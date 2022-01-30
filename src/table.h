@@ -613,6 +613,15 @@ static void N_(table_)(struct N_(table) *const table)
 static int N_(table_buffer)(struct N_(table) *const table, const PN_(uint) n)
 	{ return assert(table), PN_(buffer)(table, n); }
 
+/** Re-sizes `table` to the power-of-two (above 2) that will fit all the keys.
+ If it is idle, than it remains idle. @return Success. @throws[malloc]
+ @throws[1] Always returns zero because this is not implemented. @allow */
+static int N_(table_shrink)(struct N_(table) *const table) {
+	assert(table);
+	assert(0);
+	return 0;
+}
+
 /** Clears and removes all buckets from `table`. The capacity and memory of the
  `table` is preserved, but all previous values are un-associated. (The load
  factor will be less until it reaches it's previous size.)
@@ -627,10 +636,6 @@ static void N_(table_clear)(struct N_(table) *const table) {
 	table->size = 0;
 	table->top = (PN_(capacity)(table) - 1) & TABLE_HIGH;
 }
-
-/* ***table_shrink: if shrinkable, reserve the exact amount in a separate
- buffer and move all. Does not, and indeed cannot, respect the most-recently
- used heuristic. */
 
 /** @return Whether `key` is in `table` (which can be null.) @allow */
 static int N_(table_is)(struct N_(table) *const table, const PN_(key) key)
@@ -825,7 +830,8 @@ static PN_(value) N_(table_next_value)(struct N_(table_iterator) *const it)
 
 #endif /* value --> */
 
-/* *** <N>table_iterator_remove */
+/* *** <N>table_iterator_remove *** This is a big one -- may have to rewrite
+ <fn:<PN>remove> to return the spot at which the movement happened. */
 
 /* <!-- box (multiple traits) */
 #define BOX_ PN_
@@ -843,11 +849,11 @@ static void PN_(unused_base_coda)(void);
 static void PN_(unused_base)(void) {
 	PN_(entry) e; PN_(key) k; PN_(value) v;
 	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
-	N_(table)(0); N_(table_)(0); N_(table_buffer)(0, 0); N_(table_clear)(0);
-	N_(table_is)(0, k); N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v);
-	N_(table_try)(0, e); N_(table_replace)(0, e, 0); N_(table_update)(0,e,0,0);
-	N_(table_remove)(0, 0); N_(table_begin)(0, 0); N_(table_next)(0, 0);
-	N_(table_has_next)(0); PN_(unused_base_coda)();
+	N_(table)(0); N_(table_)(0); N_(table_buffer)(0, 0); N_(table_shrink)(0);
+	N_(table_clear)(0); N_(table_is)(0, k); N_(table_query)(0, k, 0);
+	N_(table_get_or)(0, k, v); N_(table_try)(0, e); N_(table_replace)(0, e, 0);
+	N_(table_update)(0,e,0,0); N_(table_remove)(0, 0); N_(table_begin)(0, 0);
+	N_(table_next)(0, 0); N_(table_has_next)(0); PN_(unused_base_coda)();
 #ifdef TABLE_VALUE
 	N_(table_compute)(0, k, 0); N_(table_next_key)(0); N_(table_next_value)(0);
 #endif

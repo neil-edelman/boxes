@@ -126,15 +126,6 @@ static unsigned lowbias32_r(unsigned x) {
 	return x;
 }
 #else /* < 32 bits */
-#if 0
-/** <https://github.com/skeeto/hash-prospector>; it doesn't say the inverse. */
-uint16_t hash16_xm2(uint16_t x) {
-	x ^= x >> 8; x *= 0x88b5u;
-	x ^= x >> 7; x *= 0xdb2du;
-	x ^= x >> 9;
-	return x;
-}
-#endif
 /** Uniform values don't really need a hash, and I'm lazy.
  @implements <int>hash_fn */
 static unsigned lowbias32(unsigned x) { return x; }
@@ -273,7 +264,7 @@ static void test_default(void) {
 }
 
 
-/** This is stored in the value of a table. */
+/** This is stored in the map value of `<boat>table`. */
 struct boat_record { int best_time, points; };
 #define TABLE_NAME boat
 #define TABLE_KEY int
@@ -476,7 +467,135 @@ finally:
 }
 
 
-/* Have an unsigned set that is a subclass of a larger parent. */
+/* Int set that is a subclass of a larger parent using a pointer. */
+struct year;
+typedef void (*year_to_string_fn)(const struct year *, char (*)[12]);
+struct year_vt { year_to_string_fn to_string; };
+struct year { int year, unused; struct year_vt vt; };
+/** @implements <year>hash_fn */
+static unsigned year_hash(const int *const year) { return int_hash(*year); }
+/** @implements <year>is_equal_fn */
+static int year_is_equal(const int *const a, const int *const b)
+	{ return *a == *b; }
+/** `container_of` integer `year` which is `struct year`. */
+static const struct year *year_upcast(const int *const year)
+	{ return (const struct year *)(const void *)
+	((const char *)year - offsetof(struct year, year)); }
+/** @implements <thing>to_string_fn */
+static void year_to_string(const int *const year, char (*const a)[12])
+	{ year_upcast(year)->vt.to_string(year_upcast(year), a); }
+#define TABLE_NAME year
+#define TABLE_KEY int *
+#define TABLE_UINT unsigned
+#define TABLE_HASH &year_hash
+/* Can not use `TABLE_INVERSE` because it's not a bijection. */
+#define TABLE_IS_EQUAL &year_is_equal
+#define TABLE_EXPECT_TRAIT
+#include "../src/table.h"
+#define TABLE_TO_STRING &year_to_string
+#include "../src/table.h"
+#define COLOUR /* Max 11 letters. */ \
+	X(White), X(Silver), X(Gray), X(Black), X(Red), X(Maroon), X(Bisque), \
+	X(Wheat), X(Tan), X(Sienna), X(Brown), X(Yellow), X(Khaki), X(Gold), \
+	X(Olive), X(Lime), X(Green), X(Aqua), X(Cyan), X(Teal), X(Salmon), \
+	X(Orange), X(Powder), X(Sky), X(Steel), X(Royal), X(Blue), X(Navy), \
+	X(Fuchsia), X(Pink), X(Purple), X(MaxColour)
+#define X(n) n
+struct colour { struct year year; enum col { COLOUR } colour, unused; };
+#undef X
+#define X(n) #n
+static const char *colours[] = { COLOUR };
+#undef X
+struct snake { struct year year; unsigned chill, unused; };
+struct letter { struct year year; char letter, unused[7]; };
+/* (It's just a coincidence that the types are all the same size. They could
+ not be.) */
+/** @implements year_to_string_fn */
+static void colour_to_string(const struct year *const year,
+	char (*const z)[12])
+	{ sprintf(*z, "%d:%.6s",
+	year->year, colours[((const struct colour *)year)->colour]); }
+static void snake_to_string(const struct year *const year,
+	char (*const z)[12])
+	{ sprintf(*z, "%d:Snake%.1u",
+	year->year, ((const struct snake *)year)->chill); }
+static void letter_to_string(const struct year *const year,
+	char (*const z)[12])
+	{ sprintf(*z, "%d:'%c'",
+	year->year, ((const struct letter *)year)->letter); }
+static const struct year_vt colour_vt = { &colour_to_string },
+	snake_vt = { &snake_to_string }, letter_vt = { &letter_to_string };
+static void fill_year(struct year *const year)
+	{ year->year = rand() / (RAND_MAX / 3000 + 1) - 500; }
+static void fill_colour(struct colour *const colour) {
+	fill_year(&colour->year);
+	colour->year.vt = colour_vt;
+	colour->colour = (enum col)(rand() / (RAND_MAX / MaxColour + 1));
+}
+static void fill_snake(struct snake *const snake) {
+	fill_year(&snake->year);
+	snake->year.vt = snake_vt;
+	snake->chill = (unsigned)(rand() / (RAND_MAX / 10 + 1));
+}
+static void fill_letter(struct letter *const letter) {
+	fill_year(&letter->year);
+	letter->year.vt = letter_vt;
+	letter->letter = rand() / (RAND_MAX / 26 + 1) + 'A';
+}
+#define POOL_NAME colour
+#define POOL_TYPE struct colour
+#include "pool.h"
+#define POOL_NAME snake
+#define POOL_TYPE struct snake
+#include "pool.h"
+#define POOL_NAME letter
+#define POOL_TYPE struct letter
+#include "pool.h"
+/** Example of a set with a pointer key. */
+static void year_of(void) {
+	struct year_table year = TABLE_IDLE;
+	struct colour_pool colour_pool = POOL_IDLE;
+	struct snake_pool snake_pool = POOL_IDLE;
+	struct letter_pool letter_pool = POOL_IDLE;
+	size_t i;
+	printf("Testing pointer set key.\n");
+	for(i = 0; i < 500; i++) {
+		struct year *y = 0;
+		int *eject;
+		switch(rand() / (RAND_MAX / 3 + 1)) {
+		case 0: { struct colour *c;
+			if(!(c = colour_pool_new(&colour_pool))) goto catch;
+			fill_colour(c), y = &c->year; } break;
+		case 1: { struct snake *s;
+			if(!(s = snake_pool_new(&snake_pool))) goto catch;
+			fill_snake(s), y = &s->year; } break;
+		case 2: { struct letter *a;
+			if(!(a = letter_pool_new(&letter_pool))) goto catch;
+			fill_letter(a), y = &a->year; } break;
+		}
+		switch(year_table_replace(&year, &y->year, &eject)) {
+		case TABLE_ERROR: case TABLE_YIELD: goto catch;
+		case TABLE_REPLACE: { char e[12], z[12];
+			year_to_string(eject, &e);
+			year_to_string(&y->year, &z);
+			printf("Replaced %s with %s.\n", e, z);
+			/* We could have a `delete` in the virtual table which frees
+			 unneeded memory. This is just an example, we'll allow it all to be
+			 deleted later. */ } break;
+		case TABLE_UNIQUE: break;
+		}
+	}
+	printf("Year of %s.\n", year_table_to_string(&year));
+	goto finally;
+catch:
+	perror("year"), assert(0);
+finally:
+	year_table_(&year);
+	colour_pool_(&colour_pool);
+	snake_pool_(&snake_pool);
+	letter_pool_(&letter_pool);
+	printf("\n");
+}
 
 
 /* A histogram of lengths' defined as a map with the pointers to the keys
@@ -571,12 +690,21 @@ int main(void) {
 	test_default();
 	boat_club();
 	linked_dict();
+	year_of();
 	nato();
 
 	return EXIT_SUCCESS;
 }
 
 #if 0
+
+/** <https://github.com/skeeto/hash-prospector>; it doesn't say the inverse. */
+uint16_t hash16_xm2(uint16_t x) {
+	x ^= x >> 8; x *= 0x88b5u;
+	x ^= x >> 7; x *= 0xdb2du;
+	x ^= x >> 9;
+	return x;
+}
 
 /* We never did use this hash, but it's cool. Also:
  <https://github.com/aappleby/smhasher/>. */
