@@ -36,9 +36,9 @@
 	<td>to_string</td>
 	<td>array, heap</td>
 </tr><tr>
-	<td><a href = "https://github.com/neil-edelman/set">set</a></td>
-	<td>unordered associative array</td>
-	<td>to_string, compare?</td>
+	<td><a href = "https://github.com/neil-edelman/table">table</a></td>
+	<td>set or map (associative array)</td>
+	<td>to_string, default</td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/trie">trie</a></td>
