@@ -685,7 +685,7 @@ finally:
 }
 
 
-#if 0 /* <!-- timing */
+#ifdef TIMING /* <!-- timing */
 
 /* Set up a closed hash table for comparison. The closed hash is twice as fast
  for small values, but >= 100, the open hash is slightly faster, until 100000,
@@ -778,10 +778,10 @@ static void timing_comparison(void) {
 			exp[e].name, (unsigned long)replicas);
 	}
 	/* Do experiment. */
-	for(n = 1; n < 10000/*000*/; n <<= 1) {
-		for(e = 0; e < exp_size; e++) m_reset(&exp[e].m);
+	for(n = 1; n < 1000000/*0*/; n <<= 1) {
 		clock_t t_total;
 		size_t r;
+		for(e = 0; e < exp_size; e++) m_reset(&exp[e].m);
 		for(r = 0; r < replicas; r++) {
 			clock_t t;
 			struct str16 *s16;
@@ -914,7 +914,7 @@ finally2:
 
 #else /* timing --><!-- !timing */
 static void timing_comparison(void)
-	{ printf("No timing comparison compiled.\n"); }
+	{ printf("Compile with TIMING to do comparison.\n"); }
 #endif /* timing --> */
 
 
