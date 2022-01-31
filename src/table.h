@@ -602,9 +602,9 @@ static void N_(table_)(struct N_(table) *const table)
 static int N_(table_buffer)(struct N_(table) *const table, const PN_(uint) n)
 	{ return assert(table), PN_(buffer)(table, n); }
 
-/** Re-sizes `table` to the power-of-two (above 2) that will fit all the keys.
- If it is idle, than it remains idle. @return Success. @throws[malloc]
- @throws[1] Always returns zero because this is not implemented. @allow */
+/** Will re-size `table` to the power-of-two (above 2) that will fit all the
+ keys. If it is idle, than it remains idle. @return Always returns zero because
+ this is not implemented. @allow */
 static int N_(table_shrink)(struct N_(table) *const table)
 	{ (void)table; assert(table); assert(0); return 0; }
 

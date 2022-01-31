@@ -52,7 +52,7 @@
 
 <p><a href = "#tag:&lt;N&gt;table">&lt;N&gt;table</a> implements a set or map of <a href = "#typedef:&lt;PN&gt;entry">&lt;PN&gt;entry</a> as a hash table. It must be supplied a <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> and, <a href = "#typedef:&lt;PN&gt;is_equal_fn">&lt;PN&gt;is_equal_fn</a> or <a href = "#typedef:&lt;PN&gt;inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a>.</p>
 
-fixme</div>
+</div>
 
 <dl>
 	<dt>Parameter: TABLE_NAME, TABLE_KEY</dt>
@@ -66,7 +66,7 @@ fixme</div>
 	<dt>Parameter: TABLE_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: TABLE_DEFAULT_NAME, TABLE_DEFAULT</dt>
-	<dd>Default trait; a name that satisfies <code>C</code> naming conventions when mangled and a <a href = "#typedef:&lt;PN&gt;value">&lt;PN&gt;value</a> used in <a href = "#fn:&lt;N&gt;table&lt;D&gt;get">&lt;N&gt;table&lt;D&gt;get</a>. There can be multiple to defaults, but only one can omit <code>TABLE_DEFAULT_NAME</code>.</dd>
+	<dd>Default trait; a name that satisfies <code>C</code> naming conventions when mangled and a <a href = "#typedef:&lt;PN&gt;value">&lt;PN&gt;value</a> used in <a href = "#fn:&lt;N&gt;table&lt;D&gt;get">&lt;N&gt;table&lt;D&gt;get</a>. There can be multiple defaults, but only one can omit <code>TABLE_DEFAULT_NAME</code>.</dd>
 	<dt>Parameter: TABLE_TO_STRING_NAME, TABLE_TO_STRING</dt>
 	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; <code>&lt;SZ&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>TABLE_TO_STRING_NAME</code>.</dd>
 	<dt>Standard:</dt>
@@ -91,7 +91,7 @@ fixme</div>
 
 <p><code>typedef TABLE_KEY <strong>&lt;PN&gt;key</strong>;</code></p>
 
-<p>Valid tag type defined by <code>TABLE_KEY</code> used for keys.</p>
+<p>Valid tag type defined by <code>TABLE_KEY</code> used for keys. If <code>TABLE_INVERSE</code> is not defined, this will be part of the buckets.</p>
 
 </div>
 
@@ -111,7 +111,7 @@ fixme</div>
 
 <p><code>typedef &lt;PN&gt;uint(*<strong>&lt;PN&gt;hash_fn</strong>)(&lt;PN&gt;ckey);</code></p>
 
-<p>A map from <a href = "#typedef:&lt;PN&gt;ckey">&lt;PN&gt;ckey</a> onto <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a> that, ideally, should be easy to compute while minimizing duplicate addresses. Must be consistent while in the table. If <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> is a pointer, one is permitted to have null in the domain.</p>
+<p>A map from <a href = "#typedef:&lt;PN&gt;ckey">&lt;PN&gt;ckey</a> onto <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a> that, ideally, should be easy to compute while minimizing duplicate addresses. Must be consistent for each value while in the table. If <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> is a pointer, one is permitted to have null in the domain.</p>
 
 </div>
 
@@ -233,6 +233,8 @@ fixme</div>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<N>table_buffer">&lt;N&gt;table_buffer</a></td><td>table, n</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#fn:<N>table_shrink">&lt;N&gt;table_shrink</a></td><td>table</td></tr>
+
 <tr><td align = right>static void</td><td><a href = "#fn:<N>table_clear">&lt;N&gt;table_clear</a></td><td>table</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<N>table_is">&lt;N&gt;table_is</a></td><td>table, key</td></tr>
@@ -304,7 +306,7 @@ fixme</div>
 
 <p><code>static int <strong>&lt;N&gt;table_buffer</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;uint <em>n</em>)</code></p>
 
-<p>Reserve at least <code>n</code> space for buckets of <code>table</code>. This will ensure that there is space for those buckets and may increase iteration time.</p>
+<p>Reserve at least <code>n</code> more empty buckets in <code>table</code>. This may cause the capacity to increase.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -312,6 +314,21 @@ fixme</div>
 	<dt>Exceptional return: ERANGE</dt>
 	<dd>The request was unsatisfiable.</dd>
 	<dt>Exceptional return: realloc</dt>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>table_shrink" name = "fn:<N>table_shrink">&lt;N&gt;table_shrink</a></h3>
+
+<p><code>static int <strong>&lt;N&gt;table_shrink</strong>(struct &lt;N&gt;table *const <em>table</em>)</code></p>
+
+<p>Will re-size <code>table</code> to the power-of-two (above 2) that will fit all the keys. If it is idle, than it remains idle.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Always returns zero because this is not implemented.</dd>
 </dl>
 
 </div>
@@ -354,7 +371,7 @@ fixme</div>
 	<dt>Parameter: <em>result</em></dt>
 	<dd>If null, behaves like <a href = "#fn:&lt;N&gt;table_is">&lt;N&gt;table_is</a>, otherwise, a <a href = "#typedef:&lt;PN&gt;entry">&lt;PN&gt;entry</a> which gets filled on true.</dd>
 	<dt>Return:</dt>
-	<dd>Is <code>key</code> in <code>table</code>? (which can be null.)</dd>
+	<dd>Whether <code>key</code> is in <code>table</code> (which can be null.)</dd>
 </dl>
 
 </div>
@@ -386,7 +403,7 @@ fixme</div>
 	<dt>Return:</dt>
 	<dd>One of: <code>TABLE_ERROR</code>, the table is not modified; <code>TABLE_YIELD</code>, not modified if there is another entry with the same key; <code>TABLE_UNIQUE</code>, put an entry in the table.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
-	<dd>There was an error with resizing.</dd>
+	<dd>On <code>TABLE_ERROR</code>.</dd>
 	<dt>Order:</dt>
 	<dd>Average amortised &#927;(1); worst &#927;(n).</dd>
 </dl>
@@ -405,7 +422,7 @@ fixme</div>
 	<dt>Return:</dt>
 	<dd>One of: <code>TABLE_ERROR</code>, the table is not modified; <code>TABLE_REPLACE</code>, the <code>entry</code> is put if the table, and, if non-null, <code>eject</code> will be filled; <code>TABLE_UNIQUE</code>, on a unique entry.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
-	<dd>There was an error with resizing.</dd>
+	<dd>On <code>TABLE_ERROR</code>.</dd>
 	<dt>Order:</dt>
 	<dd>Average amortised &#927;(1); worst &#927;(n).</dd>
 </dl>
@@ -424,7 +441,7 @@ fixme</div>
 	<dt>Return:</dt>
 	<dd>One of: <code>TABLE_ERROR</code>, the table is not modified; <code>TABLE_REPLACE</code>, if <code>update</code> is non-null and returns true, if non-null, <code>eject</code> will be filled; <code>TABLE_YIELD</code>, if <code>update</code> is null or false; <code>TABLE_UNIQUE</code>, on unique entry.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
-	<dd>There was an error with resizing.</dd>
+	<dd>On <code>TABLE_ERROR</code>.</dd>
 	<dt>Order:</dt>
 	<dd>Average amortised &#927;(1); worst &#927;(n).</dd>
 </dl>
@@ -437,12 +454,12 @@ fixme</div>
 
 <p><code>static enum table_result <strong>&lt;N&gt;table_compute</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>, &lt;PN&gt;value **const <em>value</em>)</code></p>
 
-<p>If <code>TABLE_VALUE</code> is defined. Try to put <code>key</code> into <code>table</code>, and store the value in <code>value</code>.</p>
+<p>If <code>TABLE_VALUE</code> is defined. Try to put <code>key</code> into <code>table</code>, and store the associated value in a pointer <code>value</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd><code>TABLE_ERROR</code> does not set <code>value</code>; <code>TABLE_GROW</code>, the <code>value</code> will be uninitialized; <code>TABLE_YIELD</code>, gets the current <code>value</code> but doesn't use the <code>key</code>.</dd>
-	<dt>Exceptional return: malloc</dt>
+	<dd><code>TABLE_ERROR</code> does not set <code>value</code>; <code>TABLE_GROW</code>, the <code>value</code> will point to uninitialized memory; <code>TABLE_YIELD</code>, gets the current <code>value</code> but doesn't use the <code>key</code>.</dd>
+	<dt>Exceptional return: malloc, ERANGE</dt>
 	<dd>On <code>TABLE_ERROR</code>.</dd>
 </dl>
 

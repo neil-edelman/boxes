@@ -15,7 +15,7 @@
 
 [&lt;N&gt;table](#user-content-tag-8f317be5) implements a set or map of [&lt;PN&gt;entry](#user-content-typedef-a9017e7) as a hash table\. It must be supplied a [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) and, [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb) or [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded)\.
 
-fixme
+
 
  * Parameter: TABLE\_NAME, TABLE\_KEY  
    `<N>` that satisfies `C` naming conventions when mangled and a valid [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) associated therewith; required\. `<PN>` is private, whose names are prefixed in a manner to avoid collisions\.
@@ -28,7 +28,7 @@ fixme
  * Parameter: TABLE\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: TABLE\_DEFAULT\_NAME, TABLE\_DEFAULT  
-   Default trait; a name that satisfies `C` naming conventions when mangled and a [&lt;PN&gt;value](#user-content-typedef-218ce716) used in [&lt;N&gt;table&lt;D&gt;get](#user-content-fn-92774ccb)\. There can be multiple to defaults, but only one can omit `TABLE_DEFAULT_NAME`\.
+   Default trait; a name that satisfies `C` naming conventions when mangled and a [&lt;PN&gt;value](#user-content-typedef-218ce716) used in [&lt;N&gt;table&lt;D&gt;get](#user-content-fn-92774ccb)\. There can be multiple defaults, but only one can omit `TABLE_DEFAULT_NAME`\.
  * Parameter: TABLE\_TO\_STRING\_NAME, TABLE\_TO\_STRING  
    To string trait contained in [to\_string\.h](to_string.h); `<SZ>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\. There can be multiple to string traits, but only one can omit `TABLE_TO_STRING_NAME`\.
  * Standard:  
@@ -49,7 +49,7 @@ fixme
 
 <code>typedef TABLE_KEY <strong>&lt;PN&gt;key</strong>;</code>
 
-Valid tag type defined by `TABLE_KEY` used for keys\.
+Valid tag type defined by `TABLE_KEY` used for keys\. If `TABLE_INVERSE` is not defined, this will be part of the buckets\.
 
 
 
@@ -65,7 +65,7 @@ Read\-only [&lt;PN&gt;key](#user-content-typedef-e7af8dc0)\. Makes the simplifyi
 
 <code>typedef &lt;PN&gt;uint(*<strong>&lt;PN&gt;hash_fn</strong>)(&lt;PN&gt;ckey);</code>
 
-A map from [&lt;PN&gt;ckey](#user-content-typedef-c325bde5) onto [&lt;PN&gt;uint](#user-content-typedef-c13937ad) that, ideally, should be easy to compute while minimizing duplicate addresses\. Must be consistent while in the table\. If [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) is a pointer, one is permitted to have null in the domain\.
+A map from [&lt;PN&gt;ckey](#user-content-typedef-c325bde5) onto [&lt;PN&gt;uint](#user-content-typedef-c13937ad) that, ideally, should be easy to compute while minimizing duplicate addresses\. Must be consistent for each value while in the table\. If [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) is a pointer, one is permitted to have null in the domain\.
 
 
 
@@ -165,6 +165,8 @@ Iteration usually not in any particular order\. The asymptotic runtime of iterat
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-4afceb58">&lt;N&gt;table_buffer</a></td><td>table, n</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-77beb767">&lt;N&gt;table_shrink</a></td><td>table</td></tr>
+
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-abc0643f">&lt;N&gt;table_clear</a></td><td>table</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-a8bd2b22">&lt;N&gt;table_is</a></td><td>table, key</td></tr>
@@ -227,13 +229,25 @@ Destroys `table` and returns it to idle\.
 
 <code>static int <strong>&lt;N&gt;table_buffer</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;uint <em>n</em>)</code>
 
-Reserve at least `n` space for buckets of `table`\. This will ensure that there is space for those buckets and may increase iteration time\.
+Reserve at least `n` more empty buckets in `table`\. This may cause the capacity to increase\.
 
  * Return:  
    Success\.
  * Exceptional return: ERANGE  
    The request was unsatisfiable\.
  * Exceptional return: realloc  
+
+
+
+
+### <a id = "user-content-fn-77beb767" name = "user-content-fn-77beb767">&lt;N&gt;table_shrink</a> ###
+
+<code>static int <strong>&lt;N&gt;table_shrink</strong>(struct &lt;N&gt;table *const <em>table</em>)</code>
+
+Will re\-size `table` to the power\-of\-two \(above 2\) that will fit all the keys\. If it is idle, than it remains idle\.
+
+ * Return:  
+   Always returns zero because this is not implemented\.
 
 
 
@@ -267,7 +281,7 @@ Clears and removes all buckets from `table`\. The capacity and memory of the `ta
  * Parameter: _result_  
    If null, behaves like [&lt;N&gt;table_is](#user-content-fn-a8bd2b22), otherwise, a [&lt;PN&gt;entry](#user-content-typedef-a9017e7) which gets filled on true\.
  * Return:  
-   Is `key` in `table`? \(which can be null\.\)
+   Whether `key` is in `table` \(which can be null\.\)
 
 
 
@@ -293,7 +307,7 @@ Puts `entry` in `table` only if absent\.
  * Return:  
    One of: `TABLE_ERROR`, the table is not modified; `TABLE_YIELD`, not modified if there is another entry with the same key; `TABLE_UNIQUE`, put an entry in the table\.
  * Exceptional return: realloc, ERANGE  
-   There was an error with resizing\.
+   On `TABLE_ERROR`\.
  * Order:  
    Average amortised &#927;\(1\); worst &#927;\(n\)\.
 
@@ -309,7 +323,7 @@ Puts `entry` in `table`\.
  * Return:  
    One of: `TABLE_ERROR`, the table is not modified; `TABLE_REPLACE`, the `entry` is put if the table, and, if non\-null, `eject` will be filled; `TABLE_UNIQUE`, on a unique entry\.
  * Exceptional return: realloc, ERANGE  
-   There was an error with resizing\.
+   On `TABLE_ERROR`\.
  * Order:  
    Average amortised &#927;\(1\); worst &#927;\(n\)\.
 
@@ -325,7 +339,7 @@ Puts `entry` in `table` only if absent or if calling `update` returns true\.
  * Return:  
    One of: `TABLE_ERROR`, the table is not modified; `TABLE_REPLACE`, if `update` is non\-null and returns true, if non\-null, `eject` will be filled; `TABLE_YIELD`, if `update` is null or false; `TABLE_UNIQUE`, on unique entry\.
  * Exceptional return: realloc, ERANGE  
-   There was an error with resizing\.
+   On `TABLE_ERROR`\.
  * Order:  
    Average amortised &#927;\(1\); worst &#927;\(n\)\.
 
@@ -336,11 +350,11 @@ Puts `entry` in `table` only if absent or if calling `update` returns true\.
 
 <code>static enum table_result <strong>&lt;N&gt;table_compute</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>, &lt;PN&gt;value **const <em>value</em>)</code>
 
-If `TABLE_VALUE` is defined\. Try to put `key` into `table`, and store the value in `value`\.
+If `TABLE_VALUE` is defined\. Try to put `key` into `table`, and store the associated value in a pointer `value`\.
 
  * Return:  
-   `TABLE_ERROR` does not set `value`; `TABLE_GROW`, the `value` will be uninitialized; `TABLE_YIELD`, gets the current `value` but doesn't use the `key`\.
- * Exceptional return: malloc  
+   `TABLE_ERROR` does not set `value`; `TABLE_GROW`, the `value` will point to uninitialized memory; `TABLE_YIELD`, gets the current `value` but doesn't use the `key`\.
+ * Exceptional return: malloc, ERANGE  
    On `TABLE_ERROR`\.
 
 
