@@ -70,7 +70,7 @@ bison := bison
 #lemon := lemon
 
 target    := # -mwindows
-optimize  := -ffast-math -funroll-loops -Ofast # -O3 -g
+optimize  := -ffast-math -funroll-loops -Ofast -D NDEBUG # -O3 -g
 warnbasic := -Wall -pedantic -ansi # -std=c99
 # Some stuff is really new.
 warnclang := -Wextra \
