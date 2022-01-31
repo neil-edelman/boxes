@@ -50,7 +50,7 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 /* For testing; there is no extra memory required to generate random `enum`.
  @implements <zodiac>fill_fn */
 static int fill_zodiac(void *const zero, enum zodiac *const z) {
-	assert(!zero);
+	(void)zero, assert(!zero);
 	*z = (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1));
 	return 1;
 }
@@ -153,7 +153,7 @@ static void uint_to_string(const unsigned x, char (*const a)[12])
 #include "../src/table.h"
 /** @implements <int>test_new_fn */
 static int uint_from_void(void *const zero, unsigned *const u) {
-	assert(!zero && RAND_MAX <= 99999999999l); /* For printing. */
+	(void)zero, assert(!zero && RAND_MAX <= 99999999999l); /* For printing. */
 	*u = (unsigned)rand();
 	return 1;
 }
@@ -189,7 +189,7 @@ static void int_to_string(const int d, char (*const a)[12])
 #include "../src/table.h"
 /** @implements <int>test_new_fn */
 static int int_from_void(void *const zero, int *const s) {
-	assert(!zero && RAND_MAX <= 9999999999l); /* For printing with '-'. */
+	(void)zero, assert(!zero && RAND_MAX <= 9999999999l); /* With '-'. */
 	*s = rand() - RAND_MAX / 2;
 	return 1;
 }
@@ -444,6 +444,7 @@ static void linked_dict(void) {
 			*befs[] = { "HIPPOLOGY", "EMS", "ZYGOMORPHY", "LIZARD", "APAYS" },
 			*afts[] = { "HIPPOPOTAMUS","EMULATE","ZYGOPHYTE","LLAMA","APEAK" },
 			**r, **r_end;
+		(void)befs, (void)afts;
 		for(r = rando, r_end = r + sizeof rando / sizeof *rando;
 			r < r_end; r++) {
 			struct dict *found;

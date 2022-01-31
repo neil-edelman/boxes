@@ -282,12 +282,11 @@ static PN_(uint) PN_(to_bucket)(const struct N_(table) *const table,
 static struct PN_(bucket) *PN_(prev)(const struct N_(table) *const table,
 	const PN_(uint) b) {
 	const struct PN_(bucket) *const bucket = table->buckets + b;
-	const PN_(uint) capacity = PN_(capacity)(table);
 	PN_(uint) to_next = TABLE_NULL, next;
 	assert(table && bucket->next != TABLE_NULL);
 	/* Note that this does not check for corrupted tables; would get assert. */
 	for(next = PN_(to_bucket)(table, bucket->hash);
-		assert(next < capacity), next != b;
+		/* assert(next < capacity), */ next != b;
 		to_next = next, next = table->buckets[next].next);
 	return to_next != TABLE_NULL ? table->buckets + to_next : 0;
 }
@@ -299,13 +298,8 @@ static struct PN_(bucket) *PN_(prev)(const struct N_(table) *const table,
 static void PN_(grow_stack)(struct N_(table) *const table) {
 	/* Subtract one for eager. */
 	PN_(uint) top = (table->top & ~TABLE_HIGH) - !(table->top & TABLE_HIGH);
-	/*char z[12];*/
 	assert(table && table->buckets && table->top && top < PN_(capacity)(table));
-	while(table->buckets[top].next != TABLE_NULL)
-		assert(top), /*PN_(to_string)(PN_(bucket_key)(table->buckets + top), &z),
-		printf("grow_stack: skip top %lu: %s.\n", (unsigned long)top, z),*/
-		top--;
-	/*printf("grow_stack: top %lu.\n", (unsigned long)top);*/
+	while(table->buckets[top].next != TABLE_NULL) assert(top), top--;
 	table->top = top; /* Eager, since one is allegedly going to fill it. */
 }
 
@@ -314,15 +308,11 @@ static void PN_(grow_stack)(struct N_(table) *const table) {
 static void PN_(force_stack)(struct N_(table) *const table) {
 	PN_(uint) top = table->top;
 	if(top & TABLE_HIGH) { /* Lazy. */
-		const PN_(uint) cap = PN_(capacity)(table);
 		struct PN_(bucket) *bucket;
-		/*char z[12];*/
 		top &= ~TABLE_HIGH;
-		do bucket = table->buckets + ++top, assert(top < cap);
+		do bucket = table->buckets + ++top/*, assert(top < capacity)*/;
 		while(bucket->next != TABLE_NULL
-			&& (/*PN_(to_string)(PN_(bucket_key)(bucket), &z),
-			printf("force_stack: skipping %s\n", z),*/
-			PN_(to_bucket)(table, bucket->hash) == top));
+			&& PN_(to_bucket)(table, bucket->hash) == top);
 		table->top = top; /* Eager. */
 	}
 }
@@ -359,8 +349,8 @@ static void PN_(shrink_stack)(struct N_(table) *const table,
  hole and linking it with top. */
 static void PN_(move_to_top)(struct N_(table) *const table, const PN_(uint) m) {
 	struct PN_(bucket) *move, *top, *prev;
-	const PN_(uint) capacity = PN_(capacity)(table);
-	assert(table->size < capacity && m < capacity);
+	assert(table
+		&& table->size < PN_(capacity)(table) && m < PN_(capacity)(table));
 	PN_(grow_stack)(table); /* Leaves it in an eager state. */
 	move = table->buckets + m, top = table->buckets + table->top;
 	assert(move->next != TABLE_NULL && top->next == TABLE_NULL);
@@ -615,11 +605,8 @@ static int N_(table_buffer)(struct N_(table) *const table, const PN_(uint) n)
 /** Re-sizes `table` to the power-of-two (above 2) that will fit all the keys.
  If it is idle, than it remains idle. @return Success. @throws[malloc]
  @throws[1] Always returns zero because this is not implemented. @allow */
-static int N_(table_shrink)(struct N_(table) *const table) {
-	assert(table);
-	assert(0);
-	return 0;
-}
+static int N_(table_shrink)(struct N_(table) *const table)
+	{ (void)table; assert(table); assert(0); return 0; }
 
 /** Clears and removes all buckets from `table`. The capacity and memory of the
  `table` is preserved, but all previous values are un-associated. (The load
