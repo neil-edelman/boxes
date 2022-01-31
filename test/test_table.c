@@ -916,7 +916,7 @@ int main(void) {
 	string_table_test(&str16_from_void, &strings), str16_pool_(&strings);
 	uint_table_test(&uint_from_void, 0);
 	int_table_test(&int_from_void, 0);
-	vec4_table_test(&vec4_from_void, &vec4s);
+	vec4_table_test(&vec4_from_void, &vec4s), vec4_pool_(&vec4s);
 	test_default();
 	boat_club();
 	linked_dict();
