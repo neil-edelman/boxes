@@ -12,5 +12,5 @@ cd "$(dirname "$0")" || exit
 [[ ! -e "list" ]] && git clone https://github.com/neil-edelman/list
 [[ ! -e "orcish" ]] && git clone https://github.com/neil-edelman/orcish
 [[ ! -e "pool" ]] && git clone https://github.com/neil-edelman/pool
-[[ ! -e "set" ]] && git clone https://github.com/neil-edelman/set
+[[ ! -e "table" ]] && git clone https://github.com/neil-edelman/table
 [[ ! -e "trie" ]] && git clone https://github.com/neil-edelman/trie
