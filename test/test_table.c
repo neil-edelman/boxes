@@ -687,25 +687,15 @@ finally:
 
 #ifdef TIMING /* <!-- timing */
 
-/* Set up a closed hash table for comparison. The closed hash is twice as fast
- for small values, but >= 100, the open hash is slightly faster, until 100000,
- when they match. The start of the non-linear region, I interpret that as being
- due to increasing hardware effects. The linked-list closed hash is: very
- simple; 'e' times more dilute, but still comparable size; always a pointer;
- the pointers were not counted to the time because they are not under our
- control. The open hash is bigger, storing the data instead of a pointer.
- Expectation value of how many buckets traversed is about one less, which is
- expected. If I were to choose based on this, I'd say the closed, simple hash
- beat out the open hash. However, the inscrutable nature of the closed hash is
- so much harder to work with in `C`, that obviously I'm going to choose the
- open hash. Even though it's way simpler for the designer, it's, like, stick
- one struct linked-list node for every hash I want to be in? I just want a hash
- table, and now I have to read the documentation? I don't believe people
- actually do that. (Though I think <https://troydhanson.github.io/uthash/> does
- this, so there is precedent.)
+/* Set up a closed hash table for comparison. With optimizations, I get that
+ the run-time is very close to the same. Performance-wise, the simplicity of
+ the closed hash is the winner. However, open tables are a big improvement in
+ usability over the inscrutable closed set. (Like why is there a linked-list?
+ No one has time to read or understand the documentation.)
 
- This relies on the closed set branch being in a certain location, which it
- isn't in general. I expect strings are the basis of most use cases. */
+ This relies on the closed set branch being in a certain directory outside the
+ project, which it isn't in general, (_ie_, one would have to make changes.) I
+ expect strings are the basis of most use cases. */
 
 /** This was before we solved pointers-pointers. */
 static void pstring_to_string(const char *const*const ps,

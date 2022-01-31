@@ -606,9 +606,8 @@ static void N_(table)(struct N_(table) *const table) {
 static void N_(table_)(struct N_(table) *const table)
 	{ assert(table), free(table->buckets); N_(table)(table); }
 
-/** Reserve at least `n` space for buckets of `table`. This will ensure that
- there is space for those buckets and may increase iteration time.
- @return Success.
+/** Reserve at least `n` more empty buckets in `table`. This may cause the
+ capacity to increase. @return Success.
  @throws[ERANGE] The request was unsatisfiable. @throws[realloc] @allow */
 static int N_(table_buffer)(struct N_(table) *const table, const PN_(uint) n)
 	{ return assert(table), PN_(buffer)(table, n); }
@@ -644,7 +643,7 @@ static int N_(table_is)(struct N_(table) *const table, const PN_(key) key)
 
 /** @param[result] If null, behaves like <fn:<N>table_is>, otherwise, a
  <typedef:<PN>entry> which gets filled on true.
- @return Is `key` in `table`? (which can be null.) @allow */
+ @return Whether `key` is in `table` (which can be null.) @allow */
 static int N_(table_query)(struct N_(table) *const table, const PN_(key) key,
 	PN_(entry) *const result) {
 	struct PN_(bucket) *bucket;
@@ -669,7 +668,7 @@ static PN_(value) N_(table_get_or)(struct N_(table) *const table,
  @return One of: `TABLE_ERROR`, the table is not modified; `TABLE_YIELD`, not
  modified if there is another entry with the same key; `TABLE_UNIQUE`, put an
  entry in the table.
- @throws[realloc, ERANGE] There was an error with resizing.
+ @throws[realloc, ERANGE] On `TABLE_ERROR`.
  @order Average amortised \O(1); worst \O(n). @allow */
 static enum table_result N_(table_try)(struct N_(table) *const table,
 	PN_(entry) entry) { return PN_(put)(table, entry, 0, 0); }
@@ -684,7 +683,7 @@ static int PN_(always_replace)(const PN_(key) original,
  @return One of: `TABLE_ERROR`, the table is not modified; `TABLE_REPLACE`, the
  `entry` is put if the table, and, if non-null, `eject` will be filled;
  `TABLE_UNIQUE`, on a unique entry.
- @throws[realloc, ERANGE] There was an error with resizing.
+ @throws[realloc, ERANGE] On `TABLE_ERROR`.
  @order Average amortised \O(1); worst \O(n). @allow */
 static enum table_result N_(table_replace)(struct N_(table) *const table,
 	PN_(entry) entry, PN_(entry) *eject) {
@@ -695,7 +694,7 @@ static enum table_result N_(table_replace)(struct N_(table) *const table,
  @return One of: `TABLE_ERROR`, the table is not modified; `TABLE_REPLACE`, if
  `update` is non-null and returns true, if non-null, `eject` will be filled;
  `TABLE_YIELD`, if `update` is null or false; `TABLE_UNIQUE`, on unique entry.
- @throws[realloc, ERANGE] There was an error with resizing.
+ @throws[realloc, ERANGE] On `TABLE_ERROR`.
  @order Average amortised \O(1); worst \O(n). @allow */
 static enum table_result N_(table_update)(struct N_(table) *const table,
 	PN_(entry) entry, PN_(entry) *eject, const PN_(policy_fn) update)
@@ -706,7 +705,7 @@ static enum table_result N_(table_update)(struct N_(table) *const table,
  associated value in a pointer `value`.
  @return `TABLE_ERROR` does not set `value`; `TABLE_GROW`, the `value` will
  point to uninitialized memory; `TABLE_YIELD`, gets the current `value` but
- doesn't use the `key`. @throws[malloc] On `TABLE_ERROR`. @allow */
+ doesn't use the `key`. @throws[malloc, ERANGE] On `TABLE_ERROR`. @allow */
 static enum table_result N_(table_compute)(struct N_(table) *const table,
 	PN_(key) key, PN_(value) **const value)
 	{ return PN_(compute)(table, key, value); }
@@ -719,7 +718,6 @@ static int N_(table_remove)(struct N_(table) *const table,
 	const PN_(key) key) {
 	struct PN_(bucket) *target;
 	PN_(uint) i, prv = TABLE_NULL, nxt, hash = PN_(hash)(key);
-	/*char z[12];*/
 	assert(table);
 	if(!table || !table->buckets || !table->size) return 0;
 	/* Find item and keep track of previous. */
@@ -735,17 +733,11 @@ static int N_(table_remove)(struct N_(table) *const table,
 			&& i != TABLE_NULL);
 		nxt = target->next;
 	}
-	/*PN_(to_entry)(table, ) PN_(to_string)(, &z);...
-	printf("remove key %s: prev %lx, i %lx, next %lx\n",
-		z, (unsigned long)prv, (unsigned long)i, (unsigned long)nxt);*/
 	if(prv != TABLE_NULL) { /* Open entry. */
 		struct PN_(bucket) *previous = table->buckets + prv;
-		/*PN_(to_string)(PN_(bucket_entry)(previous), &z);
-		printf("\tprev was %s, making it point to next\n", z);*/
 		previous->next = target->next;
 	} else if(target->next != TABLE_END) { /* Head closed entry and others. */
 		struct PN_(bucket) *const second = table->buckets + (i = target->next);
-		/*printf("\tclosed head %s, replacing it with next\n", z);*/
 		assert(target->next < PN_(capacity)(table));
 		memcpy(target, second, sizeof *second);
 		target = second;
