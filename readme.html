@@ -235,8 +235,6 @@
 
 <tr><td align = right>static int</td><td><a href = "#fn:<N>table_buffer">&lt;N&gt;table_buffer</a></td><td>table, n</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<N>table_shrink">&lt;N&gt;table_shrink</a></td><td>table</td></tr>
-
 <tr><td align = right>static void</td><td><a href = "#fn:<N>table_clear">&lt;N&gt;table_clear</a></td><td>table</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<N>table_is">&lt;N&gt;table_is</a></td><td>table, key</td></tr>
@@ -318,21 +316,6 @@
 	<dt>Exceptional return: ERANGE</dt>
 	<dd>The request was unsatisfiable.</dd>
 	<dt>Exceptional return: realloc</dt>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<N>table_shrink" name = "fn:<N>table_shrink">&lt;N&gt;table_shrink</a></h3>
-
-<p><code>static int <strong>&lt;N&gt;table_shrink</strong>(struct &lt;N&gt;table *const <em>table</em>)</code></p>
-
-<p>Will re-size <code>table</code> to the power-of-two (above 2) that will fit all the keys. If it is idle, than it remains idle.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>Always returns zero because this is not implemented.</dd>
 </dl>
 
 </div>

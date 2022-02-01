@@ -577,11 +577,12 @@ static void N_(table_)(struct N_(table) *const table)
 static int N_(table_buffer)(struct N_(table) *const table, const PN_(uint) n)
 	{ return assert(table), PN_(buffer)(table, n); }
 
-/** Will re-size `table` to the power-of-two (above 2) that will fit all the
- keys. If it is idle, than it remains idle. @return Always returns zero because
- this is not implemented. @allow */
-static int N_(table_shrink)(struct N_(table) *const table)
-	{ (void)table; assert(table); assert(0); return 0; }
+/* Re-size `table` to the power-of-two (above 2) that will fit all the keys.
+ If it is idle, then it remains idle, otherwise, if it has a size less than 8,
+ including zero, it attempts to shrink it to 8.
+ @return Always returns zero because this is not implemented. @allow */
+/*static int N_(table_shrink)(struct N_(table) *const table)
+	{ (void)table; assert(table); assert(0); return 0; }*/
 
 /** Clears and removes all buckets from `table`. The capacity and memory of the
  `table` is preserved, but all previous values are un-associated. (The load
@@ -858,7 +859,7 @@ static void PN_(unused_base_coda)(void);
 static void PN_(unused_base)(void) {
 	PN_(entry) e; PN_(key) k; PN_(value) v;
 	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
-	N_(table)(0); N_(table_)(0); N_(table_buffer)(0, 0); N_(table_shrink)(0);
+	N_(table)(0); N_(table_)(0); N_(table_buffer)(0, 0);/*N_(table_shrink)(0);*/
 	N_(table_clear)(0); N_(table_is)(0, k); N_(table_query)(0, k, 0);
 	N_(table_get_or)(0, k, v); N_(table_try)(0, e); N_(table_replace)(0, e, 0);
 	N_(table_update)(0,e,0,0); N_(table_remove)(0, 0); N_(table_begin)(0, 0);

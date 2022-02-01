@@ -167,8 +167,6 @@ Adding, deleting, successfully looking up entries, or any modification of the ta
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-4afceb58">&lt;N&gt;table_buffer</a></td><td>table, n</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-77beb767">&lt;N&gt;table_shrink</a></td><td>table</td></tr>
-
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-abc0643f">&lt;N&gt;table_clear</a></td><td>table</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-a8bd2b22">&lt;N&gt;table_is</a></td><td>table, key</td></tr>
@@ -240,18 +238,6 @@ Reserve at least `n` more empty buckets in `table`\. This may cause the capacity
  * Exceptional return: ERANGE  
    The request was unsatisfiable\.
  * Exceptional return: realloc  
-
-
-
-
-### <a id = "user-content-fn-77beb767" name = "user-content-fn-77beb767">&lt;N&gt;table_shrink</a> ###
-
-<code>static int <strong>&lt;N&gt;table_shrink</strong>(struct &lt;N&gt;table *const <em>table</em>)</code>
-
-Will re\-size `table` to the power\-of\-two \(above 2\) that will fit all the keys\. If it is idle, than it remains idle\.
-
- * Return:  
-   Always returns zero because this is not implemented\.
 
 
 
