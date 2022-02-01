@@ -717,7 +717,7 @@ finally:
 }
 
 
-#ifdef TIMING /* <!-- timing */
+#if 0 /* <!-- timing */
 
 /* Set up a closed hash table for comparison. With optimizations, I get that
  the run-time is very close to the same. Performance-wise, the simplicity of
@@ -800,7 +800,7 @@ static void timing_comparison(void) {
 			exp[e].name, (unsigned long)replicas);
 	}
 	/* Do experiment. */
-	for(n = 1; n < 1000000/*0*/; n <<= 1) {
+	for(n = 1; n < 10000000; n <<= 1) {
 		clock_t t_total;
 		size_t r;
 		for(e = 0; e < exp_size; e++) m_reset(&exp[e].m);
@@ -937,7 +937,7 @@ finally2:
 
 #else /* timing --><!-- !timing */
 static void timing_comparison(void)
-	{ printf("Compile with TIMING to do comparison.\n\n"); }
+	{ printf("Compile with \"#if 1\" to do timing comparison.\n\n"); }
 #endif /* timing --> */
 
 

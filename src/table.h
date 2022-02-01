@@ -309,8 +309,6 @@ static void PN_(shrink_stack)(struct N_(table) *const table,
 	const PN_(uint) b) {
 	assert(table && table->buckets && b < PN_(capacity)(table));
 	assert(table->buckets[b].next == TABLE_NULL);
-	/*printf("shrink_stack(%lx), top %lx\n",
-		(unsigned long)i, (unsigned long)table->top);*/
 	if(!PN_(in_stack_range)(table, b)) return;
 	PN_(force_stack)(table); /* Only have room for 1 step of laziness. */
 	assert(PN_(in_stack_range)(table, b)); /* I think this is assured? Think. */
@@ -354,23 +352,37 @@ static int PN_(equal_buckets)(PN_(ckey) a, PN_(ckey) b) {
  @fixme Move to front like splay trees? */
 static struct PN_(bucket) *PN_(query)(struct N_(table) *const table,
 	PN_(ckey) key, const PN_(uint) hash) {
-	struct PN_(bucket) *bucket;
-	PN_(uint) i, next;
+	struct PN_(bucket) *bucket1;
+	PN_(uint) head, b0 = TABLE_NULL, b1, b2;
 	assert(table && table->buckets && table->log_capacity);
-	bucket = table->buckets + (i = PN_(to_bucket)(table, hash));
+	bucket1 = table->buckets + (head = b1 = PN_(to_bucket)(table, hash));
 	/* Not the start of a bucket: empty or in the collision stack. */
-	if((next = bucket->next) == TABLE_NULL
-		|| PN_(in_stack_range)(table, i)
-		&& i != PN_(to_bucket)(table, bucket->hash)) return 0;
-	while(hash != bucket->hash
-		|| !PN_(equal_buckets)(key, PN_(bucket_key)(bucket))) {
-		if(next == TABLE_END) return 0;
-		bucket = table->buckets + (i = next);
-		assert(i < PN_(capacity)(table) && PN_(in_stack_range)(table, i)
-			&& i != TABLE_NULL);
-		next = bucket->next;
+	if((b2 = bucket1->next) == TABLE_NULL
+		|| PN_(in_stack_range)(table, b1)
+		&& b1 != PN_(to_bucket)(table, bucket1->hash)) return 0;
+	while(hash != bucket1->hash
+		|| !PN_(equal_buckets)(key, PN_(bucket_key)(bucket1))) {
+		if(b2 == TABLE_END) return 0;
+		bucket1 = table->buckets + (b0 = b1, b1 = b2);
+		assert(b1 < PN_(capacity)(table) && PN_(in_stack_range)(table, b1)
+			&& b1 != TABLE_NULL);
+		b2 = bucket1->next;
 	}
-	return bucket;
+#ifdef TABLE_DONT_SPLAY /* <!-- !splay */
+	return bucket1;
+#else /* !splay --><!-- splay: bring the MRU to the front. */
+	if(b0 == TABLE_NULL) return bucket1;
+	{
+		struct PN_(bucket) *const bucket0 = table->buckets + b0,
+			*const bucket_head = table->buckets + head, temp;
+		bucket0->next = b2;
+		memcpy(&temp, bucket_head, sizeof *bucket_head);
+		memcpy(bucket_head, bucket1, sizeof *bucket1);
+		memcpy(bucket1, &temp, sizeof temp);
+		bucket_head->next = b1;
+		return bucket_head;
+	}
+#endif /* splay --> */
 }
 
 /** Ensures that `table` has enough buckets to fill `n` more than the size. May
