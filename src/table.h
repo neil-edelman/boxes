@@ -804,25 +804,34 @@ static PN_(value) N_(table_next_value)(struct N_(table_iterator) *const it) {
 
 #endif /* value --> */
 
-/** Removes the entry at `it`. Invalidates the entry such that all operations
- on the pointer are ill-defined; one can only cannot do anything but call the
- next. */
-static void N_(table_iterator_remove)(struct N_(table_iterator) *const it) {
-	struct N_(table) *table = it->modify;
+static void (*PN_(to_string))(PN_(ckey), char (*)[12]);
+
+/** Removes the entry at `it`.
+ @return Success, or there was no entry at the iterator's position (anymore). */
+static int N_(table_iterator_remove)(struct N_(table_iterator) *const it) {
+	struct N_(table) *table;
 	PN_(uint) b = it->_.prev;
 	struct PN_(bucket) *previous = 0, *current;
 	PN_(uint) prv = TABLE_NULL, crnt;
 	int is_later_replaced = 0;
-	assert(it && table && table == it->it.table
-		&& table->buckets && b < PN_(capacity)(table));
+	assert(it);
+	if(b == TABLE_NULL) return 0;
+	table = it->modify;
+	assert(table && table == it->it.table
+	   && table->buckets && b < PN_(capacity)(table));
 	/* fixme: code reuse! */
 	current = table->buckets + b, assert(current->next != TABLE_NULL);
+	{
+		char z[12];
+		PN_(to_string)(PN_(bucket_key)(current), &z);
+		printf("(rm%s)", z);
+	}
 	crnt = PN_(to_bucket)(table, current->hash);
 	while(crnt != b) assert(crnt < PN_(capacity)(table)),
 		crnt = (previous = table->buckets + (prv = crnt))->next;
 	if(prv != TABLE_NULL) { /* Open entry. */
 		previous->next = current->next;
-		printf("open\n");
+		//printf("open\n");
 	} else if(current->next != TABLE_END) { /* Head closed entry and others. */
 		const PN_(uint) scnd = current->next;
 		struct PN_(bucket) *const second = table->buckets + scnd;
@@ -830,10 +839,11 @@ static void N_(table_iterator_remove)(struct N_(table_iterator) *const it) {
 		memcpy(current, second, sizeof *second);
 		if(crnt < scnd) is_later_replaced = 1;
 		crnt = scnd; current = second;
-		printf("closed\n");
+		//printf("closed\n");
 	}
 	current->next = TABLE_NULL, table->size--, PN_(shrink_stack)(table, crnt);
-	if(!is_later_replaced) it->it._.b++;
+	if(is_later_replaced) printf("<not>"), it->it._.b = it->_.prev;
+	return 1;
 }
 
 /* <!-- box (multiple traits) */
