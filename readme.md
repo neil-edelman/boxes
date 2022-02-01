@@ -22,7 +22,7 @@
  * Parameter: TABLE\_HASH, TABLE\_IS\_EQUAL, TABLE\_INVERSE  
    `TABLE_HASH`, and either `TABLE_IS_EQUAL` or `TABLE_INVERSE`, but not both, are required\. Function satisfying [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292), and [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb) or [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded)\.
  * Parameter: TABLE\_VALUE  
-   An optional type that is the payload of the key, thus making this an associative array\. If the key is part of an aggregate value, it will be more efficient and robust to use a type conversion instead of storing related pointers\.
+   An optional type that is the payload of the key, thus making this an associative array\. \(If the key is part of an aggregate value, it will be more efficient and robust to use a type conversion instead of storing related pointers\.\)
  * Parameter: TABLE\_UINT  
    This is [&lt;PN&gt;uint](#user-content-typedef-c13937ad), the unsigned type of hash hash of the key given by [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292); defaults to `size_t`\.
  * Parameter: TABLE\_EXPECT\_TRAIT  

@@ -20,9 +20,9 @@
 
  @param[TABLE_VALUE]
  An optional type that is the payload of the key, thus making this an
- associative array. If the key is part of an aggregate value, it will be
+ associative array. (If the key is part of an aggregate value, it will be
  more efficient and robust to use a type conversion instead of storing
- related pointers.
+ related pointers.)
 
  @param[TABLE_UINT]
  This is <typedef:<PN>uint>, the unsigned type of hash hash of the key given by

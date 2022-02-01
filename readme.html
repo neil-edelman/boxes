@@ -60,7 +60,7 @@
 	<dt>Parameter: TABLE_HASH, TABLE_IS_EQUAL, TABLE_INVERSE</dt>
 	<dd><code>TABLE_HASH</code>, and either <code>TABLE_IS_EQUAL</code> or <code>TABLE_INVERSE</code>, but not both, are required. Function satisfying <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a>, and <a href = "#typedef:&lt;PN&gt;is_equal_fn">&lt;PN&gt;is_equal_fn</a> or <a href = "#typedef:&lt;PN&gt;inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a>.</dd>
 	<dt>Parameter: TABLE_VALUE</dt>
-	<dd>An optional type that is the payload of the key, thus making this an associative array. If the key is part of an aggregate value, it will be more efficient and robust to use a type conversion instead of storing related pointers.</dd>
+	<dd>An optional type that is the payload of the key, thus making this an associative array. (If the key is part of an aggregate value, it will be more efficient and robust to use a type conversion instead of storing related pointers.)</dd>
 	<dt>Parameter: TABLE_UINT</dt>
 	<dd>This is <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a>, the unsigned type of hash hash of the key given by <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a>; defaults to <code>size_t</code>.</dd>
 	<dt>Parameter: TABLE_EXPECT_TRAIT</dt>
