@@ -270,6 +270,37 @@ static void test_default(void) {
 }
 
 
+static void test_it(void) {
+	struct int_table t = TABLE_IDLE;
+	struct int_table_iterator it;
+	int n, i;
+	printf("Testing iteration.\n");
+	for(n = 0; n < 1000; n++) if(!int_table_try(&t, n)) goto catch;
+	printf("t = %s.\n", int_table_to_string(&t));
+	for(int_table_begin(&it, &t); int_table_has_next(&it); ) {
+		int_table_next(&it, &i);
+		printf("%d, ", i);
+	}
+	printf("done.\n");
+	table_int_graph(&t, "graph/it0.gv");
+	printf("Remove: ");
+	for(int_table_begin(&it, &t); int_table_has_next(&it); ) {
+		int_table_next(&it, &i);
+		if(i & 1) continue;
+		int_table_iterator_remove(&it);
+		printf("%d, ", i);
+	}
+	printf("done.\n");
+	table_int_graph(&t, "graph/it1.gv");
+	goto finally;
+catch:
+	perror("it"), assert(0);
+finally:
+	int_table_(&t);
+	printf("\n");
+}
+
+
 /** This is stored in the map value of `<boat>table`. */
 struct boat_record { int best_time, points; };
 #define TABLE_NAME boat
@@ -923,6 +954,7 @@ int main(void) {
 	year_of();
 	nato();
 	timing_comparison();
+	test_it();
 	return EXIT_SUCCESS;
 }
 

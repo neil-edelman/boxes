@@ -245,26 +245,6 @@ struct N_(table) { /* "Padding size," good. */
 	PN_(uint) log_capacity, size, top;
 };
 
-/* **********fixme*/
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
-#ifdef TABLE_TEST
-/** `f` `g` */
-static void PN_(graph)(const struct N_(table) *f, const char *g);
-static void (*PN_(to_string))(PN_(ckey), char (*)[12]);
-#else
-/** `table` `fn` */
-static void PN_(graph)(const struct N_(table) *const table,
-	const char *const fn) { (void)table, (void)fn; }
-/** `key` `z` */
-static void PN_(to_string)(PN_(ckey) key, char (*z)[12])
-	{ (void)key, strcpy(*z, "<key>"); }
-static void PN_(unused_temp_coda)(void);
-static void PN_(unused_temp)(void)
-	{ PN_(graph)(0, 0); PN_(to_string)(0, 0); PN_(unused_temp_coda)(); }
-static void PN_(unused_temp_coda)(void) { PN_(unused_temp)(); }
-#endif
-
 /** The capacity of a non-idle `table` is always a power-of-two. */
 static PN_(uint) PN_(capacity)(const struct N_(table) *const table)
 	{ return assert(table && table->buckets && table->log_capacity >= 3),
@@ -324,21 +304,21 @@ static int PN_(in_stack_range)(const struct N_(table) *const table,
 		(table->top & ~TABLE_HIGH) + !!(table->top & TABLE_HIGH) <= i;
 }
 
-/** Corrects newly-deleted `i` from `table` in the stack. */
+/** Corrects newly-deleted `b` from `table` in the stack. */
 static void PN_(shrink_stack)(struct N_(table) *const table,
-	const PN_(uint) i) {
-	assert(table && table->buckets && i < PN_(capacity)(table));
-	assert(table->buckets[i].next == TABLE_NULL);
+	const PN_(uint) b) {
+	assert(table && table->buckets && b < PN_(capacity)(table));
+	assert(table->buckets[b].next == TABLE_NULL);
 	/*printf("shrink_stack(%lx), top %lx\n",
 		(unsigned long)i, (unsigned long)table->top);*/
-	if(!PN_(in_stack_range)(table, i)) return;
+	if(!PN_(in_stack_range)(table, b)) return;
 	PN_(force_stack)(table); /* Only have room for 1 step of laziness. */
-	assert(PN_(in_stack_range)(table, i)); /* I think this is assured? Think. */
-	if(i != table->top) {
+	assert(PN_(in_stack_range)(table, b)); /* I think this is assured? Think. */
+	if(b != table->top) {
 		struct PN_(bucket) *const prev = PN_(prev)(table, table->top);
-		memcpy(table->buckets + i, table->buckets + table->top,
+		memcpy(table->buckets + b, table->buckets + table->top,
 			sizeof *table->buckets);
-		prev->next = i;
+		prev->next = b;
 	}
 	table->buckets[table->top].next = TABLE_NULL;
 	table->top |= TABLE_HIGH; /* Lazy. */
@@ -359,7 +339,6 @@ static void PN_(move_to_top)(struct N_(table) *const table, const PN_(uint) m) {
 }
 
 /* stack --> */
-
 
 /** `TABLE_INVERSE` is injective, so in that case, we only compare hashes.
  @return `a` and `b`. */
@@ -387,8 +366,8 @@ static struct PN_(bucket) *PN_(query)(struct N_(table) *const table,
 		|| !PN_(equal_buckets)(key, PN_(bucket_key)(bucket))) {
 		if(next == TABLE_END) return 0;
 		bucket = table->buckets + (i = next);
-		assert(i < PN_(capacity)(table) && PN_(in_stack_range)(table, i) &&
-			i != TABLE_NULL);
+		assert(i < PN_(capacity)(table) && PN_(in_stack_range)(table, i)
+			&& i != TABLE_NULL);
 		next = bucket->next;
 	}
 	return bucket;
@@ -490,13 +469,8 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 		wait = waiting->next, waiting->next = TABLE_NULL; /* Pop. */
 	}
 
-	/*printf("buffer: expanded from %lu to %lu.\n",
-		(unsigned long)c0, (unsigned long)c1);*/
 	return 1;
 }
-
-#undef QUOTE_
-#undef QUOTE
 
 /** Replace the `key` and `hash` of `bucket`. Don't touch next. */
 static void PN_(replace_key)(struct PN_(bucket) *const bucket,
@@ -703,33 +677,33 @@ static enum table_result N_(table_compute)(struct N_(table) *const table,
  distributes elements uniformly); worst \O(n). @allow */
 static int N_(table_remove)(struct N_(table) *const table,
 	const PN_(key) key) {
-	struct PN_(bucket) *target;
-	PN_(uint) i, prv = TABLE_NULL, nxt, hash = PN_(hash)(key);
-	assert(table);
-	if(!table || !table->buckets || !table->size) return 0;
+	struct PN_(bucket) *current;
+	PN_(uint) crnt, prv = TABLE_NULL, nxt, hash = PN_(hash)(key);
+	if(!table || !table->size) return 0; assert(table->buckets);
 	/* Find item and keep track of previous. */
-	target = table->buckets + (i = PN_(to_bucket)(table, hash));
-	if((nxt = target->next) == TABLE_NULL
-		|| PN_(in_stack_range)(table, i)
-		&& i != PN_(to_bucket)(table, target->hash)) return 0;
-	while(hash != target->hash
-		|| !PN_(equal_buckets)(key, PN_(bucket_key)(target))) {
+	current = table->buckets + (crnt = PN_(to_bucket)(table, hash));
+	if((nxt = current->next) == TABLE_NULL
+		|| PN_(in_stack_range)(table, crnt)
+		&& crnt != PN_(to_bucket)(table, current->hash)) return 0;
+	while(hash != current->hash
+		&& !PN_(equal_buckets)(key, PN_(bucket_key)(current))) {
 		if(nxt == TABLE_END) return 0;
-		prv = i, target = table->buckets + (i = nxt);
-		assert(i < PN_(capacity)(table) && PN_(in_stack_range)(table, i)
-			&& i != TABLE_NULL);
-		nxt = target->next;
+		prv = crnt, current = table->buckets + (crnt = nxt);
+		assert(crnt < PN_(capacity)(table) && PN_(in_stack_range)(table, crnt)
+			&& crnt != TABLE_NULL);
+		nxt = current->next;
 	}
 	if(prv != TABLE_NULL) { /* Open entry. */
 		struct PN_(bucket) *previous = table->buckets + prv;
-		previous->next = target->next;
-	} else if(target->next != TABLE_END) { /* Head closed entry and others. */
-		struct PN_(bucket) *const second = table->buckets + (i = target->next);
-		assert(target->next < PN_(capacity)(table));
-		memcpy(target, second, sizeof *second);
-		target = second;
+		previous->next = current->next;
+	} else if(current->next != TABLE_END) { /* Head closed entry and others. */
+		struct PN_(bucket) *const second
+			= table->buckets + (crnt = current->next);
+		assert(current->next < PN_(capacity)(table));
+		memcpy(current, second, sizeof *second);
+		current = second;
 	}
-	target->next = TABLE_NULL, table->size--, PN_(shrink_stack)(table, i);
+	current->next = TABLE_NULL, table->size--, PN_(shrink_stack)(table, crnt);
 	return 1;
 }
 
@@ -743,8 +717,8 @@ struct PN_(iterator) {
 
 /** Loads `hash` (can be null) into `it`. @implements begin */
 static void PN_(begin)(struct PN_(iterator) *const it,
-	const struct N_(table) *const hash)
-	{ assert(it), it->table = hash, it->_.b = 0; }
+	const struct N_(table) *const table)
+	{ assert(it), it->table = table, it->_.b = 0; }
 
 /** Helper to skip the buckets of `it` that are not there.
  @return Whether it found another index. */
@@ -771,13 +745,30 @@ static struct PN_(bucket) *PN_(next)(struct PN_(iterator) *const it) {
 
 /* iterate --> */
 
-/** Iteration usually not in any particular order. The asymptotic runtime of
- iterating though the whole table is proportional to the capacity. */
-struct N_(table_iterator) { struct PN_(iterator) it; };
+/** ![States](../web/it.png)
+
+ In the above, for tables that can have zero as a valid value, there is
+ <fn:<N>table_has_next>. Iteration usually not in any particular order. The asymptotic runtime of iterating though the whole table is proportional to the
+ capacity. */
+struct N_(table_iterator);
+struct N_(table_iterator) { struct PN_(iterator) it;
+	struct N_(table) *modify; union { PN_(uint) prev; void *do_not_warn; } _; };
 
 /** Loads `table` (can be null) into `it`. @allow */
 static void N_(table_begin)(struct N_(table_iterator) *const it,
-	const struct N_(table) *const table) { PN_(begin)(&it->it, table); }
+	struct N_(table) *const table) {
+	PN_(begin)(&it->it, table);
+	/* Stupid: I want to have <fn:<N>table_iterator_remove>; so I need a
+	 non-constant value. The value in to string is constant. */
+	it->modify = table;
+	it->_.prev = TABLE_NULL;
+}
+
+/** Advances `prev` to keep up with `b` in `it`.
+ (Stupid: changing back to offset.) */
+static void PN_(advance)(struct N_(table_iterator) *const it,
+	const struct PN_(bucket) *const b)
+	{ it->_.prev = (PN_(uint))(b - it->it.table->buckets); }
 
 /** Advances `it`.
  @param[entry] If non-null, the entry is filled with the next element only if
@@ -785,7 +776,7 @@ static void N_(table_begin)(struct N_(table_iterator) *const it,
 static int N_(table_next)(struct N_(table_iterator) *const it,
 	PN_(entry) *entry) {
 	const struct PN_(bucket) *b = PN_(next)(&it->it);
-	return b ? (PN_(to_entry)(b, entry), 1) : 0;
+	return b ? (PN_(advance)(it, b), PN_(to_entry)(b, entry), 1) : 0;
 }
 
 /** @return Whether the table specified to `it` in <fn:<N>table_begin> has a
@@ -799,18 +790,51 @@ static int N_(table_has_next)(struct N_(table_iterator) *const it) {
 
 /** If `TABLE_VALUE`, advances `it` when <fn:<N>table_has_next>.
  @return The next key. @allow */
-static PN_(key) N_(table_next_key)(struct N_(table_iterator) *const it)
-	{ return PN_(bucket_key)(PN_(next)(&it->it)); }
+static PN_(key) N_(table_next_key)(struct N_(table_iterator) *const it) {
+	struct PN_(bucket) *b = PN_(next)(&it->it);
+	return PN_(advance)(it, b), PN_(bucket_key)(b);
+}
 
 /** If `TABLE_VALUE`, advances `it` when <fn:<N>table_has_next>.
  @return The next value. @allow */
-static PN_(value) N_(table_next_value)(struct N_(table_iterator) *const it)
-	{ return PN_(next)(&it->it)->value; }
+static PN_(value) N_(table_next_value)(struct N_(table_iterator) *const it) {
+	struct PN_(bucket) *b = PN_(next)(&it->it);
+	return PN_(advance)(it, b), b->value;
+}
 
 #endif /* value --> */
 
-/* *** <N>table_iterator_remove *** This is a big one -- may have to rewrite
- <fn:<PN>remove> to return the spot at which the movement happened. */
+/** Removes the entry at `it`. Invalidates the entry such that all operations
+ on the pointer are ill-defined; one can only cannot do anything but call the
+ next. */
+static void N_(table_iterator_remove)(struct N_(table_iterator) *const it) {
+	struct N_(table) *table = it->modify;
+	PN_(uint) b = it->_.prev;
+	struct PN_(bucket) *previous = 0, *current;
+	PN_(uint) prv = TABLE_NULL, crnt;
+	int is_later_replaced = 0;
+	assert(it && table && table == it->it.table
+		&& table->buckets && b < PN_(capacity)(table));
+	/* fixme: code reuse! */
+	current = table->buckets + b, assert(current->next != TABLE_NULL);
+	crnt = PN_(to_bucket)(table, current->hash);
+	while(crnt != b) assert(crnt < PN_(capacity)(table)),
+		crnt = (previous = table->buckets + (prv = crnt))->next;
+	if(prv != TABLE_NULL) { /* Open entry. */
+		previous->next = current->next;
+		printf("open\n");
+	} else if(current->next != TABLE_END) { /* Head closed entry and others. */
+		const PN_(uint) scnd = current->next;
+		struct PN_(bucket) *const second = table->buckets + scnd;
+		assert(scnd < PN_(capacity)(table));
+		memcpy(current, second, sizeof *second);
+		if(crnt < scnd) is_later_replaced = 1;
+		crnt = scnd; current = second;
+		printf("closed\n");
+	}
+	current->next = TABLE_NULL, table->size--, PN_(shrink_stack)(table, crnt);
+	if(!is_later_replaced) it->it._.b++;
+}
 
 /* <!-- box (multiple traits) */
 #define BOX_ PN_
@@ -832,7 +856,8 @@ static void PN_(unused_base)(void) {
 	N_(table_clear)(0); N_(table_is)(0, k); N_(table_query)(0, k, 0);
 	N_(table_get_or)(0, k, v); N_(table_try)(0, e); N_(table_replace)(0, e, 0);
 	N_(table_update)(0,e,0,0); N_(table_remove)(0, 0); N_(table_begin)(0, 0);
-	N_(table_next)(0, 0); N_(table_has_next)(0); PN_(unused_base_coda)();
+	N_(table_next)(0, 0); N_(table_has_next)(0); N_(table_iterator_remove)(0);
+	PN_(unused_base_coda)();
 #ifdef TABLE_VALUE
 	N_(table_compute)(0, k, 0); N_(table_next_key)(0); N_(table_next_value)(0);
 #endif
