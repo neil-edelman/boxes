@@ -3,6 +3,8 @@
 
  @subtitle Hash table
 
+ TL;DR <src/table.h> is the source. <test/test_table.c> has examples.
+
  ![Example of <string>table.](../web/table.png)
 
  <tag:<N>table> implements a set or map of <typedef:<PN>entry> as a hash table.
@@ -16,7 +18,8 @@
 
  @param[TABLE_HASH, TABLE_IS_EQUAL, TABLE_INVERSE]
  `TABLE_HASH`, and either `TABLE_IS_EQUAL` or `TABLE_INVERSE`, but not both,
- are required. Function satisfying <typedef:<PN>hash_fn>, and <typedef:<PN>is_equal_fn> or <typedef:<PN>inverse_hash_fn>.
+ are required. Function satisfying <typedef:<PN>hash_fn>, and
+ <typedef:<PN>is_equal_fn> or <typedef:<PN>inverse_hash_fn>.
 
  @param[TABLE_VALUE]
  An optional type that is the payload of the key, thus making this an

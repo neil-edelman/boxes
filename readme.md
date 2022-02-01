@@ -11,6 +11,8 @@
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
+TL;DR [src/table\.h](src/table.h) is the source\. [test/test\_table\.c](test/test_table.c) has examples\.
+
 ![Example of &lt;string&gt;table.](web/table.png)
 
 [&lt;N&gt;table](#user-content-tag-8f317be5) implements a set or map of [&lt;PN&gt;entry](#user-content-typedef-a9017e7) as a hash table\. It must be supplied a [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) and, [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb) or [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded)\.
