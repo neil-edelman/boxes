@@ -273,9 +273,10 @@ static void test_default(void) {
 static void test_it(void) {
 	struct int_table t = TABLE_IDLE;
 	struct int_table_iterator it;
+	const int ko = 10, ko2 = ko * 2;
 	int n, i;
 	printf("Testing iteration.\n");
-	for(n = 0; n < 10; n++) if(!int_table_try(&t, n)) goto catch;
+	for(n = 0; n < ko2; n++) if(!int_table_try(&t, n)) goto catch;
 	printf("t = %s.\n", int_table_to_string(&t));
 	for(int_table_begin(&it, &t); int_table_has_next(&it); ) {
 		int_table_next(&it, &i);
@@ -283,16 +284,22 @@ static void test_it(void) {
 	}
 	printf("done.\n");
 	table_int_graph(&t, "graph/it0.gv");
+	assert(t.size == ko2);
 	printf("Remove: ");
 	for(int_table_begin(&it, &t); int_table_has_next(&it); ) {
 		int_table_next(&it, &i);
 		printf("<%lx,%lx>", (unsigned long)it.it._.b, (unsigned long)it._.prev);
-		if(i & 1) continue;
+		if(i & 1) continue; /* Odd ones left. */
 		int_table_iterator_remove(&it);
 		printf("%d, ", i);
+		assert(int_table_iterator_remove(&it) == 0);
 	}
 	printf("done.\n");
 	table_int_graph(&t, "graph/it1.gv");
+	assert(t.size == ko);
+	for(int_table_begin(&it, &t); int_table_has_next(&it); )
+		int_table_next(&it, &i), assert(i & 1);
+
 	goto finally;
 catch:
 	perror("it"), assert(0);

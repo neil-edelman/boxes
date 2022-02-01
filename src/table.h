@@ -831,7 +831,6 @@ static int N_(table_iterator_remove)(struct N_(table_iterator) *const it) {
 		crnt = (previous = table->buckets + (prv = crnt))->next;
 	if(prv != TABLE_NULL) { /* Open entry. */
 		previous->next = current->next;
-		//printf("open\n");
 	} else if(current->next != TABLE_END) { /* Head closed entry and others. */
 		const PN_(uint) scnd = current->next;
 		struct PN_(bucket) *const second = table->buckets + scnd;
@@ -839,10 +838,10 @@ static int N_(table_iterator_remove)(struct N_(table_iterator) *const it) {
 		memcpy(current, second, sizeof *second);
 		if(crnt < scnd) is_later_replaced = 1;
 		crnt = scnd; current = second;
-		//printf("closed\n");
 	}
 	current->next = TABLE_NULL, table->size--, PN_(shrink_stack)(table, crnt);
-	if(is_later_replaced) printf("<not>"), it->it._.b = it->_.prev;
+	if(is_later_replaced) it->it._.b = it->_.prev;
+	it->_.prev = TABLE_NULL;
 	return 1;
 }
 
