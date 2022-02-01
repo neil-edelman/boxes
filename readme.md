@@ -49,7 +49,7 @@
 
 <code>typedef TABLE_KEY <strong>&lt;PN&gt;key</strong>;</code>
 
-Valid tag type defined by `TABLE_KEY` used for keys\. If `TABLE_INVERSE` is not defined, this will be part of the buckets\.
+Valid tag type defined by `TABLE_KEY` used for keys\. If `TABLE_INVERSE` is not defined, a copy of this value will be stored in the internal buckets\.
 
 
 
@@ -73,7 +73,7 @@ A map from [&lt;PN&gt;ckey](#user-content-typedef-c325bde5) onto [&lt;PN&gt;uint
 
 <code>typedef &lt;PN&gt;key(*<strong>&lt;PN&gt;inverse_hash_fn</strong>)(&lt;PN&gt;uint);</code>
 
-Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) forms a bijection between the range in [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) and the image in [&lt;PN&gt;uint](#user-content-typedef-c13937ad)\. The keys are not stored in the hash table at all, but rely on this, the inverse\-mapping\.
+Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) forms a bijection between the range in [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) and the image in [&lt;PN&gt;uint](#user-content-typedef-c13937ad)\. The keys are not stored in the hash table at all, but rely on this, the inverse\-mapping to generate them\.
 
 
 
@@ -123,7 +123,7 @@ Returns true if the `replace` replaces the `original`\.
 
 <code>enum <strong>table_result</strong> { TABLE_RESULT };</code>
 
-This is the result of modifying the table, of which `TABLE_ERROR` is false\. ![A diagram of the result states.](web/put.png)
+A result of modifying the table, of which `TABLE_ERROR` is false\. ![A diagram of the result states.](web/put.png)
 
 
 
@@ -233,7 +233,7 @@ Destroys `table` and returns it to idle\.
 
 <code>static int <strong>&lt;N&gt;table_buffer</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;uint <em>n</em>)</code>
 
-Reserve at least `n` more empty buckets in `table`\. This may cause the capacity to increase\.
+Reserve at least `n` more empty buckets in `table`\. This may cause the capacity to increase and invalidates any pointers to data in the table\.
 
  * Return:  
    Success\.
@@ -416,7 +416,7 @@ Advances `it`\.
 
 <code>static &lt;PN&gt;key <strong>&lt;N&gt;table_next_key</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
 
-If `TABLE_VALUE`, advances `it` when [&lt;N&gt;table_has_next](#user-content-fn-cbb7429a)\.
+Defined if `TABLE_VALUE`\. Advances `it` only when [&lt;N&gt;table_has_next](#user-content-fn-cbb7429a)\.
 
  * Return:  
    The next key\.
@@ -428,7 +428,7 @@ If `TABLE_VALUE`, advances `it` when [&lt;N&gt;table_has_next](#user-content-fn-
 
 <code>static &lt;PN&gt;value <strong>&lt;N&gt;table_next_value</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
 
-If `TABLE_VALUE`, advances `it` when [&lt;N&gt;table_has_next](#user-content-fn-cbb7429a)\.
+Defined if `TABLE_VALUE`\. Advances `it` only when [&lt;N&gt;table_has_next](#user-content-fn-cbb7429a)\.
 
  * Return:  
    The next value\.

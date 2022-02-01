@@ -95,7 +95,7 @@
 #define TABLE_NULL (TABLE_HIGH + 1)
 #define TABLE_RESULT X(ERROR), X(UNIQUE), X(YIELD), X(REPLACE)
 #define X(n) TABLE_##n
-/** This is the result of modifying the table, of which `TABLE_ERROR` is false.
+/** A result of modifying the table, of which `TABLE_ERROR` is false.
  ![A diagram of the result states.](../web/put.png) */
 enum table_result { TABLE_RESULT };
 #undef X
@@ -120,7 +120,7 @@ static const char *const table_result_str[] = { TABLE_RESULT };
 typedef TABLE_UINT PN_(uint);
 
 /** Valid tag type defined by `TABLE_KEY` used for keys. If `TABLE_INVERSE` is
- not defined, this will be part of the buckets. */
+ not defined, a copy of this value will be stored in the internal buckets. */
 typedef TABLE_KEY PN_(key);
 /** Read-only <typedef:<PN>key>. Makes the simplifying assumption that this is
  not `const`-qualified. */
@@ -139,7 +139,7 @@ static const PN_(hash_fn) PN_(hash) = (TABLE_HASH);
 /** Defining `TABLE_INVERSE` says <typedef:<PN>hash_fn> forms a bijection
  between the range in <typedef:<PN>key> and the image in <typedef:<PN>uint>.
  The keys are not stored in the hash table at all, but rely on this, the
- inverse-mapping. */
+ inverse-mapping to generate them. */
 typedef PN_(key) (*PN_(inverse_hash_fn))(PN_(uint));
 /* Check that `TABLE_INVERSE` is a function implementing
  <typedef:<PN>inverse_hash_fn>. */
@@ -571,7 +571,8 @@ static void N_(table_)(struct N_(table) *const table)
 	{ assert(table), free(table->buckets); N_(table)(table); }
 
 /** Reserve at least `n` more empty buckets in `table`. This may cause the
- capacity to increase. @return Success.
+ capacity to increase and invalidates any pointers to data in the table.
+ @return Success.
  @throws[ERANGE] The request was unsatisfiable. @throws[realloc] @allow */
 static int N_(table_buffer)(struct N_(table) *const table, const PN_(uint) n)
 	{ return assert(table), PN_(buffer)(table, n); }
@@ -791,14 +792,14 @@ static int N_(table_has_next)(struct N_(table_iterator) *const it) {
 
 #ifdef TABLE_VALUE /* <!-- value */
 
-/** If `TABLE_VALUE`, advances `it` when <fn:<N>table_has_next>.
+/** Defined if `TABLE_VALUE`. Advances `it` only when <fn:<N>table_has_next>.
  @return The next key. @allow */
 static PN_(key) N_(table_next_key)(struct N_(table_iterator) *const it) {
 	struct PN_(bucket) *b = PN_(next)(&it->it);
 	return PN_(advance)(it, b), PN_(bucket_key)(b);
 }
 
-/** If `TABLE_VALUE`, advances `it` when <fn:<N>table_has_next>.
+/** Defined if `TABLE_VALUE`. Advances `it` only when <fn:<N>table_has_next>.
  @return The next value. @allow */
 static PN_(value) N_(table_next_value)(struct N_(table_iterator) *const it) {
 	struct PN_(bucket) *b = PN_(next)(&it->it);

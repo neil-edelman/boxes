@@ -91,7 +91,7 @@
 
 <p><code>typedef TABLE_KEY <strong>&lt;PN&gt;key</strong>;</code></p>
 
-<p>Valid tag type defined by <code>TABLE_KEY</code> used for keys. If <code>TABLE_INVERSE</code> is not defined, this will be part of the buckets.</p>
+<p>Valid tag type defined by <code>TABLE_KEY</code> used for keys. If <code>TABLE_INVERSE</code> is not defined, a copy of this value will be stored in the internal buckets.</p>
 
 </div>
 
@@ -121,7 +121,7 @@
 
 <p><code>typedef &lt;PN&gt;key(*<strong>&lt;PN&gt;inverse_hash_fn</strong>)(&lt;PN&gt;uint);</code></p>
 
-<p>Defining <code>TABLE_INVERSE</code> says <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> forms a bijection between the range in <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> and the image in <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a>. The keys are not stored in the hash table at all, but rely on this, the inverse-mapping.</p>
+<p>Defining <code>TABLE_INVERSE</code> says <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> forms a bijection between the range in <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> and the image in <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a>. The keys are not stored in the hash table at all, but rely on this, the inverse-mapping to generate them.</p>
 
 </div>
 
@@ -183,7 +183,7 @@
 
 <p><code>enum <strong>table_result</strong> { TABLE_RESULT };</code></p>
 
-<p>This is the result of modifying the table, of which <code>TABLE_ERROR</code> is false. <img alt = "A diagram of the result states." src = "web/put.png" width = 657 height = 305></p>
+<p>A result of modifying the table, of which <code>TABLE_ERROR</code> is false. <img alt = "A diagram of the result states." src = "web/put.png" width = 657 height = 305></p>
 
 </div>
 
@@ -215,7 +215,7 @@
 
 <p><code>struct <strong>&lt;N&gt;table_iterator</strong>;</code></p>
 
-<p><img alt = "States" src = "web/it.png" width = 1017 height = 121></p>
+<p><img alt = "States" src = "web/it.png" width = 832 height = 109></p>
 
 <p>Adding, deleting, successfully looking up entries, or any modification of the table's topology causes the iterator to become invalid. Use <a href = "#fn:&lt;N&gt;table_iterator_remove">&lt;N&gt;table_iterator_remove</a> to avoid this. For tables that can have zero as a valid value, <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a> can differentiate between them. Iteration usually not in any particular order. The asymptotic runtime of iterating though the whole table is proportional to the capacity.</p>
 
@@ -310,7 +310,7 @@
 
 <p><code>static int <strong>&lt;N&gt;table_buffer</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;uint <em>n</em>)</code></p>
 
-<p>Reserve at least <code>n</code> more empty buckets in <code>table</code>. This may cause the capacity to increase.</p>
+<p>Reserve at least <code>n</code> more empty buckets in <code>table</code>. This may cause the capacity to increase and invalidates any pointers to data in the table.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -534,7 +534,7 @@
 
 <p><code>static &lt;PN&gt;key <strong>&lt;N&gt;table_next_key</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
 
-<p>If <code>TABLE_VALUE</code>, advances <code>it</code> when <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a>.</p>
+<p>Defined if <code>TABLE_VALUE</code>. Advances <code>it</code> only when <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -549,7 +549,7 @@
 
 <p><code>static &lt;PN&gt;value <strong>&lt;N&gt;table_next_value</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
 
-<p>If <code>TABLE_VALUE</code>, advances <code>it</code> when <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a>.</p>
+<p>Defined if <code>TABLE_VALUE</code>. Advances <code>it</code> only when <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a>.</p>
 
 <dl>
 	<dt>Return:</dt>

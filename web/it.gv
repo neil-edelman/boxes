@@ -11,10 +11,10 @@ digraph {
 	null [label="uninitialized\l|undetermined state\l", fillcolor="Pink"];
 	ready [ label = "ready\l|bound to table\l" ];
 	null -> ready [ label = "<N>table_begin" ];
-	ready -> null [ label = "<N>table_next[key|value] = 0" ];
+	ready -> null [ label = "<N>table_next = 0" ];
 	entry [ label = "entry\l|specific entry\l" ];
-	ready -> entry [ label = "<N>table_next[key|value]" ];
-	entry -> entry [ label = "<N>table_next[key|value]" ];
+	ready -> entry [ label = "<N>table_next" ];
+	entry -> entry [ label = "<N>table_next" ];
 	entry -> ready [ label = "<N>table_iterator_remove" ];
-	entry -> null [ label = "<N>table_next[key|value] = 0" ];
+	entry -> null [ label = "<N>table_next = 0" ];
 }
