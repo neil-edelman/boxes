@@ -48,7 +48,7 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p>TL;DR <a href = "src/table.h">src/table.h</a> is the source. <a href = "test/test_table.c">test/test_table.c</a> has examples.</p>
+<p>TL;DR: <a href = "src/table.h">src/table.h</a> is the source; <a href = "src/to_string.h">src/to_string.h</a> is required if one needs <code>to_string</code>; <a href = "test/test_table.c">test/test_table.c</a> has examples.</p>
 
 <p><img alt = "Example of &lt;string&gt;table." src = "web/table.png" width = 388 height = 391></p>
 
@@ -62,7 +62,7 @@
 	<dt>Parameter: TABLE_HASH, TABLE_IS_EQUAL, TABLE_INVERSE</dt>
 	<dd><code>TABLE_HASH</code>, and either <code>TABLE_IS_EQUAL</code> or <code>TABLE_INVERSE</code>, but not both, are required. Function satisfying <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a>, and <a href = "#typedef:&lt;PN&gt;is_equal_fn">&lt;PN&gt;is_equal_fn</a> or <a href = "#typedef:&lt;PN&gt;inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a>.</dd>
 	<dt>Parameter: TABLE_VALUE</dt>
-	<dd>An optional type that is the payload of the key, thus making this an associative array. (If the key is part of an aggregate value, it will be more efficient and robust to use a type conversion instead of storing related pointers.)</dd>
+	<dd>An optional type that is the payload of the key, thus making this a map or associative array. (If the key is part of an aggregate pointer, it will be more efficient and robust to use a set with a type conversion instead of storing related pointers in a map.)</dd>
 	<dt>Parameter: TABLE_UINT</dt>
 	<dd>This is <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a>, the unsigned type of hash hash of the key given by <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a>; defaults to <code>size_t</code>.</dd>
 	<dt>Parameter: TABLE_EXPECT_TRAIT</dt>
@@ -123,7 +123,7 @@
 
 <p><code>typedef &lt;PN&gt;key(*<strong>&lt;PN&gt;inverse_hash_fn</strong>)(&lt;PN&gt;uint);</code></p>
 
-<p>Defining <code>TABLE_INVERSE</code> says <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> forms a bijection between the range in <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> and the image in <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a>. The keys are not stored in the hash table at all, but rely on this, the inverse-mapping to generate them.</p>
+<p>Defining <code>TABLE_INVERSE</code> says <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> forms a bijection between the range in <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> and the image in <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a>. The keys are not stored in the hash table, but they are generated from the hashes using this inverse-mapping.</p>
 
 </div>
 
@@ -133,7 +133,7 @@
 
 <p><code>typedef int(*<strong>&lt;PN&gt;is_equal_fn</strong>)(&lt;PN&gt;ckey a, &lt;PN&gt;ckey b);</code></p>
 
-<p>Equivalence relation between <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> that satisfies <code>&lt;PN&gt;is_equal_fn(a, b) -&gt; &lt;PN&gt;hash(a) == &lt;PN&gt;hash(b)</code>.</p>
+<p>Equivalence relation between <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> that satisfies <code>&lt;PN&gt;is_equal_fn(a, b) -&gt; &lt;PN&gt;hash(a) == &lt;PN&gt;hash(b)</code>. Not used if <code>TABLE_INVERSE</code> because the comparison is done in hash space, in that case.</p>
 
 </div>
 
@@ -195,7 +195,7 @@
 
 <p><code>struct <strong>&lt;N&gt;table_entry</strong> { &lt;PN&gt;key key; &lt;PN&gt;value value; };</code></p>
 
-<p>Defining <code>TABLE_VALUE</code> creates this map from <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> to <a href = "#typedef:&lt;PN&gt;value">&lt;PN&gt;value</a> as an interface with table. In general, reducing the size of these elements will be better for performance.</p>
+<p>Defining <code>TABLE_VALUE</code> creates this map from <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> to <a href = "#typedef:&lt;PN&gt;value">&lt;PN&gt;value</a> as an interface with table.</p>
 
 </div>
 

@@ -3,7 +3,8 @@
 
  @subtitle Hash table
 
- TL;DR <src/table.h> is the source. <test/test_table.c> has examples.
+ TL;DR: <src/table.h> is the source; <src/to_string.h> is required if one needs
+ `to_string`; <test/test_table.c> has examples.
 
  ![Example of <string>table.](../web/table.png)
 
@@ -22,10 +23,10 @@
  <typedef:<PN>is_equal_fn> or <typedef:<PN>inverse_hash_fn>.
 
  @param[TABLE_VALUE]
- An optional type that is the payload of the key, thus making this an
- associative array. (If the key is part of an aggregate value, it will be
- more efficient and robust to use a type conversion instead of storing
- related pointers.)
+ An optional type that is the payload of the key, thus making this a map or
+ associative array. (If the key is part of an aggregate pointer, it will be
+ more efficient and robust to use a set with a type conversion instead of
+ storing related pointers in a map.)
 
  @param[TABLE_UINT]
  This is <typedef:<PN>uint>, the unsigned type of hash hash of the key given by
@@ -141,8 +142,8 @@ static const PN_(hash_fn) PN_(hash) = (TABLE_HASH);
 
 /** Defining `TABLE_INVERSE` says <typedef:<PN>hash_fn> forms a bijection
  between the range in <typedef:<PN>key> and the image in <typedef:<PN>uint>.
- The keys are not stored in the hash table at all, but rely on this, the
- inverse-mapping to generate them. */
+ The keys are not stored in the hash table, but they are generated from the
+ hashes using this inverse-mapping. */
 typedef PN_(key) (*PN_(inverse_hash_fn))(PN_(uint));
 /* Check that `TABLE_INVERSE` is a function implementing
  <typedef:<PN>inverse_hash_fn>. */
@@ -151,7 +152,8 @@ static const PN_(inverse_hash_fn) PN_(inverse_hash) = (TABLE_INVERSE);
 #else /* inv --><!-- !inv */
 
 /** Equivalence relation between <typedef:<PN>key> that satisfies
- `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`. */
+ `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`. Not used if
+ `TABLE_INVERSE` because the comparison is done in hash space, in that case. */
 typedef int (*PN_(is_equal_fn))(PN_(ckey) a, PN_(ckey) b);
 /* Check that `TABLE_IS_EQUAL` is a function implementing
  <typedef:<PN>is_equal_fn>. */
@@ -164,8 +166,7 @@ static const PN_(is_equal_fn) PN_(equal) = (TABLE_IS_EQUAL);
  same as <typedef:<PN>key>. */
 typedef TABLE_VALUE PN_(value);
 /** Defining `TABLE_VALUE` creates this map from <typedef:<PN>key> to
- <typedef:<PN>value> as an interface with table. In general, reducing the size
- of these elements will be better for performance. */
+ <typedef:<PN>value> as an interface with table. */
 struct N_(table_entry) { PN_(key) key; PN_(value) value; };
 /** If `TABLE_VALUE`, this is <tag:<N>table_entry>; otherwise, it's the same as
  <typedef:<PN>key>. */

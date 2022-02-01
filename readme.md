@@ -11,7 +11,7 @@
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-TL;DR [src/table\.h](src/table.h) is the source\. [test/test\_table\.c](test/test_table.c) has examples\.
+TL;DR: [src/table\.h](src/table.h) is the source; [src/to\_string\.h](src/to_string.h) is required if one needs `to_string`; [test/test\_table\.c](test/test_table.c) has examples\.
 
 ![Example of &lt;string&gt;table.](web/table.png)
 
@@ -24,7 +24,7 @@ TL;DR [src/table\.h](src/table.h) is the source\. [test/test\_table\.c](test/tes
  * Parameter: TABLE\_HASH, TABLE\_IS\_EQUAL, TABLE\_INVERSE  
    `TABLE_HASH`, and either `TABLE_IS_EQUAL` or `TABLE_INVERSE`, but not both, are required\. Function satisfying [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292), and [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb) or [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded)\.
  * Parameter: TABLE\_VALUE  
-   An optional type that is the payload of the key, thus making this an associative array\. \(If the key is part of an aggregate value, it will be more efficient and robust to use a type conversion instead of storing related pointers\.\)
+   An optional type that is the payload of the key, thus making this a map or associative array\. \(If the key is part of an aggregate pointer, it will be more efficient and robust to use a set with a type conversion instead of storing related pointers in a map\.\)
  * Parameter: TABLE\_UINT  
    This is [&lt;PN&gt;uint](#user-content-typedef-c13937ad), the unsigned type of hash hash of the key given by [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292); defaults to `size_t`\.
  * Parameter: TABLE\_EXPECT\_TRAIT  
@@ -75,7 +75,7 @@ A map from [&lt;PN&gt;ckey](#user-content-typedef-c325bde5) onto [&lt;PN&gt;uint
 
 <code>typedef &lt;PN&gt;key(*<strong>&lt;PN&gt;inverse_hash_fn</strong>)(&lt;PN&gt;uint);</code>
 
-Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) forms a bijection between the range in [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) and the image in [&lt;PN&gt;uint](#user-content-typedef-c13937ad)\. The keys are not stored in the hash table at all, but rely on this, the inverse\-mapping to generate them\.
+Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) forms a bijection between the range in [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) and the image in [&lt;PN&gt;uint](#user-content-typedef-c13937ad)\. The keys are not stored in the hash table, but they are generated from the hashes using this inverse\-mapping\.
 
 
 
@@ -83,7 +83,7 @@ Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292
 
 <code>typedef int(*<strong>&lt;PN&gt;is_equal_fn</strong>)(&lt;PN&gt;ckey a, &lt;PN&gt;ckey b);</code>
 
-Equivalence relation between [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) that satisfies `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`\.
+Equivalence relation between [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) that satisfies `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`\. Not used if `TABLE_INVERSE` because the comparison is done in hash space, in that case\.
 
 
 
@@ -133,7 +133,7 @@ A result of modifying the table, of which `TABLE_ERROR` is false\. ![A diagram o
 
 <code>struct <strong>&lt;N&gt;table_entry</strong> { &lt;PN&gt;key key; &lt;PN&gt;value value; };</code>
 
-Defining `TABLE_VALUE` creates this map from [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) to [&lt;PN&gt;value](#user-content-typedef-218ce716) as an interface with table\. In general, reducing the size of these elements will be better for performance\.
+Defining `TABLE_VALUE` creates this map from [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) to [&lt;PN&gt;value](#user-content-typedef-218ce716) as an interface with table\.
 
 
 
