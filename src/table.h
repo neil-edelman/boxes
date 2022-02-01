@@ -807,8 +807,8 @@ static PN_(value) N_(table_next_value)(struct N_(table_iterator) *const it) {
 
 #endif /* value --> */
 
-/** Removes the entry at `it`. <fn:<N>table_remove> invalidates the iterator,
- but this corrects the iterator and knows where it is.
+/** Removes the entry at `it`. (Where <fn:<N>table_remove> invalidates the
+ iterator.)
  @return Success, or there was no entry at the iterator's position (anymore).
  @allow */
 static int N_(table_iterator_remove)(struct N_(table_iterator) *const it) {

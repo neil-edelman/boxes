@@ -440,7 +440,7 @@ If `TABLE_VALUE`, advances `it` when [&lt;N&gt;table_has_next](#user-content-fn-
 
 <code>static int <strong>&lt;N&gt;table_iterator_remove</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
 
-Removes the entry at `it`\. [&lt;N&gt;table_remove](#user-content-fn-f3d5d82a) invalidates the iterator, but this corrects the iterator and knows where it is\.
+Removes the entry at `it`\. \(Where [&lt;N&gt;table_remove](#user-content-fn-f3d5d82a) invalidates the iterator\.\)
 
  * Return:  
    Success, or there was no entry at the iterator's position \(anymore\)\.
