@@ -937,7 +937,8 @@ finally2:
 
 #else /* timing --><!-- !timing */
 static void timing_comparison(void)
-	{ printf("Compile with \"#if 1\" to do timing comparison.\n\n"); }
+	{ printf("%s:%lu: \"#if 0\" to do timing comparison.\n\n",
+	__FILE__, (unsigned long)__LINE__); }
 #endif /* timing --> */
 
 
