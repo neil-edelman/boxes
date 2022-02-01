@@ -53,64 +53,29 @@
 </tr></table>
 
 `boxes` is a very simple automated dependancy and build system for
-separate `C89` data structure projects; these projects are intended
+separate `C89` data structure projects. These projects are intended
 to generate lightweight, independent, and statically type-safe
-containers for new and existing code. The `sh`-script `autoclone`,
-downloads them all.  See each for usage, and each project's `test`
-section for examples.
-
-## Why boxes? ##
-
-> [C sucks because](https://wiki.theory.org/index.php/YourLanguageSucks#C_sucks_because)
-> You get nothing else that's truly portable. Rolling your own containers (likely
-> inferior to a standard, highly-optimised version) is something you better get
-> used to doing for every new application, or using overly complicated existing
-> frameworks that take over your application (nspr, apr, glib...).
-
-This aims to be a middle ground for some popular containers. No
-libraries or frameworks; each fairly small, simple, stand-alone
-`C89` code. It's like rolling one's own, but aims to have work of
-testing and documenting already done. In a project, one can pick
-and choose which ones are appropriate.
-
-## Internal interface ##
+containers as drop-ins for new and existing code. The `sh`-script
+`autoclone`, downloads them all.  See each for usage, and each
+project's `test` section for examples.
 
 Most of the projects make extensive use of code generation: in the
-background, it uses the `C89` pre-processor for very basic template
-meta-programming to do compile-time polymorphism. Such that, when
-the code is run through traditional parsers, they tend to get
-confused; by default, a custom parser is used for documentation:
-[cdoc](https://github.com/neil-edelman/cdoc).
-
-The code in the individual projects should work on most systems and
-compilers. The build system (this) requires a shell that understands
-`sh`-scripts and GNU `Makefile`; it is useful in automated developing
-of these containers.
-
-Projects are subdirectories of `boxes` and have separate `git`
-repositories.  Each one must have `test` and `src`. Files could be
-duplicated, but the `C` one-source-of-truth files are: any files
-the `src` has which are the same name as the project, and files in
-`traits`. `make` creates a test in `bin` using `gcc` or `clang`.
+background, it uses the `C89` pre-processor for template meta-programming
+to do compile-time polymorphism.  The documented parameters are
+pre-processor macros defined before including the file, and they
+are generally undefined automatically before the box is complete
+for convenience.  In a project, one can pick and choose which ones
+are appropriate.
 
 ## Details ##
 
-The documented parameters are pre-processor macros defined before
-including the file, and they are generally undefined automatically
-before the box is complete for convenience. Since `C` doesn't have
-interfaces, one can include anonymous and named traits with the
-`EXPECT_TRAIT`.  This returns in a state of incompletion until one
-includes it again with the trait's parameters defined.
-
 Assertions are used to ensure data integrity at runtime; to stop
 them, define `#define NDEBUG` before `assert.h`, included in the
-files.
-
-Errors are returned with the standard `errno`. Since this is portable
-`C89` code, we have limited options for returning our own errors,
-namely, `EDOM`, `ERANGE`, `EISEQ` (1994 Amendment 1 to `C90`);
-standard library functions may provide their own values, which are
-passed on.
+files. Errors are returned with the standard `errno`. Since this
+is portable `C89` code, we have limited options for returning our
+own errors, namely, `EDOM`, `ERANGE`, `EISEQ` (1994 Amendment 1 to
+`C90`); standard library functions may provide their own values,
+which are passed on.
 
 The source files are `UTF-8` and may contain multi-byte literals.
 Some specific terminals don't have this as a default.
