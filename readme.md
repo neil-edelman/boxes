@@ -147,9 +147,11 @@ To initialize, see [&lt;N&gt;table](#user-content-fn-8f317be5), `TABLE_IDLE`, `{
 
 ### <a id = "user-content-tag-f67540e4" name = "user-content-tag-f67540e4">&lt;N&gt;table_iterator</a> ###
 
-<code>struct <strong>&lt;N&gt;table_iterator</strong> { struct &lt;PN&gt;iterator it; };</code>
+<code>struct <strong>&lt;N&gt;table_iterator</strong>;</code>
 
-Iteration usually not in any particular order\. The asymptotic runtime of iterating though the whole table is proportional to the capacity\.
+![States](web/it.png)
+
+Adding, deleting, successfully looking up entries, or any modification of the table's topology causes the iterator to become invalid\. Use [&lt;N&gt;table_iterator_remove](#user-content-fn-c384e71) to avoid this\. For tables that can have zero as a valid value, [&lt;N&gt;table_has_next](#user-content-fn-cbb7429a) can differentiate between them\. Iteration usually not in any particular order\. The asymptotic runtime of iterating though the whole table is proportional to the capacity\.
 
 
 
@@ -194,6 +196,8 @@ Iteration usually not in any particular order\. The asymptotic runtime of iterat
 <tr><td align = right>static &lt;PN&gt;key</td><td><a href = "#user-content-fn-69407e33">&lt;N&gt;table_next_key</a></td><td>it</td></tr>
 
 <tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#user-content-fn-df072cd">&lt;N&gt;table_next_value</a></td><td>it</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-c384e71">&lt;N&gt;table_iterator_remove</a></td><td>it</td></tr>
 
 <tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#user-content-fn-92774ccb">&lt;N&gt;table&lt;D&gt;get</a></td><td>table, key</td></tr>
 
@@ -376,7 +380,7 @@ Removes `key` from `table` \(which could be null\.\)
 
 ### <a id = "user-content-fn-89645eb3" name = "user-content-fn-89645eb3">&lt;N&gt;table_begin</a> ###
 
-<code>static void <strong>&lt;N&gt;table_begin</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, const struct &lt;N&gt;table *const <em>table</em>)</code>
+<code>static void <strong>&lt;N&gt;table_begin</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, struct &lt;N&gt;table *const <em>table</em>)</code>
 
 Loads `table` \(can be null\) into `it`\.
 
@@ -428,6 +432,18 @@ If `TABLE_VALUE`, advances `it` when [&lt;N&gt;table_has_next](#user-content-fn-
 
  * Return:  
    The next value\.
+
+
+
+
+### <a id = "user-content-fn-c384e71" name = "user-content-fn-c384e71">&lt;N&gt;table_iterator_remove</a> ###
+
+<code>static int <strong>&lt;N&gt;table_iterator_remove</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
+
+[&lt;N&gt;table_remove](#user-content-fn-f3d5d82a) invalidates the iterator because , but Removes the entry at `it`\.
+
+ * Return:  
+   Success, or there was no entry at the iterator's position \(anymore\)\.
 
 
 

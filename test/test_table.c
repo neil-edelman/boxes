@@ -270,28 +270,21 @@ static void test_default(void) {
 }
 
 
+/** Test iteration removal. */
 static void test_it(void) {
 	struct int_table t = TABLE_IDLE;
 	struct int_table_iterator it;
-	const int ko = 10, ko2 = ko * 2;
+	const int ko = 1000, ko2 = ko * 2;
 	int n, i;
 	printf("Testing iteration.\n");
 	for(n = 0; n < ko2; n++) if(!int_table_try(&t, n)) goto catch;
-	printf("t = %s.\n", int_table_to_string(&t));
-	for(int_table_begin(&it, &t); int_table_has_next(&it); ) {
-		int_table_next(&it, &i);
-		printf("%d, ", i);
-	}
-	printf("done.\n");
 	table_int_graph(&t, "graph/it0.gv");
 	assert(t.size == ko2);
 	printf("Remove: ");
 	for(int_table_begin(&it, &t); int_table_has_next(&it); ) {
 		int_table_next(&it, &i);
-		printf("<%lx,%lx>", (unsigned long)it.it._.b, (unsigned long)it._.prev);
 		if(i & 1) continue; /* Odd ones left. */
 		int_table_iterator_remove(&it);
-		printf("%d, ", i);
 		assert(int_table_iterator_remove(&it) == 0);
 	}
 	printf("done.\n");
@@ -299,7 +292,6 @@ static void test_it(void) {
 	assert(t.size == ko);
 	for(int_table_begin(&it, &t); int_table_has_next(&it); )
 		int_table_next(&it, &i), assert(i & 1);
-
 	goto finally;
 catch:
 	perror("it"), assert(0);
@@ -958,12 +950,12 @@ int main(void) {
 	int_table_test(&int_from_void, 0);
 	vec4_table_test(&vec4_from_void, &vec4s), vec4_pool_(&vec4s);
 	test_default();
+	test_it();
 	boat_club();
 	linked_dict();
 	year_of();
 	nato();
 	timing_comparison();
-	test_it();
 	return EXIT_SUCCESS;
 }
 

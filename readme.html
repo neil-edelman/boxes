@@ -213,9 +213,11 @@
 
 <h3><a id = "tag:<N>table_iterator" name = "tag:<N>table_iterator">&lt;N&gt;table_iterator</a></h3>
 
-<p><code>struct <strong>&lt;N&gt;table_iterator</strong> { struct &lt;PN&gt;iterator it; };</code></p>
+<p><code>struct <strong>&lt;N&gt;table_iterator</strong>;</code></p>
 
-<p>Iteration usually not in any particular order. The asymptotic runtime of iterating though the whole table is proportional to the capacity.</p>
+<p><img alt = "States" src = "web/it.png" width = 1017 height = 121></p>
+
+<p>Adding, deleting, successfully looking up entries, or any modification of the table's topology causes the iterator to become invalid. Use <a href = "#fn:&lt;N&gt;table_iterator_remove">&lt;N&gt;table_iterator_remove</a> to avoid this. For tables that can have zero as a valid value, <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a> can differentiate between them. Iteration usually not in any particular order. The asymptotic runtime of iterating though the whole table is proportional to the capacity.</p>
 
 </div>
 
@@ -262,6 +264,8 @@
 <tr><td align = right>static &lt;PN&gt;key</td><td><a href = "#fn:<N>table_next_key">&lt;N&gt;table_next_key</a></td><td>it</td></tr>
 
 <tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#fn:<N>table_next_value">&lt;N&gt;table_next_value</a></td><td>it</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<N>table_iterator_remove">&lt;N&gt;table_iterator_remove</a></td><td>it</td></tr>
 
 <tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#fn:<N>table<D>get">&lt;N&gt;table&lt;D&gt;get</a></td><td>table, key</td></tr>
 
@@ -486,7 +490,7 @@
 
 <h3><a id = "fn:<N>table_begin" name = "fn:<N>table_begin">&lt;N&gt;table_begin</a></h3>
 
-<p><code>static void <strong>&lt;N&gt;table_begin</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, const struct &lt;N&gt;table *const <em>table</em>)</code></p>
+<p><code>static void <strong>&lt;N&gt;table_begin</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, struct &lt;N&gt;table *const <em>table</em>)</code></p>
 
 <p>Loads <code>table</code> (can be null) into <code>it</code>.</p>
 
@@ -550,6 +554,21 @@
 <dl>
 	<dt>Return:</dt>
 	<dd>The next value.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>table_iterator_remove" name = "fn:<N>table_iterator_remove">&lt;N&gt;table_iterator_remove</a></h3>
+
+<p><code>static int <strong>&lt;N&gt;table_iterator_remove</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
+
+<p><a href = "#fn:&lt;N&gt;table_remove">&lt;N&gt;table_remove</a> invalidates the iterator because , but Removes the entry at <code>it</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success, or there was no entry at the iterator's position (anymore).</dd>
 </dl>
 
 </div>

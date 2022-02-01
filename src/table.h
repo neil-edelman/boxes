@@ -715,7 +715,7 @@ struct PN_(iterator) {
 	union { const void *const do_not_warn; PN_(uint) b; } _;
 };
 
-/** Loads `hash` (can be null) into `it`. @implements begin */
+/** Loads `table` (can be null) into `it`. @implements begin */
 static void PN_(begin)(struct PN_(iterator) *const it,
 	const struct N_(table) *const table)
 	{ assert(it), it->table = table, it->_.b = 0; }
@@ -747,9 +747,12 @@ static struct PN_(bucket) *PN_(next)(struct PN_(iterator) *const it) {
 
 /** ![States](../web/it.png)
 
- In the above, for tables that can have zero as a valid value, there is
- <fn:<N>table_has_next>. Iteration usually not in any particular order. The asymptotic runtime of iterating though the whole table is proportional to the
- capacity. */
+ Adding, deleting, successfully looking up entries, or any modification of the
+ table's topology causes the iterator to become invalid. Use
+ <fn:<N>table_iterator_remove> to avoid this. For tables that can have zero as
+ a valid value, <fn:<N>table_has_next> can differentiate between them.
+ Iteration usually not in any particular order. The asymptotic runtime of
+ iterating though the whole table is proportional to the capacity. */
 struct N_(table_iterator);
 struct N_(table_iterator) { struct PN_(iterator) it;
 	struct N_(table) *modify; union { PN_(uint) prev; void *do_not_warn; } _; };
@@ -804,28 +807,21 @@ static PN_(value) N_(table_next_value)(struct N_(table_iterator) *const it) {
 
 #endif /* value --> */
 
-static void (*PN_(to_string))(PN_(ckey), char (*)[12]);
-
-/** Removes the entry at `it`.
- @return Success, or there was no entry at the iterator's position (anymore). */
+/** <fn:<N>table_remove> invalidates the iterator because , but Removes the entry at `it`.
+ @return Success, or there was no entry at the iterator's position (anymore).
+ @allow */
 static int N_(table_iterator_remove)(struct N_(table_iterator) *const it) {
 	struct N_(table) *table;
 	PN_(uint) b = it->_.prev;
 	struct PN_(bucket) *previous = 0, *current;
 	PN_(uint) prv = TABLE_NULL, crnt;
-	int is_later_replaced = 0;
 	assert(it);
 	if(b == TABLE_NULL) return 0;
 	table = it->modify;
 	assert(table && table == it->it.table
 	   && table->buckets && b < PN_(capacity)(table));
-	/* fixme: code reuse! */
+	/* Egregious code reuse. :[ */
 	current = table->buckets + b, assert(current->next != TABLE_NULL);
-	{
-		char z[12];
-		PN_(to_string)(PN_(bucket_key)(current), &z);
-		printf("(rm%s)", z);
-	}
 	crnt = PN_(to_bucket)(table, current->hash);
 	while(crnt != b) assert(crnt < PN_(capacity)(table)),
 		crnt = (previous = table->buckets + (prv = crnt))->next;
@@ -836,11 +832,10 @@ static int N_(table_iterator_remove)(struct N_(table_iterator) *const it) {
 		struct PN_(bucket) *const second = table->buckets + scnd;
 		assert(scnd < PN_(capacity)(table));
 		memcpy(current, second, sizeof *second);
-		if(crnt < scnd) is_later_replaced = 1;
+		if(crnt < scnd) it->it._.b = it->_.prev; /* Iterate new entry. */
 		crnt = scnd; current = second;
 	}
 	current->next = TABLE_NULL, table->size--, PN_(shrink_stack)(table, crnt);
-	if(is_later_replaced) it->it._.b = it->_.prev;
 	it->_.prev = TABLE_NULL;
 	return 1;
 }
