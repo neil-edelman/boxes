@@ -89,7 +89,7 @@ warn := $(warnbasic) $(warnclang)
 
 CC   := clang # gcc
 CF   := $(target) $(optimize) $(warn)
-OF   := -Ofast # -O3 -framework OpenGL -framework GLUT or -lglut -lGLEW
+OF   := -Ofast -lm # -O3 -framework OpenGL -framework GLUT or -lglut -lGLEW
 
 # Jakob Borg and Eldar Abusalimov
 # $(ARGS) is all the extra arguments; $(BRGS) is_all_the_extra_arguments
