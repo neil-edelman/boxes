@@ -428,10 +428,10 @@ Defined if `TABLE_VALUE`\. Advances `it` only when [&lt;N&gt;table_has_next](#us
 
 <code>static int <strong>&lt;N&gt;table_iterator_remove</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
 
-Removes the entry at `it`\. \(Where [&lt;N&gt;table_remove](#user-content-fn-f3d5d82a) invalidates the iterator\.\)
+Removes the entry at `it`\. Whereas [&lt;N&gt;table_remove](#user-content-fn-f3d5d82a) invalidates the iterator, this corrects for a signal `it`\.
 
  * Return:  
-   Success, or there was no entry at the iterator's position \(anymore\)\.
+   Success, or there was no entry at the iterator's position, \(anymore\.\)
 
 
 

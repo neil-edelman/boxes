@@ -549,11 +549,11 @@
 
 <p><code>static int <strong>&lt;N&gt;table_iterator_remove</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
 
-<p>Removes the entry at <code>it</code>. (Where <a href = "#fn:&lt;N&gt;table_remove">&lt;N&gt;table_remove</a> invalidates the iterator.)</p>
+<p>Removes the entry at <code>it</code>. Whereas <a href = "#fn:&lt;N&gt;table_remove">&lt;N&gt;table_remove</a> invalidates the iterator, this corrects for a signal <code>it</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Success, or there was no entry at the iterator's position (anymore).</dd>
+	<dd>Success, or there was no entry at the iterator's position, (anymore.)</dd>
 </dl>
 
 </div>
