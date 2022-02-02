@@ -191,7 +191,7 @@
 
 <p><code>struct <strong>&lt;A&gt;array</strong> { &lt;PA&gt;type *data; size_t size, capacity; };</code></p>
 
-<p>Manages the array field <code>data</code> which has <code>size</code> elements. The space is indexed up to <code>capacity</code>, which is at least <code>size</code>. To initialize it to an idle state, see <a href = "#fn:&lt;A&gt;array">&lt;A&gt;array</a>, <code>ARRAY_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
+<p>Manages the array field <code>data</code> which has <code>size</code> elements. The space is indexed up to <code>capacity</code>, which is at least <code>size</code>. To initialize it to an idle state, see <a href = "#fn:&lt;A&gt;array">&lt;A&gt;array</a>, <code>ARRAY_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>. The fields should be treated as read-only; any modification is liable to cause the array to go into an invalid state.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 901 height = 137></p>
 
