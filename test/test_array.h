@@ -33,10 +33,10 @@ static void PA_(graph)(const struct A_(array) *const a, const char *const fn) {
 	if(!(fp = fopen(fn, "w"))) { perror(fn); errno = 0; return; }
 	fprintf(fp, "digraph {\n"
 		"\trankdir=LR;\n"
-		"\tfontface=modern;"
+		"\tgraph [truecolor=true, bgcolor=transparent];\n"
+		"\tfontface=modern;\n"
 		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
-		"\tarray [label=<\n"
-		"<TABLE BORDER=\"0\">\n"
+		"\tarray [label=<<TABLE BORDER=\"0\">\n"
 		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">"
 		"<FONT COLOR=\"Gray85\">&lt;" QUOTE(ARRAY_NAME)
 		"&gt;array: " QUOTE(ARRAY_TYPE) "</FONT></TD></TR>\n"

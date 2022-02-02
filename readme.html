@@ -37,7 +37,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PA>type">&lt;PA&gt;type</a>, <a href = "#typedef:<PCG>box">&lt;PCG&gt;box</a>, <a href = "#typedef:<PCG>type">&lt;PCG&gt;type</a>, <a href = "#typedef:<PCG>action_fn">&lt;PCG&gt;action_fn</a>, <a href = "#typedef:<PCG>predicate_fn">&lt;PCG&gt;predicate_fn</a>, <a href = "#typedef:<PSZ>box">&lt;PSZ&gt;box</a>, <a href = "#typedef:<PSZ>type">&lt;PSZ&gt;type</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a>, <a href = "#typedef:<PCM>box">&lt;PCM&gt;box</a>, <a href = "#typedef:<PCM>type">&lt;PCM&gt;type</a>, <a href = "#typedef:<PCM>bipredicate_fn">&lt;PCM&gt;bipredicate_fn</a>, <a href = "#typedef:<PCM>biaction_fn">&lt;PCM&gt;biaction_fn</a>, <a href = "#typedef:<PCM>compare_fn">&lt;PCM&gt;compare_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PA>type">&lt;PA&gt;type</a>, <a href = "#typedef:<PCG>box">&lt;PCG&gt;box</a>, <a href = "#typedef:<PCG>type">&lt;PCG&gt;type</a>, <a href = "#typedef:<PCG>action_fn">&lt;PCG&gt;action_fn</a>, <a href = "#typedef:<PCG>predicate_fn">&lt;PCG&gt;predicate_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a>, <a href = "#typedef:<PCM>box">&lt;PCM&gt;box</a>, <a href = "#typedef:<PCM>type">&lt;PCM&gt;type</a>, <a href = "#typedef:<PCM>bipredicate_fn">&lt;PCM&gt;bipredicate_fn</a>, <a href = "#typedef:<PCM>biaction_fn">&lt;PCM&gt;biaction_fn</a>, <a href = "#typedef:<PCM>compare_fn">&lt;PCM&gt;compare_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<A>array">&lt;A&gt;array</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -48,7 +48,7 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of array." src = "web/array.png" width = 428 height = 372></p>
+<p><img alt = "Example of array." src = "web/array.png" width = 428 height = 301></p>
 
 <p><a href = "#tag:&lt;A&gt;array">&lt;A&gt;array</a> is a dynamic array that stores contiguous <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a>. Resizing may be necessary when increasing the size of the array; this incurs amortised cost, and any pointers to this memory may become stale.</p>
 
@@ -125,31 +125,11 @@
 
 <div>
 
-<h3><a id = "typedef:<PSZ>box" name = "typedef:<PSZ>box">&lt;PSZ&gt;box</a></h3>
-
-<p><code>typedef BOX_CONTAINER <strong>&lt;PSZ&gt;box</strong>;</code></p>
-
-<p><a href = "to_string.h">to_string.h</a>: an alias to the box.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PSZ>type" name = "typedef:<PSZ>type">&lt;PSZ&gt;type</a></h3>
-
-<p><code>typedef BOX_CONTENTS <strong>&lt;PSZ&gt;type</strong>;</code></p>
-
-<p><a href = "to_string.h">to_string.h</a>: an alias to the individual type contained in the box.</p>
-
-</div>
-
-<div>
-
 <h3><a id = "typedef:<PSZ>to_string_fn" name = "typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></h3>
 
 <p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code></p>
 
-<p>Responsible for turning the argument <a href = "#typedef:&lt;PSZ&gt;type">&lt;PSZ&gt;type</a> into a 12-<code>char</code> null-terminated output string.</p>
+<p><a href = "to_string.h">to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string. <code>&lt;PSZ&gt;type</code> is contracted to be an internal iteration type of the box.</p>
 
 </div>
 
@@ -213,7 +193,7 @@
 
 <p>Manages the array field <code>data</code> which has <code>size</code> elements. The space is indexed up to <code>capacity</code>, which is at least <code>size</code>. To initialize it to an idle state, see <a href = "#fn:&lt;A&gt;array">&lt;A&gt;array</a>, <code>ARRAY_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
 
-<p><img alt = "States." src = "web/states.png" width = 215 height = 280></p>
+<p><img alt = "States." src = "web/states.png" width = 901 height = 137></p>
 
 </div>
 
@@ -591,9 +571,11 @@
 
 <p><code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code></p>
 
+<p><a href = "to_string.h">to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;PSZ&gt;box</code> is contracted to be the box itself. <code>&lt;SZ&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
+
 <dl>
 	<dt>Return:</dt>
-	<dd>Print the contents of <a href = "#typedef:&lt;PSZ&gt;box">&lt;PSZ&gt;box</a> <code>box</code> in a static string buffer of 256 bytes with limitations of only printing 4 things at a time.</dd>
+	<dd>Address of the static buffer.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
