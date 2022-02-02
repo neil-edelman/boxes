@@ -1,10 +1,7 @@
 digraph {
-	graph [truecolor=true, bgcolor=transparent];
-	node [shape=record, style=filled, fillcolor=Grey95];
-	fontname = "Bitstream Vera Sans";
-	fontsize = 12;
-	node [fontname = "Bitstream Vera Sans", fontsize = 12];
-	edge [fontname = "Bitstream Vera Sans" fontsize = 12];
+	graph [truecolor=true, bgcolor=transparent, fontname = "Bitstream Vera Sans"];
+	node [shape=record, style=filled, fillcolor="Grey95", fontname="Bitstream Vera Sans"];
+	edge [fontname="Bitstream Vera Sans"];
 	put [label="enum table_result"];
 	put -> unique;
 	unique -> error;
@@ -12,15 +9,9 @@ digraph {
 	put -> equal;
 	equal -> yield;
 	equal -> replace;
-	//replace -> key;
-	//replace -> value;
-	//replace -> both;
-	error [label="{TABLE_ERROR|do not modify\nmemory error;\nset errno}", fillcolor="Pink"];
-	equal [label="{equal to other element|values possibly recomputed}"];
-	grow [label="{TABLE_UNIQUE|value default,\npassed, or\nuninitialized}"];
-	yield [label="{TABLE_YIELD|do not\nmodify key}"];
-	//key [label="{REPLACE_KEY|not implemented}", color=Grey, fontcolor=Grey];
-	//value [label="{REPLACE_VALUE|not implemented}", color=Grey, fontcolor=Grey];
-	//both [label="REPLACE"];
-	replace [label="{TABLE_REPLACE|replace entry}"];
+	error [label="{TABLE_ERROR\l|do not modify;\lmemory error;\lset errno\l}", fillcolor="Pink"];
+	equal [label="{equal to other element\l|values possibly recomputed\l}"];
+	grow [label="{TABLE_UNIQUE\l|value default,\lpassed, or\luninitialized\l}"];
+	yield [label="{TABLE_YIELD\l|do not\lmodify key\l}"];
+	replace [label="{TABLE_REPLACE\l|replace entry\l}"];
 }

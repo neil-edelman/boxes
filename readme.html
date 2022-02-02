@@ -185,7 +185,7 @@
 
 <p><code>enum <strong>table_result</strong> { TABLE_RESULT };</code></p>
 
-<p>A result of modifying the table, of which <code>TABLE_ERROR</code> is false. <img alt = "A diagram of the result states." src = "web/put.png" width = 657 height = 305></p>
+<p>A result of modifying the table, of which <code>TABLE_ERROR</code> is false. <img alt = "A diagram of the result states." src = "web/put.png" width = 735 height = 321></p>
 
 </div>
 
@@ -207,7 +207,7 @@
 
 <p>To initialize, see <a href = "#fn:&lt;N&gt;table">&lt;N&gt;table</a>, <code>TABLE_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>. The fields should be treated as read-only; any modification is liable to cause the table to go into an invalid state.</p>
 
-<p><img alt = "States." src = "web/states.png" width = 808 height = 135></p>
+<p><img alt = "States." src = "web/states.png" width = 912 height = 152></p>
 
 </div>
 
@@ -217,7 +217,7 @@
 
 <p><code>struct <strong>&lt;N&gt;table_iterator</strong>;</code></p>
 
-<p><img alt = "States" src = "web/it.png" width = 832 height = 109></p>
+<p><img alt = "States" src = "web/it.png" width = 943 height = 117></p>
 
 <p>Adding, deleting, successfully looking up entries, or any modification of the table's topology causes the iterator to become invalid. Use <a href = "#fn:&lt;N&gt;table_iterator_remove">&lt;N&gt;table_iterator_remove</a> to avoid this. For tables that can have zero as a valid value, <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a> can differentiate between them. Iteration usually not in any particular order. The asymptotic runtime of iterating though the whole table is proportional to the capacity.</p>
 

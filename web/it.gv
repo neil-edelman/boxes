@@ -1,13 +1,7 @@
 digraph {
-	rankdir = LR;
-	graph [truecolor=true, bgcolor=transparent];
-	node [shape = "record", style=filled, fillcolor="Grey95"];
-	fontname = "Bitstream Vera Sans";
-	fontsize = 12;
-	node [fontname = "Bitstream Vera Sans", fontsize = 12];
-	edge [fontname = "Bitstream Vera Sans" fontsize = 12];
-
-	node [shape=record, style=filled];
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname = "Bitstream Vera Sans"];
+	node [shape=record, style=filled, fillcolor="Grey95", fontname="Bitstream Vera Sans"];
+	edge [fontname="Bitstream Vera Sans"];
 	null [label="uninitialized\l|undetermined state\l", fillcolor="Pink"];
 	ready [ label = "ready\l|bound to table\l" ];
 	null -> ready [ label = "<N>table_begin" ];
