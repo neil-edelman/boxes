@@ -70,7 +70,7 @@ bison := bison
 #lemon := lemon
 
 target    := # -mwindows
-optimize  := -ffast-math -funroll-loops -Ofast -D NDEBUG # -O3 -g
+optimize  := -ffast-math
 warnbasic := -Wall -pedantic -ansi # -std=c99
 # Some stuff is really new.
 warnclang := -Wextra \
@@ -89,7 +89,7 @@ warn := $(warnbasic) $(warnclang)
 
 CC   := clang # gcc
 CF   := $(target) $(optimize) $(warn)
-OF   := -Ofast -lm # -O3 -framework OpenGL -framework GLUT or -lglut -lGLEW
+OF   := # -lm -framework OpenGL -framework GLUT or -lglut -lGLEW
 
 # Jakob Borg and Eldar Abusalimov
 # $(ARGS) is all the extra arguments; $(BRGS) is_all_the_extra_arguments
@@ -102,6 +102,12 @@ ifeq (backup, $(firstword $(MAKECMDGOALS)))
     BRGS := -$(BRGS)
   endif
   $(eval $(ARGS):;@:)
+endif
+ifeq (release, $(firstword $(MAKECMDGOALS)))
+	CF += -funroll-loops -Ofast -D NDEBUG # -O3
+	OF += -Ofast
+else
+	CF += -g
 endif
 
 ######
@@ -174,7 +180,7 @@ $(html_docs): $(doc)/%.html: $(src)/%.c $(src)/%.h
 ######
 # phoney targets
 
-.PHONY: setup clean backup icon install uninstall test docs
+.PHONY: setup clean backup icon install uninstall test docs release
 
 clean:
 	-rm -f $(c_objs) $(test_c_objs) $(c_other_objs) $(c_re_builds) \
@@ -203,7 +209,11 @@ setup: default icon
 	# or zip $(BDIR)/$(INST)-Win32.zip -r $(BDIR)/$(INST)
 	rm -R $(bin)/$(install)
 
-install: default
+# this needs work
+release: clean default
+	# define NDEBUG
+
+install: release
 	@$(mkdir) -p $(DESTDIR)$(PREFIX)/bin
 	cp $(bin)/$(project) $(DESTDIR)$(PREFIX)/bin/$(project)
 
