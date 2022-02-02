@@ -526,20 +526,20 @@ static struct PN_(bucket) *PN_(evict)(struct N_(table) *const table,
 	return bucket;
 }
 
-/** Put `entry` in `table`. For collisions, only if `update` exists and returns
+/** Put `entry` in `table`. For collisions, only if `policy` exists and returns
  true do and displace it to `eject`, if non-null.
  @return A <tag:table_result>. @throws[malloc]
  @order Amortized \O(max bucket length); the key to another bucket may have to
  be moved to the top; the table might be full and have to be resized. */
 static enum table_result PN_(put)(struct N_(table) *const table,
-	PN_(entry) entry, PN_(entry) *eject, const PN_(policy_fn) update) {
+	PN_(entry) entry, PN_(entry) *eject, const PN_(policy_fn) policy) {
 	struct PN_(bucket) *bucket;
 	const PN_(key) key = PN_(entry_key)(entry);
 	const PN_(uint) hash = PN_(hash)(key);
 	enum table_result result;
 	assert(table);
 	if(table->buckets && (bucket = PN_(query)(table, key, hash))) {
-		if(!update || !update(PN_(bucket_key)(bucket), key)) return TABLE_YIELD;
+		if(!policy || !policy(PN_(bucket_key)(bucket), key)) return TABLE_YIELD;
 		if(eject) PN_(to_entry)(bucket, eject);
 		result = TABLE_REPLACE;
 	} else {
@@ -662,15 +662,15 @@ static enum table_result N_(table_replace)(struct N_(table) *const table,
 	return PN_(put)(table, entry, eject, &PN_(always_replace));
 }
 
-/** Puts `entry` in `table` only if absent or if calling `update` returns true.
+/** Puts `entry` in `table` only if absent or if calling `policy` returns true.
  @return One of: `TABLE_ERROR`, the table is not modified; `TABLE_REPLACE`, if
  `update` is non-null and returns true, if non-null, `eject` will be filled;
  `TABLE_YIELD`, if `update` is null or false; `TABLE_UNIQUE`, on unique entry.
  @throws[realloc, ERANGE] On `TABLE_ERROR`.
  @order Average amortised \O(1); worst \O(n). @allow */
 static enum table_result N_(table_update)(struct N_(table) *const table,
-	PN_(entry) entry, PN_(entry) *eject, const PN_(policy_fn) update)
-	{ return PN_(put)(table, entry, eject, update); }
+	PN_(entry) entry, PN_(entry) *eject, const PN_(policy_fn) policy)
+	{ return PN_(put)(table, entry, eject, policy); }
 
 #ifdef TABLE_VALUE /* <!-- value */
 /** If `TABLE_VALUE` is defined. Try to put `key` into `table`, and store the

@@ -181,7 +181,7 @@ Adding, deleting, successfully looking up entries, or any modification of the ta
 
 <tr><td align = right>static enum table_result</td><td><a href = "#user-content-fn-6bd7561a">&lt;N&gt;table_replace</a></td><td>table, entry, eject</td></tr>
 
-<tr><td align = right>static enum table_result</td><td><a href = "#user-content-fn-cea327b7">&lt;N&gt;table_update</a></td><td>table, entry, eject, update</td></tr>
+<tr><td align = right>static enum table_result</td><td><a href = "#user-content-fn-cea327b7">&lt;N&gt;table_update</a></td><td>table, entry, eject, policy</td></tr>
 
 <tr><td align = right>static enum table_result</td><td><a href = "#user-content-fn-f9e3ef3">&lt;N&gt;table_compute</a></td><td>table, key, value</td></tr>
 
@@ -324,9 +324,9 @@ Puts `entry` in `table`\.
 
 ### <a id = "user-content-fn-cea327b7" name = "user-content-fn-cea327b7">&lt;N&gt;table_update</a> ###
 
-<code>static enum table_result <strong>&lt;N&gt;table_update</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;entry <em>entry</em>, &lt;PN&gt;entry *<em>eject</em>, const &lt;PN&gt;policy_fn <em>update</em>)</code>
+<code>static enum table_result <strong>&lt;N&gt;table_update</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;entry <em>entry</em>, &lt;PN&gt;entry *<em>eject</em>, const &lt;PN&gt;policy_fn <em>policy</em>)</code>
 
-Puts `entry` in `table` only if absent or if calling `update` returns true\.
+Puts `entry` in `table` only if absent or if calling `policy` returns true\.
 
  * Return:  
    One of: `TABLE_ERROR`, the table is not modified; `TABLE_REPLACE`, if `update` is non\-null and returns true, if non\-null, `eject` will be filled; `TABLE_YIELD`, if `update` is null or false; `TABLE_UNIQUE`, on unique entry\.

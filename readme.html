@@ -249,7 +249,7 @@
 
 <tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_replace">&lt;N&gt;table_replace</a></td><td>table, entry, eject</td></tr>
 
-<tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_update">&lt;N&gt;table_update</a></td><td>table, entry, eject, update</td></tr>
+<tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_update">&lt;N&gt;table_update</a></td><td>table, entry, eject, policy</td></tr>
 
 <tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_compute">&lt;N&gt;table_compute</a></td><td>table, key, value</td></tr>
 
@@ -422,9 +422,9 @@
 
 <h3><a id = "fn:<N>table_update" name = "fn:<N>table_update">&lt;N&gt;table_update</a></h3>
 
-<p><code>static enum table_result <strong>&lt;N&gt;table_update</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;entry <em>entry</em>, &lt;PN&gt;entry *<em>eject</em>, const &lt;PN&gt;policy_fn <em>update</em>)</code></p>
+<p><code>static enum table_result <strong>&lt;N&gt;table_update</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;entry <em>entry</em>, &lt;PN&gt;entry *<em>eject</em>, const &lt;PN&gt;policy_fn <em>policy</em>)</code></p>
 
-<p>Puts <code>entry</code> in <code>table</code> only if absent or if calling <code>update</code> returns true.</p>
+<p>Puts <code>entry</code> in <code>table</code> only if absent or if calling <code>policy</code> returns true.</p>
 
 <dl>
 	<dt>Return:</dt>
