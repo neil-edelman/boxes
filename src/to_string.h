@@ -29,7 +29,7 @@
 
 #if !defined(BOX_) || !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS) \
 	|| !defined(SZ_) || !defined(TO_STRING)
-#error Unexpected preprocessor symbols.
+#error Unexpected preprocessor symbols. Check that one including it as a trait.
 #endif
 
 #if defined(TO_STRING_H) \
