@@ -372,14 +372,15 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #else /* name --><!-- !name */
 #define SZ_(n) HEAP_CAT(H_(heap), n)
 #endif /* !name --> */
+#define TSZ_(n) HEAP_CAT(heap_sz, SZ_(n))
 #ifdef HEAP_VALUE /* <!-- value */
 /* Check that `HEAP_TO_STRING` is a function implementing this prototype. */
-static void (*const PH_(actual_to_string))(const PH_(value_data) *,
+static void (*const TSZ_(actual_to_string))(const PH_(value_data) *,
 	char (*const)[12]) = (HEAP_TO_STRING);
-/** Call <data:<PH>actual_to_string> with just the value of `node` and `z`. */
-static void PH_(thunk_to_string)(const PH_(node) *const node,
-	char (*const z)[12]) { PH_(actual_to_string)(node->value, z); }
-#define TO_STRING &PH_(thunk_to_string)
+/** Call <data:<TSZ>actual_to_string> with just the value of `node` and `z`. */
+static void TSZ_(thunk_to_string)(const PH_(node) *const node,
+	char (*const z)[12]) { TSZ_(actual_to_string)(node->value, z); }
+#define TO_STRING &TSZ_(thunk_to_string)
 #else /* value --><!-- !value */
 #define TO_STRING HEAP_TO_STRING
 #endif /* !value --> */
@@ -390,6 +391,7 @@ static PSZ_(to_string_fn) PH_(to_string) = PSZ_(to_string);
 static const char *(*PH_(heap_to_string))(const struct H_(heap) *)
 	= &SZ_(to_string);
 #endif /* expect --> */
+#undef TSZ_
 #undef SZ_
 #undef HEAP_TO_STRING
 #ifdef HEAP_TO_STRING_NAME

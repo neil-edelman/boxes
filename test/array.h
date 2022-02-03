@@ -94,6 +94,8 @@ typedef ARRAY_TYPE PA_(type);
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`. To initialize it to an
  idle state, see <fn:<A>array>, `ARRAY_IDLE`, `{0}` (`C99`,) or being `static`.
+ The fields should be treated as read-only; any modification is liable to cause
+ the array to go into an invalid state.
 
  ![States.](../web/states.png) */
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
