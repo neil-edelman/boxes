@@ -396,26 +396,24 @@ static int dict_compare(const struct dict_listlink *const a,
 static int append_file(struct char_array *c, const char *const fn) {
 	FILE *fp = 0;
 	const size_t granularity = 1024;
-	size_t nread, zero_len, file_size;
-	char *cursor, *terminating, *buffer;
+	size_t nread;
+	char *cursor;
 	int success = 0;
 	assert(c && fn);
 	if(!(fp = fopen(fn, "r"))) goto catch;
+	/* Read entire file in chunks. */
 	do if(!(cursor = char_array_buffer(c, granularity))
 		|| (nread = fread(cursor, 1, granularity, fp), ferror(fp))
 		|| !char_array_append(c, nread)) goto catch;
 	while(nread == granularity);
-	fclose(fp), fp = 0;
-	if(!(terminating = char_array_new(c))) goto catch;
-	*terminating = '\0'; /* Embed '\0'. */
-	/* The file can have no embedded '\0'; check. */
-	buffer = c->data;
-	zero_len = (size_t)(strchr(buffer, '\0') - buffer);
-	file_size = c->size, assert(file_size > 0);
-	if(zero_len != file_size - 1) { errno = EILSEQ; goto catch; }
+	/* File to `C` string. */
+	if(!(cursor = char_array_new(c))) goto catch;
+	*cursor = '\0';
+	/* Binary files with embedded '\0' are not allowed. */
+	if(strchr(c->data, '\0') != cursor) { errno = EILSEQ; goto catch; }
 	{ success = 1; goto finally; }
 catch:
-	if(!errno) errno = EILSEQ; /* On POSIX, this will never be true. */
+	if(!errno) errno = EILSEQ; /* Will never be true on POSIX. */
 finally:
 	if(fp) fclose(fp);
 	return success;
