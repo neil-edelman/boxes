@@ -165,6 +165,8 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-7bf4e995">&lt;A&gt;array_pop</a></td><td>a</td></tr>
 
+<tr><td align = right>static &lt;PCG&gt;type *</td><td><a href = "#user-content-fn-5e0a543c">&lt;CG&gt;previous</a></td><td>box, x</td></tr>
+
 <tr><td align = right>static &lt;PCG&gt;type *</td><td><a href = "#user-content-fn-d3a8ce44">&lt;CG&gt;next</a></td><td>box, x</td></tr>
 
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-8025f997">&lt;CG&gt;clip</a></td><td>box, i</td></tr>
@@ -354,6 +356,18 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
    Value from the the top of `a` that is removed or null if the array is empty\.
  * Order:  
    &#920;\(1\)
+
+
+
+
+### <a id = "user-content-fn-5e0a543c" name = "user-content-fn-5e0a543c">&lt;CG&gt;previous</a> ###
+
+<code>static &lt;PCG&gt;type *<strong>&lt;CG&gt;previous</strong>(const &lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;type *const <em>x</em>)</code>
+
+ * Parameter: _x_  
+   A valid entry or null to start from the last\.
+ * Return:  
+   The previous valid entry from `box` or null if this was the first\.
 
 
 
