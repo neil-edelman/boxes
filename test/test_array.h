@@ -558,7 +558,6 @@ static void PCM_(test_bounds)(void) {
 #endif /* compare --> */
 }
 
-/** Passed `parent_new` and `parent`, tests sort and meta-sort. */
 static void PCM_(test_sort)(void) {
 #ifdef ARRAY_COMPARE /* <!-- comp */
 	struct A_(array) as[64], *a;
@@ -590,9 +589,39 @@ static void PCM_(test_sort)(void) {
 		cmp = A_(array_compare)(a - 1, a);
 		assert(cmp <= 0);
 	}
-#else /* comp --><!-- !comp */
-	(void)(parent_new), (void)(parent);
-#endif /* !comp --> */
+#endif /* comp --> */
+}
+
+static void PCM_(test_contiguous)(void) {
+#ifdef ARRAY_CONTIGUOUS /* <!-- contiguous */
+	struct A_(array) a = ARRAY_IDLE;
+	PA_(type) ts[9], *t, *t1;
+	const size_t ts_size = sizeof ts / sizeof *ts;
+	size_t i;
+	/* `valgrind` is giving me grief if I don't do this? */
+	memset(ts, 0, sizeof ts);
+	/* Get elements. */
+	for(t = ts, t1 = t + ts_size; t < t1; t++) PA_(filler)(t);
+	if(!A_(array_append)(&a, ts_size)) { assert(0); return; }
+	memcpy(a.data, ts, sizeof *t * ts_size);
+	printf("Contiguous: %s.\n", PA_(array_to_string)(&a));
+	assert(ts_size == a.size);
+	t = 0, i = 0;
+	while(t = A_(array_next)(&a, t)) {
+		char z[12];
+		PA_(to_string)(t, &z);
+		printf("next %s;\n", z);
+		assert(t = a.data + i++);
+	}
+	t = 0, i = ts_size;
+	while(t = A_(array_previous)(&a, t)) {
+		char z[12];
+		PA_(to_string)(t, &z);
+		printf("previous %s;\n", z);
+		assert(t = a.data + --i);
+	}
+	A_(array_)(&a);
+#endif /* contiguous --> */
 }
 
 /** `ARRAY_TEST`, `ARRAY_COMPARE` -> `ARRAY_TO_STRING`, !`NDEBUG`: will be
@@ -614,7 +643,7 @@ static void CM_(compare_test)(void) {
 	PCM_(test_compactify)();
 	PCM_(test_bounds)();
 	PCM_(test_sort)();
-	/* fixme: Test contiguous. */
+	PCM_(test_contiguous)();
 	assert(errno == 0);
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array compare.\n\n");
 }
