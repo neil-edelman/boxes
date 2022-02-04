@@ -158,11 +158,11 @@ static PA_(type) *A_(array_buffer)(struct A_(array) *const a, const size_t n) {
  pointer will be returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */
 static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n) {
-	PA_(type) *buffer;
+	PA_(type) *b;
 	assert(a);
-	if(!(buffer = A_(array_buffer)(a, n))) return 0;
+	if(!(b = A_(array_buffer)(a, n))) return 0;
 	assert(n <= a->capacity && a->size <= a->capacity - n);
-	return a->size += n, buffer;
+	return a->size += n, b;
 }
 
 /** Adds `n` un-initialised elements at position `at` in `a`. The buffer holds

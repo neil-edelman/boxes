@@ -614,6 +614,7 @@ static void CM_(compare_test)(void) {
 	PCM_(test_compactify)();
 	PCM_(test_bounds)();
 	PCM_(test_sort)();
+	/* fixme: Test contiguous. */
 	assert(errno == 0);
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array compare.\n\n");
 }

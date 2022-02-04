@@ -42,6 +42,17 @@ typedef void (*PCG_(action_fn))(PCG_(type) *);
 /** Returns a boolean given read-only <typedef:<PCG>type>. */
 typedef int (*PCG_(predicate_fn))(const PCG_(type) *);
 
+/** @param[x] A valid entry or null to start from the first.
+ @return The next valid entry from `box` or null if this was the last. @allow */
+static PCG_(type) *CG_(next)(const PCG_(box) *const box,
+	const PCG_(type) *const x) {
+	size_t i;
+	assert(box);
+	if(!box->data) return 0;
+	if(!x) return box->size ? box->data + 0 : 0;
+	return (i = (size_t)(x - box->data) + 1) < box->size ? box->data + i : 0;
+}
+
 /** @return Converts `i` to an index in <typedef:<PCG>box> `box` from
  [0, `a.size`]. Negative values are implicitly plus `box.size`.
  @order \Theta(1) @allow */
@@ -171,8 +182,8 @@ static const PCG_(type) *CG_(any)(const PCG_(box) *const box,
 }
 
 static void PCG_(unused_function_coda)(void);
-static void PCG_(unused_function)(void) {
-	CG_(clip)(0, 0); CG_(copy_if)(0, 0, 0); CG_(keep_if)(0, 0, 0); CG_(trim)(0, 0);
-	CG_(each)(0, 0); CG_(if_each)(0, 0, 0); CG_(any)(0, 0);
-	PCG_(unused_function_coda)(); }
+static void PCG_(unused_function)(void)
+	{ CG_(next)(0, 0); CG_(clip)(0, 0); CG_(copy_if)(0, 0, 0);
+	CG_(keep_if)(0, 0, 0); CG_(trim)(0, 0); CG_(each)(0, 0);
+	CG_(if_each)(0, 0, 0); CG_(any)(0, 0); PCG_(unused_function_coda)(); }
 static void PCG_(unused_function_coda)(void) { PCG_(unused_function)(); }
