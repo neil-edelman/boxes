@@ -174,9 +174,9 @@ static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n) {
 static PA_(type) *A_(array_insert)(struct A_(array) *const a,
 	const size_t n, const size_t at) {
 	const size_t old_size = a->size;
-	PA_(type) *const buffer = A_(array_append)(a, n);
+	PA_(type) *const b = A_(array_append)(a, n);
 	assert(a && at <= old_size);
-	if(!buffer) return 0;
+	if(!b) return 0;
 	memmove(a->data + at + n, a->data + at, sizeof *a->data * (old_size - at));
 	return a->data + at;
 }
