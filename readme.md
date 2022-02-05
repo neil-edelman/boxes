@@ -1,3 +1,5 @@
+src/[array\.h](array.h) is the source\. Examples are in [\.\./test/test\_array\.c](../test/test_array.c)\.
+
 # array\.h #
 
 ## Contiguous dynamic array ##
