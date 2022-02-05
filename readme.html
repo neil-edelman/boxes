@@ -33,9 +33,9 @@
 
 <h1>array.h</h1>
 
-<h2>Contiguous dynamic array</h2>
-
 <p>Source <a href = "src/array.h">src/array.h</a>; examples <a href = "test/test_array.c">test/test_array.c</a>.</p>
+
+<h2>Contiguous dynamic array</h2>
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
@@ -232,8 +232,6 @@
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#fn:<A>array_pop">&lt;A&gt;array_pop</a></td><td>a</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<A>array_splice">&lt;A&gt;array_splice</a></td><td>a, b, i0, i1</td></tr>
-
-<tr><td align = right>static &lt;PCG&gt;type *</td><td><a href = "#fn:<CG>previous">&lt;CG&gt;previous</a></td><td>box, x</td></tr>
 
 <tr><td align = right>static &lt;PCG&gt;type *</td><td><a href = "#fn:<CG>next">&lt;CG&gt;next</a></td><td>box, x</td></tr>
 
@@ -485,21 +483,6 @@
 
 <div>
 
-<h3><a id = "fn:<CG>previous" name = "fn:<CG>previous">&lt;CG&gt;previous</a></h3>
-
-<p><code>static &lt;PCG&gt;type *<strong>&lt;CG&gt;previous</strong>(const &lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;type *const <em>x</em>)</code></p>
-
-<dl>
-	<dt>Parameter: <em>x</em></dt>
-	<dd>A valid entry or null to start from the last.</dd>
-	<dt>Return:</dt>
-	<dd>The previous valid entry from <code>box</code> (which could be null) or null if this was the first.</dd>
-</dl>
-
-</div>
-
-<div>
-
 <h3><a id = "fn:<CG>next" name = "fn:<CG>next">&lt;CG&gt;next</a></h3>
 
 <p><code>static &lt;PCG&gt;type *<strong>&lt;CG&gt;next</strong>(const &lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;type *const <em>x</em>)</code></p>
@@ -508,7 +491,7 @@
 	<dt>Parameter: <em>x</em></dt>
 	<dd>A valid entry or null to start from the first.</dd>
 	<dt>Return:</dt>
-	<dd>The next valid entry from <code>box</code> (which could be null) or null if this was the last.</dd>
+	<dd>The next valid entry from <code>box</code> or null if this was the last.</dd>
 </dl>
 
 </div>

@@ -1,8 +1,8 @@
 # array\.h #
 
-## Contiguous dynamic array ##
-
 Source [src/array\.h](src/array.h); examples [test/test\_array\.c](test/test_array.c)\.
+
+## Contiguous dynamic array ##
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), [&lt;PCG&gt;box](#user-content-typedef-9c8158f8), [&lt;PCG&gt;type](#user-content-typedef-1c7f487f), [&lt;PCG&gt;action_fn](#user-content-typedef-d8b6d30a), [&lt;PCG&gt;predicate_fn](#user-content-typedef-dfee9029), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa), [&lt;PCM&gt;type](#user-content-typedef-cee32005), [&lt;PCM&gt;bipredicate_fn](#user-content-typedef-ea6988c2), [&lt;PCM&gt;biaction_fn](#user-content-typedef-6f7f0563), [&lt;PCM&gt;compare_fn](#user-content-typedef-64a034e9)
@@ -168,8 +168,6 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-7bf4e995">&lt;A&gt;array_pop</a></td><td>a</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-bce1c326">&lt;A&gt;array_splice</a></td><td>a, b, i0, i1</td></tr>
-
-<tr><td align = right>static &lt;PCG&gt;type *</td><td><a href = "#user-content-fn-5e0a543c">&lt;CG&gt;previous</a></td><td>box, x</td></tr>
 
 <tr><td align = right>static &lt;PCG&gt;type *</td><td><a href = "#user-content-fn-d3a8ce44">&lt;CG&gt;next</a></td><td>box, x</td></tr>
 
@@ -379,18 +377,6 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 
 
-### <a id = "user-content-fn-5e0a543c" name = "user-content-fn-5e0a543c">&lt;CG&gt;previous</a> ###
-
-<code>static &lt;PCG&gt;type *<strong>&lt;CG&gt;previous</strong>(const &lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;type *const <em>x</em>)</code>
-
- * Parameter: _x_  
-   A valid entry or null to start from the last\.
- * Return:  
-   The previous valid entry from `box` \(which could be null\) or null if this was the first\.
-
-
-
-
 ### <a id = "user-content-fn-d3a8ce44" name = "user-content-fn-d3a8ce44">&lt;CG&gt;next</a> ###
 
 <code>static &lt;PCG&gt;type *<strong>&lt;CG&gt;next</strong>(const &lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;type *const <em>x</em>)</code>
@@ -398,7 +384,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
  * Parameter: _x_  
    A valid entry or null to start from the first\.
  * Return:  
-   The next valid entry from `box` \(which could be null\) or null if this was the last\.
+   The next valid entry from `box` or null if this was the last\.
 
 
 
