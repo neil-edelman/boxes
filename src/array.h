@@ -3,7 +3,7 @@
 
  @subtitle Contiguous dynamic array
 
- @abstract src/<array.h> is the source. Examples are in <../test/test_array.c>.
+ @abstract <src/array.h> is the source. Examples are in <test/test_array.c>.
 
  ![Example of array.](../web/array.png)
 
