@@ -598,6 +598,8 @@ static void PCM_(test_contiguous)(void) {
 	PA_(type) ts[9], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	size_t i;
+	assert(A_(array_previous)(0, t) == 0);
+	assert(A_(array_next)(0, t) == 0);
 	/* `valgrind` is giving me grief if I don't do this? */
 	memset(ts, 0, sizeof ts);
 	/* Get elements. */
