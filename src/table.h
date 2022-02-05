@@ -1,9 +1,9 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Hash table
-
  @abstract Source <src/table.h>; examples <test/test_table.c>.
+
+ @subtitle Hash table
 
  ![Example of <string>table.](../web/table.png)
 
@@ -758,9 +758,7 @@ static struct PN_(bucket) *PN_(next)(struct PN_(iterator) *const it) {
 /** ![States](../web/it.png)
 
  Adding, deleting, successfully looking up entries, or any modification of the
- table's topology causes the iterator to become invalid. Use
- <fn:<N>table_iterator_remove> to avoid this. For tables that can have zero as
- a valid value, <fn:<N>table_has_next> can differentiate between them.
+ table's topology invalidates the iterator.
  Iteration usually not in any particular order. The asymptotic runtime of
  iterating though the whole table is proportional to the capacity. */
 struct N_(table_iterator);
@@ -792,7 +790,9 @@ static int N_(table_next)(struct N_(table_iterator) *const it,
 	return b ? (PN_(advance)(it, b), PN_(to_entry)(b, entry), 1) : 0;
 }
 
-/** @return Whether the table specified to `it` in <fn:<N>table_begin> has a
+/** Especially for tables that can have zero as a valid value, this is used to
+ differentiate between zero and null.
+ @return Whether the table specified to `it` in <fn:<N>table_begin> has a
  next element. @order Amortized on the capacity, \O(1). @allow */
 static int N_(table_has_next)(struct N_(table_iterator) *const it) {
 	assert(it);
