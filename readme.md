@@ -1,4 +1,4 @@
-[src/array\.h](src/array.h) is the source\. Examples are in [test/test\_array\.c](test/test_array.c)\.
+Source [src/array\.h](src/array.h); examples [test/test\_array\.c](test/test_array.c)\.
 
 # array\.h #
 
