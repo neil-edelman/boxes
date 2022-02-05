@@ -1,8 +1,8 @@
 # table\.h #
 
-## Hash table ##
-
 Source [src/table\.h](src/table.h); examples [test/test\_table\.c](test/test_table.c)\.
+
+## Hash table ##
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;uint](#user-content-typedef-c13937ad), [&lt;PN&gt;key](#user-content-typedef-e7af8dc0), [&lt;PN&gt;ckey](#user-content-typedef-c325bde5), [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292), [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded), [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb), [&lt;PN&gt;value](#user-content-typedef-218ce716), [&lt;PN&gt;entry](#user-content-typedef-a9017e7), [&lt;PN&gt;policy_fn](#user-content-typedef-1244a528), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
