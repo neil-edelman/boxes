@@ -276,19 +276,19 @@ static void PA_(test_replace)(void) {
 	printf("Array %s.\n", PA_(array_to_string)(&a));
 	assert(success && a.size == ts_size);
 	/* Deleting from the front. */
-	success = A_(array_splice)(&a, 0, 1, 0);
+	success = A_(array_splice)(&a, 0, 0, 1);
 	printf("Array after deleting from front %s.\n", PA_(array_to_string)(&a));
 	assert(success && a.size == ts_size - 1);
 	/* Adding at the back. */
 	t = A_(array_new)(&b);
 	assert(t);
 	memcpy(t, ts + 0, sizeof *t);
-	success = A_(array_splice)(&a, a.size, a.size, &b);
+	success = A_(array_affix)(&a, &b);
 	printf("Array after adding %s to back %s.\n", PA_(array_to_string)(&b),
 		PA_(array_to_string)(&a));
 	assert(success && a.size == ts_size);
 	/* Replacing same-size. */
-	success = A_(array_splice)(&a, 1, 2, &b);
+	success = A_(array_splice)(&a, &b, 1, 2);
 	printf("Array after replacing [1, 2) %s: %s.\n", PA_(array_to_string)(&b),
 		PA_(array_to_string)(&a));
 	assert(success && a.size == ts_size
@@ -297,13 +297,13 @@ static void PA_(test_replace)(void) {
 	t = A_(array_new)(&b);
 	assert(t);
 	memcpy(t, ts + 1, sizeof *t);
-	success = A_(array_splice)(&a, 1, 2, &b);
+	success = A_(array_splice)(&a, &b, 1, 2);
 	printf("Array after replacing [1, 2) %s: %s.\n", PA_(array_to_string)(&b),
 		PA_(array_to_string)(&a));
 	assert(success && a.size == ts_size + 1
 		&& !memcmp(t, a.data + 2, sizeof *t));
 	/* Replacing a smaller size. */
-	success = A_(array_splice)(&a, 1, 4, &b);
+	success = A_(array_splice)(&a, &b, 1, 4);
 	printf("Array after replacing [1, 4) %s: %s.\n", PA_(array_to_string)(&b),
 		PA_(array_to_string)(&a));
 	assert(success && a.size == ts_size
@@ -316,19 +316,19 @@ static void PA_(test_replace)(void) {
 	printf("0: a = %s, b = %s.\n", PA_(array_to_string)(&a),
 		PA_(array_to_string)(&b));
 	assert(a.size == 5 && b.size == 2);
-	A_(array_splice)(&a, a.size, a.size, &b);
+	A_(array_splice)(&a, &b, a.size, a.size);
 	printf("1: a = %s.\n", PA_(array_to_string)(&a));
 	/* a = [[1],[0],[1],[4],[0],[2],[3]] */
 	assert(a.size == 7);
-	A_(array_splice)(&a, 1, 3, &b);
+	A_(array_splice)(&a, &b, 1, 3);
 	printf("2: a = %s.\n", PA_(array_to_string)(&a));
 	/* a = [[1],[2],[3],[4],[0],[2],[3]] */
 	assert(a.size == 7);
-	A_(array_splice)(&a, A_(array_clip)(&a, 2), A_(array_clip)(&a, -4), &b);
+	A_(array_splice)(&a, &b, A_(array_clip)(&a, 2), A_(array_clip)(&a, -4));
 	printf("3: a = %s.\n", PA_(array_to_string)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[3]] */
 	assert(a.size == 8);
-	A_(array_splice)(&a, 7, A_(array_clip)(&a, -1) + 1, &b);
+	A_(array_splice)(&a, &b, 7, A_(array_clip)(&a, -1) + 1);
 	printf("4: a = %s.\n", PA_(array_to_string)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[2],[3]] */
 	assert(a.size == 9 &&

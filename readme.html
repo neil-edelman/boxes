@@ -229,6 +229,8 @@
 
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#fn:<A>array_pop">&lt;A&gt;array_pop</a></td><td>a</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#fn:<A>array_splice">&lt;A&gt;array_splice</a></td><td>a, b, i0, i1</td></tr>
+
 <tr><td align = right>static &lt;PCG&gt;type *</td><td><a href = "#fn:<CG>previous">&lt;CG&gt;previous</a></td><td>box, x</td></tr>
 
 <tr><td align = right>static &lt;PCG&gt;type *</td><td><a href = "#fn:<CG>next">&lt;CG&gt;next</a></td><td>box, x</td></tr>
@@ -463,6 +465,24 @@
 
 <div>
 
+<h3><a id = "fn:<A>array_splice" name = "fn:<A>array_splice">&lt;A&gt;array_splice</a></h3>
+
+<p><code>static int <strong>&lt;A&gt;array_splice</strong>(struct &lt;A&gt;array *const <em>a</em>, const struct &lt;A&gt;array *const <em>b</em>, const size_t <em>i0</em>, const size_t <em>i1</em>)</code></p>
+
+<p>Indices [<code>i0</code>, <code>i1</code>) of <code>a</code> will be replaced with a copy of <code>b</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>b</em></dt>
+	<dd>Can be null, which acts as empty, but cannot be <code>a</code>.</dd>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+</dl>
+
+</div>
+
+<div>
+
 <h3><a id = "fn:<CG>previous" name = "fn:<CG>previous">&lt;CG&gt;previous</a></h3>
 
 <p><code>static &lt;PCG&gt;type *<strong>&lt;CG&gt;previous</strong>(const &lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;type *const <em>x</em>)</code></p>
@@ -471,7 +491,7 @@
 	<dt>Parameter: <em>x</em></dt>
 	<dd>A valid entry or null to start from the last.</dd>
 	<dt>Return:</dt>
-	<dd>The previous valid entry from <code>box</code> or null if this was the first.</dd>
+	<dd>The previous valid entry from <code>box</code> (which could be null) or null if this was the first.</dd>
 </dl>
 
 </div>
@@ -486,7 +506,7 @@
 	<dt>Parameter: <em>x</em></dt>
 	<dd>A valid entry or null to start from the first.</dd>
 	<dt>Return:</dt>
-	<dd>The next valid entry from <code>box</code> or null if this was the last.</dd>
+	<dd>The next valid entry from <code>box</code> (which could be null) or null if this was the last.</dd>
 </dl>
 
 </div>

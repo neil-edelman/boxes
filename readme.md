@@ -165,6 +165,8 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-7bf4e995">&lt;A&gt;array_pop</a></td><td>a</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-bce1c326">&lt;A&gt;array_splice</a></td><td>a, b, i0, i1</td></tr>
+
 <tr><td align = right>static &lt;PCG&gt;type *</td><td><a href = "#user-content-fn-5e0a543c">&lt;CG&gt;previous</a></td><td>box, x</td></tr>
 
 <tr><td align = right>static &lt;PCG&gt;type *</td><td><a href = "#user-content-fn-d3a8ce44">&lt;CG&gt;next</a></td><td>box, x</td></tr>
@@ -360,6 +362,21 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
 
 
 
+### <a id = "user-content-fn-bce1c326" name = "user-content-fn-bce1c326">&lt;A&gt;array_splice</a> ###
+
+<code>static int <strong>&lt;A&gt;array_splice</strong>(struct &lt;A&gt;array *const <em>a</em>, const struct &lt;A&gt;array *const <em>b</em>, const size_t <em>i0</em>, const size_t <em>i1</em>)</code>
+
+Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
+
+ * Parameter: _b_  
+   Can be null, which acts as empty, but cannot be `a`\.
+ * Return:  
+   Success\.
+ * Exceptional return: realloc, ERANGE  
+
+
+
+
 ### <a id = "user-content-fn-5e0a543c" name = "user-content-fn-5e0a543c">&lt;CG&gt;previous</a> ###
 
 <code>static &lt;PCG&gt;type *<strong>&lt;CG&gt;previous</strong>(const &lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;type *const <em>x</em>)</code>
@@ -367,7 +384,7 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
  * Parameter: _x_  
    A valid entry or null to start from the last\.
  * Return:  
-   The previous valid entry from `box` or null if this was the first\.
+   The previous valid entry from `box` \(which could be null\) or null if this was the first\.
 
 
 
@@ -379,7 +396,7 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
  * Parameter: _x_  
    A valid entry or null to start from the first\.
  * Return:  
-   The next valid entry from `box` or null if this was the last\.
+   The next valid entry from `box` \(which could be null\) or null if this was the last\.
 
 
 
