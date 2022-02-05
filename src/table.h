@@ -3,8 +3,7 @@
 
  @subtitle Hash table
 
- TL;DR: <src/table.h> is the source; <src/to_string.h> is required if one needs
- `to_string`; <test/test_table.c> has examples.
+ @abstract Source <src/table.h>; examples <test/test_table.c>.
 
  ![Example of <string>table.](../web/table.png)
 

@@ -3,6 +3,8 @@
 
  @subtitle Contiguous dynamic array
 
+ @abstract Source <src/array.h>; examples <test/test_array.c>.
+
  ![Example of array.](../web/array.png)
 
  <tag:<A>array> is a dynamic array that stores contiguous <typedef:<PA>type>.
@@ -158,11 +160,11 @@ static PA_(type) *A_(array_buffer)(struct A_(array) *const a, const size_t n) {
  pointer will be returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */
 static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n) {
-	PA_(type) *buffer;
+	PA_(type) *b;
 	assert(a);
-	if(!(buffer = A_(array_buffer)(a, n))) return 0;
+	if(!(b = A_(array_buffer)(a, n))) return 0;
 	assert(n <= a->capacity && a->size <= a->capacity - n);
-	return a->size += n, buffer;
+	return a->size += n, b;
 }
 
 /** Adds `n` un-initialised elements at position `at` in `a`. The buffer holds
@@ -174,9 +176,9 @@ static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n) {
 static PA_(type) *A_(array_insert)(struct A_(array) *const a,
 	const size_t n, const size_t at) {
 	const size_t old_size = a->size;
-	PA_(type) *const buffer = A_(array_append)(a, n);
+	PA_(type) *const b = A_(array_append)(a, n);
 	assert(a && at <= old_size);
-	if(!buffer) return 0;
+	if(!b) return 0;
 	memmove(a->data + at + n, a->data + at, sizeof *a->data * (old_size - at));
 	return a->data + at;
 }
@@ -234,12 +236,13 @@ static PA_(type) *A_(array_peek)(const struct A_(array) *const a)
 static PA_(type) *A_(array_pop)(struct A_(array) *const a)
 	{ return assert(a), a->size ? a->data + --a->size : 0; }
 
-/** `a` indices [`i0`, `i1`) will be replaced with a copy of `b`.
- @param[b] Can be null, which acts as empty.
- @return Success. @throws[realloc, ERANGE] */
-static int A_(array_splice)(struct A_(array) *const a, const size_t i0,
-	const size_t i1, const struct A_(array) *const b) {
+/** Indices [`i0`, `i1`) of `a` will be replaced with a copy of `b`.
+ @param[b] Can be null, which acts as empty, but cannot be `a`.
+ @return Success. @throws[realloc, ERANGE] @allow */
+static int A_(array_splice)(struct A_(array) *const a,
+	const struct A_(array) *const b, const size_t i0, const size_t i1) {
 	const size_t a_range = i1 - i0, b_range = b ? b->size : 0;
+	/* Is the compiler smart enough? */
 	assert(a && a != b && i0 <= i1 && i1 <= a->size);
 	if(a_range < b_range) { /* The output is bigger. */
 		const size_t diff = b_range - a_range;
@@ -261,7 +264,7 @@ static int A_(array_splice)(struct A_(array) *const a, const size_t i0,
  @fixme Untested. */
 static int A_(array_affix)(struct A_(array) *const a,
 	const struct A_(array) *const b)
-	{ return A_(array_splice)(a, a->size, a->size, b); }
+	{ return A_(array_splice)(a, b, a->size, a->size); }
 
 /** Appends `n` items on the back of `a`.
  @fixme It should be the other way around. */

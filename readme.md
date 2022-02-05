@@ -2,6 +2,8 @@
 
 ## Hash table ##
 
+Source [src/table\.h](src/table.h); examples [test/test\_table\.c](test/test_table.c)\.
+
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;uint](#user-content-typedef-c13937ad), [&lt;PN&gt;key](#user-content-typedef-e7af8dc0), [&lt;PN&gt;ckey](#user-content-typedef-c325bde5), [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292), [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded), [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb), [&lt;PN&gt;value](#user-content-typedef-218ce716), [&lt;PN&gt;entry](#user-content-typedef-a9017e7), [&lt;PN&gt;policy_fn](#user-content-typedef-1244a528), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [table_result](#user-content-tag-4f1ea759), [&lt;N&gt;table_entry](#user-content-tag-b491b196), [&lt;N&gt;table](#user-content-tag-8f317be5), [&lt;N&gt;table_iterator](#user-content-tag-f67540e4)
@@ -10,8 +12,6 @@
  * [License](#user-content-license)
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
-
-TL;DR: [src/table\.h](src/table.h) is the source; [src/to\_string\.h](src/to_string.h) is required if one needs `to_string`; [test/test\_table\.c](test/test_table.c) has examples\.
 
 ![Example of &lt;string&gt;table.](web/table.png)
 
