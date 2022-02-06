@@ -39,7 +39,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PA>type">&lt;PA&gt;type</a>, <a href = "#typedef:<PAC>box">&lt;PAC&gt;box</a>, <a href = "#typedef:<PAC>type">&lt;PAC&gt;type</a>, <a href = "#typedef:<PAC>action_fn">&lt;PAC&gt;action_fn</a>, <a href = "#typedef:<PAC>predicate_fn">&lt;PAC&gt;predicate_fn</a>, <a href = "#typedef:<PAC>bipredicate_fn">&lt;PAC&gt;bipredicate_fn</a>, <a href = "#typedef:<PAC>compare_fn">&lt;PAC&gt;compare_fn</a>, <a href = "#typedef:<PAC>biaction_fn">&lt;PAC&gt;biaction_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a>, <a href = "#typedef:<PAC>box">&lt;PAC&gt;box</a>, <a href = "#typedef:<PAC>type">&lt;PAC&gt;type</a>, <a href = "#typedef:<PAC>action_fn">&lt;PAC&gt;action_fn</a>, <a href = "#typedef:<PAC>predicate_fn">&lt;PAC&gt;predicate_fn</a>, <a href = "#typedef:<PAC>bipredicate_fn">&lt;PAC&gt;bipredicate_fn</a>, <a href = "#typedef:<PAC>compare_fn">&lt;PAC&gt;compare_fn</a>, <a href = "#typedef:<PAC>biaction_fn">&lt;PAC&gt;biaction_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PA>type">&lt;PA&gt;type</a>, <a href = "#typedef:<PAC>box">&lt;PAC&gt;box</a>, <a href = "#typedef:<PAC>type">&lt;PAC&gt;type</a>, <a href = "#typedef:<PAC>action_fn">&lt;PAC&gt;action_fn</a>, <a href = "#typedef:<PAC>predicate_fn">&lt;PAC&gt;predicate_fn</a>, <a href = "#typedef:<PAC>bipredicate_fn">&lt;PAC&gt;bipredicate_fn</a>, <a href = "#typedef:<PAC>compare_fn">&lt;PAC&gt;compare_fn</a>, <a href = "#typedef:<PAC>biaction_fn">&lt;PAC&gt;biaction_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<A>array">&lt;A&gt;array</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -91,7 +91,7 @@
 
 <p><code>typedef BOX_CONTAINER <strong>&lt;PAC&gt;box</strong>;</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: an alias to the box.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: an alias to the box.</p>
 
 </div>
 
@@ -101,7 +101,7 @@
 
 <p><code>typedef BOX_CONTENTS <strong>&lt;PAC&gt;type</strong>;</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: an alias to the individual type contained in the box.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: an alias to the individual type contained in the box.</p>
 
 </div>
 
@@ -111,7 +111,7 @@
 
 <p><code>typedef void(*<strong>&lt;PAC&gt;action_fn</strong>)(&lt;PAC&gt;type *);</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: Operates by side-effects on <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Operates by side-effects on <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
 
 </div>
 
@@ -121,7 +121,7 @@
 
 <p><code>typedef int(*<strong>&lt;PAC&gt;predicate_fn</strong>)(const &lt;PAC&gt;type *);</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: Returns a boolean given read-only <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Returns a boolean given read-only <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
 
 </div>
 
@@ -131,7 +131,7 @@
 
 <p><code>typedef int(*<strong>&lt;PAC&gt;bipredicate_fn</strong>)(const &lt;PAC&gt;type *, const &lt;PAC&gt;type *);</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: Returns a boolean given two read-only <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Returns a boolean given two read-only <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
 
 </div>
 
@@ -141,7 +141,7 @@
 
 <p><code>typedef int(*<strong>&lt;PAC&gt;compare_fn</strong>)(const &lt;PAC&gt;type *a, const &lt;PAC&gt;type *b);</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: Three-way comparison on a totally order set of <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>; returns an integer value less then, equal to, greater then zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Three-way comparison on a totally order set of <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>; returns an integer value less then, equal to, greater then zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
 
 </div>
 
@@ -151,7 +151,7 @@
 
 <p><code>typedef int(*<strong>&lt;PAC&gt;biaction_fn</strong>)(&lt;PAC&gt;type *, &lt;PAC&gt;type *);</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: Returns a boolean given two <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Returns a boolean given two <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
 
 </div>
 
@@ -162,76 +162,6 @@
 <p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code></p>
 
 <p><a href = "to_string.h">to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string. <code>&lt;PSZ&gt;type</code> is contracted to be an internal iteration type of the box.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PAC>box" name = "typedef:<PAC>box">&lt;PAC&gt;box</a></h3>
-
-<p><code>typedef BOX_CONTAINER <strong>&lt;PAC&gt;box</strong>;</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: an alias to the box.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PAC>type" name = "typedef:<PAC>type">&lt;PAC&gt;type</a></h3>
-
-<p><code>typedef BOX_CONTENTS <strong>&lt;PAC&gt;type</strong>;</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: an alias to the individual type contained in the box.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PAC>action_fn" name = "typedef:<PAC>action_fn">&lt;PAC&gt;action_fn</a></h3>
-
-<p><code>typedef void(*<strong>&lt;PAC&gt;action_fn</strong>)(&lt;PAC&gt;type *);</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: Operates by side-effects on <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PAC>predicate_fn" name = "typedef:<PAC>predicate_fn">&lt;PAC&gt;predicate_fn</a></h3>
-
-<p><code>typedef int(*<strong>&lt;PAC&gt;predicate_fn</strong>)(const &lt;PAC&gt;type *);</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: Returns a boolean given read-only <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PAC>bipredicate_fn" name = "typedef:<PAC>bipredicate_fn">&lt;PAC&gt;bipredicate_fn</a></h3>
-
-<p><code>typedef int(*<strong>&lt;PAC&gt;bipredicate_fn</strong>)(const &lt;PAC&gt;type *, const &lt;PAC&gt;type *);</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: Returns a boolean given two read-only <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PAC>compare_fn" name = "typedef:<PAC>compare_fn">&lt;PAC&gt;compare_fn</a></h3>
-
-<p><code>typedef int(*<strong>&lt;PAC&gt;compare_fn</strong>)(const &lt;PAC&gt;type *a, const &lt;PAC&gt;type *b);</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: Three-way comparison on a totally order set of <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>; returns an integer value less then, equal to, greater then zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PAC>biaction_fn" name = "typedef:<PAC>biaction_fn">&lt;PAC&gt;biaction_fn</a></h3>
-
-<p><code>typedef int(*<strong>&lt;PAC&gt;biaction_fn</strong>)(&lt;PAC&gt;type *, &lt;PAC&gt;type *);</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: Returns a boolean given two <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
 
 </div>
 
@@ -320,42 +250,6 @@
 <tr><td align = right>static void</td><td><a href = "#fn:<ACC>unique">&lt;ACC&gt;unique</a></td><td>a</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
-
-<tr><td align = right>static &lt;PAC&gt;type *</td><td><a href = "#fn:<AC>previous">&lt;AC&gt;previous</a></td><td>box, x</td></tr>
-
-<tr><td align = right>static &lt;PAC&gt;type *</td><td><a href = "#fn:<AC>next">&lt;AC&gt;next</a></td><td>box, x</td></tr>
-
-<tr><td align = right>static size_t</td><td><a href = "#fn:<AC>clip">&lt;AC&gt;clip</a></td><td>box, i</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#fn:<AC>copy_if">&lt;AC&gt;copy_if</a></td><td>a, copy, b</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<AC>keep_if">&lt;AC&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<AC>trim">&lt;AC&gt;trim</a></td><td>box, predicate</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<AC>each">&lt;AC&gt;each</a></td><td>box, action</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<AC>if_each">&lt;AC&gt;if_each</a></td><td>box, predicate, action</td></tr>
-
-<tr><td align = right>static const &lt;PAC&gt;type *</td><td><a href = "#fn:<AC>any">&lt;AC&gt;any</a></td><td>box, predicate</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#fn:<ACC>compare">&lt;ACC&gt;compare</a></td><td>a, b</td></tr>
-
-<tr><td align = right>static size_t</td><td><a href = "#fn:<ACC>lower_bound">&lt;ACC&gt;lower_bound</a></td><td>box, value</td></tr>
-
-<tr><td align = right>static size_t</td><td><a href = "#fn:<ACC>upper_bound">&lt;ACC&gt;upper_bound</a></td><td>box, value</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#fn:<ACC>insert_after">&lt;ACC&gt;insert_after</a></td><td>box, value</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<ACC>sort">&lt;ACC&gt;sort</a></td><td>box</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<ACC>reverse">&lt;ACC&gt;reverse</a></td><td>box</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#fn:<ACC>is_equal">&lt;ACC&gt;is_equal</a></td><td>a, b</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<ACC>unique_merge">&lt;ACC&gt;unique_merge</a></td><td>box, merge</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<ACC>unique">&lt;ACC&gt;unique</a></td><td>a</td></tr>
 
 </table>
 
@@ -575,7 +469,7 @@
 
 <p><code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;previous</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a></p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a></p>
 
 <dl>
 	<dt>Parameter: <em>x</em></dt>
@@ -592,7 +486,7 @@
 
 <p><code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;next</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a></p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a></p>
 
 <dl>
 	<dt>Parameter: <em>x</em></dt>
@@ -609,7 +503,7 @@
 
 <p><code>static size_t <strong>&lt;AC&gt;clip</strong>(const &lt;PAC&gt;box *const <em>box</em>, const long <em>i</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a></p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -626,7 +520,7 @@
 
 <p><code>static int <strong>&lt;AC&gt;copy_if</strong>(&lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;predicate_fn <em>copy</em>, const &lt;PAC&gt;box *const <em>b</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: For all elements of <code>b</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>a</code>. <code>a</code> and <code>b</code> can not be the same but <code>b</code> can be null, (in which case, it does nothing.)</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: For all elements of <code>b</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>a</code>. <code>a</code> and <code>b</code> can not be the same but <code>b</code> can be null, (in which case, it does nothing.)</p>
 
 <dl>
 	<dt>Exceptional return: ERANGE, realloc</dt>
@@ -642,7 +536,7 @@
 
 <p><code>static void <strong>&lt;AC&gt;keep_if</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>keep</em>, const &lt;PAC&gt;action_fn <em>destruct</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: For all elements of <code>box</code>, calls <code>keep</code>, and if false, lazy deletes that item, calling <code>destruct</code> (if not-null).</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: For all elements of <code>box</code>, calls <code>keep</code>, and if false, lazy deletes that item, calling <code>destruct</code> (if not-null).</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -657,7 +551,7 @@
 
 <p><code>static void <strong>&lt;AC&gt;trim</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: Removes at either end of <code>box</code> of things that <code>predicate</code> returns true.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Removes at either end of <code>box</code> of things that <code>predicate</code> returns true.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -672,7 +566,7 @@
 
 <p><code>static void <strong>&lt;AC&gt;each</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;action_fn <em>action</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements. The topology of the list should not change while in this function.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements. The topology of the list should not change while in this function.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -687,7 +581,7 @@
 
 <p><code>static void <strong>&lt;AC&gt;if_each</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>, const &lt;PAC&gt;action_fn <em>action</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements for which <code>predicate</code> returns true. The topology of the list should not change while in this function.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements for which <code>predicate</code> returns true. The topology of the list should not change while in this function.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -702,7 +596,7 @@
 
 <p><code>static const &lt;PAC&gt;type *<strong>&lt;AC&gt;any</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: Iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -719,7 +613,7 @@
 
 <p><code>static int <strong>&lt;ACC&gt;compare</strong>(const &lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;box *const <em>b</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: Lexicographically compares <code>a</code> to <code>b</code>. Both can be null, with null values before everything.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Lexicographically compares <code>a</code> to <code>b</code>. Both can be null, with null values before everything.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -736,7 +630,7 @@
 
 <p><code>static size_t <strong>&lt;ACC&gt;lower_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: <code>box</code> should be partitioned true/false with less-then <code>value</code>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: <code>box</code> should be partitioned true/false with less-then <code>value</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -753,7 +647,7 @@
 
 <p><code>static size_t <strong>&lt;ACC&gt;upper_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: <code>box</code> should be partitioned false/true with greater-than or equal-to <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a> <code>value</code>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: <code>box</code> should be partitioned false/true with greater-than or equal-to <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a> <code>value</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -770,7 +664,7 @@
 
 <p><code>static int <strong>&lt;ACC&gt;insert_after</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: Copies <code>value</code> at the upper bound of a sorted <code>box</code>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Copies <code>value</code> at the upper bound of a sorted <code>box</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -788,7 +682,7 @@
 
 <p><code>static void <strong>&lt;ACC&gt;sort</strong>(&lt;PAC&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: Sorts <code>box</code> by <code>qsort</code>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Sorts <code>box</code> by <code>qsort</code>.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -803,7 +697,7 @@
 
 <p><code>static void <strong>&lt;ACC&gt;reverse</strong>(&lt;PAC&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: Sorts <code>box</code> in reverse by <code>qsort</code>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Sorts <code>box</code> in reverse by <code>qsort</code>.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -818,7 +712,7 @@
 
 <p><code>static int <strong>&lt;ACC&gt;is_equal</strong>(const &lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;box *const <em>b</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a></p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -835,7 +729,7 @@
 
 <p><code>static void <strong>&lt;ACC&gt;unique_merge</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;biaction_fn <em>merge</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: Removes consecutive duplicate elements in <code>box</code>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Removes consecutive duplicate elements in <code>box</code>.</p>
 
 <dl>
 	<dt>Parameter: <em>merge</em></dt>
@@ -852,7 +746,7 @@
 
 <p><code>static void <strong>&lt;ACC&gt;unique</strong>(&lt;PAC&gt;box *const <em>a</em>)</code></p>
 
-<p><a href = "array_coda.h">array_coda.h</a>: Removes consecutive duplicate elements in <code>a</code>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Removes consecutive duplicate elements in <code>a</code>.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -874,298 +768,6 @@
 	<dd>Address of the static buffer.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<AC>previous" name = "fn:<AC>previous">&lt;AC&gt;previous</a></h3>
-
-<p><code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;previous</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a></p>
-
-<dl>
-	<dt>Parameter: <em>x</em></dt>
-	<dd>A valid entry or null to start from the last.</dd>
-	<dt>Return:</dt>
-	<dd>The previous valid entry from <code>box</code> (which could be null) or null if this was the first.</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<AC>next" name = "fn:<AC>next">&lt;AC&gt;next</a></h3>
-
-<p><code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;next</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a></p>
-
-<dl>
-	<dt>Parameter: <em>x</em></dt>
-	<dd>A valid entry or null to start from the first.</dd>
-	<dt>Return:</dt>
-	<dd>The next valid entry from <code>box</code> (which could be null) or null if this was the last.</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<AC>clip" name = "fn:<AC>clip">&lt;AC&gt;clip</a></h3>
-
-<p><code>static size_t <strong>&lt;AC&gt;clip</strong>(const &lt;PAC&gt;box *const <em>box</em>, const long <em>i</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a></p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>Converts <code>i</code> to an index in <code>box</code> from [0, <code>box.size</code>]. Negative values are wrapped.</dd>
-	<dt>Order:</dt>
-	<dd>&#920;(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<AC>copy_if" name = "fn:<AC>copy_if">&lt;AC&gt;copy_if</a></h3>
-
-<p><code>static int <strong>&lt;AC&gt;copy_if</strong>(&lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;predicate_fn <em>copy</em>, const &lt;PAC&gt;box *const <em>b</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: For all elements of <code>b</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>a</code>. <code>a</code> and <code>b</code> can not be the same but <code>b</code> can be null, (in which case, it does nothing.)</p>
-
-<dl>
-	<dt>Exceptional return: ERANGE, realloc</dt>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>b.size</code> &#215; <code>copy</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<AC>keep_if" name = "fn:<AC>keep_if">&lt;AC&gt;keep_if</a></h3>
-
-<p><code>static void <strong>&lt;AC&gt;keep_if</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>keep</em>, const &lt;PAC&gt;action_fn <em>destruct</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: For all elements of <code>box</code>, calls <code>keep</code>, and if false, lazy deletes that item, calling <code>destruct</code> (if not-null).</p>
-
-<dl>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>a.size</code> &#215; <code>keep</code> &#215; <code>destruct</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<AC>trim" name = "fn:<AC>trim">&lt;AC&gt;trim</a></h3>
-
-<p><code>static void <strong>&lt;AC&gt;trim</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: Removes at either end of <code>box</code> of things that <code>predicate</code> returns true.</p>
-
-<dl>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>box.size</code> &#215; <code>predicate</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<AC>each" name = "fn:<AC>each">&lt;AC&gt;each</a></h3>
-
-<p><code>static void <strong>&lt;AC&gt;each</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;action_fn <em>action</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements. The topology of the list should not change while in this function.</p>
-
-<dl>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>box.size</code> &#215; <code>action</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<AC>if_each" name = "fn:<AC>if_each">&lt;AC&gt;if_each</a></h3>
-
-<p><code>static void <strong>&lt;AC&gt;if_each</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>, const &lt;PAC&gt;action_fn <em>action</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements for which <code>predicate</code> returns true. The topology of the list should not change while in this function.</p>
-
-<dl>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>box.size</code> &#215; <code>predicate</code> &#215; <code>action</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<AC>any" name = "fn:<AC>any">&lt;AC&gt;any</a></h3>
-
-<p><code>static const &lt;PAC&gt;type *<strong>&lt;AC&gt;any</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: Iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>The first <code>predicate</code> that returned true, or, if the statement is false on all, null.</dd>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>box.size</code> &#215; <code>predicate</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<ACC>compare" name = "fn:<ACC>compare">&lt;ACC&gt;compare</a></h3>
-
-<p><code>static int <strong>&lt;ACC&gt;compare</strong>(const &lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;box *const <em>b</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: Lexicographically compares <code>a</code> to <code>b</code>. Both can be null, with null values before everything.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd><code>a &lt; b</code>: negative; <code>a == b</code>: zero; <code>a &gt; b</code>: positive.</dd>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>a.size</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<ACC>lower_bound" name = "fn:<ACC>lower_bound">&lt;ACC&gt;lower_bound</a></h3>
-
-<p><code>static size_t <strong>&lt;ACC&gt;lower_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: <code>box</code> should be partitioned true/false with less-then <code>value</code>.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>The first index of <code>a</code> that is not less than <code>value</code>.</dd>
-	<dt>Order:</dt>
-	<dd>&#927;(log <code>a.size</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<ACC>upper_bound" name = "fn:<ACC>upper_bound">&lt;ACC&gt;upper_bound</a></h3>
-
-<p><code>static size_t <strong>&lt;ACC&gt;upper_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: <code>box</code> should be partitioned false/true with greater-than or equal-to <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a> <code>value</code>.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>The first index of <code>box</code> that is greater than <code>value</code>.</dd>
-	<dt>Order:</dt>
-	<dd>&#927;(log <code>a.size</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<ACC>insert_after" name = "fn:<ACC>insert_after">&lt;ACC&gt;insert_after</a></h3>
-
-<p><code>static int <strong>&lt;ACC&gt;insert_after</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: Copies <code>value</code> at the upper bound of a sorted <code>box</code>.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>Success.</dd>
-	<dt>Exceptional return: realloc, ERANGE</dt>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>a.size</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<ACC>sort" name = "fn:<ACC>sort">&lt;ACC&gt;sort</a></h3>
-
-<p><code>static void <strong>&lt;ACC&gt;sort</strong>(&lt;PAC&gt;box *const <em>box</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: Sorts <code>box</code> by <code>qsort</code>.</p>
-
-<dl>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>a.size</code> \log <code>box.size</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<ACC>reverse" name = "fn:<ACC>reverse">&lt;ACC&gt;reverse</a></h3>
-
-<p><code>static void <strong>&lt;ACC&gt;reverse</strong>(&lt;PAC&gt;box *const <em>box</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: Sorts <code>box</code> in reverse by <code>qsort</code>.</p>
-
-<dl>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>a.size</code> \log <code>a.size</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<ACC>is_equal" name = "fn:<ACC>is_equal">&lt;ACC&gt;is_equal</a></h3>
-
-<p><code>static int <strong>&lt;ACC&gt;is_equal</strong>(const &lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;box *const <em>b</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a></p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>If <code>a</code> piecewise equals <code>b</code>, which both can be null.</dd>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>size</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<ACC>unique_merge" name = "fn:<ACC>unique_merge">&lt;ACC&gt;unique_merge</a></h3>
-
-<p><code>static void <strong>&lt;ACC&gt;unique_merge</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;biaction_fn <em>merge</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: Removes consecutive duplicate elements in <code>box</code>.</p>
-
-<dl>
-	<dt>Parameter: <em>merge</em></dt>
-	<dd>Controls surjection. Called with duplicate elements, if false <code>(x, y)-&gt;(x)</code>, if true <code>(x,y)-&gt;(y)</code>. More complex functions, <code>(x, y)-&gt;(x+y)</code> can be simulated by mixing the two in the value returned. Can be null: behaves like false.</dd>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>a.size</code> &#215; <code>merge</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<ACC>unique" name = "fn:<ACC>unique">&lt;ACC&gt;unique</a></h3>
-
-<p><code>static void <strong>&lt;ACC&gt;unique</strong>(&lt;PAC&gt;box *const <em>a</em>)</code></p>
-
-<p><a href = "array_coda.h">array_coda.h</a>: Removes consecutive duplicate elements in <code>a</code>.</p>
-
-<dl>
-	<dt>Order:</dt>
-	<dd>&#927;(<code>a.size</code>)</dd>
 </dl>
 
 </div>

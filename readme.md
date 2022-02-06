@@ -5,7 +5,7 @@ Source [src/array\.h](src/array.h); examples [test/test\_array\.c](test/test_arr
 ## Contiguous dynamic array ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), [&lt;PAC&gt;box](#user-content-typedef-66d14de2), [&lt;PAC&gt;type](#user-content-typedef-b6e4909d), [&lt;PAC&gt;action_fn](#user-content-typedef-6f318a4), [&lt;PAC&gt;predicate_fn](#user-content-typedef-13605483), [&lt;PAC&gt;bipredicate_fn](#user-content-typedef-6cd1ff8a), [&lt;PAC&gt;compare_fn](#user-content-typedef-355f3451), [&lt;PAC&gt;biaction_fn](#user-content-typedef-a314f7fb), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PAC&gt;box](#user-content-typedef-66d14de2), [&lt;PAC&gt;type](#user-content-typedef-b6e4909d), [&lt;PAC&gt;action_fn](#user-content-typedef-6f318a4), [&lt;PAC&gt;predicate_fn](#user-content-typedef-13605483), [&lt;PAC&gt;bipredicate_fn](#user-content-typedef-6cd1ff8a), [&lt;PAC&gt;compare_fn](#user-content-typedef-355f3451), [&lt;PAC&gt;biaction_fn](#user-content-typedef-a314f7fb)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), [&lt;PAC&gt;box](#user-content-typedef-66d14de2), [&lt;PAC&gt;type](#user-content-typedef-b6e4909d), [&lt;PAC&gt;action_fn](#user-content-typedef-6f318a4), [&lt;PAC&gt;predicate_fn](#user-content-typedef-13605483), [&lt;PAC&gt;bipredicate_fn](#user-content-typedef-6cd1ff8a), [&lt;PAC&gt;compare_fn](#user-content-typedef-355f3451), [&lt;PAC&gt;biaction_fn](#user-content-typedef-a314f7fb), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;A&gt;array](#user-content-tag-8049be0d)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -49,7 +49,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 <code>typedef BOX_CONTAINER <strong>&lt;PAC&gt;box</strong>;</code>
 
-[array\_coda\.h](array_coda.h): an alias to the box\.
+[src/array\_coda\.h](src/array_coda.h): an alias to the box\.
 
 
 
@@ -57,7 +57,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 <code>typedef BOX_CONTENTS <strong>&lt;PAC&gt;type</strong>;</code>
 
-[array\_coda\.h](array_coda.h): an alias to the individual type contained in the box\.
+[src/array\_coda\.h](src/array_coda.h): an alias to the individual type contained in the box\.
 
 
 
@@ -65,7 +65,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 <code>typedef void(*<strong>&lt;PAC&gt;action_fn</strong>)(&lt;PAC&gt;type *);</code>
 
-[array\_coda\.h](array_coda.h): Operates by side\-effects on [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
+[src/array\_coda\.h](src/array_coda.h): Operates by side\-effects on [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
 
 
 
@@ -73,7 +73,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 <code>typedef int(*<strong>&lt;PAC&gt;predicate_fn</strong>)(const &lt;PAC&gt;type *);</code>
 
-[array\_coda\.h](array_coda.h): Returns a boolean given read\-only [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
+[src/array\_coda\.h](src/array_coda.h): Returns a boolean given read\-only [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
 
 
 
@@ -81,7 +81,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 <code>typedef int(*<strong>&lt;PAC&gt;bipredicate_fn</strong>)(const &lt;PAC&gt;type *, const &lt;PAC&gt;type *);</code>
 
-[array\_coda\.h](array_coda.h): Returns a boolean given two read\-only [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
+[src/array\_coda\.h](src/array_coda.h): Returns a boolean given two read\-only [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
 
 
 
@@ -89,7 +89,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 <code>typedef int(*<strong>&lt;PAC&gt;compare_fn</strong>)(const &lt;PAC&gt;type *a, const &lt;PAC&gt;type *b);</code>
 
-[array\_coda\.h](array_coda.h): Three\-way comparison on a totally order set of [&lt;PAC&gt;type](#user-content-typedef-b6e4909d); returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
+[src/array\_coda\.h](src/array_coda.h): Three\-way comparison on a totally order set of [&lt;PAC&gt;type](#user-content-typedef-b6e4909d); returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
 
 
 
@@ -97,7 +97,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 <code>typedef int(*<strong>&lt;PAC&gt;biaction_fn</strong>)(&lt;PAC&gt;type *, &lt;PAC&gt;type *);</code>
 
-[array\_coda\.h](array_coda.h): Returns a boolean given two [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
+[src/array\_coda\.h](src/array_coda.h): Returns a boolean given two [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
 
 
 
@@ -106,62 +106,6 @@ A valid tag type set by `ARRAY_TYPE`\.
 <code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
 
 [to\_string\.h](to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\. `<PSZ>type` is contracted to be an internal iteration type of the box\.
-
-
-
-### <a id = "user-content-typedef-66d14de2" name = "user-content-typedef-66d14de2">&lt;PAC&gt;box</a> ###
-
-<code>typedef BOX_CONTAINER <strong>&lt;PAC&gt;box</strong>;</code>
-
-[array\_coda\.h](array_coda.h): an alias to the box\.
-
-
-
-### <a id = "user-content-typedef-b6e4909d" name = "user-content-typedef-b6e4909d">&lt;PAC&gt;type</a> ###
-
-<code>typedef BOX_CONTENTS <strong>&lt;PAC&gt;type</strong>;</code>
-
-[array\_coda\.h](array_coda.h): an alias to the individual type contained in the box\.
-
-
-
-### <a id = "user-content-typedef-6f318a4" name = "user-content-typedef-6f318a4">&lt;PAC&gt;action_fn</a> ###
-
-<code>typedef void(*<strong>&lt;PAC&gt;action_fn</strong>)(&lt;PAC&gt;type *);</code>
-
-[array\_coda\.h](array_coda.h): Operates by side\-effects on [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
-
-
-
-### <a id = "user-content-typedef-13605483" name = "user-content-typedef-13605483">&lt;PAC&gt;predicate_fn</a> ###
-
-<code>typedef int(*<strong>&lt;PAC&gt;predicate_fn</strong>)(const &lt;PAC&gt;type *);</code>
-
-[array\_coda\.h](array_coda.h): Returns a boolean given read\-only [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
-
-
-
-### <a id = "user-content-typedef-6cd1ff8a" name = "user-content-typedef-6cd1ff8a">&lt;PAC&gt;bipredicate_fn</a> ###
-
-<code>typedef int(*<strong>&lt;PAC&gt;bipredicate_fn</strong>)(const &lt;PAC&gt;type *, const &lt;PAC&gt;type *);</code>
-
-[array\_coda\.h](array_coda.h): Returns a boolean given two read\-only [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
-
-
-
-### <a id = "user-content-typedef-355f3451" name = "user-content-typedef-355f3451">&lt;PAC&gt;compare_fn</a> ###
-
-<code>typedef int(*<strong>&lt;PAC&gt;compare_fn</strong>)(const &lt;PAC&gt;type *a, const &lt;PAC&gt;type *b);</code>
-
-[array\_coda\.h](array_coda.h): Three\-way comparison on a totally order set of [&lt;PAC&gt;type](#user-content-typedef-b6e4909d); returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
-
-
-
-### <a id = "user-content-typedef-a314f7fb" name = "user-content-typedef-a314f7fb">&lt;PAC&gt;biaction_fn</a> ###
-
-<code>typedef int(*<strong>&lt;PAC&gt;biaction_fn</strong>)(&lt;PAC&gt;type *, &lt;PAC&gt;type *);</code>
-
-[array\_coda\.h](array_coda.h): Returns a boolean given two [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
 
 
 
@@ -246,42 +190,6 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-367663f1">&lt;ACC&gt;unique</a></td><td>a</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
-
-<tr><td align = right>static &lt;PAC&gt;type *</td><td><a href = "#user-content-fn-b346708e">&lt;AC&gt;previous</a></td><td>box, x</td></tr>
-
-<tr><td align = right>static &lt;PAC&gt;type *</td><td><a href = "#user-content-fn-60e57f42">&lt;AC&gt;next</a></td><td>box, x</td></tr>
-
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-86c2328d">&lt;AC&gt;clip</a></td><td>box, i</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-cf7c3074">&lt;AC&gt;copy_if</a></td><td>a, copy, b</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-a6bb890c">&lt;AC&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-7924b33">&lt;AC&gt;trim</a></td><td>box, predicate</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-884c09a">&lt;AC&gt;each</a></td><td>box, action</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-d0650740">&lt;AC&gt;if_each</a></td><td>box, predicate, action</td></tr>
-
-<tr><td align = right>static const &lt;PAC&gt;type *</td><td><a href = "#user-content-fn-ed02e52b">&lt;AC&gt;any</a></td><td>box, predicate</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-a4e64b3d">&lt;ACC&gt;compare</a></td><td>a, b</td></tr>
-
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-5214478c">&lt;ACC&gt;lower_bound</a></td><td>box, value</td></tr>
-
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-aa46e23d">&lt;ACC&gt;upper_bound</a></td><td>box, value</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-4789a122">&lt;ACC&gt;insert_after</a></td><td>box, value</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-9d49726">&lt;ACC&gt;sort</a></td><td>box</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-1cd40178">&lt;ACC&gt;reverse</a></td><td>box</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-92b388f5">&lt;ACC&gt;is_equal</a></td><td>a, b</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-30137672">&lt;ACC&gt;unique_merge</a></td><td>box, merge</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-367663f1">&lt;ACC&gt;unique</a></td><td>a</td></tr>
 
 </table>
 
@@ -459,7 +367,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;previous</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code>
 
-[array\_coda\.h](array_coda.h)
+[src/array\_coda\.h](src/array_coda.h)
 
  * Parameter: _x_  
    A valid entry or null to start from the last\.
@@ -473,7 +381,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;next</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code>
 
-[array\_coda\.h](array_coda.h)
+[src/array\_coda\.h](src/array_coda.h)
 
  * Parameter: _x_  
    A valid entry or null to start from the first\.
@@ -487,7 +395,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static size_t <strong>&lt;AC&gt;clip</strong>(const &lt;PAC&gt;box *const <em>box</em>, const long <em>i</em>)</code>
 
-[array\_coda\.h](array_coda.h)
+[src/array\_coda\.h](src/array_coda.h)
 
  * Return:  
    Converts `i` to an index in `box` from \[0, `box.size`\]\. Negative values are wrapped\.
@@ -501,7 +409,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static int <strong>&lt;AC&gt;copy_if</strong>(&lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;predicate_fn <em>copy</em>, const &lt;PAC&gt;box *const <em>b</em>)</code>
 
-[array\_coda\.h](array_coda.h): For all elements of `b`, calls `copy`, and if true, lazily copies the elements to `a`\. `a` and `b` can not be the same but `b` can be null, \(in which case, it does nothing\.\)
+[src/array\_coda\.h](src/array_coda.h): For all elements of `b`, calls `copy`, and if true, lazily copies the elements to `a`\. `a` and `b` can not be the same but `b` can be null, \(in which case, it does nothing\.\)
 
  * Exceptional return: ERANGE, realloc  
  * Order:  
@@ -514,7 +422,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;AC&gt;keep_if</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>keep</em>, const &lt;PAC&gt;action_fn <em>destruct</em>)</code>
 
-[array\_coda\.h](array_coda.h): For all elements of `box`, calls `keep`, and if false, lazy deletes that item, calling `destruct` \(if not\-null\)\.
+[src/array\_coda\.h](src/array_coda.h): For all elements of `box`, calls `keep`, and if false, lazy deletes that item, calling `destruct` \(if not\-null\)\.
 
  * Order:  
    &#927;\(`a.size` &#215; `keep` &#215; `destruct`\)
@@ -526,7 +434,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;AC&gt;trim</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code>
 
-[array\_coda\.h](array_coda.h): Removes at either end of `box` of things that `predicate` returns true\.
+[src/array\_coda\.h](src/array_coda.h): Removes at either end of `box` of things that `predicate` returns true\.
 
  * Order:  
    &#927;\(`box.size` &#215; `predicate`\)
@@ -538,7 +446,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;AC&gt;each</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;action_fn <em>action</em>)</code>
 
-[array\_coda\.h](array_coda.h): Iterates through `box` and calls `action` on all the elements\. The topology of the list should not change while in this function\.
+[src/array\_coda\.h](src/array_coda.h): Iterates through `box` and calls `action` on all the elements\. The topology of the list should not change while in this function\.
 
  * Order:  
    &#927;\(`box.size` &#215; `action`\)
@@ -550,7 +458,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;AC&gt;if_each</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>, const &lt;PAC&gt;action_fn <em>action</em>)</code>
 
-[array\_coda\.h](array_coda.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list should not change while in this function\.
+[src/array\_coda\.h](src/array_coda.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list should not change while in this function\.
 
  * Order:  
    &#927;\(`box.size` &#215; `predicate` &#215; `action`\)
@@ -562,7 +470,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static const &lt;PAC&gt;type *<strong>&lt;AC&gt;any</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code>
 
-[array\_coda\.h](array_coda.h): Iterates through `box` and calls `predicate` until it returns true\.
+[src/array\_coda\.h](src/array_coda.h): Iterates through `box` and calls `predicate` until it returns true\.
 
  * Return:  
    The first `predicate` that returned true, or, if the statement is false on all, null\.
@@ -576,7 +484,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static int <strong>&lt;ACC&gt;compare</strong>(const &lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;box *const <em>b</em>)</code>
 
-[array\_coda\.h](array_coda.h): Lexicographically compares `a` to `b`\. Both can be null, with null values before everything\.
+[src/array\_coda\.h](src/array_coda.h): Lexicographically compares `a` to `b`\. Both can be null, with null values before everything\.
 
  * Return:  
    `a < b`: negative; `a == b`: zero; `a > b`: positive\.
@@ -590,7 +498,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static size_t <strong>&lt;ACC&gt;lower_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code>
 
-[array\_coda\.h](array_coda.h): `box` should be partitioned true/false with less\-then `value`\.
+[src/array\_coda\.h](src/array_coda.h): `box` should be partitioned true/false with less\-then `value`\.
 
  * Return:  
    The first index of `a` that is not less than `value`\.
@@ -604,7 +512,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static size_t <strong>&lt;ACC&gt;upper_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code>
 
-[array\_coda\.h](array_coda.h): `box` should be partitioned false/true with greater\-than or equal\-to [&lt;PAC&gt;type](#user-content-typedef-b6e4909d) `value`\.
+[src/array\_coda\.h](src/array_coda.h): `box` should be partitioned false/true with greater\-than or equal\-to [&lt;PAC&gt;type](#user-content-typedef-b6e4909d) `value`\.
 
  * Return:  
    The first index of `box` that is greater than `value`\.
@@ -618,7 +526,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static int <strong>&lt;ACC&gt;insert_after</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code>
 
-[array\_coda\.h](array_coda.h): Copies `value` at the upper bound of a sorted `box`\.
+[src/array\_coda\.h](src/array_coda.h): Copies `value` at the upper bound of a sorted `box`\.
 
  * Return:  
    Success\.
@@ -633,7 +541,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;ACC&gt;sort</strong>(&lt;PAC&gt;box *const <em>box</em>)</code>
 
-[array\_coda\.h](array_coda.h): Sorts `box` by `qsort`\.
+[src/array\_coda\.h](src/array_coda.h): Sorts `box` by `qsort`\.
 
  * Order:  
    &#927;\(`a.size` \\log `box.size`\)
@@ -645,7 +553,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;ACC&gt;reverse</strong>(&lt;PAC&gt;box *const <em>box</em>)</code>
 
-[array\_coda\.h](array_coda.h): Sorts `box` in reverse by `qsort`\.
+[src/array\_coda\.h](src/array_coda.h): Sorts `box` in reverse by `qsort`\.
 
  * Order:  
    &#927;\(`a.size` \\log `a.size`\)
@@ -657,7 +565,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static int <strong>&lt;ACC&gt;is_equal</strong>(const &lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;box *const <em>b</em>)</code>
 
-[array\_coda\.h](array_coda.h)
+[src/array\_coda\.h](src/array_coda.h)
 
  * Return:  
    If `a` piecewise equals `b`, which both can be null\.
@@ -671,7 +579,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;ACC&gt;unique_merge</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;biaction_fn <em>merge</em>)</code>
 
-[array\_coda\.h](array_coda.h): Removes consecutive duplicate elements in `box`\.
+[src/array\_coda\.h](src/array_coda.h): Removes consecutive duplicate elements in `box`\.
 
  * Parameter: _merge_  
    Controls surjection\. Called with duplicate elements, if false `(x, y)->(x)`, if true `(x,y)->(y)`\. More complex functions, `(x, y)->(x+y)` can be simulated by mixing the two in the value returned\. Can be null: behaves like false\.
@@ -685,7 +593,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;ACC&gt;unique</strong>(&lt;PAC&gt;box *const <em>a</em>)</code>
 
-[array\_coda\.h](array_coda.h): Removes consecutive duplicate elements in `a`\.
+[src/array\_coda\.h](src/array_coda.h): Removes consecutive duplicate elements in `a`\.
 
  * Order:  
    &#927;\(`a.size`\)
@@ -703,244 +611,6 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
    Address of the static buffer\.
  * Order:  
    &#920;\(1\)
-
-
-
-
-### <a id = "user-content-fn-b346708e" name = "user-content-fn-b346708e">&lt;AC&gt;previous</a> ###
-
-<code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;previous</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code>
-
-[array\_coda\.h](array_coda.h)
-
- * Parameter: _x_  
-   A valid entry or null to start from the last\.
- * Return:  
-   The previous valid entry from `box` \(which could be null\) or null if this was the first\.
-
-
-
-
-### <a id = "user-content-fn-60e57f42" name = "user-content-fn-60e57f42">&lt;AC&gt;next</a> ###
-
-<code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;next</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code>
-
-[array\_coda\.h](array_coda.h)
-
- * Parameter: _x_  
-   A valid entry or null to start from the first\.
- * Return:  
-   The next valid entry from `box` \(which could be null\) or null if this was the last\.
-
-
-
-
-### <a id = "user-content-fn-86c2328d" name = "user-content-fn-86c2328d">&lt;AC&gt;clip</a> ###
-
-<code>static size_t <strong>&lt;AC&gt;clip</strong>(const &lt;PAC&gt;box *const <em>box</em>, const long <em>i</em>)</code>
-
-[array\_coda\.h](array_coda.h)
-
- * Return:  
-   Converts `i` to an index in `box` from \[0, `box.size`\]\. Negative values are wrapped\.
- * Order:  
-   &#920;\(1\)
-
-
-
-
-### <a id = "user-content-fn-cf7c3074" name = "user-content-fn-cf7c3074">&lt;AC&gt;copy_if</a> ###
-
-<code>static int <strong>&lt;AC&gt;copy_if</strong>(&lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;predicate_fn <em>copy</em>, const &lt;PAC&gt;box *const <em>b</em>)</code>
-
-[array\_coda\.h](array_coda.h): For all elements of `b`, calls `copy`, and if true, lazily copies the elements to `a`\. `a` and `b` can not be the same but `b` can be null, \(in which case, it does nothing\.\)
-
- * Exceptional return: ERANGE, realloc  
- * Order:  
-   &#927;\(`b.size` &#215; `copy`\)
-
-
-
-
-### <a id = "user-content-fn-a6bb890c" name = "user-content-fn-a6bb890c">&lt;AC&gt;keep_if</a> ###
-
-<code>static void <strong>&lt;AC&gt;keep_if</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>keep</em>, const &lt;PAC&gt;action_fn <em>destruct</em>)</code>
-
-[array\_coda\.h](array_coda.h): For all elements of `box`, calls `keep`, and if false, lazy deletes that item, calling `destruct` \(if not\-null\)\.
-
- * Order:  
-   &#927;\(`a.size` &#215; `keep` &#215; `destruct`\)
-
-
-
-
-### <a id = "user-content-fn-7924b33" name = "user-content-fn-7924b33">&lt;AC&gt;trim</a> ###
-
-<code>static void <strong>&lt;AC&gt;trim</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code>
-
-[array\_coda\.h](array_coda.h): Removes at either end of `box` of things that `predicate` returns true\.
-
- * Order:  
-   &#927;\(`box.size` &#215; `predicate`\)
-
-
-
-
-### <a id = "user-content-fn-884c09a" name = "user-content-fn-884c09a">&lt;AC&gt;each</a> ###
-
-<code>static void <strong>&lt;AC&gt;each</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;action_fn <em>action</em>)</code>
-
-[array\_coda\.h](array_coda.h): Iterates through `box` and calls `action` on all the elements\. The topology of the list should not change while in this function\.
-
- * Order:  
-   &#927;\(`box.size` &#215; `action`\)
-
-
-
-
-### <a id = "user-content-fn-d0650740" name = "user-content-fn-d0650740">&lt;AC&gt;if_each</a> ###
-
-<code>static void <strong>&lt;AC&gt;if_each</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>, const &lt;PAC&gt;action_fn <em>action</em>)</code>
-
-[array\_coda\.h](array_coda.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list should not change while in this function\.
-
- * Order:  
-   &#927;\(`box.size` &#215; `predicate` &#215; `action`\)
-
-
-
-
-### <a id = "user-content-fn-ed02e52b" name = "user-content-fn-ed02e52b">&lt;AC&gt;any</a> ###
-
-<code>static const &lt;PAC&gt;type *<strong>&lt;AC&gt;any</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code>
-
-[array\_coda\.h](array_coda.h): Iterates through `box` and calls `predicate` until it returns true\.
-
- * Return:  
-   The first `predicate` that returned true, or, if the statement is false on all, null\.
- * Order:  
-   &#927;\(`box.size` &#215; `predicate`\)
-
-
-
-
-### <a id = "user-content-fn-a4e64b3d" name = "user-content-fn-a4e64b3d">&lt;ACC&gt;compare</a> ###
-
-<code>static int <strong>&lt;ACC&gt;compare</strong>(const &lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;box *const <em>b</em>)</code>
-
-[array\_coda\.h](array_coda.h): Lexicographically compares `a` to `b`\. Both can be null, with null values before everything\.
-
- * Return:  
-   `a < b`: negative; `a == b`: zero; `a > b`: positive\.
- * Order:  
-   &#927;\(`a.size`\)
-
-
-
-
-### <a id = "user-content-fn-5214478c" name = "user-content-fn-5214478c">&lt;ACC&gt;lower_bound</a> ###
-
-<code>static size_t <strong>&lt;ACC&gt;lower_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code>
-
-[array\_coda\.h](array_coda.h): `box` should be partitioned true/false with less\-then `value`\.
-
- * Return:  
-   The first index of `a` that is not less than `value`\.
- * Order:  
-   &#927;\(log `a.size`\)
-
-
-
-
-### <a id = "user-content-fn-aa46e23d" name = "user-content-fn-aa46e23d">&lt;ACC&gt;upper_bound</a> ###
-
-<code>static size_t <strong>&lt;ACC&gt;upper_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code>
-
-[array\_coda\.h](array_coda.h): `box` should be partitioned false/true with greater\-than or equal\-to [&lt;PAC&gt;type](#user-content-typedef-b6e4909d) `value`\.
-
- * Return:  
-   The first index of `box` that is greater than `value`\.
- * Order:  
-   &#927;\(log `a.size`\)
-
-
-
-
-### <a id = "user-content-fn-4789a122" name = "user-content-fn-4789a122">&lt;ACC&gt;insert_after</a> ###
-
-<code>static int <strong>&lt;ACC&gt;insert_after</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code>
-
-[array\_coda\.h](array_coda.h): Copies `value` at the upper bound of a sorted `box`\.
-
- * Return:  
-   Success\.
- * Exceptional return: realloc, ERANGE  
- * Order:  
-   &#927;\(`a.size`\)
-
-
-
-
-### <a id = "user-content-fn-9d49726" name = "user-content-fn-9d49726">&lt;ACC&gt;sort</a> ###
-
-<code>static void <strong>&lt;ACC&gt;sort</strong>(&lt;PAC&gt;box *const <em>box</em>)</code>
-
-[array\_coda\.h](array_coda.h): Sorts `box` by `qsort`\.
-
- * Order:  
-   &#927;\(`a.size` \\log `box.size`\)
-
-
-
-
-### <a id = "user-content-fn-1cd40178" name = "user-content-fn-1cd40178">&lt;ACC&gt;reverse</a> ###
-
-<code>static void <strong>&lt;ACC&gt;reverse</strong>(&lt;PAC&gt;box *const <em>box</em>)</code>
-
-[array\_coda\.h](array_coda.h): Sorts `box` in reverse by `qsort`\.
-
- * Order:  
-   &#927;\(`a.size` \\log `a.size`\)
-
-
-
-
-### <a id = "user-content-fn-92b388f5" name = "user-content-fn-92b388f5">&lt;ACC&gt;is_equal</a> ###
-
-<code>static int <strong>&lt;ACC&gt;is_equal</strong>(const &lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;box *const <em>b</em>)</code>
-
-[array\_coda\.h](array_coda.h)
-
- * Return:  
-   If `a` piecewise equals `b`, which both can be null\.
- * Order:  
-   &#927;\(`size`\)
-
-
-
-
-### <a id = "user-content-fn-30137672" name = "user-content-fn-30137672">&lt;ACC&gt;unique_merge</a> ###
-
-<code>static void <strong>&lt;ACC&gt;unique_merge</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;biaction_fn <em>merge</em>)</code>
-
-[array\_coda\.h](array_coda.h): Removes consecutive duplicate elements in `box`\.
-
- * Parameter: _merge_  
-   Controls surjection\. Called with duplicate elements, if false `(x, y)->(x)`, if true `(x,y)->(y)`\. More complex functions, `(x, y)->(x+y)` can be simulated by mixing the two in the value returned\. Can be null: behaves like false\.
- * Order:  
-   &#927;\(`a.size` &#215; `merge`\)
-
-
-
-
-### <a id = "user-content-fn-367663f1" name = "user-content-fn-367663f1">&lt;ACC&gt;unique</a> ###
-
-<code>static void <strong>&lt;ACC&gt;unique</strong>(&lt;PAC&gt;box *const <em>a</em>)</code>
-
-[array\_coda\.h](array_coda.h): Removes consecutive duplicate elements in `a`\.
-
- * Order:  
-   &#927;\(`a.size`\)
 
 
 

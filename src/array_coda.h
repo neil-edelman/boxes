@@ -38,9 +38,9 @@
 
 #ifndef ARRAY_CODA_ONCE /* <!-- once */
 #define ARRAY_CODA_ONCE
-/** <array_coda.h>: an alias to the box. */
+/** <src/array_coda.h>: an alias to the box. */
 typedef BOX_CONTAINER PAC_(box);
-/** <array_coda.h>: an alias to the individual type contained in the box. */
+/** <src/array_coda.h>: an alias to the individual type contained in the box. */
 typedef BOX_CONTENTS PAC_(type);
 /* Downcasting. */
 typedef ARRAY_CODA_TYPE PAC_(array);
@@ -54,13 +54,13 @@ static PAC_(box_to_array) PAC_(b2a) = (ARRAY_CODA_BOX_TO);
 #if !defined(BOX_IS_EQUAL) && !defined(BOX_COMPARE) /* <!-- functions */
 
 
-/** <array_coda.h>: Operates by side-effects on <typedef:<PAC>type>. */
+/** <src/array_coda.h>: Operates by side-effects on <typedef:<PAC>type>. */
 typedef void (*PAC_(action_fn))(PAC_(type) *);
 
-/** <array_coda.h>: Returns a boolean given read-only <typedef:<PAC>type>. */
+/** <src/array_coda.h>: Returns a boolean given read-only <typedef:<PAC>type>. */
 typedef int (*PAC_(predicate_fn))(const PAC_(type) *);
 
-/** <array_coda.h> @param[x] A valid entry or null to start from the last.
+/** <src/array_coda.h> @param[x] A valid entry or null to start from the last.
  @return The previous valid entry from `box` (which could be null) or null if
  this was the first. @allow */
 static PAC_(type) *AC_(previous)(const PAC_(box) *const box,
@@ -72,7 +72,7 @@ static PAC_(type) *AC_(previous)(const PAC_(box) *const box,
 	return (i = (size_t)(x - a->data)) ? a->data + i - 1 : 0;
 }
 
-/** <array_coda.h> @param[x] A valid entry or null to start from the first.
+/** <src/array_coda.h> @param[x] A valid entry or null to start from the first.
  @return The next valid entry from `box` (which could be null) or null if this
  was the last. @allow */
 static PAC_(type) *AC_(next)(const PAC_(box) *const box,
@@ -84,7 +84,7 @@ static PAC_(type) *AC_(next)(const PAC_(box) *const box,
 	return (i = (size_t)(x - a->data) + 1) < a->size ? a->data + i : 0;
 }
 
-/** <array_coda.h> @return Converts `i` to an index in `box` from
+/** <src/array_coda.h> @return Converts `i` to an index in `box` from
  [0, `box.size`]. Negative values are wrapped. @order \Theta(1) @allow */
 static size_t AC_(clip)(const PAC_(box) *const box, const long i) {
 	const PAC_(array) *const a = PAC_(b2a_c)(box);
@@ -96,7 +96,7 @@ static size_t AC_(clip)(const PAC_(box) *const box, const long i) {
 		: (size_t)i > a->size ? a->size : (size_t)i;
 }
 
-/** <array_coda.h>: For all elements of `b`, calls `copy`, and if true, lazily
+/** <src/array_coda.h>: For all elements of `b`, calls `copy`, and if true, lazily
  copies the elements to `a`. `a` and `b` can not be the same but `b` can be
  null, (in which case, it does nothing.)
  @order \O(`b.size` \times `copy`) @throws[ERANGE, realloc] @allow */
@@ -130,7 +130,7 @@ static int AC_(copy_if)(PAC_(box) *const a, const PAC_(predicate_fn) copy,
 	return 1;
 }
 
-/** <array_coda.h>: For all elements of `box`, calls `keep`, and if false, lazy
+/** <src/array_coda.h>: For all elements of `box`, calls `keep`, and if false, lazy
  deletes that item, calling `destruct` (if not-null).
  @order \O(`a.size` \times `keep` \times `destruct`) @allow */
 static void AC_(keep_if)(PAC_(box) *const box,
@@ -168,7 +168,7 @@ static void AC_(keep_if)(PAC_(box) *const box,
 	a->size = (size_t)(erase - a->data);
 }
 
-/** <array_coda.h>: Removes at either end of `box` of things that `predicate`
+/** <src/array_coda.h>: Removes at either end of `box` of things that `predicate`
  returns true. @order \O(`box.size` \times `predicate`) @allow */
 static void AC_(trim)(PAC_(box) *const box,
 	const PAC_(predicate_fn) predicate) {
@@ -182,7 +182,7 @@ static void AC_(trim)(PAC_(box) *const box,
 	memmove(a->data, a->data + i, sizeof *a->data * i), a->size -= i;
 }
 
-/** <array_coda.h>: Iterates through `box` and calls `action` on all the
+/** <src/array_coda.h>: Iterates through `box` and calls `action` on all the
  elements. The topology of the list should not change while in this function.
  @order \O(`box.size` \times `action`) @allow */
 static void AC_(each)(PAC_(box) *const box, const PAC_(action_fn) action) {
@@ -192,7 +192,7 @@ static void AC_(each)(PAC_(box) *const box, const PAC_(action_fn) action) {
 	for(i = a->data, end = i + a->size; i < end; i++) action(i);
 }
 
-/** <array_coda.h>: Iterates through `box` and calls `action` on all the
+/** <src/array_coda.h>: Iterates through `box` and calls `action` on all the
  elements for which `predicate` returns true. The topology of the list should
  not change while in this function.
  @order \O(`box.size` \times `predicate` \times `action`) @allow */
@@ -205,7 +205,7 @@ static void AC_(if_each)(PAC_(box) *const box,
 		if(predicate(i)) action(i);
 }
 
-/** <array_coda.h>: Iterates through `box` and calls `predicate` until it
+/** <src/array_coda.h>: Iterates through `box` and calls `predicate` until it
  returns true.
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null. @order \O(`box.size` \times `predicate`) @allow */
@@ -231,13 +231,13 @@ static void PAC_(unused_function_coda)(void) { PAC_(unused_function)(); }
 
 #ifndef ARRAY_CODA_COMPARE_ONCE /* <!-- once */
 #define ARRAY_CODA_COMPARE_ONCE
-/** <array_coda.h>: Returns a boolean given two read-only <typedef:<PAC>type>. */
+/** <src/array_coda.h>: Returns a boolean given two read-only <typedef:<PAC>type>. */
 typedef int (*PAC_(bipredicate_fn))(const PAC_(type) *, const PAC_(type) *);
-/** <array_coda.h>: Three-way comparison on a totally order set of
+/** <src/array_coda.h>: Three-way comparison on a totally order set of
  <typedef:<PAC>type>; returns an integer value less then, equal to, greater
  then zero, if `a < b`, `a == b`, `a > b`, respectively. */
 typedef int (*PAC_(compare_fn))(const PAC_(type) *a, const PAC_(type) *b);
-/** <array_coda.h>: Returns a boolean given two <typedef:<PAC>type>. */
+/** <src/array_coda.h>: Returns a boolean given two <typedef:<PAC>type>. */
 typedef int (*PAC_(biaction_fn))(PAC_(type) *, PAC_(type) *);
 #endif /* once --> */
 
@@ -254,7 +254,7 @@ typedef int (*PAC_(biaction_fn))(PAC_(type) *, PAC_(type) *);
  <typedef:<PAC>compare_fn>. */
 static const PAC_(compare_fn) PACC_(compare) = (BOX_COMPARE);
 
-/** <array_coda.h>: Lexicographically compares `a` to `b`. Both can be null,
+/** <src/array_coda.h>: Lexicographically compares `a` to `b`. Both can be null,
  with null values before everything. @return `a < b`: negative; `a == b`: zero;
  `a > b`: positive. @order \O(`a.size`) @allow */
 static int ACC_(compare)(const PAC_(box) *const a, const PAC_(box) *const b) {
@@ -276,7 +276,7 @@ static int ACC_(compare)(const PAC_(box) *const a, const PAC_(box) *const b) {
 	}
 }
 
-/** <array_coda.h>: `box` should be partitioned true/false with less-then
+/** <src/array_coda.h>: `box` should be partitioned true/false with less-then
  `value`. @return The first index of `a` that is not less than `value`.
  @order \O(log `a.size`) @allow */
 static size_t ACC_(lower_bound)(const PAC_(box) *const box,
@@ -292,7 +292,7 @@ static size_t ACC_(lower_bound)(const PAC_(box) *const box,
 	return low;
 }
 
-/** <array_coda.h>: `box` should be partitioned false/true with greater-than or
+/** <src/array_coda.h>: `box` should be partitioned false/true with greater-than or
  equal-to <typedef:<PAC>type> `value`. @return The first index of `box` that is
  greater than `value`. @order \O(log `a.size`) @allow */
 static size_t ACC_(upper_bound)(const PAC_(box) *const box,
@@ -306,7 +306,7 @@ static size_t ACC_(upper_bound)(const PAC_(box) *const box,
 	return low;
 }
 
-/** <array_coda.h>: Copies `value` at the upper bound of a sorted `box`.
+/** <src/array_coda.h>: Copies `value` at the upper bound of a sorted `box`.
  @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] @allow */
 static int ACC_(insert_after)(PAC_(box) *const box,
 	const PAC_(type) *const value) {
@@ -325,7 +325,7 @@ static int ACC_(insert_after)(PAC_(box) *const box,
 static int PACC_(vcompar)(const void *const a, const void *const b)
 	{ return PACC_(compare)(a, b); }
 
-/** <array_coda.h>: Sorts `box` by `qsort`.
+/** <src/array_coda.h>: Sorts `box` by `qsort`.
  @order \O(`a.size` \log `box.size`) @allow */
 static void ACC_(sort)(PAC_(box) *const box) {
 	const PAC_(array) *a = PAC_(b2a_c)(box);
@@ -337,7 +337,7 @@ static void ACC_(sort)(PAC_(box) *const box) {
 static int PACC_(vrevers)(const void *const a, const void *const b)
 	{ return PACC_(compare)(b, a); }
 
-/** <array_coda.h>: Sorts `box` in reverse by `qsort`.
+/** <src/array_coda.h>: Sorts `box` in reverse by `qsort`.
  @order \O(`a.size` \log `a.size`) @allow */
 static void ACC_(reverse)(PAC_(box) *const box) {
 	const PAC_(array) *a = PAC_(b2a_c)(box);
@@ -358,7 +358,7 @@ static const PAC_(bipredicate_fn) PACC_(is_equal) = (BOX_IS_EQUAL);
 
 #endif /* is equal --> */
 
-/** <array_coda.h> @return If `a` piecewise equals `b`, which both can be null.
+/** <src/array_coda.h> @return If `a` piecewise equals `b`, which both can be null.
  @order \O(`size`) @allow */
 static int ACC_(is_equal)(const PAC_(box) *const a, const PAC_(box) *const b)
 {
@@ -373,7 +373,7 @@ static int ACC_(is_equal)(const PAC_(box) *const a, const PAC_(box) *const b)
 	return 1;
 }
 
-/** <array_coda.h>: Removes consecutive duplicate elements in `box`.
+/** <src/array_coda.h>: Removes consecutive duplicate elements in `box`.
  @param[merge] Controls surjection. Called with duplicate elements, if false
  `(x, y)->(x)`, if true `(x,y)->(y)`. More complex functions, `(x, y)->(x+y)`
  can be simulated by mixing the two in the value returned. Can be null: behaves
@@ -408,7 +408,7 @@ static void ACC_(unique_merge)(PAC_(box) *const box,
 	a->size = target;
 }
 
-/** <array_coda.h>: Removes consecutive duplicate elements in `a`.
+/** <src/array_coda.h>: Removes consecutive duplicate elements in `a`.
  @order \O(`a.size`) @allow */
 static void ACC_(unique)(PAC_(box) *const a) { ACC_(unique_merge)(a, 0); }
 

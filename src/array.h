@@ -348,7 +348,7 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #else /* cmp --><!-- eq */
 #define BOX_IS_EQUAL ARRAY_IS_EQUAL
 #endif /* eq --> */
-#include "array_coda.h" /** \include */
+#include "array_coda.h" /* (Already included.) */
 #ifdef ARRAY_TEST /* <!-- test: this detects and outputs compare test. */
 #include "../test/test_array.h"
 #endif /* test --> */
