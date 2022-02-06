@@ -165,14 +165,6 @@ static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n) {
 	return a->size += n, b;
 }
 
-/** Adds `n` elements to the back of `a`. It will invalidate pointers in `a` if
- `n` is greater than the buffer space.
- @return A pointer to the elements. If `a` is idle and `n` is zero, a null
- pointer will be returned, otherwise null indicates an error.
- @throws[realloc, ERANGE] @allow */
-static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n)
-	{ return PA_(append)(a, n); }
-
 /** Adds `n` un-initialised elements at position `at` in `a`. The buffer holds
  enough elements or it will invalidate any pointers in `a`.
  @param[at] A number smaller than or equal to `a.size`; if `a.size`, this
@@ -182,7 +174,7 @@ static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n)
 static PA_(type) *A_(array_insert)(struct A_(array) *const a,
 	const size_t n, const size_t at) {
 	const size_t old_size = a->size;
-	PA_(type) *const b = A_(array_append)(a, n);
+	PA_(type) *const b = PA_(append)(a, n);
 	assert(a && at <= old_size);
 	if(!b) return 0;
 	memmove(a->data + at + n, a->data + at, sizeof *a->data * (old_size - at));
@@ -193,7 +185,7 @@ static PA_(type) *A_(array_insert)(struct A_(array) *const a,
  element or it will invalidate pointers in `a`.
  @order amortised \O(1) @throws[realloc, ERANGE] @allow */
 static PA_(type) *A_(array_new)(struct A_(array) *const a)
-	{ return A_(array_append)(a, 1); }
+	{ return PA_(append)(a, 1); }
 
 /** Shrinks the capacity `a` to the size, freeing unused memory. If the size is
  zero, it will be in an idle state. Invalidates pointers in `a`.
@@ -242,6 +234,14 @@ static PA_(type) *A_(array_peek)(const struct A_(array) *const a)
 static PA_(type) *A_(array_pop)(struct A_(array) *const a)
 	{ return assert(a), a->size ? a->data + --a->size : 0; }
 
+/** Adds `n` elements to the back of `a`. It will invalidate pointers in `a` if
+ `n` is greater than the buffer space.
+ @return A pointer to the elements. If `a` is idle and `n` is zero, a null
+ pointer will be returned, otherwise null indicates an error.
+ @throws[realloc, ERANGE] @allow */
+static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n)
+	{ return PA_(append)(a, n); }
+
 /** Indices [`i0`, `i1`) of `a` will be replaced with a copy of `b`.
  @param[b] Can be null, which acts as empty, but cannot be `a`.
  @return Success. @throws[realloc, ERANGE] @allow */
@@ -286,15 +286,13 @@ static const struct A_(array) *PA_(id_c)(const struct A_(array) *const a)
 	{ return a; }
 /** @return `a`. */
 static struct A_(array) *PA_(id)(struct A_(array) *const a) { return a; }
-/* coda --> */
-
-
-
-#ifdef ARRAY_CODA /* <!-- coda: More functions. */
 #define ARRAY_CODA_TYPE struct A_(array)
 #define ARRAY_CODA_BOX_TO_C &PA_(id_c)
 #define ARRAY_CODA_BOX_TO &PA_(id)
 #define AC_(n) ARRAY_CAT(A_(array), n)
+/* coda --> */
+
+#ifdef ARRAY_CODA /* <!-- coda: More functions. */
 #include "array_coda.h" /** \include */
 #endif /* coda --> */
 
@@ -310,8 +308,9 @@ static void PA_(unused_base)(void)
 	{ A_(array_)(0); A_(array_insert)(0, 0, 0); A_(array_new)(0);
 	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
 	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
-	A_(array_splice)(0, 0, 0, 0); PA_(begin)(0, 0); PA_(next)(0);
-	PA_(append)(0, 0); PA_(unused_base_coda)(); }
+	A_(array_append)(0, 0); A_(array_splice)(0, 0, 0, 0);
+	PA_(begin)(0, 0); PA_(next)(0); PA_(id)(0); PA_(id_c)(0);
+	PA_(unused_base_coda)(); }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 
