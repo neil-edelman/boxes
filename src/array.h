@@ -340,6 +340,8 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #else /* to string trait --><!-- compare trait */
 
 
+#if 0
+
 #ifdef ARRAY_COMPARE_NAME /* <!-- name */
 #define CM_(n) ARRAY_CAT(A_(array), ARRAY_CAT(ARRAY_COMPARE_NAME, n))
 #else /* name --><!-- !name */
@@ -355,6 +357,33 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #include "../test/test_array.h"
 #endif /* test --> */
 #undef CM_
+#ifdef ARRAY_COMPARE_NAME
+#undef ARRAY_COMPARE_NAME
+#endif
+#ifdef ARRAY_COMPARE
+#undef ARRAY_COMPARE
+#endif
+#ifdef ARRAY_IS_EQUAL
+#undef ARRAY_IS_EQUAL
+#endif
+
+#endif /* 0 */
+
+#ifdef ARRAY_COMPARE_NAME
+#define ARRAY_CODA_NAME ARRAY_COMPARE_NAME
+#endif
+#ifdef ARRAY_COMPARE /* <!-- cmp */
+#define BOX_COMPARE ARRAY_COMPARE
+#else /* cmp --><!-- eq */
+#define BOX_IS_EQUAL ARRAY_IS_EQUAL
+#endif /* eq --> */
+#include "array_coda.h" /** \include */
+#ifdef ARRAY_TEST /* <!-- test: this detects and outputs compare test. */
+#include "../test/test_array.h"
+#endif /* test --> */
+#undef ACC_
+#undef PACC_
+#undef ARRAY_CODA_NAME
 #ifdef ARRAY_COMPARE_NAME
 #undef ARRAY_COMPARE_NAME
 #endif
