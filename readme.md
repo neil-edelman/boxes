@@ -28,7 +28,7 @@ Source [src/array\.h](src/array.h); examples [test/test\_array\.c](test/test_arr
  * Parameter: ARRAY\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
  * Parameter: ARRAY\_COMPARE\_NAME, ARRAY\_COMPARE, ARRAY\_IS\_EQUAL  
-   Compare trait contained in [compare\.h](compare.h)\. An optional mangled name for uniqueness and a function implementing either [&lt;PAC&gt;compare_fn](#user-content-typedef-355f3451) or [&lt;PAC&gt;bipredicate_fn](#user-content-typedef-6cd1ff8a)\.
+   Compare trait contained in [array\_coda\.h](array_coda.h)\. An optional mangled name for uniqueness and a function implementing either [&lt;PAC&gt;compare_fn](#user-content-typedef-355f3451) or [&lt;PAC&gt;bipredicate_fn](#user-content-typedef-6cd1ff8a)\.
  * Parameter: ARRAY\_TO\_STRING\_NAME, ARRAY\_TO\_STRING  
    To string trait contained in [to\_string\.h](to_string.h)\. An optional mangled name for uniqueness and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\.
  * Standard:  
