@@ -16,8 +16,9 @@
  <typedef:<PA>type>, associated therewith; required. `<PA>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
- @param[ARRAY_CONTIGUOUS]
- Include the singleton trait contained in <contiguous.h> that takes no options.
+ @param[ARRAY_CODA]
+ Include more functions contained in <array_coda.h>, where `<AC>` is
+ `<A>array`.
 
  @param[ARRAY_MIN_CAPACITY]
  Default is 3; optional number in `[2, SIZE_MAX]` that the capacity can not go
@@ -239,8 +240,9 @@ static PA_(type) *A_(array_pop)(struct A_(array) *const a)
 /** Indices [`i0`, `i1`) of `a` will be replaced with a copy of `b`.
  @param[b] Can be null, which acts as empty, but cannot be `a`.
  @return Success. @throws[realloc, ERANGE] @allow */
-static int A_(array_splice)(struct A_(array) *const a,
-	const struct A_(array) *const b, const size_t i0, const size_t i1) {
+static int A_(array_splice)(/*restrict*/ struct A_(array) *const a,
+	/*restrict*/ const struct A_(array) *const b,
+	const size_t i0, const size_t i1) {
 	const size_t a_range = i1 - i0, b_range = b ? b->size : 0;
 	/* Is the compiler smart enough? */
 	assert(a && a != b && i0 <= i1 && i1 <= a->size);
@@ -258,13 +260,6 @@ static int A_(array_splice)(struct A_(array) *const a,
 	if(b) memcpy(a->data + i0, b->data, b->size * sizeof *a->data);
 	return 1;
 }
-
-/** Copies `b`, which can be null, to the back of `a`.
- @return Success. @throws[realloc, ERANGE]
- @fixme Untested. */
-static int A_(array_affix)(struct A_(array) *const a,
-	const struct A_(array) *const b)
-	{ return A_(array_splice)(a, b, a->size, a->size); }
 
 /** Appends `n` items on the back of `a`.
  @fixme It should be the other way around. */
@@ -292,10 +287,18 @@ static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 #define BOX_CONTAINER struct A_(array)
 #define BOX_CONTENTS PA_(type)
 
-#ifdef ARRAY_CONTIGUOUS /* <!-- contiguous */
-#define CG_(n) ARRAY_CAT(A_(array), n)
-#include "contiguous.h" /** \include */
-#endif /* contiguous --> */
+#ifdef ARRAY_CODA /* <!-- coda: More functions. */
+/** @return `a`. */
+static const struct A_(array) *PA_(id_c)(const struct A_(array) *const a)
+	{ return a; }
+/** @return `a`. */
+static struct A_(array) *PA_(id)(struct A_(array) *const a) { return a; }
+#define ARRAY_CODA_TYPE struct A_(array)
+#define ARRAY_CODA_BOX_TO_C &PA_(id_c)
+#define ARRAY_CODA_BOX_TO &PA_(id)
+#define AC_(n) ARRAY_CAT(A_(array), n)
+#include "array_coda.h" /** \include */
+#endif /* coda --> */
 
 #ifdef ARRAY_TEST /* <!-- test */
 /* Forward-declare. */
@@ -305,14 +308,12 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *);
 #endif /* test --> */
 
 static void PA_(unused_base_coda)(void);
-static void PA_(unused_base)(void) {
-	A_(array_)(0); A_(array_insert)(0, 0, 0); A_(array_new)(0);
+static void PA_(unused_base)(void)
+	{ A_(array_)(0); A_(array_insert)(0, 0, 0); A_(array_new)(0);
 	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
 	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
-	A_(array_splice)(0, 0, 0, 0); A_(array_affix)(0, 0); PA_(begin)(0, 0);
-	PA_(next)(0); PA_(append)(0, 0);
-	PA_(unused_base_coda)();
-}
+	A_(array_splice)(0, 0, 0, 0); PA_(begin)(0, 0); PA_(next)(0);
+	PA_(append)(0, 0); PA_(unused_base_coda)(); }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 

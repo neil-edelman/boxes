@@ -5,7 +5,7 @@ Source [src/array\.h](src/array.h); examples [test/test\_array\.c](test/test_arr
 ## Contiguous dynamic array ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), [&lt;PCG&gt;box](#user-content-typedef-9c8158f8), [&lt;PCG&gt;type](#user-content-typedef-1c7f487f), [&lt;PCG&gt;action_fn](#user-content-typedef-d8b6d30a), [&lt;PCG&gt;predicate_fn](#user-content-typedef-dfee9029), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa), [&lt;PCM&gt;type](#user-content-typedef-cee32005), [&lt;PCM&gt;bipredicate_fn](#user-content-typedef-ea6988c2), [&lt;PCM&gt;biaction_fn](#user-content-typedef-6f7f0563), [&lt;PCM&gt;compare_fn](#user-content-typedef-64a034e9)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), [&lt;PAC&gt;box](#user-content-typedef-66d14de2), [&lt;PAC&gt;type](#user-content-typedef-b6e4909d), [&lt;PAC&gt;action_fn](#user-content-typedef-6f318a4), [&lt;PAC&gt;predicate_fn](#user-content-typedef-13605483), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa), [&lt;PCM&gt;type](#user-content-typedef-cee32005), [&lt;PCM&gt;bipredicate_fn](#user-content-typedef-ea6988c2), [&lt;PCM&gt;biaction_fn](#user-content-typedef-6f7f0563), [&lt;PCM&gt;compare_fn](#user-content-typedef-64a034e9)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;A&gt;array](#user-content-tag-8049be0d)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -21,8 +21,8 @@ Source [src/array\.h](src/array.h); examples [test/test\_array\.c](test/test_arr
 
  * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
    `<A>` that satisfies `C` naming conventions when mangled and a valid tag\-type, [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), associated therewith; required\. `<PA>` is private, whose names are prefixed in a manner to avoid collisions\.
- * Parameter: ARRAY\_CONTIGUOUS  
-   Include the singleton trait contained in [contiguous\.h](contiguous.h) that takes no options\.
+ * Parameter: ARRAY\_CODA  
+   Include more functions contained in [array\_coda\.h](array_coda.h)\.
  * Parameter: ARRAY\_MIN\_CAPACITY  
    Default is 3; optional number in `[2, SIZE_MAX]` that the capacity can not go below\.
  * Parameter: ARRAY\_EXPECT\_TRAIT  
@@ -45,35 +45,35 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 
 
-### <a id = "user-content-typedef-9c8158f8" name = "user-content-typedef-9c8158f8">&lt;PCG&gt;box</a> ###
+### <a id = "user-content-typedef-66d14de2" name = "user-content-typedef-66d14de2">&lt;PAC&gt;box</a> ###
 
-<code>typedef BOX_CONTAINER <strong>&lt;PCG&gt;box</strong>;</code>
+<code>typedef BOX_CONTAINER <strong>&lt;PAC&gt;box</strong>;</code>
 
-[contiguous\.h](contiguous.h): an alias to the box\.
-
-
-
-### <a id = "user-content-typedef-1c7f487f" name = "user-content-typedef-1c7f487f">&lt;PCG&gt;type</a> ###
-
-<code>typedef BOX_CONTENTS <strong>&lt;PCG&gt;type</strong>;</code>
-
-[contiguous\.h](contiguous.h): an alias to the individual type contained in the box\.
+[array\_coda\.h](array_coda.h): an alias to the box\.
 
 
 
-### <a id = "user-content-typedef-d8b6d30a" name = "user-content-typedef-d8b6d30a">&lt;PCG&gt;action_fn</a> ###
+### <a id = "user-content-typedef-b6e4909d" name = "user-content-typedef-b6e4909d">&lt;PAC&gt;type</a> ###
 
-<code>typedef void(*<strong>&lt;PCG&gt;action_fn</strong>)(&lt;PCG&gt;type *);</code>
+<code>typedef BOX_CONTENTS <strong>&lt;PAC&gt;type</strong>;</code>
 
-Operates by side\-effects on [&lt;PCG&gt;type](#user-content-typedef-1c7f487f)\.
+[array\_coda\.h](array_coda.h): an alias to the individual type contained in the box\.
 
 
 
-### <a id = "user-content-typedef-dfee9029" name = "user-content-typedef-dfee9029">&lt;PCG&gt;predicate_fn</a> ###
+### <a id = "user-content-typedef-6f318a4" name = "user-content-typedef-6f318a4">&lt;PAC&gt;action_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PCG&gt;predicate_fn</strong>)(const &lt;PCG&gt;type *);</code>
+<code>typedef void(*<strong>&lt;PAC&gt;action_fn</strong>)(&lt;PAC&gt;type *);</code>
 
-Returns a boolean given read\-only [&lt;PCG&gt;type](#user-content-typedef-1c7f487f)\.
+[array\_coda\.h](array_coda.h): Operates by side\-effects on [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
+
+
+
+### <a id = "user-content-typedef-13605483" name = "user-content-typedef-13605483">&lt;PAC&gt;predicate_fn</a> ###
+
+<code>typedef int(*<strong>&lt;PAC&gt;predicate_fn</strong>)(const &lt;PAC&gt;type *);</code>
+
+[array\_coda\.h](array_coda.h): Returns a boolean given read\-only [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
 
 
 
@@ -169,21 +169,23 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-bce1c326">&lt;A&gt;array_splice</a></td><td>a, b, i0, i1</td></tr>
 
-<tr><td align = right>static &lt;PCG&gt;type *</td><td><a href = "#user-content-fn-d3a8ce44">&lt;CG&gt;next</a></td><td>box, x</td></tr>
+<tr><td align = right>static &lt;PAC&gt;type *</td><td><a href = "#user-content-fn-b346708e">&lt;AC&gt;previous</a></td><td>box, x</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-8025f997">&lt;CG&gt;clip</a></td><td>box, i</td></tr>
+<tr><td align = right>static &lt;PAC&gt;type *</td><td><a href = "#user-content-fn-60e57f42">&lt;AC&gt;next</a></td><td>box, x</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-7c7e919e">&lt;CG&gt;copy_if</a></td><td>a, copy, b</td></tr>
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-86c2328d">&lt;AC&gt;clip</a></td><td>box, i</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-b95adf62">&lt;CG&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-cf7c3074">&lt;AC&gt;copy_if</a></td><td>a, copy, b</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-672d297d">&lt;CG&gt;trim</a></td><td>box, predicate</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-a6bb890c">&lt;AC&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-2869fa64">&lt;CG&gt;each</a></td><td>box, action</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-7924b33">&lt;AC&gt;trim</a></td><td>box, predicate</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-cfdb8e2e">&lt;CG&gt;if_each</a></td><td>box, predicate, action</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-884c09a">&lt;AC&gt;each</a></td><td>box, action</td></tr>
 
-<tr><td align = right>static const &lt;PCG&gt;type *</td><td><a href = "#user-content-fn-37394af1">&lt;CG&gt;any</a></td><td>box, predicate</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-d0650740">&lt;AC&gt;if_each</a></td><td>box, predicate, action</td></tr>
+
+<tr><td align = right>static const &lt;PAC&gt;type *</td><td><a href = "#user-content-fn-ed02e52b">&lt;AC&gt;any</a></td><td>box, predicate</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
@@ -377,35 +379,53 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 
 
-### <a id = "user-content-fn-d3a8ce44" name = "user-content-fn-d3a8ce44">&lt;CG&gt;next</a> ###
+### <a id = "user-content-fn-b346708e" name = "user-content-fn-b346708e">&lt;AC&gt;previous</a> ###
 
-<code>static &lt;PCG&gt;type *<strong>&lt;CG&gt;next</strong>(const &lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;type *const <em>x</em>)</code>
+<code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;previous</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code>
+
+[array\_coda\.h](array_coda.h)
+
+ * Parameter: _x_  
+   A valid entry or null to start from the last\.
+ * Return:  
+   The previous valid entry from `box` \(which could be null\) or null if this was the first\.
+
+
+
+
+### <a id = "user-content-fn-60e57f42" name = "user-content-fn-60e57f42">&lt;AC&gt;next</a> ###
+
+<code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;next</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code>
+
+[array\_coda\.h](array_coda.h)
 
  * Parameter: _x_  
    A valid entry or null to start from the first\.
  * Return:  
-   The next valid entry from `box` or null if this was the last\.
+   The next valid entry from `box` \(which could be null\) or null if this was the last\.
 
 
 
 
-### <a id = "user-content-fn-8025f997" name = "user-content-fn-8025f997">&lt;CG&gt;clip</a> ###
+### <a id = "user-content-fn-86c2328d" name = "user-content-fn-86c2328d">&lt;AC&gt;clip</a> ###
 
-<code>static size_t <strong>&lt;CG&gt;clip</strong>(const &lt;PCG&gt;box *const <em>box</em>, const long <em>i</em>)</code>
+<code>static size_t <strong>&lt;AC&gt;clip</strong>(const &lt;PAC&gt;box *const <em>box</em>, const long <em>i</em>)</code>
+
+[array\_coda\.h](array_coda.h)
 
  * Return:  
-   Converts `i` to an index in [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box` from \[0, `a.size`\]\. Negative values are implicitly plus `box.size`\.
+   Converts `i` to an index in `box` from \[0, `box.size`\]\. Negative values are wrapped\.
  * Order:  
    &#920;\(1\)
 
 
 
 
-### <a id = "user-content-fn-7c7e919e" name = "user-content-fn-7c7e919e">&lt;CG&gt;copy_if</a> ###
+### <a id = "user-content-fn-cf7c3074" name = "user-content-fn-cf7c3074">&lt;AC&gt;copy_if</a> ###
 
-<code>static int <strong>&lt;CG&gt;copy_if</strong>(&lt;PCG&gt;box *const <em>a</em>, const &lt;PCG&gt;predicate_fn <em>copy</em>, const &lt;PCG&gt;box *const <em>b</em>)</code>
+<code>static int <strong>&lt;AC&gt;copy_if</strong>(&lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;predicate_fn <em>copy</em>, const &lt;PAC&gt;box *const <em>b</em>)</code>
 
-For all elements of [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `b`, calls `copy`, and if true, lazily copies the elements to `a`\. `a` and `b` can not be the same but `b` can be null, \(in which case, it does nothing\.\)
+[array\_coda\.h](array_coda.h): For all elements of `b`, calls `copy`, and if true, lazily copies the elements to `a`\. `a` and `b` can not be the same but `b` can be null, \(in which case, it does nothing\.\)
 
  * Exceptional return: ERANGE, realloc  
  * Order:  
@@ -414,11 +434,11 @@ For all elements of [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `b`, calls 
 
 
 
-### <a id = "user-content-fn-b95adf62" name = "user-content-fn-b95adf62">&lt;CG&gt;keep_if</a> ###
+### <a id = "user-content-fn-a6bb890c" name = "user-content-fn-a6bb890c">&lt;AC&gt;keep_if</a> ###
 
-<code>static void <strong>&lt;CG&gt;keep_if</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>keep</em>, const &lt;PCG&gt;action_fn <em>destruct</em>)</code>
+<code>static void <strong>&lt;AC&gt;keep_if</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>keep</em>, const &lt;PAC&gt;action_fn <em>destruct</em>)</code>
 
-For all elements of [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box`, calls `keep`, and if false, lazy deletes that item, calling `destruct` \(if not\-null\)\.
+[array\_coda\.h](array_coda.h): For all elements of `box`, calls `keep`, and if false, lazy deletes that item, calling `destruct` \(if not\-null\)\.
 
  * Order:  
    &#927;\(`a.size` &#215; `keep` &#215; `destruct`\)
@@ -426,11 +446,11 @@ For all elements of [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box`, call
 
 
 
-### <a id = "user-content-fn-672d297d" name = "user-content-fn-672d297d">&lt;CG&gt;trim</a> ###
+### <a id = "user-content-fn-7924b33" name = "user-content-fn-7924b33">&lt;AC&gt;trim</a> ###
 
-<code>static void <strong>&lt;CG&gt;trim</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>predicate</em>)</code>
+<code>static void <strong>&lt;AC&gt;trim</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code>
 
-Removes at either end of [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box` of things that `predicate` returns true\.
+[array\_coda\.h](array_coda.h): Removes at either end of `box` of things that `predicate` returns true\.
 
  * Order:  
    &#927;\(`box.size` &#215; `predicate`\)
@@ -438,11 +458,11 @@ Removes at either end of [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box` 
 
 
 
-### <a id = "user-content-fn-2869fa64" name = "user-content-fn-2869fa64">&lt;CG&gt;each</a> ###
+### <a id = "user-content-fn-884c09a" name = "user-content-fn-884c09a">&lt;AC&gt;each</a> ###
 
-<code>static void <strong>&lt;CG&gt;each</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;action_fn <em>action</em>)</code>
+<code>static void <strong>&lt;AC&gt;each</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;action_fn <em>action</em>)</code>
 
-Iterates through [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box` and calls `action` on all the elements\. The topology of the list should not change while in this function\.
+[array\_coda\.h](array_coda.h): Iterates through `box` and calls `action` on all the elements\. The topology of the list should not change while in this function\.
 
  * Order:  
    &#927;\(`box.size` &#215; `action`\)
@@ -450,11 +470,11 @@ Iterates through [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box` and call
 
 
 
-### <a id = "user-content-fn-cfdb8e2e" name = "user-content-fn-cfdb8e2e">&lt;CG&gt;if_each</a> ###
+### <a id = "user-content-fn-d0650740" name = "user-content-fn-d0650740">&lt;AC&gt;if_each</a> ###
 
-<code>static void <strong>&lt;CG&gt;if_each</strong>(&lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>predicate</em>, const &lt;PCG&gt;action_fn <em>action</em>)</code>
+<code>static void <strong>&lt;AC&gt;if_each</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>, const &lt;PAC&gt;action_fn <em>action</em>)</code>
 
-Iterates through [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list should not change while in this function\.
+[array\_coda\.h](array_coda.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list should not change while in this function\.
 
  * Order:  
    &#927;\(`box.size` &#215; `predicate` &#215; `action`\)
@@ -462,11 +482,11 @@ Iterates through [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box` and call
 
 
 
-### <a id = "user-content-fn-37394af1" name = "user-content-fn-37394af1">&lt;CG&gt;any</a> ###
+### <a id = "user-content-fn-ed02e52b" name = "user-content-fn-ed02e52b">&lt;AC&gt;any</a> ###
 
-<code>static const &lt;PCG&gt;type *<strong>&lt;CG&gt;any</strong>(const &lt;PCG&gt;box *const <em>box</em>, const &lt;PCG&gt;predicate_fn <em>predicate</em>)</code>
+<code>static const &lt;PAC&gt;type *<strong>&lt;AC&gt;any</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code>
 
-Iterates through [&lt;PCG&gt;box](#user-content-typedef-9c8158f8) `box` and calls `predicate` until it returns true\.
+[array\_coda\.h](array_coda.h): Iterates through `box` and calls `predicate` until it returns true\.
 
  * Return:  
    The first `predicate` that returned true, or, if the statement is false on all, null\.

@@ -283,7 +283,7 @@ static void PA_(test_replace)(void) {
 	t = A_(array_new)(&b);
 	assert(t);
 	memcpy(t, ts + 0, sizeof *t);
-	success = A_(array_affix)(&a, &b);
+	success = A_(array_splice)(&a, &b, a.size, a.size);
 	printf("Array after adding %s to back %s.\n", PA_(array_to_string)(&b),
 		PA_(array_to_string)(&a));
 	assert(success && a.size == ts_size);
