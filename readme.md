@@ -22,7 +22,7 @@ Source [src/array\.h](src/array.h); examples [test/test\_array\.c](test/test_arr
  * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
    `<A>` that satisfies `C` naming conventions when mangled and a valid tag\-type, [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), associated therewith; required\. `<PA>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: ARRAY\_CODA  
-   Include more functions contained in [array\_coda\.h](array_coda.h)\.
+   Include more functions contained in [array\_coda\.h](array_coda.h), where `<AC>` is `<A>array`\.
  * Parameter: ARRAY\_MIN\_CAPACITY  
    Default is 3; optional number in `[2, SIZE_MAX]` that the capacity can not go below\.
  * Parameter: ARRAY\_EXPECT\_TRAIT  
@@ -280,7 +280,7 @@ Adds `n` elements to the back of `a`\. It will invalidate pointers in `a` if `n`
 
 <code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_insert</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>n</em>, const size_t <em>at</em>)</code>
 
-Adds `n` un\-initialised elements at position `at` in `a`\. The buffer holds enough elements or it will invalidate pointers in `a`\.
+Adds `n` un\-initialised elements at position `at` in `a`\. The buffer holds enough elements or it will invalidate any pointers in `a`\.
 
  * Parameter: _at_  
    A number smaller than or equal to `a.size`; if `a.size`, this function behaves as [&lt;A&gt;array_append](#user-content-fn-2d92b62)\.

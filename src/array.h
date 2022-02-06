@@ -169,7 +169,7 @@ static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n) {
 }
 
 /** Adds `n` un-initialised elements at position `at` in `a`. The buffer holds
- enough elements or it will invalidate pointers in `a`.
+ enough elements or it will invalidate any pointers in `a`.
  @param[at] A number smaller than or equal to `a.size`; if `a.size`, this
  function behaves as <fn:<A>array_append>.
  @return A pointer to the start of the new region, where there are `n`
@@ -244,7 +244,6 @@ static int A_(array_splice)(/*restrict*/ struct A_(array) *const a,
 	/*restrict*/ const struct A_(array) *const b,
 	const size_t i0, const size_t i1) {
 	const size_t a_range = i1 - i0, b_range = b ? b->size : 0;
-	/* Is the compiler smart enough? */
 	assert(a && a != b && i0 <= i1 && i1 <= a->size);
 	if(a_range < b_range) { /* The output is bigger. */
 		const size_t diff = b_range - a_range;
@@ -384,6 +383,9 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
 /* box (multiple traits) --> */
+#ifdef ARRAY_CODA_ONCE
+#undef ARRAY_CODA_ONCE
+#endif
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT
 #undef ARRAY_COMPARE_TRAIT

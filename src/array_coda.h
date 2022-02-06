@@ -3,8 +3,8 @@
 
  @subtitle Array coda
 
- This defines an optional set of functions that is nice, but not necessary,
- for any child of `array` not providing additional constraints.
+ This defines an optional set of functions that is nice, for any child of
+ `array` not providing additional constraints. (Thus, `array`?)
 
  @param[ARRAY_CODA_TYPE]
  Type of array.
@@ -22,21 +22,21 @@
 
 #if !defined(BOX_) || !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS) \
 	|| !defined(ARRAY_CODA_BOX_TO_C) || !defined(ARRAY_CODA_BOX_TO) \
-	|| !defined(AC_)
+	|| !defined(AC_) || defined(BOX_IS_EQUAL) && defined(BOX_COMPARE)
 #error Unexpected preprocessor symbols.
 #endif
 
 #ifndef ARRAY_CODA_H /* <!-- idempotent */
 #define ARRAY_CODA_H
 #include <limits.h>
-#if defined(ARRAY_CODA_CAT_) || defined(ARRAY_CODA_CAT) || defined(PAC_)
+#ifdef PAC_
 #error Unexpected defines.
 #endif
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-#define ARRAY_CODA_CAT_(n, m) n ## _ ## m
-#define ARRAY_CODA_CAT(n, m) ARRAY_CODA_CAT_(n, m)
-#define PAC_(n) ARRAY_CODA_CAT(array_coda, AC_(n))
+#define PAC_(n) ARRAY_CAT(array_coda, AC_(n))
 #endif /* idempotent --> */
+
+#ifndef ARRAY_CODA_ONCE /* <!-- once */
+#define ARRAY_CODA_ONCE
 
 /** <array_coda.h>: an alias to the box. */
 typedef BOX_CONTAINER PAC_(box);
@@ -44,14 +44,20 @@ typedef BOX_CONTAINER PAC_(box);
 /** <array_coda.h>: an alias to the individual type contained in the box. */
 typedef BOX_CONTENTS PAC_(type);
 
+/* Array type. */
+typedef ARRAY_CODA_TYPE PAC_(array);
+
+#endif /* once --> */
+
+
+#if !defined(BOX_IS_EQUAL) && !defined(BOX_COMPARE) /* <!-- functions */
+
+
 /** <array_coda.h>: Operates by side-effects on <typedef:<PAC>type>. */
 typedef void (*PAC_(action_fn))(PAC_(type) *);
 
 /** <array_coda.h>: Returns a boolean given read-only <typedef:<PAC>type>. */
 typedef int (*PAC_(predicate_fn))(const PAC_(type) *);
-
-/* Array type. */
-typedef ARRAY_CODA_TYPE PAC_(array);
 
 /* Returns a constant array member of constant box. */
 typedef const PAC_(array) *(*PAC_(box_to_array_c))(const PAC_(box) *);
@@ -230,3 +236,5 @@ static void PAC_(unused_function_coda)(void) { PAC_(unused_function)(); }
 
 #undef ARRAY_CODA_BOX_TO_C
 #undef ARRAY_CODA_BOX_TO
+
+#endif /* functions --> */
