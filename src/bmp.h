@@ -1,6 +1,8 @@
 /** @license 2021 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
+ @abstract Source <src/bmp.h>; examples <test/test_bmp.c>.
+
  @subtitle Fixed bit-field
 
  `<B>bmp` is a bit-field of `BMP_BITS` bits. The representation in memory is

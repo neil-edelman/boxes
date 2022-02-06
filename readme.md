@@ -1,5 +1,7 @@
 # bmp\.h #
 
+Source [src/bmp\.h](src/bmp.h); examples [test/test\_bmp\.c](test/test_bmp.c)\.
+
 ## Fixed bit\-field ##
 
  * [Description](#user-content-preamble)
