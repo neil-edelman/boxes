@@ -79,7 +79,7 @@ Three\-way comparison on a totally order set of [&lt;L&gt;listlink](#user-conten
 
 <code>struct <strong>&lt;L&gt;listlink</strong> { struct &lt;L&gt;listlink *next, *prev; };</code>
 
-Storage of this structure is the responsibility of the caller, who must provide a stable pointer while in a list\. Generally, one encloses this in a host `struct` or `union`\.
+Storage of this structure is the responsibility of the caller, who must provide a stable pointer while in a list\. Generally, one encloses this in a host `struct` or `union`\. The contents of this structure should be treated as read\-only while in the list\.
 
 ![States.](web/node-states.png)
 
@@ -87,7 +87,7 @@ Storage of this structure is the responsibility of the caller, who must provide 
 
 ### <a id = "user-content-tag-eb84971d" name = "user-content-tag-eb84971d">&lt;L&gt;list</a> ###
 
-<code>struct <strong>&lt;L&gt;list</strong> { union { struct { struct &lt;L&gt;listlink head, *part_of_tail; } as_head; struct { struct &lt;L&gt;listlink *part_of_head, tail; } as_tail; struct { struct &lt;L&gt;listlink *next, *zero, *prev; } flat; } u; };</code>
+<code>struct <strong>&lt;L&gt;list</strong>;</code>
 
 Serves as head and tail for linked\-list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. Use [&lt;L&gt;list_clear](#user-content-fn-f965b937) to initialize the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\.
 

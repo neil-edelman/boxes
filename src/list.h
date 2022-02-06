@@ -79,7 +79,8 @@
 
 /** Storage of this structure is the responsibility of the caller, who must
  provide a stable pointer while in a list. Generally, one encloses this in a
- host `struct` or `union`.
+ host `struct` or `union`. The contents of this structure should be treated as
+ read-only while in the list.
 
  ![States.](../web/node-states.png) */
 struct L_(listlink) { struct L_(listlink) *next, *prev; };
@@ -90,6 +91,7 @@ struct L_(listlink) { struct L_(listlink) *next, *prev; };
  values are not allowed and it is _not_ the same as `{0}`.
 
  ![States.](../web/states.png) */
+struct L_(list);
 struct L_(list) {
 	union {
 		struct { struct L_(listlink) head, *part_of_tail; } as_head;
