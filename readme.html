@@ -33,6 +33,8 @@
 
 <h1>heap.h</h1>
 
+<p>Source <a href = "src/heap.h">src/heap.h</a>, depends on <a href = "src/array.h">src/array.h</a>; examples <a href = "test/test_heap.c">test/test_heap.c</a>.</p>
+
 <h2>Priority-queue</h2>
 
 <ul>
@@ -48,7 +50,7 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of heap." src = "web/heap.png" width = 527 height = 310></p>
+<p><img alt = "Example of heap." src = "web/heap.png" width = 654 height = 347></p>
 
 <p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. It can be used as an implementation of a priority queue; internally, it is a <code>&lt;&lt;PH&gt;node&gt;array</code> with implicit heap properties on <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer value.</p>
 
@@ -70,7 +72,7 @@
 	<dt>Dependancies:</dt>
 	<dd><a href = "https://github.com/neil-edelman/array">array</a></dd>
 	<dt>Caveat:</dt>
-	<dd>Add decrease priority. Add replace.</dd>
+	<dd>Add decrease priority. Add replace. Don't like that <code>HEAP_VALUE</code> has to be a pointer; what is this, Java? Use <code>memcpy</code>.</dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
@@ -135,7 +137,7 @@
 
 <p>Stores the heap as an implicit binary tree in an array called <code>a</code>. To initialize it to an idle state, see <a href = "#fn:&lt;H&gt;heap">&lt;H&gt;heap</a>, <code>HEAP_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
 
-<p><img alt = "States." src = "web/states.png" width = 215 height = 280></p>
+<p><img alt = "States." src = "web/states.png" width = 912 height = 137></p>
 
 </div>
 

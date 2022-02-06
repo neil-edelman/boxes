@@ -1,5 +1,7 @@
 # heap\.h #
 
+Source [src/heap\.h](src/heap.h), depends on [src/array\.h](src/array.h); examples [test/test\_heap\.c](test/test_heap.c)\.
+
 ## Priority\-queue ##
 
  * [Description](#user-content-preamble)
@@ -32,7 +34,7 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Wil
  * Dependancies:  
    [array](https://github.com/neil-edelman/array)
  * Caveat:  
-   Add decrease priority\. Add replace\.
+   Add decrease priority\. Add replace\. Don't like that `HEAP_VALUE` has to be a pointer; what is this, Java? Use `memcpy`\.
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##

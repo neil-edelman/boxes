@@ -3,6 +3,9 @@
 
  @subtitle Priority-queue
 
+ @abstract Source <src/heap.h>, depends on <src/array.h>; examples
+ <test/test_heap.c>.
+
  ![Example of heap.](../web/heap.png)
 
  A <tag:<H>heap> is a binary heap, proposed by
@@ -39,7 +42,9 @@
  @depend [array](https://github.com/neil-edelman/array)
  @std C89
  @fixme Add decrease priority.
- @fixme Add replace. */
+ @fixme Add replace.
+ @fixme Don't like that `HEAP_VALUE` has to be a pointer; what is this, Java?
+ Use `memcpy`. */
 
 #ifndef HEAP_NAME
 #error Generic HEAP_NAME undefined.

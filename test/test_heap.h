@@ -24,8 +24,12 @@ static void PH_(graph)(const struct H_(heap) *const heap,
 	assert(heap && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
-		/*"\trankdir = BT;\n"*/
-		"\tnode [shape = box, style = filled, fillcolor = Grey95];\n");
+		"\tgraph [truecolor=true, bgcolor=transparent];\n"
+		"\tfontface=modern;\n"
+		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
+		/* Google search / Wikipedia says we should draw them with the top down.
+		"\trankdir = BT;\n" */
+		"\tedge [arrowhead = none];\n");
 	for(i = 0; i < heap->a.size; i++) {
 		PH_(to_string)(heap->a.data + i, &a);
 		fprintf(fp, "\t\tn%lu [label=\"%s\"];\n", (unsigned long)i, a);
