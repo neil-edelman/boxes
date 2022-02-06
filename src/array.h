@@ -266,32 +266,31 @@ static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
 	{ return A_(array_append)(a, n); }
 
 /* <!-- iterate interface */
-
 /* Contains all iteration parameters. */
 struct PA_(iterator) { const struct A_(array) *a; size_t i; };
-
 /** Loads `a` into `it`. @implements begin */
 static void PA_(begin)(struct PA_(iterator) *const it,
 	const struct A_(array) *const a) { assert(it && a), it->a = a, it->i = 0; }
-
 /** Advances `it`. @implements next */
 static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 	return assert(it && it->a), it->i < it->a->size ? it->a->data + it->i++ : 0;
 }
-
-/* iterate --> */
-
-/* <!-- box (multiple traits) */
 #define BOX_ PA_
 #define BOX_CONTAINER struct A_(array)
 #define BOX_CONTENTS PA_(type)
+/* iterate --> */
 
-#ifdef ARRAY_CODA /* <!-- coda: More functions. */
+/* <!-- coda interface */
 /** @return `a`. */
 static const struct A_(array) *PA_(id_c)(const struct A_(array) *const a)
 	{ return a; }
 /** @return `a`. */
 static struct A_(array) *PA_(id)(struct A_(array) *const a) { return a; }
+/* coda --> */
+
+
+
+#ifdef ARRAY_CODA /* <!-- coda: More functions. */
 #define ARRAY_CODA_TYPE struct A_(array)
 #define ARRAY_CODA_BOX_TO_C &PA_(id_c)
 #define ARRAY_CODA_BOX_TO &PA_(id)

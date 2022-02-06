@@ -44,8 +44,12 @@ typedef BOX_CONTAINER PAC_(box);
 /** <array_coda.h>: an alias to the individual type contained in the box. */
 typedef BOX_CONTENTS PAC_(type);
 
-/* Array type. */
+/* Downcasting. */
 typedef ARRAY_CODA_TYPE PAC_(array);
+typedef const PAC_(array) *(*PAC_(box_to_array_c))(const PAC_(box) *);
+static PAC_(box_to_array_c) PAC_(b2a_c) = (ARRAY_CODA_BOX_TO_C);
+typedef PAC_(array) *(*PAC_(box_to_array))(PAC_(box) *);
+static PAC_(box_to_array) PAC_(b2a) = (ARRAY_CODA_BOX_TO);
 
 #endif /* once --> */
 
@@ -58,14 +62,6 @@ typedef void (*PAC_(action_fn))(PAC_(type) *);
 
 /** <array_coda.h>: Returns a boolean given read-only <typedef:<PAC>type>. */
 typedef int (*PAC_(predicate_fn))(const PAC_(type) *);
-
-/* Returns a constant array member of constant box. */
-typedef const PAC_(array) *(*PAC_(box_to_array_c))(const PAC_(box) *);
-static PAC_(box_to_array_c) PAC_(b2a_c) = (ARRAY_CODA_BOX_TO_C);
-
-/* Returns an array member of box. */
-typedef PAC_(array) *(*PAC_(box_to_array))(PAC_(box) *);
-static PAC_(box_to_array) PAC_(b2a) = (ARRAY_CODA_BOX_TO);
 
 /** <array_coda.h> @param[x] A valid entry or null to start from the last.
  @return The previous valid entry from `box` (which could be null) or null if
