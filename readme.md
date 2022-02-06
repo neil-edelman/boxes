@@ -26,7 +26,7 @@ In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Th
  * Parameter: LIST\_COMPARE\_NAME, LIST\_COMPARE, LIST\_IS\_EQUAL  
    Compare trait contained in [src/list\_coda\.h](src/list_coda.h)\. An optional mangled name for uniqueness and a function implementing either [&lt;PLC&gt;compare_fn](#user-content-typedef-f02f365a) or [&lt;PLC&gt;bipredicate_fn](#user-content-typedef-2edb24e1)\.
  * Parameter: LIST\_TO\_STRING\_NAME, LIST\_TO\_STRING  
-   To string trait contained in [to\_string\.h](to_string.h)\. An optional mangled name for uniqueness and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\.
+   To string trait contained in [src/to\_string\.h](src/to_string.h)\. An optional mangled name for uniqueness and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\.
  * Standard:  
    C89
 

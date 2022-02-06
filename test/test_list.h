@@ -89,8 +89,9 @@ static void PL_(graph)(const struct L_(list) *const list, const char *const fn)
 	FILE *fp;
 	assert(list && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
+	printf("*** Opening graph \"%s\".\n", fn);
 	fprintf(fp, "digraph {\n"
-		"\tfontface=modern;\n"
+		"\tgraph [truecolor=true, bgcolor=transparent, fontface=modern];\n"
 		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n");
 	PL_(subgraph)(list, fp, "royalblue", 0, 1);
 	fprintf(fp, "\tnode [colour=\"Red\"];\n"

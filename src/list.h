@@ -25,7 +25,7 @@
  <typedef:<PLC>bipredicate_fn>.
 
  @param[LIST_TO_STRING_NAME, LIST_TO_STRING]
- To string trait contained in <to_string.h>. An optional mangled name for
+ To string trait contained in <src/to_string.h>. An optional mangled name for
  uniqueness and function implementing <typedef:<PSZ>to_string_fn>.
 
  @std C89 */

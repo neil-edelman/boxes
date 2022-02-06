@@ -291,10 +291,11 @@ static void panda_graph(const struct name_list *const n,
 	FILE *fp;
 	assert(n && w && f);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
+	printf("*** Opening graph \"%s\".\n", fn);
 	fprintf(fp, "digraph {\n"
-		"\tfontface=modern;\n"
+		"\tgraph [truecolor=true, bgcolor=transparent, fontface=modern];\n"
 		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n");
-	/* If it were not `C`, I would be overriding private. */
+	/* Hack: overriding private. */
 	list_name_subgraph(n, fp, "Royalblue",
 		offsetof(struct panda, name_node), 1);
 	list_where_subgraph(w, fp, "Firebrick",
@@ -472,7 +473,7 @@ static void skip_graph(const struct skip_list *const skip) {
 }
 /* Manual example. */
 static void skips_tests(void) {
-	const size_t i_lim = 1000;
+	const size_t i_lim = 1000/*0 <- Makes the graph a huge filesize. */;
 	size_t i;
 	unsigned r;
 	struct skip_pool skips = POOL_IDLE;
@@ -603,23 +604,21 @@ struct bad_emu {
 #define POOL_TYPE struct bad_emu
 #include "pool.h"
 
-/* `Llama` extends `Animal`. */
-struct Llama {
+struct llama {
 	struct animal animal;
 	struct mount_info mount_info;
 	unsigned chomps, unused;
 };
 #define POOL_NAME llama
-#define POOL_TYPE struct Llama
+#define POOL_TYPE struct llama
 #include "pool.h"
 
-/* `Lemur` extends `Animal`. */
-struct Lemur {
+struct lemur {
 	struct animal animal;
 	struct mount_info mount_info;
 };
 #define POOL_NAME lemur
-#define POOL_TYPE struct Lemur
+#define POOL_TYPE struct lemur
 #include "pool.h"
 
 /* `bear` extends `animal`. */
@@ -687,12 +686,12 @@ static void bad_emu_delete(struct bad_emu *const bad_emu) {
 	id_list_remove(&bad_emu->emu.animal.id);
 	bademu_pool_remove(&animals.bad_emus, bad_emu);
 }
-static void lemur_delete(struct Lemur *const lemur) {
+static void lemur_delete(struct lemur *const lemur) {
 	/*printf("Bye %s.\n", lemur->animal.name);*/
 	id_list_remove(&lemur->animal.id);
 	lemur_pool_remove(&animals.lemurs, lemur);
 }
-static void llama_delete(struct Llama *const llama) {
+static void llama_delete(struct llama *const llama) {
 	/*printf("Bye %s.\n", llama->animal.name);*/
 	id_list_remove(&llama->animal.id);
 	llama_pool_remove(&animals.llamas, llama);
@@ -736,7 +735,7 @@ static void bad_emu_act(struct bad_emu *const bad_emu) {
 		   bad_emu->emu.animal.name, colours[bad_emu->emu.animal.colour],
 		   bad_emu->emu.favourite_letter, bad_emu->muhaha, ride);
 }
-static void lemur_act(struct Lemur *const lemur) {
+static void lemur_act(struct lemur *const lemur) {
 	char ride[128] = "";
 	if(lemur->mount_info.riding) {
 		const struct animal *const steed = lemur->mount_info.riding->steed;
@@ -746,7 +745,7 @@ static void lemur_act(struct Lemur *const lemur) {
 	}
 	printf("%s %s.%s\n", lemur->animal.vt->type, lemur->animal.name, ride);
 }
-static void llama_act(struct Llama *const llama) {
+static void llama_act(struct llama *const llama) {
 	char ride[128] = "";
 	if(llama->mount_info.steed_of) {
 		const struct animal *const rider = llama->mount_info.steed_of->rider;
@@ -786,10 +785,10 @@ static struct mount_info *no_mount_info(struct animal *const animal) {
 static struct mount_info *bad_emu_mount_info(struct bad_emu *const bad_emu) {
 	return &bad_emu->mount_info;
 }
-static struct mount_info *lemur_mount_info(struct Lemur *const lemur) {
+static struct mount_info *lemur_mount_info(struct lemur *const lemur) {
 	return &lemur->mount_info;
 }
-static struct mount_info *llama_mount_info(struct Llama *const llama) {
+static struct mount_info *llama_mount_info(struct llama *const llama) {
 	return &llama->mount_info;
 }
 static struct mount_info *bear_mount_info(struct bear *const bear) {
@@ -800,8 +799,7 @@ static struct mount_info *bear_mount_info(struct bear *const bear) {
  is always the first item in every animal, we can cast them. This is not really
  a good design choice, in hindsight, (should have accepted all `Animal` and
  upcast.) */
-/* ******** fixme: this is technically UB, and doesn't have to be. Fix.
- Also, upper-case now sucks. *******/
+/* fixme: this is technically UB, and doesn't have to be. Fix. */
 static struct animal_vt sloth_vt = {
 	"Sloth",
 	(animal_action_fn)&sloth_delete,
@@ -874,7 +872,7 @@ static void Animals_(void) {
 	mount_pool_(&animals.mounts);
 }
 /** Constructor for all. */
-static void Animals(void) {
+static void animal(void) {
 	struct bear *bear, *end;
 	id_list_clear(&animals.list);
 	/*assert() PoolIsIdle? */
@@ -916,8 +914,8 @@ static struct bad_emu *bad_emu(void) {
 	return e;
 }
 /** Random constructor for a `Llama`. */
-static struct Llama *llama(void) {
-	struct Llama *l;
+static struct llama *llama(void) {
+	struct llama *l;
 	if(!(l = llama_pool_new(&animals.llamas))) return 0;
 	animal_filler(&l->animal, &llama_vt);
 	mount_info_filler(&l->mount_info, &l->animal, STEED);
@@ -926,8 +924,8 @@ static struct Llama *llama(void) {
 	return l;
 }
 /** Random constructor for a `Lemur`. */
-static struct Lemur *lemur(void) {
-	struct Lemur *l;
+static struct lemur *lemur(void) {
+	struct lemur *l;
 	if(!(l = lemur_pool_new(&animals.lemurs))) return 0;
 	animal_filler(&l->animal, &lemur_vt);
 	mount_info_filler(&l->mount_info, &l->animal, RIDER);
@@ -1008,7 +1006,7 @@ static int animals_tests(void) {
 	clock_t t;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	t = clock();
-	Animals();
+	animal();
 	do {
 		struct id_listlink *id = 0, *prev_id = 0;
 		struct bear *w, *n;
@@ -1062,7 +1060,8 @@ int main(void) {
 	no_list_recur_test(&no_from_pool, &nos), no_pool_(&nos);
 	letter_list_test(&letter_from_pool, &ls), letter_pool_clear(&ls);
 	letter_list_recur_test(&letter_from_pool, &ls), letter_pool_(&ls);
-	/*name_list_test(&panda_name_from_pool, &pandas), panda_pool_(&pandas);
+	/* Panda and animals converged into the same test.
+	name_list_test(&panda_name_from_pool, &pandas), panda_pool_(&pandas);
 	where_list_test(&panda_where_from_pool, &pandas), panda_pool_(&pandas);
 	fero_list_test(&panda_fero_from_pool, &pandas), panda_pool_(&pandas);*/
 	layer0_list_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
