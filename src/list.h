@@ -78,11 +78,8 @@
 
 
 /** Storage of this structure is the responsibility of the caller, who must
- provide a stable pointer while it's in the list. Generally, one encloses this
- in a host `struct` or `union`. Multiple independent lists can be in the same
- host, however one link can can only be a part of one list at a time. Adding a
- link to a second list destroys the integrity of the original list, as does
- moving a pointer, (specifically, arrays that might increase in size.)
+ provide a stable pointer while in a list. Generally, one encloses this in a
+ host `struct` or `union`.
 
  ![States.](../web/node-states.png) */
 struct L_(listlink) { struct L_(listlink) *next, *prev; };
@@ -90,10 +87,7 @@ struct L_(listlink) { struct L_(listlink) *next, *prev; };
 /** Serves as head and tail for linked-list of <tag:<L>listlink>. Use
  <fn:<L>list_clear> to initialize the list. Because this list is closed; that
  is, given a valid pointer to an element, one can determine all others, null
- values are not allowed and it is _not_ the same as `{0}`. In a valid list,
- `as_head.head.tail`, `as_tail.tail.head`, and `flat.zero`, refer to the same
- sentinel element, and it's always the only one null. If the address changes,
- one must call <fn:<L>list_self_correct>.
+ values are not allowed and it is _not_ the same as `{0}`.
 
  ![States.](../web/states.png) */
 struct L_(list) {
@@ -306,8 +300,8 @@ static struct L_(listlink) *L_(list_any)(const struct L_(list) *const list,
 }
 
 /** Corrects `list` ends to compensate for memory relocation of the list
- itself. Because the `list` is part of the links, this will invalidate all
- other copies. @order \Theta(1) @allow */
+ itself. (Can only have one copy of the list, this will invalidate all other
+ copies.) @order \Theta(1) @allow */
 static void L_(list_self_correct)(struct L_(list) *const list) {
 	assert(list && !list->u.flat.zero);
 	if(!list->u.flat.next->next) { /* Empty. */
@@ -322,7 +316,7 @@ static void L_(list_self_correct)(struct L_(list) *const list) {
 
 /* <!-- iterate interface */
 
-/** Contains all iteration parameters. (Since this is a permutation, the
+/* Contains all iteration parameters. (Since this is a permutation, the
  iteration is defined by none other then itself. Used for traits.) */
 struct PL_(iterator) { struct L_(listlink) *link; };
 

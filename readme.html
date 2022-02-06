@@ -40,7 +40,7 @@
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
 	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PL>action_fn">&lt;PL&gt;action_fn</a>, <a href = "#typedef:<PL>predicate_fn">&lt;PL&gt;predicate_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a>, <a href = "#typedef:<PLC>bipredicate_fn">&lt;PLC&gt;bipredicate_fn</a>, <a href = "#typedef:<PLC>compare_fn">&lt;PLC&gt;compare_fn</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<L>listlink">&lt;L&gt;listlink</a>, <a href = "#tag:<L>list">&lt;L&gt;list</a>, <a href = "#tag:<PL>iterator">&lt;PL&gt;iterator</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<L>listlink">&lt;L&gt;listlink</a>, <a href = "#tag:<L>list">&lt;L&gt;list</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -129,7 +129,7 @@
 
 <p><code>struct <strong>&lt;L&gt;listlink</strong> { struct &lt;L&gt;listlink *next, *prev; };</code></p>
 
-<p>Storage of this structure is the responsibility of the caller, who must provide a stable pointer while it's in the list. Generally, one encloses this in a host <code>struct</code> or <code>union</code>. Multiple independent lists can be in the same host, however one link can can only be a part of one list at a time. Adding a link to a second list destroys the integrity of the original list, as does moving a pointer, (specifically, arrays that might increase in size.)</p>
+<p>Storage of this structure is the responsibility of the caller, who must provide a stable pointer while in a list. Generally, one encloses this in a host <code>struct</code> or <code>union</code>.</p>
 
 <p><img alt = "States." src = "web/node-states.png" width = 377 height = 153></p>
 
@@ -141,19 +141,9 @@
 
 <p><code>struct <strong>&lt;L&gt;list</strong> { union { struct { struct &lt;L&gt;listlink head, *part_of_tail; } as_head; struct { struct &lt;L&gt;listlink *part_of_head, tail; } as_tail; struct { struct &lt;L&gt;listlink *next, *zero, *prev; } flat; } u; };</code></p>
 
-<p>Serves as head and tail for linked-list of <a href = "#tag:&lt;L&gt;listlink">&lt;L&gt;listlink</a>. Use <a href = "#fn:&lt;L&gt;list_clear">&lt;L&gt;list_clear</a> to initialize the list. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is <em>not</em> the same as <code>{0}</code>. In a valid list, <code>as_head.head.tail</code>, <code>as_tail.tail.head</code>, and <code>flat.zero</code>, refer to the same sentinel element, and it's always the only one null. If the address changes, one must call <a href = "#fn:&lt;L&gt;list_self_correct">&lt;L&gt;list_self_correct</a>.</p>
+<p>Serves as head and tail for linked-list of <a href = "#tag:&lt;L&gt;listlink">&lt;L&gt;listlink</a>. Use <a href = "#fn:&lt;L&gt;list_clear">&lt;L&gt;list_clear</a> to initialize the list. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is <em>not</em> the same as <code>{0}</code>.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 715 height = 202></p>
-
-</div>
-
-<div>
-
-<h3><a id = "tag:<PL>iterator" name = "tag:<PL>iterator">&lt;PL&gt;iterator</a></h3>
-
-<p><code>struct <strong>&lt;PL&gt;iterator</strong> { struct &lt;L&gt;listlink *link; };</code></p>
-
-<p>Contains all iteration parameters. (Since this is a permutation, the iteration is defined by none other then itself. Used for traits.)</p>
 
 </div>
 
@@ -496,7 +486,7 @@
 
 <p><code>static void <strong>&lt;L&gt;list_self_correct</strong>(struct &lt;L&gt;list *const <em>list</em>)</code></p>
 
-<p>Corrects <code>list</code> ends to compensate for memory relocation of the list itself. Because the <code>list</code> is part of the links, this will invalidate all other copies.</p>
+<p>Corrects <code>list</code> ends to compensate for memory relocation of the list itself. (Can only have one copy of the list, this will invalidate all other copies.)</p>
 
 <dl>
 	<dt>Order:</dt>

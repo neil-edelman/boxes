@@ -6,7 +6,7 @@ Source [src/list\.h](src/list.h); examples [test/test\_list\.c](test/test_list.c
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PL&gt;action_fn](#user-content-typedef-5aae0d96), [&lt;PL&gt;predicate_fn](#user-content-typedef-9bb522f5), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PLC&gt;bipredicate_fn](#user-content-typedef-2edb24e1), [&lt;PLC&gt;compare_fn](#user-content-typedef-f02f365a)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;L&gt;listlink](#user-content-tag-15769e01), [&lt;L&gt;list](#user-content-tag-eb84971d), [&lt;PL&gt;iterator](#user-content-tag-fe8215f1)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;L&gt;listlink](#user-content-tag-15769e01), [&lt;L&gt;list](#user-content-tag-eb84971d)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -79,7 +79,7 @@ Three\-way comparison on a totally order set of [&lt;L&gt;listlink](#user-conten
 
 <code>struct <strong>&lt;L&gt;listlink</strong> { struct &lt;L&gt;listlink *next, *prev; };</code>
 
-Storage of this structure is the responsibility of the caller, who must provide a stable pointer while it's in the list\. Generally, one encloses this in a host `struct` or `union`\. Multiple independent lists can be in the same host, however one link can can only be a part of one list at a time\. Adding a link to a second list destroys the integrity of the original list, as does moving a pointer, \(specifically, arrays that might increase in size\.\)
+Storage of this structure is the responsibility of the caller, who must provide a stable pointer while in a list\. Generally, one encloses this in a host `struct` or `union`\.
 
 ![States.](web/node-states.png)
 
@@ -89,17 +89,9 @@ Storage of this structure is the responsibility of the caller, who must provide 
 
 <code>struct <strong>&lt;L&gt;list</strong> { union { struct { struct &lt;L&gt;listlink head, *part_of_tail; } as_head; struct { struct &lt;L&gt;listlink *part_of_head, tail; } as_tail; struct { struct &lt;L&gt;listlink *next, *zero, *prev; } flat; } u; };</code>
 
-Serves as head and tail for linked\-list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. Use [&lt;L&gt;list_clear](#user-content-fn-f965b937) to initialize the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\. In a valid list, `as_head.head.tail`, `as_tail.tail.head`, and `flat.zero`, refer to the same sentinel element, and it's always the only one null\. If the address changes, one must call [&lt;L&gt;list_self_correct](#user-content-fn-1ce0c229)\.
+Serves as head and tail for linked\-list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. Use [&lt;L&gt;list_clear](#user-content-fn-f965b937) to initialize the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\.
 
 ![States.](web/states.png)
-
-
-
-### <a id = "user-content-tag-fe8215f1" name = "user-content-tag-fe8215f1">&lt;PL&gt;iterator</a> ###
-
-<code>struct <strong>&lt;PL&gt;iterator</strong> { struct &lt;L&gt;listlink *link; };</code>
-
-Contains all iteration parameters\. \(Since this is a permutation, the iteration is defined by none other then itself\. Used for traits\.\)
 
 
 
@@ -385,7 +377,7 @@ Iterates through `list` and calls `predicate` until it returns true\.
 
 <code>static void <strong>&lt;L&gt;list_self_correct</strong>(struct &lt;L&gt;list *const <em>list</em>)</code>
 
-Corrects `list` ends to compensate for memory relocation of the list itself\. Because the `list` is part of the links, this will invalidate all other copies\.
+Corrects `list` ends to compensate for memory relocation of the list itself\. \(Can only have one copy of the list, this will invalidate all other copies\.\)
 
  * Order:  
    &#920;\(1\)
