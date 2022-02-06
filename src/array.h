@@ -29,7 +29,7 @@
  trait.
 
  @param[ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
- Compare trait contained in <compare.h>. An optional mangled name for
+ Compare trait contained in <array_coda.h>. An optional mangled name for
  uniqueness and a function implementing either <typedef:<PAC>compare_fn> or
  <typedef:<PAC>bipredicate_fn>.
 
