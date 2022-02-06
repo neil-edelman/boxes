@@ -17,7 +17,7 @@
  names are prefixed in a manner to avoid collisions.
 
  @param[ARRAY_CODA]
- Include more functions contained in <array_coda.h>, where `<AC>` is
+ Include more functions contained in <src/array_coda.h>, where `<AC>` is
  `<A>array`.
 
  @param[ARRAY_MIN_CAPACITY]
@@ -29,12 +29,12 @@
  trait.
 
  @param[ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
- Compare trait contained in <array_coda.h>. An optional mangled name for
+ Compare trait contained in <src/array_coda.h>. An optional mangled name for
  uniqueness and a function implementing either <typedef:<PAC>compare_fn> or
  <typedef:<PAC>bipredicate_fn>.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
- To string trait contained in <to_string.h>. An optional mangled name for
+ To string trait contained in <src/to_string.h>. An optional mangled name for
  uniqueness and function implementing <typedef:<PSZ>to_string_fn>.
 
  @std C89 */

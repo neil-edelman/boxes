@@ -22,15 +22,15 @@ Source [src/array\.h](src/array.h); examples [test/test\_array\.c](test/test_arr
  * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
    `<A>` that satisfies `C` naming conventions when mangled and a valid tag\-type, [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), associated therewith; required\. `<PA>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: ARRAY\_CODA  
-   Include more functions contained in [array\_coda\.h](array_coda.h), where `<AC>` is `<A>array`\.
+   Include more functions contained in [src/array\_coda\.h](src/array_coda.h), where `<AC>` is `<A>array`\.
  * Parameter: ARRAY\_MIN\_CAPACITY  
    Default is 3; optional number in `[2, SIZE_MAX]` that the capacity can not go below\.
  * Parameter: ARRAY\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
  * Parameter: ARRAY\_COMPARE\_NAME, ARRAY\_COMPARE, ARRAY\_IS\_EQUAL  
-   Compare trait contained in [array\_coda\.h](array_coda.h)\. An optional mangled name for uniqueness and a function implementing either [&lt;PAC&gt;compare_fn](#user-content-typedef-355f3451) or [&lt;PAC&gt;bipredicate_fn](#user-content-typedef-6cd1ff8a)\.
+   Compare trait contained in [src/array\_coda\.h](src/array_coda.h)\. An optional mangled name for uniqueness and a function implementing either [&lt;PAC&gt;compare_fn](#user-content-typedef-355f3451) or [&lt;PAC&gt;bipredicate_fn](#user-content-typedef-6cd1ff8a)\.
  * Parameter: ARRAY\_TO\_STRING\_NAME, ARRAY\_TO\_STRING  
-   To string trait contained in [to\_string\.h](to_string.h)\. An optional mangled name for uniqueness and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\.
+   To string trait contained in [src/to\_string\.h](src/to_string.h)\. An optional mangled name for uniqueness and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\.
  * Standard:  
    C89
 
