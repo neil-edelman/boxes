@@ -155,18 +155,23 @@ static PA_(type) *A_(array_buffer)(struct A_(array) *const a, const size_t n) {
 	return A_(array_reserve)(a, a->size + n) && a->data ? a->data + a->size : 0;
 }
 
-/** Adds `n` elements to the back of `a`. It will invalidate pointers in `a` if
- `n` is greater than the buffer space.
- @return A pointer to the elements. If `a` is idle and `n` is zero, a null
- pointer will be returned, otherwise null indicates an error.
- @throws[realloc, ERANGE] @allow */
-static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n) {
+/** Appends `n` items on the back of `a`. This is used in the coda and
+ <fn:<A>array_append>. */
+static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n) {
 	PA_(type) *b;
 	assert(a);
 	if(!(b = A_(array_buffer)(a, n))) return 0;
 	assert(n <= a->capacity && a->size <= a->capacity - n);
 	return a->size += n, b;
 }
+
+/** Adds `n` elements to the back of `a`. It will invalidate pointers in `a` if
+ `n` is greater than the buffer space.
+ @return A pointer to the elements. If `a` is idle and `n` is zero, a null
+ pointer will be returned, otherwise null indicates an error.
+ @throws[realloc, ERANGE] @allow */
+static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n)
+	{ return PA_(append)(a, n); }
 
 /** Adds `n` un-initialised elements at position `at` in `a`. The buffer holds
  enough elements or it will invalidate any pointers in `a`.
@@ -259,11 +264,6 @@ static int A_(array_splice)(/*restrict*/ struct A_(array) *const a,
 	if(b) memcpy(a->data + i0, b->data, b->size * sizeof *a->data);
 	return 1;
 }
-
-/** Appends `n` items on the back of `a`.
- @fixme It should be the other way around. */
-static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
-	{ return A_(array_append)(a, n); }
 
 /* <!-- iterate interface */
 /* Contains all iteration parameters. */
