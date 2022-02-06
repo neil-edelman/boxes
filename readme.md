@@ -34,7 +34,7 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Wil
  * Dependancies:  
    [array](https://github.com/neil-edelman/array)
  * Caveat:  
-   Add decrease priority\. Add replace\. Don't like that `HEAP_VALUE` has to be a pointer; what is this, Java? Use `memcpy`\.
+   Add decrease priority\. Add replace\. `HEAP_VALUE` has to be a pointer; use `memcpy` instead\.
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##

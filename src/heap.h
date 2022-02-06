@@ -43,8 +43,7 @@
  @std C89
  @fixme Add decrease priority.
  @fixme Add replace.
- @fixme Don't like that `HEAP_VALUE` has to be a pointer; what is this, Java?
- Use `memcpy`. */
+ @fixme `HEAP_VALUE` has to be a pointer; use `memcpy` instead. */
 
 #ifndef HEAP_NAME
 #error Generic HEAP_NAME undefined.
