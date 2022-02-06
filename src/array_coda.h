@@ -227,7 +227,207 @@ static void PAC_(unused_function)(void)
 	PAC_(unused_function_coda)(); }
 static void PAC_(unused_function_coda)(void) { PAC_(unused_function)(); }
 
-#else /* functions --><!-- compare */
+#else /* functions --><!-- compare/is equal */
 
+#ifndef ARRAY_CODA_COMPARE_ONCE /* <!-- once */
+#define ARRAY_CODA_COMPARE_ONCE
+/** <array_coda.h>: Returns a boolean given two read-only <typedef:<PAC>type>. */
+typedef int (*PAC_(bipredicate_fn))(const PAC_(type) *, const PAC_(type) *);
+/** <array_coda.h>: Three-way comparison on a totally order set of
+ <typedef:<PAC>type>; returns an integer value less then, equal to, greater
+ then zero, if `a < b`, `a == b`, `a > b`, respectively. */
+typedef int (*PAC_(compare_fn))(const PAC_(type) *a, const PAC_(type) *b);
+/** <array_coda.h>: Returns a boolean given two <typedef:<PAC>type>. */
+typedef int (*PAC_(biaction_fn))(PAC_(type) *, PAC_(type) *);
+#endif /* once --> */
 
+#ifdef ARRAY_CODA_NAME
+#define AC_C_(n, m) ARRAY_CAT(AC_(n), ARRAY_CAT(ARRAY_CODA_NAME, m))
+#else /* name --><!-- !name */
+#define AC_C_(n, m) ARRAY_CAT(AC_(n), m)
+#endif /* !name --> */
+#define PACC_(n) ARRAY_CAT(array_coda, AC_C_(,n))
+
+#ifdef BOX_COMPARE /* <!-- compare */
+
+/* Check that `BOX_COMPARE` is a function implementing
+ <typedef:<PAC>compare_fn>. */
+static const PAC_(compare_fn) PACC_(compare) = (BOX_COMPARE);
+
+/** <array_coda.h>: Lexicographically compares `a` to `b`. Both can be null,
+ with null values before everything. @return `a < b`: negative; `a == b`: zero;
+ `a > b`: positive. @order \O(`a.size`) @allow */
+static int AC_C_(,compare)(const PAC_(box) *const a, const PAC_(box) *const b) {
+	const PAC_(array) *aa, *bb;
+	PCM_(type) *ad, *bd, *end;
+	int diff;
+	/* Null counts as `-\infty`. */
+	if(!a) return b ? -1 : 0;
+	else if(!b) return 1;
+	aa = PAC_(b2a_c)(a), bb = PAC_(b2a_c)(b), assert(aa && bb);
+	if(aa->size > bb->size) {
+		for(ad = aa->data, bd = bb->data, end = bd + bb->size; bd < end;
+			ad++, bd++) if((diff = PAC_(compare)(ad, bd))) return diff;
+		return 1;
+	} else {
+		for(ad = a->data, bd = b->data, end = ad + a->size; ad < end;
+			ad++, bd++) if((diff = PAC_(compare)(ad, bd))) return diff;
+		return -(aa->size != bb->size);
+	}
+}
+
+/** <array_coda.h>: `a` should be partitioned true/false with less-then `value`.
+ @return The first index of `a` that is not less than `value`.
+ @order \O(log `a.size`) @allow */
+static size_t AC_C_(,lower_bound)(const PAC_(box) *const box,
+	const PAC_(type) *const value) {
+	const PAC_(array) *a = PAC_(b2a_c)(box);
+	size_t low = 0, high = a->size, mid;
+	assert(box && a && value);
+	while(low < high)
+		if(PCM_(compare)(value, a->data + (mid = low + (high - low) / 2)) <= 0)
+			high = mid;
+		else
+			low = mid + 1;
+	return low;
+}
+
+#if 0 /* <-- undone */
+
+/** <typedef:<PCM>box> `a` should be partitioned false/true with greater-than
+ or equal-to <typedef:<PCM>type> `value`. @return The first index of `a` that
+ is greater than `value`. @order \O(log `a.size`) @allow */
+static size_t CM_(upper_bound)(const PCM_(box) *const a,
+	const PCM_(type) *const value) {
+	size_t low = 0, high = a->size, mid;
+	assert(a && value);
+	while(low < high) if(PCM_(compare)(value, a->data
+		+ (mid = low + ((high - low) >> 1))) >= 0) low = mid + 1;
+		else high = mid;
+	return low;
+}
+
+/** Copies <typedef:<PCM>type> `value` at the upper bound of a sorted
+ <typedef:<PCM>box> `a`.
+ @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] @allow */
+static int CM_(insert_after)(PCM_(box) *const a,
+	const PCM_(type) *const value) {
+	size_t bound;
+	assert(a && value);
+	bound = CM_(upper_bound)(a, value);
+	if(!A_(array_new)(a)) return 0; /* @fixme Reference to array. */
+	memmove(a->data + bound + 1, a->data + bound,
+		sizeof *a->data * (a->size - bound - 1));
+	memcpy(a->data + bound, value, sizeof *value);
+	return 1;
+}
+
+/** Wrapper with void `a` and `b`. @implements qsort bsearch */
+static int PCM_(vcompar)(const void *const a, const void *const b)
+	{ return PCM_(compare)(a, b); }
+
+/** Sorts <typedef:<PCM>box> `a` by `qsort`.
+ @order \O(`a.size` \log `a.size`) @allow */
+static void CM_(sort)(PCM_(box) *const a)
+	{ assert(a), qsort(a->data, a->size, sizeof *a->data, PCM_(vcompar)); }
+
+/** Wrapper with void `a` and `b`. @implements qsort bsearch */
+static int PCM_(vrevers)(const void *const a, const void *const b)
+	{ return PCM_(compare)(b, a); }
+
+/** Sorts <typedef:<PCM>box> `a` in reverse by `qsort`.
+ @order \O(`a.size` \log `a.size`) @allow */
+static void CM_(reverse)(PCM_(box) *const a)
+	{ assert(a), qsort(a->data, a->size, sizeof *a->data, PCM_(vrevers)); }
+
+/** !compare(`a`, `b`) == equals(`a`, `b`).
+ @implements <typedef:<PCM>bipredicate_fn> */
+static int PCM_(is_equal)(const PCM_(type) *const a, const PCM_(type) *const b)
+	{ return !PCM_(compare)(a, b); }
+
+#endif /* undone --> */
+
+#else /* compare --><!-- is equal */
+
+/* Check that `BOX_IS_EQUAL` is a function implementing
+ <typedef:<PAC>bipredicate_fn>. */
+static const PAC_(bipredicate_fn) PACC_(is_equal) = (BOX_IS_EQUAL);
+
+#endif /* is equal --> */
+
+/** @return If <typedef:<PCM>box> `a` piecewise equals `b`, which both can be
+ null. @order \O(`size`) @allow */
+static int AC_C_(,is_equal)(const PCM_(box) *const a, const PCM_(box) *const b)
+{
+	const PAC_(array) *aa, *bb;
+	const PCM_(type) *ad, *bd, *end;
+	if(!a) return !b;
+	if(!b) return 0;
+	aa = PAC_(b2a_c)(a), bb = PAC_(b2a_c)(a), assert(aa && bb);
+	if(aa->size != bb->size) return 0;
+	for(ad = a->data, bd = b->data, end = aa + a->size; ad < end; ad++, bd++)
+		if(!PCM_(is_equal)(ad, bd)) return 0;
+	return 1;
+}
+
+/** Removes consecutive duplicate elements in <typedef:<PCM>box> `a`.
+ @param[merge] Controls surjection. Called with duplicate elements, if false
+ `(x, y)->(x)`, if true `(x,y)->(y)`. More complex functions, `(x, y)->(x+y)`
+ can be simulated by mixing the two in the value returned. Can be null: behaves
+ like false. @order \O(`a.size` \times `merge`) @allow */
+static void AC_C_(,unique_merge)(PCM_(box) *const a,
+	const PAC_(biaction_fn) merge) {
+	size_t target, from, cursor, choice, next, move;
+	const size_t last = a->size;
+	int is_first, is_last;
+	assert(a);
+	for(target = from = cursor = 0; cursor < last; cursor += next) {
+		/* Bijective `[from, cursor)` is moved lazily. */
+		for(choice = 0, next = 1; cursor + next < last && PCM_(is_equal)(a->data
+			+ cursor + choice, a->data + cursor + next); next++)
+			if(merge && merge(a->data + choice, a->data + next)) choice = next;
+		if(next == 1) continue;
+		/* Must move injective `cursor + choice \in [cursor, cursor + next)`. */
+		is_first = !choice;
+		is_last  = (choice == next - 1);
+		move = cursor - from + (size_t)is_first;
+		memmove(a->data + target, a->data + from, sizeof *a->data * move),
+		target += move;
+		if(!is_first && !is_last) memcpy(a->data + target,
+			a->data + cursor + choice, sizeof *a->data), target++;
+		from = cursor + next - (size_t)is_last;
+	}
+	/* Last differed move. */
+	move = last - from;
+	memmove(a->data + target, a->data + from, sizeof *a->data * move),
+	target += move, assert(a->size >= target);
+	a->size = target;
+}
+
+/** Removes consecutive duplicate elements in <typedef:<PCM>box> `a`.
+ @order \O(`a.size`) @allow */
+static void CM_(unique)(PCM_(box) *const a) { CM_(unique_merge)(a, 0); }
+
+static void PCM_(unused_compare_coda)(void);
+static void PCM_(unused_compare)(void) {
+#ifdef BOX_COMPARE /* <!-- compare */
+	CM_(compare)(0, 0); CM_(lower_bound)(0, 0); CM_(upper_bound)(0, 0);
+	CM_(insert_after)(0, 0); CM_(sort)(0); CM_(reverse)(0);
 #endif /* compare --> */
+	CM_(is_equal)(0, 0); CM_(unique_merge)(0, 0); CM_(unique)(0);
+	PCM_(unused_compare_coda)(); }
+static void PCM_(unused_compare_coda)(void) { PCM_(unused_compare)(); }
+
+#ifdef BOX_COMPARE
+#undef BOX_COMPARE
+#endif
+#ifdef BOX_IS_EQUAL
+#undef BOX_IS_EQUAL
+#endif
+#ifdef BOX_COMPARE_NAME
+#undef BOX_COMPARE_NAME
+#endif
+#undef AC_C_
+#undef PACC_
+
+#endif /* compare/is equal --> */

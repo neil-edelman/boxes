@@ -387,6 +387,9 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #undef ARRAY_CODA_BOX_TO
 #undef AC_
 #undef ARRAY_CODA_ONCE
+#ifdef ARRAY_CODA_COMPARE_ONCE
+#undef ARRAY_CODA_COMPARE_ONCE
+#endif
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT
 #undef ARRAY_COMPARE_TRAIT
