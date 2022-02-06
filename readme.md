@@ -5,7 +5,7 @@ Source [src/array\.h](src/array.h); examples [test/test\_array\.c](test/test_arr
 ## Contiguous dynamic array ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), [&lt;PAC&gt;box](#user-content-typedef-66d14de2), [&lt;PAC&gt;type](#user-content-typedef-b6e4909d), [&lt;PAC&gt;action_fn](#user-content-typedef-6f318a4), [&lt;PAC&gt;predicate_fn](#user-content-typedef-13605483), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa), [&lt;PCM&gt;type](#user-content-typedef-cee32005), [&lt;PCM&gt;bipredicate_fn](#user-content-typedef-ea6988c2), [&lt;PCM&gt;biaction_fn](#user-content-typedef-6f7f0563), [&lt;PCM&gt;compare_fn](#user-content-typedef-64a034e9)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), [&lt;PAC&gt;box](#user-content-typedef-66d14de2), [&lt;PAC&gt;type](#user-content-typedef-b6e4909d), [&lt;PAC&gt;action_fn](#user-content-typedef-6f318a4), [&lt;PAC&gt;predicate_fn](#user-content-typedef-13605483), [&lt;PAC&gt;bipredicate_fn](#user-content-typedef-6cd1ff8a), [&lt;PAC&gt;compare_fn](#user-content-typedef-355f3451), [&lt;PAC&gt;biaction_fn](#user-content-typedef-a314f7fb), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PAC&gt;box](#user-content-typedef-66d14de2), [&lt;PAC&gt;type](#user-content-typedef-b6e4909d), [&lt;PAC&gt;action_fn](#user-content-typedef-6f318a4), [&lt;PAC&gt;predicate_fn](#user-content-typedef-13605483), [&lt;PAC&gt;bipredicate_fn](#user-content-typedef-6cd1ff8a), [&lt;PAC&gt;compare_fn](#user-content-typedef-355f3451), [&lt;PAC&gt;biaction_fn](#user-content-typedef-a314f7fb)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;A&gt;array](#user-content-tag-8049be0d)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -28,7 +28,7 @@ Source [src/array\.h](src/array.h); examples [test/test\_array\.c](test/test_arr
  * Parameter: ARRAY\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
  * Parameter: ARRAY\_COMPARE\_NAME, ARRAY\_COMPARE, ARRAY\_IS\_EQUAL  
-   Compare trait contained in [compare\.h](compare.h)\. An optional mangled name for uniqueness and a function implementing either [&lt;PCM&gt;compare_fn](#user-content-typedef-64a034e9) or [&lt;PCM&gt;bipredicate_fn](#user-content-typedef-ea6988c2)\.
+   Compare trait contained in [compare\.h](compare.h)\. An optional mangled name for uniqueness and a function implementing either [&lt;PAC&gt;compare_fn](#user-content-typedef-355f3451) or [&lt;PAC&gt;bipredicate_fn](#user-content-typedef-6cd1ff8a)\.
  * Parameter: ARRAY\_TO\_STRING\_NAME, ARRAY\_TO\_STRING  
    To string trait contained in [to\_string\.h](to_string.h)\. An optional mangled name for uniqueness and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\.
  * Standard:  
@@ -77,6 +77,30 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 
 
+### <a id = "user-content-typedef-6cd1ff8a" name = "user-content-typedef-6cd1ff8a">&lt;PAC&gt;bipredicate_fn</a> ###
+
+<code>typedef int(*<strong>&lt;PAC&gt;bipredicate_fn</strong>)(const &lt;PAC&gt;type *, const &lt;PAC&gt;type *);</code>
+
+[array\_coda\.h](array_coda.h): Returns a boolean given two read\-only [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
+
+
+
+### <a id = "user-content-typedef-355f3451" name = "user-content-typedef-355f3451">&lt;PAC&gt;compare_fn</a> ###
+
+<code>typedef int(*<strong>&lt;PAC&gt;compare_fn</strong>)(const &lt;PAC&gt;type *a, const &lt;PAC&gt;type *b);</code>
+
+[array\_coda\.h](array_coda.h): Three\-way comparison on a totally order set of [&lt;PAC&gt;type](#user-content-typedef-b6e4909d); returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
+
+
+
+### <a id = "user-content-typedef-a314f7fb" name = "user-content-typedef-a314f7fb">&lt;PAC&gt;biaction_fn</a> ###
+
+<code>typedef int(*<strong>&lt;PAC&gt;biaction_fn</strong>)(&lt;PAC&gt;type *, &lt;PAC&gt;type *);</code>
+
+[array\_coda\.h](array_coda.h): Returns a boolean given two [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
+
+
+
 ### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
 
 <code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
@@ -85,43 +109,59 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 
 
-### <a id = "user-content-typedef-ec6edbaa" name = "user-content-typedef-ec6edbaa">&lt;PCM&gt;box</a> ###
+### <a id = "user-content-typedef-66d14de2" name = "user-content-typedef-66d14de2">&lt;PAC&gt;box</a> ###
 
-<code>typedef BOX_CONTAINER <strong>&lt;PCM&gt;box</strong>;</code>
+<code>typedef BOX_CONTAINER <strong>&lt;PAC&gt;box</strong>;</code>
 
-[compare\.h](compare.h): an alias to the box\.
-
-
-
-### <a id = "user-content-typedef-cee32005" name = "user-content-typedef-cee32005">&lt;PCM&gt;type</a> ###
-
-<code>typedef BOX_CONTENTS <strong>&lt;PCM&gt;type</strong>;</code>
-
-[compare\.h](compare.h): an alias to the individual type contained in the box\.
+[array\_coda\.h](array_coda.h): an alias to the box\.
 
 
 
-### <a id = "user-content-typedef-ea6988c2" name = "user-content-typedef-ea6988c2">&lt;PCM&gt;bipredicate_fn</a> ###
+### <a id = "user-content-typedef-b6e4909d" name = "user-content-typedef-b6e4909d">&lt;PAC&gt;type</a> ###
 
-<code>typedef int(*<strong>&lt;PCM&gt;bipredicate_fn</strong>)(const &lt;PCM&gt;type *, const &lt;PCM&gt;type *);</code>
+<code>typedef BOX_CONTENTS <strong>&lt;PAC&gt;type</strong>;</code>
 
-Returns a boolean given two read\-only [&lt;PCM&gt;type](#user-content-typedef-cee32005)\.
-
-
-
-### <a id = "user-content-typedef-6f7f0563" name = "user-content-typedef-6f7f0563">&lt;PCM&gt;biaction_fn</a> ###
-
-<code>typedef int(*<strong>&lt;PCM&gt;biaction_fn</strong>)(&lt;PCM&gt;type *, &lt;PCM&gt;type *);</code>
-
-Returns a boolean given two [&lt;PCM&gt;type](#user-content-typedef-cee32005)\.
+[array\_coda\.h](array_coda.h): an alias to the individual type contained in the box\.
 
 
 
-### <a id = "user-content-typedef-64a034e9" name = "user-content-typedef-64a034e9">&lt;PCM&gt;compare_fn</a> ###
+### <a id = "user-content-typedef-6f318a4" name = "user-content-typedef-6f318a4">&lt;PAC&gt;action_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PCM&gt;compare_fn</strong>)(const &lt;PCM&gt;type *a, const &lt;PCM&gt;type *b);</code>
+<code>typedef void(*<strong>&lt;PAC&gt;action_fn</strong>)(&lt;PAC&gt;type *);</code>
 
-Three\-way comparison on a totally order set of [&lt;PCM&gt;type](#user-content-typedef-cee32005); returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
+[array\_coda\.h](array_coda.h): Operates by side\-effects on [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
+
+
+
+### <a id = "user-content-typedef-13605483" name = "user-content-typedef-13605483">&lt;PAC&gt;predicate_fn</a> ###
+
+<code>typedef int(*<strong>&lt;PAC&gt;predicate_fn</strong>)(const &lt;PAC&gt;type *);</code>
+
+[array\_coda\.h](array_coda.h): Returns a boolean given read\-only [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
+
+
+
+### <a id = "user-content-typedef-6cd1ff8a" name = "user-content-typedef-6cd1ff8a">&lt;PAC&gt;bipredicate_fn</a> ###
+
+<code>typedef int(*<strong>&lt;PAC&gt;bipredicate_fn</strong>)(const &lt;PAC&gt;type *, const &lt;PAC&gt;type *);</code>
+
+[array\_coda\.h](array_coda.h): Returns a boolean given two read\-only [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
+
+
+
+### <a id = "user-content-typedef-355f3451" name = "user-content-typedef-355f3451">&lt;PAC&gt;compare_fn</a> ###
+
+<code>typedef int(*<strong>&lt;PAC&gt;compare_fn</strong>)(const &lt;PAC&gt;type *a, const &lt;PAC&gt;type *b);</code>
+
+[array\_coda\.h](array_coda.h): Three\-way comparison on a totally order set of [&lt;PAC&gt;type](#user-content-typedef-b6e4909d); returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
+
+
+
+### <a id = "user-content-typedef-a314f7fb" name = "user-content-typedef-a314f7fb">&lt;PAC&gt;biaction_fn</a> ###
+
+<code>typedef int(*<strong>&lt;PAC&gt;biaction_fn</strong>)(&lt;PAC&gt;type *, &lt;PAC&gt;type *);</code>
+
+[array\_coda\.h](array_coda.h): Returns a boolean given two [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
 
 
 
@@ -151,8 +191,6 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-8eb786c0">&lt;A&gt;array_buffer</a></td><td>a, n</td></tr>
 
-<tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-2d92b62">&lt;A&gt;array_append</a></td><td>a, n</td></tr>
-
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-c0c02447">&lt;A&gt;array_insert</a></td><td>a, n, at</td></tr>
 
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-1b423580">&lt;A&gt;array_new</a></td><td>a</td></tr>
@@ -166,6 +204,8 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-8af01fa1">&lt;A&gt;array_peek</a></td><td>a</td></tr>
 
 <tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-7bf4e995">&lt;A&gt;array_pop</a></td><td>a</td></tr>
+
+<tr><td align = right>static &lt;PA&gt;type *</td><td><a href = "#user-content-fn-2d92b62">&lt;A&gt;array_append</a></td><td>a, n</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-bce1c326">&lt;A&gt;array_splice</a></td><td>a, b, i0, i1</td></tr>
 
@@ -187,25 +227,61 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <tr><td align = right>static const &lt;PAC&gt;type *</td><td><a href = "#user-content-fn-ed02e52b">&lt;AC&gt;any</a></td><td>box, predicate</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-a4e64b3d">&lt;ACC&gt;compare</a></td><td>a, b</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-5214478c">&lt;ACC&gt;lower_bound</a></td><td>box, value</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-aa46e23d">&lt;ACC&gt;upper_bound</a></td><td>box, value</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-4789a122">&lt;ACC&gt;insert_after</a></td><td>box, value</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-9d49726">&lt;ACC&gt;sort</a></td><td>box</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-1cd40178">&lt;ACC&gt;reverse</a></td><td>box</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-92b388f5">&lt;ACC&gt;is_equal</a></td><td>a, b</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-30137672">&lt;ACC&gt;unique_merge</a></td><td>box, merge</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-367663f1">&lt;ACC&gt;unique</a></td><td>a</td></tr>
+
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-7e7ebd12">&lt;CM&gt;compare</a></td><td>a, b</td></tr>
+<tr><td align = right>static &lt;PAC&gt;type *</td><td><a href = "#user-content-fn-b346708e">&lt;AC&gt;previous</a></td><td>box, x</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-62df0883">&lt;CM&gt;lower_bound</a></td><td>a, value</td></tr>
+<tr><td align = right>static &lt;PAC&gt;type *</td><td><a href = "#user-content-fn-60e57f42">&lt;AC&gt;next</a></td><td>box, x</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-179bac56">&lt;CM&gt;upper_bound</a></td><td>a, value</td></tr>
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-86c2328d">&lt;AC&gt;clip</a></td><td>box, i</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-bfb5a80f">&lt;CM&gt;insert_after</a></td><td>a, value</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-cf7c3074">&lt;AC&gt;copy_if</a></td><td>a, copy, b</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-3e4620eb">&lt;CM&gt;sort</a></td><td>a</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-a6bb890c">&lt;AC&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-2022b037">&lt;CM&gt;reverse</a></td><td>a</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-7924b33">&lt;AC&gt;trim</a></td><td>box, predicate</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-30c13ca0">&lt;CM&gt;is_equal</a></td><td>a, b</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-884c09a">&lt;AC&gt;each</a></td><td>box, action</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-a92a161f">&lt;CM&gt;unique_merge</a></td><td>a, merge</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-d0650740">&lt;AC&gt;if_each</a></td><td>box, predicate, action</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-f17606f0">&lt;CM&gt;unique</a></td><td>a</td></tr>
+<tr><td align = right>static const &lt;PAC&gt;type *</td><td><a href = "#user-content-fn-ed02e52b">&lt;AC&gt;any</a></td><td>box, predicate</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-a4e64b3d">&lt;ACC&gt;compare</a></td><td>a, b</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-5214478c">&lt;ACC&gt;lower_bound</a></td><td>box, value</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-aa46e23d">&lt;ACC&gt;upper_bound</a></td><td>box, value</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-4789a122">&lt;ACC&gt;insert_after</a></td><td>box, value</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-9d49726">&lt;ACC&gt;sort</a></td><td>box</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-1cd40178">&lt;ACC&gt;reverse</a></td><td>box</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-92b388f5">&lt;ACC&gt;is_equal</a></td><td>a, b</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-30137672">&lt;ACC&gt;unique_merge</a></td><td>box, merge</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-367663f1">&lt;ACC&gt;unique</a></td><td>a</td></tr>
 
 </table>
 
@@ -258,19 +334,6 @@ The capacity of `a` will be increased to at least `n` elements beyond the size\.
 
  * Return:  
    The start of the buffered space at the back of the array\. If `a` is idle and `buffer` is zero, a null pointer is returned, otherwise null indicates an error\.
- * Exceptional return: realloc, ERANGE  
-
-
-
-
-### <a id = "user-content-fn-2d92b62" name = "user-content-fn-2d92b62">&lt;A&gt;array_append</a> ###
-
-<code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_append</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>n</em>)</code>
-
-Adds `n` elements to the back of `a`\. It will invalidate pointers in `a` if `n` is greater than the buffer space\.
-
- * Return:  
-   A pointer to the elements\. If `a` is idle and `n` is zero, a null pointer will be returned, otherwise null indicates an error\.
  * Exceptional return: realloc, ERANGE  
 
 
@@ -360,6 +423,19 @@ Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was prev
    Value from the the top of `a` that is removed or null if the array is empty\.
  * Order:  
    &#920;\(1\)
+
+
+
+
+### <a id = "user-content-fn-2d92b62" name = "user-content-fn-2d92b62">&lt;A&gt;array_append</a> ###
+
+<code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_append</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>n</em>)</code>
+
+Adds `n` elements to the back of `a`\. It will invalidate pointers in `a` if `n` is greater than the buffer space\.
+
+ * Return:  
+   A pointer to the elements\. If `a` is idle and `n` is zero, a null pointer will be returned, otherwise null indicates an error\.
+ * Exceptional return: realloc, ERANGE  
 
 
 
@@ -496,6 +572,127 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 
 
+### <a id = "user-content-fn-a4e64b3d" name = "user-content-fn-a4e64b3d">&lt;ACC&gt;compare</a> ###
+
+<code>static int <strong>&lt;ACC&gt;compare</strong>(const &lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;box *const <em>b</em>)</code>
+
+[array\_coda\.h](array_coda.h): Lexicographically compares `a` to `b`\. Both can be null, with null values before everything\.
+
+ * Return:  
+   `a < b`: negative; `a == b`: zero; `a > b`: positive\.
+ * Order:  
+   &#927;\(`a.size`\)
+
+
+
+
+### <a id = "user-content-fn-5214478c" name = "user-content-fn-5214478c">&lt;ACC&gt;lower_bound</a> ###
+
+<code>static size_t <strong>&lt;ACC&gt;lower_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code>
+
+[array\_coda\.h](array_coda.h): `box` should be partitioned true/false with less\-then `value`\.
+
+ * Return:  
+   The first index of `a` that is not less than `value`\.
+ * Order:  
+   &#927;\(log `a.size`\)
+
+
+
+
+### <a id = "user-content-fn-aa46e23d" name = "user-content-fn-aa46e23d">&lt;ACC&gt;upper_bound</a> ###
+
+<code>static size_t <strong>&lt;ACC&gt;upper_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code>
+
+[array\_coda\.h](array_coda.h): `box` should be partitioned false/true with greater\-than or equal\-to [&lt;PAC&gt;type](#user-content-typedef-b6e4909d) `value`\.
+
+ * Return:  
+   The first index of `box` that is greater than `value`\.
+ * Order:  
+   &#927;\(log `a.size`\)
+
+
+
+
+### <a id = "user-content-fn-4789a122" name = "user-content-fn-4789a122">&lt;ACC&gt;insert_after</a> ###
+
+<code>static int <strong>&lt;ACC&gt;insert_after</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code>
+
+[array\_coda\.h](array_coda.h): Copies `value` at the upper bound of a sorted `box`\.
+
+ * Return:  
+   Success\.
+ * Exceptional return: realloc, ERANGE  
+ * Order:  
+   &#927;\(`a.size`\)
+
+
+
+
+### <a id = "user-content-fn-9d49726" name = "user-content-fn-9d49726">&lt;ACC&gt;sort</a> ###
+
+<code>static void <strong>&lt;ACC&gt;sort</strong>(&lt;PAC&gt;box *const <em>box</em>)</code>
+
+[array\_coda\.h](array_coda.h): Sorts `box` by `qsort`\.
+
+ * Order:  
+   &#927;\(`a.size` \\log `box.size`\)
+
+
+
+
+### <a id = "user-content-fn-1cd40178" name = "user-content-fn-1cd40178">&lt;ACC&gt;reverse</a> ###
+
+<code>static void <strong>&lt;ACC&gt;reverse</strong>(&lt;PAC&gt;box *const <em>box</em>)</code>
+
+[array\_coda\.h](array_coda.h): Sorts `box` in reverse by `qsort`\.
+
+ * Order:  
+   &#927;\(`a.size` \\log `a.size`\)
+
+
+
+
+### <a id = "user-content-fn-92b388f5" name = "user-content-fn-92b388f5">&lt;ACC&gt;is_equal</a> ###
+
+<code>static int <strong>&lt;ACC&gt;is_equal</strong>(const &lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;box *const <em>b</em>)</code>
+
+[array\_coda\.h](array_coda.h)
+
+ * Return:  
+   If `a` piecewise equals `b`, which both can be null\.
+ * Order:  
+   &#927;\(`size`\)
+
+
+
+
+### <a id = "user-content-fn-30137672" name = "user-content-fn-30137672">&lt;ACC&gt;unique_merge</a> ###
+
+<code>static void <strong>&lt;ACC&gt;unique_merge</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;biaction_fn <em>merge</em>)</code>
+
+[array\_coda\.h](array_coda.h): Removes consecutive duplicate elements in `box`\.
+
+ * Parameter: _merge_  
+   Controls surjection\. Called with duplicate elements, if false `(x, y)->(x)`, if true `(x,y)->(y)`\. More complex functions, `(x, y)->(x+y)` can be simulated by mixing the two in the value returned\. Can be null: behaves like false\.
+ * Order:  
+   &#927;\(`a.size` &#215; `merge`\)
+
+
+
+
+### <a id = "user-content-fn-367663f1" name = "user-content-fn-367663f1">&lt;ACC&gt;unique</a> ###
+
+<code>static void <strong>&lt;ACC&gt;unique</strong>(&lt;PAC&gt;box *const <em>a</em>)</code>
+
+[array\_coda\.h](array_coda.h): Removes consecutive duplicate elements in `a`\.
+
+ * Order:  
+   &#927;\(`a.size`\)
+
+
+
+
 ### <a id = "user-content-fn-b11709d3" name = "user-content-fn-b11709d3">&lt;SZ&gt;to_string</a> ###
 
 <code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
@@ -510,11 +707,128 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 
 
-### <a id = "user-content-fn-7e7ebd12" name = "user-content-fn-7e7ebd12">&lt;CM&gt;compare</a> ###
+### <a id = "user-content-fn-b346708e" name = "user-content-fn-b346708e">&lt;AC&gt;previous</a> ###
 
-<code>static int <strong>&lt;CM&gt;compare</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;box *const <em>b</em>)</code>
+<code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;previous</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code>
 
-Lexicographically compares [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` to `b`\. Null values are before everything\.
+[array\_coda\.h](array_coda.h)
+
+ * Parameter: _x_  
+   A valid entry or null to start from the last\.
+ * Return:  
+   The previous valid entry from `box` \(which could be null\) or null if this was the first\.
+
+
+
+
+### <a id = "user-content-fn-60e57f42" name = "user-content-fn-60e57f42">&lt;AC&gt;next</a> ###
+
+<code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;next</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code>
+
+[array\_coda\.h](array_coda.h)
+
+ * Parameter: _x_  
+   A valid entry or null to start from the first\.
+ * Return:  
+   The next valid entry from `box` \(which could be null\) or null if this was the last\.
+
+
+
+
+### <a id = "user-content-fn-86c2328d" name = "user-content-fn-86c2328d">&lt;AC&gt;clip</a> ###
+
+<code>static size_t <strong>&lt;AC&gt;clip</strong>(const &lt;PAC&gt;box *const <em>box</em>, const long <em>i</em>)</code>
+
+[array\_coda\.h](array_coda.h)
+
+ * Return:  
+   Converts `i` to an index in `box` from \[0, `box.size`\]\. Negative values are wrapped\.
+ * Order:  
+   &#920;\(1\)
+
+
+
+
+### <a id = "user-content-fn-cf7c3074" name = "user-content-fn-cf7c3074">&lt;AC&gt;copy_if</a> ###
+
+<code>static int <strong>&lt;AC&gt;copy_if</strong>(&lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;predicate_fn <em>copy</em>, const &lt;PAC&gt;box *const <em>b</em>)</code>
+
+[array\_coda\.h](array_coda.h): For all elements of `b`, calls `copy`, and if true, lazily copies the elements to `a`\. `a` and `b` can not be the same but `b` can be null, \(in which case, it does nothing\.\)
+
+ * Exceptional return: ERANGE, realloc  
+ * Order:  
+   &#927;\(`b.size` &#215; `copy`\)
+
+
+
+
+### <a id = "user-content-fn-a6bb890c" name = "user-content-fn-a6bb890c">&lt;AC&gt;keep_if</a> ###
+
+<code>static void <strong>&lt;AC&gt;keep_if</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>keep</em>, const &lt;PAC&gt;action_fn <em>destruct</em>)</code>
+
+[array\_coda\.h](array_coda.h): For all elements of `box`, calls `keep`, and if false, lazy deletes that item, calling `destruct` \(if not\-null\)\.
+
+ * Order:  
+   &#927;\(`a.size` &#215; `keep` &#215; `destruct`\)
+
+
+
+
+### <a id = "user-content-fn-7924b33" name = "user-content-fn-7924b33">&lt;AC&gt;trim</a> ###
+
+<code>static void <strong>&lt;AC&gt;trim</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code>
+
+[array\_coda\.h](array_coda.h): Removes at either end of `box` of things that `predicate` returns true\.
+
+ * Order:  
+   &#927;\(`box.size` &#215; `predicate`\)
+
+
+
+
+### <a id = "user-content-fn-884c09a" name = "user-content-fn-884c09a">&lt;AC&gt;each</a> ###
+
+<code>static void <strong>&lt;AC&gt;each</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;action_fn <em>action</em>)</code>
+
+[array\_coda\.h](array_coda.h): Iterates through `box` and calls `action` on all the elements\. The topology of the list should not change while in this function\.
+
+ * Order:  
+   &#927;\(`box.size` &#215; `action`\)
+
+
+
+
+### <a id = "user-content-fn-d0650740" name = "user-content-fn-d0650740">&lt;AC&gt;if_each</a> ###
+
+<code>static void <strong>&lt;AC&gt;if_each</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>, const &lt;PAC&gt;action_fn <em>action</em>)</code>
+
+[array\_coda\.h](array_coda.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list should not change while in this function\.
+
+ * Order:  
+   &#927;\(`box.size` &#215; `predicate` &#215; `action`\)
+
+
+
+
+### <a id = "user-content-fn-ed02e52b" name = "user-content-fn-ed02e52b">&lt;AC&gt;any</a> ###
+
+<code>static const &lt;PAC&gt;type *<strong>&lt;AC&gt;any</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code>
+
+[array\_coda\.h](array_coda.h): Iterates through `box` and calls `predicate` until it returns true\.
+
+ * Return:  
+   The first `predicate` that returned true, or, if the statement is false on all, null\.
+ * Order:  
+   &#927;\(`box.size` &#215; `predicate`\)
+
+
+
+
+### <a id = "user-content-fn-a4e64b3d" name = "user-content-fn-a4e64b3d">&lt;ACC&gt;compare</a> ###
+
+<code>static int <strong>&lt;ACC&gt;compare</strong>(const &lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;box *const <em>b</em>)</code>
+
+[array\_coda\.h](array_coda.h): Lexicographically compares `a` to `b`\. Both can be null, with null values before everything\.
 
  * Return:  
    `a < b`: negative; `a == b`: zero; `a > b`: positive\.
@@ -524,11 +838,11 @@ Lexicographically compares [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` 
 
 
 
-### <a id = "user-content-fn-62df0883" name = "user-content-fn-62df0883">&lt;CM&gt;lower_bound</a> ###
+### <a id = "user-content-fn-5214478c" name = "user-content-fn-5214478c">&lt;ACC&gt;lower_bound</a> ###
 
-<code>static size_t <strong>&lt;CM&gt;lower_bound</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>value</em>)</code>
+<code>static size_t <strong>&lt;ACC&gt;lower_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code>
 
-[&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` should be partitioned true/false with less\-then [&lt;PCM&gt;type](#user-content-typedef-cee32005) `value`\.
+[array\_coda\.h](array_coda.h): `box` should be partitioned true/false with less\-then `value`\.
 
  * Return:  
    The first index of `a` that is not less than `value`\.
@@ -538,25 +852,25 @@ Lexicographically compares [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` 
 
 
 
-### <a id = "user-content-fn-179bac56" name = "user-content-fn-179bac56">&lt;CM&gt;upper_bound</a> ###
+### <a id = "user-content-fn-aa46e23d" name = "user-content-fn-aa46e23d">&lt;ACC&gt;upper_bound</a> ###
 
-<code>static size_t <strong>&lt;CM&gt;upper_bound</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>value</em>)</code>
+<code>static size_t <strong>&lt;ACC&gt;upper_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code>
 
-[&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` should be partitioned false/true with greater\-than or equal\-to [&lt;PCM&gt;type](#user-content-typedef-cee32005) `value`\.
+[array\_coda\.h](array_coda.h): `box` should be partitioned false/true with greater\-than or equal\-to [&lt;PAC&gt;type](#user-content-typedef-b6e4909d) `value`\.
 
  * Return:  
-   The first index of `a` that is greater than `value`\.
+   The first index of `box` that is greater than `value`\.
  * Order:  
    &#927;\(log `a.size`\)
 
 
 
 
-### <a id = "user-content-fn-bfb5a80f" name = "user-content-fn-bfb5a80f">&lt;CM&gt;insert_after</a> ###
+### <a id = "user-content-fn-4789a122" name = "user-content-fn-4789a122">&lt;ACC&gt;insert_after</a> ###
 
-<code>static int <strong>&lt;CM&gt;insert_after</strong>(&lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;type *const <em>value</em>)</code>
+<code>static int <strong>&lt;ACC&gt;insert_after</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code>
 
-Copies [&lt;PCM&gt;type](#user-content-typedef-cee32005) `value` at the upper bound of a sorted [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a`\.
+[array\_coda\.h](array_coda.h): Copies `value` at the upper bound of a sorted `box`\.
 
  * Return:  
    Success\.
@@ -567,11 +881,23 @@ Copies [&lt;PCM&gt;type](#user-content-typedef-cee32005) `value` at the upper bo
 
 
 
-### <a id = "user-content-fn-3e4620eb" name = "user-content-fn-3e4620eb">&lt;CM&gt;sort</a> ###
+### <a id = "user-content-fn-9d49726" name = "user-content-fn-9d49726">&lt;ACC&gt;sort</a> ###
 
-<code>static void <strong>&lt;CM&gt;sort</strong>(&lt;PCM&gt;box *const <em>a</em>)</code>
+<code>static void <strong>&lt;ACC&gt;sort</strong>(&lt;PAC&gt;box *const <em>box</em>)</code>
 
-Sorts [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` by `qsort`\.
+[array\_coda\.h](array_coda.h): Sorts `box` by `qsort`\.
+
+ * Order:  
+   &#927;\(`a.size` \\log `box.size`\)
+
+
+
+
+### <a id = "user-content-fn-1cd40178" name = "user-content-fn-1cd40178">&lt;ACC&gt;reverse</a> ###
+
+<code>static void <strong>&lt;ACC&gt;reverse</strong>(&lt;PAC&gt;box *const <em>box</em>)</code>
+
+[array\_coda\.h](array_coda.h): Sorts `box` in reverse by `qsort`\.
 
  * Order:  
    &#927;\(`a.size` \\log `a.size`\)
@@ -579,35 +905,25 @@ Sorts [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` by `qsort`\.
 
 
 
-### <a id = "user-content-fn-2022b037" name = "user-content-fn-2022b037">&lt;CM&gt;reverse</a> ###
+### <a id = "user-content-fn-92b388f5" name = "user-content-fn-92b388f5">&lt;ACC&gt;is_equal</a> ###
 
-<code>static void <strong>&lt;CM&gt;reverse</strong>(&lt;PCM&gt;box *const <em>a</em>)</code>
+<code>static int <strong>&lt;ACC&gt;is_equal</strong>(const &lt;PAC&gt;box *const <em>a</em>, const &lt;PAC&gt;box *const <em>b</em>)</code>
 
-Sorts [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` in reverse by `qsort`\.
-
- * Order:  
-   &#927;\(`a.size` \\log `a.size`\)
-
-
-
-
-### <a id = "user-content-fn-30c13ca0" name = "user-content-fn-30c13ca0">&lt;CM&gt;is_equal</a> ###
-
-<code>static int <strong>&lt;CM&gt;is_equal</strong>(const &lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;box *const <em>b</em>)</code>
+[array\_coda\.h](array_coda.h)
 
  * Return:  
-   If [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a` piecewise equals `b`, which both can be null\.
+   If `a` piecewise equals `b`, which both can be null\.
  * Order:  
    &#927;\(`size`\)
 
 
 
 
-### <a id = "user-content-fn-a92a161f" name = "user-content-fn-a92a161f">&lt;CM&gt;unique_merge</a> ###
+### <a id = "user-content-fn-30137672" name = "user-content-fn-30137672">&lt;ACC&gt;unique_merge</a> ###
 
-<code>static void <strong>&lt;CM&gt;unique_merge</strong>(&lt;PCM&gt;box *const <em>a</em>, const &lt;PCM&gt;biaction_fn <em>merge</em>)</code>
+<code>static void <strong>&lt;ACC&gt;unique_merge</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;biaction_fn <em>merge</em>)</code>
 
-Removes consecutive duplicate elements in [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a`\.
+[array\_coda\.h](array_coda.h): Removes consecutive duplicate elements in `box`\.
 
  * Parameter: _merge_  
    Controls surjection\. Called with duplicate elements, if false `(x, y)->(x)`, if true `(x,y)->(y)`\. More complex functions, `(x, y)->(x+y)` can be simulated by mixing the two in the value returned\. Can be null: behaves like false\.
@@ -617,11 +933,11 @@ Removes consecutive duplicate elements in [&lt;PCM&gt;box](#user-content-typedef
 
 
 
-### <a id = "user-content-fn-f17606f0" name = "user-content-fn-f17606f0">&lt;CM&gt;unique</a> ###
+### <a id = "user-content-fn-367663f1" name = "user-content-fn-367663f1">&lt;ACC&gt;unique</a> ###
 
-<code>static void <strong>&lt;CM&gt;unique</strong>(&lt;PCM&gt;box *const <em>a</em>)</code>
+<code>static void <strong>&lt;ACC&gt;unique</strong>(&lt;PAC&gt;box *const <em>a</em>)</code>
 
-Removes consecutive duplicate elements in [&lt;PCM&gt;box](#user-content-typedef-ec6edbaa) `a`\.
+[array\_coda\.h](array_coda.h): Removes consecutive duplicate elements in `a`\.
 
  * Order:  
    &#927;\(`a.size`\)

@@ -276,8 +276,8 @@ static int ACC_(compare)(const PAC_(box) *const a, const PAC_(box) *const b) {
 	}
 }
 
-/** <array_coda.h>: `a` should be partitioned true/false with less-then `value`.
- @return The first index of `a` that is not less than `value`.
+/** <array_coda.h>: `box` should be partitioned true/false with less-then
+ `value`. @return The first index of `a` that is not less than `value`.
  @order \O(log `a.size`) @allow */
 static size_t ACC_(lower_bound)(const PAC_(box) *const box,
 	const PAC_(type) *const value) {
@@ -306,7 +306,7 @@ static size_t ACC_(upper_bound)(const PAC_(box) *const box,
 	return low;
 }
 
-/** <array_coda.h>: Copies `value` at the upper bound of a sorted `a`.
+/** <array_coda.h>: Copies `value` at the upper bound of a sorted `box`.
  @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] @allow */
 static int ACC_(insert_after)(PAC_(box) *const box,
 	const PAC_(type) *const value) {
@@ -325,8 +325,8 @@ static int ACC_(insert_after)(PAC_(box) *const box,
 static int PACC_(vcompar)(const void *const a, const void *const b)
 	{ return PACC_(compare)(a, b); }
 
-/** <array_coda.h>: Sorts <typedef:<PAC>box> `a` by `qsort`.
- @order \O(`a.size` \log `a.size`) @allow */
+/** <array_coda.h>: Sorts `box` by `qsort`.
+ @order \O(`a.size` \log `box.size`) @allow */
 static void ACC_(sort)(PAC_(box) *const box) {
 	const PAC_(array) *a = PAC_(b2a_c)(box);
 	assert(box && a);
@@ -337,7 +337,7 @@ static void ACC_(sort)(PAC_(box) *const box) {
 static int PACC_(vrevers)(const void *const a, const void *const b)
 	{ return PACC_(compare)(b, a); }
 
-/** <array_coda.h>: Sorts <typedef:<PAC>box> `a` in reverse by `qsort`.
+/** <array_coda.h>: Sorts `box` in reverse by `qsort`.
  @order \O(`a.size` \log `a.size`) @allow */
 static void ACC_(reverse)(PAC_(box) *const box) {
 	const PAC_(array) *a = PAC_(b2a_c)(box);
@@ -373,7 +373,7 @@ static int ACC_(is_equal)(const PAC_(box) *const a, const PAC_(box) *const b)
 	return 1;
 }
 
-/** <array_coda.h>: Removes consecutive duplicate elements in `a`.
+/** <array_coda.h>: Removes consecutive duplicate elements in `box`.
  @param[merge] Controls surjection. Called with duplicate elements, if false
  `(x, y)->(x)`, if true `(x,y)->(y)`. More complex functions, `(x, y)->(x+y)`
  can be simulated by mixing the two in the value returned. Can be null: behaves

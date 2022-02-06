@@ -30,8 +30,8 @@
 
  @param[ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
  Compare trait contained in <compare.h>. An optional mangled name for
- uniqueness and a function implementing either <typedef:<PCM>compare_fn> or
- <typedef:<PCM>bipredicate_fn>.
+ uniqueness and a function implementing either <typedef:<PAC>compare_fn> or
+ <typedef:<PAC>bipredicate_fn>.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
  To string trait contained in <to_string.h>. An optional mangled name for
@@ -339,35 +339,6 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 
 #else /* to string trait --><!-- compare trait */
 
-
-#if 0
-
-#ifdef ARRAY_COMPARE_NAME /* <!-- name */
-#define CM_(n) ARRAY_CAT(A_(array), ARRAY_CAT(ARRAY_COMPARE_NAME, n))
-#else /* name --><!-- !name */
-#define CM_(n) ARRAY_CAT(A_(array), n)
-#endif /* !name --> */
-#ifdef ARRAY_COMPARE /* <!-- cmp */
-#define BOX_COMPARE ARRAY_COMPARE
-#else /* cmp --><!-- eq */
-#define BOX_IS_EQUAL ARRAY_IS_EQUAL
-#endif /* eq --> */
-#include "compare.h" /** \include */
-#ifdef ARRAY_TEST /* <!-- test: this detects and outputs compare test. */
-#include "../test/test_array.h"
-#endif /* test --> */
-#undef CM_
-#ifdef ARRAY_COMPARE_NAME
-#undef ARRAY_COMPARE_NAME
-#endif
-#ifdef ARRAY_COMPARE
-#undef ARRAY_COMPARE
-#endif
-#ifdef ARRAY_IS_EQUAL
-#undef ARRAY_IS_EQUAL
-#endif
-
-#endif /* 0 */
 
 #ifdef ARRAY_COMPARE_NAME
 #define ARRAY_CODA_NAME ARRAY_COMPARE_NAME
