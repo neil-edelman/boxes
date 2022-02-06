@@ -1,9 +1,9 @@
 /** @license 2016 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Contiguous dynamic array
-
  @abstract Source <src/array.h>; examples <test/test_array.c>.
+
+ @subtitle Contiguous dynamic array
 
  ![Example of array.](../web/array.png)
 
@@ -132,7 +132,7 @@ static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
 	}
 	if(min > max_size) return errno = ERANGE, 0;
 	/* `c_n = a1.625^n`, approximation golden ratio `\phi ~ 1.618`. */
-	while(c0 < min) {
+	while(c0 < min) { /* \O(\log min), in practice, negligible. */
 		size_t c1 = c0 + (c0 >> 1) + (c0 >> 3);
 		if(c0 >= c1) { c0 = max_size; break; } /* Unlikely. */
 		c0 = c1;
