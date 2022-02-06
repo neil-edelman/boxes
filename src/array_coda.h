@@ -21,8 +21,9 @@
  @std C89 */
 
 #if !defined(BOX_) || !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS) \
-	|| !defined(ARRAY_CODA_BOX_TO_C) || !defined(ARRAY_CODA_BOX_TO) \
-	|| !defined(AC_) || defined(BOX_IS_EQUAL) && defined(BOX_COMPARE)
+	|| !defined(ARRAY_CODA_TYPE) || !defined(ARRAY_CODA_BOX_TO_C) \
+	|| !defined(ARRAY_CODA_BOX_TO) || !defined(AC_) \
+	|| defined(BOX_IS_EQUAL) && defined(BOX_COMPARE)
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -37,20 +38,16 @@
 
 #ifndef ARRAY_CODA_ONCE /* <!-- once */
 #define ARRAY_CODA_ONCE
-
 /** <array_coda.h>: an alias to the box. */
 typedef BOX_CONTAINER PAC_(box);
-
 /** <array_coda.h>: an alias to the individual type contained in the box. */
 typedef BOX_CONTENTS PAC_(type);
-
 /* Downcasting. */
 typedef ARRAY_CODA_TYPE PAC_(array);
 typedef const PAC_(array) *(*PAC_(box_to_array_c))(const PAC_(box) *);
 static PAC_(box_to_array_c) PAC_(b2a_c) = (ARRAY_CODA_BOX_TO_C);
 typedef PAC_(array) *(*PAC_(box_to_array))(PAC_(box) *);
 static PAC_(box_to_array) PAC_(b2a) = (ARRAY_CODA_BOX_TO);
-
 #endif /* once --> */
 
 
@@ -230,7 +227,7 @@ static void PAC_(unused_function)(void)
 	PAC_(unused_function_coda)(); }
 static void PAC_(unused_function_coda)(void) { PAC_(unused_function)(); }
 
-#undef ARRAY_CODA_BOX_TO_C
-#undef ARRAY_CODA_BOX_TO
+#else /* functions --><!-- compare */
 
-#endif /* functions --> */
+
+#endif /* compare --> */

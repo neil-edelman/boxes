@@ -286,7 +286,7 @@ static const struct A_(array) *PA_(id_c)(const struct A_(array) *const a)
 	{ return a; }
 /** @return `a`. */
 static struct A_(array) *PA_(id)(struct A_(array) *const a) { return a; }
-#define ARRAY_CODA_TYPE struct A_(array)
+#define ARRAY_CODA_TYPE struct A_(array) /* Also box. */
 #define ARRAY_CODA_BOX_TO_C &PA_(id_c)
 #define ARRAY_CODA_BOX_TO &PA_(id)
 #define AC_(n) ARRAY_CAT(A_(array), n)
@@ -377,13 +377,16 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #endif
 #undef ARRAY_NAME
 #undef ARRAY_TYPE
+/* Iteration. */
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
-/* box (multiple traits) --> */
-#ifdef ARRAY_CODA_ONCE
+/* Coda. */
+#undef ARRAY_CODA_TYPE
+#undef ARRAY_CODA_BOX_TO_C
+#undef ARRAY_CODA_BOX_TO
+#undef AC_
 #undef ARRAY_CODA_ONCE
-#endif
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT
 #undef ARRAY_COMPARE_TRAIT
