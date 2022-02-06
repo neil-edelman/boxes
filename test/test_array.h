@@ -597,7 +597,7 @@ static void PACC_(test_sort)(void) {
 }
 
 static void PACC_(test_contiguous)(void) {
-#ifdef ARRAY_CONTIGUOUS /* <!-- contiguous */
+#ifdef ARRAY_CODA /* <!-- contiguous */
 	struct A_(array) a = ARRAY_IDLE;
 	PA_(type) ts[9], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
