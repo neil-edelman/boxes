@@ -1,10 +1,10 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle Priority-queue
-
  @abstract Source <src/heap.h>, depends on <src/array.h>; examples
  <test/test_heap.c>.
+
+ @subtitle Priority-queue
 
  ![Example of heap.](../web/heap.png)
 
@@ -43,8 +43,7 @@
  @std C89
  @fixme Add decrease priority.
  @fixme Add replace.
- @fixme Don't like that `HEAP_VALUE` has to be a pointer; what is this, Java?
- Use `memcpy`. */
+ @fixme `HEAP_VALUE` has to be a pointer; use `memcpy` instead. */
 
 #ifndef HEAP_NAME
 #error Generic HEAP_NAME undefined.
