@@ -42,13 +42,24 @@ typedef void (*PCG_(action_fn))(PCG_(type) *);
 /** Returns a boolean given read-only <typedef:<PCG>type>. */
 typedef int (*PCG_(predicate_fn))(const PCG_(type) *);
 
+/** @param[x] A valid entry or null to start from the last.
+ @return The previous valid entry from `box` (which could be null) or null if
+ this was the first. @allow */
+static PCG_(type) *CG_(previous)(const PCG_(box) *const box,
+	const PCG_(type) *const x) {
+	size_t i;
+	if(!box || !box->data) return 0;
+	if(!x) return box->size ? box->data + box->size - 1 : 0;
+	return (i = (size_t)(x - box->data)) ? box->data + i - 1 : 0;
+}
+
 /** @param[x] A valid entry or null to start from the first.
- @return The next valid entry from `box` or null if this was the last. @allow */
+ @return The next valid entry from `box` (which could be null) or null if this
+ was the last. @allow */
 static PCG_(type) *CG_(next)(const PCG_(box) *const box,
 	const PCG_(type) *const x) {
 	size_t i;
-	assert(box);
-	if(!box->data) return 0;
+	if(!box || !box->data) return 0;
 	if(!x) return box->size ? box->data + 0 : 0;
 	return (i = (size_t)(x - box->data) + 1) < box->size ? box->data + i : 0;
 }
@@ -57,8 +68,8 @@ static PCG_(type) *CG_(next)(const PCG_(box) *const box,
  [0, `a.size`]. Negative values are implicitly plus `box.size`.
  @order \Theta(1) @allow */
 static size_t CG_(clip)(const PCG_(box) *const box, const long i) {
-	/* `SIZE_MAX` is `C99`; assumes two's-compliment. */
-	assert(box && (size_t)-1 >= (size_t)LONG_MAX
+	/* `SIZE_MAX` is `C99`. */
+	assert(box && ~((size_t)0) >= (size_t)LONG_MAX
 		&& (unsigned long)((size_t)-1) >= LONG_MAX);
 	return i < 0
 		? (size_t)-i >= box->size ? 0 : box->size - (size_t)-i
@@ -183,7 +194,8 @@ static const PCG_(type) *CG_(any)(const PCG_(box) *const box,
 
 static void PCG_(unused_function_coda)(void);
 static void PCG_(unused_function)(void)
-	{ CG_(next)(0, 0); CG_(clip)(0, 0); CG_(copy_if)(0, 0, 0);
-	CG_(keep_if)(0, 0, 0); CG_(trim)(0, 0); CG_(each)(0, 0);
-	CG_(if_each)(0, 0, 0); CG_(any)(0, 0); PCG_(unused_function_coda)(); }
+	{ CG_(previous)(0, 0); CG_(next)(0, 0); CG_(clip)(0, 0);
+	CG_(copy_if)(0, 0, 0); CG_(keep_if)(0, 0, 0); CG_(trim)(0, 0);
+	CG_(each)(0, 0); CG_(if_each)(0, 0, 0); CG_(any)(0, 0);
+	PCG_(unused_function_coda)(); }
 static void PCG_(unused_function_coda)(void) { PCG_(unused_function)(); }
