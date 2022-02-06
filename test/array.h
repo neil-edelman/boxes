@@ -1,6 +1,8 @@
 /** @license 2016 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
+ @abstract Source <src/array.h>; examples <test/test_array.c>.
+
  @subtitle Contiguous dynamic array
 
  ![Example of array.](../web/array.png)
@@ -14,8 +16,9 @@
  <typedef:<PA>type>, associated therewith; required. `<PA>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
- @param[ARRAY_CONTIGUOUS]
- Include the singleton trait contained in <contiguous.h> that takes no options.
+ @param[ARRAY_CODA]
+ Include more functions contained in <src/array_coda.h>, where `<AC>` is
+ `<A>array`.
 
  @param[ARRAY_MIN_CAPACITY]
  Default is 3; optional number in `[2, SIZE_MAX]` that the capacity can not go
@@ -26,12 +29,12 @@
  trait.
 
  @param[ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
- Compare trait contained in <compare.h>. An optional mangled name for
- uniqueness and a function implementing either <typedef:<PCM>compare_fn> or
- <typedef:<PCM>bipredicate_fn>.
+ Compare trait contained in <src/array_coda.h>. An optional mangled name for
+ uniqueness and a function implementing either <typedef:<PAC>compare_fn> or
+ <typedef:<PAC>bipredicate_fn>.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
- To string trait contained in <to_string.h>. An optional mangled name for
+ To string trait contained in <src/to_string.h>. An optional mangled name for
  uniqueness and function implementing <typedef:<PSZ>to_string_fn>.
 
  @std C89 */
@@ -130,7 +133,7 @@ static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
 	}
 	if(min > max_size) return errno = ERANGE, 0;
 	/* `c_n = a1.625^n`, approximation golden ratio `\phi ~ 1.618`. */
-	while(c0 < min) {
+	while(c0 < min) { /* \O(\log min), in practice, negligible. */
 		size_t c1 = c0 + (c0 >> 1) + (c0 >> 3);
 		if(c0 >= c1) { c0 = max_size; break; } /* Unlikely. */
 		c0 = c1;
@@ -152,21 +155,18 @@ static PA_(type) *A_(array_buffer)(struct A_(array) *const a, const size_t n) {
 	return A_(array_reserve)(a, a->size + n) && a->data ? a->data + a->size : 0;
 }
 
-/** Adds `n` elements to the back of `a`. It will invalidate pointers in `a` if
- `n` is greater than the buffer space.
- @return A pointer to the elements. If `a` is idle and `n` is zero, a null
- pointer will be returned, otherwise null indicates an error.
- @throws[realloc, ERANGE] @allow */
-static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n) {
-	PA_(type) *buffer;
+/** Appends `n` items on the back of `a`. This is used in the coda and
+ <fn:<A>array_append>. */
+static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n) {
+	PA_(type) *b;
 	assert(a);
-	if(!(buffer = A_(array_buffer)(a, n))) return 0;
+	if(!(b = A_(array_buffer)(a, n))) return 0;
 	assert(n <= a->capacity && a->size <= a->capacity - n);
-	return a->size += n, buffer;
+	return a->size += n, b;
 }
 
 /** Adds `n` un-initialised elements at position `at` in `a`. The buffer holds
- enough elements or it will invalidate pointers in `a`.
+ enough elements or it will invalidate any pointers in `a`.
  @param[at] A number smaller than or equal to `a.size`; if `a.size`, this
  function behaves as <fn:<A>array_append>.
  @return A pointer to the start of the new region, where there are `n`
@@ -174,9 +174,9 @@ static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n) {
 static PA_(type) *A_(array_insert)(struct A_(array) *const a,
 	const size_t n, const size_t at) {
 	const size_t old_size = a->size;
-	PA_(type) *const buffer = A_(array_append)(a, n);
+	PA_(type) *const b = PA_(append)(a, n);
 	assert(a && at <= old_size);
-	if(!buffer) return 0;
+	if(!b) return 0;
 	memmove(a->data + at + n, a->data + at, sizeof *a->data * (old_size - at));
 	return a->data + at;
 }
@@ -185,7 +185,7 @@ static PA_(type) *A_(array_insert)(struct A_(array) *const a,
  element or it will invalidate pointers in `a`.
  @order amortised \O(1) @throws[realloc, ERANGE] @allow */
 static PA_(type) *A_(array_new)(struct A_(array) *const a)
-	{ return A_(array_append)(a, 1); }
+	{ return PA_(append)(a, 1); }
 
 /** Shrinks the capacity `a` to the size, freeing unused memory. If the size is
  zero, it will be in an idle state. Invalidates pointers in `a`.
@@ -234,11 +234,20 @@ static PA_(type) *A_(array_peek)(const struct A_(array) *const a)
 static PA_(type) *A_(array_pop)(struct A_(array) *const a)
 	{ return assert(a), a->size ? a->data + --a->size : 0; }
 
-/** `a` indices [`i0`, `i1`) will be replaced with a copy of `b`.
- @param[b] Can be null, which acts as empty.
- @return Success. @throws[realloc, ERANGE] */
-static int A_(array_splice)(struct A_(array) *const a, const size_t i0,
-	const size_t i1, const struct A_(array) *const b) {
+/** Adds `n` elements to the back of `a`. It will invalidate pointers in `a` if
+ `n` is greater than the buffer space.
+ @return A pointer to the elements. If `a` is idle and `n` is zero, a null
+ pointer will be returned, otherwise null indicates an error.
+ @throws[realloc, ERANGE] @allow */
+static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n)
+	{ return PA_(append)(a, n); }
+
+/** Indices [`i0`, `i1`) of `a` will be replaced with a copy of `b`.
+ @param[b] Can be null, which acts as empty, but cannot be `a`.
+ @return Success. @throws[realloc, ERANGE] @allow */
+static int A_(array_splice)(/*restrict*/ struct A_(array) *const a,
+	/*restrict*/ const struct A_(array) *const b,
+	const size_t i0, const size_t i1) {
 	const size_t a_range = i1 - i0, b_range = b ? b->size : 0;
 	assert(a && a != b && i0 <= i1 && i1 <= a->size);
 	if(a_range < b_range) { /* The output is bigger. */
@@ -256,43 +265,36 @@ static int A_(array_splice)(struct A_(array) *const a, const size_t i0,
 	return 1;
 }
 
-/** Copies `b`, which can be null, to the back of `a`.
- @return Success. @throws[realloc, ERANGE]
- @fixme Untested. */
-static int A_(array_affix)(struct A_(array) *const a,
-	const struct A_(array) *const b)
-	{ return A_(array_splice)(a, a->size, a->size, b); }
-
-/** Appends `n` items on the back of `a`.
- @fixme It should be the other way around. */
-static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n)
-	{ return A_(array_append)(a, n); }
-
 /* <!-- iterate interface */
-
 /* Contains all iteration parameters. */
 struct PA_(iterator) { const struct A_(array) *a; size_t i; };
-
 /** Loads `a` into `it`. @implements begin */
 static void PA_(begin)(struct PA_(iterator) *const it,
 	const struct A_(array) *const a) { assert(it && a), it->a = a, it->i = 0; }
-
 /** Advances `it`. @implements next */
 static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 	return assert(it && it->a), it->i < it->a->size ? it->a->data + it->i++ : 0;
 }
-
-/* iterate --> */
-
-/* <!-- box (multiple traits) */
 #define BOX_ PA_
 #define BOX_CONTAINER struct A_(array)
 #define BOX_CONTENTS PA_(type)
+/* iterate --> */
 
-#ifdef ARRAY_CONTIGUOUS /* <!-- contiguous */
-#define CG_(n) ARRAY_CAT(A_(array), n)
-#include "contiguous.h" /** \include */
-#endif /* contiguous --> */
+/* <!-- coda interface */
+/** @return `a`. */
+static const struct A_(array) *PA_(id_c)(const struct A_(array) *const a)
+	{ return a; }
+/** @return `a`. */
+static struct A_(array) *PA_(id)(struct A_(array) *const a) { return a; }
+#define ARRAY_CODA_TYPE struct A_(array) /* Also box. */
+#define ARRAY_CODA_BOX_TO_C &PA_(id_c)
+#define ARRAY_CODA_BOX_TO &PA_(id)
+#define AC_(n) ARRAY_CAT(A_(array), n)
+/* coda --> */
+
+#ifdef ARRAY_CODA /* <!-- coda: More functions. */
+#include "array_coda.h" /** \include */
+#endif /* coda --> */
 
 #ifdef ARRAY_TEST /* <!-- test */
 /* Forward-declare. */
@@ -302,14 +304,13 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *);
 #endif /* test --> */
 
 static void PA_(unused_base_coda)(void);
-static void PA_(unused_base)(void) {
-	A_(array_)(0); A_(array_insert)(0, 0, 0); A_(array_new)(0);
+static void PA_(unused_base)(void)
+	{ A_(array_)(0); A_(array_insert)(0, 0, 0); A_(array_new)(0);
 	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
 	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
-	A_(array_splice)(0, 0, 0, 0); A_(array_affix)(0, 0); PA_(begin)(0, 0);
-	PA_(next)(0); PA_(append)(0, 0);
-	PA_(unused_base_coda)();
-}
+	A_(array_append)(0, 0); A_(array_splice)(0, 0, 0, 0);
+	PA_(begin)(0, 0); PA_(next)(0); PA_(id)(0); PA_(id_c)(0);
+	PA_(unused_base_coda)(); }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 
@@ -339,21 +340,21 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #else /* to string trait --><!-- compare trait */
 
 
-#ifdef ARRAY_COMPARE_NAME /* <!-- name */
-#define CM_(n) ARRAY_CAT(A_(array), ARRAY_CAT(ARRAY_COMPARE_NAME, n))
-#else /* name --><!-- !name */
-#define CM_(n) ARRAY_CAT(A_(array), n)
-#endif /* !name --> */
+#ifdef ARRAY_COMPARE_NAME
+#define ARRAY_CODA_NAME ARRAY_COMPARE_NAME
+#endif
 #ifdef ARRAY_COMPARE /* <!-- cmp */
 #define BOX_COMPARE ARRAY_COMPARE
 #else /* cmp --><!-- eq */
 #define BOX_IS_EQUAL ARRAY_IS_EQUAL
 #endif /* eq --> */
-#include "compare.h" /** \include */
+#include "array_coda.h" /* (Already included.) */
 #ifdef ARRAY_TEST /* <!-- test: this detects and outputs compare test. */
 #include "../test/test_array.h"
 #endif /* test --> */
-#undef CM_
+#undef ACC_
+#undef PACC_
+#undef ARRAY_CODA_NAME
 #ifdef ARRAY_COMPARE_NAME
 #undef ARRAY_COMPARE_NAME
 #endif
@@ -376,10 +377,19 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #endif
 #undef ARRAY_NAME
 #undef ARRAY_TYPE
+/* Iteration. */
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
-/* box (multiple traits) --> */
+/* Coda. */
+#undef ARRAY_CODA_TYPE
+#undef ARRAY_CODA_BOX_TO_C
+#undef ARRAY_CODA_BOX_TO
+#undef AC_
+#undef ARRAY_CODA_ONCE
+#ifdef ARRAY_CODA_COMPARE_ONCE
+#undef ARRAY_CODA_COMPARE_ONCE
+#endif
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT
 #undef ARRAY_COMPARE_TRAIT

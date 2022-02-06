@@ -1,6 +1,8 @@
 /** @license 2017 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
+ @abstract Source <src/list.h>; examples <test/test_list.c>.
+
  @subtitle Doubly-linked component
 
  ![Example of a stochastic skip-list.](../web/list.png)
@@ -18,9 +20,9 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[LIST_COMPARE_NAME, LIST_COMPARE, LIST_IS_EQUAL]
- Compare trait contained in <recur.h>. An optional mangled name for uniqueness
- and a function implementing either <typedef:<PRC>compare_fn> or
- <typedef:<PRC>bipredicate_fn>.
+ Compare trait contained in <src/list_coda.h>. An optional mangled name for
+ uniqueness and a function implementing either <typedef:<PLC>compare_fn> or
+ <typedef:<PLC>bipredicate_fn>.
 
  @param[LIST_TO_STRING_NAME, LIST_TO_STRING]
  To string trait contained in <to_string.h>. An optional mangled name for
@@ -71,11 +73,12 @@
 #if LIST_TRAITS == 0 /* <!-- base code */
 
 
-/** Storage of this structure is the responsibility of the caller. Generally,
- one encloses this in a host `struct` or `union`. Multiple independent lists
- can be in the same host structure, however one link can can only be a part of
- one list at a time; adding a link to a second list destroys the integrity of
- the original list.
+/** Storage of this structure is the responsibility of the caller, who must
+ provide a stable pointer while it's in the list. Generally, one encloses this
+ in a host `struct` or `union`. Multiple independent lists can be in the same
+ host, however one link can can only be a part of one list at a time. Adding a
+ link to a second list destroys the integrity of the original list, as does
+ moving a pointer, (specifically, arrays that might increase in size.)
 
  ![States.](../web/node-states.png) */
 struct L_(listlink) { struct L_(listlink) *next, *prev; };
@@ -85,7 +88,8 @@ struct L_(listlink) { struct L_(listlink) *next, *prev; };
  is, given a valid pointer to an element, one can determine all others, null
  values are not allowed and it is _not_ the same as `{0}`. In a valid list,
  `as_head.head.tail`, `as_tail.tail.head`, and `flat.zero`, refer to the same
- sentinel element, and it's always the only one null.
+ sentinel element, and it's always the only one null. If the address changes,
+ one must call <fn:<L>list_self_correct>.
 
  ![States.](../web/states.png) */
 struct L_(list) {
@@ -386,15 +390,15 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *)
 
 
 #ifdef LIST_COMPARE_NAME /* <!-- name */
-#define RC_(n) LIST_CAT(L_(list), LIST_CAT(LIST_COMPARE_NAME, n))
+#define LC_(n) LIST_CAT(L_(list), LIST_CAT(LIST_COMPARE_NAME, n))
 #else /* name --><!-- !name */
-#define RC_(n) LIST_CAT(L_(list), n)
+#define LC_(n) LIST_CAT(L_(list), n)
 #endif /* !name --> */
-#include "recur.h" /** \include */
+#include "list_coda.h" /** \include */
 #ifdef LIST_TEST /* <!-- test: this detects and outputs compare test. */
 #include "../test/test_list.h"
 #endif /* test --> */
-#undef RC_
+#undef LC_
 #ifdef LIST_COMPARE_NAME
 #undef LIST_COMPARE_NAME
 #endif

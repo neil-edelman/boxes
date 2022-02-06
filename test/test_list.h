@@ -257,8 +257,8 @@ static void L_(list_test)(struct L_(listlink) *(*const parent_new)(void *),
 #error Not implemented in testing.
 #endif
 
-static int PRC_(compar)(const void *const a, const void *const b)
-	{ return RC_(compare)(a, b); }
+static int PLC_(compar)(const void *const a, const void *const b)
+	{ return LC_(compare)(a, b); }
 
 /** Passed `parent_new` and `parent`, tests sort and meta-sort. */
 static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
@@ -314,14 +314,14 @@ static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
 		for(link_a = 0, link_b = L_(list_head)(list); link_b;
 			link_a = link_b, link_b = L_(list_next)(link_b)) {
 			if(!link_a) continue;
-			cmp = PRC_(compare)(link_a, link_b);
+			cmp = PLC_(compare)(link_a, link_b);
 			assert(cmp <= 0);
 		}
 	}
 	/* Now sort the lists. */
 	printf("Sorted array of sorted <" QUOTE(LIST_NAME) ">list by "
 		QUOTE(LIST_COMPARE) ":\n");
-	qsort(lists, lists_size, sizeof *lists, &PRC_(compar));
+	qsort(lists, lists_size, sizeof *lists, &PLC_(compar));
 	for(list = lists; list < lists_end; list++) {
 		L_(list_self_correct)(list); /* `qsort` moves the pointers. */
 		printf("list: %s.\n", PL_(list_to_string)(list));
@@ -400,11 +400,11 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 			/* `x = (A,...,B,C,D,...)` and `y = {[A],B,...}`. */
 			if(!(a = L_(list_head)(&x))) continue;
 			if(!(b = L_(list_head)(&y))) continue;
-			if(PRC_(compare)(a, b) == 0 && !(b = L_(list_next)(b))) continue;
-			assert(PRC_(compare)(a, b) < 0);
-			for(c = L_(list_next)(a); c && PRC_(compare)(c, b) < 0;
+			if(PLC_(compare)(a, b) == 0 && !(b = L_(list_next)(b))) continue;
+			assert(PLC_(compare)(a, b) < 0);
+			for(c = L_(list_next)(a); c && PLC_(compare)(c, b) < 0;
 				c = L_(list_next)(c));
-			assert(c && PRC_(compare)(c, b) == 0);
+			assert(c && PLC_(compare)(c, b) == 0);
 			b_alt = c;
 			if(!(c = L_(list_next)(c)) || !(d = L_(list_next)(c))) continue;
 			break;
@@ -452,7 +452,7 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 /** The linked-list will be tested on stdout. `LIST_TEST` has to be set.
  @param[parent_new, parent] Responsible for creating new objects and returning
  the list. @allow */
-static void RC_(recur_test)(struct L_(listlink) *(*const parent_new)(void *),
+static void LC_(recur_test)(struct L_(listlink) *(*const parent_new)(void *),
 	void *const parent) {
 	printf("<" QUOTE(LIST_NAME) ">list testing <"
 #ifdef LIST_COMPARE_NAME

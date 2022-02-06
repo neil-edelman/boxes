@@ -1,9 +1,11 @@
 # list\.h #
 
+Source [src/list\.h](src/list.h); examples [test/test\_list\.c](test/test_list.c)\.
+
 ## Doubly\-linked component ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PL&gt;action_fn](#user-content-typedef-5aae0d96), [&lt;PL&gt;predicate_fn](#user-content-typedef-9bb522f5), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PRC&gt;bipredicate_fn](#user-content-typedef-77f9ee2b), [&lt;PRC&gt;compare_fn](#user-content-typedef-f951a9f4)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PL&gt;action_fn](#user-content-typedef-5aae0d96), [&lt;PL&gt;predicate_fn](#user-content-typedef-9bb522f5), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PLC&gt;bipredicate_fn](#user-content-typedef-2edb24e1), [&lt;PLC&gt;compare_fn](#user-content-typedef-f02f365a)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;L&gt;listlink](#user-content-tag-15769e01), [&lt;L&gt;list](#user-content-tag-eb84971d), [&lt;PL&gt;iterator](#user-content-tag-fe8215f1)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -22,7 +24,7 @@ In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Th
  * Parameter: LIST\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: LIST\_COMPARE\_NAME, LIST\_COMPARE, LIST\_IS\_EQUAL  
-   Compare trait contained in [recur\.h](recur.h)\. An optional mangled name for uniqueness and a function implementing either [&lt;PRC&gt;compare_fn](#user-content-typedef-f951a9f4) or [&lt;PRC&gt;bipredicate_fn](#user-content-typedef-77f9ee2b)\.
+   Compare trait contained in [src/list\_coda\.h](src/list_coda.h)\. An optional mangled name for uniqueness and a function implementing either [&lt;PLC&gt;compare_fn](#user-content-typedef-f02f365a) or [&lt;PLC&gt;bipredicate_fn](#user-content-typedef-2edb24e1)\.
  * Parameter: LIST\_TO\_STRING\_NAME, LIST\_TO\_STRING  
    To string trait contained in [to\_string\.h](to_string.h)\. An optional mangled name for uniqueness and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\.
  * Standard:  
@@ -55,17 +57,17 @@ Returns \(Non\-zero\) true or \(zero\) false when given a node\.
 
 
 
-### <a id = "user-content-typedef-77f9ee2b" name = "user-content-typedef-77f9ee2b">&lt;PRC&gt;bipredicate_fn</a> ###
+### <a id = "user-content-typedef-2edb24e1" name = "user-content-typedef-2edb24e1">&lt;PLC&gt;bipredicate_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PRC&gt;bipredicate_fn</strong>)(const struct &lt;L&gt;listlink *, const struct &lt;L&gt;listlink *);</code>
+<code>typedef int(*<strong>&lt;PLC&gt;bipredicate_fn</strong>)(const struct &lt;L&gt;listlink *, const struct &lt;L&gt;listlink *);</code>
 
 Returns a boolean given two read\-only [&lt;L&gt;listlink](#user-content-tag-15769e01)\.
 
 
 
-### <a id = "user-content-typedef-f951a9f4" name = "user-content-typedef-f951a9f4">&lt;PRC&gt;compare_fn</a> ###
+### <a id = "user-content-typedef-f02f365a" name = "user-content-typedef-f02f365a">&lt;PLC&gt;compare_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PRC&gt;compare_fn</strong>)(const struct &lt;L&gt;listlink *a, const struct &lt;L&gt;listlink *b);</code>
+<code>typedef int(*<strong>&lt;PLC&gt;compare_fn</strong>)(const struct &lt;L&gt;listlink *a, const struct &lt;L&gt;listlink *b);</code>
 
 Three\-way comparison on a totally order set of [&lt;L&gt;listlink](#user-content-tag-15769e01); returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
 
@@ -77,7 +79,7 @@ Three\-way comparison on a totally order set of [&lt;L&gt;listlink](#user-conten
 
 <code>struct <strong>&lt;L&gt;listlink</strong> { struct &lt;L&gt;listlink *next, *prev; };</code>
 
-Storage of this structure is the responsibility of the caller\. Generally, one encloses this in a host `struct` or `union`\. Multiple independent lists can be in the same host structure, however one link can can only be a part of one list at a time; adding a link to a second list destroys the integrity of the original list\.
+Storage of this structure is the responsibility of the caller, who must provide a stable pointer while it's in the list\. Generally, one encloses this in a host `struct` or `union`\. Multiple independent lists can be in the same host, however one link can can only be a part of one list at a time\. Adding a link to a second list destroys the integrity of the original list, as does moving a pointer, \(specifically, arrays that might increase in size\.\)
 
 ![States.](web/node-states.png)
 
@@ -87,7 +89,7 @@ Storage of this structure is the responsibility of the caller\. Generally, one e
 
 <code>struct <strong>&lt;L&gt;list</strong> { union { struct { struct &lt;L&gt;listlink head, *part_of_tail; } as_head; struct { struct &lt;L&gt;listlink *part_of_head, tail; } as_tail; struct { struct &lt;L&gt;listlink *next, *zero, *prev; } flat; } u; };</code>
 
-Serves as head and tail for linked\-list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. Use [&lt;L&gt;list_clear](#user-content-fn-f965b937) to initialize the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\. In a valid list, `as_head.head.tail`, `as_tail.tail.head`, and `flat.zero`, refer to the same sentinel element, and it's always the only one null\.
+Serves as head and tail for linked\-list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. Use [&lt;L&gt;list_clear](#user-content-fn-f965b937) to initialize the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\. In a valid list, `as_head.head.tail`, `as_tail.tail.head`, and `flat.zero`, refer to the same sentinel element, and it's always the only one null\. If the address changes, one must call [&lt;L&gt;list_self_correct](#user-content-fn-1ce0c229)\.
 
 ![States.](web/states.png)
 
@@ -145,21 +147,21 @@ Contains all iteration parameters\. \(Since this is a permutation, the iteration
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-f00000c9">&lt;RC&gt;compare</a></td><td>alist, blist</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-14c5cb73">&lt;LC&gt;compare</a></td><td>alist, blist</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-9e1ae7d2">&lt;RC&gt;sort</a></td><td>list</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-e33e7e70">&lt;LC&gt;sort</a></td><td>list</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-797ace24">&lt;RC&gt;subtraction_to</a></td><td>a, b, result</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-641cebce">&lt;LC&gt;subtraction_to</a></td><td>a, b, result</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-b521b6cf">&lt;RC&gt;union_to</a></td><td>a, b, result</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-ca2d759d">&lt;LC&gt;union_to</a></td><td>a, b, result</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-aaa1be09">&lt;RC&gt;intersection_to</a></td><td>a, b, result</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-5fa6175f">&lt;LC&gt;intersection_to</a></td><td>a, b, result</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-3e3b389d">&lt;RC&gt;xor_to</a></td><td>a, b, result</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-2d627307">&lt;LC&gt;xor_to</a></td><td>a, b, result</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-41d9a251">&lt;RC&gt;is_equal</a></td><td>lista, listb</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-ca54e533">&lt;LC&gt;is_equal</a></td><td>lista, listb</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-ca446e8c">&lt;RC&gt;duplicates_to</a></td><td>from, to</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-8b4f3802">&lt;LC&gt;duplicates_to</a></td><td>from, to</td></tr>
 
 </table>
 
@@ -405,25 +407,25 @@ Corrects `list` ends to compensate for memory relocation of the list itself\. Be
 
 
 
-### <a id = "user-content-fn-f00000c9" name = "user-content-fn-f00000c9">&lt;RC&gt;compare</a> ###
+### <a id = "user-content-fn-14c5cb73" name = "user-content-fn-14c5cb73">&lt;LC&gt;compare</a> ###
 
-<code>static int <strong>&lt;RC&gt;compare</strong>(const struct &lt;L&gt;list *const <em>alist</em>, const struct &lt;L&gt;list *const <em>blist</em>)</code>
+<code>static int <strong>&lt;LC&gt;compare</strong>(const struct &lt;L&gt;list *const <em>alist</em>, const struct &lt;L&gt;list *const <em>blist</em>)</code>
 
 Lexicographically compares `alist` to `blist`\. Null values are before everything\.
 
  * Return:  
    `a < b`: negative; `a == b`: zero; `a > b`: positive\.
  * Implements:  
-   [&lt;PRC&gt;compare_fn](#user-content-typedef-f951a9f4) \(one can `qsort` an array of lists, as long as one calls [&lt;L&gt;list_self_correct](#user-content-fn-1ce0c229) on it's elements\)
+   [&lt;PLC&gt;compare_fn](#user-content-typedef-f02f365a) \(one can `qsort` an array of lists, as long as one calls [&lt;L&gt;list_self_correct](#user-content-fn-1ce0c229) on it's elements\)
  * Order:  
    &#920;\(min\(|`alist`|, |`blist`|\)\)
 
 
 
 
-### <a id = "user-content-fn-9e1ae7d2" name = "user-content-fn-9e1ae7d2">&lt;RC&gt;sort</a> ###
+### <a id = "user-content-fn-e33e7e70" name = "user-content-fn-e33e7e70">&lt;LC&gt;sort</a> ###
 
-<code>static void <strong>&lt;RC&gt;sort</strong>(struct &lt;L&gt;list *const <em>list</em>)</code>
+<code>static void <strong>&lt;LC&gt;sort</strong>(struct &lt;L&gt;list *const <em>list</em>)</code>
 
 Performs a stable, adaptive sort of `list` according to `compare`\.
 
@@ -433,9 +435,9 @@ Performs a stable, adaptive sort of `list` according to `compare`\.
 
 
 
-### <a id = "user-content-fn-797ace24" name = "user-content-fn-797ace24">&lt;RC&gt;subtraction_to</a> ###
+### <a id = "user-content-fn-641cebce" name = "user-content-fn-641cebce">&lt;LC&gt;subtraction_to</a> ###
 
-<code>static void <strong>&lt;RC&gt;subtraction_to</strong>(struct &lt;L&gt;list *const <em>a</em>, struct &lt;L&gt;list *const <em>b</em>, struct &lt;L&gt;list *const <em>result</em>)</code>
+<code>static void <strong>&lt;LC&gt;subtraction_to</strong>(struct &lt;L&gt;list *const <em>a</em>, struct &lt;L&gt;list *const <em>b</em>, struct &lt;L&gt;list *const <em>result</em>)</code>
 
 Subtracts `a` from `b`, as sequential sorted individual elements, and moves it to `result`\. All elements are removed from `a`\. All parameters must be unique or can be null\.
 
@@ -449,9 +451,9 @@ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, a
 
 
 
-### <a id = "user-content-fn-b521b6cf" name = "user-content-fn-b521b6cf">&lt;RC&gt;union_to</a> ###
+### <a id = "user-content-fn-ca2d759d" name = "user-content-fn-ca2d759d">&lt;LC&gt;union_to</a> ###
 
-<code>static void <strong>&lt;RC&gt;union_to</strong>(struct &lt;L&gt;list *const <em>a</em>, struct &lt;L&gt;list *const <em>b</em>, struct &lt;L&gt;list *const <em>result</em>)</code>
+<code>static void <strong>&lt;LC&gt;union_to</strong>(struct &lt;L&gt;list *const <em>a</em>, struct &lt;L&gt;list *const <em>b</em>, struct &lt;L&gt;list *const <em>result</em>)</code>
 
 Moves the union of `a` and `b` as sequential sorted individual elements to `result`\. Equal elements are moved from `a`\. All parameters must be unique or can be null\.
 
@@ -463,9 +465,9 @@ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, a
    &#927;\(|`a`| \+ |`b`|\)
 
 
-### <a id = "user-content-fn-aaa1be09" name = "user-content-fn-aaa1be09">&lt;RC&gt;intersection_to</a> ###
+### <a id = "user-content-fn-5fa6175f" name = "user-content-fn-5fa6175f">&lt;LC&gt;intersection_to</a> ###
 
-<code>static void <strong>&lt;RC&gt;intersection_to</strong>(struct &lt;L&gt;list *const <em>a</em>, struct &lt;L&gt;list *const <em>b</em>, struct &lt;L&gt;list *const <em>result</em>)</code>
+<code>static void <strong>&lt;LC&gt;intersection_to</strong>(struct &lt;L&gt;list *const <em>a</em>, struct &lt;L&gt;list *const <em>b</em>, struct &lt;L&gt;list *const <em>result</em>)</code>
 
 Moves the intersection of `a` and `b` as sequential sorted individual elements to `result`\. Equal elements are moved from `a`\. All parameters must be unique or can be null\.
 
@@ -477,9 +479,9 @@ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:B)` 
    &#927;\(|`a`| \+ |`b`|\)
 
 
-### <a id = "user-content-fn-3e3b389d" name = "user-content-fn-3e3b389d">&lt;RC&gt;xor_to</a> ###
+### <a id = "user-content-fn-2d627307" name = "user-content-fn-2d627307">&lt;LC&gt;xor_to</a> ###
 
-<code>static void <strong>&lt;RC&gt;xor_to</strong>(struct &lt;L&gt;list *const <em>a</em>, struct &lt;L&gt;list *const <em>b</em>, struct &lt;L&gt;list *const <em>result</em>)</code>
+<code>static void <strong>&lt;LC&gt;xor_to</strong>(struct &lt;L&gt;list *const <em>a</em>, struct &lt;L&gt;list *const <em>b</em>, struct &lt;L&gt;list *const <em>result</em>)</code>
 
 Moves `a` exclusive\-or `b` as sequential sorted individual elements to `result`\. Equal elements are moved from `a`\. All parameters must be unique or can be null\.
 
@@ -491,9 +493,9 @@ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, b
    O\(|`a`| \+ |`b`|\)
 
 
-### <a id = "user-content-fn-41d9a251" name = "user-content-fn-41d9a251">&lt;RC&gt;is_equal</a> ###
+### <a id = "user-content-fn-ca54e533" name = "user-content-fn-ca54e533">&lt;LC&gt;is_equal</a> ###
 
-<code>static int <strong>&lt;RC&gt;is_equal</strong>(const struct &lt;L&gt;list *const <em>lista</em>, const struct &lt;L&gt;list *const <em>listb</em>)</code>
+<code>static int <strong>&lt;LC&gt;is_equal</strong>(const struct &lt;L&gt;list *const <em>lista</em>, const struct &lt;L&gt;list *const <em>listb</em>)</code>
 
  * Return:  
    If `lista` piecewise equals `listb`, which both can be null\.
@@ -503,13 +505,13 @@ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then `(a:A, b
 
 
 
-### <a id = "user-content-fn-ca446e8c" name = "user-content-fn-ca446e8c">&lt;RC&gt;duplicates_to</a> ###
+### <a id = "user-content-fn-8b4f3802" name = "user-content-fn-8b4f3802">&lt;LC&gt;duplicates_to</a> ###
 
-<code>static void <strong>&lt;RC&gt;duplicates_to</strong>(struct &lt;L&gt;list *const <em>from</em>, struct &lt;L&gt;list *const <em>to</em>)</code>
+<code>static void <strong>&lt;LC&gt;duplicates_to</strong>(struct &lt;L&gt;list *const <em>from</em>, struct &lt;L&gt;list *const <em>to</em>)</code>
 
 Moves all local\-duplicates of `from` to the end of `to`\.
 
-For example, if `from` is `(A, B, B, A)`, it would concatenate the second `(B)` to `to` and leave `(A, B, A)` in `from`\. If one [&lt;RC&gt;sort](#user-content-fn-9e1ae7d2) `from` first, `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`\.
+For example, if `from` is `(A, B, B, A)`, it would concatenate the second `(B)` to `to` and leave `(A, B, A)` in `from`\. If one [&lt;LC&gt;sort](#user-content-fn-e33e7e70) `from` first, `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`\.
 
 
 
