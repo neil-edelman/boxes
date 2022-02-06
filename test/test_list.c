@@ -129,43 +129,47 @@ static struct letter_listlink *letter_from_pool(void *const vls) {
 }
 
 
-#if 0
-
-/* Name? */
+/** Name is a linked component of panda. */
 struct name_listlink;
 static void name_to_string(const struct name_listlink *, char (*)[12]);
 static void fill_panda_name(struct name_listlink *);
 static int name_compare(const struct name_listlink *,
 	const struct name_listlink *);
 #define LIST_NAME name
-#define LIST_COMPARE &name_compare
 #define LIST_TEST &fill_panda_name
+#define LIST_EXPECT_TRAIT
+#include "../src/list.h"
+#define LIST_COMPARE &name_compare
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &name_to_string
 #include "../src/list.h"
-/* Where? */
+/** Where is a linked component of panda. */
 struct where_listlink;
 static void where_to_string(const struct where_listlink *, char (*)[12]);
 static void fill_panda_where(struct where_listlink *);
 static int where_compare(const struct where_listlink *,
 	const struct where_listlink *);
 #define LIST_NAME where
-#define LIST_COMPARE &where_compare
 #define LIST_TEST &fill_panda_where
+#define LIST_EXPECT_TRAIT
+#include "../src/list.h"
+#define LIST_COMPARE &where_compare
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &where_to_string
 #include "../src/list.h"
-/* Ferocity? */
+/** Ferocity is a linked component of panda. */
 struct fero_listlink;
 static void fero_to_string(const struct fero_listlink *, char (*)[12]);
 static void fill_panda_fero(struct fero_listlink *);
 static int fero_compare(const struct fero_listlink *,
 	const struct fero_listlink *);
 #define LIST_NAME fero
-#define LIST_COMPARE &fero_compare
 #define LIST_TEST &fill_panda_fero
+#define LIST_EXPECT_TRAIT
+#include "../src/list.h"
+#define LIST_COMPARE &fero_compare
 #define LIST_EXPECT_TRAIT
 #include "../src/list.h"
 #define LIST_TO_STRING &fero_to_string
@@ -321,8 +325,6 @@ static void pandas_tests(void) {
 	panda_graph(&names, &wheres, &feros);
 	panda_pool_(&pandas);
 }
-
-#endif
 
 
 /* Fixed width skip list. This is probably overkill on the type-safety. */
@@ -1052,26 +1054,31 @@ int main(void) {
 	struct permutelink_pool permutes = POOL_IDLE;
 	struct no_pool nos = POOL_IDLE;
 	struct letter_pool ls = POOL_IDLE;
-	/*struct panda_pool pandas = POOL_IDLE;*/
+	struct panda_pool pandas = POOL_IDLE;
 	struct skip_pool skips = POOL_IDLE;
 	permute_list_test(&permute_from_pool, &permutes),
 		permutelink_pool_(&permutes);
 	no_list_test(&no_from_pool, &nos), no_pool_clear(&nos);
-	no_list_recur_test(&no_from_pool, &nos), no_pool_(&nos);
+	no_list_coda_test(&no_from_pool, &nos), no_pool_(&nos);
 	letter_list_test(&letter_from_pool, &ls), letter_pool_clear(&ls);
-	letter_list_recur_test(&letter_from_pool, &ls), letter_pool_(&ls);
-	/* Panda and animals converged into the same test.
-	name_list_test(&panda_name_from_pool, &pandas), panda_pool_(&pandas);
-	where_list_test(&panda_where_from_pool, &pandas), panda_pool_(&pandas);
-	fero_list_test(&panda_fero_from_pool, &pandas), panda_pool_(&pandas);*/
+	letter_list_coda_test(&letter_from_pool, &ls), letter_pool_(&ls);
+	name_list_test(&panda_name_from_pool, &pandas), panda_pool_clear(&pandas);
+	name_list_coda_test(&panda_name_from_pool, &pandas),
+		panda_pool_clear(&pandas);
+	where_list_test(&panda_where_from_pool, &pandas), panda_pool_clear(&pandas);
+	where_list_coda_test(&panda_where_from_pool, &pandas),
+		panda_pool_clear(&pandas);
+	fero_list_test(&panda_fero_from_pool, &pandas), panda_pool_clear(&pandas);
+	fero_list_coda_test(&panda_fero_from_pool, &pandas),
+		panda_pool_clear(&pandas);
 	layer0_list_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
-	layer0_list_recur_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
+	layer0_list_coda_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
 	layer1_list_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
-	layer1_list_recur_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
+	layer1_list_coda_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
 	layer2_list_test(&l2_from_pool, &skips), skip_pool_clear(&skips);
-	layer2_list_recur_test(&l2_from_pool, &skips), skip_pool_clear(&skips);
+	layer2_list_coda_test(&l2_from_pool, &skips), skip_pool_clear(&skips);
 	skip_pool_(&skips);
-	/*pandas_tests();*/
+	pandas_tests();
 	skips_tests();
 	animals_tests();
 	return EXIT_SUCCESS;

@@ -453,8 +453,8 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 /** The linked-list will be tested on stdout. `LIST_TEST` has to be set.
  @param[parent_new, parent] Responsible for creating new objects and returning
  the list. @allow */
-static void LC_(recur_test)(struct L_(listlink) *(*const parent_new)(void *),
-	void *const parent) {
+static void LC_(coda_test)(struct L_(listlink)
+	*(*const parent_new)(void *), void *const parent) {
 	printf("<" QUOTE(LIST_NAME) ">list testing <"
 #ifdef LIST_COMPARE_NAME
 		QUOTE(LIST_COMPARE_NAME)

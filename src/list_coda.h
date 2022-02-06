@@ -30,14 +30,14 @@
 #error Unexpected defines.
 #endif
 #define PLC_(n) LIST_CAT(list_coda, LC_(n))
-/* <fn:<PLC>boolean> operations bit-vector; dummy `RECUR*` ensures closed. */
-enum recur_operation {
-	RECUR_SUBTRACTION_AB = 1,
-	RECUR_SUBTRACTION_BA = 2,  RECURA,
-	RECUR_INTERSECTION   = 4,  RECURB, RECURC, RECURD,
-	RECUR_DEFAULT_A      = 8,  RECURE, RECURF, RECURG, RECURH, RECURI, RECURJ,
+/* <fn:<PLC>boolean> operations bit-vector; dummy ensures closed. */
+enum list_operation {
+	LIST_SUBTRACTION_AB = 1,
+	LIST_SUBTRACTION_BA = 2,  RECURA,
+	LIST_INTERSECTION   = 4,  RECURB, RECURC, RECURD,
+	LIST_DEFAULT_A      = 8,  RECURE, RECURF, RECURG, RECURH, RECURI, RECURJ,
 		RECURK,
-	RECUR_DEFAULT_B      = 16, RECURL, RECURM, RECURN, RECURO, RECURP, RECURQ,
+	LIST_DEFAULT_B      = 16, RECURL, RECURM, RECURN, RECURO, RECURP, RECURQ,
 		RECURR, RECURS, RECURT, RECURU, RECURV, RECURW, RECURX, RECURY, RECURZ
 };
 #endif /* idempotent --> */
@@ -238,7 +238,7 @@ static void LC_(sort)(struct L_(list) *const list) { PLC_(sort)(list); }
  @order \O(|`a`| + |`b`|) */
 static void PLC_(boolean)(struct L_(list) *const alist,
 	struct L_(list) *const blist,
-	const enum recur_operation mask, struct L_(list) *const result) {
+	const enum list_operation mask, struct L_(list) *const result) {
 	struct L_(listlink) *temp,
 		*a = alist ? alist->u.flat.next : 0,
 		*b = blist ? blist->u.flat.next : 0;
@@ -250,32 +250,32 @@ static void PLC_(boolean)(struct L_(list) *const alist,
 			comp = PLC_(compare)(a, b);
 			if(comp < 0) {
 				temp = a, a = a->next;
-				if(mask & RECUR_SUBTRACTION_AB) {
+				if(mask & LIST_SUBTRACTION_AB) {
 					PL_(remove)(temp);
 					if(result) PL_(push)(result, temp);
 				}
 			} else if(comp > 0) {
 				temp = b, b = b->next;
-				if(mask & RECUR_SUBTRACTION_BA) {
+				if(mask & LIST_SUBTRACTION_BA) {
 					PL_(remove)(temp);
 					if(result) PL_(push)(result, temp);
 				}
 			} else {
 				temp = a, a = a->next, b = b->next;
-				if(mask & RECUR_INTERSECTION) {
+				if(mask & LIST_INTERSECTION) {
 					PL_(remove)(temp);
 					if(result) PL_(push)(result, temp);
 				}
 			}
 		}
 	}
-	if(a && mask & RECUR_DEFAULT_A) {
+	if(a && mask & LIST_DEFAULT_A) {
 		while((temp = a, a = a->next)) {
 			PL_(remove)(temp);
 			if(result) PL_(push)(result, temp);
 		}
 	}
-	if(b && mask & RECUR_DEFAULT_B) {
+	if(b && mask & LIST_DEFAULT_B) {
 		while((temp = b, b = b->next)) {
 			PL_(remove)(temp);
 			if(result) PL_(push)(result, temp);
@@ -292,7 +292,7 @@ static void PLC_(boolean)(struct L_(list) *const alist,
  @order \O(|`a`| + |`b`|) @allow */
 static void LC_(subtraction_to)(struct L_(list) *const a,
 	struct L_(list) *const b, struct L_(list) *const result) {
-	PLC_(boolean)(a, b, RECUR_SUBTRACTION_AB | RECUR_DEFAULT_A, result);
+	PLC_(boolean)(a, b, LIST_SUBTRACTION_AB | LIST_DEFAULT_A, result);
 }
 
 /** Moves the union of `a` and `b` as sequential sorted individual elements to
@@ -304,8 +304,8 @@ static void LC_(subtraction_to)(struct L_(list) *const a,
  @order \O(|`a`| + |`b`|) @allow */
 static void LC_(union_to)(struct L_(list) *const a,
 	struct L_(list) *const b, struct L_(list) *const result) {
-	PLC_(boolean)(a, b, RECUR_SUBTRACTION_AB | RECUR_SUBTRACTION_BA
-		| RECUR_INTERSECTION | RECUR_DEFAULT_A | RECUR_DEFAULT_B, result);
+	PLC_(boolean)(a, b, LIST_SUBTRACTION_AB | LIST_SUBTRACTION_BA
+		| LIST_INTERSECTION | LIST_DEFAULT_A | LIST_DEFAULT_B, result);
 }
 
 /** Moves the intersection of `a` and `b` as sequential sorted individual
@@ -317,7 +317,7 @@ static void LC_(union_to)(struct L_(list) *const a,
  @order \O(|`a`| + |`b`|) @allow */
 static void LC_(intersection_to)(struct L_(list) *const a,
 	struct L_(list) *const b, struct L_(list) *const result) {
-	PLC_(boolean)(a, b, RECUR_INTERSECTION, result);
+	PLC_(boolean)(a, b, LIST_INTERSECTION, result);
 }
 
 /** Moves `a` exclusive-or `b` as sequential sorted individual elements to
@@ -329,8 +329,8 @@ static void LC_(intersection_to)(struct L_(list) *const a,
  @order O(|`a`| + |`b`|) @allow */
 static void LC_(xor_to)(struct L_(list) *const a, struct L_(list) *const b,
 	struct L_(list) *const result) {
-	PLC_(boolean)(a, b, RECUR_SUBTRACTION_AB | RECUR_SUBTRACTION_BA
-		| RECUR_DEFAULT_A | RECUR_DEFAULT_B, result);
+	PLC_(boolean)(a, b, LIST_SUBTRACTION_AB | LIST_SUBTRACTION_BA
+		| LIST_DEFAULT_A | LIST_DEFAULT_B, result);
 }
 
 /** !compare(`a`, `b`) == equals(`a`, `b`).
@@ -383,17 +383,17 @@ static void LC_(duplicates_to)(struct L_(list) *const from,
 	}
 }
 
-static void PLC_(unused_recur_coda)(void);
-static void PLC_(unused_recur)(void) {
+static void PLC_(unused_coda_coda)(void);
+static void PLC_(unused_coda)(void) {
 #ifdef LIST_COMPARE /* <!-- compare */
 	LC_(compare)(0, 0); LC_(merge)(0, 0); LC_(sort)(0);
 	LC_(subtraction_to)(0, 0, 0); LC_(union_to)(0, 0, 0);
 	LC_(intersection_to)(0, 0, 0); LC_(xor_to)(0, 0, 0);
 #endif /* compare --> */
 	LC_(is_equal)(0, 0); LC_(duplicates_to)(0, 0);
-	PLC_(unused_recur_coda)();
+	PLC_(unused_coda_coda)();
 }
-static void PLC_(unused_recur_coda)(void) { PLC_(unused_recur)(); }
+static void PLC_(unused_coda_coda)(void) { PLC_(unused_coda)(); }
 
 #ifdef BOX_COMPARE
 #undef BOX_COMPARE

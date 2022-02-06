@@ -48,6 +48,9 @@
 #if LIST_TRAITS > 1
 #error Only one trait per include is allowed; use LIST_EXPECT_TRAIT.
 #endif
+#if LIST_TRAITS && !defined(LIST_BASE)
+#error Trying to define a trait without defining the base datatype.
+#endif
 #if defined(LIST_TO_STRING_NAME) && !defined(LIST_TO_STRING)
 #error LIST_TO_STRING_NAME requires LIST_TO_STRING.
 #endif
@@ -71,6 +74,7 @@
 
 
 #if LIST_TRAITS == 0 /* <!-- base code */
+#define LIST_BASE
 
 
 /** Storage of this structure is the responsibility of the caller, who must
@@ -423,6 +427,7 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *)
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
+#undef LIST_BASE
 /* box (multiple traits) --> */
 #endif /* !trait --> */
 #undef LIST_TO_STRING_TRAIT
