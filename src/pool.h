@@ -317,7 +317,7 @@ static const PP_(type) *PP_(next)(struct PP_(iterator) *const it) {
 /* Forward-declare. */
 static void (*PP_(to_string))(const PP_(type) *, char (*)[12]);
 static const char *(*PP_(pool_to_string))(const struct P_(pool) *);
-#include "../test/test_pool.h" /** \include */
+#include "../test/test_pool.h"
 #endif /* test --> */
 
 /* <!-- box (multiple traits) */

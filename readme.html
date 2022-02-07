@@ -33,11 +33,13 @@
 
 <h1>pool.h</h1>
 
+<p>Source <a href = "src/pool.h">src/pool.h</a>, depends on <a href = "src/heap.h">src/heap.h</a>, and <a href = "src/array.h">src/array.h</a>; examples <a href = "test/test_pool.c">test/test_pool.c</a>.</p>
+
 <h2>Stable pool</h2>
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PP>type">&lt;PP&gt;type</a>, <a href = "#typedef:<PP>action_fn">&lt;PP&gt;action_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PP>type">&lt;PP&gt;type</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<P>pool">&lt;P&gt;pool</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -83,16 +85,6 @@
 
 <div>
 
-<h3><a id = "typedef:<PP>action_fn" name = "typedef:<PP>action_fn">&lt;PP&gt;action_fn</a></h3>
-
-<p><code>typedef void(*<strong>&lt;PP&gt;action_fn</strong>)(&lt;PP&gt;type *);</code></p>
-
-<p>Operates by side-effects.</p>
-
-</div>
-
-<div>
-
 <h3><a id = "typedef:<PSZ>to_string_fn" name = "typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></h3>
 
 <p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code></p>
@@ -109,7 +101,7 @@
 
 <p><code>struct <strong>&lt;P&gt;pool</strong> { struct &lt;PP&gt;slot_array slots; struct poolfree_heap free0; size_t capacity0; };</code></p>
 
-<p>Consists of a map of several chunks of increasing size and a free-list. Zeroed data is a valid state. To instantiate to an idle state, see <a href = "#fn:&lt;P&gt;pool">&lt;P&gt;pool</a>, <code>POOL_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
+<p>Consists of a map of several chunks of increasing size and a free-heap. Zeroed data is a valid state. To instantiate to an idle state, see <a href = "#fn:&lt;P&gt;pool">&lt;P&gt;pool</a>, <code>POOL_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>.</p>
 
 <p><img alt = "States." src = "web/states.png" width = 201 height = 291></p>
 
@@ -134,8 +126,6 @@
 <tr><td align = right>static int</td><td><a href = "#fn:<P>pool_remove">&lt;P&gt;pool_remove</a></td><td>pool, data</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<P>pool_clear">&lt;P&gt;pool_clear</a></td><td>pool</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<P>pool_test">&lt;P&gt;pool_test</a></td><td></td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
@@ -240,16 +230,6 @@
 	<dt>Order:</dt>
 	<dd>&#927;(\log <code>items</code>)</dd>
 </dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<P>pool_test" name = "fn:<P>pool_test">&lt;P&gt;pool_test</a></h3>
-
-<p><code>static void <strong>&lt;P&gt;pool_test</strong>(void)</code></p>
-
-<p>The list will be tested on stdout; requires <code>POOL_TEST</code> and not <code>NDEBUG</code>.</p>
 
 </div>
 

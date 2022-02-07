@@ -1,9 +1,11 @@
 # pool\.h #
 
+Source [src/pool\.h](src/pool.h), depends on [src/heap\.h](src/heap.h), and [src/array\.h](src/array.h); examples [test/test\_pool\.c](test/test_pool.c)\.
+
 ## Stable pool ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PP&gt;type](#user-content-typedef-7560d92f), [&lt;PP&gt;action_fn](#user-content-typedef-cefaf27a), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PP&gt;type](#user-content-typedef-7560d92f), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;P&gt;pool](#user-content-tag-8aba39cb)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -41,14 +43,6 @@ A valid tag type set by `POOL_TYPE`\.
 
 
 
-### <a id = "user-content-typedef-cefaf27a" name = "user-content-typedef-cefaf27a">&lt;PP&gt;action_fn</a> ###
-
-<code>typedef void(*<strong>&lt;PP&gt;action_fn</strong>)(&lt;PP&gt;type *);</code>
-
-Operates by side\-effects\.
-
-
-
 ### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
 
 <code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
@@ -63,7 +57,7 @@ Operates by side\-effects\.
 
 <code>struct <strong>&lt;P&gt;pool</strong> { struct &lt;PP&gt;slot_array slots; struct poolfree_heap free0; size_t capacity0; };</code>
 
-Consists of a map of several chunks of increasing size and a free\-list\. Zeroed data is a valid state\. To instantiate to an idle state, see [&lt;P&gt;pool](#user-content-fn-8aba39cb), `POOL_IDLE`, `{0}` \(`C99`,\) or being `static`\.
+Consists of a map of several chunks of increasing size and a free\-heap\. Zeroed data is a valid state\. To instantiate to an idle state, see [&lt;P&gt;pool](#user-content-fn-8aba39cb), `POOL_IDLE`, `{0}` \(`C99`,\) or being `static`\.
 
 ![States.](web/states.png)
 
@@ -86,8 +80,6 @@ Consists of a map of several chunks of increasing size and a free\-list\. Zeroed
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-95972ccc">&lt;P&gt;pool_remove</a></td><td>pool, data</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-96f5dc51">&lt;P&gt;pool_clear</a></td><td>pool</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-d026a8f8">&lt;P&gt;pool_test</a></td><td></td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
@@ -172,14 +164,6 @@ Removes all from `pool`, but keeps it's active state, only freeing the smaller b
  * Order:  
    &#927;\(\\log `items`\)
 
-
-
-
-### <a id = "user-content-fn-d026a8f8" name = "user-content-fn-d026a8f8">&lt;P&gt;pool_test</a> ###
-
-<code>static void <strong>&lt;P&gt;pool_test</strong>(void)</code>
-
-The list will be tested on stdout; requires `POOL_TEST` and not `NDEBUG`\.
 
 
 
