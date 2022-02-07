@@ -153,7 +153,7 @@ To initialize, see [&lt;N&gt;table](#user-content-fn-8f317be5), `TABLE_IDLE`, `{
 
 ![States](web/it.png)
 
-Adding, deleting, successfully looking up entries, or any modification of the table's topology causes the iterator to become invalid\. Use [&lt;N&gt;table_iterator_remove](#user-content-fn-c384e71) to avoid this\. For tables that can have zero as a valid value, [&lt;N&gt;table_has_next](#user-content-fn-cbb7429a) can differentiate between them\. Iteration usually not in any particular order\. The asymptotic runtime of iterating though the whole table is proportional to the capacity\.
+Adding, deleting, successfully looking up entries, or any modification of the table's topology invalidates the iterator\. Iteration usually not in any particular order\. The asymptotic runtime of iterating though the whole table is proportional to the capacity\.
 
 
 
@@ -392,6 +392,8 @@ Advances `it`\.
 
 <code>static int <strong>&lt;N&gt;table_has_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
 
+Especially for tables that can have zero as a valid value, this is used to differentiate between zero and null\.
+
  * Return:  
    Whether the table specified to `it` in [&lt;N&gt;table_begin](#user-content-fn-89645eb3) has a next element\.
  * Order:  
@@ -454,7 +456,7 @@ This is functionally identical to [&lt;N&gt;table_get_or](#user-content-fn-638dc
 
 <code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
 
-[to\_string\.h](to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<PSZ>box` is contracted to be the box itself\. `<SZ>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<PSZ>box` is contracted to be the box itself\. `<SZ>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
 
  * Return:  
    Address of the static buffer\.

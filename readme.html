@@ -219,7 +219,7 @@
 
 <p><img alt = "States" src = "web/it.png" width = 943 height = 117></p>
 
-<p>Adding, deleting, successfully looking up entries, or any modification of the table's topology causes the iterator to become invalid. Use <a href = "#fn:&lt;N&gt;table_iterator_remove">&lt;N&gt;table_iterator_remove</a> to avoid this. For tables that can have zero as a valid value, <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a> can differentiate between them. Iteration usually not in any particular order. The asymptotic runtime of iterating though the whole table is proportional to the capacity.</p>
+<p>Adding, deleting, successfully looking up entries, or any modification of the table's topology invalidates the iterator. Iteration usually not in any particular order. The asymptotic runtime of iterating though the whole table is proportional to the capacity.</p>
 
 </div>
 
@@ -504,6 +504,8 @@
 
 <p><code>static int <strong>&lt;N&gt;table_has_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
 
+<p>Especially for tables that can have zero as a valid value, this is used to differentiate between zero and null.</p>
+
 <dl>
 	<dt>Return:</dt>
 	<dd>Whether the table specified to <code>it</code> in <a href = "#fn:&lt;N&gt;table_begin">&lt;N&gt;table_begin</a> has a next element.</dd>
@@ -581,7 +583,7 @@
 
 <p><code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "to_string.h">to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;PSZ&gt;box</code> is contracted to be the box itself. <code>&lt;SZ&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;PSZ&gt;box</code> is contracted to be the box itself. <code>&lt;SZ&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
