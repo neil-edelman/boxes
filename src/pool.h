@@ -1,6 +1,9 @@
 /** @license 2021 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
+ @abstract Source <src/pool.h>, depends on <src/heap.h>, and <src/array.h>;
+ examples <test/test_pool.c>.
+
  @subtitle Stable pool
 
  ![Example of Pool](../web/pool.png)
@@ -93,7 +96,7 @@ struct PP_(slot) { size_t size; PP_(type) *chunk; };
 #define ARRAY_TYPE struct PP_(slot)
 #include "array.h"
 
-/** Consists of a map of several chunks of increasing size and a free-list.
+/** Consists of a map of several chunks of increasing size and a free-heap.
  Zeroed data is a valid state. To instantiate to an idle state, see
  <fn:<P>pool>, `POOL_IDLE`, `{0}` (`C99`,) or being `static`.
 
