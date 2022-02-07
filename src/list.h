@@ -83,12 +83,15 @@
  read-only while in the list.
 
  ![States.](../web/node-states.png) */
+struct L_(listlink);
 struct L_(listlink) { struct L_(listlink) *next, *prev; };
 
 /** Serves as head and tail for linked-list of <tag:<L>listlink>. Use
  <fn:<L>list_clear> to initialize the list. Because this list is closed; that
  is, given a valid pointer to an element, one can determine all others, null
- values are not allowed and it is _not_ the same as `{0}`.
+ values are not allowed and it is _not_ the same as `{0}`. The contents of this
+ structure should be treated as read-only while initialized, with the exception
+ of <fn:<L>list_self_correct>.
 
  ![States.](../web/states.png) */
 struct L_(list);
