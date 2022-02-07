@@ -117,7 +117,7 @@ Destroys `pool` and returns it to idle\.
 
 <code>static int <strong>&lt;P&gt;pool_buffer</strong>(struct &lt;P&gt;pool *const <em>pool</em>, const size_t <em>n</em>)</code>
 
-Ensure capacity of at least `n` items in `pool`\. Pre\-sizing is better for contiguous blocks\.
+Ensure capacity of at least `n` further items in `pool`\. Pre\-sizing is better for contiguous blocks, but takes up that memory\.
 
  * Return:  
    Success\.

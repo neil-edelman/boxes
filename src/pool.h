@@ -242,8 +242,9 @@ static void P_(pool_)(struct P_(pool) *const pool) {
 	P_(pool)(pool);
 }
 
-/** Ensure capacity of at least `n` items in `pool`. Pre-sizing is better for
- contiguous blocks. @return Success. @throws[ERANGE, malloc] @allow */
+/** Ensure capacity of at least `n` further items in `pool`. Pre-sizing is
+ better for contiguous blocks, but takes up that memory.
+ @return Success. @throws[ERANGE, malloc] @allow */
 static int P_(pool_buffer)(struct P_(pool) *const pool, const size_t n) {
 	return assert(pool), PP_(buffer)(pool, n);
 }
