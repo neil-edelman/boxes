@@ -3,16 +3,13 @@
 
  @subtitle To String Trait
 
- A trait relying on the iterate interface. One does need this file unless one
- defines a box with the `to_string` trait, in which case the box sub-includes
- this. Optional `TO_STRING_EXTERN` or `TO_STRING_INTERN` are defined before any
- `to_string` boxes.
+ A trait relying on the iterate interface (`iterator`, `begin`, `next`.)
 
- @param[Z_]
+ @param[SZ_]
  A one-argument macro producing a name that is responsible for the name of the
  to string function. Should be something like
- `Z_(to_string) -> widget_foo_to_string`. Leaves `Z_` and `PZ_` defined for any
- `EXPECTS_TO_STRING`; the caller is responsible for undefining.
+ `SZ_(to_string) -> widget_foo_to_string`. Leaves `SZ_` and defined for any
+ `EXPECTS_TO_STRING`; the caller is responsible for `#undef`.
 
  @param[TO_STRING]
  Function implementing <typedef:<PZ>to_string_fn>.
@@ -22,20 +19,17 @@
 
  @param[TO_STRING_EXTERN, TO_STRING_INTERN]
  Normally the space to put the temporary strings is static, one per file. With
- this, it's possible to have a global programme storage to save space: have one
- file have `TO_STRING_INTERN` as the first box, the other files
- `TO_STRING_EXTERN`. This is unsynchronized, but saves space.
+ this, it's possible to have a global storage to save space: have one file have
+ `TO_STRING_INTERN` as the first box, the other files `TO_STRING_EXTERN`. This
+ is unsynchronized.
 
  @fixme `extern` untested.
 
  @std C89 */
 
-#include <string.h>
-
-/* Check defines. */
 #if !defined(BOX_) || !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS) \
-	|| !defined(Z_) || !defined(TO_STRING)
-#error Undefined preprocessor symbols.
+	|| !defined(SZ_) || !defined(TO_STRING)
+#error Unexpected preprocessor symbols.
 #endif
 
 #if defined(TO_STRING_H) \
@@ -49,13 +43,14 @@
 
 #ifndef TO_STRING_H /* <!-- idempotent */
 #define TO_STRING_H
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(TO_STRING_CAT_) || defined(TO_STRING_CAT) || defined(PZ_)
+#include <string.h>
+#if defined(TO_STRING_CAT_) || defined(TO_STRING_CAT) || defined(PSZ_)
 #error Unexpected defines.
 #endif
-#define TO_STRING_CAT_(x, y) x ## _ ## y
-#define TO_STRING_CAT(x, y) TO_STRING_CAT_(x, y)
-#define PZ_(n) TO_STRING_CAT(to_string, Z_(n))
+/* <Kernighan and Ritchie, 1988, p. 231>. */
+#define TO_STRING_CAT_(n, m) n ## _ ## m
+#define TO_STRING_CAT(n, m) TO_STRING_CAT_(n, m)
+#define PSZ_(n) TO_STRING_CAT(to_string, SZ_(n))
 #if defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN) /* <!-- ntern */
 extern char to_string_buffers[4][256];
 extern const unsigned to_string_buffers_no;
@@ -83,26 +78,26 @@ static unsigned to_string_buffer_i;
 #define TO_STRING_RIGHT ')'
 #endif
 
-typedef BOX_CONTAINER PZ_(box);
-typedef BOX_CONTENTS PZ_(type);
+typedef BOX_CONTAINER PSZ_(box);
+typedef BOX_CONTENTS PSZ_(type);
 
 /** Responsible for turning the first argument into a 12-`char` null-terminated
  output string. */
-typedef void (*PZ_(to_string_fn))(const PZ_(type) *, char (*)[12]);
+typedef void (*PSZ_(to_string_fn))(const PSZ_(type) *, char (*)[12]);
 
 /* Check that `TO_STRING` is a function implementing <typedef:<PZ>to_string>. */
-static const PZ_(to_string_fn) PZ_(to_string) = (TO_STRING);
+static const PSZ_(to_string_fn) PSZ_(to_string) = (TO_STRING);
 
 /** @return Print the contents of `box` in a static string buffer of 256
  bytes with limitations of only printing 4 things at a time.
  @order \Theta(1) @allow */
-static const char *Z_(to_string)(const PZ_(box) *const box) {
+static const char *SZ_(to_string)(const PSZ_(box) *const box) {
 	const char comma = ',', space = ' ', *const ellipsis = "…",
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;
 	const size_t ellipsis_len = strlen(ellipsis);
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance, size;
-	const PZ_(type) *x;
+	const PSZ_(type) *x;
 	struct BOX_(iterator) it;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
@@ -114,7 +109,7 @@ static const char *Z_(to_string)(const PZ_(box) *const box) {
 	BOX_(begin)(&it, box);
 	*b++ = left;
 	while(x = BOX_(next)(&it)) {
-		PZ_(to_string)(x, (char (*)[12])b);
+		PSZ_(to_string)(x, (char (*)[12])b);
 		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
@@ -136,13 +131,11 @@ terminate:
 	return buffer;
 }
 
-static void PZ_(unused_to_string_coda)(void);
-static void PZ_(unused_to_string)(void)
-	{ Z_(to_string)(0); PZ_(unused_to_string_coda)(); }
-static void PZ_(unused_to_string_coda)(void) { PZ_(unused_to_string)(); }
+static void PSZ_(unused_to_string_coda)(void);
+static void PSZ_(unused_to_string)(void)
+	{ SZ_(to_string)(0); PSZ_(unused_to_string_coda)(); }
+static void PSZ_(unused_to_string_coda)(void) { PSZ_(unused_to_string)(); }
 
-/* #undef PZ_
-#undef Z_ Might need for `EXPECTS_TO_STRING`. */
 #undef TO_STRING
 #ifdef TO_STRING_NAME
 #undef TO_STRING_NAME

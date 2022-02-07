@@ -52,14 +52,13 @@
 #error TRIE_TEST requires TRIE_TO_STRING.
 #endif
 
+#ifndef TRIE_H /* <!-- idempotent */
+#define TRIE_H
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#include <limits.h> /* CHAR_BIT (will compile on C89) */
-
-#ifndef TRIE_H /* <!-- idempotent */
-#define TRIE_H
+#include <limits.h>
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #if defined(TRIE_CAT_) || defined(TRIE_CAT) || defined(T_) || defined(PT_)
 #error Unexpected defines.
@@ -271,7 +270,7 @@ static struct PT_(tree) *PT_(tree)(void) {
 	return tree;
 }
 
-#if 0
+#if 0 /* <!-- forward declare debugging tools */
 
 #ifdef TRIE_TO_STRING
 static const char *T_(trie_to_string)(const struct T_(trie) *);
@@ -304,7 +303,7 @@ static void PT_(prnt)(const struct PT_(tree) *const tree) {
 #endif
 }
 
-#endif
+#endif /* forward --> */
 
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
@@ -849,11 +848,13 @@ static PT_(type) *T_(trie_next)(struct T_(trie_iterator) *const it) {
 /** Uses the natural `a` -> `z` that is defined by `TRIE_KEY`. */
 static void PT_(to_string)(const PT_(type) *const a, char (*const z)[12])
 	{ assert(a && z); sprintf(*z, "%.11s", PT_(to_key)(a)); }
-#define Z_(n) TRIE_CAT(T_(trie), n)
+#define SZ_(n) TRIE_CAT(T_(trie), n)
 #define TO_STRING &PT_(to_string)
 #define TO_STRING_LEFT '{'
 #define TO_STRING_RIGHT '}'
 #include "to_string.h" /** \include */
+#undef SZ_
+#undef PSZ_
 #endif /* str --> */
 
 #ifdef TRIE_TEST /* <!-- test */

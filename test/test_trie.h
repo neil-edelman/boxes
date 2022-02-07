@@ -289,8 +289,9 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
+		"\tfontface=modern;"
 		"\tnode [shape = none];\n"
-		/*"\tforcelabels = true;\n"*/"\n");
+		"\n");
 	if(!trie->root) fprintf(fp, "\tidle;");
 	else tf(trie->root, 0, fp);
 	fprintf(fp, "\tnode [color = Red];\n"
