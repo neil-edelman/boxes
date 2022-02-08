@@ -17,7 +17,7 @@
  encoding with a byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
- @param[TRIE_NAME, TRIE_TYPE]
+ @param[TRIE_NAME, TRIE_VALUE]
  <typedef:<PT>type> that satisfies `C` naming conventions when mangled and an
  optional returnable type that is declared, (it is used by reference only
  except if `TRIE_TEST`.) `<PT>` is private, whose names are prefixed in a
@@ -25,7 +25,7 @@
 
  @param[TRIE_KEY]
  A function that satisfies <typedef:<PT>key_fn>. Must be defined if and only if
- `TRIE_TYPE` is defined. (This imbues it with the properties of a string
+ `TRIE_VALUE` is defined. (This imbues it with the properties of a string
  associative array.)
 
  @param[TRIE_TO_STRING]
@@ -43,8 +43,8 @@
 #ifndef TRIE_NAME
 #error Name TRIE_NAME undefined.
 #endif
-#if defined(TRIE_TYPE) ^ defined(TRIE_KEY)
-#error TRIE_TYPE and TRIE_KEY have to be mutually defined.
+#if defined(TRIE_VALUE) ^ defined(TRIE_KEY)
+#error TRIE_VALUE and TRIE_KEY have to be mutually defined.
 #endif
 #if defined(TRIE_TEST) && !defined(TRIE_TO_STRING)
 #error TRIE_TEST requires TRIE_TO_STRING.
@@ -95,15 +95,15 @@ static int trie_is_prefix(const char *a, const char *b) {
 }
 #endif /* idempotent --> */
 
-#ifndef TRIE_TYPE /* <!-- !type */
+#ifndef TRIE_VALUE /* <!-- !type */
 #define TRIE_SET /* Testing purposes; `const char *` is not really testable. */
 /** Default `char` uses `a` as the key, which makes it a set of strings. */
 static const char *PT_(raw)(const char *a) { return assert(a), a; }
-#define TRIE_TYPE const char
+#define TRIE_VALUE const char
 #define TRIE_KEY &PT_(raw)
 #endif /* !type --> */
 /** Declared type of the trie; `char` default. */
-typedef TRIE_TYPE PT_(type);
+typedef TRIE_VALUE PT_(type);
 
 /** A leaf is either data or another tree; the `children` of <tag:<PT>tree> is
  a bitmap that tells which. */
@@ -878,7 +878,7 @@ static void PT_(unused_base)(void) {
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 #undef TRIE_NAME
-#undef TRIE_TYPE
+#undef TRIE_VALUE
 #undef TRIE_KEY
 #ifdef TRIE_TEST
 #undef TRIE_TEST

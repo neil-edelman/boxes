@@ -513,7 +513,7 @@ static void PT_(test)(void) {
  defining `assert`. @allow */
 static void T_(trie_test)(void) {
 	printf("<" QUOTE(TRIE_NAME) ">trie"
-		" of type <" QUOTE(TRIE_TYPE) ">"
+		" of type <" QUOTE(TRIE_VALUE) ">"
 		" was created using: TREE_KEY<" QUOTE(TRIE_KEY) ">;"
 		" TRIE_TEST <" QUOTE(TRIE_TEST) ">;"
 		" testing:\n");

@@ -31,7 +31,7 @@ static void colour_filler(enum colour *const c)
 static const char *colour_key(const enum colour *const c)
 	{ return colours[*c]; }
 #define TRIE_NAME colour
-#define TRIE_TYPE enum colour
+#define TRIE_VALUE enum colour
 #define TRIE_KEY &colour_key
 #define TRIE_TEST &colour_filler
 #define TRIE_TO_STRING
@@ -79,7 +79,7 @@ static void star_filler(struct star *const s) {
 static const char *star_key(const struct star *const star)
 	{ return star->name; }
 #define TRIE_NAME star
-#define TRIE_TYPE struct star
+#define TRIE_VALUE struct star
 #define TRIE_KEY &star_key
 #define TRIE_TEST &star_filler
 #define TRIE_TO_STRING
@@ -92,7 +92,7 @@ static void str4_filler(struct str4 *const s)
 	{ orcish(s->value, sizeof s->value); }
 static const char *str4_key(const struct str4 *const s) { return s->value; }
 #define TRIE_NAME str4
-#define TRIE_TYPE struct str4
+#define TRIE_VALUE struct str4
 #define TRIE_KEY &str4_key
 #define TRIE_TEST &str4_filler
 #define TRIE_TO_STRING
@@ -106,7 +106,7 @@ static void keyval_filler(struct keyval *const kv)
 static const char *keyval_key(const struct keyval *const kv)
 	{ return kv->key; }
 #define TRIE_NAME keyval
-#define TRIE_TYPE struct keyval
+#define TRIE_VALUE struct keyval
 #define TRIE_KEY &keyval_key
 #define TRIE_TEST &keyval_filler
 #define TRIE_TO_STRING
