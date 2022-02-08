@@ -56,8 +56,7 @@
 separate `C89` data structure projects. These projects are intended
 to generate lightweight, independent, and statically type-safe
 containers as drop-ins for new and existing code. The `sh`-script
-`autoclone`, downloads them all.  See each for usage, and each
-project's `test` section for examples.
+`autoclone`, downloads them all.
 
 Most of the projects make extensive use of code generation: in the
 background, it uses the `C89` pre-processor for template meta-programming
