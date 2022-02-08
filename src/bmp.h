@@ -1,20 +1,18 @@
 /** @license 2021 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- `<B>bmp` is a bit-field of `BMP_BITS` bits.
+ @abstract Source <src/bmp.h>; examples <test/test_bmp.c>.
+
+ @subtitle Fixed bit-field
+
+ `<B>bmp` is a bit-field of `BMP_BITS` bits. The representation in memory is
+ most-signifiant bit first.
 
  @param[BMP_NAME, BMP_BITS]
- `<B>` that satisfies `C` naming conventions when mangled and a number of bits associated therewith; required. `<PB>` is private, whose names are prefixed in
- a manner to avoid collisions.
-
- @param[BMP_TEST]
- Optional unit testing framework using `assert`. Testing contained in <../test/test_bmp.h>.
+ `<B>` that satisfies `C` naming conventions when mangled and a number of bits associated therewith, which must be positive; required. `<PB>` is private,
+ whose names are prefixed in a manner to avoid collisions.
 
  @std C89/90 */
-
-#include <string.h> /* mem */
-#include <limits.h> /* CHAR_BIT */
-#include <assert.h>
 
 #if !defined(BMP_NAME) || !defined(BMP_BITS)
 #error Name BMP_NAME or unsigned number BMP_BITS undefined.
@@ -23,23 +21,24 @@
 #error BMP_BITS too small.
 #endif
 
-/* <Kernighan and Ritchie, 1988, p. 231>; before idempotent _st_ `CAT`. */
-#if defined(B_) || defined(PB_) \
-	|| (defined(BMP_SUBTYPE) ^ (defined(CAT) || defined(CAT_)))
-#error Unexpected P?B_ or CAT_?
-#endif
-#ifndef BMP_SUBTYPE /* <!-- !sub-type */
-#define CAT_(x, y) x ## _ ## y
-#define CAT(x, y) CAT_(x, y)
-#endif /* !sub-type --> */
-#define B_(thing) CAT(BMP_NAME, thing)
-#define PB_(thing) CAT(bmp, B_(thing))
-
 #ifndef BMP_H /* <!-- idempotent */
 #define BMP_H
+#include <string.h>
+#include <limits.h>
+#include <assert.h>
+#if defined(BMP_CAT_) || defined(BMP_CAT) || defined(B_) || defined(PB_)
+#error Unexpected defines.
+#endif
+/* <Kernighan and Ritchie, 1988, p. 231>. */
+#define BMP_CAT_(n, m) n ## _ ## m
+#define BMP_CAT(n, m) BMP_CAT_(n, m)
+#define B_(n) BMP_CAT(BMP_NAME, n)
+#define PB_(n) BMP_CAT(bmp, B_(n))
+/** The underlying array type. */
+typedef unsigned bmpchunk;
 /* <http://c-faq.com/misc/bitsets.html>, except reversed for msb-first. */
-#define BMP_MAX (~(PB_(chunk))0)
-#define BMP_CHUNK (sizeof(PB_(chunk)) * CHAR_BIT)
+#define BMP_MAX (~(bmpchunk)0)
+#define BMP_CHUNK (sizeof(bmpchunk) * CHAR_BIT)
 #define BMP_CHUNKS (((BMP_BITS) - 1) / BMP_CHUNK + 1)
 #define BMP_CHUNK_HI (1u << BMP_CHUNK - 1)
 #define BMP_MASK(x) (BMP_CHUNK_HI >> (x) % (unsigned)BMP_CHUNK)
@@ -51,11 +50,9 @@
 #define BMP_TOGGLE(a, x) ((a)[BMP_SLOT(x)] ^= BMP_MASK(x))
 #endif /* idempotent --> */
 
-/** The underlying array type. */
-typedef unsigned PB_(chunk);
-
-/** An array of `BMP_BITS` bits, taking up the next multiple chunk. */
-struct B_(bmp) { PB_(chunk) chunk[BMP_CHUNKS]; };
+/** An array of `BMP_BITS` bits, (taking up the next multiple of
+ `sizeof(bmpchunk)` \times `CHARBIT`.) */
+struct B_(bmp) { bmpchunk chunk[BMP_CHUNKS]; };
 
 /** Sets `a` to all false. @allow */
 static void B_(bmp_clear_all)(struct B_(bmp) *const a)
@@ -73,7 +70,7 @@ static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
 }
 
 /** @return Projects the eigenvalue of bit `x` of `a`. Either zero of
- non-zero. @allow */
+ non-zero, but not necessarily one. @allow */
 static unsigned B_(bmp_test)(const struct B_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); return BMP_AT(a->chunk, x); }
 
@@ -92,8 +89,9 @@ static void B_(bmp_toggle)(struct B_(bmp) *const a, const unsigned x)
 /** Inserts `n` zeros at `x` in `a`. The `n` right bits are discarded. @allow */
 static void B_(bmp_insert)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
-	/*const*/ struct { unsigned hi, lo; } move, first; unsigned i;
-	/*const*/ PB_(chunk) store; PB_(chunk) temp;
+	struct { unsigned hi, lo; } move, first;
+	unsigned i;
+	bmpchunk store, temp;
 	assert(a && x + n <= BMP_BITS);
 	if(!n) return;
 	move.hi = n / BMP_CHUNK, move.lo = n % BMP_CHUNK;
@@ -119,8 +117,9 @@ static void B_(bmp_insert)(struct B_(bmp) *const a,
  @allow */
 static void B_(bmp_remove)(struct B_(bmp) *const a,
 	const unsigned x, const unsigned n) {
-	/*const*/ struct { unsigned hi, lo; } move, first; unsigned i;
-	/*const*/ PB_(chunk) store; PB_(chunk) temp;
+	struct { unsigned hi, lo; } move, first;
+	unsigned i;
+	bmpchunk store, temp;
 	assert(a && x + n <= BMP_BITS);
 	if(!n) return;
 	move.hi = n / BMP_CHUNK, move.lo = n % BMP_CHUNK;
@@ -142,7 +141,7 @@ static void B_(bmp_remove)(struct B_(bmp) *const a,
 }
 
 #ifdef BMP_TEST /* <!-- test */
-#include "../test/test_bmp.h" /** \include */
+#include "../test/test_bmp.h" /* (not needed) \include */
 #endif /* test --> */
 
 static void PB_(unused_base_coda)(void);
@@ -153,14 +152,6 @@ static void PB_(unused_base)(void) {
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 
-#ifndef BMP_SUBTYPE /* <!-- !sub-type */
-#undef CAT
-#undef CAT_
-#else /* !sub-type --><!-- sub-type */
-#undef BMP_SUBTYPE
-#endif /* sub-type --> */
-#undef B_
-#undef PB_
 #undef BMP_NAME
 #undef BMP_BITS
 #ifdef BMP_TEST

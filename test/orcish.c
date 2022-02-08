@@ -6,7 +6,7 @@
  [MurmurHash](https://github.com/aappleby/smhasher)-derived code, placed in
  public domain by Austin Appleby.
 
- @subtitle Name Generator
+ @subtitle Name generator
 
  Orcish names originate or are inspired by [JRR Tolkien's Orcish
  ](http://en.wikipedia.org/wiki/Languages_constructed_by_J._R._R._Tolkien).
@@ -20,7 +20,8 @@
 #include <string.h> /* memcpy */
 #include <assert.h> /* assert */
 #include <limits.h> /* CHAR_BIT, ULONG_MAX */
-#include <math.h>   /* exp */
+/* Lookup-table: don't force the users to compile with math libraries. */
+/*#include <math.h>*/   /* exp */
 
 static const char *syllables[] = {
 	"ub", "ul", "uk", "um", "uu", "oo", "ee", "uuk", "uru", "ick", "gn", "ch",
@@ -52,21 +53,156 @@ static const char *suffixes[] = {
 	"kurta", "ness", "funda"
 };
 
-static const unsigned max_name_size = 128;
+/* There are entries near the end that are never used `+ 1 + min_suffix`, but
+ we might as well fill all 128. */
+static double expM1_2[] = {
+	/*0.0*/	1,
+	/*0.5*/	0.60653,
+	/*1.0*/	0.36788,
+	/*1.5*/	0.22313,
+	/*2.0*/	0.13534,
+	/*2.5*/	0.082085,
+	/*3.0*/	0.049787,
+	/*3.5*/	0.030197,
+	/*4.0*/	0.018316,
+	/*4.5*/	0.011109,
+	/*5.0*/	0.0067379,
+	/*5.5*/	0.0040868,
+	/*6.0*/	0.0024788,
+	/*6.5*/	0.0015034,
+	/*7.0*/	0.00091188,
+	/*7.5*/	0.00055308,
+	/*8.0*/	0.00033546,
+	/*8.5*/	0.00020347,
+	/*9.0*/	0.00012341,
+	/*9.5*/	7.4852e-05,
+	/*10.0*/	4.54e-05,
+	/*10.5*/	2.7536e-05,
+	/*11.0*/	1.6702e-05,
+	/*11.5*/	1.013e-05,
+	/*12.0*/	6.1442e-06,
+	/*12.5*/	3.7267e-06,
+	/*13.0*/	2.2603e-06,
+	/*13.5*/	1.371e-06,
+	/*14.0*/	8.3153e-07,
+	/*14.5*/	5.0435e-07,
+	/*15.0*/	3.059e-07,
+	/*15.5*/	1.8554e-07,
+	/*16.0*/	1.1254e-07,
+	/*16.5*/	6.8256e-08,
+	/*17.0*/	4.1399e-08,
+	/*17.5*/	2.511e-08,
+	/*18.0*/	1.523e-08,
+	/*18.5*/	9.2374e-09,
+	/*19.0*/	5.6028e-09,
+	/*19.5*/	3.3983e-09,
+	/*20.0*/	2.0612e-09,
+	/*20.5*/	1.2502e-09,
+	/*21.0*/	7.5826e-10,
+	/*21.5*/	4.5991e-10,
+	/*22.0*/	2.7895e-10,
+	/*22.5*/	1.6919e-10,
+	/*23.0*/	1.0262e-10,
+	/*23.5*/	6.2241e-11,
+	/*24.0*/	3.7751e-11,
+	/*24.5*/	2.2897e-11,
+	/*25.0*/	1.3888e-11,
+	/*25.5*/	8.4235e-12,
+	/*26.0*/	5.1091e-12,
+	/*26.5*/	3.0988e-12,
+	/*27.0*/	1.8795e-12,
+	/*27.5*/	1.14e-12,
+	/*28.0*/	6.9144e-13,
+	/*28.5*/	4.1938e-13,
+	/*29.0*/	2.5437e-13,
+	/*29.5*/	1.5428e-13,
+	/*30.0*/	9.3576e-14,
+	/*30.5*/	5.6757e-14,
+	/*31.0*/	3.4425e-14,
+	/*31.5*/	2.088e-14,
+	/*32.0*/	1.2664e-14,
+	/*32.5*/	7.6812e-15,
+	/*33.0*/	4.6589e-15,
+	/*33.5*/	2.8258e-15,
+	/*34.0*/	1.7139e-15,
+	/*34.5*/	1.0395e-15,
+	/*35.0*/	6.3051e-16,
+	/*35.5*/	3.8242e-16,
+	/*36.0*/	2.3195e-16,
+	/*36.5*/	1.4069e-16,
+	/*37.0*/	8.533e-17,
+	/*37.5*/	5.1756e-17,
+	/*38.0*/	3.1391e-17,
+	/*38.5*/	1.904e-17,
+	/*39.0*/	1.1548e-17,
+	/*39.5*/	7.0044e-18,
+	/*40.0*/	4.2484e-18,
+	/*40.5*/	2.5768e-18,
+	/*41.0*/	1.5629e-18,
+	/*41.5*/	9.4794e-19,
+	/*42.0*/	5.7495e-19,
+	/*42.5*/	3.4873e-19,
+	/*43.0*/	2.1151e-19,
+	/*43.5*/	1.2829e-19,
+	/*44.0*/	7.7811e-20,
+	/*44.5*/	4.7195e-20,
+	/*45.0*/	2.8625e-20,
+	/*45.5*/	1.7362e-20,
+	/*46.0*/	1.0531e-20,
+	/*46.5*/	6.3871e-21,
+	/*47.0*/	3.874e-21,
+	/*47.5*/	2.3497e-21,
+	/*48.0*/	1.4252e-21,
+	/*48.5*/	8.6441e-22,
+	/*49.0*/	5.2429e-22,
+	/*49.5*/	3.18e-22,
+	/*50.0*/	1.9287e-22,
+	/*50.5*/	1.1698e-22,
+	/*51.0*/	7.0955e-23,
+	/*51.5*/	4.3036e-23,
+	/*52.0*/	2.6103e-23,
+	/*52.5*/	1.5832e-23,
+	/*53.0*/	9.6027e-24,
+	/*53.5*/	5.8243e-24,
+	/*54.0*/	3.5326e-24,
+	/*54.5*/	2.1426e-24,
+	/*55.0*/	1.2996e-24,
+	/*55.5*/	7.8824e-25,
+	/*56.0*/	4.7809e-25,
+	/*56.5*/	2.8998e-25,
+	/*57.0*/	1.7588e-25,
+	/*57.5*/	1.0668e-25,
+	/*58.0*/	6.4702e-26,
+	/*58.5*/	3.9244e-26,
+	/*59.0*/	2.3803e-26,
+	/*59.5*/	1.4437e-26,
+	/*60.0*/	8.7565e-27,
+	/*60.5*/	5.3111e-27,
+	/*61.0*/	3.2213e-27,
+	/*61.5*/	1.9538e-27,
+	/*62.0*/	1.1851e-27,
+	/*62.5*/	7.1878e-28,
+	/*63.0*/	4.3596e-28,
+	/*63.5*/	2.6442e-28
+};
+static const unsigned max_name_size = sizeof expM1_2 / sizeof *expM1_2;
 
 /** This is Poisson process in a similar manner to that proposed by Knuth. It
  uses floating point; the values were too small to reliably use fixed point.
+ @param[limit] `exp -expectation`, for optimization, this is looked up in a
+ table.
  @param[r, recur] A pointer to the recurrence that will generate numbers in the
  range of `[0, RAND_MAX]`.
  @return A random number based on the expectation value `expect`.
  @order \O(`expect`) */
-static unsigned poisson(double expect,
+static unsigned poisson_lim(/*double expect,*/const double limit,
 	unsigned long *const r, unsigned (*recur)(unsigned long *)) {
-	const double limit = exp(-expect);
+	/*const double limit = exp(-expect);*/
 	double prod = 1.0 * recur(r) / RAND_MAX;
 	unsigned n;
 	/* These are orc-specific; ensures that we don't spend too much time. */
-	assert(expect >= 0.0 && expect < 128.0 && r && recur);
+	assert(/*expect >= 0.0 && expect < 1.0 * max_name_size &&*/ r && recur);
+	assert(limit > 0.0);
 	for(n = 0; prod >= limit; n++) prod *= 1.0 * recur(r) / RAND_MAX;
 	return n;
 }
@@ -76,7 +212,7 @@ static unsigned poisson(double expect,
  `recur` to generate random values in the range of `[0, RAND_MAX]`. */
 static void orc_rand(char *const name, const size_t name_size,
 	unsigned long r, unsigned (*recur)(unsigned long *)) {
-	unsigned len, syl_len, suf_len, ten_len;
+	unsigned len, syl_len, suf_len, ten_len, expectation2;
 	const char *syl, *suf;
 	char *n = name;
 	assert((name || !name_size) && recur);
@@ -102,7 +238,9 @@ static void orc_rand(char *const name, const size_t name_size,
 
 	/* Reduce the length to a number drawn from a Poisson random variable
 	 having the expected value of half the syllable part. */
-	ten_len = poisson((len + syl_len) / 2.0, &r, recur);
+	expectation2 = len + syl_len;
+	assert(expectation2 < sizeof expM1_2 / sizeof *expM1_2);
+	ten_len = poisson_lim(expM1_2[expectation2], &r, recur);
 	if(ten_len < len) { len = ten_len; if(!len) goto suffix; }
 
 	/* While we can still fit syllables. */
@@ -149,7 +287,8 @@ static unsigned long fmix(unsigned long k) {
 /** Advances `r` with `MurmurHash` finalizer.
  @return Number in `[0, RAND_MAX]`. @implements `orc_rand` */
 static unsigned murmur_callback(unsigned long *const r)
-	{ return (*r = fmix(*r)) % (1lu + RAND_MAX); }
+	{ /* `fmix(0) = 0`, not sure if that's a problem. */
+	return (*r = fmix(*r)) % (1lu + RAND_MAX); }
 
 /** Uses `rand`; ignores `r` and uses a global variable set by `srand`.
  @return Number in `[0, RAND_MAX]`. @implements `orc_rand` */
@@ -157,7 +296,7 @@ static unsigned rand_callback(unsigned long *const r)
 	{ (void)r; return (unsigned)rand(); }
 
 /** Fills `name` with a random Orcish name. Potentially up to `name_size` - 1,
- (with a maximum of 255,) then puts a null terminator. Uses `rand` from
+ (with a maximum of 128,) then puts a null terminator. Uses `rand` from
  `stdlib.h`.
  @param[name] A valid pointer to at least `name_size` characters.
  @param[name_size] If zero, does nothing. */
@@ -167,7 +306,7 @@ void orcish(char *const name, const size_t name_size) {
 }
 
 /** Fills `name` with a deterministic Orcish name based on `l`, potentially
- up to `name_size` - 1, (with a maximum of 255,) then puts a null terminator.
+ up to `name_size` - 1, (with a maximum,) then puts a null terminator.
  @param[name] A valid pointer to at least `name_size` characters.
  @param[name_size] If zero, does nothing. */
 void orc_long(char *const name, const size_t name_size, const unsigned long l) {
@@ -176,7 +315,7 @@ void orc_long(char *const name, const size_t name_size, const unsigned long l) {
 }
 
 /** Fills `name` with a deterministic Orcish name based on `p`, or if `p` is
- null, then "null". Potentially up to `name_size` - 1, (with a maximum of 255,)
+ null, then "null". Potentially up to `name_size` - 1, (with a maximum,)
  then puts a null terminator.
  @param[name] A valid pointer to at least `name_size` characters.
  @param[name_size] If zero, does nothing. */

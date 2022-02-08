@@ -1,6 +1,9 @@
 /** @license 2021 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
+ @abstract Source <src/pool.h>, depends on <src/heap.h>, and <src/array.h>;
+ examples <test/test_pool.c>.
+
  @subtitle Stable pool
 
  ![Example of Pool](../web/pool.png)
@@ -93,7 +96,7 @@ struct PP_(slot) { size_t size; PP_(type) *chunk; };
 #define ARRAY_TYPE struct PP_(slot)
 #include "array.h"
 
-/** Consists of a map of several chunks of increasing size and a free-list.
+/** Consists of a map of several chunks of increasing size and a free-heap.
  Zeroed data is a valid state. To instantiate to an idle state, see
  <fn:<P>pool>, `POOL_IDLE`, `{0}` (`C99`,) or being `static`.
 
@@ -104,7 +107,7 @@ struct P_(pool) {
 	size_t capacity0; /* Capacity of chunk-zero. */
 };
 
-/** @return Index of sorted chunk that is higher than `x` in `chunks`, but
+/** @return Index of sorted chunk that is higher than `x` in `slots`, but
  treating zero as special. @order \O(\log `chunks`) */
 static size_t PP_(upper)(const struct PP_(slot_array) *const slots,
 	const PP_(type) *const x) {
@@ -124,7 +127,7 @@ static size_t PP_(upper)(const struct PP_(slot_array) *const slots,
 	return b0 + (x >= base[slots->size - 1].chunk);
 }
 
-/** Which chunk is `item` in `pool`?
+/** Which chunk is `x` in `pool`?
  @order \O(\log `chunks`), \O(\log \log `size`)? */
 static size_t PP_(chunk_idx)(const struct P_(pool) *const pool,
 	const PP_(type) *const x) {
@@ -192,9 +195,6 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	return 1;
 }
 
-/* fixme */
-static void (*PP_(to_string))(const PP_(type) *, char (*)[12]);
-
 /** Either `data` in `pool` is in a secondary chunk, in which case it
  decrements the size, or it's the zero-chunk, where it gets added to the
  free-heap.
@@ -242,13 +242,14 @@ static void P_(pool_)(struct P_(pool) *const pool) {
 	P_(pool)(pool);
 }
 
-/** Ensure capacity of at least `n` items in `pool`. Pre-sizing is better for
- contiguous blocks. @return Success. @throws[ERANGE, malloc] @allow */
+/** Ensure capacity of at least `n` further items in `pool`. Pre-sizing is
+ better for contiguous blocks, but takes up that memory.
+ @return Success. @throws[ERANGE, malloc] @allow */
 static int P_(pool_buffer)(struct P_(pool) *const pool, const size_t n) {
 	return assert(pool), PP_(buffer)(pool, n);
 }
 
-/** This pointer is constant until it gets <fn:<PP>pool_remove>.
+/** This pointer is constant until it gets <fn:<P>pool_remove>.
  @return A pointer to a new uninitialized element from `pool`.
  @throws[ERANGE, malloc] @order amortised O(1) @allow */
 static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
@@ -270,7 +271,7 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 	return slot0->chunk + slot0->size++;
 }
 
-/** Deletes `datum` from `pool`. Do not remove data that is not in `pool`.
+/** Deletes `data` from `pool`. Do not remove data that is not in `pool`.
  @return Success. @order \O(\log \log `items`) @allow */
 static int P_(pool_remove)(struct P_(pool) *const pool,
 	PP_(type) *const data) { return PP_(remove)(pool, data); }
@@ -317,7 +318,7 @@ static const PP_(type) *PP_(next)(struct PP_(iterator) *const it) {
 /* Forward-declare. */
 static void (*PP_(to_string))(const PP_(type) *, char (*)[12]);
 static const char *(*PP_(pool_to_string))(const struct P_(pool) *);
-#include "../test/test_pool.h" /** \include */
+#include "../test/test_pool.h"
 #endif /* test --> */
 
 /* <!-- box (multiple traits) */
