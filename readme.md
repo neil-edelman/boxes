@@ -1,10 +1,10 @@
 # trie\.h #
 
-## Prefix tree ##
+## Prefix Tree ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;ctype](#user-content-typedef-6317b018), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PT&gt;replace_fn](#user-content-typedef-246bd5da), [&lt;PSZ&gt;box](#user-content-typedef-ace240bb), [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;trie](#user-content-tag-754a10a5)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PT&gt;replace_fn](#user-content-typedef-246bd5da), [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1), [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;trie](#user-content-tag-754a10a5), [&lt;T&gt;trie_iterator](#user-content-tag-854250a4)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -13,24 +13,24 @@
 
 ![Example of trie.](web/trie.png)
 
-A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix tree, digital tree, or trie, implemented as an array of pointers\-to\-`T` whose keys are always in lexicographically\-sorted order\. It can be seen as a [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only storing the where the keys are different\. Strings can be any encoding with a byte null\-terminator, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
+A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix tree, digital tree, or trie, implemented as an array of pointers\-to\-`T` and an index on the key string\. It can be seen as a [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only storing the where the key bits are different\. Strings can be any encoding with a byte null\-terminator, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
+
+In memory, it is similar to [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large)\. Using [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3) terminology, but instead of a B\-tree of order\-n nodes, it is a forest of non\-empty complete binary trees\. Therefore, the leaves in a tree are also the branching factor; the maximum is the order, fixed by compilation macros\. Being in a trie, the trees may be unbalanced depending on the distribution of strings\.
 
 
 
  * Parameter: TRIE\_NAME, TRIE\_TYPE  
    [&lt;PT&gt;type](#user-content-typedef-245060ab) that satisfies `C` naming conventions when mangled and an optional returnable type that is declared, \(it is used by reference only except if `TRIE_TEST`\.\) `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: TRIE\_KEY  
-   A function that satisfies [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f)\. Must be defined if and only if `TRIE_TYPE` is defined\.
+   A function that satisfies [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f)\. Must be defined if and only if `TRIE_TYPE` is defined\. \(This imbues it with the properties of an associative array\.\)
  * Parameter: TRIE\_TO\_STRING  
-   Defining this includes [to\_string\.h](to_string.h) with the keys as the string\.
+   Defining this includes [to\_string\.h](to_string.h), with the keys as the string\.
  * Parameter: TRIE\_TEST  
-   Unit testing framework [&lt;T&gt;trie_test](#user-content-fn-ae9d3396), included in a separate header, [\.\./test/test\_trie\.h](../test/test_trie.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)\. Requires that `NDEBUG` not be defined and `TRIE_ITERATE_TO_STRING`\.
+   Unit testing framework [&lt;T&gt;trie_test](#user-content-fn-ae9d3396), included in a separate header, [\.\./test/test\_trie\.h](../test/test_trie.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)\. Requires `TRIE_TO_STRING` and that `NDEBUG` not be defined\.
  * Standard:  
    C89
- * Dependancies:  
-   [array](https://github.com/neil-edelman/array), [iterate\.h](iterate.h)
  * Caveat:  
-   Have a replace; potentially much less wasteful than remove and add\. Compression _ala_ Judy; 64 bits to store mostly 0/1? Could it be done? Don't put two strings side\-by\-side or delete one that causes two strings to be side\-by\-side that have more than 512 matching characters in the same bit\-positions, it will trip an `assert`\. \(Genomic data, perhaps?\)
+   ([&lt;T&gt;trie_iterator](#user-content-tag-854250a4), [&lt;T&gt;trie_from_array](#user-content-fn-3554106c))
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -39,23 +39,15 @@ A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix tree, digital tree, or
 
 <code>typedef TRIE_TYPE <strong>&lt;PT&gt;type</strong>;</code>
 
-A valid tag type set by `TRIE_TYPE`; defaults to `const char`\.
-
-
-
-### <a id = "user-content-typedef-6317b018" name = "user-content-typedef-6317b018">&lt;PT&gt;ctype</a> ###
-
-<code>typedef const TRIE_TYPE <strong>&lt;PT&gt;ctype</strong>;</code>
-
-Same as [&lt;PT&gt;type](#user-content-typedef-245060ab), except read\-only\.
+Declared type of the trie; `char` default\.
 
 
 
 ### <a id = "user-content-typedef-1e6e6b3f" name = "user-content-typedef-1e6e6b3f">&lt;PT&gt;key_fn</a> ###
 
-<code>typedef const char *(*<strong>&lt;PT&gt;key_fn</strong>)(&lt;PT&gt;ctype *);</code>
+<code>typedef const char *(*<strong>&lt;PT&gt;key_fn</strong>)(const &lt;PT&gt;type *);</code>
 
-Responsible for picking out the null\-terminated string\. One must not modify this string while in any trie\.
+Responsible for picking out the null\-terminated string\. Modifying the string key in the original [&lt;PT&gt;type](#user-content-typedef-245060ab) while in any trie causes the entire trie to go into an undefined state\.
 
 
 
@@ -67,27 +59,19 @@ A bi\-predicate; returns true if the `replace` replaces the `original`; used in 
 
 
 
-### <a id = "user-content-typedef-ace240bb" name = "user-content-typedef-ace240bb">&lt;PSZ&gt;box</a> ###
+### <a id = "user-content-typedef-22f3d7f1" name = "user-content-typedef-22f3d7f1">&lt;PZ&gt;to_string_fn</a> ###
 
-<code>typedef BOX_CONTAINER <strong>&lt;PSZ&gt;box</strong>;</code>
+<code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code>
 
-[to\_string\.h](to_string.h): an alias to the box\.
-
-
-
-### <a id = "user-content-typedef-d1a7c35e" name = "user-content-typedef-d1a7c35e">&lt;PSZ&gt;type</a> ###
-
-<code>typedef BOX_CONTENTS <strong>&lt;PSZ&gt;type</strong>;</code>
-
-[to\_string\.h](to_string.h): an alias to the individual type contained in the box\.
+Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
 
 
 
-### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
+### <a id = "user-content-typedef-ba462b2e" name = "user-content-typedef-ba462b2e">&lt;PT&gt;action_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PT&gt;action_fn</strong>)(&lt;PT&gt;type *);</code>
 
-Responsible for turning the argument [&lt;PSZ&gt;type](#user-content-typedef-d1a7c35e) into a 12\-`char` null\-terminated output string\.
+Works by side\-effects, _ie_ fills the type with data\. Only defined if `TRIE_TEST`\.
 
 
 
@@ -95,13 +79,23 @@ Responsible for turning the argument [&lt;PSZ&gt;type](#user-content-typedef-d1a
 
 ### <a id = "user-content-tag-754a10a5" name = "user-content-tag-754a10a5">&lt;T&gt;trie</a> ###
 
-<code>struct <strong>&lt;T&gt;trie</strong> { struct trie_branch_array branches; struct &lt;PT&gt;leaf_array leaves; };</code>
+<code>struct <strong>&lt;T&gt;trie</strong>;</code>
 
 To initialize it to an idle state, see [&lt;T&gt;trie](#user-content-fn-754a10a5), `TRIE_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
-A full binary tree stored semi\-implicitly in two Arrays: as `branches` backed by one as pointers\-to\-[&lt;PT&gt;type](#user-content-typedef-245060ab) as `leaves` in lexicographically\-sorted order\.
-
 ![States.](web/states.png)
+
+
+
+### <a id = "user-content-tag-854250a4" name = "user-content-tag-854250a4">&lt;T&gt;trie_iterator</a> ###
+
+<code>struct <strong>&lt;T&gt;trie_iterator</strong>;</code>
+
+Stores a range in the trie\. Any changes in the topology of the trie invalidate it\.
+
+ * Caveat:  
+   Replacing `root` with `bit` would make it faster and allow size remaining; just have to fiddle with `end` to `above`\. That makes it incomatible with private, but could merge\.
+
 
 
 
@@ -117,29 +111,21 @@ A full binary tree stored semi\-implicitly in two Arrays: as `branches` backed b
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-3554106c">&lt;T&gt;trie_from_array</a></td><td>trie, array, array_size</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a></td><td>trie</td></tr>
-
-<tr><td align = right>static &lt;PT&gt;type *const *</td><td><a href = "#user-content-fn-53884c17">&lt;T&gt;trie_array</a></td><td>trie</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-1e455cff">&lt;T&gt;trie_clear</a></td><td>trie</td></tr>
-
-<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-f9b9ebc1">&lt;T&gt;trie_index_get</a></td><td>trie, key</td></tr>
+<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-46d99cc7">&lt;T&gt;trie_match</a></td><td>trie, key</td></tr>
 
 <tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-d0ca0cba">&lt;T&gt;trie_get</a></td><td>trie, key</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-6f140c4b">&lt;T&gt;trie_index_prefix</a></td><td>trie, prefix, low, high</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-70c096ed">&lt;T&gt;trie_add</a></td><td>trie, x</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-70c096ed">&lt;T&gt;trie_add</a></td><td>trie, datum</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-bd93d12b">&lt;T&gt;trie_put</a></td><td>trie, x, eject</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-bd93d12b">&lt;T&gt;trie_put</a></td><td>trie, datum, eject</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-50d1d256">&lt;T&gt;trie_policy_put</a></td><td>trie, x, eject, replace</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-50d1d256">&lt;T&gt;trie_policy_put</a></td><td>trie, datum, eject, replace</td></tr>
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a></td><td>it</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-7b28a4ea">&lt;T&gt;trie_remove</a></td><td>trie, key</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-4ecb4112">&lt;Z&gt;to_string</a></td><td>box</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-2b8ab027">&lt;T&gt;trie_shrink</a></td><td>trie</td></tr>
-
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-ae9d3396">&lt;T&gt;trie_test</a></td><td></td></tr>
 
 </table>
 
@@ -178,52 +164,20 @@ Initializes `trie` from an `array` of pointers\-to\-`<T>` of `array_size`\.
  * Exceptional return: realloc  
  * Order:  
    &#927;\(`array_size`\)
+ * Caveat:  
+   Write this function, somehow\.
 
 
 
 
-### <a id = "user-content-fn-b7ff4bcf" name = "user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a> ###
+### <a id = "user-content-fn-46d99cc7" name = "user-content-fn-46d99cc7">&lt;T&gt;trie_match</a> ###
 
-<code>static size_t <strong>&lt;T&gt;trie_size</strong>(const struct &lt;T&gt;trie *const <em>trie</em>)</code>
+<code>static &lt;PT&gt;type *<strong>&lt;T&gt;trie_match</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>key</em>)</code>
 
  * Return:  
-   The number of elements in the `trie`\.
+   Looks at only the index of `trie` for potential `key` matches, but will ignore the values of the bits that are not in the index\.
  * Order:  
-   &#920;\(1\)
-
-
-
-
-### <a id = "user-content-fn-53884c17" name = "user-content-fn-53884c17">&lt;T&gt;trie_array</a> ###
-
-<code>static &lt;PT&gt;type *const *<strong>&lt;T&gt;trie_array</strong>(const struct &lt;T&gt;trie *const <em>trie</em>)</code>
-
-It remains valid up to a structural modification of `trie` and is indexed up to [&lt;T&gt;trie_size](#user-content-fn-b7ff4bcf)\.
-
- * Return:  
-   An array of pointers to the leaves of `trie`, ordered by key\.
-
-
-
-
-### <a id = "user-content-fn-1e455cff" name = "user-content-fn-1e455cff">&lt;T&gt;trie_clear</a> ###
-
-<code>static void <strong>&lt;T&gt;trie_clear</strong>(struct &lt;T&gt;trie *const <em>trie</em>)</code>
-
-Sets `trie` to be empty\. That is, the size of `trie` will be zero, but if it was previously in an active non\-idle state, it continues to be\.
-
- * Order:  
-   &#920;\(1\)
-
-
-
-
-### <a id = "user-content-fn-f9b9ebc1" name = "user-content-fn-f9b9ebc1">&lt;T&gt;trie_index_get</a> ###
-
-<code>static &lt;PT&gt;type *<strong>&lt;T&gt;trie_index_get</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>key</em>)</code>
-
- * Return:  
-   The [&lt;PT&gt;type](#user-content-typedef-245060ab) that matches `key` bits in `trie`, excluding don't\-cares\.
+   &#927;\(|`key`|\)
 
 
 
@@ -233,130 +187,94 @@ Sets `trie` to be empty\. That is, the size of `trie` will be zero, but if it wa
 <code>static &lt;PT&gt;type *<strong>&lt;T&gt;trie_get</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>key</em>)</code>
 
  * Return:  
-   The [&lt;PT&gt;type](#user-content-typedef-245060ab) with `key` in `trie` or null no such item exists\.
+   Exact match for `key` in `trie` or null no such item exists\.
  * Order:  
    &#927;\(|`key`|\), [Thareja 2011, Data](https://scholar.google.ca/scholar?q=Thareja+2011%2C+Data)\.
 
 
 
 
-### <a id = "user-content-fn-6f140c4b" name = "user-content-fn-6f140c4b">&lt;T&gt;trie_index_prefix</a> ###
-
-<code>static void <strong>&lt;T&gt;trie_index_prefix</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>prefix</em>, size_t *const <em>low</em>, size_t *const <em>high</em>)</code>
-
-In `trie`, which must be non\-empty, given a partial `prefix`, stores all leaf prefix matches between `low`, `high`, only given the index, ignoring don't care bits\.
-
- * Order:  
-   &#927;\(`prefix.length`\)
-
-
-
-
 ### <a id = "user-content-fn-70c096ed" name = "user-content-fn-70c096ed">&lt;T&gt;trie_add</a> ###
 
-<code>static int <strong>&lt;T&gt;trie_add</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const <em>datum</em>)</code>
+<code>static int <strong>&lt;T&gt;trie_add</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const <em>x</em>)</code>
 
-Adds `datum` to `trie` if absent\.
+Adds a pointer to `x` into `trie` if the key doesn't exist already\.
 
- * Parameter: _trie_  
-   If null, returns null\.
- * Parameter: _datum_  
-   If null, returns null\.
  * Return:  
-   Success\. If data with the same key is present, returns true but doesn't add `datum`\.
- * Exceptional return: realloc  
-   There was an error with a re\-sizing\.
- * Exceptional return: ERANGE  
-   The key is greater then 510 characters or the trie has reached it's maximum size\.
+   If the key did not exist and it was created, returns true\. If the key of `x` is already in `trie`, or an error occurred, returns false\.
+ * Exceptional return: realloc, ERANGE  
+   Set `errno = 0` before to tell if the operation failed due to error\.
  * Order:  
-   &#927;\(`size`\)
+   &#927;\(|`key`|\)
 
 
 
 
 ### <a id = "user-content-fn-bd93d12b" name = "user-content-fn-bd93d12b">&lt;T&gt;trie_put</a> ###
 
-<code>static int <strong>&lt;T&gt;trie_put</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const <em>datum</em>, &lt;PT&gt;type **const <em>eject</em>)</code>
+<code>static int <strong>&lt;T&gt;trie_put</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const <em>x</em>, &lt;PT&gt;type **const <em>eject</em>)</code>
 
-Updates or adds `datum` to `trie`\.
+Updates or adds a pointer to `x` into `trie`\.
 
- * Parameter: _trie_  
-   If null, returns null\.
- * Parameter: _datum_  
-   If null, returns null\.
  * Parameter: _eject_  
-   If not null, on success it will hold the overwritten value or a pointer\-to\-null if it did not overwrite\.
+   If not null, on success it will hold the overwritten value or a pointer\-to\-null if it did not overwrite any value\.
  * Return:  
    Success\.
- * Exceptional return: realloc  
-   There was an error with a re\-sizing\.
- * Exceptional return: ERANGE  
-   The key is greater then 510 characters or the trie has reached it's maximum size\.
+ * Exceptional return: realloc, ERANGE  
  * Order:  
-   &#927;\(`size`\)
+   &#927;\(|`key`|\)
 
 
 
 
 ### <a id = "user-content-fn-50d1d256" name = "user-content-fn-50d1d256">&lt;T&gt;trie_policy_put</a> ###
 
-<code>static int <strong>&lt;T&gt;trie_policy_put</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const <em>datum</em>, &lt;PT&gt;type **const <em>eject</em>, const &lt;PT&gt;replace_fn <em>replace</em>)</code>
+<code>static int <strong>&lt;T&gt;trie_policy_put</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const <em>x</em>, &lt;PT&gt;type **const <em>eject</em>, const &lt;PT&gt;replace_fn <em>replace</em>)</code>
 
-Adds `datum` to `trie` only if the entry is absent or if calling `replace` returns true\.
+Adds a pointer to `x` to `trie` only if the entry is absent or if calling `replace` returns true or is null\.
 
  * Parameter: _eject_  
-   If not null, on success it will hold the overwritten value or a pointer\-to\-null if it did not overwrite a previous value\. If a collision occurs and `replace` does not return true, this value will be `data`\.
+   If not null, on success it will hold the overwritten value or a pointer\-to\-null if it did not overwrite any value\. If a collision occurs and `replace` does not return true, this will be a pointer to `x`\.
  * Parameter: _replace_  
    Called on collision and only replaces it if the function returns true\. If null, it is semantically equivalent to [&lt;T&gt;trie_put](#user-content-fn-bd93d12b)\.
  * Return:  
    Success\.
- * Exceptional return: realloc  
-   There was an error with a re\-sizing\.
- * Exceptional return: ERANGE  
-   The key is greater then 510 characters or the trie has reached it's maximum size\.
+ * Exceptional return: realloc, ERANGE  
  * Order:  
-   &#927;\(`size`\)
+   &#927;\(|`key`|\)
 
 
 
 
-### <a id = "user-content-fn-7b28a4ea" name = "user-content-fn-7b28a4ea">&lt;T&gt;trie_remove</a> ###
+### <a id = "user-content-fn-b7ff4bcf" name = "user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a> ###
 
-<code>static int <strong>&lt;T&gt;trie_remove</strong>(struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>key</em>)</code>
+<code>static size_t <strong>&lt;T&gt;trie_size</strong>(const struct &lt;T&gt;trie_iterator *const <em>it</em>)</code>
 
-Remove `key` from `trie`\.
+Counts the of the items in the new `it`; iterator must be new, \(calling [&lt;T&gt;trie_next](#user-content-fn-f36d1483) causes it to become undefined\.\)
 
- * Return:  
-   Success or else `key` was not in `trie`\.
  * Order:  
-   &#927;\(`size`\)
+   &#927;\(|`it`|\)
 
 
 
 
-### <a id = "user-content-fn-2b8ab027" name = "user-content-fn-2b8ab027">&lt;T&gt;trie_shrink</a> ###
+### <a id = "user-content-fn-4ecb4112" name = "user-content-fn-4ecb4112">&lt;Z&gt;to_string</a> ###
 
-<code>static int <strong>&lt;T&gt;trie_shrink</strong>(struct &lt;T&gt;trie *const <em>trie</em>)</code>
-
-Shrinks the capacity of `trie` to size\.
+<code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code>
 
  * Return:  
-   Success\.
- * Exceptional return: ERANGE, realloc  
-   Unlikely `realloc` error\.
-
-
-
-
-### <a id = "user-content-fn-b11709d3" name = "user-content-fn-b11709d3">&lt;SZ&gt;to_string</a> ###
-
-<code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
-
- * Return:  
-   Print the contents of [&lt;PSZ&gt;box](#user-content-typedef-ace240bb) `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
+   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
  * Order:  
    &#920;\(1\)
 
+
+
+
+### <a id = "user-content-fn-ae9d3396" name = "user-content-fn-ae9d3396">&lt;T&gt;trie_test</a> ###
+
+<code>static void <strong>&lt;T&gt;trie_test</strong>(void)</code>
+
+Will be tested on stdout\. Requires `TRIE_TEST`, and not `NDEBUG` while defining `assert`\.
 
 
 

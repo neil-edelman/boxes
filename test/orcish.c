@@ -6,7 +6,7 @@
  [MurmurHash](https://github.com/aappleby/smhasher)-derived code, placed in
  public domain by Austin Appleby.
 
- @subtitle Name generator
+ @subtitle Name Generator
 
  Orcish names originate or are inspired by [JRR Tolkien's Orcish
  ](http://en.wikipedia.org/wiki/Languages_constructed_by_J._R._R._Tolkien).
@@ -66,7 +66,7 @@ static unsigned poisson(double expect,
 	double prod = 1.0 * recur(r) / RAND_MAX;
 	unsigned n;
 	/* These are orc-specific; ensures that we don't spend too much time. */
-	assert(expect >= 0.0 && expect < 1.0 * max_name_size && r && recur);
+	assert(expect >= 0.0 && expect < 128.0 && r && recur);
 	for(n = 0; prod >= limit; n++) prod *= 1.0 * recur(r) / RAND_MAX;
 	return n;
 }
@@ -157,7 +157,7 @@ static unsigned rand_callback(unsigned long *const r)
 	{ (void)r; return (unsigned)rand(); }
 
 /** Fills `name` with a random Orcish name. Potentially up to `name_size` - 1,
- (with a maximum of 128,) then puts a null terminator. Uses `rand` from
+ (with a maximum of 255,) then puts a null terminator. Uses `rand` from
  `stdlib.h`.
  @param[name] A valid pointer to at least `name_size` characters.
  @param[name_size] If zero, does nothing. */

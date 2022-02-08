@@ -7,8 +7,8 @@ digraph {
 	node [ shape=record, style=filled ];
 	null [ label = "Uninitalised|Random bytes.\lNo memory.\lNot in a valid state.\l", fillcolor = pink ];
 	static [ label = "Idle|No memory.\l\{0\} or TRIE_ZERO\l" ];
-	dynamic [ label = "Active|Memory allocated.\lCould have size zero.\l" ];
-	null -> static [ label = "<N>Trie" ];
-	static -> dynamic [ label = "<N>TrieAdd\l<N>TriePut\l<N>TriePolicyPut\n" ];
-	dynamic -> static [ label = "<N>Trie_" ];
+	dynamic [ label = "Active|Memory allocated.\lSize non-zero.\l" ];
+	null -> static [ label = "<T>trie" ];
+	static -> dynamic [ label = "<T>trie_add\l<T>trie_put\l...\n" ];
+	dynamic -> static [ label = "<N>trie_" ];
 }

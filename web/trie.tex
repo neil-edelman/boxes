@@ -1,0 +1,388 @@
+\documentclass[12pt]{article}
+
+% input
+\bibliographystyle{ieeetr}
+\usepackage[utf8]{inputenc}
+%\usepackage{times} % font
+\usepackage{lmodern} % scalable font
+\usepackage{graphicx} % include graphics
+\usepackage{amsmath} % align, nobreakdash
+\usepackage[pdf,tmpdir]{graphviz} % digraph
+\usepackage{fullpage} % book margins -> std margins
+\usepackage{wrapfig} % wrapfigure
+%\usepackage{moreverb} % verbatimtabinput
+\usepackage{subcaption} % subcaptionbox
+\usepackage[colorlinks]{hyperref} % pdf links
+\usepackage{url} % url support
+%\usepackage{comment} % comment
+
+% code doesn't wrap
+\usepackage[table]{xcolor}
+\definecolor{light-gray}{gray}{0.95}
+\newcommand{\code}[1]{\colorbox{light-gray}{\texttt{#1}}}
+
+% create new commands
+%\def\^#1{\textsuperscript{#1}}
+%\def\!{\overline}
+%\def\degree{\ensuremath{^\circ}}
+\def\Scale{0.5}
+
+% colourize titles
+\definecolor{ilrblue}{RGB}{79,166,220}
+\usepackage{titling}
+\pretitle{\vspace{-3em}\fontfamily{\sfdefault}\fontsize{18bp}{18bp}\color{ilrblue}\selectfont}
+\posttitle{\par\vspace{18bp}}
+\preauthor{\normalfont\bfseries\selectfont\MakeUppercase}
+\postauthor{\par\vspace{4bp}}
+\predate{\normalfont\selectfont}
+\postdate{\par\vspace{-8bp}}
+\usepackage{titlesec}
+\titleformat{\section}{\fontfamily{\sfdefault}\selectfont\normalsize\bfseries\color{ilrblue}\MakeUppercase}{\thesection}{1em}{}
+\titleformat{\subsection}{\fontfamily{\sfdefault}\normalsize\bfseries\color{ilrblue}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\fontfamily{\sfdefault}\normalsize\bfseries\color{ilrblue}\it}{\thesubsubsection}{1em}{}
+% Ewww
+\makeatletter
+\renewenvironment{abstract}{%
+    \if@twocolumn
+      \section*{\abstractname}%
+    \else \small %
+      \begin{center}%
+        {\bfseries\color{ilrblue} \abstractname\vspace{\z@}\vspace{-12bp}}%
+      \end{center}%
+      \quotation
+    \fi}
+    {\if@twocolumn\else\endquotation\fi}
+\makeatother
+
+% for hyperref
+\hypersetup{
+  linkcolor=ilrblue, % internal (figure) links
+  urlcolor=ilrblue,
+  filecolor=ilrblue,
+  citecolor=ilrblue, % bibliography links
+  pdfauthor={\@author},
+  pdftitle={\@title},
+  pdfsubject={\@title},
+  pdfpagemode=UseNone
+}
+
+\author{Neil A. Edelman}
+\title{Compact Radix B-trees as an Efficient Index}
+\date{2021-10-20}
+
+\begin{document}
+
+\maketitle
+
+\abstract{A data structure based on a compact radix trees is introduced, with an index on key strings bits stored semi-implicitly. B-tree methods are used to group data in a sequential conglomeration, called a tree in a trie-forest. This increases cache-coherence, and presents an efficient ordered string set or map with prefix-matching capabilities. Tests comparing it to a hash map show the structure performs for . . .}
+
+\section{Introduction}
+
+A trie is, ``a multiway tree structure that stores sets of strings by successively partitioning them [de la Briandais 1959; Fredkin 1960; Jacquet and Szpankowski 1991],''\cite{askitis2011redesigning} so that, ``INSTEAD OF BASING a search method on comparisons between keys, we can make use of their representation as a sequence of digits or alphabetic characters.''\cite{knuth1997sorting} It is ordered, and allows prefix range queries.
+
+In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{fredkin1960trie}(but not really). For proper ordering, we traverse with most-significant bit first and the sentinel should be less-than the other numeric value of all the other characters. We use null-terminated, Modified~\mbox{UTF-8} strings, like in Figure~\ref{star-3:bits}. Keys are sorted in lexicographic order, but not by any collation algorithm. show a diagram
+
+% star-3
+%\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
+\begin{figure}
+	\centering
+	\subcaptionbox{Bit view.\label{star-3:bits}}{%
+		\digraph[scale=\Scale]{star3bits}{
+	node [shape = none];
+	tree0x1028049c0branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
+<TABLE BORDER="0" CELLBORDER="0">
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="0">Algieba</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD BGCOLOR="White" BORDER="1">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="1">Regulus</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
+		<TD>0</TD>
+		<TD BGCOLOR="White" BORDER="1">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="2">Vega</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
+		<TD>0</TD>
+		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
+	</TR>
+</TABLE>>];
+		}
+	}
+	\subcaptionbox{Logical view.\label{star-3:logic}}{
+\digraph[scale=\Scale]{star3logic}{
+	node [shape = none];
+	tree0x1028049c0branch0 [label = "3", shape = circle, style = filled, fillcolor = Grey95];
+	tree0x1028049c0branch0 -> tree0x1028049c0leaf0 [style = dashed, color = Gray];
+	tree0x1028049c0branch0 -> tree0x1028049c0branch1;
+	tree0x1028049c0branch1 [label = "1", shape = circle, style = filled, fillcolor = Grey95];
+	tree0x1028049c0branch1 -> tree0x1028049c0leaf1 [style = dashed, color = Gray];
+	tree0x1028049c0branch1 -> tree0x1028049c0leaf2 [color = Gray];
+	tree0x1028049c0leaf0 [label = "Algieba"];
+	tree0x1028049c0leaf1 [label = "Regulus"];
+	tree0x1028049c0leaf2 [label = "Vega"];
+}}
+	\subcaptionbox{Memory view.\label{star-3:mem}}{
+\digraph[scale=\Scale]{star3mem}{
+	node [shape = none];
+	tree0x1028049c0branch0 [shape = box, style = filled, fillcolor = Gray95, label = <
+<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="right" BORDER="0">left</TD>
+		<TD BGCOLOR="Gray90">0</TD>
+		<TD BGCOLOR="Gray90">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">skip</TD>
+		<TD>3</TD>
+		<TD>1</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">leaves</TD>
+		<TD BGCOLOR="Grey90">Algieba</TD>
+		<TD BGCOLOR="Grey90">Regulus</TD>
+		<TD BGCOLOR="Grey90">Vega</TD>
+	</TR>
+</TABLE>>];
+}}
+	\caption{A full 3-trie.\label{star-3}}
+\end{figure}
+
+% star-4
+\begin{figure}
+	\centering
+	\subcaptionbox{Bit view.\label{star-4:bits}}{
+\digraph[scale=\Scale]{star4bits}{
+	node [shape = none];
+	tree0x1028049f0branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
+<TABLE BORDER="0" CELLBORDER="0">
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="0">\detokenize{↓}<FONT COLOR="Gray">Algieba</FONT></TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD BGCOLOR="White" BORDER="1">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="1">\detokenize{↓}<FONT COLOR="Gray">Regulus</FONT></TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
+	</TR>
+</TABLE>>];
+	tree0x1028049f0branch0:0 -> tree0x1028049c0branch0 [color = "Black:invis:Black" style = dashed];
+	tree0x1028049f0branch0:1 -> tree0x102804a20branch0 [color = "Black:invis:Black"];
+	tree0x1028049c0branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
+<TABLE BORDER="0" CELLBORDER="0">
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="0">Algieba</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD BORDER="0">&nbsp;</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD BORDER="0">&nbsp;</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>1</TD>
+		<TD BGCOLOR="White" BORDER="1">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="1">Alpheratz</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD BORDER="0">&nbsp;</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>0</TD>
+		<TD BORDER="0">&nbsp;</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>1</TD>
+		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
+	</TR>
+</TABLE>>];
+	tree0x102804a20branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
+<TABLE BORDER="0" CELLBORDER="0">
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="0">Regulus</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD BGCOLOR="White" BORDER="1">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="LEFT" BORDER="0" PORT="1">Vega</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD>1</TD>
+		<TD>0</TD>
+		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
+	</TR>
+</TABLE>>];
+}}
+	\subcaptionbox{Logical view.\label{star-4:logic}}{
+\digraph[scale=\Scale]{star4logic}{
+	node [shape = none];
+	tree0x1028049f0branch0 [label = "3", shape = circle, style = filled, fillcolor = Grey95];
+	tree0x1028049f0branch0 -> tree0x1028049c0branch0 [style = dashed, color = "Black:invis:Black"];
+	tree0x1028049f0branch0 -> tree0x102804a20branch0 [color = "Black:invis:Black"];
+	tree0x1028049c0branch0 [label = "15", shape = circle, style = filled, fillcolor = Grey95];
+	tree0x1028049c0branch0 -> tree0x1028049c0leaf0 [style = dashed, color = Gray];
+	tree0x1028049c0branch0 -> tree0x1028049c0leaf1 [color = Gray];
+	tree0x1028049c0leaf0 [label = "Algieba"];
+	tree0x1028049c0leaf1 [label = "Alpheratz"];
+	tree0x102804a20branch0 [label = "1", shape = circle, style = filled, fillcolor = Grey95];
+	tree0x102804a20branch0 -> tree0x102804a20leaf0 [style = dashed, color = Gray];
+	tree0x102804a20branch0 -> tree0x102804a20leaf1 [color = Gray];
+	tree0x102804a20leaf0 [label = "Regulus"];
+	tree0x102804a20leaf1 [label = "Vega"];
+}}\\
+	\subcaptionbox{Memory view.\label{star-4:mem}}{
+\digraph[scale=\Scale]{star4mem}{
+	node [shape = none];
+	tree0x1028049f0branch0 [shape = box, style = filled, fillcolor = Gray95, label = <
+<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="right" BORDER="0">left</TD>
+		<TD BGCOLOR="Gray90">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">skip</TD>
+		<TD>3</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">leaves</TD>
+		<TD PORT="0" BGCOLOR="Gray90">...</TD>
+		<TD PORT="1" BGCOLOR="Gray90">...</TD>
+	</TR>
+</TABLE>>];
+	tree0x1028049f0branch0:0 -> tree0x1028049c0branch0 [color = "Black:invis:Black" style = dashed];
+	tree0x1028049f0branch0:1 -> tree0x102804a20branch0 [color = "Black:invis:Black"];
+	tree0x1028049c0branch0 [shape = box, style = filled, fillcolor = Gray95, label = <
+<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="right" BORDER="0">left</TD>
+		<TD BGCOLOR="Gray90">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">skip</TD>
+		<TD>15</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">leaves</TD>
+		<TD BGCOLOR="Grey90">Algieba</TD>
+		<TD BGCOLOR="Grey90">Alpheratz</TD>
+	</TR>
+</TABLE>>];
+	tree0x102804a20branch0 [shape = box, style = filled, fillcolor = Gray95, label = <
+<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="right" BORDER="0">left</TD>
+		<TD BGCOLOR="Gray90">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">skip</TD>
+		<TD>1</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="right" BORDER="0">leaves</TD>
+		<TD BGCOLOR="Grey90">Regulus</TD>
+		<TD BGCOLOR="Grey90">Vega</TD>
+	</TR>
+</TABLE>>];
+}}
+	\caption{Split the 3-trie to put four items.\label{star-4}}
+\end{figure}
+
+\section{Implementation}
+
+A compact representation is a Patrica trie\cite{morrison1968patricia}: that is, a binary radix tree and skip values when bits offer no difference. In Figure~\ref{star-3:logic}, the branches indicate a \code{do not care} for all the skipped bits before, corresponding to Figure~\ref{star-3:bits} that offer no delineation. If a query might have a difference in the skipped values, one could also check the final result of a query for agreement with the found value.
+
+instead of adding in one big trie, where the data type presents a limit of how big it is, we have pointers to sub-blocks. This is seen in ... This allows us to shrink the data-type significantly; for a non-empty complete binary tree that has `n` leaves (order `n`), it has `n - 1` the internal nodes, or branches. The maximum that the left branch count can be is when the right node of the root is a leaf, that is `n - 2`. If we set this left-branch maximum to the maximum of the data type, we can use all the range. Practically, we set it to 254 instead of 255; the branches take up 255, and the branch size number is 1, for alignment.
+
+This is a fixed-maximum size trie within a B-tree. Because of overlapping terminology, some care must be used in describing the structure. We use the notion that a trie is a forest of trees. In B-tree terminology, nodes, are now trees, such that a complete path through the forest always visits the same number of trees. However, since it's always the root instead of the middle item, we are not guaranteed fullness. Depending on the implementation, a complete path might be truncated; for example, \code{Sol} might require less than \code{Betelgeuse}, because it's shorter.[ref b-tree]
+
+\subsection{Trees}
+
+Patrica trie is a full binary tree. Non-empty. Issues with having zero, one, zero, one, zero, items always needing to allocate memory. Fixme: store the order instead of the branches.
+
+\subsection{Structure in Memory}
+
+Like a node in a B-trie, a tree structure is a contiguous chunk. As an example, refer to Figure~\ref{star-3:mem}. A tree whose $\mathit{size}$, the number of nodes, is composed of internal nodes, $\mathit{branch}$, and external nodes, $\mathit{leaf}$; $\mathit{size} = \mathit{branch} + \mathit{leaf}$. As a non-empty complete binary tree, $\mathit{leaf} = \mathit{branch} + 1 \rightarrow \mathit{size} = 2\mathit{branch} + 1$. We arrange the branches pre-order in an array, thus, forward read in topologically sorted order. If the number of branches remaining is initialized to $b = \mathit{branch}$, we can make the tree semi-implicit by storing the $\mathit{left}$ branches and calculating $\mathit{right} = b - \mathit{left}$. When $b = 0$, the accumulator, $l$, is the position of the leaf. This is a succinct encoding[?]. Programme.
+
+The above wastes half of $\mathit{left}$'s dynamic range, in the best case, because branches that are $e$ from the end will have at most $\mathit{left} = e$ (such that the end will always be zero): a tree with all left branches.
+
+ Separate the leaves, which are pointers to data or to another tree, from the branches, which are decision bits in the key string passed to look up. Only one leaf lookup is performed per tree.
+
+\subsection{Machine Considerations}
+
+The data has been engineered for maximum effectiveness of the cache in reading and traversing. That is, the tree structure and the string decisions have been reduced to each a byte and placed at the the top of the data structure of the tree. Always forward in memory. The size of this sub-structure should be a multiple of the cache line size, while also maximizing the dynamic range of $\mathit{left}$; a trie (also a B-tree) of order 256 is an obvious choice.\cite{sinha2004cache}
+
+\subsection{Running Time}
+
+The `\O(log n)` running time is only when the trie has bounds on strings that are placed there. Worst-case $\{ a, aa, aaa, aaaa, ... \}$. The case where the trie has strings that are bounded, as the tree grows, we can guarantee . . .
+
+Tries are a fairly succinct encoding at low numbers, but at high numbers, the internal trees add up. In the limit, with bounded strings, we need $n \log_{\text{order}} n$ to store $n$ items? However, practically, if one sets the order high enough, this is not an issue?
+
+\subsection{Limits}
+
+The skip value is limited by its range; in this case, 255 bits. For example, this trie is valid, $\{ dictionary \}$, as well as, $\{ dictator, dictionary, dictionaries \}$, but one ca'n't transition to, $\{ dictionary, dictionaries \}$, because it is too long a skip value. There are several modifications that would allow this, but they are out of this scope. (This is not true; 8 x 8 = 64; 8 x 32 = 256.)
+
+Insertion: Any leaf on the sub-tree queried will do; in this implementation, favours the left side.
+
+on split, do we have to go locally and see if we can join them?
+
+we don't need to store any data if the leaf-trees are different from the branch-trees?
+$
+trie: root, height
+branch tree: bsize, +branchtree, branch[o-1], leaf[o]
+leaf tree: bsize, ?, branch[o-1], is_recursive_bmp[o/8], leaf[o]
+or
+leaf tree: bsize, ?, branch[o-1], leaf[o] { skip, union{ data, trie } }
+or
+leaf tree: bsize, ?, branch[o-1], leaf[o] { 32:skip, 32:height, 64:root / 64:data }
+$
+
+ASCII and other encodings don't prioritize splitting the glyphs evenly between bits, therefore with a uniform distribution of strings, it's very unlikely that the trie will be balanced. On our trie, this results in wasted space.
+
+\bibliography{trie}
+
+\end{document}
