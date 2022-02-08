@@ -1,15 +1,15 @@
 /* @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @subtitle To String Trait
+ @subtitle To string trait
 
  A trait relying on the iterate interface (`iterator`, `begin`, `next`.)
 
  @param[SZ_]
  A one-argument macro producing a name that is responsible for the name of the
  to string function. Should be something like
- `SZ_(to_string) -> widget_foo_to_string`. Leaves `SZ_` and defined for any
- `EXPECTS_TO_STRING`; the caller is responsible for `#undef`.
+ `SZ_(to_string) -> widget_foo_to_string`. The caller is responsible for
+ undefining `SZ_`.
 
  @param[TO_STRING]
  Function implementing <typedef:<PZ>to_string_fn>.
@@ -29,7 +29,7 @@
 
 #if !defined(BOX_) || !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS) \
 	|| !defined(SZ_) || !defined(TO_STRING)
-#error Unexpected preprocessor symbols.
+#error Unexpected preprocessor symbols. Check that one including it as a trait.
 #endif
 
 #if defined(TO_STRING_H) \
@@ -78,19 +78,25 @@ static unsigned to_string_buffer_i;
 #define TO_STRING_RIGHT ')'
 #endif
 
+/* An alias to the box. */
 typedef BOX_CONTAINER PSZ_(box);
+
+/* An alias to the individual type contained in the box. */
 typedef BOX_CONTENTS PSZ_(type);
 
-/** Responsible for turning the first argument into a 12-`char` null-terminated
- output string. */
+/** <to_string.h>: responsible for turning the argument into a 12-`char`
+ null-terminated output string. `<PSZ>type` is contracted to be an internal
+ iteration type of the box. */
 typedef void (*PSZ_(to_string_fn))(const PSZ_(type) *, char (*)[12]);
-
-/* Check that `TO_STRING` is a function implementing <typedef:<PZ>to_string>. */
+/* Check that `TO_STRING` is a function implementing
+ <typedef:<PSZ>to_string>. */
 static const PSZ_(to_string_fn) PSZ_(to_string) = (TO_STRING);
 
-/** @return Print the contents of `box` in a static string buffer of 256
- bytes with limitations of only printing 4 things at a time.
- @order \Theta(1) @allow */
+/** <src/to_string.h>: print the contents of `box` in a static string buffer of
+ 256 bytes, with limitations of only printing 4 things at a time. `<PSZ>box` is
+ contracted to be the box itself. `<SZ>` is loosely contracted to be a name
+ `<X>box[<X_TO_STRING_NAME>]`.
+ @return Address of the static buffer. @order \Theta(1) @allow */
 static const char *SZ_(to_string)(const PSZ_(box) *const box) {
 	const char comma = ',', space = ' ', *const ellipsis = "…",
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;

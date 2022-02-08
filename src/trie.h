@@ -60,7 +60,8 @@
 #include <assert.h>
 #include <limits.h>
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(TRIE_CAT_) || defined(TRIE_CAT) || defined(T_) || defined(PT_)
+#if defined(TRIE_CAT_) || defined(TRIE_CAT) || defined(T_) || defined(PT_) \
+    || defined(TRIE_IDLE)
 #error Unexpected defines.
 #endif
 #define TRIE_CAT_(n, m) n ## _ ## m
@@ -854,7 +855,7 @@ static void PT_(to_string)(const PT_(type) *const a, char (*const z)[12])
 #define TO_STRING_RIGHT '}'
 #include "to_string.h" /** \include */
 #undef SZ_
-#undef PSZ_
+#undef TRIE_TO_STRING
 #endif /* str --> */
 
 #ifdef TRIE_TEST /* <!-- test */
