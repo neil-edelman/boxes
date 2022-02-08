@@ -8,7 +8,7 @@
 </tr><tr>
 	<td><a href="https://github.com/neil-edelman/array">array</a></td>
 	<td>contiguous dynamic array</td>
-	<td>compare, contiguous, to_string</td>
+	<td>array_coda, to_string</td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/bmp">bmp</a></td>
@@ -23,7 +23,7 @@
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/list">list</a></td>
 	<td>doubly-linked component</td>
-	<td>to_string</td>
+	<td>list_coda, to_string</td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/orcish">orcish</a></td>
@@ -38,17 +38,17 @@
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/table">table</a></td>
 	<td>set or map (associative array)</td>
-	<td>to_string, default</td>
+	<td>default, to_string</td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/trie">trie</a></td>
 	<td>prefix tree</td>
-	<td>to_string, compare?</td>
-	<td>array?</td>
+	<td>to_string</td>
+	<td>bmp (maybe)</td>
 </tr><tr>
 	<td>disjoint</td>
 	<td>upcoming</td>
-	<td>to_string?, compare?</td>
+	<td>to_string?</td>
 	<td>array?</td>
 </tr></table>
 
