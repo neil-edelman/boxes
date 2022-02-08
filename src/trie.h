@@ -7,15 +7,16 @@
 
  ![Example of trie.](../web/trie.png)
 
- A <tag:<T>trie> is a prefix-tree, digital-tree, or trie. Specifically,
- <Morrison, 1968 PATRICiA>: a compact
+ A <tag:<T>trie> is a prefix-tree, digital-tree, or trie: an ordered set or map
+ of immutable key strings allowing ranged queries. The strings used here are
+ any encoding with a byte null-terminator, including
+ [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
+
+ The implementation is <Morrison, 1968 PATRICiA>: a compact
  [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only
  storing the where the key bits are different. To increase cache-coherence
  while allowing for insertion and deletion in \O(\log `size`), it uses some
- B-tree techniques described in <Bayer, McCreight, 1972 Large>. Practically,
- this is an ordered set or map of immutable key strings, which can be any
- encoding with a byte null-terminator, including
- [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
+ B-tree techniques described in <Bayer, McCreight, 1972 Large>.
 
  @param[TRIE_NAME, TRIE_VALUE]
  <typedef:<PT>type> that satisfies `C` naming conventions when mangled and an
