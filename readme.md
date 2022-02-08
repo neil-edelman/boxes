@@ -1,10 +1,12 @@
 # trie\.h #
 
-## Prefix Tree ##
+Source [src/trie\.h](src/trie.h); examples [test/test\_trie\.c](test/test_trie.c)\.
+
+## Prefix tree ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PT&gt;replace_fn](#user-content-typedef-246bd5da), [&lt;PZ&gt;to_string_fn](#user-content-typedef-22f3d7f1), [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;T&gt;trie](#user-content-tag-754a10a5), [&lt;T&gt;trie_iterator](#user-content-tag-854250a4)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PT&gt;replace_fn](#user-content-typedef-246bd5da), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;PT&gt;leaf](#user-content-tag-44821167), [&lt;PT&gt;tree](#user-content-tag-134b950f), [&lt;T&gt;trie](#user-content-tag-754a10a5), [&lt;T&gt;trie_iterator](#user-content-tag-854250a4)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -13,31 +15,31 @@
 
 ![Example of trie.](web/trie.png)
 
-A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix tree, digital tree, or trie, implemented as an array of pointers\-to\-`T` and an index on the key string\. It can be seen as a [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only storing the where the key bits are different\. Strings can be any encoding with a byte null\-terminator, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
-
-In memory, it is similar to [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large)\. Using [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3) terminology, but instead of a B\-tree of order\-n nodes, it is a forest of non\-empty complete binary trees\. Therefore, the leaves in a tree are also the branching factor; the maximum is the order, fixed by compilation macros\. Being in a trie, the trees may be unbalanced depending on the distribution of strings\.
+A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, or trie\. Specifically, [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only storing the where the key bits are different\. To increase cache\-coherence while allowing for insertion and deletion in &#927;\(\\log `size`\), it uses some B\-tree techniques described in [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large)\. Practically, this is an ordered set or map of immutable key strings, which can be any encoding with a byte null\-terminator, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
 
 
 
- * Parameter: TRIE\_NAME, TRIE\_TYPE  
+ * Parameter: TRIE\_NAME, TRIE\_VALUE  
    [&lt;PT&gt;type](#user-content-typedef-245060ab) that satisfies `C` naming conventions when mangled and an optional returnable type that is declared, \(it is used by reference only except if `TRIE_TEST`\.\) `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: TRIE\_KEY  
-   A function that satisfies [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f)\. Must be defined if and only if `TRIE_TYPE` is defined\. \(This imbues it with the properties of an associative array\.\)
+   A function that satisfies [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f)\. Must be defined if and only if `TRIE_VALUE` is defined\. \(This imbues it with the properties of a string associative array\.\)
  * Parameter: TRIE\_TO\_STRING  
    Defining this includes [to\_string\.h](to_string.h), with the keys as the string\.
  * Parameter: TRIE\_TEST  
    Unit testing framework [&lt;T&gt;trie_test](#user-content-fn-ae9d3396), included in a separate header, [\.\./test/test\_trie\.h](../test/test_trie.h)\. Must be defined equal to a \(random\) filler function, satisfying [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)\. Requires `TRIE_TO_STRING` and that `NDEBUG` not be defined\.
  * Standard:  
    C89
+ * Dependancies:  
+   [bmp](https://github.com/neil-edelman/bmp)
  * Caveat:  
-   ([&lt;T&gt;trie_iterator](#user-content-tag-854250a4), [&lt;T&gt;trie_from_array](#user-content-fn-3554106c))
+   ([&lt;T&gt;trie_iterator](#user-content-tag-854250a4), [&lt;T&gt;trie_from_array](#user-content-fn-3554106c), [&lt;T&gt;trie_size](#user-content-fn-b7ff4bcf))
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
 ### <a id = "user-content-typedef-245060ab" name = "user-content-typedef-245060ab">&lt;PT&gt;type</a> ###
 
-<code>typedef TRIE_TYPE <strong>&lt;PT&gt;type</strong>;</code>
+<code>typedef TRIE_VALUE <strong>&lt;PT&gt;type</strong>;</code>
 
 Declared type of the trie; `char` default\.
 
@@ -59,11 +61,11 @@ A bi\-predicate; returns true if the `replace` replaces the `original`; used in 
 
 
 
-### <a id = "user-content-typedef-22f3d7f1" name = "user-content-typedef-22f3d7f1">&lt;PZ&gt;to_string_fn</a> ###
+### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PZ&gt;to_string_fn</strong>)(const &lt;PZ&gt;type *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
 
-Responsible for turning the first argument into a 12\-`char` null\-terminated output string\.
+[to\_string\.h](to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\. `<PSZ>type` is contracted to be an internal iteration type of the box\.
 
 
 
@@ -77,9 +79,25 @@ Works by side\-effects, _ie_ fills the type with data\. Only defined if `TRIE_TE
 
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
+### <a id = "user-content-tag-44821167" name = "user-content-tag-44821167">&lt;PT&gt;leaf</a> ###
+
+<code>union <strong>&lt;PT&gt;leaf</strong> { &lt;PT&gt;type *data; struct &lt;PT&gt;tree *child; };</code>
+
+A leaf is either data or another tree; the `children` of [&lt;PT&gt;tree](#user-content-tag-134b950f) is a bitmap that tells which\.
+
+
+
+### <a id = "user-content-tag-134b950f" name = "user-content-tag-134b950f">&lt;PT&gt;tree</a> ###
+
+<code>struct <strong>&lt;PT&gt;tree</strong> { unsigned char bsize, skip; struct trie_branch branch[TRIE_BRANCHES]; struct trie_bmp is_child; union &lt;PT&gt;leaf leaf[TRIE_ORDER]; };</code>
+
+A trie is a forest of non\-empty complete binary trees\. In [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3) terminology, this structure is similar to a B\-tree node of `TRIE_ORDER`, but 'node' already has conflicting meaning\.
+
+
+
 ### <a id = "user-content-tag-754a10a5" name = "user-content-tag-754a10a5">&lt;T&gt;trie</a> ###
 
-<code>struct <strong>&lt;T&gt;trie</strong>;</code>
+<code>struct <strong>&lt;T&gt;trie</strong> { struct &lt;PT&gt;tree *root; };</code>
 
 To initialize it to an idle state, see [&lt;T&gt;trie](#user-content-fn-754a10a5), `TRIE_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
@@ -94,7 +112,7 @@ To initialize it to an idle state, see [&lt;T&gt;trie](#user-content-fn-754a10a5
 Stores a range in the trie\. Any changes in the topology of the trie invalidate it\.
 
  * Caveat:  
-   Replacing `root` with `bit` would make it faster and allow size remaining; just have to fiddle with `end` to `above`\. That makes it incomatible with private, but could merge\.
+   Replacing `root` with `bit` would make it faster and allow size remaining; just have to fiddle with `end` to `above`\. That makes it incompatible with private, but could merge\.
 
 
 
@@ -123,7 +141,9 @@ Stores a range in the trie\. Any changes in the topology of the trie invalidate 
 
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a></td><td>it</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-4ecb4112">&lt;Z&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-f36d1483">&lt;T&gt;trie_next</a></td><td>it</td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-ae9d3396">&lt;T&gt;trie_test</a></td><td></td></tr>
 
@@ -137,7 +157,7 @@ Stores a range in the trie\. Any changes in the topology of the trie invalidate 
 
 <code>static void <strong>&lt;T&gt;trie</strong>(struct &lt;T&gt;trie *const <em>trie</em>)</code>
 
-Initialises `trie` to idle\.
+Initializes `trie` to idle\.
 
  * Order:  
    &#920;\(1\)
@@ -149,7 +169,7 @@ Initialises `trie` to idle\.
 
 <code>static void <strong>&lt;T&gt;trie_</strong>(struct &lt;T&gt;trie *const <em>trie</em>)</code>
 
-Returns an initialised `trie` to idle\.
+Returns an initialized `trie` to idle\.
 
 
 
@@ -254,16 +274,32 @@ Counts the of the items in the new `it`; iterator must be new, \(calling [&lt;T&
 
  * Order:  
    &#927;\(|`it`|\)
+ * Caveat:  
+   Allow `<T>trie_next`\.
 
 
 
 
-### <a id = "user-content-fn-4ecb4112" name = "user-content-fn-4ecb4112">&lt;Z&gt;to_string</a> ###
+### <a id = "user-content-fn-f36d1483" name = "user-content-fn-f36d1483">&lt;T&gt;trie_next</a> ###
 
-<code>static const char *<strong>&lt;Z&gt;to_string</strong>(const &lt;PZ&gt;box *const <em>box</em>)</code>
+<code>static &lt;PT&gt;type *<strong>&lt;T&gt;trie_next</strong>(struct &lt;T&gt;trie_iterator *const <em>it</em>)</code>
+
+Advances `it`\.
 
  * Return:  
-   Print the contents of `box` in a static string buffer of 256 bytes with limitations of only printing 4 things at a time\.
+   The previous value or null\.
+
+
+
+
+### <a id = "user-content-fn-b11709d3" name = "user-content-fn-b11709d3">&lt;SZ&gt;to_string</a> ###
+
+<code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
+
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<PSZ>box` is contracted to be the box itself\. `<SZ>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
+
+ * Return:  
+   Address of the static buffer\.
  * Order:  
    &#920;\(1\)
 

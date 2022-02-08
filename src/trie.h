@@ -236,7 +236,7 @@ finally:
 	it->leaf_end = t.lf + t.br1 - t.br0 + 1;
 }
 
-/** @return The leftmost key `lf` of `any`. */
+/** @return The leftmost key `lf` of `tree`. */
 static const char *PT_(sample)(const struct PT_(tree) *tree,
 	unsigned lf) {
 	assert(tree);
@@ -275,6 +275,7 @@ static struct PT_(tree) *PT_(tree)(void) {
 static const char *T_(trie_to_string)(const struct T_(trie) *);
 #endif
 
+/** Returns a string of `trie`. */
 static const char *PT_(str)(const struct T_(trie) *const trie) {
 #ifdef TRIE_TO_STRING
 	return T_(trie_to_string)(trie);
@@ -288,6 +289,7 @@ static void PT_(graph)(const struct T_(trie) *, const char *);
 static void PT_(print)(const struct PT_(tree) *);
 #endif
 
+/** Graphs `trie` in `fn`. */
 static void PT_(grph)(const struct T_(trie) *const trie, const char *const fn) {
 	assert(trie && fn);
 #ifdef TRIE_TEST
@@ -295,6 +297,7 @@ static void PT_(grph)(const struct T_(trie) *const trie, const char *const fn) {
 #endif
 }
 
+/** Prints `tree`. */
 static void PT_(prnt)(const struct PT_(tree) *const tree) {
 	assert(tree);
 #ifdef TRIE_TEST
@@ -516,9 +519,10 @@ static int PT_(put)(struct T_(trie) *const trie, PT_(type) *const x,
 	return 1;
 }
 
-/** @fixme Join when combined-half <= ~TRIE_BRANCH / 2. */
+/** Try to remove `key` from `trie`. */
 static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
+	/* @fixme Join when combined-half <= ~TRIE_BRANCH / 2 */
 	struct {
 		struct PT_(tree) *tr;
 		unsigned parent_br, unused;
@@ -654,7 +658,7 @@ static void PT_(clear)(struct PT_(tree) *const tree) {
 	free(tree);
 }
 
-/** Counts the sub-tree `any`. @order \O(|`any`|) */
+/** Counts the sub-tree `tree`. @order \O(|`any`|) */
 static size_t PT_(sub_size)(const struct PT_(tree) *const tree) {
 	unsigned i;
 	size_t size;
@@ -776,6 +780,7 @@ static PT_(type) *T_(trie_match)(const struct T_(trie) *const trie,
 static PT_(type) *T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const key) { return PT_(get)(trie, key); }
 
+/** Tries to remove `key` from `trie`. */
 static PT_(type) *T_(trie_remove)(struct T_(trie) *const trie,
 	const char *const key) { return PT_(remove)(trie, key); }
 

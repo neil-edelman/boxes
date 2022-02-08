@@ -72,7 +72,8 @@ static unsigned PT_(left_leaf)(const struct PT_(tree) *const tree,
 	return i;
 }
 
-/** Graphs `tree` on `fp`. */
+/** Graphs `tree` on `fp`. `treebit` is the number of bits currently
+ (recursive.) */
 static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 	const size_t treebit, FILE *const fp) {
 	unsigned b, i;
@@ -142,7 +143,8 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 	}
 }
 
-/** Graphs `any` on `fp`. */
+/** Graphs `tree` on `fp`. `treebit` is the number of bits currently
+ (recursive.) */
 static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
@@ -209,7 +211,8 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 	}
 }
 
-/** Graphs `any` on `fp`. */
+/** Graphs `tree` on `fp`.`treebit` is the number of bits currently
+ (recursive.) */
 static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
 	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
@@ -332,6 +335,7 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 
 #if 0
 
+/** Prints `tree` to `stdout`. */
 static void PT_(print)(const struct PT_(tree) *const tree) {
 	const struct trie_branch *branch;
 	unsigned b, i;
@@ -357,7 +361,7 @@ static void PT_(print)(const struct PT_(tree) *const tree) {
 #ifndef TRIE_SET /* <!-- !set: a set of strings is not testable in the
  automatic framework, but convenient to have graphs for manual tests. */
 
-/** Make sure `any` is in a valid state, (and all the children.) */
+/** Make sure `tree` is in a valid state, (and all the children.) */
 static void PT_(valid_tree)(const struct PT_(tree) *const tree) {
 	unsigned i;
 	int cmp = 0;
