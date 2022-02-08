@@ -33,7 +33,7 @@
 
 <h1>trie.h</h1>
 
-<p>Source <a href = "src/trie.h">src/trie.h</a>; examples <a href = "test/test_trie.c">test/test_trie.c</a>.</p>
+<p>Source <a href = "src/trie.h">src/trie.h</a> which depends on <a href = "src/bmp.h">src/bmp.h</a>; examples <a href = "test/test_trie.c">test/test_trie.c</a>.</p>
 
 <h2>Prefix tree</h2>
 
@@ -54,7 +54,7 @@
 
 <p>A <a href = "#tag:&lt;T&gt;trie">&lt;T&gt;trie</a> is a prefix-tree, digital-tree, or trie: an ordered set or map of immutable key strings allowing ranged queries. The strings used here are any encoding with a byte null-terminator, including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>.</p>
 
-<p>The implementation is <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a>, only storing the where the key bits are different. To increase cache-coherence while allowing for insertion and deletion in &#927;(\log <code>size</code>), it uses some B-tree techniques described in <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large">Bayer, McCreight, 1972 Large</a>.</p>
+<p>The implementation is as <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a>, only storing the where the key bits are different. To increase cache-coherence while allowing for insertion and deletion in &#927;(\log <code>size</code>), it uses some B-tree techniques described in <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large">Bayer, McCreight, 1972 Large</a>.</p>
 
 </div>
 
@@ -157,7 +157,7 @@
 
 <p>To initialize it to an idle state, see <a href = "#fn:&lt;T&gt;trie">&lt;T&gt;trie</a>, <code>TRIE_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
 
-<p><img alt = "States." src = "web/states.png" width = 201 height = 303></p>
+<p><img alt = "States." src = "web/states.png" width = 865 height = 112></p>
 
 </div>
 

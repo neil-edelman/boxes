@@ -1,7 +1,8 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Source <src/trie.h>; examples <test/test_trie.c>.
+ @abstract Source <src/trie.h> which depends on <src/bmp.h>; examples
+ <test/test_trie.c>.
 
  @subtitle Prefix tree
 
@@ -12,7 +13,7 @@
  any encoding with a byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
- The implementation is <Morrison, 1968 PATRICiA>: a compact
+ The implementation is as <Morrison, 1968 PATRICiA>: a compact
  [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only
  storing the where the key bits are different. To increase cache-coherence
  while allowing for insertion and deletion in \O(\log `size`), it uses some
