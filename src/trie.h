@@ -9,7 +9,7 @@
  ![Example of trie.](../web/trie.png)
 
  A <tag:<T>trie> is a prefix-tree, digital-tree, or trie: an ordered set or map
- of immutable key strings allowing ranged queries. The strings used here are
+ of immutable key strings allowing prefix queries. The strings used here are
  any encoding with a byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
