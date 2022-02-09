@@ -61,7 +61,7 @@
 #include <limits.h>
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #if defined(TRIE_CAT_) || defined(TRIE_CAT) || defined(T_) || defined(PT_) \
-    || defined(TRIE_IDLE)
+	|| defined(TRIE_IDLE)
 #error Unexpected defines.
 #endif
 #define TRIE_CAT_(n, m) n ## _ ## m
