@@ -74,19 +74,15 @@
 #define TRIE_QUERY(a, n) ((a)[TRIE_SLOT(n)] & TRIE_MASK(n))
 #define TRIE_DIFF(a, b, n) \
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
-/* Worst-case all-branches-left root. Parameter sets the maximum tree size.
- Prefer alignment `4n - 2`; cache `32n - 2`. (Easily, `{a, b, ..., A}`). */
+/* Worst-case all-branches-left root (`{A, a, b, ...}`). Parameter sets the
+ maximum tree size. Prefer alignment `4n - 2`; cache `32n - 2`. */
 #define TRIE_MAX_LEFT /*1*//*6*/254
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX
-#error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX]` without modifications.
+#error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX]`.
 #endif
 #define TRIE_BRANCHES (TRIE_MAX_LEFT + 1) /* Maximum branches. */
 #define TRIE_ORDER (TRIE_BRANCHES + 1) /* Maximum branching factor/leaves. */
 struct trie_branch { unsigned char left, skip; };
-/* Dependency on `bmp.h`. */
-#define BMP_NAME trie
-#define BMP_BITS TRIE_ORDER
-#include "bmp.h"
 /** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
  Used in <fn:<T>trie_prefix>. */
 static int trie_is_prefix(const char *a, const char *b) {
@@ -98,26 +94,27 @@ static int trie_is_prefix(const char *a, const char *b) {
 #endif /* idempotent --> */
 
 #ifndef TRIE_VALUE /* <!-- !type */
-#define TRIE_SET /* Testing purposes; `const char *` is not really testable. */
+#define TRIE_DEFAULT_TEST /* Testing purposes. */
 /** Default `char` uses `a` as the key, which makes it a set of strings. */
 static const char *PT_(raw)(const char *a) { return assert(a), a; }
 #define TRIE_VALUE const char
 #define TRIE_KEY &PT_(raw)
 #endif /* !type --> */
+
 /** Declared type of the trie; `char` default. */
 typedef TRIE_VALUE PT_(type);
 
-/** A leaf is either data or another tree; the `children` of <tag:<PT>tree> is
- a bitmap that tells which. */
+/** A leaf is either data or another tree. */
 union PT_(leaf) { PT_(type) *data; struct PT_(tree) *child; };
 
 /** A trie is a forest of non-empty complete binary trees. In
  <Knuth, 1998 Art 3> terminology, this structure is similar to a B-tree node of
- `TRIE_ORDER`, but 'node' already has conflicting meaning. */
+ `TRIE_ORDER`, but 'node' already has conflicting meaning.
+ fixme: Allow for inner trees and outer trees to have differing sizes, not
+ taken by the leaf, as above? */
 struct PT_(tree) {
-	unsigned char bsize, skip;
+	unsigned char bsize, skip /* Height. */;
 	struct trie_branch branch[TRIE_BRANCHES];
-	struct trie_bmp is_child;
 	union PT_(leaf) leaf[TRIE_ORDER];
 };
 
@@ -125,14 +122,15 @@ struct PT_(tree) {
  (`C99`), or being `static`.
 
  ![States.](../web/states.png) */
-struct T_(trie) { struct PT_(tree) *root; };
+struct T_(trie) { struct PT_(tree) *root; size_t forest_height; };
 #ifndef TRIE_IDLE /* <!-- !zero */
 #define TRIE_IDLE { 0 }
 #endif /* !zero --> */
 
 /* Contains all iteration parameters; satisfies box interface iteration. This
  is a private version of the <tag:<T>trie_iterator> that does all the work, but
- it can only iterate through the entire trie. */
+ it can only iterate through the entire trie.
+ fixme */
 struct PT_(iterator)
 	{ struct PT_(tree) *root, *next; unsigned leaf, unused; };
 
@@ -148,7 +146,6 @@ struct T_(trie_iterator)
  string key in the original <typedef:<PT>type> while in any trie causes the
  entire trie to go into an undefined state. */
 typedef const char *(*PT_(key_fn))(const PT_(type) *);
-
 /* Check that `TRIE_KEY` is a function satisfying <typedef:<PT>key_fn>. */
 static PT_(key_fn) PT_(to_key) = (TRIE_KEY);
 
@@ -157,14 +154,16 @@ static PT_(key_fn) PT_(to_key) = (TRIE_KEY);
 static PT_(type) **PT_(leaf_match)(const struct T_(trie) *const trie,
 	const char *const key) {
 	struct PT_(tree) *tree;
-	size_t bit; /* `bit \in key`.  */
+	size_t forest_remain, bit; /* `bit \in key`.  */
 	struct { unsigned br0, br1, lf; } t;
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(trie && key);
-	if(!(tree = trie->root)) return 0; /* Empty. */
-	for(byte.cur = 0, bit = 0; ; ) { /* Forest. */
+	if(!(forest_remain = trie->forest_height)) return 0; /* Empty. */
+	for(tree = trie->root, assert(tree), byte.cur = 0, bit = 0; ;
+		tree = tree->leaf[t.lf].child) {
+		assert(tree->skip < forest_remain), forest_remain -= 1 + tree->skip;
 		t.br0 = 0, t.br1 = tree->bsize, t.lf = 0;
-		while(t.br0 < t.br1) { /* Tree. */
+		while(t.br0 < t.br1) {
 			const struct trie_branch *const branch = tree->branch + t.br0;
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
@@ -175,8 +174,7 @@ static PT_(type) **PT_(leaf_match)(const struct T_(trie) *const trie,
 				t.br0 += branch->left + 1, t.lf += branch->left + 1;
 			bit++;
 		}
-		if(!trie_bmp_test(&tree->is_child, t.lf)) break;
-		tree = tree->leaf[t.lf].child;
+		if(!forest_remain) break;
 	}
 	return &tree->leaf[t.lf].data;
 }
@@ -205,16 +203,18 @@ static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
 static void PT_(match_prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, struct T_(trie_iterator) *it) {
 	struct PT_(tree) *tree;
-	size_t bit; /* `bit \in key`.  */
+	size_t forest_remain, bit; /* `bit \in key`.  */
 	struct { unsigned br0, br1, lf; } t;
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(prefix && it);
 	it->root = it->next = it->end = 0;
 	it->leaf = it->leaf_end = 0;
-	if(!trie || !(tree = trie->root)) return;
-	for(byte.cur = 0, bit = 0; ; ) { /* Forest. */
+	if(!trie || !(forest_remain = trie->forest_height)) return;
+	for(tree = trie->root, assert(tree), byte.cur = 0, bit = 0; ;
+		tree = tree->leaf[t.lf].child) {
+		assert(tree->skip < forest_remain), forest_remain -= 1 + tree->skip;
 		t.br0 = 0, t.br1 = tree->bsize, t.lf = 0;
-		while(t.br0 < t.br1) { /* Tree. */
+		while(t.br0 < t.br1) {
 			const struct trie_branch *const branch = tree->branch + t.br0;
 			/* _Sic_; '\0' is _not_ included for partial match. */
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
@@ -226,8 +226,7 @@ static void PT_(match_prefix)(const struct T_(trie) *const trie,
 				t.br0 += branch->left + 1, t.lf += branch->left + 1;
 			bit++;
 		}
-		if(!trie_bmp_test(&tree->is_child, t.lf)) break;
-		tree = tree->leaf[t.lf].child;
+		if(!forest_remain) break;
 	};
 finally:
 	assert(t.br0 <= t.br1
@@ -240,10 +239,10 @@ finally:
 
 /** @return The leftmost key `lf` of `tree`. */
 static const char *PT_(sample)(const struct PT_(tree) *tree,
-	unsigned lf) {
+	size_t forest_remain, unsigned lf) {
 	assert(tree);
-	while(trie_bmp_test(&tree->is_child, lf))
-		tree = tree->leaf[lf].child, lf = 0;
+	while(forest_remain)
+		tree = tree->leaf[lf].child, lf = 0, forest_remain -= 1 + tree->skip;
 	return PT_(to_key)(tree->leaf[lf].data);
 }
 
@@ -257,16 +256,17 @@ static void PT_(prefix)(const struct T_(trie) *const trie,
 	if(it->leaf_end <= it->leaf) return;
 	assert(it->root && it->next && it->next == it->end
 		&& it->leaf_end <= it->end->bsize + 1); /* fixme: what? */
+	assert(0);
 	/* Makes sure the trie matches the string. */
-	if(!trie_is_prefix(prefix, PT_(sample)(it->end, it->leaf_end - 1)))
-		it->leaf_end = it->leaf;
+	/*if(!trie_is_prefix(prefix, PT_(sample)(it->end, it->leaf_end - 1)))
+		it->leaf_end = it->leaf;*/
 }
 
 /** @return Allocate a new tree with one undefined leaf. @throws[malloc] */
 static struct PT_(tree) *PT_(tree)(void) {
 	struct PT_(tree) *tree;
 	if(!(tree = malloc(sizeof *tree))) { if(!errno) errno = ERANGE; return 0; }
-	tree->bsize = 0, tree->skip = 0, trie_bmp_clear_all(&tree->is_child);
+	tree->bsize = 0, tree->skip = 0;
 	/* fixme: doesn't need clear? */
 	return tree;
 }
@@ -890,6 +890,6 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #ifdef TRIE_TEST
 #undef TRIE_TEST
 #endif
-#ifdef TRIE_SET
-#undef TRIE_SET
+#ifdef TRIE_DEFAULT_TEST
+#undef TRIE_DEFAULT_TEST
 #endif

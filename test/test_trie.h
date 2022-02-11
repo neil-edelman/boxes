@@ -358,7 +358,7 @@ static void PT_(print)(const struct PT_(tree) *const tree) {
 
 #endif
 
-#ifndef TRIE_SET /* <!-- !set: a set of strings is not testable in the
+#ifndef TRIE_DEFAULT_TEST /* <!-- !set: a set of strings is not testable in the
  automatic framework, but convenient to have graphs for manual tests. */
 
 /** Make sure `tree` is in a valid state, (and all the children.) */
