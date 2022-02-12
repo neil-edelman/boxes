@@ -305,9 +305,13 @@ static void PT_(prnt)(const struct PT_(tree) *const tree) {
 
 /** @return Fills `tree` with with one null leaf; if `tree` is null, allocates.
  @throws[malloc] */
-static int PT_(init_tree)(struct PT_(tree) *tree) {
-	if(!tree && !(tree = malloc(sizeof *tree)))
+static int PT_(init_tree)(struct PT_(tree) **ptree) {
+	struct PT_(tree) *tree;
+	assert(ptree);
+	if(*ptree) tree = *ptree;
+	else if(!(tree = malloc(sizeof *tree)))
 		{ if(!errno) errno = ERANGE; return 0; }
+	else *ptree = tree;
 	tree->bsize = 0, tree->skip = 0, tree->leaf[0].data = 0;
 	return 1;
 }
@@ -329,7 +333,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie,
 start:
 	/* <!-- Solitary. ********************************************************/
 	if(!(forest_remain = trie->forest_height))
-		return PT_(init_tree)(trie->root)
+		return PT_(init_tree)(&trie->root)
 		&& (trie->forest_height = 1, trie->root->leaf[0].data = x, 1);
 	/* Solitary. --> */
 
