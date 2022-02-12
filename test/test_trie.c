@@ -7,12 +7,17 @@
 #include <time.h>   /* clock time */
 #include "orcish.h"
 
+/** Manually tested. This will not, and can not work, leaving the strings
+ uninitialized. Do _not_ call <fn:str_trie_test>. */
+static void str_filler(const char *c) { assert(c != 0); }
 /* A set of strings. `TRIE_TO_STRING` and `TRIE_TEST` are for graphing; one
  doesn't need them otherwise. */
 #define TRIE_NAME str
 #define TRIE_TO_STRING
 #define TRIE_TEST &str_filler
 #include "../src/trie.h"
+
+#if 0
 
 /* You can have an `enum` in a `trie`, pointing to a fixed set of strings. */
 #define PARAM(A) A
@@ -112,6 +117,8 @@ static const char *keyval_key(const struct keyval *const kv)
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
+#endif /* 0 */
+
 /** Manual testing for default string trie, that is, no associated information,
  just a set of `char *`. */
 static void contrived_str_test(void) {
@@ -163,9 +170,9 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	contrived_str_test();
-	colour_trie_test();
+	/*colour_trie_test();
 	star_trie_test();
 	str4_trie_test();
-	keyval_trie_test();
+	keyval_trie_test();*/
 	return EXIT_SUCCESS;
 }
