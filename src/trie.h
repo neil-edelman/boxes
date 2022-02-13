@@ -1,16 +1,15 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Source <src/trie.h> which depends on <src/bmp.h>; examples
- <test/test_trie.c>.
+ @abstract Source <src/trie.h>; examples <test/test_trie.c>.
 
  @subtitle Prefix tree
 
  ![Example of trie.](../web/trie.png)
 
  A <tag:<T>trie> is a prefix-tree, digital-tree, or trie: an ordered set or map
- of immutable key strings allowing prefix queries. The strings used here are
- any encoding with a byte null-terminator, including
+ of immutable key strings allowing fast prefix queries. The strings used here
+ are any encoding with a byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
  The implementation is as <Morrison, 1968 PATRICiA>: a compact
@@ -19,16 +18,14 @@
  while allowing for insertion and deletion in \O(\log `size`), it uses some
  B-tree techniques described in <Bayer, McCreight, 1972 Large>.
 
- @param[TRIE_NAME, TRIE_VALUE]
- <typedef:<PT>type> that satisfies `C` naming conventions when mangled and an
- optional returnable type that is declared, (it is used by reference only
- except if `TRIE_TEST`.) `<PT>` is private, whose names are prefixed in a
- manner to avoid collisions.
+ @param[TRIE_NAME]
+ Satisfies `C` naming conventions when mangled
 
- @param[TRIE_KEY]
- A function that satisfies <typedef:<PT>key_fn>. Must be defined if and only if
- `TRIE_VALUE` is defined. (This imbues it with the properties of a string
- associative array.)
+ @param[TRIE_VALUE, TRIE_KEY]
+ `TRIE_VALUE` is an optional payload type to go with the key. `TRIE_KEY` is an
+ optional <typedef:<PT>key_fn> that picks out the key from the value (a set),
+ otherwise this is an associative array, defining <tag:<PT>entry>. `<PT>` is
+ private, whose names are prefixed in a manner to avoid collisions.
 
  @param[TRIE_TO_STRING]
  Defining this includes <to_string.h>, with the keys as the string.
@@ -45,8 +42,8 @@
 #ifndef TRIE_NAME
 #error Name TRIE_NAME undefined.
 #endif
-#if defined(TRIE_VALUE) ^ defined(TRIE_KEY)
-#error TRIE_VALUE and TRIE_KEY have to be mutually defined.
+#if defined(TRIE_KEY) && !defined(TRIE_VALUE)
+#error TRIE_KEY needs TRIE_VALUE.
 #endif
 #if defined(TRIE_TEST) && !defined(TRIE_TO_STRING)
 #error TRIE_TEST requires TRIE_TO_STRING.
@@ -83,6 +80,19 @@
 #define TRIE_BRANCHES (TRIE_MAX_LEFT + 1) /* Maximum branches. */
 #define TRIE_ORDER (TRIE_BRANCHES + 1) /* Maximum branching factor/leaves. */
 struct trie_branch { unsigned char left, skip; };
+struct trie_trunk
+	{ unsigned char bsize, skip; struct trie_branch branch[TRIE_BRANCHES]; };
+/* A trie is a forest of non-empty complete binary trees; this is a tree that
+ links to other trees. In <Knuth, 1998 Art 3> terminology, this structure is
+ a B-tree internal node of `TRIE_ORDER`. 'Node' already has conflicting
+ meaning, so we use 'tree'. */
+struct trie_inner_tree { struct trie_trunk trunk, *leaf[TRIE_ORDER]; };
+/** @return Upcasts `trunk` to an inner tree. */
+static struct trie_inner_tree *trie_inner(struct trie_trunk *const trunk)
+	{ return (struct trie_inner_tree *)(void *)trunk; }
+/** @return Upcasts `trunk` to an inner tree. */
+static const struct trie_inner_tree *trie_inner_c(const struct trie_trunk *
+	const trunk) { return (const struct trie_inner_tree *)(const void *)trunk; }
 /** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
  Used in <fn:<T>trie_prefix>. */
 static int trie_is_prefix(const char *a, const char *b) {
@@ -93,78 +103,91 @@ static int trie_is_prefix(const char *a, const char *b) {
 }
 #endif /* idempotent --> */
 
-#ifndef TRIE_VALUE /* <!-- !type */
-#define TRIE_DEFAULT_TEST /* Testing purposes. */
-/** Default `char` uses `a` as the key, which makes it a set of strings. */
-static const char *PT_(raw)(const char *a) { return assert(a), a; }
-#define TRIE_VALUE const char
-#define TRIE_KEY &PT_(raw)
-#endif /* !type --> */
+#ifdef TRIE_VALUE
+typedef TRIE_VALUE PT_(value);
+#ifdef TRIE_KEY
+typedef PT_(value) PT_(entry);
+#else
+/** If `TRIE_VALUE` is set, but `TRIE_KEY` is not, creates a map from key to
+ value as an associative array. */
+struct PT_(entry) { const char *key; PT_(value) value; }
+/** This is `TRIE_VALUE` and not `TRIE_KEY`, otherwise it's just an alias for
+ <typedef:<PT>value>. */
+typedef struct PT_(entry) PT_(entry);
+#endif
+#else
+/** Default. Set with `TRIE_VALUE`. */
+typedef const char *PT_(value);
+typedef PT_(value) PT_(entry);
+#endif
 
-/** Declared type of the trie; `char` default. */
-typedef TRIE_VALUE PT_(type);
+/** If `TRIE_KEY` is set, responsible for picking out the null-terminated
+ string. */
+typedef const char *(*PT_(key_fn))(const PT_(entry));
 
-/** A leaf is either data or another tree. */
-union PT_(leaf) { PT_(type) *data; struct PT_(tree) *child; };
+#ifdef TRIE_KEY
+static PT_(key_fn) PT_(to_key) = (TRIE_KEY);
+#elif defined(TRIE_VALUE)
+static const char *PT_(entry_key)(const struct PT_(entry) *const entry)
+	{ return entry->key; }
+static PT_(key_fn) PT_(to_key) = &PT_(entry_key);
+#else
+static const char *PT_(id_key)(const char *const key) { return key; }
+static PT_(key_fn) PT_(to_key) = &PT_(id_key);
+#endif
 
-/** A trie is a forest of non-empty complete binary trees. In
- <Knuth, 1998 Art 3> terminology, this structure is similar to a B-tree node of
- `TRIE_ORDER`, but 'node' already has conflicting meaning.
- fixme: Allow for inner trees and outer trees to have differing sizes, not
- taken by the leaf, as above? */
-struct PT_(tree) {
-	unsigned char bsize, skip /* Height. */;
-	struct trie_branch branch[TRIE_BRANCHES];
-	union PT_(leaf) leaf[TRIE_ORDER];
+/* A leaf tree. */
+struct PT_(outer_tree) {
+	struct trie_trunk trunk; /* Single inheritance; has to be first. */
+	PT_(entry) leaf[TRIE_ORDER];
 };
+
+/** @return Upcasts `trunk` to an outer tree. */
+static struct PT_(outer_tree) *PT_(outer)(struct trie_trunk *const trunk)
+	{ return (struct PT_(outer_tree) *)(void *)trunk; }
+/** @return Upcasts `trunk` to an outer tree. */
+static const struct PT_(outer_tree) *PT_(outer_c)(const struct trie_trunk *
+	const trunk) { return (const struct PT_(outer_tree) *)(const void *)trunk; }
 
 /** To initialize it to an idle state, see <fn:<T>trie>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`.
 
  ![States.](../web/states.png) */
-struct T_(trie) { struct PT_(tree) *root; size_t forest_height; };
+struct T_(trie) { struct trie_trunk *root; size_t height; };
 #ifndef TRIE_IDLE /* <!-- !zero */
-#define TRIE_IDLE { 0 }
+#define TRIE_IDLE { 0, 0 }
 #endif /* !zero --> */
 
 /* Contains all iteration parameters; satisfies box interface iteration. This
  is a private version of the <tag:<T>trie_iterator> that does all the work, but
- it can only iterate through the entire trie.
- fixme */
+ it can only iterate through the entire trie. (Which is stupid; fixme.) */
 struct PT_(iterator)
 	{ struct PT_(tree) *root, *next; unsigned leaf, unused; };
 
 /** Stores a range in the trie. Any changes in the topology of the trie
  invalidate it. @fixme Replacing `root` with `bit` would make it faster and
- allow size remaining; just have to fiddle with `end` to `above`. That makes it
- incompatible with private, but could merge. */
+ allow size remaining (impossible!); just have to fiddle with `end` to `above`.
+ That makes it incompatible with private, but could merge (what?) */
 struct T_(trie_iterator);
 struct T_(trie_iterator)
 	{ struct PT_(tree) *root, *next, *end; unsigned leaf, leaf_end; };
 
-/** Responsible for picking out the null-terminated string. Modifying the
- string key in the original <typedef:<PT>type> while in any trie causes the
- entire trie to go into an undefined state. */
-typedef const char *(*PT_(key_fn))(const PT_(type) *);
-/* Check that `TRIE_KEY` is a function satisfying <typedef:<PT>key_fn>. */
-static PT_(key_fn) PT_(to_key) = (TRIE_KEY);
-
-/** @return The address of a index candidate match for `key` in `trie`, or
- null, if `key` is definitely not in `trie`. @order \O(|`key`|) */
-static PT_(type) **PT_(leaf_match)(const struct T_(trie) *const trie,
+/** @return A candidate match for `key` in `trie`, or null, if `key` is
+ definitely not in `trie`. @order \O(|`key`|) */
+static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
 	const char *const key) {
-	struct PT_(tree) *tree;
-	size_t forest_remain, bit; /* `bit \in key`.  */
+	struct trie_trunk *trunk;
+	size_t h, bit;
 	struct { unsigned br0, br1, lf; } t;
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(trie && key);
-	if(!(forest_remain = trie->forest_height)) return 0; /* Empty. */
-	for(tree = trie->root, assert(tree), byte.cur = 0, bit = 0; ;
-		tree = tree->leaf[t.lf].child) {
-		assert(tree->skip < forest_remain), forest_remain -= 1 + tree->skip;
-		t.br0 = 0, t.br1 = tree->bsize, t.lf = 0;
+	if(!(h = trie->height)) return 0;
+	for(trunk = trie->root, assert(trunk), byte.cur = 0, bit = 0; ;
+		trunk = trie_inner(trunk)->leaf[t.lf]) {
+		assert(trunk->skip < h), h -= 1 + trunk->skip;
+		t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
 		while(t.br0 < t.br1) {
-			const struct trie_branch *const branch = tree->branch + t.br0;
+			const struct trie_branch *const branch = trunk->branch + t.br0;
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(key[byte.cur] == '\0') return 0; /* Too short. */
@@ -174,48 +197,36 @@ static PT_(type) **PT_(leaf_match)(const struct T_(trie) *const trie,
 				t.br0 += branch->left + 1, t.lf += branch->left + 1;
 			bit++;
 		}
-		if(!forest_remain) break;
+		if(!h) break;
 	}
-	return &tree->leaf[t.lf].data;
-}
-
-/** @return An index candidate match for `key` in `trie`. */
-static PT_(type) *PT_(match)(const struct T_(trie) *const trie,
-	const char *const key)
-	{ PT_(type) **const x = PT_(leaf_match)(trie, key); return x ? *x : 0; }
-
-/** @return The address of the exact match for `key` in `trie` or null. */
-static PT_(type) **PT_(leaf_get)(const struct T_(trie) *const trie,
-	const char *const key) {
-	PT_(type) **const x = PT_(leaf_match)(trie, key);
-	return x && !strcmp(PT_(to_key)(*x), key) ? x : 0;
+	return PT_(outer)(trunk)->leaf + t.lf;
 }
 
 /** @return Exact match for `key` in `trie` or null. */
-static PT_(type) *PT_(get)(const struct T_(trie) *const trie,
+static PT_(entry) *PT_(get)(const struct T_(trie) *const trie,
 	const char *const key) {
-	PT_(type) *const x = PT_(match)(trie, key);
-	return x && !strcmp(PT_(to_key)(x), key) ? x : 0;
+	PT_(entry) *const x = PT_(match)(trie, key);
+	return x && !strcmp(PT_(to_key)(*x), key) ? x : 0;
 }
 
-/** Looks at only the index of `trie` for potential `prefix` matches,
- and stores them in `it`. @order \O(|`prefix`|) */
+/** Looks at only the index of `trie` (which can be null) for potential
+ `prefix` matches, and stores them in `it`. @order \O(|`prefix`|) */
 static void PT_(match_prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, struct T_(trie_iterator) *it) {
-	struct PT_(tree) *tree;
-	size_t forest_remain, bit; /* `bit \in key`.  */
+	struct trie_trunk *trunk;
+	size_t h, bit;
 	struct { unsigned br0, br1, lf; } t;
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(prefix && it);
 	it->root = it->next = it->end = 0;
 	it->leaf = it->leaf_end = 0;
-	if(!trie || !(forest_remain = trie->forest_height)) return;
-	for(tree = trie->root, assert(tree), byte.cur = 0, bit = 0; ;
-		tree = tree->leaf[t.lf].child) {
-		assert(tree->skip < forest_remain), forest_remain -= 1 + tree->skip;
-		t.br0 = 0, t.br1 = tree->bsize, t.lf = 0;
+	if(!trie || !(h = trie->height)) return;
+	for(trunk = trie->root, assert(trunk), byte.cur = 0, bit = 0; ;
+		trunk = trie_inner(trunk)->leaf[t.lf]) {
+		assert(trunk->skip < h), h -= 1 + trunk->skip;
+		t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
 		while(t.br0 < t.br1) {
-			const struct trie_branch *const branch = tree->branch + t.br0;
+			const struct trie_branch *const branch = trunk->branch + t.br0;
 			/* _Sic_; '\0' is _not_ included for partial match. */
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur <= byte.next; byte.cur++)
@@ -226,27 +237,26 @@ static void PT_(match_prefix)(const struct T_(trie) *const trie,
 				t.br0 += branch->left + 1, t.lf += branch->left + 1;
 			bit++;
 		}
-		if(!forest_remain) break;
+		if(!h) break;
 	};
 finally:
-	assert(t.br0 <= t.br1
-		&& t.lf - t.br0 + t.br1 <= tree->bsize);
+	assert(t.br0 <= t.br1 && t.lf - t.br0 + t.br1 <= trunk->bsize);
 	it->root = trie->root;
-	it->next = it->end = tree;
+	it->next = it->end = trunk;
 	it->leaf = t.lf;
 	it->leaf_end = t.lf + t.br1 - t.br0 + 1;
 }
 
 /** @return The leftmost key `lf` of `tree`. */
-static const char *PT_(sample)(const struct PT_(tree) *tree,
-	size_t forest_remain, unsigned lf) {
-	assert(tree);
-	while(forest_remain)
-		tree = tree->leaf[lf].child, lf = 0, forest_remain -= 1 + tree->skip;
-	return PT_(to_key)(tree->leaf[lf].data);
+static const char *PT_(sample)(const struct trie_trunk *trunk,
+	size_t height, unsigned lf) {
+	assert(trunk);
+	while(height) trunk = trie_inner_c(trunk)->leaf[lf], lf = 0,
+		height -= 1 + trunk->skip;
+	return PT_(to_key)(PT_(outer_c)(trunk)->leaf[lf]);
 }
 
-/** Stores all `prefix` matches in `trie` and stores them in `it`.
+/** Stores all `prefix` matches in `trie` in `it`.
  @param[it] Output remains valid until the topology of the trie changes.
  @order \O(|`prefix`|) */
 static void PT_(prefix)(const struct T_(trie) *const trie,
@@ -305,36 +315,37 @@ static void PT_(prnt)(const struct PT_(tree) *const tree) {
 
 /** @return Fills `tree` with with one null leaf; if `tree` is null, allocates.
  @throws[malloc] */
-static int PT_(init_tree)(struct PT_(tree) **ptree) {
-	struct PT_(tree) *tree;
-	assert(ptree);
-	if(*ptree) tree = *ptree;
+static int PT_(init_outer_tree)(struct trie_trunk **ptrunk) {
+	struct PT_(outer_tree) *tree;
+	assert(ptrunk);
+	if(*ptrunk) tree = PT_(outer)(*ptrunk);
 	else if(!(tree = malloc(sizeof *tree)))
 		{ if(!errno) errno = ERANGE; return 0; }
-	else *ptree = tree;
-	tree->bsize = 0, tree->skip = 0, tree->leaf[0].data = 0;
+	else *ptrunk = &tree->trunk;
+	tree->trunk.bsize = 0, tree->trunk.skip = 0;
+	tree->leaf[0] = 0; /* fixme */
 	return 1;
 }
 
 /** Adds `x` to `trie`, which must not be present. @return Success.
  @throw[malloc, ERANGE]
- @throw[ERANGE] There is too many bytes similar for the data-type. */
-static int PT_(add_unique)(struct T_(trie) *const trie,
-	PT_(type) *const x) {
+ @throw[EILSEQ] There is too many bits similar for it to placed in the trie at
+ the moment. */
+static int PT_(add_unique)(struct T_(trie) *const trie, PT_(entry) x) {
 	const char *const key = PT_(to_key)(x);
 	struct { unsigned br0, br1, lf; } t;
 	struct { struct PT_(tree) *tr; struct { size_t tr, diff; } bit; } f;
 	struct { struct { struct PT_(tree) *tr; size_t bit; } a; size_t n; } full;
 	const char *sample; /* Only used in Find. */
 	int restarts = 0; /* Debug: make sure we only go through twice. */
-	size_t forest_remain;
+	size_t h;
 	assert(trie && x && key);
 
 start:
 	/* <!-- Solitary. ********************************************************/
-	if(!(forest_remain = trie->forest_height))
-		return PT_(init_tree)(&trie->root)
-		&& (trie->forest_height = 1, trie->root->leaf[0].data = x, 1);
+	if(!(h = trie->height))
+		return PT_(init_outer_tree)(&trie->root)
+		&& (trie->height = 1, PT_(outer)(trie->root)->leaf[0] = x, 1);
 	/* Solitary. --> */
 
 	/* <!-- Find the first bit not in the tree. ******************************/
@@ -346,7 +357,7 @@ start:
 		assert(f.tr->skip < forest_remain), forest_remain -= 1 + f.tr->skip;
 		full.n = is_full ? full.n + 1 : 0;
 		f.bit.tr = f.bit.diff;
-		sample = PT_(sample)(f.tr, forest_remain, 0);
+		sample = PT_(sample)(f.tr, h, 0);
 		t.br0 = 0, t.br1 = f.tr->bsize, t.lf = 0;
 		while(t.br0 < t.br1) { /* Tree. */
 			const struct trie_branch *const branch = f.tr->branch + t.br0;
@@ -357,12 +368,12 @@ start:
 				t.br1 = ++t.br0 + branch->left;
 			} else {
 				t.br0 += branch->left + 1, t.lf += branch->left + 1;
-				sample = PT_(sample)(f.tr, forest_remain, t.lf);
+				sample = PT_(sample)(f.tr, h, t.lf);
 			}
 			f.bit.diff++;
 		}
 		assert(t.br0 == t.br1 && t.lf <= f.tr->bsize);
-		if(!forest_remain) break;
+		if(!h) break;
 		if(!is_full) full.a.tr = f.tr, full.a.bit = f.bit.tr;
 	}
 	{ /* Got to a leaf. */
@@ -768,7 +779,7 @@ static void T_(trie)(struct T_(trie) *const trie)
 /** Returns an initialized `trie` to idle. @allow */
 static void T_(trie_)(struct T_(trie) *const trie) {
 	assert(trie);
-	if(trie->forest_height) PT_(clear)(trie->root, trie->forest_height);
+	if(trie->height) PT_(clear)(trie->root, trie->height);
 	else if(trie->root) free(trie->root); /* For size zero hysteresis. */
 	T_(trie)(trie);
 }
