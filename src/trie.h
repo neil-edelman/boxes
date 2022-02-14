@@ -158,20 +158,6 @@ struct T_(trie) { struct trie_trunk *root; size_t height; };
 #define TRIE_IDLE { 0, 0 }
 #endif /* !zero --> */
 
-/* Contains all iteration parameters; satisfies box interface iteration. This
- is a private version of the <tag:<T>trie_iterator> that does all the work, but
- it can only iterate through the entire trie. (Which is stupid; fixme.) */
-struct PT_(iterator)
-	{ struct PT_(tree) *root, *next; unsigned leaf, unused; };
-
-/** Stores a range in the trie. Any changes in the topology of the trie
- invalidate it. @fixme Replacing `root` with `bit` would make it faster and
- allow size remaining (impossible!); just have to fiddle with `end` to `above`.
- That makes it incompatible with private, but could merge (what?) */
-struct T_(trie_iterator);
-struct T_(trie_iterator)
-	{ struct PT_(tree) *root, *next, *end; unsigned leaf, leaf_end; };
-
 /** @return A candidate match for `key` in `trie`, or null, if `key` is
  definitely not in `trie`. @order \O(|`key`|) */
 static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
@@ -209,17 +195,22 @@ static PT_(entry) *PT_(get)(const struct T_(trie) *const trie,
 	return x && !strcmp(PT_(to_key)(*x), key) ? x : 0;
 }
 
+struct PT_(iterator) {
+	struct PT_(outer_tree) *current; /* This is used as a synecdoche, a key. */
+	struct T_(trie) sub;
+	unsigned leaf, leaf_end;
+};
+
 /** Looks at only the index of `trie` (which can be null) for potential
  `prefix` matches, and stores them in `it`. @order \O(|`prefix`|) */
 static void PT_(match_prefix)(const struct T_(trie) *const trie,
-	const char *const prefix, struct T_(trie_iterator) *it) {
+	const char *const prefix, struct PT_(iterator) *it) {
 	struct trie_trunk *trunk;
 	size_t h, bit;
 	struct { unsigned br0, br1, lf; } t;
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(prefix && it);
-	it->root = it->next = it->end = 0;
-	it->leaf = it->leaf_end = 0;
+	it->current = 0;
 	if(!trie || !(h = trie->height)) return;
 	for(trunk = trie->root, assert(trunk), byte.cur = 0, bit = 0; ;
 		trunk = trie_inner(trunk)->leaf[t.lf]) {
@@ -241,35 +232,23 @@ static void PT_(match_prefix)(const struct T_(trie) *const trie,
 	};
 finally:
 	assert(t.br0 <= t.br1 && t.lf - t.br0 + t.br1 <= trunk->bsize);
-	it->root = trie->root;
-	it->next = it->end = trunk;
-	it->leaf = t.lf;
+	it->sub.root = trunk;
+	it->sub.height = h + 1 + trunk->skip;
 	it->leaf_end = t.lf + t.br1 - t.br0 + 1;
+	while(h) trunk = trie_inner_c(trunk)->leaf[t.lf], t.lf = 0,
+		assert(trunk->skip < h), h -= 1 + trunk->skip;
+	it->current = PT_(outer)(trunk);
+	it->leaf = t.lf;
 }
 
-/** @return The leftmost key `lf` of `tree`. */
-static const char *PT_(sample)(const struct trie_trunk *trunk,
-	size_t height, unsigned lf) {
-	assert(trunk);
-	while(height) trunk = trie_inner_c(trunk)->leaf[lf], lf = 0,
-		height -= 1 + trunk->skip;
-	return PT_(to_key)(PT_(outer_c)(trunk)->leaf[lf]);
-}
-
-/** Stores all `prefix` matches in `trie` in `it`.
- @param[it] Output remains valid until the topology of the trie changes.
- @order \O(|`prefix`|) */
+/** Stores all `prefix` matches in `trie` in `it`. @order \O(|`prefix`|) */
 static void PT_(prefix)(const struct T_(trie) *const trie,
-	const char *const prefix, struct T_(trie_iterator) *it) {
+	const char *const prefix, struct PT_(iterator) *it) {
 	assert(trie && prefix && it);
 	PT_(match_prefix)(trie, prefix, it);
-	if(it->leaf_end <= it->leaf) return;
-	assert(it->root && it->next && it->next == it->end
-		&& it->leaf_end <= it->end->bsize + 1); /* fixme: what? */
-	assert(0);
-	/* Makes sure the trie matches the string. */
-	/*if(!trie_is_prefix(prefix, PT_(sample)(it->end, it->leaf_end - 1)))
-		it->leaf_end = it->leaf;*/
+	/* Make sure actually a prefix. */
+	if(it->current && !trie_is_prefix(prefix,
+		PT_(to_key)(it->current->leaf[it->leaf]))) it->current = 0;
 }
 
 #if 0 /* <!-- forward declare debugging tools */
@@ -327,6 +306,15 @@ static int PT_(init_outer_tree)(struct trie_trunk **ptrunk) {
 	return 1;
 }
 
+/** @return The leftmost key `lf` of `tree`. */
+static const char *PT_(sample)(const struct trie_trunk *trunk,
+	size_t height, unsigned lf) {
+	assert(trunk);
+	while(height) trunk = trie_inner_c(trunk)->leaf[lf], lf = 0,
+		height -= 1 + trunk->skip;
+	return PT_(to_key)(PT_(outer_c)(trunk)->leaf[lf]);
+}
+
 /** Adds `x` to `trie`, which must not be present. @return Success.
  @throw[malloc, ERANGE]
  @throw[EILSEQ] There is too many bits similar for it to placed in the trie at
@@ -334,8 +322,8 @@ static int PT_(init_outer_tree)(struct trie_trunk **ptrunk) {
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(entry) x) {
 	const char *const key = PT_(to_key)(x);
 	struct { unsigned br0, br1, lf; } t;
-	struct { struct PT_(tree) *tr; struct { size_t tr, diff; } bit; } f;
-	struct { struct { struct PT_(tree) *tr; size_t bit; } a; size_t n; } full;
+	struct { struct trie_trunk *tr; struct { size_t tr, diff; } bit; } f;
+	struct { struct { struct trie_trunk *tr; size_t bit; } a; size_t n; } full;
 	const char *sample; /* Only used in Find. */
 	int restarts = 0; /* Debug: make sure we only go through twice. */
 	size_t h;
@@ -352,9 +340,9 @@ start:
 	/* Backtracking information; anchor is the first not-full tree. */
 	full.a.tr = 0, full.a.bit = 0, full.n = 0;
 	f.tr = trie->root, assert(f.tr);
-	for(f.bit.diff = 0; ; f.tr = f.tr->leaf[t.lf].child) { /* Forest. */
+	for(f.bit.diff = 0; ; f.tr = trie_inner(f.tr)->leaf[t.lf]) { /* Forest. */
 		const int is_full = TRIE_BRANCHES <= f.tr->bsize;
-		assert(f.tr->skip < forest_remain), forest_remain -= 1 + f.tr->skip;
+		assert(f.tr->skip < h), h -= 1 + f.tr->skip;
 		full.n = is_full ? full.n + 1 : 0;
 		f.bit.tr = f.bit.diff;
 		sample = PT_(sample)(f.tr, h, 0);
@@ -495,6 +483,7 @@ insert: /* Insert into unfilled tree. ****************************************/
 		/* Should be the same as the first descent. */
 		if(is_right = !!TRIE_QUERY(key, f.bit.diff)) t.lf += t.br1 - t.br0 + 1;
 
+#if 0
 		/* Expand the tree to include one more leaf and branch. */
 		leaf = f.tr->leaf + t.lf, assert(t.lf <= f.tr->bsize + 1);
 		memmove(leaf + 1, leaf, sizeof *leaf * ((f.tr->bsize + 1) - t.lf));
@@ -508,6 +497,7 @@ insert: /* Insert into unfilled tree. ****************************************/
 		branch->skip = (unsigned char)(f.bit.diff - bit0);
 		f.tr->bsize++;
 		leaf->data = x;
+#endif
 	}
 	/* PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-add.gv"); */
 	return 1;
@@ -515,34 +505,34 @@ insert: /* Insert into unfilled tree. ****************************************/
 
 /** A bi-predicate; returns true if the `replace` replaces the `original`; used
  in <fn:<T>trie_policy_put>. */
-typedef int (*PT_(replace_fn))(PT_(type) *original, PT_(type) *replace);
+typedef int (*PT_(replace_fn))(PT_(entry) *original, PT_(entry) *replace);
 
 /** Adds `x` to `trie` and, if `eject` is non-null, stores the collided
  element, if any, as long as `replace` is null or returns true.
  @param[eject] If not-null, the ejected datum. If `replace` returns false, then
  `*eject == datum`, but it will still return true.
  @return Success. @throws[realloc, ERANGE] */
-static int PT_(put)(struct T_(trie) *const trie, PT_(type) *const x,
-	PT_(type) **const eject, const PT_(replace_fn) replace) {
+static int PT_(put)(struct T_(trie) *const trie, PT_(entry) x,
+	PT_(entry) **const eject, const PT_(replace_fn) replace) {
 	const char *key;
-	PT_(type) **leaf;
+	PT_(entry) *leaf;
 	assert(trie && x);
 	key = PT_(to_key)(x);
 	/* Add if absent. */
-	if(!(leaf = PT_(leaf_get)(trie, key)))
+	if(!(leaf = PT_(get)(trie, key)))
 		{ if(eject) *eject = 0; return PT_(add_unique)(trie, x); }
 	/* Collision policy. */
-	if(replace && !replace(*leaf, x)) {
-		if(eject) *eject = x;
+	if(replace && !replace(leaf, &x)) {
+		if(eject) *eject = &x;
 	} else {
-		if(eject) *eject = *leaf;
+		if(eject) *eject = leaf;
 		*leaf = x;
 	}
 	return 1;
 }
 
 /** Try to remove `key` from `trie`. */
-static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
+static PT_(entry) *PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
 	/* @fixme Join when combined-half <= ~TRIE_BRANCH / 2 */
 	struct {
@@ -556,7 +546,7 @@ static PT_(type) *PT_(remove)(struct T_(trie) *const trie,
 	unsigned lf;
 	size_t bit;
 	struct { size_t cur, next; } byte;
-	PT_(type) *rm;
+	PT_(entry) *rm;
 	assert(trie && key);
 
 	/* Empty. */
@@ -674,37 +664,47 @@ free: /* Free all the unused trees. */
 #undef QUOTE
 #undef QUOTE_
 
-/** Frees `tree` and it's children recursively. */
-static void PT_(clear)(struct PT_(tree) *const tree, size_t height) {
+/** Frees `tr` at `h` and it's children recursively. */
+static void PT_(clear)(struct trie_trunk *const tr, size_t height) {
 	unsigned i;
-	assert(tree && height > tree->skip);
-	if(height -= 1 + tree->skip) for(i = 0; i <= tree->bsize; i++)
-		PT_(clear)(tree->leaf[i].child, height);
-	free(tree);
+	assert(tr && height > tr->skip);
+	if(height -= 1 + tr->skip) {
+		for(i = 0; i <= tr->bsize; i++)
+			PT_(clear)(trie_inner(tr)->leaf[i], height);
+		free(trie_inner(tr));
+	} else {
+		free(PT_(outer)(tr));
+	}
+	/* fixme: this is old */
 }
 
-/** Counts the sub-tree `tree`. @order \O(|`any`|) */
-static size_t PT_(sub_size)(const struct PT_(tree) *const tree, size_t height) {
+/** Counts the sub-tree `trunk`. @order \O(|`trunk`|) */
+static size_t PT_(sub_size)(const struct trie_trunk *const trunk,
+	size_t height) {
 	unsigned i;
 	size_t size;
-	assert(tree && height > tree->skip);
-	size = tree->bsize + 1;
-	if(height -= 1 + tree->skip) for(i = 0; i <= tree->bsize; i++)
-		size += PT_(sub_size)(tree->leaf[i].child, height) - 1;
+	assert(trunk && trunk->skip < height);
+	if(height -= 1 + trunk->skip) {
+		const struct trie_inner_tree *const inner = trie_inner_c(trunk);
+		for(size = 0, i = 0; i <= trunk->bsize; i++)
+			size += PT_(sub_size)(inner->leaf[i], height);
+	} else {
+		size = trunk->bsize + 1;
+	}
 	return size;
 }
 
 /** Counts the new iterator `it`. @order \O(|`it`|) */
-static size_t PT_(size)(const struct T_(trie_iterator) *const it) {
+static size_t PT_(size)(const struct PT_(iterator) *const it) {
 	struct PT_(tree) *next;
 	size_t size;
 	unsigned i;
 	assert(it);
-	if(!it->root || !(next = it->next)) return 0;
+	/*if(!it->root || !(next = it->next)) return 0;
 	assert(next == it->end
 		&& it->leaf <= it->leaf_end && it->leaf_end <= next->bsize + 1);
 	size = it->leaf_end - it->leaf;
-	/*for(i = it->leaf; i < it->leaf_end; i++)
+	for(i = it->leaf; i < it->leaf_end; i++)
 		size += PT_(sub_size)(next->leaf[i].child) - 1;*/
 	assert(0);
 	return size;
@@ -712,16 +712,18 @@ static size_t PT_(size)(const struct T_(trie_iterator) *const it) {
 
 /* <!-- iterate interface */
 
-/** Loads the first element of `trie` into `it`. @implements begin */
+/** Loads the first element of `trie` (can be null) into `it`.
+ @implements begin */
 static void PT_(begin)(struct PT_(iterator) *const it,
-	const struct T_(trie) *const trie)
-	{ assert(it && trie); it->root = it->next = trie->root; it->leaf = 0; }
+	const struct T_(trie) *const trie) { PT_(match_prefix)(trie, "", it); }
 
 /** Advances `it`. @return The previous value or null. @implements next */
-static PT_(type) *PT_(next)(struct PT_(iterator) *const it) {
+static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
 	struct PT_(tree) *tree;
 	assert(it);
-	/*printf("_next_\n");*/
+	printf("_next_\n");
+	if(!it->current) return 0;
+	assert(it->sub.root && it->sub.height);
 	if(!it->root || !(tree = it->next)) return 0;
 	/* Off the end of the tree. */
 	if(it->leaf > tree->bsize) {
@@ -839,6 +841,10 @@ static int T_(trie_policy_put)(struct T_(trie) *const trie, PT_(type) *const x,
 	PT_(type) **const eject, const PT_(replace_fn) replace)
 	{ return assert(trie && x), PT_(put)(trie, x, eject, replace); }
 
+/** Stores an iteration range in a trie. Any changes in the topology of the
+ trie invalidate it. */
+struct T_(trie_iterator) { struct PT_(iterator) i; };
+
 /** Fills `it` with iteration parameters that find values of keys that start
  with `prefix` in `trie`.
  @param[prefix] To fill `it` with the entire `trie`, use the empty string.
@@ -847,7 +853,7 @@ static int T_(trie_policy_put)(struct T_(trie) *const trie, PT_(type) *const x,
  order. @order \O(|`prefix`|) */
 static void T_(trie_prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, struct T_(trie_iterator) *const it)
-	{ PT_(prefix)(trie, prefix, it); }
+	{ assert(it); PT_(prefix)(trie, prefix, &it->i); }
 
 /** Counts the of the items in the new `it`; iterator must be new,
  (calling <fn:<T>trie_next> causes it to become undefined.)
@@ -876,7 +882,7 @@ static PT_(type) *T_(trie_next)(struct T_(trie_iterator) *const it) {
 
 #ifdef TRIE_TO_STRING /* <!-- str */
 /** Uses the natural `a` -> `z` that is defined by `TRIE_KEY`. */
-static void PT_(to_string)(const PT_(type) *const a, char (*const z)[12])
+static void PT_(to_string)(const PT_(entry) *const a, char (*const z)[12])
 	{ assert(a && z); sprintf(*z, "%.11s", PT_(to_key)(a)); }
 #define SZ_(n) TRIE_CAT(T_(trie), n)
 #define TO_STRING &PT_(to_string)
