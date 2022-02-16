@@ -351,8 +351,7 @@ static int PN_(equal_buckets)(PN_(ckey) a, PN_(ckey) b) {
 #endif
 }
 
-/** `table` will be searched linearly for `key` which has `hash`.
- @fixme Move to front like splay trees? */
+/** `table` will be searched linearly for `key` which has `hash`. */
 static struct PN_(bucket) *PN_(query)(struct N_(table) *const table,
 	PN_(ckey) key, const PN_(uint) hash) {
 	struct PN_(bucket) *bucket1;
