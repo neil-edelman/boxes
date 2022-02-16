@@ -306,7 +306,7 @@ void orcish(char *const name, const size_t name_size) {
 }
 
 /** Fills `name` with a deterministic Orcish name based on `l`, potentially
- up to `name_size` - 1, (with a maximum of 255,) then puts a null terminator.
+ up to `name_size` - 1, (with a maximum,) then puts a null terminator.
  @param[name] A valid pointer to at least `name_size` characters.
  @param[name_size] If zero, does nothing. */
 void orc_long(char *const name, const size_t name_size, const unsigned long l) {
@@ -315,7 +315,7 @@ void orc_long(char *const name, const size_t name_size, const unsigned long l) {
 }
 
 /** Fills `name` with a deterministic Orcish name based on `p`, or if `p` is
- null, then "null". Potentially up to `name_size` - 1, (with a maximum of 255,)
+ null, then "null". Potentially up to `name_size` - 1, (with a maximum,)
  then puts a null terminator.
  @param[name] A valid pointer to at least `name_size` characters.
  @param[name_size] If zero, does nothing. */

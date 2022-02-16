@@ -1,6 +1,9 @@
 /** @license 2021 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
+ @abstract Source <src/pool.h>, depends on <src/heap.h>, and <src/array.h>;
+ examples <test/test_pool.c>.
+
  @subtitle Stable pool
 
  ![Example of Pool](../web/pool.png)
@@ -93,7 +96,7 @@ struct PP_(slot) { size_t size; PP_(type) *chunk; };
 #define ARRAY_TYPE struct PP_(slot)
 #include "array.h"
 
-/** Consists of a map of several chunks of increasing size and a free-list.
+/** Consists of a map of several chunks of increasing size and a free-heap.
  Zeroed data is a valid state. To instantiate to an idle state, see
  <fn:<P>pool>, `POOL_IDLE`, `{0}` (`C99`,) or being `static`.
 
@@ -239,8 +242,9 @@ static void P_(pool_)(struct P_(pool) *const pool) {
 	P_(pool)(pool);
 }
 
-/** Ensure capacity of at least `n` items in `pool`. Pre-sizing is better for
- contiguous blocks. @return Success. @throws[ERANGE, malloc] @allow */
+/** Ensure capacity of at least `n` further items in `pool`. Pre-sizing is
+ better for contiguous blocks, but takes up that memory.
+ @return Success. @throws[ERANGE, malloc] @allow */
 static int P_(pool_buffer)(struct P_(pool) *const pool, const size_t n) {
 	return assert(pool), PP_(buffer)(pool, n);
 }
@@ -314,7 +318,7 @@ static const PP_(type) *PP_(next)(struct PP_(iterator) *const it) {
 /* Forward-declare. */
 static void (*PP_(to_string))(const PP_(type) *, char (*)[12]);
 static const char *(*PP_(pool_to_string))(const struct P_(pool) *);
-#include "../test/test_pool.h" /** \include */
+#include "../test/test_pool.h"
 #endif /* test --> */
 
 /* <!-- box (multiple traits) */
