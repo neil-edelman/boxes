@@ -10,15 +10,15 @@
 
 /** Works by side-effects, _ie_ fills the type with data. Only defined if
  `TRIE_TEST`. */
-typedef void (*PT_(action_fn))(PT_(type) *);
+typedef void (*PT_(action_fn))(PT_(entry));
 /* Used in <fn:<PT>graph_choose>. */
-typedef void (*PT_(tree_file_fn))(const struct PT_(tree) *, size_t, size_t,
+typedef void (*PT_(tree_file_fn))(const struct trie_trunk *, size_t, size_t,
 	FILE *);
 
 #ifndef TRIE_SET /* <!-- !set: Don't bother trying to test it automatically. */
 
 /* `TRIE_TEST` must be a function that implements <typedef:<PT>action_fn>. */
-static void (*PT_(filler))(PT_(type) *) = (TRIE_TEST);
+static const PT_(action_fn) PT_(filler) = (TRIE_TEST);
 
 #endif /* set --> */
 
@@ -26,7 +26,7 @@ static void (*PT_(filler))(PT_(type) *) = (TRIE_TEST);
 static unsigned PT_(no);
 
 /** Is `lf` going to the right in `tr`? */
-static const char *PT_(leaf_to_shape)(const struct PT_(tree) *const tr,
+static const char *PT_(leaf_to_shape)(const struct trie_trunk *const tr,
 	const unsigned lf) {
 	struct { unsigned br0, br1, lf; } t;
 	unsigned left;
@@ -42,12 +42,12 @@ static const char *PT_(leaf_to_shape)(const struct PT_(tree) *const tr,
 
 /** Given a branch `b` in `tree` branches, calculate the right child branches.
  @order \O(log `size`) */
-static unsigned PT_(right)(const struct PT_(tree) *const tree,
+static unsigned PT_(right)(const struct trie_trunk *const tr,
 	const unsigned b) {
-	unsigned left, right, total = tree->bsize, b0 = 0;
-	assert(tree && b < tree->bsize);
+	unsigned left, right, total = tr->bsize, b0 = 0;
+	assert(tr && b < tr->bsize);
 	for( ; ; ) {
-		right = total - (left = tree->branch[b0].left) - 1;
+		right = total - (left = tr->branch[b0].left) - 1;
 		assert(left < total && right < total);
 		if(b0 >= b) break;
 		if(b <= b0 + left) total = left, b0++;
@@ -58,13 +58,13 @@ static unsigned PT_(right)(const struct PT_(tree) *const tree,
 }
 
 /** @return Follows the branches to `b` in `tree` and returns the leaf. */
-static unsigned PT_(left_leaf)(const struct PT_(tree) *const tree,
+static unsigned PT_(left_leaf)(const struct trie_trunk *const tr,
 	const unsigned b) {
-	unsigned left, right, total = tree->bsize, i = 0, b0 = 0;
-	assert(tree && b < tree->bsize);
+	unsigned left, right, total = tr->bsize, i = 0, b0 = 0;
+	assert(tr && b < tr->bsize);
 	for( ; ; ) {
-		right = total - (left = tree->branch[b0].left) - 1;
-		assert(left < tree->bsize && right < tree->bsize);
+		right = total - (left = tr->branch[b0].left) - 1;
+		assert(left < tr->bsize && right < tr->bsize);
 		if(b0 >= b) break;
 		if(b <= b0 + left) total = left, b0++;
 		else total = right, b0 += left + 1, i += left + 1;
@@ -75,17 +75,17 @@ static unsigned PT_(left_leaf)(const struct PT_(tree) *const tree,
 
 /** Graphs `tree` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
-static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
+static void PT_(graph_tree_bits)(const struct trie_trunk *const tr,
 	size_t height, const size_t treebit, FILE *const fp) {
 	unsigned b, i;
-	assert(tree && fp && height > tree->skip);
-	height -= 1 + tree->skip;
+	assert(tr && fp && height > tr->skip);
+	height -= 1 + tr->skip;
 	fprintf(fp, "\ttree%pbranch0 [shape = box, style = filled, "
 		"fillcolor=\"Grey95\" label = <\n"
-		"<TABLE BORDER=\"0\" CELLBORDER=\"0\">\n", (const void *)tree);
-	for(i = 0; i <= tree->bsize; i++) {
-		const char *key = PT_(sample)(tree, height, i);
-		const struct trie_branch *branch = tree->branch;
+		"<TABLE BORDER=\"0\" CELLBORDER=\"0\">\n", (const void *)tr);
+	for(i = 0; i <= tr->bsize; i++) {
+		const char *key = PT_(sample)(tr, height, i);
+		const struct trie_branch *branch = tr->branch;
 		size_t next_branch = treebit + branch->skip;
 		const char *params, *start, *end;
 		struct { unsigned br0, br1; } in_tree;
@@ -96,7 +96,7 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 			" PORT=\"%u\">%s%s%s⊔</FONT></TD>\n",
 			i, height ? "↓<FONT COLOR=\"Gray85\">" : "", key,
 			height ? "" : "<FONT COLOR=\"Gray85\">");
-		in_tree.br0 = 0, in_tree.br1 = tree->bsize;
+		in_tree.br0 = 0, in_tree.br1 = tr->bsize;
 		for(b = 0; in_tree.br0 < in_tree.br1; b++) {
 			const unsigned bit = !!TRIE_QUERY(key, b);
 			if(next_branch) {
@@ -113,7 +113,7 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 						= " BGCOLOR=\"Black\" COLOR=\"White\" BORDER=\"1\"";
 					start = "<FONT COLOR=\"White\">", end = "</FONT>";
 				}
-				next_branch = (branch = tree->branch + in_tree.br0)->skip;
+				next_branch = (branch = tr->branch + in_tree.br0)->skip;
 			}
 			if(b && !(b & 7)) fprintf(fp, "\t\t<TD BORDER=\"0\">&nbsp;</TD>\n");
 			fprintf(fp, "\t\t<TD%s>%s%u%s</TD>\n", params, start, bit, end);
@@ -121,19 +121,20 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 		fprintf(fp, "\t</TR>\n");
 	}
 	fprintf(fp, "</TABLE>>];\n");
+#if 0
 	/* Draw the lines between trees. */
 	if(!height) return;
-	for(i = 0; i <= tree->bsize; i++)
+	for(i = 0; i <= tr->bsize; i++)
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[style = dashed, arrowhead = %snormal];\n", (const void *)tree, i,
-		(const void *)tree->leaf[i].child, PT_(leaf_to_shape)(tree, i));
+		"[style = dashed, arrowhead = %snormal];\n", (const void *)tr, i,
+		(const void *)tr->leaf[i].child, PT_(leaf_to_shape)(tr, i));
 	/* Recurse. */
-	for(i = 0; i <= tree->bsize; i++) {
+	for(i = 0; i <= tr->bsize; i++) {
 		struct { unsigned br0, br1, lf; } in_tree;
 		size_t bit = treebit;
-		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
+		in_tree.br0 = 0, in_tree.br1 = tr->bsize, in_tree.lf = 0;
 		while(in_tree.br0 < in_tree.br1) {
-			const struct trie_branch *branch = tree->branch + in_tree.br0;
+			const struct trie_branch *branch = tr->branch + in_tree.br0;
 			bit += branch->skip;
 			if(i <= in_tree.lf + branch->left)
 				in_tree.br1 = ++in_tree.br0 + branch->left;
@@ -143,15 +144,17 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tree,
 		}
 		PT_(graph_tree_bits)(tree->leaf[i].child, height, bit, fp);
 	}
+#endif
 }
 
 /** Graphs `tree` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
-static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
+static void PT_(graph_tree_mem)(const struct trie_trunk *const tree,
 	size_t height, const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
 	unsigned i;
 	(void)treebit;
+#if 0
 	assert(tree && fp && height > tree->skip);
 	height -= 1 + tree->skip;
 	/* Tree is one record node in memory -- GraphViz says html is
@@ -212,79 +215,80 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tree,
 		}
 		PT_(graph_tree_mem)(tree->leaf[i].child, height, bit, fp);
 	}
+#endif
 }
 
 /** Graphs `tree` on `fp`.`treebit` is the number of bits currently
  (recursive.) */
-static void PT_(graph_tree_logic)(const struct PT_(tree) *const tree,
+static void PT_(graph_tree_logic)(const struct trie_trunk *const tr,
 	size_t height, const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
 	unsigned left, right, b, i;
 	(void)treebit;
-	assert(tree && fp && height > tree->skip);
-	height -= 1 + tree->skip;
-	fprintf(fp, "\t// tree %p\n", (const void *)tree);
-	if(tree->bsize) {
+	assert(tr && fp && height > tr->skip);
+	height -= 1 + tr->skip;
+	fprintf(fp, "\t// tree %p\n", (const void *)tr);
+	if(tr->bsize) {
 		fprintf(fp, "\t// branches\n");
-		for(b = 0; b < tree->bsize; b++) { /* Branches. */
-			branch = tree->branch + b;
-			left = branch->left, right = PT_(right)(tree, b);
+		for(b = 0; b < tr->bsize; b++) { /* Branches. */
+			branch = tr->branch + b;
+			left = branch->left, right = PT_(right)(tr, b);
 			fprintf(fp, "\ttree%pbranch%u [label = \"%u\", shape = circle, "
 				"style = filled, fillcolor = Grey95];\n"
-				"\ttree%pbranch%u -> ", (const void *)tree, b, branch->skip,
-				(const void *)tree, b);
+				"\ttree%pbranch%u -> ", (const void *)tr, b, branch->skip,
+				(const void *)tr, b);
 			if(left) {
 				fprintf(fp, "tree%pbranch%u [arrowhead = rnormal];\n",
-					(const void *)tree, b + 1);
+					(const void *)tr, b + 1);
 			} else {
-				unsigned leaf = PT_(left_leaf)(tree, b);
+				unsigned leaf = PT_(left_leaf)(tr, b);
 				if(height) fprintf(fp,
 					"tree%pbranch0 [style = dashed, arrowhead = rnormal];\n",
-					(const void *)tree->leaf[leaf].child);
+					(const void *)PT_(outer_c)(tr)->leaf[leaf]);
 				else fprintf(fp,
 					"tree%pleaf%u [color = Gray85, arrowhead = rnormal];\n",
-					(const void *)tree, leaf);
+					(const void *)tr, leaf);
 			}
-			fprintf(fp, "\ttree%pbranch%u -> ", (const void *)tree, b);
+			fprintf(fp, "\ttree%pbranch%u -> ", (const void *)tr, b);
 			if(right) {
 				fprintf(fp, "tree%pbranch%u [arrowhead = lnormal];\n",
-					(const void *)tree, b + left + 1);
+					(const void *)tr, b + left + 1);
 			} else {
-				unsigned leaf = PT_(left_leaf)(tree, b) + left + 1;
+				unsigned leaf = PT_(left_leaf)(tr, b) + left + 1;
 				if(height) fprintf(fp,
 					"tree%pbranch0 [style = dashed, arrowhead = lnormal];\n",
-					(const void *)tree->leaf[leaf].child);
+					(const void *)PT_(outer_c)(tr)->leaf[leaf]);
 				else fprintf(fp,
 					"tree%pleaf%u [color = Gray85, arrowhead = lnormal];\n",
-					(const void *)tree, leaf);
+					(const void *)tr, leaf);
 			}
 		}
 	}
 
 	fprintf(fp, "\t// leaves\n");
-	if(tree->bsize) {
+	if(tr->bsize) {
 		/* \sqcup ⊔ was good, but it didn't leave much space. */
-		if(!height) for(i = 0; i <= tree->bsize; i++) fprintf(fp,
+		if(!height) for(i = 0; i <= tr->bsize; i++) fprintf(fp,
 			"\ttree%pleaf%u [label = <%s<FONT COLOR=\"Gray85\">⊔</FONT>>];\n",
-			(const void *)tree, i, PT_(to_key)(tree->leaf[i].data));
+			(const void *)tr, i, PT_(to_key)(PT_(outer_c)(tr)->leaf[i]));
 	} else {
 		/* Lazy hack: just call this a branch, even though it's a leaf, so that
 		 others may reference it. */
 		if(height) fprintf(fp, "\ttree%pbranch0 [label = \"\", shape = circle,"
 			" style = filled, fillcolor = Grey95];\n"
 			"\ttree%pbranch0 -> tree%pbranch0 [style = dashed];\n",
-			(const void *)tree, (const void *)tree,
-			(const void *)tree->leaf[0].child);
+			(const void *)tr, (const void *)tr,
+			(const void *)PT_(outer_c)(tr)->leaf[0]);
 		else fprintf(fp,
 			"\ttree%pbranch0 [label = <%s<FONT COLOR=\"Gray85\">⊔</FONT>>];\n",
-			(const void *)tree, PT_(to_key)(tree->leaf[0].data));
+			(const void *)tr, PT_(to_key)(PT_(outer_c)(tr)->leaf[0]));
 	}
 	fprintf(fp, "\n");
 
 	if(!height) return;
 	/* Recurse. */
-	for(i = 0; i <= tree->bsize; i++)
-		PT_(graph_tree_logic)(tree->leaf[i].child, height, 0, fp);
+	/*for(i = 0; i <= tr->bsize; i++)
+		PT_(graph_tree_logic)(tr->leaf[i].child, height, 0, fp);*/
 }
 
 /** Draw a graph of `trie` to `fn` in Graphviz format with `tf` as it's
@@ -299,8 +303,8 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 		"\tnode [shape = none];\n"
 		"\n");
 	if(!trie->root) fprintf(fp, "\tidle;\n");
-	else if(!trie->forest_height) fprintf(fp, "\tempty;\n");
-	else tf(trie->root, trie->forest_height, 0, fp);
+	else if(!trie->height) fprintf(fp, "\tempty;\n");
+	else tf(trie->root, trie->height, 0, fp);
 	fprintf(fp, "\tnode [color = Red];\n"
 		"}\n");
 	fclose(fp);
@@ -329,12 +333,12 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 	memcpy(temp + i_temp, logic, sizeof logic - 1);
 	memcpy(temp + i_temp + sizeof logic - 1, fn + i_fn, fn_len - i_fn + 1);
 	PT_(graph_choose)(trie, temp, &PT_(graph_tree_logic));
-	memcpy(temp + i_temp, mem, sizeof mem - 1);
+	/*memcpy(temp + i_temp, mem, sizeof mem - 1);
 	memcpy(temp + i_temp + sizeof mem - 1, fn + i_fn, fn_len - i_fn + 1);
 	PT_(graph_choose)(trie, temp, &PT_(graph_tree_mem));
 	memcpy(temp + i_temp, bits, sizeof bits - 1);
 	memcpy(temp + i_temp + sizeof bits - 1, fn + i_fn, fn_len - i_fn + 1);
-	PT_(graph_choose)(trie, temp, &PT_(graph_tree_bits));
+	PT_(graph_choose)(trie, temp, &PT_(graph_tree_bits));*/
 }
 
 #if 0
@@ -366,13 +370,14 @@ static void PT_(print)(const struct PT_(tree) *const tree) {
  automatic framework, but convenient to have graphs for manual tests. */
 
 /** Make sure `tree` is in a valid state, (and all the children.) */
-static void PT_(valid_tree)(const struct PT_(tree) *const tree) {
+static void PT_(valid_trunk)(const struct trie_trunk *const tree) {
 	unsigned i;
 	int cmp = 0;
 	const char *str1 = 0;
 	assert(tree && tree->bsize <= TRIE_BRANCHES);
 	for(i = 0; i < tree->bsize; i++)
 		assert(tree->branch[i].left < tree->bsize - 1 - i);
+#if 0
 	for(i = 0; i <= tree->bsize; i++) {
 		if(trie_bmp_test(&tree->is_child, i)) {
 			PT_(valid_tree)(tree->leaf[i].child);
@@ -384,35 +389,36 @@ static void PT_(valid_tree)(const struct PT_(tree) *const tree) {
 			str1 = str2;
 		}
 	}
+#endif
 }
 
 /** Makes sure the `trie` is in a valid state. */
 static void PT_(valid)(const struct T_(trie) *const trie) {
 	if(!trie || !trie->root) return;
-	PT_(valid_tree)(trie->root);
+	PT_(valid_trunk)(trie->root);
 }
 
 /** Ignores `a` and `b`. @return False. */
-static int PT_(false)(PT_(type) *const a, PT_(type) *const b)
+static int PT_(false)(PT_(entry) *const a, PT_(entry) *const b)
 	{ (void)a, (void)b; return 0; }
 
 /** Ignores `a` and `b`. @return True. */
-static int PT_(true)(PT_(type) *const a, PT_(type) *const b)
+static int PT_(true)(PT_(entry) *const a, PT_(entry) *const b)
 	{ (void)a, (void)b; return 1; }
 
 static void PT_(test)(void) {
 	struct T_(trie) trie = TRIE_IDLE;
 	struct T_(trie_iterator) it;
 	size_t n, m, count;
-	struct { PT_(type) data;
+	struct { PT_(entry) data;
 		/* Stupid warnings about struct alignment; there's got to be a better
 		 way to query the structures if you are interested. */
 		char unused[sizeof(void *)
-			- (sizeof(PT_(type)) + sizeof(int)) % sizeof(void *)];
+			- (sizeof(PT_(entry)) + sizeof(int)) % sizeof(void *)];
 		int is_in; } es[2000];
-	PT_(type) dup;
+	PT_(entry) dup;
 	const size_t es_size = sizeof es / sizeof *es;
-	PT_(type) *data;
+	PT_(entry) *data;
 	int ret, show;
 
 	/* Idle. */
