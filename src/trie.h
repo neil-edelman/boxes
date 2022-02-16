@@ -158,6 +158,13 @@ struct T_(trie) { struct trie_trunk *root; size_t height; };
 #define TRIE_IDLE { 0, 0 }
 #endif /* !zero --> */
 
+struct PT_(iterator) {
+	struct T_(trie) *trie;
+	struct PT_(outer_tree) *current;
+	struct trie_trunk *end;
+	unsigned leaf, leaf_end;
+};
+
 /** @return A candidate match for `key` in `trie`, or null, if `key` is
  definitely not in `trie`. @order \O(|`key`|) */
 static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
@@ -195,12 +202,6 @@ static PT_(entry) *PT_(get)(const struct T_(trie) *const trie,
 	return x && !strcmp(PT_(to_key)(*x), key) ? x : 0;
 }
 
-struct PT_(iterator) {
-	struct PT_(outer_tree) *current; /* This is used as a synecdoche, a key. */
-	struct T_(trie) sub;
-	unsigned leaf, leaf_end;
-};
-
 /** Looks at only the index of `trie` (which can be null) for potential
  `prefix` matches, and stores them in `it`. @order \O(|`prefix`|) */
 static void PT_(match_prefix)(const struct T_(trie) *const trie,
@@ -210,7 +211,7 @@ static void PT_(match_prefix)(const struct T_(trie) *const trie,
 	struct { unsigned br0, br1, lf; } t;
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(prefix && it);
-	it->current = 0;
+	it->trie = 0;
 	if(!trie || !(h = trie->height)) return;
 	for(trunk = trie->root, assert(trunk), byte.cur = 0, bit = 0; ;
 		trunk = trie_inner(trunk)->leaf[t.lf]) {
@@ -232,13 +233,13 @@ static void PT_(match_prefix)(const struct T_(trie) *const trie,
 	};
 finally:
 	assert(t.br0 <= t.br1 && t.lf - t.br0 + t.br1 <= trunk->bsize);
-	it->sub.root = trunk;
-	it->sub.height = h + 1 + trunk->skip;
+	it->end = trunk;
 	it->leaf_end = t.lf + t.br1 - t.br0 + 1;
 	while(h) trunk = trie_inner_c(trunk)->leaf[t.lf], t.lf = 0,
 		assert(trunk->skip < h), h -= 1 + trunk->skip;
 	it->current = PT_(outer)(trunk);
 	it->leaf = t.lf;
+	it->trie = trie;
 }
 
 /** Stores all `prefix` matches in `trie` in `it`. @order \O(|`prefix`|) */
@@ -247,7 +248,7 @@ static void PT_(prefix)(const struct T_(trie) *const trie,
 	assert(trie && prefix && it);
 	PT_(match_prefix)(trie, prefix, it);
 	/* Make sure actually a prefix. */
-	if(it->current && !trie_is_prefix(prefix,
+	if(it->trie && !trie_is_prefix(prefix,
 		PT_(to_key)(it->current->leaf[it->leaf]))) it->current = 0;
 }
 
@@ -724,36 +725,38 @@ static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
 	printf("_next_\n");
 	if(!it->current) return 0;
 	assert(it->sub.root && it->sub.height);
-	if(!it->root || !(tree = it->next)) return 0;
-	/* Off the end of the tree. */
-	if(it->leaf > tree->bsize) {
-		/* Definitely a data leaf or else we would have fallen thought.
-		 Unless it had a concurrent modification. That would be bad; don't. */
-		const char *key = PT_(to_key)(tree->leaf[tree->bsize].data);
-		const struct PT_(tree) *tree1 = it->next;
-		struct PT_(tree) *tree2 = it->root;
+	if(&it->current->trunk == it->sub.root) {
+		/* Only dealing with one tree. */
+		if(it->leaf > it->leaf_end || it->leaf > it->current->trunk.bsize)
+			{ it->current = 0; return 0; }
+	} else if(it->leaf > it->current->trunk.bsize) {
+		/* Off the end of the tree; keep track of the next branch when doing a
+		 look-up of the last entry. */
+		const char *key
+			= PT_(to_key)(it->current->leaf[it->current->trunk.bsize]);
+		const struct trie_trunk *trunk1 = &it->current->trunk;
+		struct trie_trunk *trunk2 = it->sub.root;
 		size_t bit2 = 0;
 		const struct trie_branch *branch2;
-		struct { unsigned br0, br1, lf; } in_tree2;
-		assert(key && tree2);
-		/*printf("next: over the end of the tree on %s.\n",
-			PT_(to_key)(tree.leaves[it->leaf - 1].data));*/
-		for(it->next = 0; ; ) { /* Forest. */
-			if(tree2 == tree1) break; /* Reached the tree. */
-			in_tree2.br0 = 0, in_tree2.br1 = tree2->bsize, in_tree2.lf = 0;
-			while(in_tree2.br0 < in_tree2.br1) { /* Tree. */
-				branch2 = tree2->branch + in_tree2.br0;
+		struct { unsigned br0, br1, lf; } in_tr2;
+		assert(key);
+		printf("next: %s is the last one on the tree.\n", key);
+		for(it->current = 0; ; ) {
+			if(trunk1 == trunk2) break; /* Reached the tree. */
+			in_tr2.br0 = 0, in_tr2.br1 = trunk2->bsize, in_tr2.lf = 0;
+			while(in_tr2.br0 < in_tr2.br1) {
+				branch2 = trunk2->branch + in_tr2.br0;
 				bit2 += branch2->skip;
 				if(!TRIE_QUERY(key, bit2))
-					in_tree2.br1 = ++in_tree2.br0 + branch2->left;
+					in_tr2.br1 = ++in_tr2.br0 + branch2->left;
 				else
-					in_tree2.br0 += branch2->left + 1,
-					in_tree2.lf += branch2->left + 1;
+					in_tr2.br0 += branch2->left + 1,
+					in_tr2.lf += branch2->left + 1;
 				bit2++;
 			}
 			/* Set it to the next value. */
-			if(in_tree2.lf < tree2->bsize)
-				it->next = tree2, it->leaf = in_tree2.lf + 1/*,
+			if(in_tr2.lf < trunk2->bsize)
+				it->current = trie_inner(trunk2), it->leaf = in_tree2.lf + 1/*,
 				printf("next: continues in tree %p, leaf %u.\n",
 					(void *)store2.key, it->i)*/;
 			/* We never reach the bottom, since it breaks up above. */
