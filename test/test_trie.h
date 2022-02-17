@@ -151,10 +151,10 @@ static void PT_(graph_tree_bits)(const struct trie_trunk *const tr,
  (recursive.) */
 static void PT_(graph_tree_mem)(const struct trie_trunk *const tree,
 	size_t height, const size_t treebit, FILE *const fp) {
+#if 0
 	const struct trie_branch *branch;
 	unsigned i;
 	(void)treebit;
-#if 0
 	assert(tree && fp && height > tree->skip);
 	height -= 1 + tree->skip;
 	/* Tree is one record node in memory -- GraphViz says html is
@@ -270,7 +270,7 @@ static void PT_(graph_tree_logic)(const struct trie_trunk *const tr,
 		/* \sqcup ⊔ was good, but it didn't leave much space. */
 		if(!height) for(i = 0; i <= tr->bsize; i++) fprintf(fp,
 			"\ttree%pleaf%u [label = <%s<FONT COLOR=\"Gray85\">⊔</FONT>>];\n",
-			(const void *)tr, i, PT_(to_key)(PT_(outer_c)(tr)->leaf[i]));
+			(const void *)tr, i, PT_(to_key)(PT_(outer_c)(tr)->leaf + i));
 	} else {
 		/* Lazy hack: just call this a branch, even though it's a leaf, so that
 		 others may reference it. */
@@ -281,7 +281,7 @@ static void PT_(graph_tree_logic)(const struct trie_trunk *const tr,
 			(const void *)PT_(outer_c)(tr)->leaf[0]);
 		else fprintf(fp,
 			"\ttree%pbranch0 [label = <%s<FONT COLOR=\"Gray85\">⊔</FONT>>];\n",
-			(const void *)tr, PT_(to_key)(PT_(outer_c)(tr)->leaf[0]));
+			(const void *)tr, PT_(to_key)(PT_(outer_c)(tr)->leaf + 0));
 	}
 	fprintf(fp, "\n");
 
@@ -431,7 +431,7 @@ static void PT_(test)(void) {
 	data = T_(trie_get)(&trie, ""), assert(!data);
 
 	/* Make random data. */
-	for(n = 0; n < es_size; n++) PT_(filler)(&es[n].data);
+	for(n = 0; n < es_size; n++) PT_(filler)(es[n].data);
 
 	/* Adding. */
 	PT_(no) = 0;
@@ -441,8 +441,8 @@ static void PT_(test)(void) {
 		show = !((n + 1) & n) || n + 1 == es_size;
 		if(show) PT_(no)++;
 		if(show) printf("%lu: adding %s.\n",
-			(unsigned long)n, PT_(to_key)(&es[n].data));
-		es[n].is_in = T_(trie_add)(&trie, &es[n].data);
+			(unsigned long)n, PT_(to_key)(es[n].data));
+		es[n].is_in = T_(trie_try)(&trie, es[n].data);
 		if(show) PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-sample.gv");
 		assert(!errno);
 		if(!es[n].is_in) {
@@ -476,6 +476,7 @@ static void PT_(test)(void) {
 			sum), assert(n == count && n == sum);
 	}
 
+#if 0
 	/* Replacement. */
 	ret = T_(trie_add)(&trie, &es[0].data); /* Doesn't add. */
 	assert(!ret);
@@ -518,6 +519,7 @@ static void PT_(test)(void) {
 			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-remove.gv");
 		}
 	}
+#endif
 
 	T_(trie_)(&trie), assert(!trie.root), PT_(valid)(&trie);
 	assert(!errno);
@@ -528,7 +530,7 @@ static void PT_(test)(void) {
 static void T_(trie_test)(void) {
 	printf("<" QUOTE(TRIE_NAME) ">trie"
 		" of type <" QUOTE(TRIE_VALUE) ">"
-		" was created using: TREE_KEY<" QUOTE(TRIE_KEY) ">;"
+		" was created using: TREE_KEY<" QUOTE(TRIE_KEY_IN_VALUE) ">;"
 		" TRIE_TEST <" QUOTE(TRIE_TEST) ">;"
 		" testing:\n");
 	PT_(test)();

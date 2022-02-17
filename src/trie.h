@@ -19,13 +19,13 @@
  B-tree techniques described in <Bayer, McCreight, 1972 Large>.
 
  @param[TRIE_NAME]
- Satisfies `C` naming conventions when mangled
+ `<T>` that satisfies `C` naming conventions when mangled. `<PT>` is private,
+ whose names are prefixed in a manner to avoid collisions.
 
- @param[TRIE_VALUE, TRIE_KEY]
- `TRIE_VALUE` is an optional payload type to go with the key. `TRIE_KEY` is an
- optional <typedef:<PT>key_fn> that picks out the key from the value (a set),
- otherwise this is an associative array, defining <tag:<PT>entry>. `<PT>` is
- private, whose names are prefixed in a manner to avoid collisions.
+ @param[TRIE_VALUE, TRIE_KEY_IN_VALUE]
+ `TRIE_VALUE` is an optional payload type to go with the string key.
+ `TRIE_KEY_IN_VALUE` is an optional <typedef:<PT>key_fn> that picks out the key
+ from the of value, otherwise <tag:<PT>entry> is an associative array entry.
 
  @param[TRIE_TO_STRING]
  Defining this includes <to_string.h>, with the keys as the string.
@@ -42,8 +42,8 @@
 #ifndef TRIE_NAME
 #error Name TRIE_NAME undefined.
 #endif
-#if defined(TRIE_KEY) && !defined(TRIE_VALUE)
-#error TRIE_KEY needs TRIE_VALUE.
+#if defined(TRIE_KEY_IN_VALUE) && !defined(TRIE_VALUE)
+#error TRIE_KEY_IN_VALUE needs TRIE_VALUE.
 #endif
 #if defined(TRIE_TEST) && !defined(TRIE_TO_STRING)
 #error TRIE_TEST requires TRIE_TO_STRING.
@@ -101,35 +101,46 @@ static int trie_is_prefix(const char *a, const char *b) {
 		if(*a != *b) return *b == '\0';
 	}
 }
+#define TRIE_RESULT X(ERROR), X(UNIQUE), X(YIELD), X(REPLACE)
+#define X(n) TRIE_##n
+/** A result of modifying the table, of which `TRIE_ERROR` is false.
+ ![A diagram of the result states.](../web/put.png) */
+enum trie_result { TRIE_RESULT };
+#undef X
+#define X(n) #n
+/** A static array of strings describing the <tag:trie_result>. */
+static const char *const trie_result_str[] = { TRIE_RESULT };
+#undef X
+#undef TRIE_RESULT
+#define TRIE_IDLE { 0, 0 }
 #endif /* idempotent --> */
 
 #ifdef TRIE_VALUE
+/** On `TRIE_VALUE`, otherwise just a string. */
 typedef TRIE_VALUE PT_(value);
-#ifdef TRIE_KEY
-typedef PT_(value) PT_(entry);
-#else
-/** If `TRIE_VALUE` is set, but `TRIE_KEY` is not, creates a map from key to
- value as an associative array. */
-struct PT_(entry) { const char *key; PT_(value) value; }
-/** This is `TRIE_VALUE` and not `TRIE_KEY`, otherwise it's just an alias for
- <typedef:<PT>value>. */
-typedef struct PT_(entry) PT_(entry);
 #endif
-#else
-/** Default. Set with `TRIE_VALUE`. */
+
+#if defined(TRIE_VALUE) && !defined(TRIE_KEY_IN_VALUE) /* <!-- entry */
+/** On `TRIE_VALUE` but not `TRIE_KEY_IN_VALUE`, creates a map from key to
+ value as an associative array. */
+struct T_(trie_entry) { const char *key; PT_(value) value; }
+/** On `TRIE_VALUE` and not `TRIE_KEY_IN_VALUE`, otherwise it's just an alias
+ for <typedef:<PT>value>. */
+typedef struct T_(trie_entry) PT_(entry);
+#else /* entry --><!-- !entry */
 typedef const char *PT_(value);
 typedef PT_(value) PT_(entry);
-#endif
+#endif /* !entry --> */
 
-/** If `TRIE_KEY` is set, responsible for picking out the null-terminated
- string. */
-typedef const char *(*PT_(key_fn))(const PT_(entry));
+/** If `TRIE_KEY_IN_VALUE` is set, responsible for picking out the
+ null-terminated string. */
+typedef const char *(*PT_(key_fn))(PT_(entry));
 
-#ifdef TRIE_KEY
-static PT_(key_fn) PT_(to_key) = (TRIE_KEY);
+#ifdef TRIE_KEY_IN_VALUE
+static PT_(key_fn) PT_(to_key) = (TRIE_KEY_IN_VALUE);
 #elif defined(TRIE_VALUE)
-static const char *PT_(entry_key)(const struct PT_(entry) *const entry)
-	{ return entry->key; }
+static const char *PT_(entry_key)(const struct PT_(entry) entry)
+	{ return entry.key; }
 static PT_(key_fn) PT_(to_key) = &PT_(entry_key);
 #else
 static const char *PT_(id_key)(const char *const key) { return key; }
@@ -154,9 +165,6 @@ static const struct PT_(outer_tree) *PT_(outer_c)(const struct trie_trunk *
 
  ![States.](../web/states.png) */
 struct T_(trie) { struct trie_trunk *root; size_t height; };
-#ifndef TRIE_IDLE /* <!-- !zero */
-#define TRIE_IDLE { 0, 0 }
-#endif /* !zero --> */
 
 struct PT_(iterator) {
 	const struct T_(trie) *trie;
@@ -174,7 +182,7 @@ static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
 	struct { unsigned br0, br1, lf; } t;
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(trie && key);
-	if(!(h = trie->height)) return 0;
+	if(!(h = trie->height)) { printf("match: empty\n"); return 0; }
 	for(trunk = trie->root, assert(trunk), byte.cur = 0, bit = 0; ;
 		trunk = trie_inner(trunk)->leaf[t.lf]) {
 		assert(trunk->skip < h), h -= 1 + trunk->skip;
@@ -197,10 +205,14 @@ static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
 }
 
 /** @return Exact match for `key` in `trie` or null. */
-static PT_(entry) *PT_(get)(const struct T_(trie) *const trie,
+static PT_(entry) PT_(get)(const struct T_(trie) *const trie,
 	const char *const key) {
+	printf("get \"%s\"\n", key);
 	PT_(entry) *const x = PT_(match)(trie, key);
-	return x && !strcmp(PT_(to_key)(*x), key) ? x : 0;
+	/*printf("get \"%s\" -> \n", key);
+	printf("\"%s\"\n", x ? PT_(to_key)(x) : "(null)");*/
+	printf("get \"%s\" -> \"%s\"\n", key, x ? PT_(to_key)(*x) : "(null)");
+	return x && !strcmp(PT_(to_key)(*x), key) ? *x : 0;
 }
 
 /** Looks at only the index of `trie` (which can be null) for potential
@@ -258,7 +270,16 @@ static void PT_(prefix)(struct T_(trie) *const trie,
 #ifdef TRIE_TO_STRING
 static const char *T_(trie_to_string)(const struct T_(trie) *);
 #endif
-
+/** Returns a string of `trie`. */
+static const char *PT_(str)(const struct T_(trie) *const trie) {
+#ifdef TRIE_TO_STRING
+	return T_(trie_to_string)(trie);
+#else
+	return "[not to string]"
+#endif
+}
+#ifdef TRIE_TO_STRING
+#endif
 /** Returns a string of `trie`. */
 static const char *PT_(str)(const struct T_(trie) *const trie) {
 #ifdef TRIE_TO_STRING
@@ -272,7 +293,6 @@ static const char *PT_(str)(const struct T_(trie) *const trie) {
 static void PT_(graph)(const struct T_(trie) *, const char *);
 static void PT_(print)(const struct PT_(tree) *);
 #endif
-
 /** Graphs `trie` in `fn`. */
 static void PT_(grph)(const struct T_(trie) *const trie, const char *const fn) {
 	assert(trie && fn);
@@ -280,7 +300,6 @@ static void PT_(grph)(const struct T_(trie) *const trie, const char *const fn) {
 	PT_(graph)(trie, fn);
 #endif
 }
-
 /** Prints `tree`. */
 static void PT_(prnt)(const struct PT_(tree) *const tree) {
 	assert(tree);
@@ -293,20 +312,6 @@ static void PT_(prnt)(const struct PT_(tree) *const tree) {
 
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
-
-/** @return Fills `tree` with with one null leaf; if `tree` is null, allocates.
- @throws[malloc] */
-static int PT_(init_outer_tree)(struct trie_trunk **ptrunk) {
-	struct PT_(outer_tree) *tree;
-	assert(ptrunk);
-	if(*ptrunk) tree = PT_(outer)(*ptrunk);
-	else if(!(tree = malloc(sizeof *tree)))
-		{ if(!errno) errno = ERANGE; return 0; }
-	else *ptrunk = &tree->trunk;
-	tree->trunk.bsize = 0, tree->trunk.skip = 0;
-	tree->leaf[0] = 0; /* fixme */
-	return 1;
-}
 
 /** @return The leftmost key `lf` of `tree`. */
 static const char *PT_(sample)(const struct trie_trunk *trunk,
@@ -331,11 +336,21 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(entry) x) {
 	size_t h;
 	assert(trie && x && key);
 
+	printf("unique: adding <<%s>>\n", key);
 start:
 	/* <!-- Solitary. ********************************************************/
-	if(!(h = trie->height))
-		return PT_(init_outer_tree)(&trie->root)
-		&& (trie->height = 1, PT_(outer)(trie->root)->leaf[0] = x, 1);
+	if(!(h = trie->height)) {
+		struct PT_(outer_tree) *outer;
+		if(trie->root) { printf("unique: already\n");outer = PT_(outer)(trie->root);}
+		else { printf("add: idle\n"); if(!(outer = malloc(sizeof *outer)))
+				{ if(!errno) errno = ERANGE; return 0; } }
+		memcpy(outer->leaf + 0, &x, sizeof x);
+		outer->trunk.bsize = 0, outer->trunk.skip = 0;
+		trie->root = &outer->trunk, trie->height = 1;
+		printf("add: new outer tree %s that holds <<%s>>=><<%s>>.\n",
+			orcify(outer), PT_(to_key)(x), PT_(to_key)(outer->leaf[0]));
+		return 1;
+	}
 	/* Solitary. --> */
 
 	/* <!-- Find the first bit not in the tree. ******************************/
@@ -813,9 +828,18 @@ static int T_(trie_from_array)(struct T_(trie) *const trie,
 static PT_(entry) *T_(trie_match)(const struct T_(trie) *const trie,
 	const char *const key) { return PT_(match)(trie, key); }
 
+static int T_(trie_is)(const struct T_(trie) *const trie,
+	const char *const key) { return !(!trie || !PT_(get)(trie, key)); }
+
+/** @param[result] If null, behaves like <fn:<T>trie_is>, otherwise, a
+ <typedef:<T>trie_entry> which gets filled on true.
+ @return Whether `key` is in `trie` (which can be null.) @allow */
+static int T_(trie_query)(struct T_(trie) *const trie, const char *const key,
+	PT_(entry) *const result) { return trie && key ? PT_(get)(trie, key) : 0; }
+
 /** @return Exact match for `key` in `trie` or null no such item exists.
  @order \O(|`key`|), <Thareja 2011, Data>. @allow */
-static PT_(entry) *T_(trie_get)(const struct T_(trie) *const trie,
+static PT_(entry) T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const key) { return PT_(get)(trie, key); }
 
 /** Tries to remove `key` from `trie`. */
@@ -827,9 +851,12 @@ static PT_(entry) *T_(trie_remove)(struct T_(trie) *const trie,
  of `x` is already in `trie`, or an error occurred, returns false.
  @throws[realloc, ERANGE] Set `errno = 0` before to tell if the operation
  failed due to error. @order \O(|`key`|) @allow */
-static int T_(trie_add)(struct T_(trie) *const trie, const PT_(entry) x)
-	{ return assert(trie && x),
-	PT_(get)(trie, PT_(to_key)(x)) ? 0 : PT_(add_unique)(trie, x); }
+static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
+	PT_(entry) entry) {
+	if(!trie || !entry) return printf("add: null\n"), TRIE_ERROR;
+	printf("add: trie %s; entry <<%s>>.\n", orcify(trie), PT_(to_key)(entry));
+	return PT_(get)(trie, PT_(to_key)(entry)) ? TRIE_YIELD :
+		(PT_(add_unique)(trie, entry), TRIE_UNIQUE); }
 
 /** Updates or adds a pointer to `x` into `trie`.
  @param[eject] If not null, on success it will hold the overwritten value or
@@ -881,7 +908,7 @@ static const PT_(entry) *T_(trie_next)(struct T_(trie_iterator) *const it)
 #define BOX_CONTENTS PT_(entry)
 
 #ifdef TRIE_TO_STRING /* <!-- str */
-/** Uses the natural `a` -> `z` that is defined by `TRIE_KEY`. */
+/** Uses the natural `a` -> `z` that is defined by `TRIE_KEY_IN_VALUE`. */
 static void PT_(to_string)(const PT_(entry) *a, char (*const z)[12])
 	{ assert(a && *a && z); sprintf(*z, "%.11s", PT_(to_key)(*a)); }
 #define SZ_(n) TRIE_CAT(T_(trie), n)
@@ -908,7 +935,7 @@ static void PT_(unused_base)(void) {
 	T_(trie)(0); T_(trie_)(0);
 	T_(trie_match)(0, 0); T_(trie_get)(0, 0);
 	T_(trie_remove)(0, 0);
-	T_(trie_add)(0, 0); T_(trie_put)(0, 0, 0); T_(trie_policy_put)(0, 0, 0, 0);
+	T_(trie_try)(0, 0); T_(trie_put)(0, 0, 0); T_(trie_policy_put)(0, 0, 0, 0);
 	T_(trie_prefix)(0, 0, 0); T_(trie_size)(0); T_(trie_next)(0);
 	PT_(unused_base_coda)();
 }
@@ -916,7 +943,7 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 #undef TRIE_NAME
 #undef TRIE_VALUE
-#undef TRIE_KEY
+#undef TRIE_KEY_IN_VALUE
 #ifdef TRIE_TEST
 #undef TRIE_TEST
 #endif

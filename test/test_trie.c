@@ -37,7 +37,7 @@ static const char *colour_key(const enum colour *const c)
 	{ return colours[*c]; }
 #define TRIE_NAME colour
 #define TRIE_VALUE enum colour
-#define TRIE_KEY &colour_key
+#define TRIE_KEY_IN_VALUE &colour_key
 #define TRIE_TEST &colour_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
@@ -85,7 +85,7 @@ static const char *star_key(const struct star *const star)
 	{ return star->name; }
 #define TRIE_NAME star
 #define TRIE_VALUE struct star
-#define TRIE_KEY &star_key
+#define TRIE_KEY_IN_VALUE &star_key
 #define TRIE_TEST &star_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
@@ -98,7 +98,7 @@ static void str4_filler(struct str4 *const s)
 static const char *str4_key(const struct str4 *const s) { return s->value; }
 #define TRIE_NAME str4
 #define TRIE_VALUE struct str4
-#define TRIE_KEY &str4_key
+#define TRIE_KEY_IN_VALUE &str4_key
 #define TRIE_TEST &str4_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
@@ -112,7 +112,7 @@ static const char *keyval_key(const struct keyval *const kv)
 	{ return kv->key; }
 #define TRIE_NAME keyval
 #define TRIE_VALUE struct keyval
-#define TRIE_KEY &keyval_key
+#define TRIE_KEY_IN_VALUE &keyval_key
 #define TRIE_TEST &keyval_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
@@ -125,26 +125,24 @@ static void contrived_str_test(void) {
 	struct str_trie strs = TRIE_IDLE;
 	size_t i, j;
 	int show;
-	const char *str_array[] = {"a", "b", "c", "ba", "bb",
-		"", "A", "Z", "z", "â", "foobar", "foo",
-		"dictionary", "dictionaries"
-	};
+	const char *str_array[] = { "a", "b", "c", "ba", "bb", "", "A", "Z", "z",
+		"â", "foobar", "foo", "dictionary", "dictionaries" };
 	size_t str_array_size = sizeof str_array / sizeof *str_array;
 	printf("Contrived manual test of string set trie.\n");
 	trie_str_no = 0;
 	for(i = 0; i < sizeof str_array / sizeof *str_array; i++) {
-		show = !((i + 1) & i) || i + 1 == str_array_size;
+		show = 1;//!((i + 1) & i) || i + 1 == str_array_size;
 		if(show) trie_str_no++;
 		if(show) printf("%lu: adding \"%s\".\n",
 			(unsigned long)i, str_array[i]);
-		if(!str_trie_add(&strs, str_array[i]))
+		if(!str_trie_try(&strs, str_array[i]))
 			{ printf("%lu: %s not unique?\n", (unsigned long)i, str_array[i]);
 			assert(0); continue; }
 		if(show) trie_str_graph(&strs, "graph/str-add.gv");
 		for(j = 0; j <= i; j++) {
 			const char *sz = str_trie_get(&strs, str_array[j]);
-			/*printf("Test get(%s) = %s.\n",
-				str_array[j], sz ? sz : "<didn't find>");*/
+			printf("Test get(\"%s\") = \"%s\".\n",
+				str_array[j], sz ? sz : "<didn't find>");
 			assert(sz == str_array[j]);
 		}
 	}

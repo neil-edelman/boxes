@@ -1,12 +1,13 @@
 # trie\.h #
 
-Source [src/trie\.h](src/trie.h) which depends on [src/bmp\.h](src/bmp.h); examples [test/test\_trie\.c](test/test_trie.c)\.
+Source [src/trie\.h](src/trie.h); examples [test/test\_trie\.c](test/test_trie.c)\.
 
 ## Prefix tree ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;type](#user-content-typedef-245060ab), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PT&gt;replace_fn](#user-content-typedef-246bd5da), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;PT&gt;leaf](#user-content-tag-44821167), [&lt;PT&gt;tree](#user-content-tag-134b950f), [&lt;T&gt;trie](#user-content-tag-754a10a5), [&lt;T&gt;trie_iterator](#user-content-tag-854250a4)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;value](#user-content-typedef-cc753b30), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PT&gt;replace_fn](#user-content-typedef-246bd5da), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [trie_result](#user-content-tag-eb9850a3), [&lt;T&gt;trie_entry](#user-content-tag-1422bb56), [&lt;T&gt;trie](#user-content-tag-754a10a5)
+ * [General Declarations](#user-content-data): [it](#user-content-data-47388410)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -15,16 +16,16 @@ Source [src/trie\.h](src/trie.h) which depends on [src/bmp\.h](src/bmp.h); examp
 
 ![Example of trie.](web/trie.png)
 
-A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, or trie: an ordered set or map of immutable key strings allowing ranged queries\. The strings used here are any encoding with a byte null\-terminator, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
+A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, or trie: an ordered set or map of immutable key strings allowing fast prefix queries\. The strings used here are any encoding with a byte null\-terminator, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
 
 The implementation is as [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only storing the where the key bits are different\. To increase cache\-coherence while allowing for insertion and deletion in &#927;\(\\log `size`\), it uses some B\-tree techniques described in [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large)\.
 
 
 
- * Parameter: TRIE\_NAME, TRIE\_VALUE  
-   [&lt;PT&gt;type](#user-content-typedef-245060ab) that satisfies `C` naming conventions when mangled and an optional returnable type that is declared, \(it is used by reference only except if `TRIE_TEST`\.\) `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
- * Parameter: TRIE\_KEY  
-   A function that satisfies [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f)\. Must be defined if and only if `TRIE_VALUE` is defined\. \(This imbues it with the properties of a string associative array\.\)
+ * Parameter: TRIE\_NAME  
+   `<T>` that satisfies `C` naming conventions when mangled\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
+ * Parameter: TRIE\_VALUE, TRIE\_KEY\_IN\_VALUE  
+   `TRIE_VALUE` is an optional payload type to go with the string key\. `TRIE_KEY_IN_VALUE` is an optional [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f) that picks out the key from the of value, otherwise [&lt;PT&gt;entry](#user-content-tag-41052ced) is an associative array entry\.
  * Parameter: TRIE\_TO\_STRING  
    Defining this includes [to\_string\.h](to_string.h), with the keys as the string\.
  * Parameter: TRIE\_TEST  
@@ -34,30 +35,30 @@ The implementation is as [Morrison, 1968 PATRICiA](https://scholar.google.ca/sch
  * Dependancies:  
    [bmp](https://github.com/neil-edelman/bmp)
  * Caveat:  
-   ([&lt;T&gt;trie_iterator](#user-content-tag-854250a4), [&lt;T&gt;trie_from_array](#user-content-fn-3554106c), [&lt;T&gt;trie_size](#user-content-fn-b7ff4bcf))
+   ([it](#user-content-data-47388410))
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
-### <a id = "user-content-typedef-245060ab" name = "user-content-typedef-245060ab">&lt;PT&gt;type</a> ###
+### <a id = "user-content-typedef-cc753b30" name = "user-content-typedef-cc753b30">&lt;PT&gt;value</a> ###
 
-<code>typedef TRIE_VALUE <strong>&lt;PT&gt;type</strong>;</code>
+<code>typedef TRIE_VALUE <strong>&lt;PT&gt;value</strong>;</code>
 
-Declared type of the trie; `char` default\.
+On `TRIE_VALUE`, otherwise just a string\.
 
 
 
 ### <a id = "user-content-typedef-1e6e6b3f" name = "user-content-typedef-1e6e6b3f">&lt;PT&gt;key_fn</a> ###
 
-<code>typedef const char *(*<strong>&lt;PT&gt;key_fn</strong>)(const &lt;PT&gt;type *);</code>
+<code>typedef const char *(*<strong>&lt;PT&gt;key_fn</strong>)(&lt;PT&gt;entry);</code>
 
-Responsible for picking out the null\-terminated string\. Modifying the string key in the original [&lt;PT&gt;type](#user-content-typedef-245060ab) while in any trie causes the entire trie to go into an undefined state\.
+If `TRIE_KEY_IN_VALUE` is set, responsible for picking out the null\-terminated string\.
 
 
 
 ### <a id = "user-content-typedef-246bd5da" name = "user-content-typedef-246bd5da">&lt;PT&gt;replace_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PT&gt;replace_fn</strong>)(&lt;PT&gt;type *original, &lt;PT&gt;type *replace);</code>
+<code>typedef int(*<strong>&lt;PT&gt;replace_fn</strong>)(&lt;PT&gt;entry *original, &lt;PT&gt;entry *replace);</code>
 
 A bi\-predicate; returns true if the `replace` replaces the `original`; used in [&lt;T&gt;trie_policy_put](#user-content-fn-50d1d256)\.
 
@@ -73,7 +74,7 @@ A bi\-predicate; returns true if the `replace` replaces the `original`; used in 
 
 ### <a id = "user-content-typedef-ba462b2e" name = "user-content-typedef-ba462b2e">&lt;PT&gt;action_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PT&gt;action_fn</strong>)(&lt;PT&gt;type *);</code>
+<code>typedef void(*<strong>&lt;PT&gt;action_fn</strong>)(&lt;PT&gt;entry);</code>
 
 Works by side\-effects, _ie_ fills the type with data\. Only defined if `TRIE_TEST`\.
 
@@ -81,25 +82,25 @@ Works by side\-effects, _ie_ fills the type with data\. Only defined if `TRIE_TE
 
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
-### <a id = "user-content-tag-44821167" name = "user-content-tag-44821167">&lt;PT&gt;leaf</a> ###
+### <a id = "user-content-tag-eb9850a3" name = "user-content-tag-eb9850a3">trie_result</a> ###
 
-<code>union <strong>&lt;PT&gt;leaf</strong> { &lt;PT&gt;type *data; struct &lt;PT&gt;tree *child; };</code>
+<code>enum <strong>trie_result</strong> { TRIE_RESULT };</code>
 
-A leaf is either data or another tree; the `children` of [&lt;PT&gt;tree](#user-content-tag-134b950f) is a bitmap that tells which\.
+A result of modifying the table, of which `TRIE_ERROR` is false\. ![A diagram of the result states.](../web/put.png)
 
 
 
-### <a id = "user-content-tag-134b950f" name = "user-content-tag-134b950f">&lt;PT&gt;tree</a> ###
+### <a id = "user-content-tag-1422bb56" name = "user-content-tag-1422bb56">&lt;T&gt;trie_entry</a> ###
 
-<code>struct <strong>&lt;PT&gt;tree</strong> { unsigned char bsize, skip; struct trie_branch branch[TRIE_BRANCHES]; struct trie_bmp is_child; union &lt;PT&gt;leaf leaf[TRIE_ORDER]; };</code>
+<code>struct <strong>&lt;T&gt;trie_entry</strong> { const char *key; &lt;PT&gt;value value; } typedef struct &lt;T&gt;trie_entry &lt;PT&gt;entry;</code>
 
-A trie is a forest of non\-empty complete binary trees\. In [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3) terminology, this structure is similar to a B\-tree node of `TRIE_ORDER`, but 'node' already has conflicting meaning\.
+On `TRIE_VALUE` but not `TRIE_KEY_IN_VALUE`, creates a map from key to value as an associative array\. On `TRIE_VALUE` and not `TRIE_KEY_IN_VALUE`, otherwise it's just an alias for [&lt;PT&gt;value](#user-content-typedef-cc753b30)\.
 
 
 
 ### <a id = "user-content-tag-754a10a5" name = "user-content-tag-754a10a5">&lt;T&gt;trie</a> ###
 
-<code>struct <strong>&lt;T&gt;trie</strong> { struct &lt;PT&gt;tree *root; };</code>
+<code>struct <strong>&lt;T&gt;trie</strong> { struct trie_trunk *root; size_t height; };</code>
 
 To initialize it to an idle state, see [&lt;T&gt;trie](#user-content-fn-754a10a5), `TRIE_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
@@ -107,14 +108,16 @@ To initialize it to an idle state, see [&lt;T&gt;trie](#user-content-fn-754a10a5
 
 
 
-### <a id = "user-content-tag-854250a4" name = "user-content-tag-854250a4">&lt;T&gt;trie_iterator</a> ###
+## <a id = "user-content-data" name = "user-content-data">General Declarations</a> ##
 
-<code>struct <strong>&lt;T&gt;trie_iterator</strong>;</code>
+### <a id = "user-content-data-47388410" name = "user-content-data-47388410">it</a> ###
 
-Stores a range in the trie\. Any changes in the topology of the trie invalidate it\.
+<code>const static &lt;PT&gt;entry *&lt;PT&gt;next(struct &lt;PT&gt;iterator *const <strong>it</strong>){ assert(it); printf("_next_\n"); if(!it -&gt;trie)return 0; assert(it -&gt;current &amp;&amp;it -&gt;end); if(&amp;it -&gt;current -&gt;trunk ==it -&gt;end){ if(it -&gt;leaf &gt;it -&gt;leaf_end ||it -&gt;leaf &gt;it -&gt;current -&gt;trunk .bsize){ it -&gt;trie = 0; return 0; } } else if(it -&gt;leaf &gt;it -&gt;current -&gt;trunk .bsize){ const char *key = &lt;PT&gt;to_key(it -&gt;current -&gt;leaf[it -&gt;current -&gt;trunk .bsize]); const struct trie_trunk *trunk1 = &amp;it -&gt;current -&gt;trunk; struct trie_trunk *trunk2, *next = 0; size_t h2 = it -&gt;trie -&gt;height, bit2; struct { unsigned br0, br1, lf; } t2; int is_past_end = !it -&gt;end; assert(key); printf("next: %s is the last one on the tree.\n", key); for(it -&gt;current = 0, trunk2 = it -&gt;trie -&gt;root, assert(trunk2), bit2 = 0;; trunk2 = trie_inner(trunk2)-&gt;leaf[t2 .lf]){ int is_considering = 0; if(trunk2 ==trunk1)break; assert(trunk2 -&gt;skip &lt;h2), h2 -=1 +trunk2 -&gt;skip; if(!h2){ printf("next: bailing.\n"); break; } t2 .br0 = 0, t2 .br1 = trunk2 -&gt;bsize, t2 .lf = 0; while(t2 .br0 &lt;t2 .br1){ const struct trie_branch *const branch2 = trunk2 -&gt;branch +t2 .br0; bit2 +=branch2 -&gt;skip; if(!TRIE_QUERY(key, bit2))t2 .br1 = ++t2 .br0 +branch2 -&gt;left; else t2 .br0 +=branch2 -&gt;left +1, t2 .lf +=branch2 -&gt;left +1; bit2 ++; } if(is_past_end){ is_considering = 1; } else if(trunk2 ==it -&gt;end){ is_past_end = 1; if(t2 .lf &lt;it -&gt;leaf_end)is_considering = 1; } if(is_considering &amp;&amp;t2 .lf &lt;trunk2 -&gt;bsize)next = trunk2, it -&gt;leaf = t2 .lf +1, printf("next: continues in tree %s, leaf %u.\n", orcify(trunk2), it -&gt;leaf); } if(!next){ printf("next: fin\n"); it -&gt;trie = 0; return 0; } while(h2)trunk2 = trie_inner_c(trunk2)-&gt;leaf[it -&gt;leaf], it -&gt;leaf = 0, assert(trunk2 -&gt;skip &lt;h2), h2 -=1 +trunk2 -&gt;skip; it -&gt;current = &lt;PT&gt;outer(trunk2); } return it -&gt;current -&gt;leaf +it -&gt;leaf ++; } static void &lt;T&gt;trie(struct &lt;T&gt;trie *const trie){ assert(trie); trie -&gt;root = 0; } static void &lt;T&gt;trie_(struct &lt;T&gt;trie *const trie){ assert(trie); if(trie -&gt;height)&lt;PT&gt;clear(trie -&gt;root, trie -&gt;height); else if(trie -&gt;root)free(trie -&gt;root); &lt;T&gt;trie(trie); } static int &lt;T&gt;trie_from_array(struct &lt;T&gt;trie *const trie, &lt;PT&gt;type *const *const array, const size_t array_size){ return assert(trie &amp;&amp;array &amp;&amp;array_size), &lt;PT&gt;init(trie, array, array_size); } static &lt;PT&gt;entry *&lt;T&gt;trie_match(const struct &lt;T&gt;trie *const trie, const char *const key){ return &lt;PT&gt;match(trie, key); } static int &lt;T&gt;trie_query(struct &lt;N&gt;table *const table, const char *const key, &lt;PN&gt;entry *const result){ struct &lt;PN&gt;bucket *bucket; if(!table ||!table -&gt;buckets ||!(bucket = &lt;PN&gt;query(table, key, &lt;PN&gt;hash(key))))return 0; if(result)&lt;PN&gt;to_entry(bucket, result); return 1; } static &lt;PT&gt;entry &lt;T&gt;trie_get(const struct &lt;T&gt;trie *const trie, const char *const key){ return &lt;PT&gt;get(trie, key); } static &lt;PT&gt;entry *&lt;T&gt;trie_remove(struct &lt;T&gt;trie *const trie, const char *const key){ return &lt;PT&gt;remove(trie, key); } static enum trie_result &lt;T&gt;trie_try(struct &lt;T&gt;trie *const trie, &lt;PT&gt;entry entry){ if(!trie ||!entry)return printf("add: null\n"), TRIE_ERROR; printf("add: trie %s; entry &lt;&lt;%s&gt;&gt;.\n", orcify(trie), &lt;PT&gt;to_key(entry)); return &lt;PT&gt;get(trie, &lt;PT&gt;to_key(entry))?TRIE_YIELD :(&lt;PT&gt;add_unique(trie, entry), TRIE_UNIQUE); } static int &lt;T&gt;trie_put(struct &lt;T&gt;trie *const trie, const &lt;PT&gt;entry x, &lt;PT&gt;entry */*const fixme*/eject){ return assert(trie &amp;&amp;x), &lt;PT&gt;put(trie, x, &amp;eject, 0); } static int &lt;T&gt;trie_policy_put(struct &lt;T&gt;trie *const trie, const &lt;PT&gt;entry x, &lt;PT&gt;entry *eject, const &lt;PT&gt;replace_fn replace){ return assert(trie &amp;&amp;x), &lt;PT&gt;put(trie, x, &amp;eject, replace); } struct &lt;T&gt;trie_iterator { struct &lt;PT&gt;iterator i; };</code>
+
+Advances `it`\. Initializes `trie` to idle\. Returns an initialized `trie` to idle\. Initializes `trie` from an `array` of pointers\-to\-`<T>` of `array_size`\. Tries to remove `key` from `trie`\. Adds a pointer to `x` into `trie` if the key doesn't exist already\. Updates or adds a pointer to `x` into `trie`\. Adds a pointer to `x` to `trie` only if the entry is absent or if calling `replace` returns true or is null\. Stores an iteration range in a trie\. Any changes in the topology of the trie invalidate it\.
 
  * Caveat:  
-   Replacing `root` with `bit` would make it faster and allow size remaining; just have to fiddle with `end` to `above`\. That makes it incompatible with private, but could merge\.
+   Write this function, somehow\.
 
 
 
@@ -125,25 +128,9 @@ Stores a range in the trie\. Any changes in the topology of the trie invalidate 
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-754a10a5">&lt;T&gt;trie</a></td><td>trie</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-9d98b98e">&lt;T&gt;trie_</a></td><td>trie</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-3554106c">&lt;T&gt;trie_from_array</a></td><td>trie, array, array_size</td></tr>
-
-<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-46d99cc7">&lt;T&gt;trie_match</a></td><td>trie, key</td></tr>
-
-<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-d0ca0cba">&lt;T&gt;trie_get</a></td><td>trie, key</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-70c096ed">&lt;T&gt;trie_add</a></td><td>trie, x</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-bd93d12b">&lt;T&gt;trie_put</a></td><td>trie, x, eject</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-50d1d256">&lt;T&gt;trie_policy_put</a></td><td>trie, x, eject, replace</td></tr>
-
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a></td><td>it</td></tr>
 
-<tr><td align = right>static &lt;PT&gt;type *</td><td><a href = "#user-content-fn-f36d1483">&lt;T&gt;trie_next</a></td><td>it</td></tr>
+<tr><td align = right>static const &lt;PT&gt;entry *</td><td><a href = "#user-content-fn-f36d1483">&lt;T&gt;trie_next</a></td><td>it</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
@@ -155,119 +142,6 @@ Stores a range in the trie\. Any changes in the topology of the trie invalidate 
 
 ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
 
-### <a id = "user-content-fn-754a10a5" name = "user-content-fn-754a10a5">&lt;T&gt;trie</a> ###
-
-<code>static void <strong>&lt;T&gt;trie</strong>(struct &lt;T&gt;trie *const <em>trie</em>)</code>
-
-Initializes `trie` to idle\.
-
- * Order:  
-   &#920;\(1\)
-
-
-
-
-### <a id = "user-content-fn-9d98b98e" name = "user-content-fn-9d98b98e">&lt;T&gt;trie_</a> ###
-
-<code>static void <strong>&lt;T&gt;trie_</strong>(struct &lt;T&gt;trie *const <em>trie</em>)</code>
-
-Returns an initialized `trie` to idle\.
-
-
-
-### <a id = "user-content-fn-3554106c" name = "user-content-fn-3554106c">&lt;T&gt;trie_from_array</a> ###
-
-<code>static int <strong>&lt;T&gt;trie_from_array</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const *const <em>array</em>, const size_t <em>array_size</em>)</code>
-
-Initializes `trie` from an `array` of pointers\-to\-`<T>` of `array_size`\.
-
- * Return:  
-   Success\.
- * Exceptional return: realloc  
- * Order:  
-   &#927;\(`array_size`\)
- * Caveat:  
-   Write this function, somehow\.
-
-
-
-
-### <a id = "user-content-fn-46d99cc7" name = "user-content-fn-46d99cc7">&lt;T&gt;trie_match</a> ###
-
-<code>static &lt;PT&gt;type *<strong>&lt;T&gt;trie_match</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>key</em>)</code>
-
- * Return:  
-   Looks at only the index of `trie` for potential `key` matches, but will ignore the values of the bits that are not in the index\.
- * Order:  
-   &#927;\(|`key`|\)
-
-
-
-
-### <a id = "user-content-fn-d0ca0cba" name = "user-content-fn-d0ca0cba">&lt;T&gt;trie_get</a> ###
-
-<code>static &lt;PT&gt;type *<strong>&lt;T&gt;trie_get</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>key</em>)</code>
-
- * Return:  
-   Exact match for `key` in `trie` or null no such item exists\.
- * Order:  
-   &#927;\(|`key`|\), [Thareja 2011, Data](https://scholar.google.ca/scholar?q=Thareja+2011%2C+Data)\.
-
-
-
-
-### <a id = "user-content-fn-70c096ed" name = "user-content-fn-70c096ed">&lt;T&gt;trie_add</a> ###
-
-<code>static int <strong>&lt;T&gt;trie_add</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const <em>x</em>)</code>
-
-Adds a pointer to `x` into `trie` if the key doesn't exist already\.
-
- * Return:  
-   If the key did not exist and it was created, returns true\. If the key of `x` is already in `trie`, or an error occurred, returns false\.
- * Exceptional return: realloc, ERANGE  
-   Set `errno = 0` before to tell if the operation failed due to error\.
- * Order:  
-   &#927;\(|`key`|\)
-
-
-
-
-### <a id = "user-content-fn-bd93d12b" name = "user-content-fn-bd93d12b">&lt;T&gt;trie_put</a> ###
-
-<code>static int <strong>&lt;T&gt;trie_put</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const <em>x</em>, &lt;PT&gt;type **const <em>eject</em>)</code>
-
-Updates or adds a pointer to `x` into `trie`\.
-
- * Parameter: _eject_  
-   If not null, on success it will hold the overwritten value or a pointer\-to\-null if it did not overwrite any value\.
- * Return:  
-   Success\.
- * Exceptional return: realloc, ERANGE  
- * Order:  
-   &#927;\(|`key`|\)
-
-
-
-
-### <a id = "user-content-fn-50d1d256" name = "user-content-fn-50d1d256">&lt;T&gt;trie_policy_put</a> ###
-
-<code>static int <strong>&lt;T&gt;trie_policy_put</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const <em>x</em>, &lt;PT&gt;type **const <em>eject</em>, const &lt;PT&gt;replace_fn <em>replace</em>)</code>
-
-Adds a pointer to `x` to `trie` only if the entry is absent or if calling `replace` returns true or is null\.
-
- * Parameter: _eject_  
-   If not null, on success it will hold the overwritten value or a pointer\-to\-null if it did not overwrite any value\. If a collision occurs and `replace` does not return true, this will be a pointer to `x`\.
- * Parameter: _replace_  
-   Called on collision and only replaces it if the function returns true\. If null, it is semantically equivalent to [&lt;T&gt;trie_put](#user-content-fn-bd93d12b)\.
- * Return:  
-   Success\.
- * Exceptional return: realloc, ERANGE  
- * Order:  
-   &#927;\(|`key`|\)
-
-
-
-
 ### <a id = "user-content-fn-b7ff4bcf" name = "user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a> ###
 
 <code>static size_t <strong>&lt;T&gt;trie_size</strong>(const struct &lt;T&gt;trie_iterator *const <em>it</em>)</code>
@@ -276,15 +150,13 @@ Counts the of the items in the new `it`; iterator must be new, \(calling [&lt;T&
 
  * Order:  
    &#927;\(|`it`|\)
- * Caveat:  
-   Allow `<T>trie_next`\.
 
 
 
 
 ### <a id = "user-content-fn-f36d1483" name = "user-content-fn-f36d1483">&lt;T&gt;trie_next</a> ###
 
-<code>static &lt;PT&gt;type *<strong>&lt;T&gt;trie_next</strong>(struct &lt;T&gt;trie_iterator *const <em>it</em>)</code>
+<code>static const &lt;PT&gt;entry *<strong>&lt;T&gt;trie_next</strong>(struct &lt;T&gt;trie_iterator *const <em>it</em>)</code>
 
 Advances `it`\.
 
