@@ -266,29 +266,26 @@ static void PT_(graph_tree_logic)(const struct trie_trunk *const tr,
 	}
 
 	fprintf(fp, "\t// leaves\n");
-	if(tr->bsize) {
-		/* \sqcup ⊔ was good, but it didn't leave much space. */
-		if(!height) for(i = 0; i <= tr->bsize; i++) fprintf(fp,
-			"\ttree%pleaf%u [label = <%s<FONT COLOR=\"Gray85\">⊔</FONT>>];\n",
-			(const void *)tr, i, PT_(to_key)(PT_(outer_c)(tr)->leaf[i]));
-	} else {
-		/* Lazy hack: just call this a branch, even though it's a leaf, so that
-		 others may reference it. */
-		if(height) fprintf(fp, "\ttree%pbranch0 [label = \"\", shape = circle,"
-			" style = filled, fillcolor = Grey95];\n"
-			"\ttree%pbranch0 -> tree%pbranch0 [style = dashed];\n",
-			(const void *)tr, (const void *)tr,
-			(const void *)PT_(outer_c)(tr)->leaf[0]);
-		else fprintf(fp,
-			"\ttree%pbranch0 [label = <%s<FONT COLOR=\"Gray85\">⊔</FONT>>];\n",
-			(const void *)tr, PT_(to_key)(PT_(outer_c)(tr)->leaf[0]));
-	}
-	fprintf(fp, "\n");
 
-	if(!height) return;
-	/* Recurse. */
-	/*for(i = 0; i <= tr->bsize; i++)
-		PT_(graph_tree_logic)(tr->leaf[i].child, height, 0, fp);*/
+	if(!height) { /* Outer. */
+		const struct PT_(outer_tree) *outer = PT_(outer_c)(tr);
+		for(i = 0; i <= tr->bsize; i++) fprintf(fp,
+			"\ttree%pleaf%u [label = <%s<FONT COLOR=\"Gray85\">⊔</FONT>>];\n",
+			(const void *)tr, i, PT_(to_key)(outer->leaf[i]));
+		fprintf(fp, "\n");
+	} else { /* Inner. */
+		const struct trie_inner_tree *inner = trie_inner_c(tr);
+		/* Lazy hack: just call this a branch, even though it's a leaf, so that
+		 others may reference it. We will see if this is even allowed as we go
+		 forward. */
+		if(!tr->bsize) fprintf(fp, "\ttree%pbranch0 [label = \"\","
+			" shape = circle, style = filled, fillcolor = Grey95];\n"
+			"\ttree%pbranch0 -> tree%pbranch0 [style = dashed];\n",
+			(const void *)tr, (const void *)tr, (const void *)inner->leaf[0]);
+		fprintf(fp, "\n");
+		for(i = 0; i <= tr->bsize; i++)
+			PT_(graph_tree_logic)(inner->leaf[i], height, 0, fp);
+	}
 }
 
 /** Draw a graph of `trie` to `fn` in Graphviz format with `tf` as it's
@@ -299,13 +296,15 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
-		"\tfontface=modern;"
-		"\tnode [shape = none];\n"
+		"\tgraph [truecolor=true, bgcolor=transparent];\n"
+		"\tfontface=modern;\n"
+		"\tnode [shape=none];\n"
 		"\n");
+	/*"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"*/
 	if(!trie->root) fprintf(fp, "\tidle;\n");
 	else if(!trie->height) fprintf(fp, "\tempty;\n");
 	else tf(trie->root, trie->height, 0, fp);
-	fprintf(fp, "\tnode [color = Red];\n"
+	fprintf(fp, "\tnode [color = \"Red\"];\n"
 		"}\n");
 	fclose(fp);
 }
