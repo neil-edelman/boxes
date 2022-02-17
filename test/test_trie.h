@@ -281,10 +281,10 @@ static void PT_(graph_tree_logic)(const struct trie_trunk *const tr,
 		if(!tr->bsize) fprintf(fp, "\ttree%pbranch0 [label = \"\","
 			" shape = circle, style = filled, fillcolor = Grey95];\n"
 			"\ttree%pbranch0 -> tree%pbranch0 [style = dashed];\n",
-			(const void *)tr, (const void *)tr, (const void *)inner->leaf[0]);
+			(const void *)tr, (const void *)tr, (const void *)inner->link[0]);
 		fprintf(fp, "\n");
 		for(i = 0; i <= tr->bsize; i++)
-			PT_(graph_tree_logic)(inner->leaf[i], height, 0, fp);
+			PT_(graph_tree_logic)(inner->link[i], height, 0, fp);
 	}
 }
 
