@@ -823,12 +823,6 @@ static PT_(entry) *T_(trie_match)(const struct T_(trie) *const trie,
 static int T_(trie_is)(const struct T_(trie) *const trie,
 	const char *const key) { return !(!trie || !PT_(get)(trie, key)); }
 
-/** @param[result] If null, behaves like <fn:<T>trie_is>, otherwise, a
- <typedef:<T>trie_entry> which gets filled on true.
- @return Whether `key` is in `trie` (which can be null.) @allow */
-static int T_(trie_query)(struct T_(trie) *const trie, const char *const key,
-	PT_(entry) *const result) { return trie && key ? PT_(get)(trie, key) : 0; }
-
 /** @return Exact match for `key` in `trie` or null no such item exists.
  @order \O(|`key`|), <Thareja 2011, Data>. @allow */
 static PT_(entry) T_(trie_get)(const struct T_(trie) *const trie,

@@ -127,7 +127,7 @@ static void PT_(graph_tree_bits)(const struct trie_trunk *const tr,
 	for(i = 0; i <= tr->bsize; i++)
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
 		"[style = dashed, arrowhead = %snormal];\n", (const void *)tr, i,
-		(const void *)tr->leaf[i].child, PT_(leaf_to_shape)(tr, i));
+		(const void *)tr->leaf[i].child, PT_(leaf_to_dir)(tr, i));
 	/* Recurse. */
 	for(i = 0; i <= tr->bsize; i++) {
 		struct { unsigned br0, br1, lf; } in_tree;
@@ -149,14 +149,14 @@ static void PT_(graph_tree_bits)(const struct trie_trunk *const tr,
 
 /** Graphs `tree` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
-static void PT_(graph_tree_mem)(const struct trie_trunk *const tree,
+static void PT_(graph_tree_mem)(const struct trie_trunk *const tr,
 	size_t height, const size_t treebit, FILE *const fp) {
-#if 0
 	const struct trie_branch *branch;
 	unsigned i;
+	const struct trie_inner_tree *inner;
 	(void)treebit;
-	assert(tree && fp && height > tree->skip);
-	height -= 1 + tree->skip;
+	assert(tr && fp && height > tr->skip);
+	height -= 1 + tr->skip;
 	/* Tree is one record node in memory -- GraphViz says html is
 	 case-insensitive, but no. */
 	fprintf(fp, "\ttree%pbranch0 [shape = box, "
@@ -168,13 +168,13 @@ static void PT_(graph_tree_mem)(const struct trie_trunk *const tree,
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">left</FONT></TD>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">skip</FONT></TD>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">leaves</FONT></TD>\n"
-		"\t</TR>\n", (const void *)tree, orcify(tree),
+		"\t</TR>\n", (const void *)tr, orcify(tr),
 		(unsigned long)treebit);
-	for(i = 0; i <= tree->bsize; i++) {
+	for(i = 0; i <= tr->bsize; i++) {
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
-		const char *key = PT_(sample)(tree, height, i);
-		if(i < tree->bsize) {
-			branch = tree->branch + i;
+		const char *key = PT_(sample)(tr, height, i);
+		if(i < tr->bsize) {
+			branch = tr->branch + i;
 			fprintf(fp, "\t<TR>\n"
 				"\t\t<TD ALIGN=\"RIGHT\"%s>%u</TD>\n"
 				"\t\t<TD ALIGN=\"RIGHT\"%s>%u</TD>\n",
@@ -195,17 +195,18 @@ static void PT_(graph_tree_mem)(const struct trie_trunk *const tree,
 	fprintf(fp, "</TABLE>>];\n");
 	/* Draw the lines between trees. */
 	if(!height) return;
-	for(i = 0; i <= tree->bsize; i++)
+	inner = trie_inner_c(tr);
+	for(i = 0; i <= tr->bsize; i++)
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[style = dashed, arrowhead = %snormal];\n", (const void *)tree, i,
-		(const void *)tree->leaf[i].child, PT_(leaf_to_shape)(tree, i));
+		"[style = dashed, arrowhead = %snormal];\n", (const void *)inner, i,
+		(const void *)inner->link[i], PT_(leaf_to_dir)(tr, i));
 	/* Recurse. */
-	for(i = 0; i <= tree->bsize; i++) {
+	for(i = 0; i <= tr->bsize; i++) {
 		struct { unsigned br0, br1, lf; } in_tree;
 		size_t bit = treebit;
-		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
+		in_tree.br0 = 0, in_tree.br1 = tr->bsize, in_tree.lf = 0;
 		while(in_tree.br0 < in_tree.br1) {
-			branch = tree->branch + in_tree.br0;
+			branch = tr->branch + in_tree.br0;
 			bit += branch->skip;
 			if(i <= in_tree.lf + branch->left)
 				in_tree.br1 = ++in_tree.br0 + branch->left;
@@ -213,9 +214,8 @@ static void PT_(graph_tree_mem)(const struct trie_trunk *const tree,
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 			bit++;
 		}
-		PT_(graph_tree_mem)(tree->leaf[i].child, height, bit, fp);
+		PT_(graph_tree_mem)(inner->link[i], height, bit, fp);
 	}
-#endif
 }
 
 /** Graphs `tree` on `fp`.`treebit` is the number of bits currently
@@ -313,31 +313,31 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 static void PT_(graph)(const struct T_(trie) *const trie,
 	const char *const fn) {
 	const char logic[] = "-logic", mem[] = "-mem", bits[] = "-bits";
-	char temp[128], *dash, *dot;
-	size_t fn_len = strlen(fn), i, i_fn, i_temp;
+	char name[128], *dash, *dot;
+	size_t fn_len = strlen(fn), i, i_fn, i_name;
 	/* Whatever we're going to add to the string. */
-	if(fn_len > sizeof temp - 30 - 1
+	if(fn_len > sizeof name - 30 - 1
 		|| !(dash = strchr(fn, '-')) || !(dot = strchr(dash, '.'))) {
 		fprintf(stderr, "Too long or doesn't '-' and then '.': <%s>.\n", fn);
 		assert(0);
 		return;
 	}
 	printf("graph.%u: base %s.\n", PT_(no), fn);
-	i = (size_t)(dash - fn), memcpy(temp, fn, i_temp = i_fn = i);
-	temp[i_temp++] = '-';
-	sprintf(temp + i_temp, "%u", PT_(no)), i_temp += strlen(temp + i_temp);
-	i = (size_t)(dot - fn) - i_fn, memcpy(temp + i_temp, fn + i_fn, i),
-		i_temp += i, i_fn += i;
+	i = (size_t)(dash - fn), memcpy(name, fn, i_name = i_fn = i);
+	name[i_name++] = '-';
+	sprintf(name + i_name, "%u", PT_(no)), i_name += strlen(name + i_name);
+	i = (size_t)(dot - fn) - i_fn, memcpy(name + i_name, fn + i_fn, i),
+		i_name += i, i_fn += i;
 
-	memcpy(temp + i_temp, logic, sizeof logic - 1);
-	memcpy(temp + i_temp + sizeof logic - 1, fn + i_fn, fn_len - i_fn + 1);
-	PT_(graph_choose)(trie, temp, &PT_(graph_tree_logic));
-	/*memcpy(temp + i_temp, mem, sizeof mem - 1);
-	memcpy(temp + i_temp + sizeof mem - 1, fn + i_fn, fn_len - i_fn + 1);
-	PT_(graph_choose)(trie, temp, &PT_(graph_tree_mem));
-	memcpy(temp + i_temp, bits, sizeof bits - 1);
-	memcpy(temp + i_temp + sizeof bits - 1, fn + i_fn, fn_len - i_fn + 1);
-	PT_(graph_choose)(trie, temp, &PT_(graph_tree_bits));*/
+	memcpy(name + i_name, logic, sizeof logic - 1);
+	memcpy(name + i_name + sizeof logic - 1, fn + i_fn, fn_len - i_fn + 1);
+	PT_(graph_choose)(trie, name, &PT_(graph_tree_logic));
+	memcpy(name + i_name, mem, sizeof mem - 1);
+	memcpy(name + i_name + sizeof mem - 1, fn + i_fn, fn_len - i_fn + 1);
+	PT_(graph_choose)(trie, name, &PT_(graph_tree_mem));
+	/*memcpy(fn + i_fn1, bits, sizeof bits - 1);
+	memcpy(fn + i_fn1 + sizeof bits - 1, fn + i_fn0, fn_len - i_fn0 + 1);
+	PT_(graph_choose)(trie, fn, &PT_(graph_tree_bits));*/
 }
 
 #if 0
