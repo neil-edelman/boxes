@@ -2,10 +2,12 @@ digraph {
 	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans"];
 	node [shape=record, style=filled, fillcolor="Grey95", fontname="Bitstream Vera Sans"];
 	edge [fontname="Bitstream Vera Sans"];
-	null [ label = "Uninitalised\l|no dynamic memory;\lundetermined state\l", fillcolor = pink ];
-	static [ label = "idle\l|no dynamic memory;\l\{0\} or TRIE_ZERO\l" ];
-	dynamic [ label = "active\n|memory allocated;\lsize non-zero (maybe)\l" ];
+	null [label = "uninitialized\l|no dynamic memory;\lundetermined state\l", fillcolor = "Pink"];
+	static [label = "idle\l|no dynamic memory;\l\{0\} or TRIE_ZERO\l"];
+	dynamic [label = "active\n|memory allocated;\lcould have size zero\l"];
 	null -> static [ label = "<T>trie" ];
-	static -> dynamic [ label = "<T>trie_add\l<T>trie_put\l...\n" ];
+	static -> dynamic [ label = "<T>trie_try\n<T>trie_replace\n...\n" ];
 	dynamic -> static [ label = "<T>trie_" ];
+	dynamic -> dynamic [label = "<T>trie_clear"];
+	static -> static [ label = "<T>trie_clear"];
 }

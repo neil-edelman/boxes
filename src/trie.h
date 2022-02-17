@@ -8,19 +8,19 @@
  ![Example of trie.](../web/trie.png)
 
  A <tag:<T>trie> is a prefix-tree, digital-tree, or trie: an ordered set or map
- of immutable key strings allowing fast prefix queries. The strings used here
+ of immutable key strings allowing easy prefix queries. The strings used here
  are any encoding with a byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
  The implementation is as <Morrison, 1968 PATRICiA>: a compact
  [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only
- storing the where the key bits are different. To increase cache-coherence
- while allowing for insertion and deletion in \O(\log `size`), it uses some
- B-tree techniques described in <Bayer, McCreight, 1972 Large>.
+ storing the where the key bits are different. It uses some B-tree techniques
+ described in <Bayer, McCreight, 1972 Large> for grouping the nodes in a
+ compact, cache-friendly manner.
 
  @param[TRIE_NAME]
- `<T>` that satisfies `C` naming conventions when mangled. `<PT>` is private,
- whose names are prefixed in a manner to avoid collisions.
+ `<T>` that satisfies `C` naming conventions when mangled; required. `<PT>` is
+ private, whose names are prefixed in a manner to avoid collisions.
 
  @param[TRIE_VALUE, TRIE_KEY_IN_VALUE]
  `TRIE_VALUE` is an optional payload type to go with the string key.
@@ -30,13 +30,6 @@
  @param[TRIE_TO_STRING]
  Defining this includes <to_string.h>, with the keys as the string.
 
- @param[TRIE_TEST]
- Unit testing framework <fn:<T>trie_test>, included in a separate header,
- <../test/test_trie.h>. Must be defined equal to a (random) filler function,
- satisfying <typedef:<PT>action_fn>. Requires `TRIE_TO_STRING` and that
- `NDEBUG` not be defined.
-
- @depend [bmp](https://github.com/neil-edelman/bmp)
  @std C89 */
 
 #ifndef TRIE_NAME
@@ -124,16 +117,17 @@ typedef TRIE_VALUE PT_(value);
 /** On `TRIE_VALUE` but not `TRIE_KEY_IN_VALUE`, creates a map from key to
  value as an associative array. */
 struct T_(trie_entry) { const char *key; PT_(value) value; }
-/** On `TRIE_VALUE` and not `TRIE_KEY_IN_VALUE`, otherwise it's just an alias
- for <typedef:<PT>value>. */
 typedef struct T_(trie_entry) PT_(entry);
 #else /* entry --><!-- !entry */
 typedef const char *PT_(value);
+/** On `TRIE_VALUE` and not `TRIE_KEY_IN_VALUE`, otherwise it's just an alias
+ for <typedef:<PT>value>. */
 typedef PT_(value) PT_(entry);
 #endif /* !entry --> */
 
 /** If `TRIE_KEY_IN_VALUE` is set, responsible for picking out the
- null-terminated string. */
+ null-terminated string from the <typedef:<PT>value>, (in which case, the same
+ as <typedef:<PT>entry>.) */
 typedef const char *(*PT_(key_fn))(PT_(entry));
 
 #ifdef TRIE_KEY_IN_VALUE
