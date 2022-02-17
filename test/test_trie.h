@@ -25,8 +25,8 @@ static const PT_(action_fn) PT_(filler) = (TRIE_TEST);
 /* Debug number, which is the number printed next to the graphs, _etc_. */
 static unsigned PT_(no);
 
-/** Is `lf` going to the right in `tr`? */
-static const char *PT_(leaf_to_shape)(const struct trie_trunk *const tr,
+/** Outputs a direction string for `lf` in `tr`, `{ "", "r", "l" }`. */
+static const char *PT_(leaf_to_dir)(const struct trie_trunk *const tr,
 	const unsigned lf) {
 	struct { unsigned br0, br1, lf; } t;
 	unsigned left;
@@ -270,7 +270,7 @@ static void PT_(graph_tree_logic)(const struct trie_trunk *const tr,
 		/* \sqcup ⊔ was good, but it didn't leave much space. */
 		if(!height) for(i = 0; i <= tr->bsize; i++) fprintf(fp,
 			"\ttree%pleaf%u [label = <%s<FONT COLOR=\"Gray85\">⊔</FONT>>];\n",
-			(const void *)tr, i, PT_(to_key)(PT_(outer_c)(tr)->leaf + i));
+			(const void *)tr, i, PT_(to_key)(PT_(outer_c)(tr)->leaf[i]));
 	} else {
 		/* Lazy hack: just call this a branch, even though it's a leaf, so that
 		 others may reference it. */
@@ -281,7 +281,7 @@ static void PT_(graph_tree_logic)(const struct trie_trunk *const tr,
 			(const void *)PT_(outer_c)(tr)->leaf[0]);
 		else fprintf(fp,
 			"\ttree%pbranch0 [label = <%s<FONT COLOR=\"Gray85\">⊔</FONT>>];\n",
-			(const void *)tr, PT_(to_key)(PT_(outer_c)(tr)->leaf + 0));
+			(const void *)tr, PT_(to_key)(PT_(outer_c)(tr)->leaf[0]));
 	}
 	fprintf(fp, "\n");
 
