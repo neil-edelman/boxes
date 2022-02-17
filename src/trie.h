@@ -545,12 +545,15 @@ static PT_(entry) *PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
 	/* @fixme Join when combined-half <= ~TRIE_BRANCH / 2 */
 	struct {
-		struct PT_(tree) *tr;
+		struct trie_trunk *tr;
+		size_t height;
 		unsigned parent_br, unused;
 		struct { unsigned br0, br1, lf; } me, twin;
 		size_t empty_followers;
 	} full;
-	struct trie_trunk *tr;
+	struct trie_trunk *trunk;
+	size_t h;
+	struct PT_(outer_tree) *outer;
 	struct trie_branch *twin;
 	unsigned lf;
 	size_t bit;
@@ -559,20 +562,20 @@ static PT_(entry) *PT_(remove)(struct T_(trie) *const trie,
 	assert(trie && key);
 
 	/* Empty. */
-	if(!(tr = trie->root)) return 0;
+	if(!(h = trie->height)) return 0;
+	trunk = trie->root, assert(trunk);
 
-	assert(0);
-#if 0
 	/* Preliminary exploration. */
 	full.tr = 0, full.empty_followers = 0;
-	for(bit = 0; ; tree = tree->leaf[lf].child) {
-		if(!tree->bsize) { /* Tree is only one leaf: will be freed. */
+	for(bit = 0; ; trunk = trie_inner(trunk)->link[lf]) {
+		assert(trunk->skip < h), h -= 1 + trunk->skip;
+		if(!trunk->bsize) { /* Tree is only one leaf: will be freed. */
 			full.empty_followers++;
 			lf = 0;
 		} else { /* Restart with non-empty (`full`) tree, `me`, and `twin`. */
 			full.empty_followers = 0;
-			full.tr = tree;
-			full.me.br0 = 0, full.me.br1 = tree->bsize, full.me.lf = 0;
+			full.tr = trunk;
+			full.me.br0 = 0, full.me.br1 = trunk->bsize, full.me.lf = 0;
 			do {
 				struct trie_branch *const branch
 					= full.tr->branch + (full.parent_br = full.me.br0);
@@ -593,14 +596,19 @@ static PT_(entry) *PT_(remove)(struct T_(trie) *const trie,
 				&& full.me.lf <= full.tr->bsize);
 			lf = full.me.lf;
 		}
-		if(!trie_bmp_test(&tree->is_child, lf)) break;
+		if(!h) break;
 	}
 	/* We have the candidate leaf; check and see if it is a match. */
-	if(strcmp(key, PT_(to_key)(rm = tree->leaf[lf].data))) return 0;
-	/* Removed the whole trie. Fixme: 1/0/1/0... makes a lot of `malloc`. */
+	rm = PT_(outer)(trunk)->leaf + lf;
+	printf("Want to remove <<%s>>?\n", PT_(to_key)(*rm));
+	if(strcmp(key, PT_(to_key)(*rm))) return 0;
+	assert(0);
+#if 0
+	/* Removed the whole trie. Leave it for laziness. */
 	if(!full.tr) {
 		assert(full.empty_followers);
 		tree = trie->root, trie->root = 0;
+		trie->height = 0;
 		goto free;
 	}
 

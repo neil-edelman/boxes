@@ -77,6 +77,7 @@ static unsigned PT_(left_leaf)(const struct trie_trunk *const tr,
  (recursive.) */
 static void PT_(graph_tree_bits)(const struct trie_trunk *const tr,
 	size_t height, const size_t treebit, FILE *const fp) {
+	const struct trie_inner_tree *inner;
 	unsigned b, i;
 	assert(tr && fp && height > tr->skip);
 	height -= 1 + tr->skip;
@@ -121,13 +122,13 @@ static void PT_(graph_tree_bits)(const struct trie_trunk *const tr,
 		fprintf(fp, "\t</TR>\n");
 	}
 	fprintf(fp, "</TABLE>>];\n");
-#if 0
 	/* Draw the lines between trees. */
 	if(!height) return;
+	inner = trie_inner_c(tr);
 	for(i = 0; i <= tr->bsize; i++)
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
 		"[style = dashed, arrowhead = %snormal];\n", (const void *)tr, i,
-		(const void *)tr->leaf[i].child, PT_(leaf_to_dir)(tr, i));
+		(const void *)inner->link[i], PT_(leaf_to_dir)(tr, i));
 	/* Recurse. */
 	for(i = 0; i <= tr->bsize; i++) {
 		struct { unsigned br0, br1, lf; } in_tree;
@@ -142,18 +143,17 @@ static void PT_(graph_tree_bits)(const struct trie_trunk *const tr,
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 			bit++;
 		}
-		PT_(graph_tree_bits)(tree->leaf[i].child, height, bit, fp);
+		PT_(graph_tree_bits)(inner->link[i], height, bit, fp);
 	}
-#endif
 }
 
 /** Graphs `tree` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
 static void PT_(graph_tree_mem)(const struct trie_trunk *const tr,
 	size_t height, const size_t treebit, FILE *const fp) {
+	const struct trie_inner_tree *inner;
 	const struct trie_branch *branch;
 	unsigned i;
-	const struct trie_inner_tree *inner;
 	(void)treebit;
 	assert(tr && fp && height > tr->skip);
 	height -= 1 + tr->skip;
@@ -335,9 +335,9 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 	memcpy(name + i_name, mem, sizeof mem - 1);
 	memcpy(name + i_name + sizeof mem - 1, fn + i_fn, fn_len - i_fn + 1);
 	PT_(graph_choose)(trie, name, &PT_(graph_tree_mem));
-	/*memcpy(fn + i_fn1, bits, sizeof bits - 1);
-	memcpy(fn + i_fn1 + sizeof bits - 1, fn + i_fn0, fn_len - i_fn0 + 1);
-	PT_(graph_choose)(trie, fn, &PT_(graph_tree_bits));*/
+	memcpy(name + i_name, bits, sizeof bits - 1);
+	memcpy(name + i_name + sizeof bits - 1, fn + i_fn, fn_len - i_fn + 1);
+	PT_(graph_choose)(trie, name, &PT_(graph_tree_bits));
 }
 
 #if 0
