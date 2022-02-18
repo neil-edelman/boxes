@@ -560,8 +560,6 @@ static int PT_(remove)(struct T_(trie) *const trie,
 		trunk = trie_inner(trunk)->link[t.lf]) {
 		assert(trunk->skip < h), h -= 1 + trunk->skip;
 		t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
-		printf("remove: descend %s-trunk with bsize %u.\n",
-			orcify(trunk), trunk->bsize);
 		while(t.br0 < t.br1) {
 			const struct trie_branch *const branch
 				= trunk->branch + (parent_br = t.br0);
