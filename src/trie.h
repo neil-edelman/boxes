@@ -169,12 +169,12 @@ struct PT_(iterator) {
  definitely not in `trie`. @order \O(|`key`|) */
 static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
 	const char *const key) {
-	struct trie_trunk *trunk;
-	size_t h, bit;
-	struct { unsigned br0, br1, lf; } t;
+	struct trie_trunk *trunk; /* Current tree trunk. */
+	struct { unsigned br0, br1, lf; } t; /* Binary search in tree trunk. */
+	size_t h, bit; /* Height of tree; `bit` in key. */
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(trie && key);
-	if(!(h = trie->height)) { printf("match: empty\n"); return 0; }
+	if(!(h = trie->height)) return 0;
 	for(trunk = trie->root, assert(trunk), byte.cur = 0, bit = 0; ;
 		trunk = trie_inner(trunk)->link[t.lf]) {
 		assert(trunk->skip < h), h -= 1 + trunk->skip;
@@ -212,9 +212,9 @@ static PT_(entry) PT_(get)(const struct T_(trie) *const trie,
 static void PT_(match_prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, struct PT_(iterator) *it) {
 	struct trie_trunk *trunk;
-	size_t h, bit;
 	struct { unsigned br0, br1, lf; } t;
-	struct { size_t cur, next; } byte; /* `key` null checks. */
+	size_t h, bit;
+	struct { size_t cur, next; } byte;
 	assert(prefix && it);
 	it->trie = 0;
 	if(!trie || !(h = trie->height)) return;
@@ -231,7 +231,8 @@ static void PT_(match_prefix)(const struct T_(trie) *const trie,
 			if(!TRIE_QUERY(prefix, bit))
 				t.br1 = ++t.br0 + branch->left;
 			else
-				t.br0 += branch->left + 1, t.lf += branch->left + 1;
+				t.br0 += branch->left + 1,
+				t.lf += branch->left + 1;
 			bit++;
 		}
 		if(!h) break;
@@ -320,12 +321,12 @@ static const char *PT_(sample)(const struct trie_trunk *trunk,
  the moment. */
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(entry) x) {
 	const char *const key = PT_(to_key)(x);
-	struct { unsigned br0, br1, lf; } t;
 	struct { struct trie_trunk *tr; struct { size_t tr, diff; } bit; } f;
+	struct { unsigned br0, br1, lf; } t;
+	size_t h;
 	struct { struct { struct trie_trunk *tr; size_t bit; } a; size_t n; } full;
 	const char *sample; /* Only used in Find. */
 	int restarts = 0; /* Debug: make sure we only go through twice. */
-	size_t h;
 	assert(trie && x && key);
 
 	printf("unique: adding <<%s>>\n", key);
@@ -540,17 +541,110 @@ static int PT_(put)(struct T_(trie) *const trie, PT_(entry) x,
 	return 1;
 }
 
+#if 1
+
+/** Try to remove `key` from `trie`. */
+static int PT_(remove)(struct T_(trie) *const trie,
+	const char *const key) {
+	struct trie_trunk *trunk;
+	size_t h, bit;
+	struct { unsigned br0, br1, lf; } t, u, v;
+	unsigned parent_br = 0; /* Useless initialization. */
+	struct { size_t cur, next; } byte; /* `key` null checks. */
+	PT_(entry) *rm;
+	assert(trie && key);
+
+	/* Same as match, but keep track of the branch not taken in `u`. */
+	printf("remove: <<%s>> from %s-trie.\n", key, orcify(trie));
+	if(!(h = trie->height)) return printf("remove: empty\n"), 0;
+	for(trunk = trie->root, assert(trunk), byte.cur = 0, bit = 0; ;
+		trunk = trie_inner(trunk)->link[t.lf]) {
+		assert(trunk->skip < h), h -= 1 + trunk->skip;
+		t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
+		printf("remove: descend %s-trunk with bsize %u.\n",
+			orcify(trunk), trunk->bsize);
+		while(t.br0 < t.br1) {
+			const struct trie_branch *const branch
+				= trunk->branch + (parent_br = t.br0);
+			for(byte.next = (bit += branch->skip) / CHAR_BIT;
+				byte.cur < byte.next; byte.cur++)
+				if(key[byte.cur] == '\0') return printf("remove: unfound\n"), 0;
+			printf("branch.left %u\n", branch->left);
+			printf("before me: [%u,%u;%u], twin: [%u,%u;%u]\n",
+				t.br0, t.br1, t.lf, u.br0, u.br1, u.lf);
+			if(!TRIE_QUERY(key, bit))
+				printf("left %u + %u + 1 = ", t.lf, branch->left),
+				u.lf = t.lf + branch->left + 1,
+				u.br1 = t.br1,
+				u.br0 = t.br1 = ++t.br0 + branch->left, printf("%u\n", u.lf);
+			else
+				printf("right\n"),
+				u.br0 = ++t.br0,
+				u.br1 = (t.br0 += branch->left),
+				u.lf = t.lf, t.lf += branch->left + 1;
+			printf("me: [%u,%u;%u], twin: [%u,%u;%u]\n",
+				t.br0, t.br1, t.lf, u.br0, u.br1, u.lf);
+			bit++;
+		}
+		if(!h) break;
+	}
+	rm = PT_(outer)(trunk)->leaf + t.lf;
+	printf("remove: <<%s>>?\n", PT_(to_key)(*rm));
+	if(strcmp(key, PT_(to_key)(*rm))) return 0;
+
+	/* If a branch, branch not taken's skip merges with the parent. */
+	if(u.br0 < u.br1) {
+		struct trie_branch *const parent = trunk->branch + parent_br,
+			*const diverge = trunk->branch + u.br0;
+		printf("remove: remove, %u + 1 + %u.\n", parent->skip, diverge->skip);
+		/* Would cause overflow. */
+		if(parent->skip == UCHAR_MAX
+			|| UCHAR_MAX - parent->skip - 1 > diverge->skip)
+			{ errno = EILSEQ; return 0; }
+		diverge->skip = parent->skip + 1 + diverge->skip;
+	}
+
+	/* Update `left` values for the path to the deleted branch. */
+	v.br0 = 0, v.br1 = trunk->bsize, v.lf = t.lf;
+	if(!v.br1) goto erased_tree;
+	for( ; ; ) {
+		struct trie_branch *const branch = trunk->branch + v.br0;
+		if(branch->left >= v.lf) {
+			if(!branch->left) break;
+			v.br1 = ++v.br0 + branch->left;
+			branch->left--;
+		} else {
+			if((v.br0 += branch->left + 1) >= v.br1) break;
+			v.lf -= branch->left + 1;
+		}
+	}
+
+	/* Remove the actual memory. */
+	memmove(trunk->branch + parent_br, trunk->branch
+		+ parent_br + 1, sizeof *trunk->branch
+		* (trunk->bsize - parent_br - 1));
+	memmove(rm, rm + 1, sizeof *rm * (trunk->bsize - t.lf));
+	trunk->bsize--;
+	return 1;
+
+erased_tree:
+	assert(0);
+	return 0;
+}
+
+#else
+
 /** Try to remove `key` from `trie`. */
 static PT_(entry) *PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
 	/* @fixme Join when combined-half <= ~TRIE_BRANCH / 2 */
 	struct {
-		struct trie_trunk *tr;
+		struct trie_trunk *trunk;
 		size_t height;
 		unsigned parent_br, unused;
 		struct { unsigned br0, br1, lf; } me, twin;
-		size_t empty_followers;
-	} full;
+		size_t followers;
+	} laden;
 	struct trie_trunk *trunk;
 	size_t h;
 	struct PT_(outer_tree) *outer;
@@ -563,38 +657,47 @@ static PT_(entry) *PT_(remove)(struct T_(trie) *const trie,
 
 	/* Empty. */
 	if(!(h = trie->height)) return 0;
-	trunk = trie->root, assert(trunk);
 
 	/* Preliminary exploration. */
-	full.tr = 0, full.empty_followers = 0;
-	for(bit = 0; ; trunk = trie_inner(trunk)->link[lf]) {
+	for(bit = 0, laden.trunk = 0, laden.followers = 0, trunk = trie->root,
+		assert(trunk); ; trunk = trie_inner(trunk)->link[lf]) {
 		assert(trunk->skip < h), h -= 1 + trunk->skip;
 		if(!trunk->bsize) { /* Tree is only one leaf: will be freed. */
-			full.empty_followers++;
+			laden.followers++;
 			lf = 0;
-		} else { /* Restart with non-empty (`full`) tree, `me`, and `twin`. */
-			full.empty_followers = 0;
-			full.tr = trunk;
-			full.me.br0 = 0, full.me.br1 = trunk->bsize, full.me.lf = 0;
+		} else { /* Restart with non-empty tree, `me`, and `twin`. */
+			laden.trunk = trunk, laden.followers = 0;
+			laden.me.br0 = 0, laden.me.br1 = trunk->bsize, laden.me.lf = 0;
+			printf("remove: descend %s-trunk with bsize %u.\n",
+				orcify(trunk), trunk->bsize);
 			do {
 				struct trie_branch *const branch
-					= full.tr->branch + (full.parent_br = full.me.br0);
+					= laden.trunk->branch + (laden.parent_br = laden.me.br0);
 				for(byte.next = (bit += branch->skip) / CHAR_BIT;
 					byte.cur < byte.next; byte.cur++)
 					if(key[byte.cur] == '\0') return 0;
+				printf("branch.left %u\n", branch->left);
+				printf("before me: [%u,%u;%u], twin: [%u,%u;%u]\n",
+					laden.me.br0, laden.me.br1, laden.me.lf,
+					laden.twin.br0, laden.twin.br1, laden.twin.lf);
 				if(!TRIE_QUERY(key, bit))
-					full.twin.lf = full.me.lf + branch->left + 1,
-					full.twin.br1 = full.me.br1,
-					full.twin.br0 = full.me.br1 = ++full.me.br0 +branch->left;
+					printf("left\n"),
+					laden.twin.lf = laden.me.lf + branch->left + 1,
+					laden.twin.br1 = laden.me.br1,
+					laden.twin.br0 = laden.me.br1 = ++laden.me.br0 +branch->left;
 				else
-					full.twin.br0 = ++full.me.br0,
-					full.twin.br1 = (full.me.br0 += branch->left),
-					full.twin.lf = full.me.lf, full.me.lf += branch->left + 1;
+					printf("right\n"),
+					laden.twin.br0 = ++laden.me.br0,
+					laden.twin.br1 = (laden.me.br0 += branch->left),
+					laden.twin.lf = laden.me.lf, laden.me.lf += branch->left + 1;
+				printf("me: [%u,%u;%u], twin: [%u,%u;%u]\n",
+					laden.me.br0, laden.me.br1, laden.me.lf,
+					laden.twin.br0, laden.twin.br1, laden.twin.lf);
 				bit++;
-			} while(full.me.br0 < full.me.br1);
-			assert(full.me.br0 == full.me.br1
-				&& full.me.lf <= full.tr->bsize);
-			lf = full.me.lf;
+			} while(laden.me.br0 < laden.me.br1);
+			assert(laden.me.br0 == laden.me.br1
+				&& laden.me.lf <= laden.trunk->bsize);
+			lf = laden.me.lf;
 		}
 		if(!h) break;
 	}
@@ -604,17 +707,17 @@ static PT_(entry) *PT_(remove)(struct T_(trie) *const trie,
 	if(strcmp(key, PT_(to_key)(*rm))) return 0;
 	assert(0);
 #if 0
-	/* Removed the whole trie. Leave it for laziness. */
-	if(!full.tr) {
-		assert(full.empty_followers);
+	/* Removed the whole trie. */
+	if(!laden.trunk) {
+		assert(laden.followers);
 		tree = trie->root, trie->root = 0;
-		trie->height = 0;
+		/*trie->height = 0;*/
 		goto free;
 	}
 
 	/* Branch we are deleting could have it's skip value taken up by another. */
 	twin = 0;
-	if(full.twin.br0 == full.twin.br1) { /* Twin is a leaf. */
+	if(laden.twin.br0 == laden.twin.br1) { /* Twin is a leaf. */
 		/* If twin continues down another tree. */
 		if(trie_bmp_test(&full.tr->is_child, full.twin.lf)) {
 			struct PT_(tree) *next = full.tr->leaf[full.twin.lf].child;
@@ -624,11 +727,11 @@ static PT_(entry) *PT_(remove)(struct T_(trie) *const trie,
 		}
 		/* Fall-through: reduce the size of the trie, twin is data-leaf-like. */
 	} else { /* Twin is a branch in the same tree. */
-		assert(full.twin.br0 < full.twin.br1);
-		twin = full.tr->branch + full.twin.br0;
+		assert(laden.twin.br0 < laden.twin.br1);
+		twin = laden.trunk->branch + laden.twin.br0;
 	}
 	if(twin) { /* Collapsing, as determined previously. */
-		const unsigned collapse_br = full.tr->branch[full.parent_br].skip + 1
+		const unsigned collapse_br = laden.trunk->branch[laden.parent_br].skip + 1
 			+ twin->skip;
 		/* Removing the data would cause an overflow in `skip`. */
 		if(collapse_br > UCHAR_MAX) { errno = EILSEQ; return 0; }
@@ -642,9 +745,9 @@ static PT_(entry) *PT_(remove)(struct T_(trie) *const trie,
 
 	{ /* Go down a second time and modify the tree. Now `lf` goes down. */
 		struct { unsigned br0, br1, lf; } mod;
-		mod.br0 = 0, mod.br1 = full.tr->bsize, mod.lf = full.me.lf;
+		mod.br0 = 0, mod.br1 = laden.trunk->bsize, mod.lf = laden.me.lf;
 		for( ; ; ) {
-			struct trie_branch *const branch = full.tr->branch + mod.br0;
+			struct trie_branch *const branch = laden.trunk->branch + mod.br0;
 			if(branch->left >= mod.lf) {
 				if(!branch->left) break;
 				mod.br1 = ++mod.br0 + branch->left;
@@ -655,28 +758,29 @@ static PT_(entry) *PT_(remove)(struct T_(trie) *const trie,
 			}
 		}
 	}
-	memmove(full.tr->branch + full.parent_br, full.tr->branch
-		+ full.parent_br + 1, sizeof *full.tr->branch
-		* (full.tr->bsize - full.parent_br - 1));
-	memmove(full.tr->leaf + full.me.lf, full.tr->leaf + full.me.lf + 1,
+	memmove(laden.trunk->branch + laden.parent_br, laden.trunk->branch
+		+ laden.parent_br + 1, sizeof *laden.trunk->branch
+		* (laden.trunk->bsize - laden.parent_br - 1));
+	memmove(full.trunk->leaf + full.me.lf, full.tr->leaf + full.me.lf + 1,
 		sizeof *full.tr->leaf * (full.tr->bsize - full.me.lf));
 	trie_bmp_remove(&full.tr->is_child, full.me.lf, 1);
-	full.tr->bsize--;
+	laden.trunk->bsize--;
 
 free: /* Free all the unused trees. */
-	if(full.empty_followers) for( ; ; ) {
+	if(laden.followers) for( ; ; ) {
 		union PT_(leaf) leaf;
 		printf("(Freeing %s.)\n", orcify(tree));
 		assert(tree && !tree->bsize && !!(full.empty_followers - 1)
 			== !!trie_bmp_test(&tree->is_child, 0));
 		leaf = tree->leaf[0];
 		free(tree);
-		if(!--full.empty_followers) break;
+		if(!--laden.followers) break;
 		tree = leaf.child;
 	}
 #endif
 	return rm;
 }
+#endif
 
 #undef QUOTE
 #undef QUOTE_
