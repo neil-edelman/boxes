@@ -141,8 +141,8 @@ static void contrived_str_test(void) {
 		if(show) trie_str_graph(&strs, "graph/str-add.gv");
 		for(j = 0; j <= i; j++) {
 			const char *sz = str_trie_get(&strs, str_array[j]);
-			printf("Test get(\"%s\") = \"%s\".\n",
-				str_array[j], sz ? sz : "<didn't find>");
+			/*printf("Test get(\"%s\") = \"%s\".\n",
+				str_array[j], sz ? sz : "<didn't find>");*/
 			assert(sz == str_array[j]);
 		}
 	}
@@ -155,9 +155,11 @@ static void contrived_str_test(void) {
 		if(show) trie_str_graph(&strs, "graph/str-deleted.gv");
 		for(j = 0; j < sizeof str_array / sizeof *str_array; j++) {
 			const char *get = str_trie_get(&strs, str_array[j]);
-			/*printf("Test get(%s) = %s\n",
-				str_array[j], get ? get : "<didn't find>");*/
-			assert((j >= i-1) ^ (get == str_array[j]));
+			const int want_to_get = j < i - 1;
+			printf("Test get(%s) = %s, (%swant to get.)\n",
+				str_array[j], get ? get : "<didn't find>",
+				want_to_get ? "" : "DON'T ");
+			assert(!(want_to_get ^ (get == str_array[j])));
 		}
 	}
 	str_trie_(&strs);

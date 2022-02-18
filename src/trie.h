@@ -543,7 +543,8 @@ static int PT_(put)(struct T_(trie) *const trie, PT_(entry) x,
 
 #if 1
 
-/** Try to remove `key` from `trie`. */
+/** Try to remove `key` from `trie`.
+ @fixme Join when combined-half <= ~TRIE_BRANCH / 2 */
 static int PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
 	struct trie_trunk *trunk;
@@ -577,8 +578,8 @@ static int PT_(remove)(struct T_(trie) *const trie,
 				u.br0 = ++t.br0,
 				u.br1 = (t.br0 += branch->left),
 				u.lf = t.lf, t.lf += branch->left + 1;
-			printf("me: [%u,%u;%u], twin: [%u,%u;%u]\n",
-				t.br0, t.br1, t.lf, u.br0, u.br1, u.lf);
+			/*printf("me: [%u,%u;%u], twin: [%u,%u;%u]\n",
+				t.br0, t.br1, t.lf, u.br0, u.br1, u.lf);*/
 			bit++;
 		}
 		if(!h) break;
@@ -591,11 +592,12 @@ static int PT_(remove)(struct T_(trie) *const trie,
 	if(u.br0 < u.br1) {
 		struct trie_branch *const parent = trunk->branch + parent_br,
 			*const diverge = trunk->branch + u.br0;
-		printf("remove: remove, %u + 1 + %u.\n", parent->skip, diverge->skip);
+		printf("remove: skip, parent %u, diverge %u.\n",
+			parent->skip, diverge->skip);
 		/* Would cause overflow. */
 		if(parent->skip == UCHAR_MAX
-			|| UCHAR_MAX - parent->skip - 1 > diverge->skip)
-			{ errno = EILSEQ; return 0; }
+			|| diverge->skip > UCHAR_MAX - parent->skip - 1)
+			{ printf("remove: no!\n"); return errno = EILSEQ, 0; }
 		diverge->skip = parent->skip + 1 + diverge->skip;
 	}
 
@@ -620,6 +622,7 @@ static int PT_(remove)(struct T_(trie) *const trie,
 		* (trunk->bsize - parent_br - 1));
 	memmove(rm, rm + 1, sizeof *rm * (trunk->bsize - t.lf));
 	trunk->bsize--;
+	printf("remove: success.\n");
 	return 1;
 
 erased_tree:
