@@ -147,12 +147,11 @@ static void contrived_str_test(void) {
 		}
 	}
 	for( ; i; i--) {
-		const char *rm;
-		show = !(i & (i - 1));
+		int is;
+		show = 1/*!(i & (i - 1))*/;
 		if(show) trie_str_no++;
-		rm = str_trie_remove(&strs, str_array[i - 1]);
-		assert(rm);
-		if(show) printf("\"%s\" removed.\n", rm);
+		if(show) printf("\"%s\" remove.\n", str_array[i - 1]);
+		is = str_trie_remove(&strs, str_array[i - 1]);
 		if(show) trie_str_graph(&strs, "graph/str-deleted.gv");
 		for(j = 0; j < sizeof str_array / sizeof *str_array; j++) {
 			const char *get = str_trie_get(&strs, str_array[j]);

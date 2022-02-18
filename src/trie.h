@@ -569,16 +569,11 @@ static int PT_(remove)(struct T_(trie) *const trie,
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(key[byte.cur] == '\0') return printf("remove: unfound\n"), 0;
-			printf("branch.left %u\n", branch->left);
-			printf("before me: [%u,%u;%u], twin: [%u,%u;%u]\n",
-				t.br0, t.br1, t.lf, u.br0, u.br1, u.lf);
 			if(!TRIE_QUERY(key, bit))
-				printf("left %u + %u + 1 = ", t.lf, branch->left),
 				u.lf = t.lf + branch->left + 1,
 				u.br1 = t.br1,
-				u.br0 = t.br1 = ++t.br0 + branch->left, printf("%u\n", u.lf);
+				u.br0 = t.br1 = ++t.br0 + branch->left;
 			else
-				printf("right\n"),
 				u.br0 = ++t.br0,
 				u.br1 = (t.br0 += branch->left),
 				u.lf = t.lf, t.lf += branch->left + 1;
@@ -676,17 +671,11 @@ static PT_(entry) *PT_(remove)(struct T_(trie) *const trie,
 				for(byte.next = (bit += branch->skip) / CHAR_BIT;
 					byte.cur < byte.next; byte.cur++)
 					if(key[byte.cur] == '\0') return 0;
-				printf("branch.left %u\n", branch->left);
-				printf("before me: [%u,%u;%u], twin: [%u,%u;%u]\n",
-					laden.me.br0, laden.me.br1, laden.me.lf,
-					laden.twin.br0, laden.twin.br1, laden.twin.lf);
 				if(!TRIE_QUERY(key, bit))
-					printf("left\n"),
 					laden.twin.lf = laden.me.lf + branch->left + 1,
 					laden.twin.br1 = laden.me.br1,
 					laden.twin.br0 = laden.me.br1 = ++laden.me.br0 +branch->left;
 				else
-					printf("right\n"),
 					laden.twin.br0 = ++laden.me.br0,
 					laden.twin.br1 = (laden.me.br0 += branch->left),
 					laden.twin.lf = laden.me.lf, laden.me.lf += branch->left + 1;
@@ -941,7 +930,7 @@ static PT_(entry) T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const key) { return PT_(get)(trie, key); }
 
 /** Tries to remove `key` from `trie`. */
-static PT_(entry) *T_(trie_remove)(struct T_(trie) *const trie,
+static int T_(trie_remove)(struct T_(trie) *const trie,
 	const char *const key) { return PT_(remove)(trie, key); }
 
 /** Adds a pointer to `x` into `trie` if the key doesn't exist already.
