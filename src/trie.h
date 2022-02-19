@@ -25,7 +25,7 @@
  @param[TRIE_VALUE, TRIE_KEY_IN_VALUE]
  `TRIE_VALUE` is an optional payload type to go with the string key.
  `TRIE_KEY_IN_VALUE` is an optional <typedef:<PT>key_fn> that picks out the key
- from the of value, otherwise <tag:<PT>entry> is an associative array entry.
+ from the of value, otherwise it is an associative array <tag:<PT>entry>.
 
  @param[TRIE_TO_STRING]
  Defining this includes <to_string.h>, with the keys as the string.
@@ -78,14 +78,16 @@ struct trie_trunk
 /* A trie is a forest of non-empty complete binary trees; this is a tree that
  links to other trees. In <Knuth, 1998 Art 3> terminology, this structure is
  a B-tree internal node of `TRIE_ORDER`. 'Node' already has conflicting
- meaning, so we use 'tree'. */
+ meaning in the level below, so we use 'tree'. */
 struct trie_inner_tree { struct trie_trunk trunk, *link[TRIE_ORDER]; };
 /** @return Upcasts `trunk` to an inner tree. */
 static struct trie_inner_tree *trie_inner(struct trie_trunk *const trunk)
-	{ return (struct trie_inner_tree *)(void *)trunk; }
+	{ return (struct trie_inner_tree *)(void *)
+	((char *)trunk - offsetof(struct trie_inner_tree, trunk)); }
 /** @return Upcasts `trunk` to an inner tree. */
 static const struct trie_inner_tree *trie_inner_c(const struct trie_trunk *
-	const trunk) { return (const struct trie_inner_tree *)(const void *)trunk; }
+	const trunk) { return (const struct trie_inner_tree *)(const void *)
+	((const char *)trunk - offsetof(struct trie_inner_tree, trunk)); }
 /** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
  Used in <fn:<T>trie_prefix>. */
 static int trie_is_prefix(const char *a, const char *b) {
@@ -141,16 +143,17 @@ static const char *PT_(id_key)(const char *const key) { return key; }
 static PT_(key_fn) PT_(to_key) = &PT_(id_key);
 #endif
 
-/* A leaf/external B-tree node/tree.
- (Single inheritance; trunk has to be first.) */
+/* A leaf/external B-tree node/tree. */
 struct PT_(outer_tree) { struct trie_trunk trunk; PT_(entry) leaf[TRIE_ORDER];};
 
 /** @return Upcasts `trunk` to an outer tree. */
 static struct PT_(outer_tree) *PT_(outer)(struct trie_trunk *const trunk)
-	{ return (struct PT_(outer_tree) *)(void *)trunk; }
+	{ return (struct PT_(outer_tree) *)(void *)
+	((char *)trunk - offsetof(struct PT_(outer_tree), trunk)); }
 /** @return Upcasts `trunk` to an outer tree. */
 static const struct PT_(outer_tree) *PT_(outer_c)(const struct trie_trunk *
-	const trunk) { return (const struct PT_(outer_tree) *)(const void *)trunk; }
+	const trunk) { return (const struct PT_(outer_tree) *)(const void *)
+	((const char *)trunk - offsetof(struct PT_(outer_tree), trunk)); }
 
 /** To initialize it to an idle state, see <fn:<T>trie>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`.
@@ -581,8 +584,7 @@ static int PT_(remove)(struct T_(trie) *const trie,
 		if(!h) break;
 	}
 	rm = PT_(outer)(trunk)->leaf + t.lf;
-	printf("remove: <<%s>>?\n", PT_(to_key)(*rm));
-	if(strcmp(key, PT_(to_key)(*rm))) return 0;
+	if(strcmp(key, PT_(to_key)(*rm))) return printf("remove: doesn't match <<%s>>\n", PT_(to_key)(*rm)), 0;
 
 	/* If a branch, branch not taken's skip merges with the parent. */
 	if(u.br0 < u.br1) {
@@ -593,7 +595,7 @@ static int PT_(remove)(struct T_(trie) *const trie,
 		/* Would cause overflow. */
 		if(parent->skip == UCHAR_MAX
 			|| diverge->skip > UCHAR_MAX - parent->skip - 1)
-			{ printf("remove: no!\n"); return errno = EILSEQ, 0; }
+			return printf("remove: no!\n"), errno = EILSEQ, 0;
 		diverge->skip = parent->skip + 1 + diverge->skip;
 	}
 
@@ -622,6 +624,8 @@ static int PT_(remove)(struct T_(trie) *const trie,
 	return 1;
 
 erased_tree:
+	/* Maybe previous tree would be good? Set in match, unless this is
+	 recursive? Can it be? */
 	assert(0);
 	return 0;
 }
@@ -784,7 +788,7 @@ static int T_(trie_is)(const struct T_(trie) *const trie,
 static PT_(entry) T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const key) { return PT_(get)(trie, key); }
 
-/** Tries to remove `key` from `trie`. */
+/** Tries to remove `key` from `trie`. @return Success. */
 static int T_(trie_remove)(struct T_(trie) *const trie,
 	const char *const key) { return PT_(remove)(trie, key); }
 
