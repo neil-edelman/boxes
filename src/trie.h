@@ -633,28 +633,13 @@ erased_tree:
 #undef QUOTE
 #undef QUOTE_
 
-/** Counts the sub-tree `trunk`. @order \O(|`trunk`|) */
-static size_t PT_(sub_size)(const struct trie_trunk *const trunk,
-	size_t height) {
-	unsigned i;
-	size_t size;
-	assert(trunk && trunk->skip < height);
-	if(height -= 1 + trunk->skip) {
-		const struct trie_inner_tree *const inner = trie_inner_c(trunk);
-		for(size = 0, i = 0; i <= trunk->bsize; i++)
-			size += PT_(sub_size)(inner->link[i], height);
-	} else {
-		size = trunk->bsize + 1;
-	}
-	return size;
-}
-
 /** Counts the new iterator `it`. @order \O(|`it`|) */
-static size_t PT_(size)(const struct PT_(iterator) *const it) {
+static size_t PT_(size_r)(const struct PT_(iterator) *const it) {
 	size_t size;
-	/*struct PT_(tree) *next;
-	unsigned i;*/
-	assert(it);
+	unsigned i;
+	size_t height = it->trie->height; /* No. */
+	struct trie_trunk *trunk = it->trie->root;
+	assert(it && height);
 	/*if(!it->root || !(next = it->next)) return 0;
 	assert(next == it->end
 		&& it->leaf <= it->leaf_end && it->leaf_end <= next->bsize + 1);
@@ -662,6 +647,14 @@ static size_t PT_(size)(const struct PT_(iterator) *const it) {
 	for(i = it->leaf; i < it->leaf_end; i++)
 		size += PT_(sub_size)(next->leaf[i].child) - 1;*/
 	assert(0);
+	assert(trunk && trunk->skip < height);
+	if(height -= 1 + trunk->skip) {
+		const struct trie_inner_tree *const inner = trie_inner_c(trunk);
+		for(size = 0, i = 0; i <= trunk->bsize; i++)
+			size += 1/*PT_(size_r)(inner->link[i], height)*/;
+	} else {
+		size = trunk->bsize + 1;
+	}
 	return size;
 }
 
@@ -671,7 +664,8 @@ static size_t PT_(size)(const struct PT_(iterator) *const it) {
  @implements begin */
 static void PT_(begin)(struct PT_(iterator) *const it,
 	const struct T_(trie) *const trie) {
-	PT_(match_prefix)(trie, "", it); // fixme: not entirely reliable
+	PT_(match_prefix)(trie, "", it);
+	it->end = 0; /* More robust to concurrent modifications. */
 }
 
 /** Advances `it`. @return The previous value or null. @implements next */
@@ -848,7 +842,7 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
  @param[prefix] To fill `it` with the entire `trie`, use the empty string.
  @param[it] A pointer to an iterator that gets filled. It is valid until a
  topological change to `trie`. Calling <fn:<T>trie_next> will iterate them in
- order. @order \O(\log `trie.size`) or \O(|`prefix`|) */
+ order. @order \O(\log `trie.size`) or \O(|`prefix`|) @allow */
 static void T_(trie_prefix)(struct T_(trie) *const trie,
 	const char *const prefix, struct T_(trie_iterator) *const it)
 	{ assert(it); PT_(prefix)(trie, prefix, &it->i); }
@@ -859,7 +853,7 @@ static const PT_(entry) *T_(trie_next)(struct T_(trie_iterator) *const it)
 
 /** Counts the of the items in initialized `it`. @order \O(|`it`|) @allow */
 static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
-	{ return PT_(size)(&it->i); }
+	{ return assert(it), PT_(size_r)(&it->i); }
 
 /* <!-- box: Define these for traits. */
 #define BOX_ PT_
