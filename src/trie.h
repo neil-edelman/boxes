@@ -66,7 +66,7 @@
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-branches-left root (`{A, a, b, ...}`). Parameter sets the
  maximum tree size. Prefer alignment `4n - 2`; cache `32n - 2`. */
-#define TRIE_MAX_LEFT /*1*//*6*/254
+#define TRIE_MAX_LEFT 2/*6*//*254*/
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX
 #error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX]`.
 #endif
@@ -178,12 +178,15 @@ static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(trie && key);
 	if(!(h = trie->height)) return 0;
+	/* Every path though the forest has the same height. */
 	for(trunk = trie->root, assert(trunk), byte.cur = 0, bit = 0; ;
 		trunk = trie_inner(trunk)->link[t.lf]) {
 		assert(trunk->skip < h), h -= 1 + trunk->skip;
 		t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
+		/* Binary search in the easily cached values of tree-trunk. */
 		while(t.br0 < t.br1) {
 			const struct trie_branch *const branch = trunk->branch + t.br0;
+			/* Advance to the bit that has a difference in `key`. */
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(key[byte.cur] == '\0') return 0; /* Too short. */
@@ -309,7 +312,7 @@ static void PT_(prnt)(const struct PT_(tree) *const tree) {
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-/** @return The leftmost key `lf` of `tree`. */
+/** @return The leftmost key `lf` of `trunk` of `height`. */
 static const char *PT_(sample)(const struct trie_trunk *trunk,
 	size_t height, unsigned lf) {
 	assert(trunk);
@@ -320,7 +323,7 @@ static const char *PT_(sample)(const struct trie_trunk *trunk,
 
 /** Adds `x` to `trie`, which must not be present. @return Success.
  @throw[malloc, ERANGE]
- @throw[EILSEQ] There is too many bits similar for it to placed in the trie at
+ @throw[EILSEQ] There are too many bits similar for it to placed in the trie at
  the moment. */
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(entry) x) {
 	const char *const key = PT_(to_key)(x);
