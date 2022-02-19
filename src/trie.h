@@ -633,20 +633,6 @@ erased_tree:
 #undef QUOTE
 #undef QUOTE_
 
-/** Frees `tr` at `h` and it's children recursively. */
-static void PT_(clear)(struct trie_trunk *const tr, size_t height) {
-	unsigned i;
-	assert(tr && height > tr->skip);
-	if(height -= 1 + tr->skip) {
-		for(i = 0; i <= tr->bsize; i++)
-			PT_(clear)(trie_inner(tr)->link[i], height);
-		free(trie_inner(tr));
-	} else {
-		free(PT_(outer)(tr));
-	}
-	/* fixme: this is old */
-}
-
 /** Counts the sub-tree `trunk`. @order \O(|`trunk`|) */
 static size_t PT_(sub_size)(const struct trie_trunk *const trunk,
 	size_t height) {
@@ -751,16 +737,47 @@ const static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
 
 /* iterate --> */
 
+/** Frees `tr` at `h` and it's children recursively. Stores any one outer tree
+ in `one`. */
+static void PT_(clear_r)(struct trie_trunk *const tr, size_t height,
+	struct PT_(outer_tree) **const one) {
+	unsigned i;
+	assert(tr && height > tr->skip && one);
+	if(height -= 1 + tr->skip) {
+		for(i = 0; i <= tr->bsize; i++)
+			PT_(clear_r)(trie_inner(tr)->link[i], height, one);
+		free(trie_inner(tr));
+	} else if(!*one) {
+		*one = PT_(outer)(tr);
+	} else {
+		free(PT_(outer)(tr));
+	}
+}
+
+/** Stores an iteration range in a trie. Any changes in the topology of the
+ trie invalidate it. */
+struct T_(trie_iterator) { struct PT_(iterator) i; };
+
 /** Initializes `trie` to idle. @order \Theta(1) @allow */
 static void T_(trie)(struct T_(trie) *const trie)
 	{ assert(trie); trie->root = 0; }
 
 /** Returns an initialized `trie` to idle. @allow */
 static void T_(trie_)(struct T_(trie) *const trie) {
+	struct PT_(outer_tree) *clear_all = (struct PT_(outer_tree) *)1;
 	assert(trie);
-	if(trie->height) PT_(clear)(trie->root, trie->height);
-	else if(trie->root) free(trie->root); /* For size zero hysteresis. */
+	PT_(clear_r)(trie->root, trie->height, &clear_all);
 	T_(trie)(trie);
+}
+
+/** Clears every entry in a valid `trie`, but it continues to be active if it
+ is not idle. */
+static void T_(trie_clear)(struct T_(trie) *const trie) {
+	struct PT_(outer_tree) *will_be_root = 0;
+	assert(trie);
+	PT_(clear_r)(trie->root, trie->height, &will_be_root);
+	T_(trie)(trie);
+	trie->root = &will_be_root->trunk; /* Hysteresis. */
 }
 
 #if 0
@@ -774,23 +791,21 @@ static int T_(trie_from_array)(struct T_(trie) *const trie,
 }
 #endif
 
+/** @return Whether `key` is in `trie`; in case either one is null, returns
+ false. @order \O(\log `trie.size`) or \O(|`key`|) */
+static int T_(trie_is)(const struct T_(trie) *const trie,
+	const char *const key) { return !(!trie || !key || !PT_(get)(trie, key)); }
+
 /** @return Looks at only the index of `trie` for potential `key` matches,
  but will ignore the values of the bits that are not in the index.
  @order \O(|`key`|) @allow */
 static PT_(entry) *T_(trie_match)(const struct T_(trie) *const trie,
 	const char *const key) { return PT_(match)(trie, key); }
 
-static int T_(trie_is)(const struct T_(trie) *const trie,
-	const char *const key) { return !(!trie || !PT_(get)(trie, key)); }
-
 /** @return Exact match for `key` in `trie` or null no such item exists.
  @order \O(|`key`|), <Thareja 2011, Data>. @allow */
 static PT_(entry) T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const key) { return PT_(get)(trie, key); }
-
-/** Tries to remove `key` from `trie`. @return Success. */
-static int T_(trie_remove)(struct T_(trie) *const trie,
-	const char *const key) { return PT_(remove)(trie, key); }
 
 /** Adds a pointer to `x` into `trie` if the key doesn't exist already.
  @return If the key did not exist and it was created, returns true. If the key
@@ -820,33 +835,31 @@ static int T_(trie_put)(struct T_(trie) *const trie, const PT_(entry) x,
  @param[replace] Called on collision and only replaces it if the function
  returns true. If null, it is semantically equivalent to <fn:<T>trie_put>.
  @return Success. @throws[realloc, ERANGE] @order \O(|`key`|) @allow */
-static int T_(trie_policy_put)(struct T_(trie) *const trie, const PT_(entry) x,
+static int T_(trie_policy)(struct T_(trie) *const trie, const PT_(entry) x,
 	PT_(entry) */*const*/ eject, const PT_(replace_fn) replace)
 	{ return assert(trie && x), PT_(put)(trie, x, &eject, replace); }
 
-/** Stores an iteration range in a trie. Any changes in the topology of the
- trie invalidate it. */
-struct T_(trie_iterator) { struct PT_(iterator) i; };
+/** Tries to remove `key` from `trie`. @return Success. */
+static int T_(trie_remove)(struct T_(trie) *const trie,
+	const char *const key) { return PT_(remove)(trie, key); }
 
 /** Fills `it` with iteration parameters that find values of keys that start
  with `prefix` in `trie`.
  @param[prefix] To fill `it` with the entire `trie`, use the empty string.
  @param[it] A pointer to an iterator that gets filled. It is valid until a
  topological change to `trie`. Calling <fn:<T>trie_next> will iterate them in
- order. @order \O(|`prefix`|) */
+ order. @order \O(\log `trie.size`) or \O(|`prefix`|) */
 static void T_(trie_prefix)(struct T_(trie) *const trie,
 	const char *const prefix, struct T_(trie_iterator) *const it)
 	{ assert(it); PT_(prefix)(trie, prefix, &it->i); }
 
-/** Counts the of the items in the new `it`; iterator must be new,
- (calling <fn:<T>trie_next> causes it to become undefined.)
- @order \O(|`it`|) @allow */
-static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
-	{ return PT_(size)(&it->i); }
-
 /** Advances `it`. @return The previous value or null. @allow */
 static const PT_(entry) *T_(trie_next)(struct T_(trie_iterator) *const it)
 	{ return PT_(next)(&it->i); }
+
+/** Counts the of the items in initialized `it`. @order \O(|`it`|) @allow */
+static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
+	{ return PT_(size)(&it->i); }
 
 /* <!-- box: Define these for traits. */
 #define BOX_ PT_
@@ -878,11 +891,11 @@ static void PT_(to_string)(const PT_(entry) *a, char (*const z)[12])
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
 	PT_(begin)(0, 0);
-	T_(trie)(0); T_(trie_)(0);
-	T_(trie_match)(0, 0); T_(trie_get)(0, 0);
+	T_(trie)(0); T_(trie_)(0); T_(trie_clear)(0);
+	T_(trie_is)(0, 0); T_(trie_match)(0, 0); T_(trie_get)(0, 0);
+	T_(trie_try)(0, 0); T_(trie_put)(0, 0, 0); T_(trie_policy)(0, 0, 0, 0);
 	T_(trie_remove)(0, 0);
-	T_(trie_try)(0, 0); T_(trie_put)(0, 0, 0); T_(trie_policy_put)(0, 0, 0, 0);
-	T_(trie_prefix)(0, 0, 0); T_(trie_size)(0); T_(trie_next)(0);
+	T_(trie_prefix)(0, 0, 0); T_(trie_next)(0); T_(trie_size)(0);
 	PT_(unused_base_coda)();
 }
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
