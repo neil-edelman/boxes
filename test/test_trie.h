@@ -163,13 +163,15 @@ static void PT_(graph_tree_mem)(const struct trie_trunk *const tr,
 		"style = filled, fillcolor = Gray95, label = <\n"
 		"<TABLE BORDER=\"0\">\n"
 		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">"
-		"<FONT COLOR=\"Gray85\">%s: %lu</FONT></TD></TR>\n"
+		"<FONT COLOR=\"Gray85\">%s</FONT></TD></TR>\n"
+		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">height %lu; start bit %lu"
+		"</TD></TR>\n"
 		"\t<TR>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">left</FONT></TD>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">skip</FONT></TD>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">leaves</FONT></TD>\n"
 		"\t</TR>\n", (const void *)tr, orcify(tr),
-		(unsigned long)treebit);
+		(unsigned long)height, (unsigned long)treebit);
 	for(i = 0; i <= tr->bsize; i++) {
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
 		const char *key = PT_(sample)(tr, height, i);

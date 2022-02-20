@@ -88,6 +88,7 @@ static struct trie_inner_tree *trie_inner(struct trie_trunk *const trunk)
 static const struct trie_inner_tree *trie_inner_c(const struct trie_trunk *
 	const trunk) { return (const struct trie_inner_tree *)(const void *)
 	((const char *)trunk - offsetof(struct trie_inner_tree, trunk)); }
+enum trie_tree_type { TRIE_INNER, TRIE_OUTER };
 /** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
  Used in <fn:<T>trie_prefix>. */
 static int trie_is_prefix(const char *a, const char *b) {
@@ -145,6 +146,7 @@ static PT_(key_fn) PT_(to_key) = &PT_(id_key);
 
 /* A leaf/external B-tree node/tree. */
 struct PT_(outer_tree) { struct trie_trunk trunk; PT_(entry) leaf[TRIE_ORDER];};
+union PT_(leaf_ptr) { struct trie_inner_tree **inner; PT_(entry) *outer; };
 
 /** @return Upcasts `trunk` to an outer tree. */
 static struct PT_(outer_tree) *PT_(outer)(struct trie_trunk *const trunk)
@@ -321,6 +323,92 @@ static const char *PT_(sample)(const struct trie_trunk *trunk,
 	return PT_(to_key)(PT_(outer_c)(trunk)->leaf[lf]);
 }
 
+static void PT_(trunk_split)(struct trie_trunk *const left) {
+	assert(0);
+}
+
+static void PT_(inner_split)(struct trie_inner_tree *const left,
+	struct trie_inner_tree *const right) {
+	assert(0);
+}
+
+/** Right side of `left`, which must be full, moves to `right`, (which is
+ clobbered.) The root of `left` is also clobbered. */
+static void PT_(outer_split)(struct PT_(outer_tree) *const left,
+	struct PT_(outer_tree) *const right) {
+	unsigned char leaves_split = left->trunk.branch[0].left + 1;;
+	assert(left && right && left->trunk.bsize == TRIE_BRANCHES);
+	right->trunk.bsize = left->trunk.bsize - leaves_split;
+	right->trunk.skip = left->trunk.skip; /* Maybe? */
+	memcpy(right->trunk.branch, left->trunk.branch + leaves_split,
+		sizeof *left->trunk.branch * right->trunk.bsize);
+	memcpy(right->leaf, left->leaf + leaves_split,
+		sizeof *left->leaf * (right->trunk.bsize + 1));
+	/* Move back the branches of the left to account for the promotion. */
+	left->trunk.bsize = leaves_split - 1;
+	memmove(left->trunk.branch, left->trunk.branch + 1,
+		sizeof *left->trunk.branch * (left->trunk.bsize + 1));
+	memmove(left->leaf, left->leaf + 1,
+		sizeof *left->leaf * (left->trunk.bsize + 2));
+}
+
+/** Open up a spot in the tree. Used in <fn:<PT>add_unique>. This is no longer
+ well-defined if any parameters are off.
+ @param[key] New <fn:<PT>to_key>.
+ @param[diff] Calculated bit where the difference occurs.
+ @param[trunk] Tree-trunk in which the difference occurs. Cannot be full.
+ @param[bit] Tree start bit.
+ @param[type] Inner (link) or outer (leaf) type of the `trunk`.
+ @return The uninitialized leaf/link. */
+static union PT_(leaf_ptr) PT_(tree_open)(const char *const key,
+	const size_t diff, struct trie_trunk *const trunk, size_t bit,
+	enum trie_tree_type type) {
+	struct { unsigned br0, br1, lf; } t;
+	struct trie_branch *branch;
+	size_t bit1;
+	unsigned is_right;
+	union PT_(leaf_ptr) ret;
+	assert(key && trunk && trunk->bsize < TRIE_BRANCHES && bit <= diff);
+	/* Modify the tree's left branches to account for the new leaf. */
+	t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
+	while(t.br0 < t.br1) { /* Tree. */
+		branch = trunk->branch + t.br0;
+		bit1 = bit + branch->skip;
+		/* Decision bits can never be the site of a difference. */
+		if(diff <= bit1) { assert(diff < bit1); break; }
+		if(!TRIE_QUERY(key, bit1))
+			t.br1 = ++t.br0 + branch->left++;
+		else
+			t.br0 += branch->left + 1, t.lf += branch->left + 1;
+		bit = bit1 + 1;
+	}
+	assert(bit <= diff && diff - bit <= UCHAR_MAX);
+	/* Should be the same as the first descent. */
+	if(is_right = !!TRIE_QUERY(key, diff)) t.lf += t.br1 - t.br0 + 1;
+
+	/* Expand the tree to include one more leaf and branch. */
+	assert(t.lf <= trunk->bsize + 1);
+	if(type == TRIE_INNER) {
+		assert(0);
+	} else {
+		PT_(entry) *const leaf = PT_(outer)(trunk)->leaf + t.lf;
+		memmove(leaf + 1, leaf, sizeof *leaf * ((trunk->bsize + 1) - t.lf));
+		ret.outer = leaf;
+	}
+	branch = trunk->branch + t.br0;
+	if(t.br0 != t.br1) { /* Split with existing branch. */
+		assert(t.br0 < t.br1 && diff + 1 <= bit + branch->skip);
+		branch->skip -= diff - bit + 1;
+	}
+	memmove(branch + 1, branch, sizeof *branch * (trunk->bsize - t.br0));
+	branch->left = is_right ? (unsigned char)(t.br1 - t.br0) : 0;
+	branch->skip = (unsigned char)(diff - bit);
+	trunk->bsize++;
+	return ret;
+	/*memcpy(leaf, &x, sizeof x);*/
+}
+
+
 /** Adds `x` to `trie`, which must not be present. @return Success.
  @throw[malloc, ERANGE]
  @throw[EILSEQ] There are too many bits similar for it to placed in the trie at
@@ -330,7 +418,8 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(entry) x) {
 	struct { struct trie_trunk *tr; struct { size_t tr, diff; } bit; } f;
 	struct { unsigned br0, br1, lf; } t;
 	size_t h;
-	struct { struct { struct trie_trunk *tr; size_t bit; } a; size_t n; } full;
+	struct { struct { struct trie_trunk *tr; size_t bit; } last_unfull;
+		size_t full; } context;
 	const char *sample; /* Only used in Find. */
 	int restarts = 0; /* Debug: make sure we only go through twice. */
 	assert(trie && x && key);
@@ -353,13 +442,13 @@ start:
 	/* Solitary. --> */
 
 	/* <!-- Find the first bit not in the tree. ******************************/
-	/* Backtracking information; anchor is the first not-full tree. */
-	full.a.tr = 0, full.a.bit = 0, full.n = 0;
+	/* Backtracking information. */
+	context.last_unfull.tr = 0, context.last_unfull.bit = 0, context.full = 0;
 	f.tr = trie->root, assert(f.tr);
 	for(f.bit.diff = 0; ; f.tr = trie_inner(f.tr)->link[t.lf]) { /* Forest. */
 		const int is_full = TRIE_BRANCHES <= f.tr->bsize;
 		assert(f.tr->skip < h), h -= 1 + f.tr->skip;
-		full.n = is_full ? full.n + 1 : 0;
+		context.full = is_full ? context.full + 1 : 0;
 		f.bit.tr = f.bit.diff;
 		sample = PT_(sample)(f.tr, h, 0);
 		printf("add: find, tree %s, sample %s.\n", orcify(f.tr), sample);
@@ -379,7 +468,8 @@ start:
 		}
 		assert(t.br0 == t.br1 && t.lf <= f.tr->bsize);
 		if(!h) break;
-		if(!is_full) full.a.tr = f.tr, full.a.bit = f.bit.tr;
+		if(!is_full) context.last_unfull.tr = f.tr,
+			context.last_unfull.bit = f.bit.tr;
 	}
 	{ /* Got to a leaf. */
 		const size_t limit = f.bit.diff + UCHAR_MAX;
@@ -392,8 +482,23 @@ found:
 	/* Find. --> */
 
 	/* <!-- Backtrack and split. *********************************************/
-	if(!full.n) goto insert;
+	if(!context.full) goto insert;
 	do { /* Split a tree. */
+		size_t add_outer = 1,
+			add_inner = context.full - !h + !context.last_unfull.tr;
+		printf("add: context last unfull, %s:%lu, followed by %lu full.\n",
+			orcify(context.last_unfull.tr),
+			(unsigned long)context.last_unfull.bit,
+			(unsigned long)context.full);
+		printf("add: we will need an additional %lu outer tree"
+			" and %lu inner trees.\n", add_outer, add_inner);
+		printf("tree: %s, height %lu\n", orcify(f.tr), h);
+		if(!context.last_unfull.tr) {
+			struct trie_inner_tree *upper = 0;
+			struct PT_(outer_tree) *outer = 0;
+			assert(0);
+			//if(!(upper = malloc(sizeof *upper))) goto catch;
+		}
 		assert(0);
 #if 0
 		struct PT_(tree) *up, *left = 0, *right = 0;
@@ -467,14 +572,21 @@ found:
 		memmove(left->branch, left->branch + 1,
 			sizeof *left->branch * (left->bsize + 1));
 #endif
-	} while(--full.n);
-	f.tr = full.a.tr, f.bit.tr = full.a.bit;
+	} while(--context.full);
+	f.tr = context.last_unfull.tr, f.bit.tr = context.last_unfull.bit;
 	/* It was in the promoted bit's skip and "Might be full now," was true.
 	 Don't have enough information to recover, but ca'n't get here twice. */
 	if(TRIE_BRANCHES <= f.tr->bsize) { assert(!restarts++); goto start; }
 	/* Split. --> */
 
 insert: /* Insert into unfilled tree. ****************************************/
+#if 1
+	{
+		union PT_(leaf_ptr) leaf
+			= PT_(tree_open)(key, f.bit.diff, f.tr, f.bit.tr, TRIE_OUTER);
+		memcpy(leaf.outer, &x, sizeof x);
+	}
+#else
 	{
 		PT_(entry) *leaf;
 		struct trie_branch *branch;
@@ -514,6 +626,7 @@ insert: /* Insert into unfilled tree. ****************************************/
 		f.tr->bsize++;
 		memcpy(leaf, &x, sizeof x);
 	}
+#endif
 	/* PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-add.gv"); */
 	return 1;
 }
