@@ -177,12 +177,12 @@ static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
 	const char *const key) {
 	struct trie_trunk *trunk; /* Current tree trunk. */
 	struct { unsigned br0, br1, lf; } t; /* Binary search in tree trunk. */
-	size_t h, bit; /* Height of tree; `bit` in key. */
+	size_t h, diff; /* Height of tree; bit in key. */
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(trie && key);
 	if(!(h = trie->height)) return 0;
 	/* Every path though the forest has the same height. */
-	for(trunk = trie->root, assert(trunk), byte.cur = 0, bit = 0; ;
+	for(trunk = trie->root, assert(trunk), byte.cur = 0, diff = 0; ;
 		trunk = trie_inner(trunk)->link[t.lf]) {
 		assert(trunk->skip < h), h -= 1 + trunk->skip;
 		t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
@@ -190,15 +190,15 @@ static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
 		while(t.br0 < t.br1) {
 			const struct trie_branch *const branch = trunk->branch + t.br0;
 			/* Advance to the bit that has a difference in `key`. */
-			for(byte.next = (bit += branch->skip) / CHAR_BIT;
+			for(byte.next = (diff += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(key[byte.cur] == '\0') return 0; /* Too short. */
-			if(!TRIE_QUERY(key, bit))
+			if(!TRIE_QUERY(key, diff))
 				t.br1 = ++t.br0 + branch->left;
 			else
 				t.br0 += branch->left + 1,
 				t.lf += branch->left + 1;
-			bit++;
+			diff++;
 		}
 		if(!h) break;
 	}
@@ -222,27 +222,27 @@ static void PT_(match_prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, struct PT_(iterator) *it) {
 	struct trie_trunk *trunk;
 	struct { unsigned br0, br1, lf; } t;
-	size_t h, bit;
+	size_t h, diff;
 	struct { size_t cur, next; } byte;
 	assert(prefix && it);
 	it->trie = 0;
 	if(!trie || !(h = trie->height)) return;
-	for(trunk = trie->root, assert(trunk), byte.cur = 0, bit = 0; ;
+	for(trunk = trie->root, assert(trunk), byte.cur = 0, diff = 0; ;
 		trunk = trie_inner(trunk)->link[t.lf]) {
 		assert(trunk->skip < h), h -= 1 + trunk->skip;
 		t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
 		while(t.br0 < t.br1) {
 			const struct trie_branch *const branch = trunk->branch + t.br0;
 			/* _Sic_; '\0' is _not_ included for partial match. */
-			for(byte.next = (bit += branch->skip) / CHAR_BIT;
+			for(byte.next = (diff += branch->skip) / CHAR_BIT;
 				byte.cur <= byte.next; byte.cur++)
 				if(prefix[byte.cur] == '\0') goto finally;
-			if(!TRIE_QUERY(prefix, bit))
+			if(!TRIE_QUERY(prefix, diff))
 				t.br1 = ++t.br0 + branch->left;
 			else
 				t.br0 += branch->left + 1,
 				t.lf += branch->left + 1;
-			bit++;
+			diff++;
 		}
 		if(!h) break;
 	};
@@ -353,28 +353,28 @@ static void PT_(split)(struct PT_(outer_tree) *const left,
  @param[type] Inner (link) or outer (leaf) type of the `trunk`.
  @return The uninitialized leaf/link. */
 static union PT_(leaf_ptr) PT_(tree_open)(const char *const key,
-	const size_t diff, struct trie_trunk *const trunk, size_t bit,
+	const size_t diff, struct trie_trunk *const trunk, size_t tr0,
 	enum trie_tree_type type) {
 	struct { unsigned br0, br1, lf; } t;
 	struct trie_branch *branch;
-	size_t bit1;
+	size_t tr1;
 	unsigned is_right;
 	union PT_(leaf_ptr) ret;
-	assert(key && trunk && trunk->bsize < TRIE_BRANCHES && bit <= diff);
+	assert(key && trunk && trunk->bsize < TRIE_BRANCHES && tr0 <= diff);
 	/* Modify the tree's left branches to account for the new leaf. */
 	t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
 	while(t.br0 < t.br1) { /* Tree. */
 		branch = trunk->branch + t.br0;
-		bit1 = bit + branch->skip;
+		tr1 = tr0 + branch->skip;
 		/* Decision bits can never be the site of a difference. */
-		if(diff <= bit1) { assert(diff < bit1); break; }
-		if(!TRIE_QUERY(key, bit1))
+		if(diff <= tr1) { assert(diff < tr1); break; }
+		if(!TRIE_QUERY(key, tr1))
 			t.br1 = ++t.br0 + branch->left++;
 		else
 			t.br0 += branch->left + 1, t.lf += branch->left + 1;
-		bit = bit1 + 1;
+		tr0 = tr1 + 1;
 	}
-	assert(bit <= diff && diff - bit <= UCHAR_MAX);
+	assert(tr0 <= diff && diff - tr0 <= UCHAR_MAX);
 	/* Should be the same as the first descent. */
 	if(is_right = !!TRIE_QUERY(key, diff)) t.lf += t.br1 - t.br0 + 1;
 
@@ -389,12 +389,12 @@ static union PT_(leaf_ptr) PT_(tree_open)(const char *const key,
 	}
 	branch = trunk->branch + t.br0;
 	if(t.br0 != t.br1) { /* Split with existing branch. */
-		assert(t.br0 < t.br1 && diff + 1 <= bit + branch->skip);
-		branch->skip -= diff - bit + 1;
+		assert(t.br0 < t.br1 && diff + 1 <= tr0 + branch->skip);
+		branch->skip -= diff - tr0 + 1;
 	}
 	memmove(branch + 1, branch, sizeof *branch * (trunk->bsize - t.br0));
 	branch->left = is_right ? (unsigned char)(t.br1 - t.br0) : 0;
-	branch->skip = (unsigned char)(diff - bit);
+	branch->skip = (unsigned char)(diff - tr0);
 	trunk->bsize++;
 	return ret;
 	/*memcpy(leaf, &x, sizeof x);*/
@@ -407,87 +407,91 @@ static union PT_(leaf_ptr) PT_(tree_open)(const char *const key,
  the moment. */
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(entry) x) {
 	const char *const key = PT_(to_key)(x);
-	struct { struct trie_trunk *tr; struct { size_t tr, diff; } bit; } f;
+	struct trie_trunk *trunk;
+	size_t h, trunk_diff, diff;
 	struct { unsigned br0, br1, lf; } t;
-	size_t h;
-	struct { struct { struct trie_trunk *tr; size_t bit; } last_unfull;
-		size_t full; } context;
+	struct { struct { struct trie_trunk *trunk; size_t trunk_diff; } unfull;
+		size_t full; } history;
 	const char *sample; /* Only used in Find. */
 	int restarts = 0; /* Debug: make sure we only go through twice. */
+	struct trie_inner_tree *inner = 0;
+	struct PT_(outer_tree) *outer = 0;
 	struct trie_inner_tree *new_root = 0;
 	assert(trie && x && key);
 
-	printf("unique: adding <<%s>>\n", key);
+	printf("unique: adding \"%s\".\n", key);
 start:
 	/* <!-- Solitary. ********************************************************/
 	if(!(h = trie->height)) {
-		struct PT_(outer_tree) *outer;
 		if(trie->root) outer = PT_(outer)(trie->root);
-		else if(!(outer = malloc(sizeof *outer)))
-			{ if(!errno) errno = ERANGE; return 0; }
-		memcpy(outer->leaf + 0, &x, sizeof x);
-		outer->trunk.bsize = 0, outer->trunk.skip = 0;
+		else if(!(outer = malloc(sizeof *outer))) goto catch;
+		outer->trunk.bsize = 0, outer->trunk.skip = 0, outer->leaf[0] = x;
 		trie->root = &outer->trunk, trie->height = 1;
-		printf("add: new outer tree %s that holds <<%s>>=><<%s>>.\n",
+		printf("add: new outer %s-tree that holds \"%s\"=>\"%s\".\n",
 			orcify(outer), PT_(to_key)(x), PT_(to_key)(outer->leaf[0]));
 		return 1;
 	}
 	/* Solitary. --> */
 
 	/* <!-- Find the first bit not in the tree. ******************************/
-	/* Backtracking information. */
-	context.last_unfull.tr = 0, context.last_unfull.bit = 0, context.full = 0;
-	f.tr = trie->root, assert(f.tr);
-	for(f.bit.diff = 0; ; f.tr = trie_inner(f.tr)->link[t.lf]) { /* Forest. */
-		const int is_full = TRIE_BRANCHES <= f.tr->bsize;
-		assert(f.tr->skip < h), h -= 1 + f.tr->skip;
-		context.full = is_full ? context.full + 1 : 0;
-		f.bit.tr = f.bit.diff;
-		sample = PT_(sample)(f.tr, h, 0);
-		printf("add: find, tree %s, sample %s.\n", orcify(f.tr), sample);
-		t.br0 = 0, t.br1 = f.tr->bsize, t.lf = 0;
+	history.unfull.trunk = 0, history.unfull.trunk_diff = 0,
+		history.full = 0;
+	trunk = trie->root, assert(trunk);
+	for(diff = 0; ; trunk = trie_inner(trunk)->link[t.lf]) { /* Forest. */
+		const int is_full = TRIE_BRANCHES <= trunk->bsize;
+		assert(trunk->skip < h), h -= 1 + trunk->skip;
+		history.full = is_full ? history.full + 1 : 0;
+		trunk_diff = diff;
+		sample = PT_(sample)(trunk, h, 0);
+		printf("add: find, %s-tree, sample %s.\n", orcify(trunk), sample);
+		t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
 		while(t.br0 < t.br1) { /* Tree. */
-			const struct trie_branch *const branch = f.tr->branch + t.br0;
-			const size_t bit1 = f.bit.diff + branch->skip;
-			for( ; f.bit.diff < bit1; f.bit.diff++)
-				if(TRIE_DIFF(key, sample, f.bit.diff)) goto found;
-			if(!TRIE_QUERY(key, f.bit.diff)) {
+			const struct trie_branch *const branch = trunk->branch + t.br0;
+			const size_t bit1 = diff + branch->skip;
+			for( ; diff < bit1; diff++)
+				if(TRIE_DIFF(key, sample, diff)) goto found;
+			if(!TRIE_QUERY(key, diff)) {
 				t.br1 = ++t.br0 + branch->left;
 			} else {
 				t.br0 += branch->left + 1, t.lf += branch->left + 1;
-				sample = PT_(sample)(f.tr, h, t.lf);
+				sample = PT_(sample)(trunk, h, t.lf);
 			}
-			f.bit.diff++;
+			diff++;
 		}
-		assert(t.br0 == t.br1 && t.lf <= f.tr->bsize);
+		assert(t.br0 == t.br1 && t.lf <= trunk->bsize);
 		if(!h) break;
-		if(!is_full) context.last_unfull.tr = f.tr,
-			context.last_unfull.bit = f.bit.tr;
+		/* Why here? Want this to be unique from the current tree-trunk. */
+		if(!is_full) history.unfull.trunk = trunk,
+			history.unfull.trunk_diff = trunk_diff;
 	}
-	{ /* Got to a leaf. */
-		const size_t limit = f.bit.diff + UCHAR_MAX;
-		while(!TRIE_DIFF(key, sample, f.bit.diff))
-			if(++f.bit.diff > limit) return errno = EILSEQ, 0;
+	{ /* Got to a leaf without getting a difference. */
+		const size_t limit = diff + UCHAR_MAX;
+		while(!TRIE_DIFF(key, sample, diff))
+			if(++diff > limit) return errno = EILSEQ, 0;
 	}
 found:
 	/* Account for choosing the right leaf, (not strictly necessary here?) */
-	if(!!TRIE_QUERY(key, f.bit.diff)) t.lf += t.br1 - t.br0 + 1;
+	if(!!TRIE_QUERY(key, diff)) t.lf += t.br1 - t.br0 + 1;
 	/* Find. --> */
 
 	/* <!-- Backtrack and split. *********************************************/
-	if(!context.full) goto insert;
+	if(!history.full) goto insert;
 	do { /* Split a tree. */
 		size_t add_outer = 1,
-			add_inner = context.full - !h + !context.last_unfull.tr;
-		printf("add: context last unfull, %s:%lu, followed by %lu full.\n",
-			orcify(context.last_unfull.tr),
-			(unsigned long)context.last_unfull.bit,
-			(unsigned long)context.full);
+			add_inner = history.full - !h + !history.unfull.trunk;
+		int is_above = t.br0 == 0 && t.br1 == trunk->bsize;
+		printf("add: history last unfull, %s:%lu, followed by %lu full.\n",
+			orcify(history.unfull.trunk),
+			(unsigned long)history.unfull.trunk_diff,
+			(unsigned long)history.full);
 		printf("add: we will need an additional %lu outer tree"
 			" and %lu inner trees.\n", add_outer, add_inner);
-		printf("tree: %s, height %lu\n", orcify(f.tr), h);
-		if(!context.last_unfull.tr && !(new_root = malloc(sizeof *new_root)))
-			goto catch;
+		printf("add: is above %s.\n", is_above ? "yes" : "no");
+		printf("add: %s-tree, height %lu.\n", orcify(trunk), h);
+		if(!history.unfull.trunk) { /* Trie is full -- increase height. */
+			if(!(new_root = malloc(sizeof *new_root))) goto catch;
+			printf("add: new root %s.\n", orcify(&new_root->trunk));
+		}
 		assert(0);
 #if 0
 		struct PT_(tree) *up, *left = 0, *right = 0;
@@ -505,7 +509,7 @@ found:
 			t.br0 = 0, t.br1 = up->bsize, t.lf = 0;
 			while(t.br0 < t.br1) { /* Tree. */
 				branch = up->branch + t.br0;
-				full.a.bit += branch->skip, assert(full.a.bit < f.bit.diff);
+				full.a.bit += branch->skip, assert(full.a.bit < diff);
 				if(!TRIE_QUERY(key, full.a.bit))
 					t.br1 = ++t.br0 + branch->left++;
 				else
@@ -539,8 +543,8 @@ found:
 			assert(trie_bmp_test(&up->is_child, t.lf + 1));
 		/* Advance the cursor to the next tree. */
 		leaves_split = left->branch[0].left + 1;
-		if((with_promote_bit = full.a.bit + branch->skip) <= f.bit.diff) {
-			assert(with_promote_bit < f.bit.diff);
+		if((with_promote_bit = full.a.bit + branch->skip) <= diff) {
+			assert(with_promote_bit < diff);
 			full.a.bit = with_promote_bit;
 			full.a.tr = !(TRIE_QUERY(key, full.a.bit)) ? left : right;
 			full.a.bit++;
@@ -561,23 +565,22 @@ found:
 		memmove(left->branch, left->branch + 1,
 			sizeof *left->branch * (left->bsize + 1));
 #endif
-	} while(--context.full);
-	f.tr = context.last_unfull.tr, f.bit.tr = context.last_unfull.bit;
+	} while(--history.full);
+	trunk = history.unfull.trunk, trunk_diff = history.unfull.trunk_diff;
 	/* It was in the promoted bit's skip and "Might be full now," was true.
 	 Don't have enough information to recover, but ca'n't get here twice. */
-	if(TRIE_BRANCHES <= f.tr->bsize) { assert(!restarts++); goto start; }
+	if(TRIE_BRANCHES <= trunk->bsize) { assert(!restarts++); goto start; }
 	/* Split. --> */
 
 insert: /* Insert into unfilled tree. ****************************************/
-	{
-		union PT_(leaf_ptr) leaf
-			= PT_(tree_open)(key, f.bit.diff, f.tr, f.bit.tr, TRIE_OUTER);
-		memcpy(leaf.leaf, &x, sizeof x);
-	}
+	{ union PT_(leaf_ptr) outer
+		= PT_(tree_open)(key, diff, trunk, trunk_diff, TRIE_OUTER);
+	memcpy(outer.leaf, &x, sizeof x); }
 	return 1;
 
 catch:
-	free(new_root);
+	free(inner), free(outer), free(new_root);
+	if(!errno) errno = ERANGE;
 	return 0;
 }
 
@@ -615,7 +618,7 @@ static int PT_(put)(struct T_(trie) *const trie, PT_(entry) x,
 static int PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
 	struct trie_trunk *trunk;
-	size_t h, bit;
+	size_t h, diff;
 	struct { unsigned br0, br1, lf; } t, u, v;
 	unsigned parent_br = 0; /* Useless initialization. */
 	struct { size_t cur, next; } byte; /* `key` null checks. */
@@ -625,17 +628,17 @@ static int PT_(remove)(struct T_(trie) *const trie,
 	/* Same as match, but keep track of the branch not taken in `u`. */
 	printf("remove: <<%s>> from %s-trie.\n", key, orcify(trie));
 	if(!(h = trie->height)) return printf("remove: empty\n"), 0;
-	for(trunk = trie->root, assert(trunk), byte.cur = 0, bit = 0; ;
+	for(trunk = trie->root, assert(trunk), byte.cur = 0, diff = 0; ;
 		trunk = trie_inner(trunk)->link[t.lf]) {
 		assert(trunk->skip < h), h -= 1 + trunk->skip;
 		t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
 		while(t.br0 < t.br1) {
 			const struct trie_branch *const branch
 				= trunk->branch + (parent_br = t.br0);
-			for(byte.next = (bit += branch->skip) / CHAR_BIT;
+			for(byte.next = (diff += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(key[byte.cur] == '\0') return printf("remove: unfound\n"), 0;
-			if(!TRIE_QUERY(key, bit))
+			if(!TRIE_QUERY(key, diff))
 				u.lf = t.lf + branch->left + 1,
 				u.br1 = t.br1,
 				u.br0 = t.br1 = ++t.br0 + branch->left;
@@ -645,7 +648,7 @@ static int PT_(remove)(struct T_(trie) *const trie,
 				u.lf = t.lf, t.lf += branch->left + 1;
 			/*printf("me: [%u,%u;%u], twin: [%u,%u;%u]\n",
 				t.br0, t.br1, t.lf, u.br0, u.br1, u.lf);*/
-			bit++;
+			diff++;
 		}
 		if(!h) break;
 	}
