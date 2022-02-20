@@ -66,7 +66,7 @@
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-branches-left root (`{A, a, b, ...}`). Parameter sets the
  maximum tree size. Prefer alignment `4n - 2`; cache `32n - 2`. */
-#define TRIE_MAX_LEFT 2/*6*//*254*/
+#define TRIE_MAX_LEFT 3/*6*//*254*/
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX
 #error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX]`.
 #endif
@@ -78,7 +78,8 @@ struct trie_trunk
 /* A trie is a forest of non-empty complete binary trees; this is a tree that
  links to other trees. In <Knuth, 1998 Art 3> terminology, this structure is
  a B-tree internal node of `TRIE_ORDER`. 'Node' already has conflicting
- meaning in the level below, so we use 'tree'. */
+ meaning in the level below, so we use 'tree'. Outer tree (node) is defined
+ later because it's parameterized. */
 struct trie_inner_tree { struct trie_trunk trunk, *link[TRIE_ORDER]; };
 /** @return Upcasts `trunk` to an inner tree. */
 static struct trie_inner_tree *trie_inner(struct trie_trunk *const trunk)
@@ -88,7 +89,14 @@ static struct trie_inner_tree *trie_inner(struct trie_trunk *const trunk)
 static const struct trie_inner_tree *trie_inner_c(const struct trie_trunk *
 	const trunk) { return (const struct trie_inner_tree *)(const void *)
 	((const char *)trunk - offsetof(struct trie_inner_tree, trunk)); }
+/* Determined by the depth. */
 enum trie_tree_type { TRIE_INNER, TRIE_OUTER };
+/* Binary-search temporaries. */
+struct trie_trunk_descend {
+	struct trie_trunk *trunk;
+	size_t h, diff;
+	unsigned br0, br1, lf, unused;
+};
 /** @return Whether `a` and `b` are equal up to the minimum of their lengths'.
  Used in <fn:<T>trie_prefix>. */
 static int trie_is_prefix(const char *a, const char *b) {
@@ -146,9 +154,6 @@ static PT_(key_fn) PT_(to_key) = &PT_(id_key);
 
 /* Leaf/external B-tree node/tree. */
 struct PT_(outer_tree) { struct trie_trunk trunk; PT_(entry) leaf[TRIE_ORDER];};
-/* Either an inner or outer leaf. */
-union PT_(leaf_ptr) { struct trie_inner_tree **link; PT_(entry) *leaf; };
-
 /** @return Upcasts `trunk` to an outer tree. */
 static struct PT_(outer_tree) *PT_(outer)(struct trie_trunk *const trunk)
 	{ return (struct PT_(outer_tree) *)(void *)
@@ -162,6 +167,7 @@ static const struct PT_(outer_tree) *PT_(outer_c)(const struct trie_trunk *
  (`C99`), or being `static`.
 
  ![States.](../web/states.png) */
+struct T_(trie);
 struct T_(trie) { struct trie_trunk *root; size_t height; };
 
 struct PT_(iterator) {
@@ -171,38 +177,37 @@ struct PT_(iterator) {
 	unsigned leaf, leaf_end;
 };
 
+union PT_(leaf_ptr) { struct trie_inner_tree **link; PT_(entry) *leaf; };
+
 /** @return A candidate match for `key` in `trie`, or null, if `key` is
  definitely not in `trie`. @order \O(|`key`|) */
 static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
 	const char *const key) {
-	struct trie_trunk *trunk; /* Current tree trunk. */
-	struct { unsigned br0, br1, lf; } t; /* Binary search in tree trunk. */
-	size_t h, diff; /* Height of tree; bit in key. */
+	struct trie_trunk_descend d;
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(trie && key);
-	if(!(h = trie->height)) return 0;
+	if(!(d.h = trie->height)) return 0; /* Node height. */
 	/* Every path though the forest has the same height. */
-	for(trunk = trie->root, assert(trunk), byte.cur = 0, diff = 0; ;
-		trunk = trie_inner(trunk)->link[t.lf]) {
-		assert(trunk->skip < h), h -= 1 + trunk->skip;
-		t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
-		/* Binary search in the easily cached values of tree-trunk. */
-		while(t.br0 < t.br1) {
-			const struct trie_branch *const branch = trunk->branch + t.br0;
+	for(d.trunk = trie->root, assert(d.trunk), d.diff = 0, byte.cur = 0; ;
+		d.trunk = trie_inner(d.trunk)->link[d.lf]) {
+		assert(d.trunk->skip < d.h), d.h -= 1 + d.trunk->skip;
+		d.br0 = 0, d.br1 = d.trunk->bsize, d.lf = 0;
+		while(d.br0 < d.br1) {
+			const struct trie_branch *const branch = d.trunk->branch + d.br0;
 			/* Advance to the bit that has a difference in `key`. */
-			for(byte.next = (diff += branch->skip) / CHAR_BIT;
+			for(byte.next = (d.diff += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(key[byte.cur] == '\0') return 0; /* Too short. */
-			if(!TRIE_QUERY(key, diff))
-				t.br1 = ++t.br0 + branch->left;
+			if(!TRIE_QUERY(key, d.diff))
+				d.br1 = ++d.br0 + branch->left;
 			else
-				t.br0 += branch->left + 1,
-				t.lf += branch->left + 1;
-			diff++;
+				d.br0 += branch->left + 1,
+				d.lf += branch->left + 1;
+			d.diff++;
 		}
-		if(!h) break;
+		if(!d.h) break; /* Edge height. */
 	}
-	return PT_(outer)(trunk)->leaf + t.lf;
+	return PT_(outer)(d.trunk)->leaf + d.lf;
 }
 
 /** @return Exact match for `key` in `trie` or null. */
@@ -220,40 +225,38 @@ static PT_(entry) PT_(get)(const struct T_(trie) *const trie,
  `prefix` matches, and stores them in `it`. @order \O(|`prefix`|) */
 static void PT_(match_prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, struct PT_(iterator) *it) {
-	struct trie_trunk *trunk;
-	struct { unsigned br0, br1, lf; } t;
-	size_t h, diff;
+	struct trie_trunk_descend d;
 	struct { size_t cur, next; } byte;
 	assert(prefix && it);
 	it->trie = 0;
-	if(!trie || !(h = trie->height)) return;
-	for(trunk = trie->root, assert(trunk), byte.cur = 0, diff = 0; ;
-		trunk = trie_inner(trunk)->link[t.lf]) {
-		assert(trunk->skip < h), h -= 1 + trunk->skip;
-		t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
-		while(t.br0 < t.br1) {
-			const struct trie_branch *const branch = trunk->branch + t.br0;
+	if(!trie || !(d.h = trie->height)) return;
+	for(d.trunk = trie->root, assert(d.trunk), d.diff = 0, byte.cur = 0; ;
+		d.trunk = trie_inner(d.trunk)->link[d.lf]) {
+		assert(d.trunk->skip < d.h), d.h -= 1 + d.trunk->skip;
+		d.br0 = 0, d.br1 = d.trunk->bsize, d.lf = 0;
+		while(d.br0 < d.br1) {
+			const struct trie_branch *const branch = d.trunk->branch + d.br0;
 			/* _Sic_; '\0' is _not_ included for partial match. */
-			for(byte.next = (diff += branch->skip) / CHAR_BIT;
+			for(byte.next = (d.diff += branch->skip) / CHAR_BIT;
 				byte.cur <= byte.next; byte.cur++)
 				if(prefix[byte.cur] == '\0') goto finally;
-			if(!TRIE_QUERY(prefix, diff))
-				t.br1 = ++t.br0 + branch->left;
+			if(!TRIE_QUERY(prefix, d.diff))
+				d.br1 = ++d.br0 + branch->left;
 			else
-				t.br0 += branch->left + 1,
-				t.lf += branch->left + 1;
-			diff++;
+				d.br0 += branch->left + 1,
+				d.lf += branch->left + 1;
+			d.diff++;
 		}
-		if(!h) break;
-	};
+		if(!d.h) break;
+	}
 finally:
-	assert(t.br0 <= t.br1 && t.lf - t.br0 + t.br1 <= trunk->bsize);
-	it->end = trunk;
-	it->leaf_end = t.lf + t.br1 - t.br0 + 1;
-	while(h) trunk = trie_inner_c(trunk)->link[t.lf], t.lf = 0,
-		assert(trunk->skip < h), h -= 1 + trunk->skip;
-	it->current = PT_(outer)(trunk);
-	it->leaf = t.lf;
+	assert(d.br0 <= d.br1 && d.lf - d.br0 + d.br1 <= d.trunk->bsize);
+	it->end = d.trunk;
+	it->leaf_end = d.lf + d.br1 - d.br0 + 1;
+	while(d.h) d.trunk = trie_inner_c(d.trunk)->link[d.lf], d.lf = 0,
+		assert(d.trunk->skip < d.h), d.h -= 1 + d.trunk->skip;
+	it->current = PT_(outer)(d.trunk);
+	it->leaf = d.lf;
 	it->trie = trie;
 }
 
@@ -324,6 +327,31 @@ static const char *PT_(sample)(const struct trie_trunk *trunk,
 	return PT_(to_key)(PT_(outer_c)(trunk)->leaf[lf]);
 }
 
+static size_t PT_(trunk_bit)(const struct T_(trie) *trie,
+	const struct trie_trunk *trunk, const size_t height) {
+	struct trie_trunk_descend d;
+	const char *sample = PT_(sample)(trunk, height, 0);
+	assert(trie && sample);
+	d.h = trie->height, assert(d.h);
+	for(d.trunk = trie->root, assert(d.trunk), d.diff = 0; ;
+		d.trunk = trie_inner(d.trunk)->link[d.lf]) {
+		assert(d.trunk->skip < d.h), d.h -= 1 + trunk->skip;
+		if(trunk == d.trunk) break;
+		d.br0 = 0, d.br1 = trunk->bsize, d.lf = 0;
+		while(d.br0 < d.br1) {
+			const struct trie_branch *const branch = d.trunk->branch + d.br0;
+			if(!TRIE_QUERY(sample, d.diff))
+				d.br1 = ++d.br0 + branch->left;
+			else
+				d.br0 += branch->left + 1,
+				d.lf += branch->left + 1;
+			d.diff++;
+		}
+		assert(d.h); if(!d.h) return 0; /* Probably crash; corrupted? */
+	}
+	return d.diff;
+}
+
 /** Right side of `left`, which must be full, moves to `right`, (which is
  clobbered.) The root of `left` is also clobbered. */
 static void PT_(split)(struct PT_(outer_tree) *const left,
@@ -347,7 +375,8 @@ static void PT_(split)(struct PT_(outer_tree) *const left,
 /** Open up a spot in the tree. Used in <fn:<PT>add_unique>. This is no longer
  well-defined if any parameters are off.
  @param[key] New <fn:<PT>to_key>.
- @param[diff] Calculated bit where the difference occurs.
+ @param[diff] Calculated bit where the difference occurs. Ignored on
+ `TRIE_INNER`.
  @param[trunk] Tree-trunk in which the difference occurs. Cannot be full.
  @param[bit] Tree start bit.
  @param[type] Inner (link) or outer (leaf) type of the `trunk`.
@@ -360,14 +389,15 @@ static union PT_(leaf_ptr) PT_(tree_open)(const char *const key,
 	size_t tr1;
 	unsigned is_right;
 	union PT_(leaf_ptr) ret;
-	assert(key && trunk && trunk->bsize < TRIE_BRANCHES && tr0 <= diff);
+	assert(key && trunk && trunk->bsize < TRIE_BRANCHES
+		&& (tr0 <= diff || type == TRIE_INNER));
 	/* Modify the tree's left branches to account for the new leaf. */
 	t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
 	while(t.br0 < t.br1) { /* Tree. */
 		branch = trunk->branch + t.br0;
 		tr1 = tr0 + branch->skip;
 		/* Decision bits can never be the site of a difference. */
-		if(diff <= tr1) { assert(diff < tr1); break; }
+		if(type == TRIE_OUTER && diff <= tr1) { assert(diff < tr1); break; }
 		if(!TRIE_QUERY(key, tr1))
 			t.br1 = ++t.br0 + branch->left++;
 		else
@@ -376,7 +406,8 @@ static union PT_(leaf_ptr) PT_(tree_open)(const char *const key,
 	}
 	assert(tr0 <= diff && diff - tr0 <= UCHAR_MAX);
 	/* Should be the same as the first descent. */
-	if(is_right = !!TRIE_QUERY(key, diff)) t.lf += t.br1 - t.br0 + 1;
+	if(is_right = type == TRIE_OUTER && !!TRIE_QUERY(key, diff))
+		t.lf += t.br1 - t.br0 + 1;
 
 	/* Expand the tree to include one more leaf and branch. */
 	assert(t.lf <= trunk->bsize + 1);
@@ -410,8 +441,10 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(entry) x) {
 	struct trie_trunk *trunk;
 	size_t h, trunk_diff, diff;
 	struct { unsigned br0, br1, lf; } t;
-	struct { struct { struct trie_trunk *trunk; size_t trunk_diff; } unfull;
-		size_t full; } history;
+	struct { /* Last inner trie that is not full. */
+		struct { struct trie_inner_tree *inner; size_t height; } unfull;
+		size_t full; /* Count after the last. */
+	} history;
 	const char *sample; /* Only used in Find. */
 	int restarts = 0; /* Debug: make sure we only go through twice. */
 	struct trie_inner_tree *inner = 0;
@@ -434,8 +467,7 @@ start:
 	/* Solitary. --> */
 
 	/* <!-- Find the first bit not in the tree. ******************************/
-	history.unfull.trunk = 0, history.unfull.trunk_diff = 0,
-		history.full = 0;
+	history.unfull.inner = 0, history.unfull.height = 0, history.full = 0;
 	trunk = trie->root, assert(trunk);
 	for(diff = 0; ; trunk = trie_inner(trunk)->link[t.lf]) { /* Forest. */
 		const int is_full = TRIE_BRANCHES <= trunk->bsize;
@@ -460,9 +492,8 @@ start:
 		}
 		assert(t.br0 == t.br1 && t.lf <= trunk->bsize);
 		if(!h) break;
-		/* Why here? Want this to be unique from the current tree-trunk. */
-		if(!is_full) history.unfull.trunk = trunk,
-			history.unfull.trunk_diff = trunk_diff;
+		if(!is_full) history.unfull.inner = trie_inner(trunk),
+			history.unfull.height = h;
 	}
 	{ /* Got to a leaf without getting a difference. */
 		const size_t limit = diff + UCHAR_MAX;
@@ -478,19 +509,21 @@ found:
 	if(!history.full) goto insert;
 	do { /* Split a tree. */
 		size_t add_outer = 1,
-			add_inner = history.full - !h + !history.unfull.trunk;
+			add_inner = history.full - !h + !history.unfull.inner;
 		int is_above = t.br0 == 0 && t.br1 == trunk->bsize;
-		printf("add: history last unfull, %s:%lu, followed by %lu full.\n",
-			orcify(history.unfull.trunk),
-			(unsigned long)history.unfull.trunk_diff,
+		printf("add: history last unfull, %s-tree, followed by %lu full.\n",
+			orcify(history.unfull.inner),
 			(unsigned long)history.full);
 		printf("add: we will need an additional %lu outer tree"
 			" and %lu inner trees.\n", add_outer, add_inner);
 		printf("add: is above %s.\n", is_above ? "yes" : "no");
 		printf("add: %s-tree, height %lu.\n", orcify(trunk), h);
-		if(!history.unfull.trunk) { /* Trie is full -- increase height. */
+		if(!history.unfull.inner) { /* Trie is full -- increase height. */
 			if(!(new_root = malloc(sizeof *new_root))) goto catch;
 			printf("add: new root %s.\n", orcify(&new_root->trunk));
+		} else { /* Add to not-full. */
+			assert(0);
+			//PT_(tree_open)(key, 0, &history.unfull.inner->trunk, );
 		}
 		assert(0);
 #if 0
@@ -566,16 +599,17 @@ found:
 			sizeof *left->branch * (left->bsize + 1));
 #endif
 	} while(--history.full);
-	trunk = history.unfull.trunk, trunk_diff = history.unfull.trunk_diff;
+	//trunk = history.unfull.trunk, trunk_diff = history.unfull.trunk_diff;
+	assert(0);
 	/* It was in the promoted bit's skip and "Might be full now," was true.
 	 Don't have enough information to recover, but ca'n't get here twice. */
 	if(TRIE_BRANCHES <= trunk->bsize) { assert(!restarts++); goto start; }
 	/* Split. --> */
 
 insert: /* Insert into unfilled tree. ****************************************/
-	{ union PT_(leaf_ptr) outer
+	{ union PT_(leaf_ptr) ptr
 		= PT_(tree_open)(key, diff, trunk, trunk_diff, TRIE_OUTER);
-	memcpy(outer.leaf, &x, sizeof x); }
+	memcpy(ptr.leaf, &x, sizeof x); }
 	return 1;
 
 catch:
