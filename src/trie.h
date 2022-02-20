@@ -144,9 +144,10 @@ static const char *PT_(id_key)(const char *const key) { return key; }
 static PT_(key_fn) PT_(to_key) = &PT_(id_key);
 #endif
 
-/* A leaf/external B-tree node/tree. */
+/* Leaf/external B-tree node/tree. */
 struct PT_(outer_tree) { struct trie_trunk trunk; PT_(entry) leaf[TRIE_ORDER];};
-union PT_(leaf_ptr) { struct trie_inner_tree **inner; PT_(entry) *outer; };
+/* Either an inner or outer leaf. */
+union PT_(leaf_ptr) { struct trie_inner_tree **link; PT_(entry) *leaf; };
 
 /** @return Upcasts `trunk` to an outer tree. */
 static struct PT_(outer_tree) *PT_(outer)(struct trie_trunk *const trunk)
@@ -323,19 +324,10 @@ static const char *PT_(sample)(const struct trie_trunk *trunk,
 	return PT_(to_key)(PT_(outer_c)(trunk)->leaf[lf]);
 }
 
-static void PT_(trunk_split)(struct trie_trunk *const left) {
-	assert(0);
-}
-
-static void PT_(inner_split)(struct trie_inner_tree *const left,
-	struct trie_inner_tree *const right) {
-	assert(0);
-}
-
 /** Right side of `left`, which must be full, moves to `right`, (which is
  clobbered.) The root of `left` is also clobbered. */
-static void PT_(outer_split)(struct PT_(outer_tree) *const left,
-	struct PT_(outer_tree) *const right) {
+static void PT_(split)(struct PT_(outer_tree) *const left,
+	struct PT_(outer_tree) *const right, enum trie_tree_type type) {
 	unsigned char leaves_split = left->trunk.branch[0].left + 1;;
 	assert(left && right && left->trunk.bsize == TRIE_BRANCHES);
 	right->trunk.bsize = left->trunk.bsize - leaves_split;
@@ -393,7 +385,7 @@ static union PT_(leaf_ptr) PT_(tree_open)(const char *const key,
 	} else {
 		PT_(entry) *const leaf = PT_(outer)(trunk)->leaf + t.lf;
 		memmove(leaf + 1, leaf, sizeof *leaf * ((trunk->bsize + 1) - t.lf));
-		ret.outer = leaf;
+		ret.leaf = leaf;
 	}
 	branch = trunk->branch + t.br0;
 	if(t.br0 != t.br1) { /* Split with existing branch. */
@@ -422,6 +414,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(entry) x) {
 		size_t full; } context;
 	const char *sample; /* Only used in Find. */
 	int restarts = 0; /* Debug: make sure we only go through twice. */
+	struct trie_inner_tree *new_root = 0;
 	assert(trie && x && key);
 
 	printf("unique: adding <<%s>>\n", key);
@@ -493,12 +486,8 @@ found:
 		printf("add: we will need an additional %lu outer tree"
 			" and %lu inner trees.\n", add_outer, add_inner);
 		printf("tree: %s, height %lu\n", orcify(f.tr), h);
-		if(!context.last_unfull.tr) {
-			struct trie_inner_tree *upper = 0;
-			struct PT_(outer_tree) *outer = 0;
-			assert(0);
-			//if(!(upper = malloc(sizeof *upper))) goto catch;
-		}
+		if(!context.last_unfull.tr && !(new_root = malloc(sizeof *new_root)))
+			goto catch;
 		assert(0);
 #if 0
 		struct PT_(tree) *up, *left = 0, *right = 0;
@@ -580,55 +569,16 @@ found:
 	/* Split. --> */
 
 insert: /* Insert into unfilled tree. ****************************************/
-#if 1
 	{
 		union PT_(leaf_ptr) leaf
 			= PT_(tree_open)(key, f.bit.diff, f.tr, f.bit.tr, TRIE_OUTER);
-		memcpy(leaf.outer, &x, sizeof x);
+		memcpy(leaf.leaf, &x, sizeof x);
 	}
-#else
-	{
-		PT_(entry) *leaf;
-		struct trie_branch *branch;
-		size_t bit0, bit1;
-		unsigned is_right;
-		assert(key && f.tr && f.tr->bsize < TRIE_BRANCHES
-			&& f.bit.tr <= f.bit.diff);
-		/* Modify the tree's left branches to account for the new leaf. */
-		t.br0 = 0, t.br1 = f.tr->bsize, t.lf = 0;
-		bit0 = f.bit.tr;
-		while(t.br0 < t.br1) { /* Tree. */
-			branch = f.tr->branch + t.br0;
-			bit1 = bit0 + branch->skip;
-			/* Decision bits can never be the site of a difference. */
-			if(f.bit.diff <= bit1) { assert(f.bit.diff < bit1); break; }
-			if(!TRIE_QUERY(key, bit1))
-				t.br1 = ++t.br0 + branch->left++;
-			else
-				t.br0 += branch->left + 1, t.lf += branch->left + 1;
-			bit0 = bit1 + 1;
-		}
-		assert(bit0 <= f.bit.diff && f.bit.diff - bit0 <= UCHAR_MAX);
-		/* Should be the same as the first descent. */
-		if(is_right = !!TRIE_QUERY(key, f.bit.diff)) t.lf += t.br1 - t.br0 + 1;
-
-		/* Expand the tree to include one more leaf and branch. */
-		leaf = PT_(outer)(f.tr)->leaf + t.lf, assert(t.lf <= f.tr->bsize + 1);
-		memmove(leaf + 1, leaf, sizeof *leaf * ((f.tr->bsize + 1) - t.lf));
-		branch = f.tr->branch + t.br0;
-		if(t.br0 != t.br1) { /* Split with existing branch. */
-			assert(t.br0 < t.br1 && f.bit.diff + 1 <= bit0 + branch->skip);
-			branch->skip -= f.bit.diff - bit0 + 1;
-		}
-		memmove(branch + 1, branch, sizeof *branch * (f.tr->bsize - t.br0));
-		branch->left = is_right ? (unsigned char)(t.br1 - t.br0) : 0;
-		branch->skip = (unsigned char)(f.bit.diff - bit0);
-		f.tr->bsize++;
-		memcpy(leaf, &x, sizeof x);
-	}
-#endif
-	/* PT_(grph)(trie, "graph/" QUOTE(TRIE_NAME) "-add.gv"); */
 	return 1;
+
+catch:
+	free(new_root);
+	return 0;
 }
 
 /** A bi-predicate; returns true if the `replace` replaces the `original`; used
