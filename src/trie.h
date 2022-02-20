@@ -318,7 +318,7 @@ static void PT_(prnt)(const struct PT_(tree) *const tree) {
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-/** @return The leftmost key `lf` of `trunk` of `height`. */
+/** @return The leftmost key `lf` of `trunk` of edge `height`. */
 static const char *PT_(sample)(const struct trie_trunk *trunk,
 	size_t height, unsigned lf) {
 	assert(trunk);
@@ -327,7 +327,9 @@ static const char *PT_(sample)(const struct trie_trunk *trunk,
 	return PT_(to_key)(PT_(outer_c)(trunk)->leaf[lf]);
 }
 
-static size_t PT_(trunk_bit)(const struct T_(trie) *trie,
+/** Given a `trie`, calculate the bit at the start of `trunk`.
+ @order \O(\log `trie.size`) */
+static size_t PT_(trunk_diff)(const struct T_(trie) *trie,
 	const struct trie_trunk *trunk, const size_t height) {
 	struct trie_trunk_descend d;
 	const char *sample = PT_(sample)(trunk, height, 0);
@@ -347,7 +349,7 @@ static size_t PT_(trunk_bit)(const struct T_(trie) *trie,
 				d.lf += branch->left + 1;
 			d.diff++;
 		}
-		assert(d.h); if(!d.h) return 0; /* Probably crash; corrupted? */
+		assert(d.h); if(!d.h) return 0; /* Corrupted? */
 	}
 	return d.diff;
 }
