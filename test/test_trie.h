@@ -128,7 +128,7 @@ static void PT_(graph_tree_bits)(const struct trie_trunk *const tr,
 	for(i = 0; i <= tr->bsize; i++)
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
 		"[style = dashed, arrowhead = %snormal];\n", (const void *)tr, i,
-		(const void *)inner->link[i], PT_(leaf_to_dir)(tr, i));
+		(const void *)inner->leaf[i].link, PT_(leaf_to_dir)(tr, i));
 	/* Recurse. */
 	for(i = 0; i <= tr->bsize; i++) {
 		struct { unsigned br0, br1, lf; } in_tree;
@@ -143,7 +143,7 @@ static void PT_(graph_tree_bits)(const struct trie_trunk *const tr,
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 			bit++;
 		}
-		PT_(graph_tree_bits)(inner->link[i], height, bit, fp);
+		PT_(graph_tree_bits)(inner->leaf[i].link, height, bit, fp);
 	}
 }
 
@@ -201,7 +201,7 @@ static void PT_(graph_tree_mem)(const struct trie_trunk *const tr,
 	for(i = 0; i <= tr->bsize; i++)
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
 		"[style = dashed, arrowhead = %snormal];\n", (const void *)inner, i,
-		(const void *)inner->link[i], PT_(leaf_to_dir)(tr, i));
+		(const void *)inner->leaf[i].link, PT_(leaf_to_dir)(tr, i));
 	/* Recurse. */
 	for(i = 0; i <= tr->bsize; i++) {
 		struct { unsigned br0, br1, lf; } in_tree;
@@ -216,7 +216,7 @@ static void PT_(graph_tree_mem)(const struct trie_trunk *const tr,
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 			bit++;
 		}
-		PT_(graph_tree_mem)(inner->link[i], height, bit, fp);
+		PT_(graph_tree_mem)(inner->leaf[i].link, height, bit, fp);
 	}
 }
 
@@ -283,10 +283,10 @@ static void PT_(graph_tree_logic)(const struct trie_trunk *const tr,
 		if(!tr->bsize) fprintf(fp, "\ttree%pbranch0 [label = \"\","
 			" shape = circle, style = filled, fillcolor = Grey95];\n"
 			"\ttree%pbranch0 -> tree%pbranch0 [style = dashed];\n",
-			(const void *)tr, (const void *)tr, (const void *)inner->link[0]);
+			(const void *)tr, (const void *)tr, (const void *)inner->leaf[0].link);
 		fprintf(fp, "\n");
 		for(i = 0; i <= tr->bsize; i++)
-			PT_(graph_tree_logic)(inner->link[i], height, 0, fp);
+			PT_(graph_tree_logic)(inner->leaf[i].link, height, 0, fp);
 	}
 }
 
