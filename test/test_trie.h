@@ -304,8 +304,8 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 		"\n");
 	/*"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"*/
 	if(!trie->root) fprintf(fp, "\tidle;\n");
-	else if(!trie->height) fprintf(fp, "\tempty;\n");
-	else tf(trie->root, trie->height, 0, fp);
+	else if(!trie->node_height) fprintf(fp, "\tempty;\n");
+	else tf(trie->root, trie->node_height, 0, fp);
 	fprintf(fp, "\tnode [color = \"Red\"];\n"
 		"}\n");
 	fclose(fp);
