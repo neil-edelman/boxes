@@ -388,9 +388,9 @@ static void PT_(split)(struct PT_(outer_tree) *const left,
  @param[bit0] Tree start bit.
  @param[type] Inner (link) or outer (leaf) type of the `trunk`.
  @return The uninitialized leaf/link. */
-static union PT_(leaf_ptr) PT_(tree_open)(const char *const key,
-	const size_t diff, struct trie_trunk *const trunk, size_t bit0,
-	enum trie_tree_type type, union PT_(leaf_ptr) spot_for_tree_root) {
+static union PT_(leaf_ptr) PT_(tree_open)(enum trie_tree_type type,
+	const char *const key, const size_t diff, struct trie_trunk *const trunk,
+	size_t bit0, union PT_(leaf_ptr) spot_for_tree_root) {
 	struct { unsigned br0, br1, lf; } t;
 	struct trie_branch *branch;
 	size_t tr1;
@@ -418,6 +418,7 @@ static union PT_(leaf_ptr) PT_(tree_open)(const char *const key,
 	if(is_right = type == TRIE_OUTER && !!TRIE_QUERY(key, diff))
 		t.lf += t.br1 - t.br0 + 1;
 
+	/************************ also promote the root ****************/
 	/* Expand the tree to include one more leaf and branch. */
 	assert(t.lf <= trunk->bsize + 1);
 	if(type == TRIE_INNER) {
@@ -451,7 +452,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(entry) x) {
 	struct trie_trunk_descend d;
 	size_t trunk_diff;
 	struct { /* Last inner trie that is not full. */
-		struct { struct trie_inner_tree *inner; size_t height, diff; } unfull;
+		struct { struct trie_trunk *trunk; size_t height, diff; } unfull;
 		size_t full; /* Count after the last. */
 	} history;
 	const char *sample;
@@ -477,7 +478,7 @@ start:
 	/* Solitary. --> */
 
 	/* <!-- Find the first bit not in the tree. ******************************/
-	history.unfull.inner = 0, history.unfull.height = 0,
+	history.unfull.trunk = 0, history.unfull.height = 0,
 		history.unfull.diff = 0, history.full = 0;
 	for(d.trunk = trie->root, assert(d.trunk), d.diff = 0; ;
 		d.trunk = trie_inner(d.trunk)->leaf[d.lf].link) {
@@ -502,7 +503,7 @@ start:
 			d.diff++;
 		}
 		if(!d.h) break;
-		if(!is_full) history.unfull.inner = trie_inner(d.trunk),
+		if(!is_full) history.unfull.trunk = d.trunk,
 			history.unfull.height = d.h, history.unfull.diff = trunk_diff;
 	}
 	{ /* Got to a leaf without getting a difference. */
@@ -519,23 +520,26 @@ found:
 	if(!history.full) goto insert;
 	do { /* Split a tree. */
 		size_t add_outer = 1,
-			add_inner = history.full - !d.h + !history.unfull.inner;
+			add_inner = history.full - !d.h + !history.unfull.trunk;
 		int is_above = d.br0 == 0 && d.br1 == d.trunk->bsize;
 		printf("add: history last unfull, %s-tree, followed by %lu full.\n",
-			orcify(history.unfull.inner),
+			orcify(history.unfull.trunk),
 			(unsigned long)history.full);
 		printf("add: we will need an additional %lu outer tree"
 			" and %lu inner trees.\n", add_outer, add_inner);
 		printf("add: is above %s.\n", is_above ? "yes" : "no");
 		printf("add: %s-tree, height %lu.\n", orcify(d.trunk), d.h);
-		if(!history.unfull.inner) { /* Trie is full -- increase height. */
+		if(!history.unfull.trunk) { /* Trie is full -- increase height. */
 			if(!(new_root = malloc(sizeof *new_root))) goto catch;
 			printf("add: new root %s.\n", orcify(&new_root->trunk));
 		} else { /* Add to not-full. */
 			struct trie_inner_leaf dumb;
-			union PT_(leaf_ptr) stupid = { &dumb };
-			PT_(tree_open)(key, 0, &history.unfull.inner->trunk,
-				history.unfull.diff, TRIE_INNER, stupid);
+			union PT_(leaf_ptr) ptr;
+			ptr.inner = &dumb;
+			/********* I want a state machine ***************/
+			/* machine parameters: key, trunk, diff, height */
+			PT_(tree_open)(TRIE_INNER, key, 0, history.unfull.trunk,
+				history.unfull.diff, ptr);
 			assert(0);
 		}
 		assert(0);
@@ -623,8 +627,8 @@ insert: /* Insert into unfilled tree. ****************************************/
 	{
 		union PT_(leaf_ptr) dumb;
 		dumb.outer = &x;
-		union PT_(leaf_ptr) ptr
-			= PT_(tree_open)(key, d.diff, d.trunk, trunk_diff, TRIE_OUTER, dumb);
+		union PT_(leaf_ptr) ptr = PT_(tree_open)(TRIE_OUTER, key, d.diff,
+			d.trunk, trunk_diff, dumb);
 		memcpy(ptr.outer, &x, sizeof x);
 	}
 	return 1;
