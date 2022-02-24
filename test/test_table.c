@@ -357,6 +357,66 @@ finally:
 }
 
 
+/* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
+ Sol. As a real example, this is silly; it would be much better suited to
+ `gperf` because the data is known beforehand. */
+#define STARS \
+	X(Sol, 0), X(Sirius, 8.6), X(Canopus, 310), X(Rigil Kentaurus, 4.4), \
+	X(Toliman, 4.4), X(Arcturus, 37), X(Vega, 25), X(Capella, 43), \
+	X(Rigel, 860), X(Procyon, 11), X(Achernar, 139), X(Betelgeuse, 700), \
+	X(Hadar, 390), X(Altair, 17), X(Acrux, 320), X(Aldebaran, 65), \
+	X(Antares, 550), X(Spica, 250), X(Pollux, 34), X(Fomalhaut, 25), \
+	X(Deneb, 2615), X(Mimosa, 280), X(Regulus, 79), X(Adhara, 430), \
+	X(Shaula, 570), X(Castor, 52), X(Gacrux, 88), X(Bellatrix, 240), \
+	X(Elnath, 130), X(Miaplacidus, 110), X(Alnilam, 2000), X(Regor, 840), \
+	X(Alnair, 100), X(Alioth, 81), X(Alnitak, 820), X(Dubhe, 120), \
+	X(Mirfak, 590), X(Wezen, 1800), X(Sargas, 270), X(Kaus Australis, 140), \
+	X(Avior, 630), X(Alkaid, 100), X(Menkalinan, 100), X(Atria, 420), \
+	X(Alhena, 100), X(Peacock, 180), X(Alsephina, 80), X(Mirzam, 500), \
+	X(Alphard, 180), X(Polaris, 430), X(Hamal, 66), X(Algieba, 130), \
+	X(Diphda, 96), X(Mizar, 78), X(Nunki, 220), X(Menkent, 61), \
+	X(Mirach, 200), X(Alpheratz, 97), X(Rasalhague, 47), X(Kochab, 130), \
+	X(Saiph, 720), X(Denebola, 36), X(Algol, 93), X(Tiaki, 170), \
+	X(Muhlifain, 130), X(Aspidiske, 690), X(Suhail, 570), X(Alphecca, 75), \
+	X(Mintaka, 900), X(Sadr, 1500), X(Eltanin, 150), X(Schedar, 230), \
+	X(Naos, 1080), X(Almach, 350), X(Caph, 54), X(Izar, 202), \
+	/* Messes with graph?
+	X(2.30 (2.29–2.34var), 550), X(2.30 (2.29–2.31var), 380),*/ \
+	X(Dschubba, 400), X(Larawag, 65), /*X(2.35 (2.30–2.41var), 310),*/ \
+	X(Merak, 79), X(Ankaa, 77), X(Girtab, 460), X(Enif, 670), X(Scheat, 200), \
+	X(Sabik, 88), X(Phecda, 84), X(Aludra, 2000), X(Markeb, 540), \
+	X(Navi, 610), X(Markab, 140), X(Aljanah, 72), X(Acrab, 404)
+#define X(n, m) #n
+static /*const*/ char *star_names[] = { STARS };
+#undef X
+static const size_t stars_size = sizeof star_names / sizeof *star_names;
+#define X(n, m) m
+static const double star_distances[] = { STARS };
+#undef X
+#define TABLE_NAME star
+#define TABLE_KEY char *
+#define TABLE_VALUE double
+#define TABLE_UINT unsigned char
+#define TABLE_HASH &djb2_hash
+#define TABLE_IS_EQUAL &string_is_equal
+#define TABLE_TEST
+#define TABLE_EXPECT_TRAIT
+#include "../src/table.h"
+#define TABLE_DEFAULT 0
+#define TABLE_EXPECT_TRAIT
+#include "../src/table.h"
+#define TABLE_TO_STRING &string_to_string
+#include "../src/table.h"
+/* @implements <zodiac>fill_fn */
+static int fill_star(void *const zero, struct star_table_entry *const star) {
+	size_t r = (size_t)rand() / (RAND_MAX / stars_size + 1);
+	(void)zero, assert(!zero);
+	star->key = star_names[r];
+	star->value = star_distances[r];
+	return 1;
+}
+
+
 /* Linked dictionary: linked-list with a comparison order indexed by a map.
  This is just the thing we said in `TABLE_VALUE` to avoid, and probably is the
  worst-case in terms of design of the table. It's associated, so we don't
@@ -715,6 +775,30 @@ finally:
 }
 
 
+/** Contrived example. */
+static void stars(void) {
+	struct star_table stars = TABLE_IDLE;
+	const size_t s_array[] = { 0, 1, 8, 9, 11, 16, 17, 20, 22, 25, 49 };
+	size_t i;
+	for(i = 0; i < sizeof s_array / sizeof *s_array; i++) {
+		struct star_table_entry e;
+		size_t s = s_array[i];
+		e.key = star_names[s], e.value = star_distances[s];
+		printf("%lu: %s -> %f\n", (unsigned long)s, e.key, e.value);
+		if(star_table_try(&stars, e) != TABLE_UNIQUE)
+			goto catch;
+	}
+	printf("%s.\n", star_table_to_string(&stars));
+	table_star_graph(&stars, "web/table-precursor/star-raw.gv");
+	goto finally;
+catch:
+	assert(0);
+finally:
+	star_table_(&stars);
+	printf("\n");
+}
+
+
 #if 0 /* <!-- timing */
 
 /* Set up a closed hash table for comparison. With optimizations, I get that
@@ -940,20 +1024,25 @@ static void timing_comparison(void)
 #endif /* timing --> */
 
 
+#include <time.h>
+
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
 	struct vec4_pool vec4s = POOL_IDLE;
+	unsigned seed = (unsigned)clock();
 	zodiac_table_test(&fill_zodiac, 0); /* Don't require any space. */
 	string_table_test(&str16_from_void, &strings), str16_pool_(&strings);
 	uint_table_test(&uint_from_void, 0);
 	int_table_test(&int_from_void, 0);
 	vec4_table_test(&vec4_from_void, &vec4s), vec4_pool_(&vec4s);
+	star_table_test(&fill_star, 0);
 	test_default();
 	test_it();
 	boat_club();
 	linked_dict();
 	year_of();
 	nato();
+	stars();
 	timing_comparison();
 	return EXIT_SUCCESS;
 }

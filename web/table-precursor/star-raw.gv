@@ -1,0 +1,121 @@
+digraph {
+	rankdir=LR;
+	graph [truecolor=true, bgcolor=transparent];
+	fontface=modern;
+	node [shape=box, style=filled, fillcolor="Gray95"];
+	hash [label=<<TABLE BORDER="0">
+	<TR><TD COLSPAN="3" ALIGN="LEFT"><FONT COLOR="Gray85">&lt;star&gt;table: char *</FONT></TD></TR>
+	<TR>
+		<TD>&nbsp;</TD>
+		<TD BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">load factor</TD>
+		<TD BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">11/16</TD>
+	</TR>
+	<TR>
+		<TD>&nbsp;</TD>
+		<TD BORDER="0" ALIGN="RIGHT">E[no bucket]</TD>
+		<TD BORDER="0" ALIGN="RIGHT">1.36(0.7)</TD>
+	</TR>
+	<TR>
+		<TD>&nbsp;</TD>
+		<TD BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">max bucket</TD>
+		<TD BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">3</TD>
+	</TR>
+	<TR>
+		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Bold">hash</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Bold">key</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Bold">next</FONT></TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x1</TD>
+		<TD ALIGN="RIGHT">0x91</TD>
+		<TD ALIGN="LEFT">Castor</TD>
+		<TD PORT="1">⬤</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x2</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x3</TD>
+		<TD ALIGN="RIGHT">0x3</TD>
+		<TD ALIGN="LEFT">Deneb</TD>
+		<TD PORT="3">⬤</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x44</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sirius</TD>
+		<TD PORT="4" BGCOLOR="Gray90">⬤</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x5</TD>
+		<TD ALIGN="RIGHT">0x35</TD>
+		<TD ALIGN="LEFT">Spica</TD>
+		<TD PORT="5">⬤</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x6</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x7</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x8</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xd8</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Rigel</TD>
+		<TD PORT="8" BGCOLOR="Gray90">⬤</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x9</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xa</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4a</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Betelgeuse</TD>
+		<TD PORT="10" BGCOLOR="Gray90">⬤</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BORDER="2">0xb</TD>
+		<TD ALIGN="RIGHT">0x4f</TD>
+		<TD ALIGN="LEFT">Procyon</TD>
+		<TD PORT="11">◯</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xc</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xec</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Regulus</TD>
+		<TD PORT="12" BGCOLOR="Gray90">⬤</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0xd</TD>
+		<TD ALIGN="RIGHT">0x33</TD>
+		<TD ALIGN="LEFT">Antares</TD>
+		<TD PORT="13">◯</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xe</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xb3</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sol</TD>
+		<TD PORT="14" BGCOLOR="Gray90">◯</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0xf</TD>
+		<TD ALIGN="RIGHT">0x9f</TD>
+		<TD ALIGN="LEFT">Polaris</TD>
+		<TD PORT="15">⬤</TD>
+	</TR>
+</TABLE>>];
+	node [shape=plain, fillcolor=none]
+	e13 [label="0xd"];
+	hash:3 -> e13 [tailclip=false];
+	e14 [label="0xe"];
+	e13 -> e14;
+	i0xe [label="0xe", fontcolor="Gray"];
+	hash:13 -> i0xe [color="Gray"];
+	e11 [label="0xb"];
+	hash:15 -> e11 [tailclip=false];
+	node [color=red];
+}
