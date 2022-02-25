@@ -47,7 +47,7 @@
       \section*{\abstractname}%
     \else \small %
       \begin{center}%
-        {\bfseries\color{ilrblue} \abstractname\vspace{\z@}\vspace{-12bp}}%
+        {\bfseries\color{ilrblue} \abstractname\vspace{\z@}\vspace{-6bp}}%
       \end{center}%
       \quotation
     \fi}
@@ -74,23 +74,434 @@
 
 \maketitle
 
-\abstract{Imbuing a hash-table entry with a `next index' allows collisions to be stored in a stack of open entries grown from the unused. Storing a present bit in the `next' instead of the key allows the key to be unconstrained. In practice, this scheme simplifies load-factor-based expansions, and often saves a dereference step.}
+\abstract{We consider an inline-chained hash-table, that is, overlapping the entry with an index to the next entry in a bucket array; compare separate chaining, where there is a link to the next entry. Wherein closed entries that form the heads of buckets, and open entries that form a stack, do not coalesce. This can simplify allocations, allows the load-factor to grow to one, and often saves a dereference step.}
 
 \section{Introduction}
 
-By `expensive' we mean (mostly) usability.
+Performance is a critical issue, but we are also concerned with usability. Without higher-level language support for native hash-tables or automatic garbage-collection, how hard is it to understand and manage a general hash-table?
 
-Separate chaining as seen in Figure~\ref{chaining}. As pictured here, this poses a problem: one can only be in one hash-table at a time; any subclasses must inherit from the node, not the data. In practice, one would have another dereference between the link in the linked-list and the data. With ordered data, keeping a self-balancing tree cuts down the worst case to $\mathcal{O}(\log n)$\cite{knuth1998sorting}. However, it is damaging to cache-coherence; the large number of objects can be, at least, difficult to keep track. It allows unconstrained load factors, which is useful in some cases.
+As motivation, an example of separate chaining as seen in Figure~\ref{chaining:separate}. We've used D.J.~Bernstein's {\it djb2} to hash the star name as a string to 8-bit unsigned integer. As pictured here, this poses a problem: one can only be in one hash-table at a time and any subclasses must inherit from the linked-list node, not the entry. In common practice, one would have another dereference between the link in the linked-list and the entry. It allows unconstrained load factors, which is useful in some cases. With ordered data, keeping a self-balancing tree cuts down the worst case to $\mathcal{O}(\log n)$\cite{knuth1998sorting}. The expected number of dereferences is one (two, if the dereference were made in the link) more than the number of queries.
 
-Read the Art.
+Another, more compact and cache-friendly...
+Problems with null.
+Clustering.
+Cache-friendly.
+Open addressing. Robin Hood, obviously.\cite{wiki?} One can calculate the displacement from the hash, but we have to have a way of telling if it's null; one could have the maximum value of displaced be a flag. More cache-coherent for simple values. Less expected value of lookup. Exhibits clustering. Must maintain a low load factor, (already we can see a lot of clustering.) Reliance on randomness of hash function? ``Open addressing can lead to more concise tables with better cache performance than bucketing, but performance will be more brittle as the load factor (ratio of occupancy to capacity) of the hash table starts to get high.''\cite{skiena2008algorithm} The lack of symmetry presents a difficulty removing entries.
 
-Open addressing. Robin Hood, obviously.\cite{wiki?} One can calculate the displacement from the hash, but we have to have a way of telling if it's null; one could have the maximum value of displaced be a flag. More cache-coherent for simple values. Less expected value of lookup. Exhibits clustering. Must maintain a low load factor, (already we can see a lot of clustering.) Reliance on randomness of hash function? ``Open addressing can lead to more concise tables with better cache performance than bucketing, but performance will be more brittle as the load factor (ratio of occupancy to capacity) of the hash table starts to get high.''\cite{skiena2008algorithm}
+The data structure is similar to that of coalesced hashing\cite{williams1959handling}, but the procedure is very different. We need no extra buckets; coalescing cannot occur because the stack and the closed entries are orthogonal. It is homomorphic to separate-chaining in the regime where the load factor is less-then one. It may be more cache-friendly than separate chaining.
+The expected number of dereferences is number of queries.
 
-The data structure is similar to that of coalesced hashing\cite{williams1959handling}, except we need no extra buckets; coalescing cannot occur because the stack and the closed entries are orthogonal.
+%\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
+\begin{figure}
+	\centering
+	\subcaptionbox{Separate-chaining.\label{chaining:separate}}{%
+		\digraph[scale=\Scale]{separate}{
+	rankdir=LR;
+	graph [truecolor=true, bgcolor=transparent];
+	fontface=modern;
+	node [shape=box, style=filled, fillcolor="Gray95"];
+	hash [label=<<TABLE BORDER="0">
+	<TR>
+		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Bold">next</FONT></TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x1</TD>
+		<TD PORT="1">\detokenize{⬤}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x2</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x3</TD>
+		<TD PORT="3">\detokenize{⬤}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4</TD>
+		<TD PORT="4" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x5</TD>
+		<TD PORT="5">\detokenize{⬤}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x6</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x7</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x8</TD>
+		<TD PORT="8" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x9</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xa</TD>
+		<TD PORT="10" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BORDER="0">0xb</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xc</TD>
+		<TD PORT="12" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0xd</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xe</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0xf</TD>
+		<TD PORT="15">\detokenize{⬤}</TD>
+	</TR>
+</TABLE>>];
+	e1 [label=<<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="RIGHT">0x91</TD>
+		<TD ALIGN="LEFT">Castor</TD>
+		<TD ALIGN="RIGHT">52</TD>
+		<TD PORT="1">\detokenize{⬤}</TD>
+	</TR>
+</TABLE>>];
+	e3 [label=<<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="RIGHT">0x3</TD>
+		<TD ALIGN="LEFT">Deneb</TD>
+		<TD ALIGN="RIGHT">2615</TD>
+		<TD PORT="3">\detokenize{⬤}</TD>
+	</TR>
+</TABLE>>];
+	e4 [label=<<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x44</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sirius</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">8.6</TD>
+		<TD PORT="4" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+	</TR>
+</TABLE>>];
+	e5 [label=<<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="RIGHT">0x35</TD>
+		<TD ALIGN="LEFT">Spica</TD>
+		<TD ALIGN="RIGHT">250</TD>
+		<TD PORT="5">\detokenize{⬤}</TD>
+	</TR>
+</TABLE>>];
+	e8 [label=<<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xd8</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Rigel</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">860</TD>
+		<TD PORT="8" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+	</TR>
+</TABLE>>];
+	e10 [label=<<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4a</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Betelgeuse</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">700</TD>
+		<TD PORT="10" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+	</TR>
+</TABLE>>];
+	e11 [label=<<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="RIGHT">0x4f</TD>
+		<TD ALIGN="LEFT">Procyon</TD>
+		<TD ALIGN="RIGHT">11</TD>
+		<TD PORT="11">\detokenize{◯}</TD>
+	</TR>
+</TABLE>>];
+	e12 [label=<<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xec</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Regulus</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">79</TD>
+		<TD PORT="12" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+	</TR>
+</TABLE>>];
+	e13 [label=<<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="RIGHT">0x33</TD>
+		<TD ALIGN="LEFT">Antares</TD>
+		<TD ALIGN="RIGHT">550</TD>
+		<TD PORT="13">\detokenize{◯}</TD>
+	</TR>
+</TABLE>>];
+	e14 [label=<<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="RIGHT">0xb3</TD>
+		<TD ALIGN="LEFT">Sol</TD>
+		<TD ALIGN="RIGHT">0</TD>
+		<TD PORT="14">\detokenize{◯}</TD>
+	</TR>
+</TABLE>>];
+	e15 [label=<<TABLE BORDER="0">
+	<TR>
+		<TD ALIGN="RIGHT">0x9f</TD>
+		<TD ALIGN="LEFT">Polaris</TD>
+		<TD ALIGN="RIGHT">430</TD>
+		<TD PORT="15">\detokenize{⬤}</TD>
+	</TR>
+</TABLE>>];
+	node [shape=plain, fillcolor=none, headclip = false, tailclip=false]
+	hash:1 -> e1;
+	hash:3 -> e3 -> e13 -> e14;
+	hash:4 -> e4;
+	hash:5 -> e5;
+	hash:8 -> e8;
+	hash:10 -> e10;
+	hash:12 -> e12;
+	hash:15 -> e15;
+	e15 -> e11;
+		}
+	}
+	\subcaptionbox{Open-addressing.\label{chaining:open}}{%
+		\digraph[scale=\Scale]{open}{
+	rankdir=LR;
+	graph [truecolor=true, bgcolor=transparent];
+	fontface=modern;
+	node [shape=box, style=filled, fillcolor="Gray95"];
+	hash [label=<<TABLE BORDER="0">
+	<TR>
+		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Italic">disp.</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Bold">hash</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Bold">key</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Bold">value</FONT></TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x0</TD>
+		<TD BGCOLOR="Gray90">1</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4f</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Procyon</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">11</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x1</TD>
+		<TD>0</TD>
+		<TD ALIGN="RIGHT">0x91</TD>
+		<TD ALIGN="LEFT">Castor</TD>
+		<TD ALIGN="RIGHT">52</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x2</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x3</TD>
+		<TD>0</TD>
+		<TD ALIGN="RIGHT">0x3</TD>
+		<TD ALIGN="LEFT">Deneb</TD>
+		<TD ALIGN="RIGHT">2615</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4</TD>
+		<TD BGCOLOR="Gray90">1</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x33</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Antares</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">550</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x5</TD>
+		<TD PORT="14">2</TD>
+		<TD ALIGN="RIGHT">0xb3</TD>
+		<TD ALIGN="LEFT">Sol</TD>
+		<TD ALIGN="RIGHT">0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x6</TD>
+		<TD BGCOLOR="Gray90">2</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x44</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sirius</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">8.6</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x7</TD>
+		<TD>2</TD>
+		<TD ALIGN="RIGHT">0x35</TD>
+		<TD ALIGN="LEFT">Spica</TD>
+		<TD ALIGN="RIGHT">250</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x8</TD>
+		<TD PORT="8" BGCOLOR="Gray90">0</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xd8</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Rigel</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">860</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x9</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xa</TD>
+		<TD PORT="10" BGCOLOR="Gray90">0</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4a</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Betelgeuse</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">700</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0xb</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xc</TD>
+		<TD PORT="12" BGCOLOR="Gray90">0</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xec</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Regulus</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">79</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0xd</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xe</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0xf</TD>
+		<TD PORT="15">0</TD>
+		<TD ALIGN="RIGHT">0x9f</TD>
+		<TD ALIGN="LEFT">Polaris</TD>
+		<TD ALIGN="RIGHT">430</TD>
+	</TR>
+</TABLE>>];
+	node [shape=plain, fillcolor=none]
+		}
+	}
+	\subcaptionbox{Inline-chaining.\label{chaining:inline}}{%
+		\digraph[scale=\Scale]{inline}{
+	rankdir=LR;
+	graph [truecolor=true, bgcolor=transparent];
+	fontface=modern;
+	node [shape=box, style=filled, fillcolor="Gray95"];
+	hash [label=<<TABLE BORDER="0">
+	<TR>
+		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Bold">hash</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Bold">key</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Bold">value</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Bold">next</FONT></TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x0</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x1</TD>
+		<TD ALIGN="RIGHT">0x91</TD>
+		<TD ALIGN="LEFT">Castor</TD>
+		<TD ALIGN="RIGHT">52</TD>
+		<TD PORT="1">\detokenize{⬤}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x2</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x3</TD>
+		<TD ALIGN="RIGHT">0x3</TD>
+		<TD ALIGN="LEFT">Deneb</TD>
+		<TD ALIGN="RIGHT">2615</TD>
+		<TD PORT="3">\detokenize{⬤}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x44</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sirius</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">8.6</TD>
+		<TD PORT="4" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x5</TD>
+		<TD ALIGN="RIGHT">0x35</TD>
+		<TD ALIGN="LEFT">Spica</TD>
+		<TD ALIGN="RIGHT">250</TD>
+		<TD PORT="5">\detokenize{⬤}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x6</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x7</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x8</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xd8</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Rigel</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">860</TD>
+		<TD PORT="8" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0x9</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xa</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4a</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Betelgeuse</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">700</TD>
+		<TD PORT="10" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BORDER="2">0xb</TD>
+		<TD ALIGN="RIGHT">0x4f</TD>
+		<TD ALIGN="LEFT">Procyon</TD>
+		<TD ALIGN="RIGHT">11</TD>
+		<TD PORT="11">\detokenize{◯}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xc</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xec</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Regulus</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">79</TD>
+		<TD PORT="12" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0xd</TD>
+		<TD ALIGN="RIGHT">0x33</TD>
+		<TD ALIGN="LEFT">Antares</TD>
+		<TD ALIGN="RIGHT">550</TD>
+		<TD PORT="13">\detokenize{◯}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xe</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xb3</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sol</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0</TD>
+		<TD PORT="14" BGCOLOR="Gray90">\detokenize{◯}</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">0xf</TD>
+		<TD ALIGN="RIGHT">0x9f</TD>
+		<TD ALIGN="LEFT">Polaris</TD>
+		<TD ALIGN="RIGHT">430</TD>
+		<TD PORT="15">\detokenize{⬤}</TD>
+	</TR>
+</TABLE>>];
+	node [shape=plain, fillcolor=none]
+	e13 [label="0xd"];
+	hash:3 -> e13 [tailclip=false];
+	e14 [label="0xe"];
+	e13 -> e14;
+	i0xe [label="0xe", fontcolor="Gray"];
+	hash:13 -> i0xe [color="Gray"];
+	e11 [label="0xb"];
+	hash:15 -> e11 [tailclip=false];
+		}
+	}
+	\label{chaining}
+	\caption{A map from some star names to light-year distance using different collision-resolution schemes. Order of insertion: Sol, Sirius, Rigel, Procyon, Betelgeuse, Antares, Spica, Deneb, Regulus, Castor, Polaris. Load factor 11/16 = 0.69. Expected value of number of queries for chaining, 1.36(0.7), and for open-addressing 1.60(0.9).}
+% sample std.dev.
+\end{figure}
 
-It is homomorphic to separate-chaining in the regime where the load factor is equal-to or less-then one. It may be more cache-friendly than separate chaining.
+\section{Details}
 
-The distinction between open and closed, is then, every bucket with contents begins with a closed entry, followed by zero-or-more open entries 
+We assume that the size of the data is small; enough to easily fit in a cache-line. With larger objects, or with any form of hierarchy, the user would generally store a pointer. This is at least an extra dereference, in which case, it becomes even less important what is the structure of the hash-table.
+
+For implementations that do not provide a special iteration mechanism, iteration on separate-chaining is $\mathcal{O}(\text{capacity} + \text{size})$. For open-addressing and inline-chaining, because we store collisions in the hash-table itself, it's $\mathcal{O}(\text{capacity})$. However, a practical capacity in open-addressing will be larger because the decrease in performance as the load-factor reaches saturation.
+
+The distinction between open and closed, is then, every bucket with contents begins with a closed entry, followed by zero-or-more open entries. A failed lookup is characterized by either the next is null or the hash doesn't match the address, that is, open entry. If the hash matches the address, go through each entry until hitting `END'. In this way, the logic is indistinguishable from separate chaining.
 
 %\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
 \begin{figure}
@@ -234,13 +645,11 @@ The distinction between open and closed, is then, every bucket with contents beg
 
 \section{Implementation}
 
-
-
 \subsection{Next}
 
 In order to offer a complete range of data for the key, (specifically, not just a pointer,) the nullity is stored in the `next' field. There are two special values that must be differentiated: there is no closed value associated with this address, called `NULL', and there is no next value, called `END'. In the implementation, this is parameterized by a single type to store indices.
 
-These two special values cause the indexing to be two values short. Since the implementation is a power-of-two, it causes the addressable space to be one-bit less; half the size, or the equivalent of a signed positive integer. The bits `NULL' and `END' were chosen to minimize average power requirements while leaving a natural $[0, 011..11]$ for addressing. That is, $100..00$, and $100..01$. In Figure~\ref{star}, where there (unusually) are 8~bits, the addressable space is $[0, 127]$, and `NULL', `END' are 128, 129.
+These two special values cause the indexing to be two values short. Since the implementation is a power-of-two, it causes the addressable space to be one-bit less; half the size, or the equivalent of a signed positive integer. The bits `NULL' and `END' were chosen to minimize average power requirements while leaving a natural $[0, 011..11]$ for addressing. That is, $100..00$, and $100..01$. In Figure~\ref{star}, where there are 8~bits, the addressable space is $[0, 127]$, and `NULL', `END' are 128, 129.
 
 \subsection{Orthogonal Features}
 
