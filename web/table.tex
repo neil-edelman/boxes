@@ -15,6 +15,7 @@
 \usepackage[colorlinks]{hyperref} % pdf links
 \usepackage{url} % url support
 %\usepackage{comment} % comment
+\usepackage{xfrac}
 
 % code doesn't wrap
 \usepackage[table]{xcolor}
@@ -74,19 +75,15 @@
 
 \maketitle
 
-\abstract{We consider an inline-chained hash-table, that is, overlapping the entry with an index to the next entry in a bucket array; compare separate chaining, where there is a link to the next entry. Wherein closed entries that form the heads of buckets, and open entries that form a stack, do not coalesce. This can simplify allocations, allows the load-factor to grow to one, and often saves a dereference step.}
+\abstract{By an inline-chained hash-table we mean overlapping each entry with an index to the next entry; compare separate-chaining, where there is a link to the next entry. In this scheme, closed entries that form the heads of buckets, and open entries that form a stack, never coalesce. This can simplify allocations, allows the load-factor to grow to one, and often saves a dereference step.}
 
 \section{Introduction}
 
-Performance is a critical issue, but we are also concerned with usability. Without higher-level language support for native hash-tables or automatic garbage-collection, how hard is it to understand and manage a general hash-table?
+Figure~\ref{types} shows a comparison of reasonably simple types of hash-table; it uses D.J.~Bernstein's {\it djb2} to hash a string to 8-bit unsigned integer. It also uses a most-recently-used heuristic as probe-order; experimentally, this was found to make little difference in the run-time, and is advantageous when the access pattern is non-uniform\cite{brent1973reducing, sleator1985self}.
 
-As motivation, an example of separate chaining as seen in Figure~\ref{chaining:separate}. We've used D.J.~Bernstein's {\it djb2} to hash the star name as a string to 8-bit unsigned integer. As pictured here, this poses a problem: one can only be in one hash-table at a time and any subclasses must inherit from the linked-list node, not the entry. In common practice, one would have another dereference between the link in the linked-list and the entry. It allows unconstrained load factors, which is useful in some cases. With ordered data, keeping a self-balancing tree cuts down the worst case to $\mathcal{O}(\log n)$\cite{knuth1998sorting}. The expected number of dereferences is one (two, if the dereference were made in the link) more than the number of queries.
+An example of separate-chaining is seen in Figure~\ref{types:separate}, and is more like T.D. Hanson's {\it uthash}: only being in one hash-table at a time. A similar hash to {\it C++}'s {\it std::unordered\_map}, {\it Lua}'s {\it table}, and many others, would have another dereference between the linked-list and the entry. This style of hash-table allows unconstrained load factors. With ordered data, keeping a self-balancing tree cuts down the worst case to $\mathcal{O}(\log n)$\cite{knuth1998sorting}, as in {\it Java}. The expected number of dereferences is a constant added to the number of queries.
 
-Another, more compact and cache-friendly...
-Problems with null.
-Clustering.
-Cache-friendly.
-Open addressing. Robin Hood, obviously.\cite{wiki?} One can calculate the displacement from the hash, but we have to have a way of telling if it's null; one could have the maximum value of displaced be a flag. More cache-coherent for simple values. Less expected value of lookup. Exhibits clustering. Must maintain a low load factor, (already we can see a lot of clustering.) Reliance on randomness of hash function? ``Open addressing can lead to more concise tables with better cache performance than bucketing, but performance will be more brittle as the load factor (ratio of occupancy to capacity) of the hash table starts to get high.''\cite{skiena2008algorithm} The lack of symmetry presents a difficulty removing entries.
+Open-addressing\cite{peterson1957addressing} is another, more compact, and generally more cache-coherent. An example of this table design is seen in Figure~\ref{types:open}. Robin Hood hashing\cite{celis1985robin} has been used to keep the variation in the query length to a minimum; here, with the condition on whether to evict strengthened because of the most-recently-used heuristic. It has lower maximum load-factor because of clustering\cite{skiena2008algorithm}. Practically, it 0.69 is high; {\it Python}\cite{knuth1998sorting} uses a maximum of \sfrac{2}{3}. One can calculate the displacement from the hash, but we have to have a general way of telling if it's null. The lack of symmetry presents a difficulty removing entries.
 
 The data structure is similar to that of coalesced hashing\cite{williams1959handling}, but the procedure is very different. We need no extra buckets; coalescing cannot occur because the stack and the closed entries are orthogonal. It is homomorphic to separate-chaining in the regime where the load factor is less-then one. It may be more cache-friendly than separate chaining.
 The expected number of dereferences is number of queries.
@@ -94,7 +91,7 @@ The expected number of dereferences is number of queries.
 %\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
 \begin{figure}
 	\centering
-	\subcaptionbox{Separate-chaining.\label{chaining:separate}}{%
+	\subcaptionbox{Separate-chaining.\label{types:separate}}{%
 		\digraph[scale=\Scale]{separate}{
 	rankdir=LR;
 	graph [truecolor=true, bgcolor=transparent];
@@ -262,7 +259,7 @@ The expected number of dereferences is number of queries.
 	e15 -> e11;
 		}
 	}
-	\subcaptionbox{Open-addressing.\label{chaining:open}}{%
+	\subcaptionbox{Open-addressing.\label{types:open}}{%
 		\digraph[scale=\Scale]{open}{
 	rankdir=LR;
 	graph [truecolor=true, bgcolor=transparent];
@@ -372,7 +369,7 @@ The expected number of dereferences is number of queries.
 	node [shape=plain, fillcolor=none]
 		}
 	}
-	\subcaptionbox{Inline-chaining.\label{chaining:inline}}{%
+	\subcaptionbox{Inline-chaining.\label{types:inline}}{%
 		\digraph[scale=\Scale]{inline}{
 	rankdir=LR;
 	graph [truecolor=true, bgcolor=transparent];
@@ -490,158 +487,19 @@ The expected number of dereferences is number of queries.
 	hash:15 -> e11 [tailclip=false];
 		}
 	}
-	\label{chaining}
-	\caption{A map from some star names to light-year distance using different collision-resolution schemes. Order of insertion: Sol, Sirius, Rigel, Procyon, Betelgeuse, Antares, Spica, Deneb, Regulus, Castor, Polaris. Load factor 11/16 = 0.69. Expected value of number of queries for chaining, 1.36(0.7), and for open-addressing 1.60(0.9).}
+	\caption{A map from some star names to light-year distance using different collision-resolution schemes. Order of insertion: Sol, Sirius, Rigel, Procyon, Betelgeuse, Antares, Spica, Deneb, Regulus, Castor, Polaris. Load factor 11/16 = 0.69. Expected value of number of queries for chaining, 1.36(0.7), and for open-addressing 1.60(0.9).\label{types}}
 % sample std.dev.
 \end{figure}
 
 \section{Details}
+
+Performance is a critical issue, but we are also concerned with usability. Specifically, without higher-level language support for native hash-tables or automatic garbage-collection, how hard is it to understand and manage a general hash-table.
 
 We assume that the size of the data is small; enough to easily fit in a cache-line. With larger objects, or with any form of hierarchy, the user would generally store a pointer. This is at least an extra dereference, in which case, it becomes even less important what is the structure of the hash-table.
 
 For implementations that do not provide a special iteration mechanism, iteration on separate-chaining is $\mathcal{O}(\text{capacity} + \text{size})$. For open-addressing and inline-chaining, because we store collisions in the hash-table itself, it's $\mathcal{O}(\text{capacity})$. However, a practical capacity in open-addressing will be larger because the decrease in performance as the load-factor reaches saturation.
 
 The distinction between open and closed, is then, every bucket with contents begins with a closed entry, followed by zero-or-more open entries. A failed lookup is characterized by either the next is null or the hash doesn't match the address, that is, open entry. If the hash matches the address, go through each entry until hitting `END'. In this way, the logic is indistinguishable from separate chaining.
-
-%\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
-\begin{figure}
-	\centering
-	\digraph[scale=\Scale]{star}{
-	rankdir=LR;
-	graph [truecolor=true, bgcolor=transparent];
-	fontface=modern;
-	node [shape=box, style=filled, fillcolor="Gray95"];
-	hash [label=<<TABLE BORDER="0">
-	<TR><TD COLSPAN="3" ALIGN="LEFT"><FONT COLOR="Gray85">&lt;star&gt;table: char *</FONT></TD></TR>
-	<TR>
-		<TD>&nbsp;</TD>
-		<TD BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">load factor</TD>
-		<TD BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">12/16</TD>
-	</TR>
-	<TR>
-		<TD>&nbsp;</TD>
-		<TD BORDER="0" ALIGN="RIGHT">E[no bucket]</TD>
-		<TD BORDER="0" ALIGN="RIGHT">1.33(0.7)</TD>
-	</TR>
-	<TR>
-		<TD>&nbsp;</TD>
-		<TD BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">max bucket</TD>
-		<TD BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">3</TD>
-	</TR>
-	<TR>
-		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">hash</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">key</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">next</FONT></TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x0</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x1</TD>
-		<TD ALIGN="RIGHT">0x91</TD>
-		<TD ALIGN="LEFT">Castor</TD>
-		<TD PORT="1">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x2</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x3</TD>
-		<TD ALIGN="RIGHT">0x3</TD>
-		<TD ALIGN="LEFT">Deneb</TD>
-		<TD PORT="3">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x44</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sirius</TD>
-		<TD PORT="4" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x5</TD>
-		<TD ALIGN="RIGHT">0x35</TD>
-		<TD ALIGN="LEFT">Spica</TD>
-		<TD PORT="5">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x6</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x7</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x8</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xd8</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Rigel</TD>
-		<TD PORT="8" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x9</TD>
-		<TD ALIGN="RIGHT">0xe9</TD>
-		<TD ALIGN="LEFT">Pollux</TD>
-		<TD PORT="9">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xa</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4a</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Betelgeuse</TD>
-		<TD PORT="10" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BORDER="2">0xb</TD>
-		<TD ALIGN="RIGHT">0x4f</TD>
-		<TD ALIGN="LEFT">Procyon</TD>
-		<TD PORT="11">\detokenize{◯}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xc</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xec</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Regulus</TD>
-		<TD PORT="12" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0xd</TD>
-		<TD ALIGN="RIGHT">0x33</TD>
-		<TD ALIGN="LEFT">Antares</TD>
-		<TD PORT="13">\detokenize{◯}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xe</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xb3</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sol</TD>
-		<TD PORT="14" BGCOLOR="Gray90">\detokenize{◯}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0xf</TD>
-		<TD ALIGN="RIGHT">0x9f</TD>
-		<TD ALIGN="LEFT">Polaris</TD>
-		<TD PORT="15">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	node [shape=plain, fillcolor=none]
-	e13 [label="0xd"];
-	hash:3 -> e13 [tailclip=false];
-	e14 [label="0xe"];
-	e13 -> e14;
-	i0xe [label="0xe", fontcolor="Gray"];
-	hash:13 -> i0xe [color="Gray"];
-	e11 [label="0xb"];
-	hash:15 -> e11 [tailclip=false];
-	}
-	\caption{Hash map.\label{star} Order of insertion is Sol, Sirius, Rigel, Procyon, Betelgeuse, Antares, Spica, Deneb, Regulus, Castor, Polaris. Load factor 11/16 = 0.69. Expected value of number of queries 1.36(0.7).}
-%0: Sol -> 0.000000
-%1: Sirius -> 8.600000
-%8: Rigel -> 860.000000
-%9: Procyon -> 11.000000
-%11: Betelgeuse -> 700.000000
-%16: Antares -> 550.000000
-%17: Spica -> 250.000000
-%20: Deneb -> 2615.000000
-%22: Regulus -> 79.000000
-%25: Castor -> 52.000000
-%49: Polaris -> 430.000000
-\end{figure}
 
 \section{Implementation}
 
