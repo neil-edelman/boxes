@@ -75,26 +75,17 @@
 
 \maketitle
 
-\abstract{Overlapping each entry with an index to the next entry gives us an inline-chained hash-table design. This can often be less expensive, performance-wise, but also to understand and maintain. Having a chained hash-table with the simplicity of allocation of an open-addressing hash-table is especially attractive for low-level languages, devices, and data.}
+\abstract{A bucket scheme where overlapping each entry with an index to the next entry gives us an inline-chained hash-table. The front entry in the bucket is closed, and all others are open, taken from unoccupied slots. This design can often be less expensive, performance-wise, but also to understand and maintain. Having a chained hash-table with the simplicity of allocation of an open-addressing hash-table is especially attractive for low-level languages, devices, and data.}
 
 \section{Introduction}
 
 Performance is a critical issue, but we are also concerned with usability. Specifically, without higher-level language support for native hash-tables or automatic garbage-collection, how hard is it to understand and maintain a general hash-table.
 
-Overlapping each entry with an index to the next entry creates a hash-table that is self-contained in memory, yet behaves as a chained hash in the regime where the load factor is less-then one.\cite{knuth1998sorting} We call this inline-chaining to differentiate it from separate-chaining, where the buckets are separate objects with links between them.
+Overlapping each entry with an index to the next entry creates a hash-table that is self-contained in memory, yet behaves as a chained hash in the regime where the load factor is less-then one.\cite{knuth1998sorting} We call this inline-chaining to differentiate it from separate-chaining, where the buckets are objects with links between them.
 
 This data structure is similar to that of coalesced-hashing\cite{williams1959handling}, but coalescing cannot occur. The closed entries that form the heads of buckets and the open entries that form a stack are orthogonal.
 
 \section{Stars Example}
-
-Figure~\ref{types} shows a comparison of some hash-table types. It uses D.J.~Bernstein's {\it djb2} to hash a string to 8-bit unsigned integer. All tables use a most-recently-used heuristic as probe-order; experimentally, this was found to make little difference in the run-time, and is advantageous when the access pattern is non-uniform\cite{brent1973reducing, sleator1985self}.
-
-Separate-chaining is seen in Figure~\ref{types:separate}; this is more like T.D. Hanson's {\it uthash}: only being in one hash-table at a time. A similar hash to {\it C++}'s {\it std::unordered\_map}, {\it Lua}'s {\it table}, and many others, would have another dereference between the linked-list and the entry. This style of hash-table allows unconstrained load factors. With ordered data, keeping a self-balancing tree cuts down the worst case to $\mathcal{O}(\log n)$\cite{knuth1998sorting}, as in {\it Java}. The expected number of dereferences is a constant added to the number of queries.
-
-Open-addressing\cite{peterson1957addressing} as seen in Figure~\ref{types:open}, is another, more compact, and generally more cache-coherent table design. Robin Hood hashing\cite{celis1985robin} has been used to keep the variation in the query length to a minimum; here, with the condition on whether to evict strengthened because of the most-recently-used heuristic. It has lower maximum load-factor because of clustering\cite{skiena2008algorithm}. Practically, 0.69 is high; {\it Python}\cite{knuth1998sorting} uses a maximum of \sfrac{2}{3}. One can calculate the displacement from the hash, but we have to have a general way of telling if it's null. The lack of symmetry presents a difficulty removing entries.
-
-Inline-chaining (chaining\cite{knuth1998sorting}, but to differentiate it from separate-chaining) is in Figure~\ref{types:inline}.
-The expected number of dereferences is number of queries. Because of the {\it next index} field, the space taken is one index {\it per} entry more then open-addressing, but this offers a convenient place to store a null bit. Being chained offers a much higher load-factor.
 
 %\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
 \begin{figure}
@@ -498,33 +489,41 @@ The expected number of dereferences is number of queries. Because of the {\it ne
 	\caption{A map from some star names to light-year distance using different collision-resolution schemes. Order of insertion: Sol, Sirius, Rigel, Procyon, Betelgeuse, Antares, Spica, Deneb, Regulus, Castor, Polaris. Load factor 11/16 = 0.69. Expected value of number of queries for chaining, 1.36(0.7), and for open-addressing 1.60(0.9), (sample standard deviation.)\label{types}}
 \end{figure}
 
-\section{Details}
+Figure~\ref{types} shows a comparison of some standard hash-table types. It uses D.J.~Bernstein's {\it djb2} to hash a string to 8-bit unsigned integer. All tables use a most-recently-used heuristic as probe-order; experimentally, this was found to make little difference in the run-time, and is advantageous when the access pattern is non-uniform\cite{brent1973reducing, sleator1985self}.
 
-For implementations that do not provide a special iteration mechanism, iteration on separate-chaining is $\mathcal{O}(\text{capacity} + \text{size})$. For open-addressing and inline-chaining, because we store collisions in the hash-table itself, it's $\mathcal{O}(\text{capacity})$. However, a practical capacity in open-addressing will be larger because the decrease in performance as the load-factor reaches saturation.
+Separate-chaining is seen in Figure~\ref{types:separate}; this is more like T.D. Hanson's {\it uthash}: only being in one hash-table at a time. A similar hash to {\it C++}'s {\it std::unordered\_map}, {\it Lua}'s {\it table}, and many others, would have another dereference between the linked-list and the entry. This style of hash-table allows unconstrained load factors. With ordered data, keeping a self-balancing tree cuts down the worst case to $\mathcal{O}(\log n)$\cite{knuth1998sorting}, as in {\it Java}. The expected number of dereferences is a constant added to the number of queries.
 
-The distinction between open and closed, is then, every bucket with contents begins with a closed entry, followed by zero-or-more open entries. A failed lookup is characterized by either the next is null or the hash doesn't match the address, that is, open entry. If the hash matches the address, go through each entry until hitting `END'. In this way, the logic is indistinguishable from separate chaining.
+Open-addressing\cite{peterson1957addressing} as seen in Figure~\ref{types:open}, is another, more compact, and generally more cache-coherent table design. Robin Hood hashing\cite{celis1985robin} has been used to keep the variation in the query length to a minimum; here, with the condition on whether to evict strengthened because of the most-recently-used heuristic. It has lower maximum load-factor because clustering decreases performance as the load-factor reaches saturation\cite{skiena2008algorithm}. Practically, 0.69 is high; {\it Python}\cite{knuth1998sorting} uses a maximum of \sfrac{2}{3}. One can calculate the displacement from the hash, but we have to have a general way of telling if it's null. The lack of symmetry presents a difficulty removing entries.
+
+Inline-chaining, as seen in Figure~\ref{types:inline}, is, in many ways, a mix between the two. The expected number of dereferences is number of queries for simple data. Because of the {\it next index} field, the space taken is one index {\it per} entry more then open-addressing. This offers a convenient place to store a flag for null. Being chained offers a much higher load-factor, but it is not possible to exceed one. The dark circles represent the closed heads, and the outline the open stack, with a highlight to indicate the stack position.
 
 \section{Implementation}
 
-\subsection{Next}
+\subsection{Next Entry}
 
-In order to offer a complete range of data for the key, (specifically, not just a pointer,) the nullity is stored in the `next' field. There are two special values that must be differentiated: there is no closed value associated with this address, called `NULL', and there is no next value, called `END'. In the implementation, this is parameterized by a single type to store indices.
+In order to offer a complete range of data for the key, (specifically, not just a pointer, it could be an integer zero,) it is convenient to store flags in the `next' field. There are two special values that must be differentiated: there is no closed value associated with this address, called `NULL', and there is no next value in the bucket, called `END'.
 
-These two special values cause the indexing to be two values short. Since the implementation is a power-of-two, it causes the addressable space to be one-bit less; half the size, or the equivalent of a signed positive integer. The bits `NULL' and `END' were chosen to minimize average power requirements while leaving a natural $[0, 011..11]$ for addressing. That is, $100..00$, and $100..01$. In Figure~\ref{star}, where there are 8~bits, the addressable space is $[0, 127]$, and `NULL', `END' are 128, 129.
+Since the implementation uses power-of-two resizes, it causes the addressable space to be one-bit less; half the size, or the equivalent of a signed positive integer. The bits `NULL' and `END' were chosen to minimize average power requirements while leaving a natural $[0, 011..11]$ for addressing. That is, $100..00$, and $100..01$. In Figure~\ref{types:inline}, where there are 8~bits, the addressable space is $[0, 127]$, and `NULL', `END' are 128, 129.
 
-\subsection{Orthogonal Features}
+\subsection{Load Factor}
 
-Among the set of  Most-recently-used first
+It is possible to get rid of load factor calculations by making the maximum load factor identically one. Only if the hash-table is full does one resize. In an inline-chained hash-table, the entries and the next index are overlapped; this means that the capacity for each goes up in the same allocation.
 
-Consistent hashing.
+\subsection{Orthoganal}
 
-\subsection{Structure in Memory}
+\subsection{Iteration}
 
-\subsection{Machine Considerations}
+For implementations that do not provide a special iteration mechanism, iteration on separate-chaining is $\mathcal{O}(\text{capacity} + \text{size})$. For open-addressing and inline-chaining, because we store collisions in the hash-table itself, it's $\mathcal{O}(\text{capacity})$. However, a practical capacity in open-addressing will be larger because the decrease in performance as the load-factor reaches saturation.
+
+\subsection{Power-of-Two}
+
+Consistent hashing.\cite{karger1997consistent}
 
 \subsection{Running Time}
 
-\subsection{Limits}
+The asymptotic worst-case run-time will be the same as any chained hash. However, the average 2.
+
+\section{Conclusion}
 
 \bibliography{table}
 
