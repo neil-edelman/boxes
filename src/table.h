@@ -244,8 +244,8 @@ typedef int (*PN_(policy_fn))(PN_(key) original, PN_(key) replace);
 struct N_(table) { /* "Padding size," good. */
 	struct PN_(bucket) *buckets; /* @ has zero/one key specified by `next`. */
 	/* `size <= capacity`; size is not needed but convenient and allows
-	 short-circuiting. Index of the top of the stack; however, we are really
-	 lazy, so MSB store is the top a step ahead? Thereby, hysteresis. */
+	 short-circuiting. Top is an index of the stack; however, we are really
+	 lazy, so MSB stores whether this is a step ahead, (thereby, hysteresis.) */
 	PN_(uint) log_capacity, size, top;
 };
 
