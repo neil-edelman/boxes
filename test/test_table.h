@@ -265,7 +265,8 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 		} sample[1000];
 		size_t count;
 	} trials;
-	const size_t trial_size = sizeof trials.sample / sizeof *trials.sample;
+	const size_t trial_size = sizeof trials.sample / sizeof *trials.sample,
+		max_graph = ((PN_(uint))~0) > 1000 ? 1000 : ((PN_(uint))~0);
 	size_t i;
 	PN_(uint) b, b_end;
 	char z[12];
@@ -323,7 +324,7 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 			|| !s->is_in && result == TABLE_YIELD && size.before == size.after);
 		success = N_(table_query)(&table, PN_(entry_key)(s->_.entry), &entry);
 		assert(success && PN_(eq_en)(s->_.entry, entry));
-		if(table.size < 10000 && !(i & (i - 1)) || i + 1 == trial_size) {
+		if(table.size < max_graph && !(i & (i - 1)) || i + 1 == trial_size) {
 			char fn[64];
 			PN_(to_string)(PN_(entry_key)(s->_.entry), &z);
 			printf("%lu. Store \"%s\" result %s, table %s.\n", (unsigned long)i,

@@ -393,11 +393,13 @@ static const size_t stars_size = sizeof star_names / sizeof *star_names;
 #define X(n, m) m
 static const double star_distances[] = { STARS };
 #undef X
+static unsigned char djb2_restrict(const char *const s)
+	{ return (unsigned char)djb2_hash(s); }
 #define TABLE_NAME star
 #define TABLE_KEY char *
 #define TABLE_VALUE double
 #define TABLE_UINT unsigned char
-#define TABLE_HASH &djb2_hash
+#define TABLE_HASH &djb2_restrict
 #define TABLE_IS_EQUAL &string_is_equal
 #define TABLE_TEST
 #define TABLE_EXPECT_TRAIT
@@ -1024,12 +1026,12 @@ static void timing_comparison(void)
 #endif /* timing --> */
 
 
-#include <time.h>
+/*#include <time.h>*/
 
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
 	struct vec4_pool vec4s = POOL_IDLE;
-	unsigned seed = (unsigned)clock();
+	/*unsigned seed = (unsigned)clock();*/
 	zodiac_table_test(&fill_zodiac, 0); /* Don't require any space. */
 	string_table_test(&str16_from_void, &strings), str16_pool_(&strings);
 	uint_table_test(&uint_from_void, 0);

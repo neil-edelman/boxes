@@ -870,7 +870,7 @@ static void PN_(unused_base)(void) {
 	N_(table)(0); N_(table_)(0); N_(table_buffer)(0, 0); N_(table_clear)(0);
 	N_(table_is)(0, k); N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v);
 	N_(table_try)(0, e); N_(table_replace)(0, e, 0); N_(table_update)(0,e,0,0);
-	N_(table_remove)(0, e); N_(table_begin)(0, 0); N_(table_next)(0, 0);
+	N_(table_remove)(0, k); N_(table_begin)(0, 0); N_(table_next)(0, 0);
 	N_(table_has_next)(0); N_(table_iterator_remove)(0);PN_(unused_base_coda)();
 #ifdef TABLE_VALUE
 	N_(table_compute)(0, k, 0); N_(table_next_key)(0); N_(table_next_value)(0);
