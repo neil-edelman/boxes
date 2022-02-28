@@ -26,6 +26,19 @@
 \usepackage{moreverb}
 \usepackage[siunitx, subfolder]{gnuplottex}
 
+% https://tex.stackexchange.com/questions/259247/rescaling-gnuplottex-to-fit-in-subfigure
+%\usepackage{epstopdf}
+%\usepackage{printlen}
+%\usepackage[utf8]{inputenx}
+%\usepackage{xparse}
+%\ExplSyntaxOn
+%\DeclareExpandableDocumentCommand{\convertlen}{ O{cm} m }
+% {
+%  \dim_to_unit:nn { #2 } { 1 #1 } cm
+% }
+%\ExplSyntaxOff
+% fuck it, just guess
+
 \newcommand{\code}[1]{\colorbox{light-gray}{\texttt{#1}}}
 \def\Scale{0.5}
 
@@ -511,7 +524,7 @@ Because the closed and open entries are orthogonal for inline-chaining, the limi
 
 \begin{figure}%
 \centering%
-\begin{gnuplot}[terminal=cairolatex, terminaloptions=color dashed]
+\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
 set style line 1 lt 5 lw 2 lc rgb '#0072bd' pointtype 1 pointsize 0.5
 set style line 2 lt 5 lw 2 lc rgb '#ff0000' pointtype 2 pointsize 0.5
 set style line 3 lt 5 lw 2 lc rgb '#00ac33' pointtype 5 pointsize 0.5
