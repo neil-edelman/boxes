@@ -5,7 +5,7 @@
 \usepackage[utf8]{inputenc}
 %\usepackage{times} % font
 \usepackage{lmodern} % scalable font
-\usepackage{graphicx} % include graphics
+\usepackage[pdftex]{graphicx} % include graphics
 \usepackage{amsmath} % align, nobreakdash
 \usepackage[pdf,tmpdir]{graphviz} % digraph
 \usepackage{fullpage} % book margins -> std margins
@@ -17,7 +17,13 @@
 %\usepackage{comment} % comment
 \usepackage{xfrac}
 \usepackage[table]{xcolor}
+
 \usepackage{siunitx}
+%\usepackage{graphicx} already
+\usepackage{latexsym}
+\usepackage{keyval}
+\usepackage{ifthen}
+\usepackage{moreverb}
 \usepackage[siunitx, subfolder]{gnuplottex}
 
 \newcommand{\code}[1]{\colorbox{light-gray}{\texttt{#1}}}
@@ -505,21 +511,22 @@ Because the closed and open entries are orthogonal for inline-chaining, the limi
 
 \begin{figure}%
 \centering%
-\begin{gnuplot}[terminal=epslatex, terminaloptions=color dashed]
-set key box top left
-set key width 4
-set key height 0.25
-set key spacing 1.2
-set key opaque
-set sample 1000
-set xr [-5:5]
-set yr [-1:1]
-set xlabel "$x$-label"
-set ylabel "$y$-label"
-plot sin(x) w l lc 1 lw 3 t "$\sin(x)$",\
-cos(x) w l lc 7 lw 3 t "$\cos(x)$",\
-tan(x) w l lc 3 lw 3 t "$\tan(x)$",\
-tanh(x) w l lc 4 lw 3 t "$\tanh(x)$"
+\begin{gnuplot}[terminal=cairolatex, terminaloptions=color dashed]
+set style line 1 lt 5 lw 2 lc rgb '#0072bd' pointtype 1 pointsize 0.5
+set style line 2 lt 5 lw 2 lc rgb '#ff0000' pointtype 2 pointsize 0.5
+set style line 3 lt 5 lw 2 lc rgb '#00ac33' pointtype 5 pointsize 0.5
+set style line 4 lt 5 lw 2 lc rgb '#19d3f5' pointtype 5 pointsize 0.5
+set grid
+set xlabel "iterations"
+set ylabel "time per iteration, $t$ (ns)"
+set yrange [0:1000]
+set log x
+set format x '\tiny %g'
+set format y '\tiny %g'
+#set tics font "Modern, 8" #rotate by 20 right # ineffectual
+plot \
+"../timing/graph/Closed.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "Closed" ls 1, \
+"../timing/graph/Open.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "Open" ls 2
 \end{gnuplot}
 \caption{This is a simple example using the cairolatex-terminal.}%
 \label{pic:cairolatex}%
