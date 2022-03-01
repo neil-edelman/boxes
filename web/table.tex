@@ -174,7 +174,7 @@ This data structure is similar to that of coalesced-hashing\cite{williams1959han
 </TABLE>>];
 	e1 [label=<<TABLE BORDER="0">
 	<TR>
-		<TD ALIGN="RIGHT">0x91</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x91</TD>
 		<TD ALIGN="LEFT">Castor</TD>
 		<TD ALIGN="RIGHT">52</TD>
 		<TD PORT="1">\detokenize{⬤}</TD>
@@ -182,7 +182,7 @@ This data structure is similar to that of coalesced-hashing\cite{williams1959han
 </TABLE>>];
 	e3 [label=<<TABLE BORDER="0">
 	<TR>
-		<TD ALIGN="RIGHT">0x3</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x3</TD>
 		<TD ALIGN="LEFT">Deneb</TD>
 		<TD ALIGN="RIGHT">2615</TD>
 		<TD PORT="3">\detokenize{⬤}</TD>
@@ -191,14 +191,14 @@ This data structure is similar to that of coalesced-hashing\cite{williams1959han
 	e4 [label=<<TABLE BORDER="0">
 	<TR>
 		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x44</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sirius</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">8.6</TD>
-		<TD PORT="4" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+		<TD ALIGN="LEFT">Sirius</TD>
+		<TD ALIGN="RIGHT">8.6</TD>
+		<TD PORT="4">\detokenize{⬤}</TD>
 	</TR>
 </TABLE>>];
 	e5 [label=<<TABLE BORDER="0">
 	<TR>
-		<TD ALIGN="RIGHT">0x35</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x35</TD>
 		<TD ALIGN="LEFT">Spica</TD>
 		<TD ALIGN="RIGHT">250</TD>
 		<TD PORT="5">\detokenize{⬤}</TD>
@@ -207,22 +207,22 @@ This data structure is similar to that of coalesced-hashing\cite{williams1959han
 	e8 [label=<<TABLE BORDER="0">
 	<TR>
 		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xd8</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Rigel</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">860</TD>
-		<TD PORT="8" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+		<TD ALIGN="LEFT">Rigel</TD>
+		<TD ALIGN="RIGHT">860</TD>
+		<TD PORT="8">\detokenize{⬤}</TD>
 	</TR>
 </TABLE>>];
 	e10 [label=<<TABLE BORDER="0">
 	<TR>
 		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4a</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Betelgeuse</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">700</TD>
-		<TD PORT="10" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+		<TD ALIGN="LEFT">Betelgeuse</TD>
+		<TD ALIGN="RIGHT">700</TD>
+		<TD PORT="10">\detokenize{⬤}</TD>
 	</TR>
 </TABLE>>];
 	e11 [label=<<TABLE BORDER="0">
 	<TR>
-		<TD ALIGN="RIGHT">0x4f</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4f</TD>
 		<TD ALIGN="LEFT">Procyon</TD>
 		<TD ALIGN="RIGHT">11</TD>
 		<TD PORT="11">\detokenize{◯}</TD>
@@ -231,14 +231,14 @@ This data structure is similar to that of coalesced-hashing\cite{williams1959han
 	e12 [label=<<TABLE BORDER="0">
 	<TR>
 		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xec</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Regulus</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">79</TD>
-		<TD PORT="12" BGCOLOR="Gray90">\detokenize{⬤}</TD>
+		<TD ALIGN="LEFT">Regulus</TD>
+		<TD ALIGN="RIGHT">79</TD>
+		<TD PORT="12">\detokenize{⬤}</TD>
 	</TR>
 </TABLE>>];
 	e13 [label=<<TABLE BORDER="0">
 	<TR>
-		<TD ALIGN="RIGHT">0x33</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x33</TD>
 		<TD ALIGN="LEFT">Antares</TD>
 		<TD ALIGN="RIGHT">550</TD>
 		<TD PORT="13">\detokenize{◯}</TD>
@@ -246,7 +246,7 @@ This data structure is similar to that of coalesced-hashing\cite{williams1959han
 </TABLE>>];
 	e14 [label=<<TABLE BORDER="0">
 	<TR>
-		<TD ALIGN="RIGHT">0xb3</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xb3</TD>
 		<TD ALIGN="LEFT">Sol</TD>
 		<TD ALIGN="RIGHT">0</TD>
 		<TD PORT="14">\detokenize{◯}</TD>
@@ -254,7 +254,7 @@ This data structure is similar to that of coalesced-hashing\cite{williams1959han
 </TABLE>>];
 	e15 [label=<<TABLE BORDER="0">
 	<TR>
-		<TD ALIGN="RIGHT">0x9f</TD>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x9f</TD>
 		<TD ALIGN="LEFT">Polaris</TD>
 		<TD ALIGN="RIGHT">430</TD>
 		<TD PORT="15">\detokenize{⬤}</TD>
@@ -500,21 +500,21 @@ This data structure is similar to that of coalesced-hashing\cite{williams1959han
 	hash:15 -> e11 [tailclip=false];
 		}
 	}
-	\caption{A map from some star names to light-year distance using different collision-resolution schemes. Load factor \sfrac{11}{16} = 0.69. Expected value: number of queries chained, 1.4(7),
+	\caption{A map from some star names to light-year distance using different collision-resolution schemes. Load factor \sfrac{11}{16} = 0.69. Expected value: chained number of queries, 1.4(7);
 %1.36(0.7),
-and probe-sequence in open-addressing, 1.6(9),
-%1.60(0.9),
-(sample standard deviation.)\label{types}
+open probe-length, 1.6(9),
+%1.60(0.9), (sample
+(standard deviation.)\label{types}
 Order of insertion: Sol, Sirius, Rigel, Procyon, Betelgeuse, Antares, Spica, Deneb, Regulus, Castor, Polaris.}
 \end{figure}
 
 Figure~\ref{types} shows a comparison of some standard hash-table types. It uses D.J.~Bernstein's {\it djb2} to hash a string to 8-bit unsigned integer. All tables use a most-recently-used heuristic as probe-order; experimentally, this was found to make little difference in the run-time, and is advantageous when the access pattern is non-uniform\cite{brent1973reducing, sleator1985self}.
 
-Separate-chaining is seen in Figure~\ref{types:separate}; this is more like T.D. Hanson's {\it uthash}: only being in one hash-table at a time. A similar hash to {\it C++}'s {\it std::unordered\_map}, {\it Lua}'s {\it table}, and many others, would have another dereference between the linked-list and the entry. This style of hash-table allows unconstrained load factors. With ordered data, keeping a self-balancing tree cuts down the worst case to $\mathcal{O}(\log n)$\cite{knuth1998sorting}, as in {\it Java}. The expected number of dereferences is a constant added to the number of queries.
+Separate-chaining is seen in Figure~\ref{types:separate}; this is more like T.D. Hanson's {\it uthash}: only being in one hash-table at a time. A similar hash to {\it C++}'s {\it std::unordered\_map}, {\it Lua}'s {\it table}, and many others, would have another dereference between the linked-list and the entry. This style of hash-table allows unconstrained load factors. With ordered data, keeping a self-balancing tree cuts down the worst case to $\mathcal{O}(\log n)$\cite{knuth1998sorting}, as in {\it Java}. The expected number of dereferences is a constant added to the number of queries. The nodes are typically allocated separately from hash-table.
 
-Open-addressing\cite{peterson1957addressing} as seen in Figure~\ref{types:open}, is another, more compact, and generally more cache-coherent table design. Robin Hood hashing\cite{celis1985robin} has been used to keep the variation in the query length to a minimum; here, with the condition on whether to evict strengthened because of the most-recently-used heuristic. It has lower maximum load-factor, because clustering decreases performance as the load-factor reaches saturation\cite{skiena2008algorithm}; so, although they have less data {\it per} entry, they have on average more entries. Practically, 0.69 is high; {\it Python}\cite{knuth1998sorting} uses a maximum of \sfrac{2}{3}. One can calculate the displacement from the hash, but we have to have a general way of telling if it's null. The lack of symmetry presents a difficulty removing entries.
+Open-addressing\cite{peterson1957addressing} as seen in Figure~\ref{types:open}, is another, more compact, and generally more cache-coherent table design. Robin Hood hashing\cite{celis1985robin} has been used to keep the variation in the query length to a minimum; here, with the condition on whether to evict strengthened because of the most-recently-used heuristic. It has lower maximum load-factor, because clustering decreases performance as the load-factor reaches saturation.\cite{skiena2008algorithm} Although they have less data {\it per} entry, on average they have more entries. Practically, 0.69 is high; {\it Python}\cite{knuth1998sorting} uses a maximum of \sfrac{2}{3}. One can calculate the displacement from the hash, but we have to have a general way of telling if it's null. The lack of symmetry presents a difficulty removing entries.
 
-Inline-chaining, as seen in Figure~\ref{types:inline}, is, in many ways, a hybrid between the two. The dark circles represent the closed heads, and the outline the open stack, with a highlight to indicate the stack position. The expected number of dereferences is number of queries for plain-old-data. Because of the {\it next index} field, the space taken is one index {\it per} entry more then open-addressing. Being chained offers a higher load-factor, but it is not possible to exceed one.
+Inline-chaining, as seen in Figure~\ref{types:inline}, is, in many ways, a hybrid between the two. The dark circles represent the closed heads, and the outline the open stack, with a highlight to indicate the stack position, compare to Figure~\ref{types:separate}. The expected number of dereferences is number of queries for plain-old-data. Because of the {\it next index} field, the space taken is one index {\it per} entry more then open-addressing. Being chained offers a higher load-factor, but it is not possible to exceed one: like open-addressing, the hash-table is contained in one block of memory.
 
 \section{Results}
 
@@ -530,20 +530,20 @@ set style line 2 lt 5 lw 2 lc rgb '#ff0000' pointtype 2 pointsize 0.5
 set style line 3 lt 5 lw 2 lc rgb '#00ac33' pointtype 5 pointsize 0.5
 set style line 4 lt 5 lw 2 lc rgb '#19d3f5' pointtype 5 pointsize 0.5
 set grid
-set xlabel "iterations"
-set ylabel "time per iteration, $t$ (ns)"
-set yrange [0:2000]
+set xlabel "insertions"
+set ylabel "time per insertion, $t$ (ns)"
+set yrange [0:1000]
 set log x
 set format x '\tiny %g'
 set format y '\tiny %g'
 #set tics font "Modern, 8" #rotate by 20 right # ineffectual
 plot \
-"../timing/graph/closed.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "closed" ls 1, \
-"../timing/graph/open.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "open" ls 2, \
-"../timing/graph/unordered.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "unordered set" ls 3
+"../timing/graph/closed.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "separate-chaining" ls 1, \
+"../timing/graph/open.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "inline-chaining" ls 2, \
+"../timing/graph/unordered.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "std$\:\:$unordered\\_set" ls 3
 \end{gnuplot}
-\caption{This is a simple example using the cairolatex-terminal.}%
-\label{pic:cairolatex}%
+\caption{A comparison of chained techniques.}%
+\label{timing}%
 \end{figure}%
 
 \section{Implementation}
