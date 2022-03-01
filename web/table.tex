@@ -510,17 +510,17 @@ Order of insertion: Sol, Sirius, Rigel, Procyon, Betelgeuse, Antares, Spica, Den
 
 Figure~\ref{types} shows a comparison of some standard hash-table types. It uses D.J.~Bernstein's {\it djb2} to hash a string to 8-bit unsigned integer. All tables use a most-recently-used heuristic as probe-order; experimentally, this was found to make little difference in the run-time, and is advantageous when the access pattern is non-uniform\cite{brent1973reducing, sleator1985self}.
 
-Separate-chaining is seen in Figure~\ref{types:separate}; this is more like T.D. Hanson's {\it uthash}: only being in one hash-table at a time. A similar hash to {\it C++}'s {\it std::unordered\_map}, {\it Lua}'s {\it table}, and many others, would have another dereference between the linked-list and the entry. This style of hash-table allows unconstrained load factors. With ordered data, keeping a self-balancing tree cuts down the worst case to $\mathcal{O}(\log n)$\cite{knuth1998sorting}, as in {\it Java}. The expected number of dereferences is a constant added to the number of queries. The nodes are typically allocated separately from hash-table.
+Separate-chaining is seen in Figure~\ref{types:separate}; this is more like T.D. Hanson's {\it uthash}: only being in one hash-table at a time. A similar hash to {\it $C^{++}$}'s {\it std::unordered\_map}, {\it Lua}'s {\it table}, and many others, would have another dereference between the linked-list and the entry. This style of hash-table allows unconstrained load factors. With ordered data, keeping a self-balancing tree cuts down the worst case to $\mathcal{O}(\log n)$\cite{knuth1998sorting}, as in {\it Java}. The expected number of dereferences is a constant added to the number of queries. The nodes are typically allocated separately from hash-table.
 
 Open-addressing\cite{peterson1957addressing} as seen in Figure~\ref{types:open}, is another, more compact, and generally more cache-coherent table design. Robin Hood hashing\cite{celis1985robin} has been used to keep the variation in the query length to a minimum; here, with the condition on whether to evict strengthened because of the most-recently-used heuristic. It has lower maximum load-factor, because clustering decreases performance as the load-factor reaches saturation.\cite{skiena2008algorithm} Although they have less data {\it per} entry, on average they have more entries. Practically, 0.69 is high; {\it Python}\cite{knuth1998sorting} uses a maximum of \sfrac{2}{3}. One can calculate the displacement from the hash, but we have to have a general way of telling if it's null. The lack of symmetry presents a difficulty removing entries.
 
-Inline-chaining, as seen in Figure~\ref{types:inline}, is, in many ways, a hybrid between the two. The dark circles represent the closed heads, and the outline the open stack, with a highlight to indicate the stack position, compare to Figure~\ref{types:separate}. The expected number of dereferences is number of queries for plain-old-data. Because of the {\it next index} field, the space taken is one index {\it per} entry more then open-addressing. Being chained offers a higher load-factor, but it is not possible to exceed one: like open-addressing, the hash-table is contained in one block of memory.
+Inline-chaining, as seen in Figure~\ref{types:inline}, is, in many ways, a hybrid between the two. The dark circles represent the closed heads, and the outline the open stack, with a highlight to indicate the stack position. The expected probe-length is number of chained queries. Because of the {\it next index} field, the space taken is one index {\it per} entry more then open-addressing. Being chained offers a higher load-factor, but it is not possible to exceed one: like open-addressing, the hash-table is contained in one block of memory.
 
-\section{Results}
-
-\subsection{Running Time}
+\section{Perfomance}
 
 Because the closed and open entries are orthogonal for inline-chaining, the limiting factor in the worst-case is the same as for separate-chaining, and it will have identical behaviour. In the average case, we do at least as much work by a constant factor; in addition to the steps required for chaining, we also have to sometimes also have to manage the stack. Moving the top of the stack involves finding the closed head of the top entry and iterating until the top. However, modification requires only copying one entry; we aren't concerned with the order of the stack, only the order of the next indices.
+
+Figure~\ref{timing} benchmarks straight insertion on a closed separately-chained set like Figure~\ref{types:separate}, an inline-chained set like Figure~\ref{types:inline}, and a {\it std::unordered\_set}. The data is a pointer to a randomly generated set of non-sense names, formed out of syllables, Poisson-distributed up to 15-letters in length; a \code{char[16]} with a null-terminator. Hashed by {\it djb2} to a 64-bit \code{size\_t}. The same data was used for each replica across different methods; collisions were ignored on all methods. The hash-tables were then destroyed for the next replica. The data was in a pool. Pre-allocation of the nodes of the separately-chained was in an array and was not counted towards the run-time.
 
 \begin{figure}%
 \centering%
@@ -542,7 +542,7 @@ plot \
 "../timing/graph/open.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "inline-chaining" ls 2, \
 "../timing/graph/unordered.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "std$\:\:$unordered\\_set" ls 3
 \end{gnuplot}
-\caption{A comparison of chained techniques.}%
+\caption{A comparison of chained techniques in a $C^{++}$ benchmark with a log-$x$ scale.}%
 \label{timing}%
 \end{figure}%
 
@@ -594,6 +594,8 @@ We must move them around. Still O(n), but the average is twice that. Doesn't mak
 For implementations that do not provide a special iteration mechanism, iteration on separate-chaining is $\mathcal{O}(\text{capacity} + \text{size})$. For open-addressing and inline-chaining, because we store collisions in the hash-table itself, it's $\mathcal{O}(\text{capacity})$. However, a practical capacity in open-addressing will be larger because the decrease in performance as the load-factor reaches saturation.
 
 \section{Conclusion}
+
+This specific data for the average use-case shows the difference between separate-chaining and inline-chaining is not great enough to matter to performance.
 
 \bibliography{table}
 
