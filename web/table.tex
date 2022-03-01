@@ -532,14 +532,15 @@ set style line 4 lt 5 lw 2 lc rgb '#19d3f5' pointtype 5 pointsize 0.5
 set grid
 set xlabel "iterations"
 set ylabel "time per iteration, $t$ (ns)"
-set yrange [0:1000]
+set yrange [0:2000]
 set log x
 set format x '\tiny %g'
 set format y '\tiny %g'
 #set tics font "Modern, 8" #rotate by 20 right # ineffectual
 plot \
-"../timing/graph/Closed.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "Closed" ls 1, \
-"../timing/graph/Open.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "Open" ls 2
+"../timing/graph/closed.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "closed" ls 1, \
+"../timing/graph/open.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "open" ls 2, \
+"../timing/graph/unordered.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "unordered set" ls 3
 \end{gnuplot}
 \caption{This is a simple example using the cairolatex-terminal.}%
 \label{pic:cairolatex}%

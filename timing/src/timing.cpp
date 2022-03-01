@@ -101,25 +101,33 @@ static double m_sample_variance(const struct measure *const m)
 static double m_stddev(const struct measure *const m)
 	{ return sqrt(m_sample_variance(m)); }
 
-#define EXPS(X) X(Closed), X(Open)
+#define EXPS \
+	X(CLOSED, closed), \
+	X(OPEN, open), \
+	X(UNORDERED, unordered)
+
+struct str_eq { bool operator()(const char *a, const char *b)
+	/* noexcept: 'noexcept' is a keyword, yes, and I want to use that keyword,
+	 wtv.*/ const { return !strcmp(a, b); } };
+struct str_djb2hash { std::size_t operator()(const char* s) const {
+	return djb2_hash(s); } };
 
 int main(void) {
 	FILE *gnu = 0;
 	const char *name = "timing";
 	size_t i, n = 1, e, replicas = 5;
-#define X(n) n
-	enum { EXPS(X) };
+#define X(n, m) n
+	enum { EXPS };
 #undef X
-#define X(n) { #n, 0, { 0, 0.0, 0.0 } }
+#define X(n, m) { #m, 0, { 0, 0.0, 0.0 } }
 	struct { const char *name; FILE *fp; struct measure m; }
-		exp[] = { EXPS(X) };
+		exp[] = { EXPS };
 	const size_t exp_size = sizeof exp / sizeof *exp;
 #undef X
-	struct closed_set closed = SET_IDLE;
-	struct string_table open = TABLE_IDLE;
-	std::unordered_set<char *> unordered;
+	struct closed_set cs = SET_IDLE;
+	struct string_table os = TABLE_IDLE;
 	struct backing backing = { POOL_IDLE, ARRAY_IDLE };
-	closed_set(&closed);
+	closed_set(&cs);
 	/* Open all graphs for writing. */
 	for(e = 0; e < exp_size; e++) {
 		char fn[64];
@@ -135,6 +143,7 @@ int main(void) {
 		size_t r;
 		for(e = 0; e < exp_size; e++) m_reset(&exp[e].m);
 		for(r = 0; r < replicas; r++) {
+			std::unordered_set<char *, str_djb2hash, str_eq> us;
 			clock_t t;
 			struct str16 *s16;
 			struct closed_setlink *link;
@@ -142,8 +151,8 @@ int main(void) {
 			printf("Replica %lu/%lu.\n", r + 1, replicas);
 
 			/* It crashes if I don't have this, but no idea why. */
-			closed_set(&closed);
-			string_table(&open);
+			closed_set(&cs);
+			string_table(&os);
 
 			/* Sorted array; pre-allocate for fair test. Don't worry about
 			 unused references. */
@@ -161,27 +170,33 @@ int main(void) {
 			t = clock();
 			for(i = 0; i < n; i++) {
 				link = backing.closed.data + i;
-				if(closed_set_policy_put(&closed, link, 0))
+				if(closed_set_policy_put(&cs, link, 0))
 					/*printf("Closed %s already.\n", link->key)*/;
 			}
-			m_add(&exp[Closed].m, diff_us(t));
-			printf("Closed size %lu: %s.\n", (unsigned long)closed.size,
-				closed_set_to_string(&closed));
+			m_add(&exp[CLOSED].m, diff_us(t));
+			printf("Closed size %lu: %s.\n", (unsigned long)cs.size,
+				closed_set_to_string(&cs));
 
 			/* Table, (open hash set.) */
 			t = clock();
 			for(i = 0; i < n; i++) {
 				char *const word = backing.closed.data[i].key;
-				string_table_try(&open, word);
-				/*switch(string_table_try(&open, word)) {
+				string_table_try(&os, word);
+				/*switch(string_table_try(&os, word)) {
 				case TABLE_ERROR: case TABLE_REPLACE: goto catch;
 				case TABLE_YIELD: printf("Open %s already.\n", word); break;
 				case TABLE_UNIQUE: printf("Open %s.\n", word); break;
 				}*/
 			}
-			m_add(&exp[Open].m, diff_us(t));
-			printf("Open size %lu: %s.\n", (unsigned long)open.size,
-				string_table_to_string(&open));
+			m_add(&exp[OPEN].m, diff_us(t));
+			printf("Open size %lu: %s.\n", (unsigned long)os.size,
+				string_table_to_string(&os));
+
+			t = clock();
+			for(i = 0; i < n; i++) us.insert(backing.closed.data[i].key);
+			m_add(&exp[UNORDERED].m, diff_us(t));
+			printf("Unordered size %lu.\n", (unsigned long)os.size);
+			//for(const char *w : us) printf("word: %s\n", w);
 
 			/* Took took much time; decrease the replicas for next time. */
 			if(replicas != 1
@@ -194,12 +209,12 @@ int main(void) {
 				sprintf(fn, "graph/%s.gv", exp[0].name);
 				set_closed_graph(&closed, fn);
 				sprintf(fn, "graph/%s.gv", exp[1].name);
-				table_string_graph(&open, fn);
+				table_string_graph(&os, fn);
 			}*/
 			/*closed_set_clear(&closed);
-			string_table_clear(&open);*/
-			closed_set_(&closed);
-			string_table_(&open);
+			string_table_clear(&os);*/
+			closed_set_(&cs);
+			string_table_(&os);
 		}
 		for(e = 0; e < exp_size; e++) {
 			double stddev = m_stddev(&exp[e].m);
