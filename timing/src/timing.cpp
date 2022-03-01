@@ -138,7 +138,7 @@ int main(void) {
 			exp[e].name, (unsigned long)replicas);
 	}
 	/* Do experiment. */
-	for(n = 1; n < 10000000; n <<= 1) {
+	for(n = 1; n < 10000000/*0*/; n <<= 1) {
 		clock_t t_total;
 		size_t r;
 		for(e = 0; e < exp_size; e++) m_reset(&exp[e].m);
