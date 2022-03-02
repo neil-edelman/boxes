@@ -9,9 +9,9 @@ digraph {
 	put -> equal;
 	equal -> yield;
 	equal -> replace;
-	error [label="{TABLE_ERROR\l|do not modify;\lmemory error;\lset errno\l}", fillcolor="Pink"];
+	error [label="{TABLE_ERROR\l|did not modify;\lmemory error;\lset errno\l}", fillcolor="Pink"];
 	equal [label="{equal to other element\l|values possibly recomputed\l}"];
 	grow [label="{TABLE_UNIQUE\l|value default,\lpassed, or\luninitialized\l}"];
-	yield [label="{TABLE_YIELD\l|do not\lmodify key\l}"];
-	replace [label="{TABLE_REPLACE\l|replace entry\l}"];
+	yield [label="{TABLE_YIELD\l|did not modify\l}"];
+	replace [label="{TABLE_REPLACE\l|replace\l}"];
 }

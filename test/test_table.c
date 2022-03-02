@@ -12,7 +12,7 @@
 
 
 /* Zodiac is a bounded set of `enum`. An X-macro allows printing. This is
- preferable to `TABLE_KEY const char *`. */
+ preferable to `TABLE_KEY const char *`, (which leads to duplicate `const`.) */
 #define ZODIAC(X) X(Aries), X(Taurus), X(Gemini), X(Cancer), X(Leo), X(Virgo), \
 	X(Libra), X(Scorpio), X(Sagittarius), X(Capricorn), X(Aquarius), X(Pisces),\
 	X(ZodiacCount)
@@ -30,8 +30,8 @@ static unsigned hash_zodiac(const enum zodiac z) { return z; }
  having to define <typedef:<PN>is_equal_fn> and saves the key from even being
  stored. @implements <zodiac>inverse_hash_fn */
 static enum zodiac hash_inv_zodiac(const unsigned z) { return z; }
-/** This is not necessary except for testing.
-@implements <zodiac>to_string_fn */
+/** This is not necessary except for testing, because that is how we see what
+ we're testing. @implements <zodiac>to_string_fn */
 static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 	{ strcpy(*a, zodiac[z]); /* strlen z < 12 */ }
 #define TABLE_NAME zodiac
@@ -41,11 +41,11 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 #define TABLE_INVERSE &hash_inv_zodiac
 /* There are less than 256/2 keys, so a byte would suffice, but speed-wise, we
  expect type coercion between different sizes to be slower. */
-#define TABLE_UINT unsigned /*char*/
+#define TABLE_UINT unsigned
 #define TABLE_TEST /* Testing requires to string. */
-#define TABLE_EXPECT_TRAIT
+#define TABLE_EXPECT_TRAIT /* It is a trait; this is here to not undef. */
 #include "../src/table.h"
-#define TABLE_TO_STRING &zodiac_to_string
+#define TABLE_TO_STRING &zodiac_to_string /* Requires <../src/to_string.h>. */
 #include "../src/table.h"
 /* For testing; there is no extra memory required to generate random `enum`.
  @implements <zodiac>fill_fn */
@@ -59,8 +59,8 @@ static int fill_zodiac(void *const zero, enum zodiac *const z) {
 /* String set. */
 
 /** One must supply the hash: djb2 <http://www.cse.yorku.ca/~oz/hash.html> is
- a simple one (fast) that is mostly `size_t`-length agnostic.
- @implements <string>hash_fn */
+ a simple one that is mostly `size_t`-length agnostic. It's not the greatest,
+ but it doesn't need to be. @implements <string>hash_fn */
 static size_t djb2_hash(const char *s) {
 	const unsigned char *str = (const unsigned char *)s;
 	size_t hash = 5381, c;
@@ -359,7 +359,8 @@ finally:
 
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
  Sol. As a real example, this is silly; it would be much better suited to
- `gperf` because the data is known beforehand. */
+ `gperf` because the data is known beforehand. Also, see <fn:hash_zodiac>.
+ (It's a good example for the article.) */
 #define STARS \
 	X(Sol, 0), X(Sirius, 8.6), X(Canopus, 310), X(Rigil Kentaurus, 4.4), \
 	X(Toliman, 4.4), X(Arcturus, 37), X(Vega, 25), X(Capella, 43), \
@@ -380,19 +381,21 @@ finally:
 	X(Muhlifain, 130), X(Aspidiske, 690), X(Suhail, 570), X(Alphecca, 75), \
 	X(Mintaka, 900), X(Sadr, 1500), X(Eltanin, 150), X(Schedar, 230), \
 	X(Naos, 1080), X(Almach, 350), X(Caph, 54), X(Izar, 202), \
-	/* Messes with graph?
+	/* We don't sanitize GraphViz, and this messes with graph.
 	X(2.30 (2.29–2.34var), 550), X(2.30 (2.29–2.31var), 380),*/ \
 	X(Dschubba, 400), X(Larawag, 65), /*X(2.35 (2.30–2.41var), 310),*/ \
 	X(Merak, 79), X(Ankaa, 77), X(Girtab, 460), X(Enif, 670), X(Scheat, 200), \
 	X(Sabik, 88), X(Phecda, 84), X(Aludra, 2000), X(Markeb, 540), \
 	X(Navi, 610), X(Markab, 140), X(Aljanah, 72), X(Acrab, 404)
 #define X(n, m) #n
-static /*const*/ char *star_names[] = { STARS };
+static /*const is not supported*/ char *star_names[] = { STARS };
 #undef X
 static const size_t stars_size = sizeof star_names / sizeof *star_names;
 #define X(n, m) m
 static const double star_distances[] = { STARS };
 #undef X
+/** Big numbers are hard to understand and useless to explain in an article.
+ @implements <star>hash */
 static unsigned char djb2_restrict(const char *const s)
 	{ return (unsigned char)djb2_hash(s); }
 #define TABLE_NAME star
@@ -483,7 +486,9 @@ finally:
 /* A string set with a pointer to dict map. It duplicates data from `key` and
  `value->word`, but table is complicated enough as it is. It has to be a
  pointer because a table is not stable, (not guaranteed stability even looking
- at it.) */
+ at it.) It was easier to make a linked-dictionary in separate-chaining,
+ because it's all independent, but it was such a pain to understand, I couldn't
+ see anyone using it. Tries are better anyway. */
 #define TABLE_NAME dict
 #define TABLE_KEY char *
 #define TABLE_VALUE struct dict *
@@ -586,7 +591,9 @@ static void year_to_string(const int *const year, char (*const a)[12])
 #define TABLE_KEY int *
 #define TABLE_UINT unsigned
 #define TABLE_HASH &year_hash
-/* Can not use `TABLE_INVERSE` because it's not a bijection. */
+/* Can not use `TABLE_INVERSE` because it's not a bijection; the child is also
+ part of the data. Arguably, `TABLE_DO_NOT_CACHE` would be useful in this
+ situation, but I took it out. Too many options. */
 #define TABLE_IS_EQUAL &year_is_equal
 #define TABLE_EXPECT_TRAIT
 #include "../src/table.h"
@@ -777,7 +784,7 @@ finally:
 }
 
 
-/** Contrived example. */
+/** Contrived example for paper. */
 static void stars(void) {
 	struct star_table stars = TABLE_IDLE;
 	const size_t s_array[] = { 0, 1, 8, 9, 11, 16, 17, 20, 22, 25, 49 };
@@ -804,7 +811,6 @@ finally:
 int main(void) {
 	struct str16_pool strings = POOL_IDLE;
 	struct vec4_pool vec4s = POOL_IDLE;
-	/*unsigned seed = (unsigned)clock();*/
 	zodiac_table_test(&fill_zodiac, 0); /* Don't require any space. */
 	string_table_test(&str16_from_void, &strings), str16_pool_(&strings);
 	uint_table_test(&uint_from_void, 0);
@@ -813,11 +819,11 @@ int main(void) {
 	star_table_test(&fill_star, 0);
 	test_default();
 	test_it();
+	stars();
 	boat_club();
 	linked_dict();
 	year_of();
 	nato();
-	stars();
 	return EXIT_SUCCESS;
 }
 
@@ -839,7 +845,8 @@ uint16_t hash16_xm2(uint16_t x) {
 /** We support 32 and 64-bit `size_t` but only if `size_t` is used as the
  maximum for integer constants, (not guaranteed.)
  <http://www.isthe.com/chongo/tech/comp/fnv/>
- <https://github.com/sindresorhus/fnv1a> */
+ <https://github.com/sindresorhus/fnv1a>. This is a very popular hash, I like
+ it. Didn't make it in because a don't have a 16-bit machine to test it with. */
 static size_t fnv_32a_str(const char *const str) {
 	const unsigned char *s = (const unsigned char *)str;
 	unsigned hval = 0x811c9dc5;
