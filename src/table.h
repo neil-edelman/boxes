@@ -1,8 +1,9 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Source <src/table.h>; examples <test/test_table.c>;
- article <web/table.pdf>.
+ @abstract C89 stand-alone source <src/table.h>; examples <test/test_table.c>;
+ article <web/table.pdf>. `make` and the right computer should create the test
+ suite of the examples automatically.
 
  @subtitle Hash table
 

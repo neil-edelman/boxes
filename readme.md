@@ -1,6 +1,6 @@
 # table\.h #
 
-Source [src/table\.h](src/table.h); examples [test/test\_table\.c](test/test_table.c); article [web/table\.pdf](web/table.pdf)\.
+C89 stand\-alone source [src/table\.h](src/table.h); examples [test/test\_table\.c](test/test_table.c); article [web/table\.pdf](web/table.pdf)\. `make` and the right computer should create the test suite of the examples automatically\.
 
 ## Hash table ##
 
