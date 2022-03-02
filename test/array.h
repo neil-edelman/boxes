@@ -1,11 +1,13 @@
 /** @license 2016 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Source <src/array.h>; examples <test/test_array.c>.
+ @abstract C89 stand-alone source <src/array.h>; examples <test/test_array.c>;
+ `make` and the right computer should create the test suite of the examples
+ automatically.
 
  @subtitle Contiguous dynamic array
 
- ![Example of array.](../web/array.png)
+ ![Example of array.](../doc/array.png)
 
  <tag:<A>array> is a dynamic array that stores contiguous <typedef:<PA>type>.
  Resizing may be necessary when increasing the size of the array; this incurs
@@ -100,7 +102,7 @@ typedef ARRAY_TYPE PA_(type);
  The fields should be treated as read-only; any modification is liable to cause
  the array to go into an invalid state.
 
- ![States.](../web/states.png) */
+ ![States.](../doc/states.png) */
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 

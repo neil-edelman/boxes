@@ -1,8 +1,9 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Source <src/heap.h>, depends on <src/array.h>; examples
- <test/test_heap.c>.
+ @abstract Header <src/heap.h> depends on <src/array.h>; examples
+ <test/test_heap.c>; if on a compatible workstation, `make` creates the test
+ suite of the examples.
 
  @subtitle Priority-queue
 
