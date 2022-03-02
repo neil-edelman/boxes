@@ -1,6 +1,6 @@
 # list\.h #
 
-Source [src/list\.h](src/list.h); examples [test/test\_list\.c](test/test_list.c)\.
+Stand\-alone header [src/list\.h](src/list.h); examples [test/test\_list\.c](test/test_list.c); if on a compatible workstation, `make` creates the test suite of the examples\.
 
 ## Doubly\-linked component ##
 
@@ -13,7 +13,7 @@ Source [src/list\.h](src/list.h); examples [test/test\_list\.c](test/test_list.c
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of a stochastic skip-list.](web/list.png)
+![Example of a stochastic skip-list.](doc/list.png)
 
 In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Thareja+2014%2C+Structures), [&lt;L&gt;list](#user-content-tag-eb84971d) is a circular header, or sentinel, to a doubly\-linked list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list\.
 
@@ -81,7 +81,7 @@ Three\-way comparison on a totally order set of [&lt;L&gt;listlink](#user-conten
 
 Storage of this structure is the responsibility of the caller, who must provide a stable pointer while in a list\. Generally, one encloses this in a host `struct` or `union`\. The contents of this structure should be treated as read\-only while in the list\.
 
-![States.](web/node-states.png)
+![States.](doc/node-states.png)
 
 
 
@@ -91,7 +91,7 @@ Storage of this structure is the responsibility of the caller, who must provide 
 
 Serves as head and tail for linked\-list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. Use [&lt;L&gt;list_clear](#user-content-fn-f965b937) to initialize the list\. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is _not_ the same as `{0}`\. The contents of this structure should be treated as read\-only while initialized, with the exception of [&lt;L&gt;list_self_correct](#user-content-fn-1ce0c229)\.
 
-![States.](web/states.png)
+![States.](doc/states.png)
 
 
 

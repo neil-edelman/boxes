@@ -33,7 +33,7 @@
 
 <h1>list.h</h1>
 
-<p>Source <a href = "src/list.h">src/list.h</a>; examples <a href = "test/test_list.c">test/test_list.c</a>.</p>
+<p>Stand-alone header <a href = "src/list.h">src/list.h</a>; examples <a href = "test/test_list.c">test/test_list.c</a>; if on a compatible workstation, <code>make</code> creates the test suite of the examples.</p>
 
 <h2>Doubly-linked component</h2>
 
@@ -50,7 +50,7 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of a stochastic skip-list." src = "web/list.png" width = 785 height = 556></p>
+<p><img alt = "Example of a stochastic skip-list." src = "doc/list.png" width = 785 height = 556></p>
 
 <p>In parlance of <a href = "https://scholar.google.ca/scholar?q=Thareja+2014%2C+Structures">Thareja 2014, Structures</a>, <a href = "#tag:&lt;L&gt;list">&lt;L&gt;list</a> is a circular header, or sentinel, to a doubly-linked list of <a href = "#tag:&lt;L&gt;listlink">&lt;L&gt;listlink</a>. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list.</p>
 
@@ -131,7 +131,7 @@
 
 <p>Storage of this structure is the responsibility of the caller, who must provide a stable pointer while in a list. Generally, one encloses this in a host <code>struct</code> or <code>union</code>. The contents of this structure should be treated as read-only while in the list.</p>
 
-<p><img alt = "States." src = "web/node-states.png" width = 377 height = 153></p>
+<p><img alt = "States." src = "doc/node-states.png" width = 377 height = 153></p>
 
 </div>
 
@@ -143,7 +143,7 @@
 
 <p>Serves as head and tail for linked-list of <a href = "#tag:&lt;L&gt;listlink">&lt;L&gt;listlink</a>. Use <a href = "#fn:&lt;L&gt;list_clear">&lt;L&gt;list_clear</a> to initialize the list. Because this list is closed; that is, given a valid pointer to an element, one can determine all others, null values are not allowed and it is <em>not</em> the same as <code>{0}</code>. The contents of this structure should be treated as read-only while initialized, with the exception of <a href = "#fn:&lt;L&gt;list_self_correct">&lt;L&gt;list_self_correct</a>.</p>
 
-<p><img alt = "States." src = "web/states.png" width = 715 height = 202></p>
+<p><img alt = "States." src = "doc/states.png" width = 715 height = 202></p>
 
 </div>
 
