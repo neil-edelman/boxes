@@ -1,7 +1,8 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Source <src/table.h>; examples <test/test_table.c>.
+ @abstract Source <src/table.h>; examples <test/test_table.c>;
+ article <web/table.pdf>.
 
  @subtitle Hash table
 
