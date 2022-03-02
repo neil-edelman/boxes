@@ -1,7 +1,9 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Source <src/trie.h>; examples <test/test_trie.c>.
+ @abstract Stand-alone header <src/trie.h>; examples <test/test_trie.c>;
+ article <doc/trie.pdf>. On a compatible workstation, `make` creates the
+ test suite of the examples.
 
  @subtitle Prefix tree
 
@@ -464,8 +466,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(entry) x) {
 
 	printf("unique: adding \"%s\".\n", key);
 start:
-	/* <!-- Solitary. ********************************************************/
-	if(!(d.h = trie->node_height)) {
+	if(!(d.h = trie->node_height)) { /* Solitary. */
 		if(trie->root) outer = PT_(outer)(trie->root);
 		else if(outer = malloc(sizeof *outer)) trie->root = &outer->trunk;
 		else goto catch;
@@ -475,9 +476,8 @@ start:
 			orcify(outer), PT_(to_key)(x), PT_(to_key)(outer->leaf[0]));
 		return 1;
 	}
-	/* Solitary. --> */
 
-	/* <!-- Find the first bit not in the tree. ******************************/
+	/* Find the first bit not in the tree. */
 	history.unfull.trunk = 0, history.unfull.height = 0,
 		history.unfull.diff = 0, history.full = 0;
 	for(d.trunk = trie->root, assert(d.trunk), d.diff = 0; ;
@@ -512,13 +512,24 @@ start:
 			if(++d.diff > limit) return errno = EILSEQ, 0;
 	}
 found:
-	/* Account for choosing the right leaf, (not strictly necessary here?) */
+	/* Account for choosing the right leaf. */
 	if(!!TRIE_QUERY(key, d.diff)) d.lf += d.br1 - d.br0 + 1;
-	/* Find. --> */
 
-	/* <!-- Backtrack and split. *********************************************/
-	if(!history.full) goto insert;
-	do { /* Split a tree. */
+	/* If the tree is full, backtrack and split. */
+	if(history.full) goto split;
+split_end:
+
+	{ /* Insert into unfilled tree. */
+		union PT_(leaf_ptr) dumb;
+		dumb.outer = &x;
+		union PT_(leaf_ptr) ptr = PT_(tree_open)(TRIE_OUTER, key, d.diff,
+			d.trunk, trunk_diff, dumb);
+		memcpy(ptr.outer, &x, sizeof x);
+	}
+	return 1;
+
+split:
+	do {
 		size_t add_outer = 1,
 			add_inner = history.full - !d.h + !history.unfull.trunk;
 		int is_above = d.br0 == 0 && d.br1 == d.trunk->bsize;
@@ -621,17 +632,7 @@ found:
 	/* It was in the promoted bit's skip and "Might be full now," was true.
 	 Don't have enough information to recover, but ca'n't get here twice. */
 	if(TRIE_BRANCHES <= d.trunk->bsize) { assert(!restarts++); goto start; }
-	/* Split. --> */
-
-insert: /* Insert into unfilled tree. ****************************************/
-	{
-		union PT_(leaf_ptr) dumb;
-		dumb.outer = &x;
-		union PT_(leaf_ptr) ptr = PT_(tree_open)(TRIE_OUTER, key, d.diff,
-			d.trunk, trunk_diff, dumb);
-		memcpy(ptr.outer, &x, sizeof x);
-	}
-	return 1;
+	goto split_end;
 
 catch:
 	free(inner), free(outer), free(new_root);
