@@ -1,8 +1,8 @@
 /** @license 2017 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Stand-alone header <src/list.h>; examples <test/test_list.c>; if on
- a compatible workstation, `make` creates the test suite of the examples.
+ @abstract Stand-alone header <src/list.h>; examples <test/test_list.c>; on a
+ compatible workstation, `make` creates the test suite of the examples.
 
  @subtitle Doubly-linked component
 
