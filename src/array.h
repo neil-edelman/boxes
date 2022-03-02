@@ -1,9 +1,8 @@
 /** @license 2016 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract C89 stand-alone source <src/array.h>; examples <test/test_array.c>;
- `make` and the right computer should create the test suite of the examples
- automatically.
+ @abstract Stand-alone header <src/array.h>; examples <test/test_array.c>; if
+ on a compatible workstation, `make` creates the test suite of the examples.
 
  @subtitle Contiguous dynamic array
 
