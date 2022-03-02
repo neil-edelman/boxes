@@ -1,8 +1,8 @@
 /** @license 2016 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Stand-alone header <src/array.h>; examples <test/test_array.c>; if
- on a compatible workstation, `make` creates the test suite of the examples.
+ @abstract Stand-alone header <src/array.h>; examples <test/test_array.c>; on a
+ compatible workstation, `make` creates the test suite of the examples.
 
  @subtitle Contiguous dynamic array
 
