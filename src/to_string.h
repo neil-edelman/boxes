@@ -78,10 +78,10 @@ static unsigned to_string_buffer_i;
 #define TO_STRING_RIGHT ')'
 #endif
 
-/* <to_string.h>: an alias to the box. */
+/* An alias to the box. */
 typedef BOX_CONTAINER PSZ_(box);
 
-/* <to_string.h>: an alias to the individual type contained in the box. */
+/* An alias to the individual type contained in the box. */
 typedef BOX_CONTENTS PSZ_(type);
 
 /** <to_string.h>: responsible for turning the argument into a 12-`char`
@@ -92,7 +92,7 @@ typedef void (*PSZ_(to_string_fn))(const PSZ_(type) *, char (*)[12]);
  <typedef:<PSZ>to_string>. */
 static const PSZ_(to_string_fn) PSZ_(to_string) = (TO_STRING);
 
-/** <to_string.h>: print the contents of `box` in a static string buffer of
+/** <src/to_string.h>: print the contents of `box` in a static string buffer of
  256 bytes, with limitations of only printing 4 things at a time. `<PSZ>box` is
  contracted to be the box itself. `<SZ>` is loosely contracted to be a name
  `<X>box[<X_TO_STRING_NAME>]`.

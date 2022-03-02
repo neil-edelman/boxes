@@ -50,7 +50,7 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of array." src = "web/array.png" width = 428 height = 301></p>
+<p><img alt = "Example of array." src = "doc/array.png" width = 428 height = 301></p>
 
 <p><a href = "#tag:&lt;A&gt;array">&lt;A&gt;array</a> is a dynamic array that stores contiguous <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a>. Resizing may be necessary when increasing the size of the array; this incurs amortised cost, and any pointers to this memory may become stale.</p>
 
@@ -175,7 +175,7 @@
 
 <p>Manages the array field <code>data</code> which has <code>size</code> elements. The space is indexed up to <code>capacity</code>, which is at least <code>size</code>. To initialize it to an idle state, see <a href = "#fn:&lt;A&gt;array">&lt;A&gt;array</a>, <code>ARRAY_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>. The fields should be treated as read-only; any modification is liable to cause the array to go into an invalid state.</p>
 
-<p><img alt = "States." src = "web/states.png" width = 901 height = 137></p>
+<p><img alt = "States." src = "doc/states.png" width = 901 height = 137></p>
 
 </div>
 
@@ -761,7 +761,7 @@
 
 <p><code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "to_string.h">to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;PSZ&gt;box</code> is contracted to be the box itself. <code>&lt;SZ&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;PSZ&gt;box</code> is contracted to be the box itself. <code>&lt;SZ&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
