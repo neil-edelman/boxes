@@ -1,6 +1,6 @@
 # heap\.h #
 
-Header [src/heap\.h](src/heap.h) depends on [src/array\.h](src/array.h); examples [test/test\_heap\.c](test/test_heap.c); if on a compatible workstation, `make` creates the test suite of the examples\.
+Header [src/heap\.h](src/heap.h) depends on [src/array\.h](src/array.h); examples [test/test\_heap\.c](test/test_heap.c); on a compatible workstation, `make` creates the test suite of the examples\.
 
 ## Priority\-queue ##
 
