@@ -33,7 +33,7 @@
 
 <h1>trie.h</h1>
 
-<p>Source <a href = "src/trie.h">src/trie.h</a>; examples <a href = "test/test_trie.c">test/test_trie.c</a>.</p>
+<p>Stand-alone header <a href = "src/trie.h">src/trie.h</a>; examples <a href = "test/test_trie.c">test/test_trie.c</a>; article <a href = "doc/trie.pdf">doc/trie.pdf</a>. On a compatible workstation, <code>make</code> creates the test suite of the examples.</p>
 
 <h2>Prefix tree</h2>
 
@@ -51,7 +51,7 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of trie." src = "web/trie.png" width = 880 height = 402></p>
+<p><img alt = "Example of trie." src = "doc/trie.png" width = 880 height = 402></p>
 
 <p>A <a href = "#tag:&lt;T&gt;trie">&lt;T&gt;trie</a> is a prefix-tree, digital-tree, or trie: an ordered set or map of immutable key strings allowing easy prefix queries. The strings used here are any encoding with a byte null-terminator, including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>.</p>
 
@@ -63,13 +63,13 @@
 	<dt>Parameter: TRIE_NAME</dt>
 	<dd><code>&lt;T&gt;</code> that satisfies <code>C</code> naming conventions when mangled; required. <code>&lt;PT&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: TRIE_VALUE, TRIE_KEY_IN_VALUE</dt>
-	<dd><code>TRIE_VALUE</code> is an optional payload type to go with the string key. <code>TRIE_KEY_IN_VALUE</code> is an optional <a href = "#typedef:&lt;PT&gt;key_fn">&lt;PT&gt;key_fn</a> that picks out the key from the of value, otherwise <a href = "#tag:&lt;PT&gt;entry">&lt;PT&gt;entry</a> is an associative array entry.</dd>
+	<dd><code>TRIE_VALUE</code> is an optional payload type to go with the string key. <code>TRIE_KEY_IN_VALUE</code> is an optional <a href = "#typedef:&lt;PT&gt;key_fn">&lt;PT&gt;key_fn</a> that picks out the key from the of value, otherwise it is an associative array <a href = "#tag:&lt;PT&gt;entry">&lt;PT&gt;entry</a>.</dd>
 	<dt>Parameter: TRIE_TO_STRING</dt>
 	<dd>Defining this includes <a href = "to_string.h">to_string.h</a>, with the keys as the string.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>Caveat:</dt>
-	<dd>(<a href = "#data:it">it</a>)</dd>
+	<dd>(<a href = "#fn:&lt;T&gt;trie_from_array">&amp;lt;T&amp;gt;trie_from_array</a>)</dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
@@ -142,7 +142,7 @@
 
 <p><code>enum <strong>trie_result</strong> { TRIE_RESULT };</code></p>
 
-<p>A result of modifying the table, of which <code>TRIE_ERROR</code> is false. <img alt = "A diagram of the result states." src = "../web/put.png"></p>
+<p>A result of modifying the table, of which <code>TRIE_ERROR</code> is false. <img alt = "A diagram of the result states." src = "../doc/put.png"></p>
 
 </div>
 
@@ -160,11 +160,11 @@
 
 <h3><a id = "tag:<T>trie" name = "tag:<T>trie">&lt;T&gt;trie</a></h3>
 
-<p><code>struct <strong>&lt;T&gt;trie</strong> { struct trie_trunk *root; size_t height; };</code></p>
+<p><code>struct <strong>&lt;T&gt;trie</strong>;</code></p>
 
 <p>To initialize it to an idle state, see <a href = "#fn:&lt;T&gt;trie">&lt;T&gt;trie</a>, <code>TRIE_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
 
-<p><img alt = "States." src = "web/states.png" width = 865 height = 112></p>
+<p><img alt = "States." src = "doc/states.png" width = 880 height = 137></p>
 
 </div>
 
@@ -174,14 +174,9 @@
 
 <h3><a id = "data:it" name = "data:it">it</a></h3>
 
-<p><code>const static &lt;PT&gt;entry *&lt;PT&gt;next(struct &lt;PT&gt;iterator *const <strong>it</strong>){ assert(it); printf("_next_\n"); if(!it -&gt;trie)return 0; assert(it -&gt;current &amp;&amp;it -&gt;end); if(&amp;it -&gt;current -&gt;trunk ==it -&gt;end){ if(it -&gt;leaf &gt;it -&gt;leaf_end ||it -&gt;leaf &gt;it -&gt;current -&gt;trunk .bsize){ it -&gt;trie = 0; return 0; } } else if(it -&gt;leaf &gt;it -&gt;current -&gt;trunk .bsize){ const char *key = &lt;PT&gt;to_key(it -&gt;current -&gt;leaf[it -&gt;current -&gt;trunk .bsize]); const struct trie_trunk *trunk1 = &amp;it -&gt;current -&gt;trunk; struct trie_trunk *trunk2, *next = 0; size_t h2 = it -&gt;trie -&gt;height, bit2; struct { unsigned br0, br1, lf; } t2; int is_past_end = !it -&gt;end; assert(key); printf("next: %s is the last one on the tree.\n", key); for(it -&gt;current = 0, trunk2 = it -&gt;trie -&gt;root, assert(trunk2), bit2 = 0;; trunk2 = trie_inner(trunk2)-&gt;link[t2 .lf]){ int is_considering = 0; if(trunk2 ==trunk1)break; assert(trunk2 -&gt;skip &lt;h2), h2 -=1 +trunk2 -&gt;skip; if(!h2){ printf("next: bailing.\n"); break; } t2 .br0 = 0, t2 .br1 = trunk2 -&gt;bsize, t2 .lf = 0; while(t2 .br0 &lt;t2 .br1){ const struct trie_branch *const branch2 = trunk2 -&gt;branch +t2 .br0; bit2 +=branch2 -&gt;skip; if(!TRIE_QUERY(key, bit2))t2 .br1 = ++t2 .br0 +branch2 -&gt;left; else t2 .br0 +=branch2 -&gt;left +1, t2 .lf +=branch2 -&gt;left +1; bit2 ++; } if(is_past_end){ is_considering = 1; } else if(trunk2 ==it -&gt;end){ is_past_end = 1; if(t2 .lf &lt;it -&gt;leaf_end)is_considering = 1; } if(is_considering &amp;&amp;t2 .lf &lt;trunk2 -&gt;bsize)next = trunk2, it -&gt;leaf = t2 .lf +1, printf("next: continues in tree %s, leaf %u.\n", orcify(trunk2), it -&gt;leaf); } if(!next){ printf("next: fin\n"); it -&gt;trie = 0; return 0; } while(h2)trunk2 = trie_inner_c(trunk2)-&gt;link[it -&gt;leaf], it -&gt;leaf = 0, assert(trunk2 -&gt;skip &lt;h2), h2 -=1 +trunk2 -&gt;skip; it -&gt;current = &lt;PT&gt;outer(trunk2); } return it -&gt;current -&gt;leaf +it -&gt;leaf ++; } static void &lt;T&gt;trie(struct &lt;T&gt;trie *const trie){ assert(trie); trie -&gt;root = 0; } static void &lt;T&gt;trie_(struct &lt;T&gt;trie *const trie){ assert(trie); if(trie -&gt;height)&lt;PT&gt;clear(trie -&gt;root, trie -&gt;height); else if(trie -&gt;root)free(trie -&gt;root); &lt;T&gt;trie(trie); } static int &lt;T&gt;trie_from_array(struct &lt;T&gt;trie *const trie, &lt;PT&gt;type *const *const array, const size_t array_size){ return assert(trie &amp;&amp;array &amp;&amp;array_size), &lt;PT&gt;init(trie, array, array_size); } static &lt;PT&gt;entry *&lt;T&gt;trie_match(const struct &lt;T&gt;trie *const trie, const char *const key){ return &lt;PT&gt;match(trie, key); } static int &lt;T&gt;trie_is(const struct &lt;T&gt;trie *const trie, const char *const key){ return !(!trie ||!&lt;PT&gt;get(trie, key)); } static int &lt;T&gt;trie_query(struct &lt;T&gt;trie *const trie, const char *const key, &lt;PT&gt;entry *const result){ return trie &amp;&amp;key ?&lt;PT&gt;get(trie, key):0; } static &lt;PT&gt;entry &lt;T&gt;trie_get(const struct &lt;T&gt;trie *const trie, const char *const key){ return &lt;PT&gt;get(trie, key); } static &lt;PT&gt;entry *&lt;T&gt;trie_remove(struct &lt;T&gt;trie *const trie, const char *const key){ return &lt;PT&gt;remove(trie, key); } static enum trie_result &lt;T&gt;trie_try(struct &lt;T&gt;trie *const trie, &lt;PT&gt;entry entry){ if(!trie ||!entry)return printf("add: null\n"), TRIE_ERROR; printf("add: trie %s; entry &lt;&lt;%s&gt;&gt;.\n", orcify(trie), &lt;PT&gt;to_key(entry)); return &lt;PT&gt;get(trie, &lt;PT&gt;to_key(entry))?TRIE_YIELD :(&lt;PT&gt;add_unique(trie, entry), TRIE_UNIQUE); } static int &lt;T&gt;trie_put(struct &lt;T&gt;trie *const trie, const &lt;PT&gt;entry x, &lt;PT&gt;entry */*const fixme*/eject){ return assert(trie &amp;&amp;x), &lt;PT&gt;put(trie, x, &amp;eject, 0); } static int &lt;T&gt;trie_policy_put(struct &lt;T&gt;trie *const trie, const &lt;PT&gt;entry x, &lt;PT&gt;entry *eject, const &lt;PT&gt;replace_fn replace){ return assert(trie &amp;&amp;x), &lt;PT&gt;put(trie, x, &amp;eject, replace); } struct &lt;T&gt;trie_iterator { struct &lt;PT&gt;iterator i; };</code></p>
+<p><code>const static &lt;PT&gt;entry *&lt;PT&gt;next(struct &lt;PT&gt;iterator *const <strong>it</strong>){ assert(it); printf("_next_\n"); if(!it -&gt;trie)return 0; assert(it -&gt;current &amp;&amp;it -&gt;end); if(&amp;it -&gt;current -&gt;trunk ==it -&gt;end){ if(it -&gt;leaf &gt;it -&gt;leaf_end ||it -&gt;leaf &gt;it -&gt;current -&gt;trunk .bsize){ it -&gt;trie = 0; return 0; } } else if(it -&gt;leaf &gt;it -&gt;current -&gt;trunk .bsize){ const char *key = &lt;PT&gt;to_key(it -&gt;current -&gt;leaf[it -&gt;current -&gt;trunk .bsize]); const struct trie_trunk *trunk1 = &amp;it -&gt;current -&gt;trunk; struct trie_trunk *trunk2, *next = 0; size_t h2 = it -&gt;trie -&gt;node_height, bit2; struct { unsigned br0, br1, lf; } t2; int is_past_end = !it -&gt;end; assert(key); printf("next: %s is the last one on the tree.\n", key); for(it -&gt;current = 0, trunk2 = it -&gt;trie -&gt;root, assert(trunk2), bit2 = 0;; trunk2 = trie_inner(trunk2)-&gt;leaf[t2 .lf].link){ int is_considering = 0; if(trunk2 ==trunk1)break; assert(trunk2 -&gt;skip &lt;h2), h2 -=1 +trunk2 -&gt;skip; if(!h2){ printf("next: bailing.\n"); break; } t2 .br0 = 0, t2 .br1 = trunk2 -&gt;bsize, t2 .lf = 0; while(t2 .br0 &lt;t2 .br1){ const struct trie_branch *const branch2 = trunk2 -&gt;branch +t2 .br0; bit2 +=branch2 -&gt;skip; if(!TRIE_QUERY(key, bit2))t2 .br1 = ++t2 .br0 +branch2 -&gt;left; else t2 .br0 +=branch2 -&gt;left +1, t2 .lf +=branch2 -&gt;left +1; bit2 ++; } if(is_past_end){ is_considering = 1; } else if(trunk2 ==it -&gt;end){ is_past_end = 1; if(t2 .lf &lt;it -&gt;leaf_end)is_considering = 1; } if(is_considering &amp;&amp;t2 .lf &lt;trunk2 -&gt;bsize)next = trunk2, it -&gt;leaf = t2 .lf +1, printf("next: continues in tree %s, leaf %u.\n", orcify(trunk2), it -&gt;leaf); } if(!next){ printf("next: fin\n"); it -&gt;trie = 0; return 0; } while(h2)trunk2 = trie_inner_c(trunk2)-&gt;leaf[it -&gt;leaf].link, it -&gt;leaf = 0, assert(trunk2 -&gt;skip &lt;h2), h2 -=1 +trunk2 -&gt;skip; it -&gt;current = &lt;PT&gt;outer(trunk2); } return it -&gt;current -&gt;leaf +it -&gt;leaf ++; } static void &lt;PT&gt;clear_r(struct trie_trunk *const tr, size_t height, struct &lt;PT&gt;outer_tree **const one){ unsigned i; assert(tr &amp;&amp;height &gt;tr -&gt;skip &amp;&amp;one); if(height -=1 +tr -&gt;skip){ for(i = 0; i &lt;=tr -&gt;bsize; i ++)&lt;PT&gt;clear_r(trie_inner(tr)-&gt;leaf[i].link, height, one); free(trie_inner(tr)); } else if(!*one){ *one = &lt;PT&gt;outer(tr); } else { free(&lt;PT&gt;outer(tr)); } } struct &lt;T&gt;trie_iterator { struct &lt;PT&gt;iterator i; };</code></p>
 
-<p>Advances <code>it</code>. Initializes <code>trie</code> to idle. Returns an initialized <code>trie</code> to idle. Initializes <code>trie</code> from an <code>array</code> of pointers-to-<code>&lt;T&gt;</code> of <code>array_size</code>. Tries to remove <code>key</code> from <code>trie</code>. Adds a pointer to <code>x</code> into <code>trie</code> if the key doesn't exist already. Updates or adds a pointer to <code>x</code> into <code>trie</code>. Adds a pointer to <code>x</code> to <code>trie</code> only if the entry is absent or if calling <code>replace</code> returns true or is null. Stores an iteration range in a trie. Any changes in the topology of the trie invalidate it.</p>
-
-<dl>
-	<dt>Caveat:</dt>
-	<dd>Write this function, somehow.</dd>
-</dl>
+<p>Advances <code>it</code>. Frees <code>tr</code> at <code>h</code> and it's children recursively. Stores any one outer tree in <code>one</code>. <code>height</code> is the node height, (height plus one.) Stores an iteration range in a trie. Any changes in the topology of the trie invalidate it.</p>
 
 </div>
 
@@ -193,9 +188,27 @@
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#fn:<T>trie_size">&lt;T&gt;trie_size</a></td><td>it</td></tr>
+<tr><td align = right>static void</td><td><a href = "#fn:<T>trie">&lt;T&gt;trie</a></td><td>trie</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>trie_">&lt;T&gt;trie_</a></td><td>trie</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>trie_from_array">&lt;T&gt;trie_from_array</a></td><td>trie, array, array_size</td></tr>
+
+<tr><td align = right>static &lt;PT&gt;entry *</td><td><a href = "#fn:<T>trie_match">&lt;T&gt;trie_match</a></td><td>trie, key</td></tr>
+
+<tr><td align = right>static &lt;PT&gt;entry</td><td><a href = "#fn:<T>trie_get">&lt;T&gt;trie_get</a></td><td>trie, key</td></tr>
+
+<tr><td align = right>static enum trie_result</td><td><a href = "#fn:<T>trie_try">&lt;T&gt;trie_try</a></td><td>trie, entry</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>trie_put">&lt;T&gt;trie_put</a></td><td>trie, x, /*const fixme*/eject</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>trie_policy">&lt;T&gt;trie_policy</a></td><td>trie, x, eject, replace</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>trie_prefix">&lt;T&gt;trie_prefix</a></td><td>trie, prefix, it</td></tr>
 
 <tr><td align = right>static const &lt;PT&gt;entry *</td><td><a href = "#fn:<T>trie_next">&lt;T&gt;trie_next</a></td><td>it</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#fn:<T>trie_size">&lt;T&gt;trie_size</a></td><td>it</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
 
@@ -211,15 +224,153 @@
 
 <div>
 
-<h3><a id = "fn:<T>trie_size" name = "fn:<T>trie_size">&lt;T&gt;trie_size</a></h3>
+<h3><a id = "fn:<T>trie" name = "fn:<T>trie">&lt;T&gt;trie</a></h3>
 
-<p><code>static size_t <strong>&lt;T&gt;trie_size</strong>(const struct &lt;T&gt;trie_iterator *const <em>it</em>)</code></p>
+<p><code>static void <strong>&lt;T&gt;trie</strong>(struct &lt;T&gt;trie *const <em>trie</em>)</code></p>
 
-<p>Counts the of the items in the new <code>it</code>; iterator must be new, (calling <a href = "#fn:&lt;T&gt;trie_next">&lt;T&gt;trie_next</a> causes it to become undefined.)</p>
+<p>Initializes <code>trie</code> to idle.</p>
 
 <dl>
 	<dt>Order:</dt>
-	<dd>&#927;(|<code>it</code>|)</dd>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>trie_" name = "fn:<T>trie_">&lt;T&gt;trie_</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;trie_</strong>(struct &lt;T&gt;trie *const <em>trie</em>)</code></p>
+
+<p>Returns an initialized <code>trie</code> to idle.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>trie_from_array" name = "fn:<T>trie_from_array">&lt;T&gt;trie_from_array</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;trie_from_array</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;type *const *const <em>array</em>, const size_t <em>array_size</em>)</code></p>
+
+<p>Initializes <code>trie</code> from an <code>array</code> of pointers-to-<code>&lt;T&gt;</code> of <code>array_size</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: realloc</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>array_size</code>)</dd>
+	<dt>Caveat:</dt>
+	<dd>Write this function, somehow.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>trie_match" name = "fn:<T>trie_match">&lt;T&gt;trie_match</a></h3>
+
+<p><code>static &lt;PT&gt;entry *<strong>&lt;T&gt;trie_match</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>key</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Looks at only the index of <code>trie</code> for potential <code>key</code> matches, but will ignore the values of the bits that are not in the index.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>key</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>trie_get" name = "fn:<T>trie_get">&lt;T&gt;trie_get</a></h3>
+
+<p><code>static &lt;PT&gt;entry <strong>&lt;T&gt;trie_get</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>key</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Exact match for <code>key</code> in <code>trie</code> or null no such item exists.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>key</code>|), <a href = "https://scholar.google.ca/scholar?q=Thareja+2011%2C+Data">Thareja 2011, Data</a>.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>trie_try" name = "fn:<T>trie_try">&lt;T&gt;trie_try</a></h3>
+
+<p><code>static enum trie_result <strong>&lt;T&gt;trie_try</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;PT&gt;entry <em>entry</em>)</code></p>
+
+<p>Adds a pointer to <code>x</code> into <code>trie</code> if the key doesn't exist already.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>If the key did not exist and it was created, returns true. If the key of <code>x</code> is already in <code>trie</code>, or an error occurred, returns false.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dd>Set <code>errno = 0</code> before to tell if the operation failed due to error.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>key</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>trie_put" name = "fn:<T>trie_put">&lt;T&gt;trie_put</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;trie_put</strong>(struct &lt;T&gt;trie *const <em>trie</em>, const &lt;PT&gt;entry <em>x</em>, &lt;PT&gt;entry *<em>/*const fixme*/eject</em>)</code></p>
+
+<p>Updates or adds a pointer to <code>x</code> into <code>trie</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>key</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>trie_policy" name = "fn:<T>trie_policy">&lt;T&gt;trie_policy</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;trie_policy</strong>(struct &lt;T&gt;trie *const <em>trie</em>, const &lt;PT&gt;entry <em>x</em>, &lt;PT&gt;entry *<em>eject</em>, const &lt;PT&gt;replace_fn <em>replace</em>)</code></p>
+
+<p>Adds a pointer to <code>x</code> to <code>trie</code> only if the entry is absent or if calling <code>replace</code> returns true or is null.</p>
+
+<dl>
+	<dt>Parameter: <em>eject</em></dt>
+	<dd>If not null, on success it will hold the overwritten value or a pointer-to-null if it did not overwrite any value. If a collision occurs and <code>replace</code> does not return true, this will be a pointer to <code>x</code>.</dd>
+	<dt>Parameter: <em>replace</em></dt>
+	<dd>Called on collision and only replaces it if the function returns true. If null, it is semantically equivalent to <a href = "#fn:&lt;T&gt;trie_put">&lt;T&gt;trie_put</a>.</dd>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>key</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>trie_prefix" name = "fn:<T>trie_prefix">&lt;T&gt;trie_prefix</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;trie_prefix</strong>(struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>prefix</em>, struct &lt;T&gt;trie_iterator *const <em>it</em>)</code></p>
+
+<p>Fills <code>it</code> with iteration parameters that find values of keys that start with <code>prefix</code> in <code>trie</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>prefix</em></dt>
+	<dd>To fill <code>it</code> with the entire <code>trie</code>, use the empty string.</dd>
+	<dt>Parameter: <em>it</em></dt>
+	<dd>A pointer to an iterator that gets filled. It is valid until a topological change to <code>trie</code>. Calling <a href = "#fn:&lt;T&gt;trie_next">&lt;T&gt;trie_next</a> will iterate them in order.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(\log <code>trie.size</code>) or &#927;(|<code>prefix</code>|)</dd>
 </dl>
 
 </div>
@@ -235,6 +386,21 @@
 <dl>
 	<dt>Return:</dt>
 	<dd>The previous value or null.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>trie_size" name = "fn:<T>trie_size">&lt;T&gt;trie_size</a></h3>
+
+<p><code>static size_t <strong>&lt;T&gt;trie_size</strong>(const struct &lt;T&gt;trie_iterator *const <em>it</em>)</code></p>
+
+<p>Counts the of the items in initialized <code>it</code>.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>it</code>|)</dd>
 </dl>
 
 </div>

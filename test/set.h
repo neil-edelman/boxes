@@ -3,7 +3,7 @@
 
  @subtitle Unordered associative array
 
- ![Example of <String>Set.](../web/set.png)
+ ![Example of <String>Set.](../doc/set.png)
 
  <tag:<S>set> is a collection of elements of <tag:<S>set_node> that doesn't
  allow duplication; it must be supplied an equality function, `SET_IS_EQUAL`
@@ -166,7 +166,7 @@ struct PS_(bucket) { struct S_(set_node) *first; };
 /** An `<S>set` of `size`. To initialise, see <fn:<S>set>, `SET_IDLE`, `{0}`
  (`C99`,) or being `static`.
 
- ![States.](../web/states.png) */
+ ![States.](../doc/states.png) */
 struct S_(set);
 struct S_(set) {
 	struct PS_(bucket) *buckets; /* An array of 1 << log_capacity (>3) or 0. */

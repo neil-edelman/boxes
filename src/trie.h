@@ -7,7 +7,7 @@
 
  @subtitle Prefix tree
 
- ![Example of trie.](../web/trie.png)
+ ![Example of trie.](../doc/trie.png)
 
  A <tag:<T>trie> is a prefix-tree, digital-tree, or trie: an ordered set or map
  of immutable key strings allowing easy prefix queries. The strings used here
@@ -113,7 +113,7 @@ static int trie_is_prefix(const char *a, const char *b) {
 #define TRIE_RESULT X(ERROR), X(UNIQUE), X(YIELD), X(REPLACE)
 #define X(n) TRIE_##n
 /** A result of modifying the table, of which `TRIE_ERROR` is false.
- ![A diagram of the result states.](../web/put.png) */
+ ![A diagram of the result states.](../doc/put.png) */
 enum trie_result { TRIE_RESULT };
 #undef X
 #define X(n) #n
@@ -171,7 +171,7 @@ static const struct PT_(outer_tree) *PT_(outer_c)(const struct trie_trunk *
 /** To initialize it to an idle state, see <fn:<T>trie>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`.
 
- ![States.](../web/states.png) */
+ ![States.](../doc/states.png) */
 struct T_(trie);
 struct T_(trie) { struct trie_trunk *root; size_t node_height; };
 
@@ -670,7 +670,7 @@ static int PT_(put)(struct T_(trie) *const trie, PT_(entry) x,
 }
 
 /** Try to remove `key` from `trie`.
- @fixme Join when combined-half <= ~TRIE_BRANCH / 2 */
+ @fixme Join when combined-half is less than half. */
 static int PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
 	struct trie_trunk *trunk;
