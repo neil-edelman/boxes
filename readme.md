@@ -1,6 +1,6 @@
 # array\.h #
 
-Source [src/array\.h](src/array.h); examples [test/test\_array\.c](test/test_array.c)\.
+C89 stand\-alone source [src/array\.h](src/array.h); examples [test/test\_array\.c](test/test_array.c); `make` and the right computer should create the test suite of the examples automatically\.
 
 ## Contiguous dynamic array ##
 
