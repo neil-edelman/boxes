@@ -13,7 +13,7 @@ Header [src/pool\.h](src/pool.h) depends on [src/heap\.h](src/heap.h) and [src/a
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of Pool](web/pool.png)
+![Example of Pool](doc/pool.png)
 
 [&lt;P&gt;pool](#user-content-tag-8aba39cb) is a memory pool that stores [&lt;PP&gt;type](#user-content-typedef-7560d92f)\. Pointers to valid items in the pool are stable, but not generally in any order\. When removal is ongoing and uniformly sampled while reaching a steady\-state size, it will eventually settle in one contiguous region\.
 
@@ -59,7 +59,7 @@ A valid tag type set by `POOL_TYPE`\.
 
 Consists of a map of several chunks of increasing size and a free\-heap\. Zeroed data is a valid state\. To instantiate to an idle state, see [&lt;P&gt;pool](#user-content-fn-8aba39cb), `POOL_IDLE`, `{0}` \(`C99`,\) or being `static`\.
 
-![States.](web/states.png)
+![States.](doc/states.png)
 
 
 

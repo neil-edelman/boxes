@@ -7,7 +7,7 @@
 
  @subtitle Stable pool
 
- ![Example of Pool](../web/pool.png)
+ ![Example of Pool](../doc/pool.png)
 
  <tag:<P>pool> is a memory pool that stores <typedef:<PP>type>. Pointers to
  valid items in the pool are stable, but not generally in any order. When
@@ -101,7 +101,7 @@ struct PP_(slot) { size_t size; PP_(type) *chunk; };
  Zeroed data is a valid state. To instantiate to an idle state, see
  <fn:<P>pool>, `POOL_IDLE`, `{0}` (`C99`,) or being `static`.
 
- ![States.](../web/states.png) */
+ ![States.](../doc/states.png) */
 struct P_(pool) {
 	struct PP_(slot_array) slots;
 	struct poolfree_heap free0; /* Free-list in chunk-zero. */
