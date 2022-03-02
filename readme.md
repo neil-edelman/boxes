@@ -1,6 +1,6 @@
 # bmp\.h #
 
-Stand\-alone header [src/bmp\.h](src/bmp.h); examples [test/test\_bmp\.c](test/test_bmp.c); if on a compatible workstation, `make` creates the test suite of the examples\.
+Stand\-alone header [src/bmp\.h](src/bmp.h); examples [test/test\_bmp\.c](test/test_bmp.c); on a compatible workstation, `make` creates the test suite of the examples\.
 
 ## Fixed bit\-field ##
 
