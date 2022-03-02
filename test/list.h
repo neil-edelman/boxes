@@ -1,11 +1,12 @@
 /** @license 2017 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Source <src/list.h>; examples <test/test_list.c>.
+ @abstract Stand-alone header <src/list.h>; examples <test/test_list.c>; on a
+ compatible workstation, `make` creates the test suite of the examples.
 
  @subtitle Doubly-linked component
 
- ![Example of a stochastic skip-list.](../web/list.png)
+ ![Example of a stochastic skip-list.](../doc/list.png)
 
  In parlance of <Thareja 2014, Structures>, <tag:<L>list> is a circular
  header, or sentinel, to a doubly-linked list of <tag:<L>listlink>. This is a
@@ -82,7 +83,7 @@
  host `struct` or `union`. The contents of this structure should be treated as
  read-only while in the list.
 
- ![States.](../web/node-states.png) */
+ ![States.](../doc/node-states.png) */
 struct L_(listlink);
 struct L_(listlink) { struct L_(listlink) *next, *prev; };
 
@@ -93,7 +94,7 @@ struct L_(listlink) { struct L_(listlink) *next, *prev; };
  structure should be treated as read-only while initialized, with the exception
  of <fn:<L>list_self_correct>.
 
- ![States.](../web/states.png) */
+ ![States.](../doc/states.png) */
 struct L_(list);
 struct L_(list) {
 	union {

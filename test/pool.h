@@ -1,12 +1,13 @@
 /** @license 2021 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Source <src/pool.h>, depends on <src/heap.h>, and <src/array.h>;
- examples <test/test_pool.c>.
+ @abstract Header <src/pool.h> depends on <src/heap.h> and <src/array.h>;
+ examples <test/test_pool.c>; if on a compatible workstation, `make` creates
+ the test suite of the examples.
 
  @subtitle Stable pool
 
- ![Example of Pool](../web/pool.png)
+ ![Example of Pool](../doc/pool.png)
 
  <tag:<P>pool> is a memory pool that stores <typedef:<PP>type>. Pointers to
  valid items in the pool are stable, but not generally in any order. When
@@ -100,7 +101,7 @@ struct PP_(slot) { size_t size; PP_(type) *chunk; };
  Zeroed data is a valid state. To instantiate to an idle state, see
  <fn:<P>pool>, `POOL_IDLE`, `{0}` (`C99`,) or being `static`.
 
- ![States.](../web/states.png) */
+ ![States.](../doc/states.png) */
 struct P_(pool) {
 	struct PP_(slot_array) slots;
 	struct poolfree_heap free0; /* Free-list in chunk-zero. */

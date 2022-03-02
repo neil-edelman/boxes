@@ -1,13 +1,13 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract C89 stand-alone source <src/table.h>; examples <test/test_table.c>;
- article <web/table.pdf>. `make` and the right computer should create the test
- suite of the examples automatically.
+ @abstract Stand-alone header <src/table.h>; examples <test/test_table.c>;
+ article <doc/table.pdf>. On a compatible workstation, `make` creates the
+ test suite of the examples.
 
  @subtitle Hash table
 
- ![Example of <string>table.](../web/table.png)
+ ![Example of <string>table.](../doc/table.png)
 
  <tag:<N>table> implements a set or map of <typedef:<PN>entry> as a hash table.
  It must be supplied a <typedef:<PN>hash_fn> and, <typedef:<PN>is_equal_fn> or
@@ -102,7 +102,7 @@
 #define TABLE_RESULT X(ERROR), X(UNIQUE), X(YIELD), X(REPLACE)
 #define X(n) TABLE_##n
 /** A result of modifying the table, of which `TABLE_ERROR` is false.
- ![A diagram of the result states.](../web/put.png) */
+ ![A diagram of the result states.](../doc/put.png) */
 enum table_result { TABLE_RESULT };
 #undef X
 #define X(n) #n
@@ -242,7 +242,7 @@ typedef int (*PN_(policy_fn))(PN_(key) original, PN_(key) replace);
  `static`. The fields should be treated as read-only; any modification is
  liable to cause the table to go into an invalid state.
 
- ![States.](../web/states.png) */
+ ![States.](../doc/states.png) */
 struct N_(table) { /* "Padding size," good. */
 	struct PN_(bucket) *buckets; /* @ has zero/one key specified by `next`. */
 	/* `size <= capacity`; size is not needed but convenient and allows
@@ -757,7 +757,7 @@ static struct PN_(bucket) *PN_(next)(struct PN_(iterator) *const it) {
 
 /* iterate --> */
 
-/** ![States](../web/it.png)
+/** ![States](../doc/it.png)
 
  Adding, deleting, successfully looking up entries, or any modification of the
  table's topology invalidates the iterator.

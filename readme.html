@@ -33,7 +33,7 @@
 
 <h1>table.h</h1>
 
-<p>C89 stand-alone source <a href = "src/table.h">src/table.h</a>; examples <a href = "test/test_table.c">test/test_table.c</a>; article <a href = "web/table.pdf">web/table.pdf</a>. <code>make</code> and the right computer should create the test suite of the examples automatically.</p>
+<p>Stand-alone header <a href = "src/table.h">src/table.h</a>; examples <a href = "test/test_table.c">test/test_table.c</a>; article <a href = "doc/table.pdf">doc/table.pdf</a>. On a compatible workstation, <code>make</code> creates the test suite of the examples.</p>
 
 <h2>Hash table</h2>
 
@@ -50,7 +50,7 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of &lt;string&gt;table." src = "web/table.png" width = 388 height = 391></p>
+<p><img alt = "Example of &lt;string&gt;table." src = "doc/table.png" width = 388 height = 391></p>
 
 <p><a href = "#tag:&lt;N&gt;table">&lt;N&gt;table</a> implements a set or map of <a href = "#typedef:&lt;PN&gt;entry">&lt;PN&gt;entry</a> as a hash table. It must be supplied a <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> and, <a href = "#typedef:&lt;PN&gt;is_equal_fn">&lt;PN&gt;is_equal_fn</a> or <a href = "#typedef:&lt;PN&gt;inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a>.</p>
 
@@ -185,7 +185,7 @@
 
 <p><code>enum <strong>table_result</strong> { TABLE_RESULT };</code></p>
 
-<p>A result of modifying the table, of which <code>TABLE_ERROR</code> is false. <img alt = "A diagram of the result states." src = "web/put.png" width = 735 height = 321></p>
+<p>A result of modifying the table, of which <code>TABLE_ERROR</code> is false. <img alt = "A diagram of the result states." src = "doc/put.png" width = 735 height = 321></p>
 
 </div>
 
@@ -207,7 +207,7 @@
 
 <p>To initialize, see <a href = "#fn:&lt;N&gt;table">&lt;N&gt;table</a>, <code>TABLE_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>. The fields should be treated as read-only; any modification is liable to cause the table to go into an invalid state.</p>
 
-<p><img alt = "States." src = "web/states.png" width = 912 height = 152></p>
+<p><img alt = "States." src = "doc/states.png" width = 912 height = 152></p>
 
 </div>
 
@@ -217,7 +217,7 @@
 
 <p><code>struct <strong>&lt;N&gt;table_iterator</strong>;</code></p>
 
-<p><img alt = "States" src = "web/it.png" width = 943 height = 117></p>
+<p><img alt = "States" src = "doc/it.png" width = 943 height = 117></p>
 
 <p>Adding, deleting, successfully looking up entries, or any modification of the table's topology invalidates the iterator. Iteration usually not in any particular order. The asymptotic runtime of iterating though the whole table is proportional to the capacity.</p>
 
