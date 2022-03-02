@@ -13,7 +13,7 @@ Header [src/heap\.h](src/heap.h) depends on [src/array\.h](src/array.h); example
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of heap.](web/heap.png)
+![Example of heap.](doc/heap.png)
 
 A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. It can be used as an implementation of a priority queue; internally, it is a `<<PH>node>array` with implicit heap properties on [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) pointer value\.
 
@@ -87,7 +87,7 @@ If `HEAP_VALUE` is set, this becomes [&lt;PH&gt;node](#user-content-typedef-23ae
 
 Stores the heap as an implicit binary tree in an array called `a`\. To initialize it to an idle state, see [&lt;H&gt;heap](#user-content-fn-8ef1078f), `HEAP_IDLE`, `{0}` \(`C99`\), or being `static`\.
 
-![States.](web/states.png)
+![States.](doc/states.png)
 
 
 
