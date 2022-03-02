@@ -1,6 +1,6 @@
 # table\.h #
 
-Source [src/table\.h](src/table.h); examples [test/test\_table\.c](test/test_table.c)\.
+Source [src/table\.h](src/table.h); examples [test/test\_table\.c](test/test_table.c); article [web/table\.pdf](web/table.pdf)\.
 
 ## Hash table ##
 
