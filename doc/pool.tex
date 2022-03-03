@@ -88,7 +88,7 @@ To reach the ideal contiguous chunk of memory, we only allocate memory to a chun
 
 \section{Details}
 
-We face the same problem as {\it OCaml}'s garbage collection: in chunk$_0$, we need some way to tell which are deleted. The first choice is a free-list. When adding an entry, check if the list is not empty, and if it is not, we recycle deleted entries by shifting the list. Alternately, popping the free-list works, too, but on average, shifting yields lower, more compact addresses, on average.
+We face a similar problem as {\it OCaml}'s garbage collection: in chunk$_0$, we need some way to tell which are deleted. The first choice is a free-list. When adding an entry, check if the list is not empty, and if it is not, we recycle deleted entries by shifting the list. Alternately, popping the free-list works, too, but on average, shifting yields lower, more compact addresses.
 
 The free-list is $\mathcal{O}(1)$ run-time, but hard $\Theta(\sum_n\text{capacity of chunk}_n)$\cite{knuth1976big} space requirement, (all analysis amortized to the number of entries in chunk$_0$.) Alternately, we could use a free-heap, who's run-time is worse, $\mathcal{O}(\log \text{chunk}_0)$, but space requirement is much more reasonable, $\mathcal{O}(\text{chunk}_0)$, and a reference count on the secondary chunks.
 
