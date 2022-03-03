@@ -1,0 +1,244 @@
+\documentclass[12pt]{article}
+
+% input
+\bibliographystyle{ieeetr}
+\usepackage[utf8]{inputenc}
+%\usepackage{times} % font
+\usepackage{lmodern} % scalable font
+\usepackage[pdftex]{graphicx} % include graphics
+\usepackage{amsmath} % align, nobreakdash
+\usepackage[pdf,tmpdir]{graphviz} % digraph
+\usepackage{fullpage} % book margins -> std margins
+\usepackage{wrapfig} % wrapfigure
+%\usepackage{moreverb} % verbatimtabinput
+\usepackage{subcaption} % subcaptionbox
+\usepackage[colorlinks]{hyperref} % pdf links
+\usepackage{url} % url support
+%\usepackage{comment} % comment
+\usepackage{xfrac}
+\usepackage[table]{xcolor}
+
+\usepackage{siunitx}
+%\usepackage{graphicx} already
+\usepackage{latexsym}
+\usepackage{keyval}
+\usepackage{ifthen}
+\usepackage{moreverb}
+\usepackage[siunitx, subfolder]{gnuplottex}
+
+\newcommand{\code}[1]{\colorbox{light-gray}{\texttt{#1}}}
+\def\Scale{0.5}
+
+% colourize titles
+\definecolor{light-gray}{gray}{0.95}
+\definecolor{ilrblue}{RGB}{79,166,220}
+\usepackage{titling}
+\pretitle{\vspace{-3em}\fontfamily{\sfdefault}\fontsize{18bp}{18bp}\color{ilrblue}\selectfont}
+\posttitle{\par\vspace{18bp}}
+\preauthor{\normalfont\bfseries\selectfont\MakeUppercase}
+\postauthor{\par\vspace{4bp}}
+\predate{\normalfont\selectfont}
+\postdate{\par\vspace{-8bp}}
+\usepackage{titlesec}
+\titleformat{\section}{\fontfamily{\sfdefault}\selectfont\normalsize\bfseries\color{ilrblue}\MakeUppercase}{\thesection}{1em}{}
+\titleformat{\subsection}{\fontfamily{\sfdefault}\normalsize\bfseries\color{ilrblue}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\fontfamily{\sfdefault}\normalsize\bfseries\color{ilrblue}\it}{\thesubsubsection}{1em}{}
+\makeatletter
+\renewenvironment{abstract}{%
+    \if@twocolumn
+      \section*{\abstractname}%
+    \else \small %
+      \begin{center}%
+        {\bfseries\color{ilrblue} \abstractname\vspace{\z@}\vspace{-6bp}}%
+      \end{center}%
+      \quotation
+    \fi}
+    {\if@twocolumn\else\endquotation\fi}
+\makeatother
+
+% for hyperref
+\hypersetup{
+  linkcolor=ilrblue, % internal (figure) links
+  urlcolor=ilrblue,
+  filecolor=ilrblue,
+  citecolor=ilrblue, % bibliography links
+  pdfauthor={\@author},
+  pdftitle={\@title},
+  pdfsubject={\@title},
+  pdfpagemode=UseNone
+}
+
+\author{Neil A. Edelman}
+\title{A random-access pool of similar objects}
+\date{2022-03-01}
+
+\begin{document}
+
+\maketitle
+
+\abstract{A pool is parameterized to one type, offering packed random-access insertion and deletion. Pointers to valid items in the pool are stable, but not generally in any order. When removal is ongoing and uniformly sampled while reaching a steady-state size, it will eventually settle in one contiguous region.}
+
+\section{Motivation}
+
+In many applications, we would like a stream of many similar object's addresses to be stable throughout each of their lifetimes, but we can not tell, {\it a priori} how many objects at one time will be needed. Dynamic arrays are not suited for this because, in order there to be a contiguity guarantee, the pointers are not guaranteed to be stable. $C^{++}$'s \code{std::deqeue} is close, but it only allows deletion from the ends.
+
+The pool, therefore, must not be contiguous, but we want blocks of data to be in one section of memory for fast cached-access and low storage-overhead. This suggests an an array of chunks, each one exponentially bigger than the last full chunk.
+
+To reach the ideal contiguous chunk of memory, we only allocate memory to a chunk from the primary, biggest, chunk$_0$. When data is deleted from a secondary chunk, it is unused until all the data is gone and we can free that chunk.
+
+\section{Details}
+
+We face the same problem as {\it OCaml}'s garbage collection: in chunk$_0$, we need some way to tell which are deleted. The first choice is a free-list. When adding an entry, check if the list is not empty, and if it is not, we recycle deleted entries by shifting the list. Alternately, popping the free-list works, too, but on average, shifting yields lower, more compact addresses, on average.
+
+The free-list is $\mathcal{O}(1)$ run-time, but hard $\Theta(\sum_n\text{capacity of chunk}_n)$\cite{knuth1976big} space requirement, (all analysis amortized to the number of entries in chunk$_0$.) Alternately, we could use a free-heap, who's run-time is worse, $\mathcal{O}(\log \text{chunk}_0)$, but space requirement is much more reasonable, $\mathcal{O}(\text{chunk}_0)$, and a reference count on the secondary chunks.
+
+Sort by memory, $\mathcal{O}(\log \text{chunks})$.
+
+Approximation to golden ratio for array.
+
+$if(r > c.size / (growth=50.0))$
+
+%\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
+\begin{figure}
+	\centering
+	\digraph[scale=\Scale]{pool}{
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontface=modern];
+	node [shape=box, style=filled, fillcolor="Gray95"];
+	free0_0 [label=<<FONT COLOR="Gray75">5</FONT>>, shape=circle];
+	free0_1 [label=<<FONT COLOR="Gray75">4</FONT>>, shape=circle];
+	free0_1 -> free0_0 [dir=back];
+	free0_2 [label=<<FONT COLOR="Gray75">2</FONT>>, shape=circle];
+	free0_2 -> free0_0 [dir=back];
+	free0_3 [label=<<FONT COLOR="Gray75">3</FONT>>, shape=circle];
+	free0_3 -> free0_1 [dir=back];
+	{rank=same; pool; free0_0; }
+	pool:free -> free0_0;
+	pool [label=<
+<TABLE BORDER="0">
+	<TR><TD COLSPAN="3" ALIGN="LEFT"><FONT COLOR="Gray85">&lt;keyval&gt;pool: struct keyval</FONT></TD></TR>
+	<TR>
+		<TD BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">capacity0</TD>
+		<TD BORDER="0" BGCOLOR="Gray90">&nbsp;</TD>
+		<TD BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">20</TD>
+	</TR>
+	<TR>
+		<TD BORDER="0" ALIGN="RIGHT">slots</TD>
+		<TD BORDER="0" ALIGN="RIGHT">3</TD>
+		<TD PORT="slots" BORDER="0" ALIGN="RIGHT">3</TD>
+	</TR>
+	<TR>
+		<TD BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">freeheap0</TD>
+		<TD BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">4</TD>
+		<TD PORT="free" BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">4</TD>
+	</TR>
+</TABLE>>];
+	pool:slots -> slots;
+	slots [label = <
+<TABLE BORDER="0">
+	<TR>
+		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Italic">chunk</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Italic">size</FONT></TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Kraafunda</TD>
+		<TD PORT="0" ALIGN="RIGHT" BGCOLOR="Gray90">7</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT">1</TD>
+		<TD ALIGN="LEFT">Ettedurb</TD>
+		<TD PORT="1" ALIGN="RIGHT">3</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">2</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Dabishi</TD>
+		<TD PORT="2" ALIGN="RIGHT" BGCOLOR="Gray90">5</TD>
+	</TR>
+</TABLE>>];
+	slots:0 -> chunk0;
+	chunk0 [label=<
+<TABLE BORDER="0">
+	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Kraafunda</FONT></TD></TR>
+	<TR>
+		<TD PORT="0" ALIGN="RIGHT" BGCOLOR="Gray90">0</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">580_Oobagun</TD>
+	</TR>
+	<TR>
+		<TD PORT="1" ALIGN="RIGHT">1</TD>
+		<TD ALIGN="LEFT">91_Ashannp</TD>
+	</TR>
+	<TR>
+		<TD PORT="2" ALIGN="RIGHT" BGCOLOR="Gray90">2</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90"><FONT COLOR="Gray75">deleted</FONT></TD>
+	</TR>
+	<TR>
+		<TD PORT="3" ALIGN="RIGHT">3</TD>
+		<TD ALIGN="LEFT"><FONT COLOR="Gray75">deleted</FONT></TD>
+	</TR>
+	<TR>
+		<TD PORT="4" ALIGN="RIGHT" BGCOLOR="Gray90">4</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90"><FONT COLOR="Gray75">deleted</FONT></TD>
+	</TR>
+	<TR>
+		<TD PORT="5" ALIGN="RIGHT">5</TD>
+		<TD ALIGN="LEFT"><FONT COLOR="Gray75">deleted</FONT></TD>
+	</TR>
+	<TR>
+		<TD PORT="6" ALIGN="RIGHT" BGCOLOR="Gray90">6</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">480_Ioniagr</TD>
+	</TR>
+</TABLE>>];
+	slots:1 -> chunk1;
+	chunk1 [label=<
+<TABLE BORDER="0">
+	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Ettedurb</FONT></TD></TR>
+	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT FACE="Times-Italic">count 3</FONT></TD></TR>
+</TABLE>>];
+	slots:2 -> chunk2;
+	chunk2 [label=<
+<TABLE BORDER="0">
+	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Dabishi</FONT></TD></TR>
+	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT FACE="Times-Italic">count 5</FONT></TD></TR>
+</TABLE>>];
+	}
+	\caption{A pool consists of several blocks of packed data and a free-heap for block-0.}
+	\label{pool}
+\end{figure}
+
+Figure~\ref{pool} shows a diagram of a pool, the same type that was tested in Figure~\ref{pool-vs-pool}.
+
+\section{Performance}
+
+\begin{figure}%
+\centering%
+\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
+set style line 1 lt 5 lw 2 lc rgb '#0072bd' pointtype 1 pointsize 0.5
+set style line 2 lt 5 lw 2 lc rgb '#ff0000' pointtype 2 pointsize 0.5
+set style line 3 lt 5 lw 2 lc rgb '#00ac33' pointtype 5 pointsize 0.5
+set style line 4 lt 5 lw 2 lc rgb '#19d3f5' pointtype 5 pointsize 0.5
+set grid
+set xlabel "insertions"
+set ylabel "time per insertion, $t$ (ns)"
+set yrange [0:1000]
+set log x
+set format x '\tiny %g'
+set format y '\tiny %g'
+#set tics font "Modern, 8" #rotate by 20 right # ineffectual
+plot \
+"../timing/graph/closed.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "separate-chaining" ls 1, \
+"../timing/graph/open.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "inline-chaining" ls 2, \
+"../timing/graph/unordered.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "std$\:\:$unordered\\_set" ls 3
+\end{gnuplot}
+\caption{A comparison of chained techniques in a $C^{++}$ benchmark with a log-$x$ scale.}%
+\label{timing}%
+\end{figure}%
+
+\section{Implementation}
+
+\section{Conclusion}
+
+
+\bibliography{pool}
+
+\end{document}

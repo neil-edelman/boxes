@@ -28,8 +28,8 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	printf("*** %s\n", fn);
 	fprintf(fp, "digraph {\n"
-		"\trankdir=LR;\n"
-		"\tfontface=modern;"
+		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
+		" fontface=modern];\n"
 		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n");
 	if(!pool->free0.a.size) goto no_free0;
 	for(i = 0; i < pool->free0.a.size; i++) {

@@ -1,6 +1,6 @@
 /** Unit test. */
 
-#include <stdlib.h> /* EXIT_ malloc free */
+#include <stdlib.h> /* EXIT_ malloc free rand */
 #include <stdio.h>  /* fprintf */
 #include <string.h>	/* strcmp */
 #include <time.h>	/* clock */
@@ -88,6 +88,29 @@ static int keyval_value_cmp(const struct Keyval *const a,
 #include "../src/pool.h"
 
 
+/** For paper. */
+static void special(void) {
+	struct keyval_pool kvp = POOL_IDLE;
+	struct keyval *kv[30];
+	int is_kv[sizeof kv / sizeof *kv];
+	size_t i;
+	for(i = 0; i < sizeof kv / sizeof *kv; i++) kv[i] = 0, is_kv[i] = 0;
+	for(i = 0; i < sizeof kv / sizeof *kv; i++) {
+		if(!(kv[i] = keyval_pool_new(&kvp))) goto finally;
+		keyval_filler(kv[i]);
+		is_kv[i] = 1;
+	}
+	for(i = 0; i < sizeof kv / sizeof *kv; i++) {
+		size_t r = (size_t)rand() / (RAND_MAX / (sizeof kv / sizeof *kv) + 1);
+		if(!is_kv[r]) continue;
+		if(!keyval_pool_remove(&kvp, kv[r])) goto finally;
+		is_kv[r] = 0;
+	}
+finally:
+	pool_keyval_graph(&kvp, "doc/kvpool.gv");
+	keyval_pool_(&kvp);
+}
+
 /** Entry point.
  @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
@@ -98,6 +121,7 @@ int main(void) {
 	str4_pool_test();
 	int_pool_test();
 	keyval_pool_test();
+	special();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
