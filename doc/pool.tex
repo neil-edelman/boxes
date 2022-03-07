@@ -84,15 +84,63 @@ In many applications, we would like a stream of many similar object's addresses 
 
 The pool, therefore, must not be contiguous, but we want blocks of data to be in one section of memory for fast cached-access and low storage-overhead. This suggests an an array of chunks, each one exponentially bigger than the last full chunk.
 
-To reach the ideal contiguous chunk of memory, we only allocate memory to a chunk from the primary, biggest, chunk$_0$. When data is deleted from a secondary chunk, it is unused until all the data is gone and we can free that chunk.
+To reach the ideal contiguous chunk of memory, we only allocate memory to a chunk from the largest capacity, active chunk$_0$. When data is deleted from a secondary chunk, it is unused until all the data is gone and we can free that chunk.
 
 \section{Details}
 
-We face a similar problem as {\it OCaml}'s garbage collection: in chunk$_0$, we need some way to tell which are deleted. The first choice is a free-list. When adding an entry, check if the list is not empty, and if it is not, we recycle deleted entries by shifting the list. Alternately, popping the free-list works, too, but on average, shifting yields lower, more compact addresses.
+\subsection{Marking Entries as Deleted}
 
-The free-list is $\mathcal{O}(1)$ run-time, but hard $\Theta(\sum_n\text{capacity of chunk}_n)$\cite{knuth1976big} space requirement, (all analysis amortized to the number of entries in chunk$_0$.) Alternately, we could use a free-heap, who's run-time is worse, $\mathcal{O}(\log \text{chunk}_0)$, but space requirement is much more reasonable, $\mathcal{O}(\text{chunk}_0)$, and a reference count on the secondary chunks.
+We face a similar problem as garbage collection: in the active chunk$_0$, we need some way to tell which are deleted. The first choice is a free-list. When adding an entry, check if the free-list is not empty, and if it is not, we recycle deleted entries by shifting the list. Alternately, popping the free-list works, too, but on average, shifting yields lower, more compact addresses.
 
-Sort by memory, $\mathcal{O}(\log \text{chunks})$.
+The free-list is $\mathcal{O}(1)$ amortized run-time, but hard $\Theta(\sum_n\text{capacity of chunk}_n)$\cite{knuth1976big} space requirement. Alternately, we could use an implicit complete binary-tree free-heap. This will negatively affect the run-time, $\mathcal{O}(\log \text{chunk}_0)$, but space requirement is much more reasonable, $\mathcal{O}(\text{chunk}_0)$. A reference count on the secondary chunks.
+
+\begin{figure}%
+	\centering%
+	\begin{subfigure}[b]{0.5\textwidth}
+\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 3.1,3.4}]
+set style line 1 lt 5 lw 2 lc black pointtype 1 pointsize 0.5 dt 1
+set style line 2 lt 5 lw 2 lc black pointtype 2 pointsize 0.5 dt 4
+set grid
+set xlabel "$n$"
+set ylabel "time, $t$ ($\\mu$s)"
+set xtics rotate
+set format x '\tiny %g'
+set format y '\tiny %g'
+plot \
+"../timing/pool_vs_pool_time.data" using 1:2 with lines title "free-heap" ls 1, \
+"../timing/pool_vs_pool_time.data" using 1:3 with lines title "free-list" ls 2
+\end{gnuplot}%
+	\caption{Run-time.\label{compare:time}}%
+	\end{subfigure}%
+	\begin{subfigure}[b]{0.5\textwidth}%
+\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 3.1,3.4}]
+set style line 1 lt 5 lw 2 lc black pointtype 1 pointsize 0.5 dt 1
+set style line 2 lt 5 lw 2 lc black pointtype 2 pointsize 0.5 dt 4
+set grid
+set xlabel "$n$"
+set ylabel "space, (bytes)"
+set xtics rotate
+set format x '\tiny %g'
+set format y '\tiny %g'
+plot \
+"../timing/pool_vs_pool_space.data" using 1:2 with lines title "free-heap" ls 1, \
+"../timing/pool_vs_pool_space.data" using 1:3 with lines title "free-list" ls 2
+\end{gnuplot}
+		\caption{Space.\label{compare:space}}
+	\end{subfigure}
+	\caption{Time and space to inserting and deleting $n$ random, but linearly stable about 50~items.}%
+	\label{compare}%
+\end{figure}%
+
+Figure~\ref{compare} compares a hypothetical \code{struct keyval} with an \code{int} and a string of 12 \code{char} both in run-time, Figure~\ref{compare:time}, and total space, Figure~\ref{compare:space}. It was decided that the space requirement of using a free-list is too great for, what turned out to be, a very modest performance gain in this region.
+
+With a free-list, all the items in a block that are non-deleted have a null pointer attached to them. A free-heap saves initializing and reading the list, and only needs the space for what one has deleted. This is not without a downside: there is no guarantee that one will be able to expand the heap to account for a deletion; it could be that deleting an item fails.
+
+\subsection{Which chunk are they in?}
+
+Except primary chunk$_0$, we maintain the chunks sorted by memory location. Whenever we allocate a new chunk$_0$ in response to the old chunk$_0$ being full, it requires that we binary search the array of chunks and insert the old, $\mathcal{O}(\log \text{chunks} + \text{chunks}) = \mathcal{O}(\text{chunks})$. Similarly for deleting a chunk. Because the exponential growth of chunks, this happens $\mathcal{O}(\log \text{items})$. Thus, the worst-case time to delete is, $\mathcal{O}(\text{chunks} + \log \text{items in chunk$_0$}) = \mathcal{O}(\log \text{items})$.
+
+Insertion is amortized $\mathcal{O}(1)$. In the case where chunk$_0$ is full, we allocate a new chunk for at least $(1+\epsilon)n$ new entries, and each entry bears a transfer of constant time. In the case where the free-heap is empty, just return chunk$_0[$size$_0]$. If there's any addresses in the maximum free-heap, just pop an address from the array of which the heap is made and return it; we know that it is lower in the binary-tree heap than those higher up. We prefer to have low-numbers, but any number would do.
 
 Approximation to golden ratio for array.
 
@@ -202,7 +250,7 @@ $if(r > c.size / (growth=50.0))$
 	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT FACE="Times-Italic">count 5</FONT></TD></TR>
 </TABLE>>];
 	}
-	\caption{A pool consists of several blocks of packed data and a free-heap for block-0.}
+	\caption{A pool consists of several chunks of packed data managed by an array, and a free-heap for chunk$_0$.}
 	\label{pool}
 \end{figure}
 
@@ -210,31 +258,11 @@ Figure~\ref{pool} shows a diagram of a pool, the same type that was tested in Fi
 
 \section{Performance}
 
-\begin{figure}%
-\centering%
-\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
-set style line 1 lt 5 lw 2 lc rgb '#0072bd' pointtype 1 pointsize 0.5
-set style line 2 lt 5 lw 2 lc rgb '#ff0000' pointtype 2 pointsize 0.5
-set style line 3 lt 5 lw 2 lc rgb '#00ac33' pointtype 5 pointsize 0.5
-set style line 4 lt 5 lw 2 lc rgb '#19d3f5' pointtype 5 pointsize 0.5
-set grid
-set xlabel "insertions"
-set ylabel "time per insertion, $t$ (ns)"
-set yrange [0:1000]
-set log x
-set format x '\tiny %g'
-set format y '\tiny %g'
-#set tics font "Modern, 8" #rotate by 20 right # ineffectual
-plot \
-"../timing/graph/closed.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "separate-chaining" ls 1, \
-"../timing/graph/open.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "inline-chaining" ls 2, \
-"../timing/graph/unordered.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "std$\:\:$unordered\\_set" ls 3
-\end{gnuplot}
-\caption{A comparison of chained techniques in a $C^{++}$ benchmark with a log-$x$ scale.}%
-\label{timing}%
-\end{figure}%
-
 \section{Implementation}
+
+A max heap\cite{williams1964heapsort} with which we can compare the data in the maximum position in chunk$_0$ on deletion. If it matches, we decrement the max value and pop from the stack until $\text{top} < \text{address}_\text{end}$. In this way, the end of the list is never deleted. The procedure is amortized. For example, in Figure~\ref{pool}, if we deleted the data at chunk$_0$, index 6, \code{480\_Ioniagr}, then it would result in successive amortized deletions of all the heap; the $size$ would be 2.
+
+%This can be seen as a form of path-compression\cite{tarjan1979compression}, where the compressed nodes are deleted. But is it?
 
 \section{Conclusion}
 

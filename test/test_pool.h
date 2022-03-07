@@ -22,7 +22,7 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 	char str[12];
 	size_t i, j;
 	struct PP_(slot) *slot;
-	PP_(type) *chunk;
+	PP_(type) *slab;
 
 	assert(pool && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
@@ -76,10 +76,8 @@ no_free0:
 		"<TABLE BORDER=\"0\">\n"
 		"\t<TR>\n"
 		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">i</FONT></TD>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">chunk"
-		"</FONT></TD>\n"
-		"\t\t<TD BORDER=\"0\">"
-		"<FONT FACE=\"Times-Italic\">size</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">slab</FONT></TD>\n"
+		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">size</FONT></TD>\n"
 		"\t</TR>\n");
 	for(i = 0; i < pool->slots.size; i++) {
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
@@ -88,28 +86,28 @@ no_free0:
 			"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
 			"\t\t<TD PORT=\"%lu\" ALIGN=\"RIGHT\"%s>%lu</TD>\n"
 			"\t</TR>\n",
-			bgc, (unsigned long)i, bgc, orcify(pool->slots.data[i].chunk),
+			bgc, (unsigned long)i, bgc, orcify(pool->slots.data[i].slab),
 			(unsigned long)i, bgc, pool->slots.data[i].size);
 	}
 	fprintf(fp, "</TABLE>>];\n");
-	/* For each slot, there is a chunk array with data. */
+	/* For each slot, there is a slab. */
 	for(i = 0; i < pool->slots.size; i++) {
 		char *bmp;
 		slot = pool->slots.data + i;
-		chunk = slot->chunk;
+		slab = slot->slab;
 		fprintf(fp,
-			"\tslots:%lu -> chunk%lu;\n"
-			"\tchunk%lu [label=<\n"
+			"\tslots:%lu -> slab%lu;\n"
+			"\tslab%lu [label=<\n"
 			"<TABLE BORDER=\"0\">\n"
 			"\t<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\">"
 			"<FONT COLOR=\"Gray85\">%s</FONT></TD></TR>\n",
 			(unsigned long)i, (unsigned long)i,
-			(unsigned long)i, orcify(chunk));
+			(unsigned long)i, orcify(slab));
 		if(i || !slot->size) {
 			fprintf(fp, "\t<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\">"
 				"<FONT FACE=\"Times-Italic\">count %lu</FONT></TD></TR>\n",
 				slot->size);
-			goto no_chunk_data;
+			goto no_slab_data;
 		}
 		/* Primary buffer: print rows. */
 		if(!(bmp = calloc(slot->size, sizeof *bmp)))
@@ -129,20 +127,20 @@ no_free0:
 					"<FONT COLOR=\"Gray75\">deleted"
 					"</FONT></TD>\n", bgc);
 			} else {
-				PP_(to_string)(chunk + j, &str);
+				PP_(to_string)(slab + j, &str);
 				fprintf(fp, "\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n", bgc, str);
 			}
 			fprintf(fp, "\t</TR>\n");
 		}
 		free(bmp);
-no_chunk_data:
+no_slab_data:
 		fprintf(fp, "</TABLE>>];\n");
-		/* Too crowded!
+		/* Too crowded to draw heap.
 		if(i) continue;
 		for(j = 1; j < pool->free0.a.size; j++) {
 			const size_t *const f0low = pool->free0.a.data + j / 2,
 				*const f0high = pool->free0.a.data + j;
-			fprintf(fp, "\tchunk0:%lu -> chunk0:%lu;\n", *f0low, *f0high);
+			fprintf(fp, "\tslab0:%lu -> slab0:%lu;\n", *f0low, *f0high);
 		} */
 	}
 no_slots:
@@ -159,7 +157,7 @@ static void PP_(valid_state)(const struct P_(pool) *const pool) {
 	if(!pool->capacity0) assert(!pool->slots.size);
 	/* Every slot up to size is active. */
 	for(i = 0; i < pool->slots.size; i++) {
-		assert(pool->slots.data[i].chunk);
+		assert(pool->slots.data[i].slab);
 		assert(!i || pool->slots.data[i].size);
 	}
 	if(!pool->slots.size) {
@@ -176,7 +174,7 @@ static void PP_(valid_state)(const struct P_(pool) *const pool) {
 
 static void PP_(test_states)(void) {
 	struct P_(pool) pool = POOL_IDLE;
-	PP_(type) *t, *chunk;
+	PP_(type) *t, *slab;
 	const size_t size[] = { 9, 14, 22 };
 	enum { CHUNK1_IS_ZERO, CHUNK2_IS_ZERO } conf = CHUNK1_IS_ZERO;
 	size_t i;
@@ -198,7 +196,7 @@ static void PP_(test_states)(void) {
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-02-one.gv");
 
 	printf("Remove.\n");
-	r = P_(pool_remove)(&pool, pool.slots.data[0].chunk + 0), assert(r),
+	r = P_(pool_remove)(&pool, pool.slots.data[0].slab + 0), assert(r),
 		PP_(valid_state)(&pool);
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-03-remove.gv");
 
@@ -209,37 +207,37 @@ static void PP_(test_states)(void) {
 	for(i = 0; i < size[0]; i++) t = P_(pool_new)(&pool), assert(t),
 		PP_(filler)(t), PP_(valid_state)(&pool);
 	assert(pool.slots.size == 1);
-	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-05-one-chunk.gv");
+	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-05-one-slab.gv");
 	for(i = 0; i < size[1]; i++) t = P_(pool_new)(&pool), assert(t),
 		PP_(filler)(t), PP_(valid_state)(&pool);
 	assert(pool.slots.size == 2);
-	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-06-two-chunks.gv");
+	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-06-two-slabs.gv");
 	t = P_(pool_new)(&pool), assert(t), PP_(filler)(t), PP_(valid_state)(&pool);
 	assert(pool.slots.size == 3);
-	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-07-three-chunks.gv");
+	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-07-three-slabs.gv");
 	/* It's `malloc` whether, `conf = { 0: { 2, 0, 1 }, 1: { 2, 1, 0 } }`. */
 	if(pool.slots.data[1].size == size[0]) conf = CHUNK1_IS_ZERO;
 	else assert(pool.slots.data[1].size == size[1]);
 	if(pool.slots.data[2].size == size[0]) conf = CHUNK2_IS_ZERO;
 	else assert(pool.slots.data[2].size == size[1]);
 	assert(pool.slots.data[0].size == 1);
-	printf("%s is %u, %s is %u.\n", orcify(pool.slots.data[1].chunk), conf,
-		orcify(pool.slots.data[2].chunk), !conf);
-	t = pool.slots.data[!conf + 1].chunk + 0, PP_(to_string)(t, &z);
-	printf("Removing index-zero %s from chunk %u %s.\n", z, !conf + 1,
-		orcify(pool.slots.data[!conf + 1].chunk));
+	printf("%s is %u, %s is %u.\n", orcify(pool.slots.data[1].slab), conf,
+		orcify(pool.slots.data[2].slab), !conf);
+	t = pool.slots.data[!conf + 1].slab + 0, PP_(to_string)(t, &z);
+	printf("Removing index-zero %s from slab %u %s.\n", z, !conf + 1,
+		orcify(pool.slots.data[!conf + 1].slab));
 	P_(pool_remove)(&pool, t), PP_(valid_state)(&pool);
-	t = pool.slots.data[0].chunk + 0, PP_(to_string)(t, &z);
-	printf("Removing index-zero %s from chunk %u %s.\n", z, 0,
-		orcify(pool.slots.data[0].chunk));
-	P_(pool_remove)(&pool, pool.slots.data[0].chunk + 0);
+	t = pool.slots.data[0].slab + 0, PP_(to_string)(t, &z);
+	printf("Removing index-zero %s from slab %u %s.\n", z, 0,
+		orcify(pool.slots.data[0].slab));
+	P_(pool_remove)(&pool, pool.slots.data[0].slab + 0);
 	PP_(valid_state)(&pool);
 	assert(pool.slots.data[conf + 1].size == size[0]);
-	chunk = pool.slots.data[conf + 1].chunk;
-	printf("Removing all in chunk %s.\n", orcify(chunk));
-	for(i = 0; i < size[0]; i++) P_(pool_remove)(&pool, chunk + i);
+	slab = pool.slots.data[conf + 1].slab;
+	printf("Removing all in slab %s.\n", orcify(slab));
+	for(i = 0; i < size[0]; i++) P_(pool_remove)(&pool, slab + i);
 	PP_(valid_state)(&pool);
-	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-08-remove-chunk.gv");
+	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-08-remove-slab.gv");
 	assert(pool.slots.size == 2);
 	P_(pool_clear)(&pool);
 	assert(pool.slots.size == 1);
@@ -267,7 +265,7 @@ static void PP_(test_states)(void) {
 			bits |= rnd_bit;
 		}
 		for(i = 0; i < size[2]; i++) if(bits & (1 << i))
-			P_(pool_remove)(&pool, pool.slots.data[0].chunk + i);
+			P_(pool_remove)(&pool, pool.slots.data[0].slab + i);
 		i = n0;
 	}
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-10-remove.gv");
