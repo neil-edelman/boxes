@@ -209,7 +209,7 @@
 
 <p>Deletes <code>data</code> from <code>pool</code>. Do not remove data that is not in <code>pool</code>.</p>
 
-<p>This memory-pool has an element of undefined behaviour (C89) or implementation-defined behaviour (with <code>stdint.h</code>) because it must do an ordered test to see which memory segment is in. This will most likely be a problem in segmented memory models. There is no system-independent fix that we are aware of.</p>
+<p>This is undefined behaviour (C89) or implementation-defined behaviour (with <code>stdint.h</code>) because it must do an ordered test to see which memory segment is in. There is no system-independent fix that we are aware of, but it is reasonable to think it works. This will most likely be a problem in segmented memory models.</p>
 
 </div>
 

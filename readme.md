@@ -147,7 +147,7 @@ This pointer is constant until it gets [&lt;P&gt;pool_remove](#user-content-fn-9
 
 Deletes `data` from `pool`\. Do not remove data that is not in `pool`\.
 
-This memory\-pool has an element of undefined behaviour \(C89\) or implementation\-defined behaviour \(with `stdint.h`\) because it must do an ordered test to see which memory segment is in\. This will most likely be a problem in segmented memory models\. There is no system\-independent fix that we are aware of\.
+This is undefined behaviour \(C89\) or implementation\-defined behaviour \(with `stdint.h`\) because it must do an ordered test to see which memory segment is in\. There is no system\-independent fix that we are aware of, but it is reasonable to think it works\. This will most likely be a problem in segmented memory models\.
 
 
 

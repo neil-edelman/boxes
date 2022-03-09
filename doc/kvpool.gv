@@ -1,6 +1,15 @@
 digraph {
 	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontface=modern];
 	node [shape=box, style=filled, fillcolor="Gray95"];
+	free0_0 [label=<<FONT COLOR="Gray75">5</FONT>>, shape=circle];
+	free0_1 [label=<<FONT COLOR="Gray75">2</FONT>>, shape=circle];
+	free0_1 -> free0_0 [dir=back];
+	free0_2 [label=<<FONT COLOR="Gray75">4</FONT>>, shape=circle];
+	free0_2 -> free0_0 [dir=back];
+	free0_3 [label=<<FONT COLOR="Gray75">1</FONT>>, shape=circle];
+	free0_3 -> free0_1 [dir=back];
+	{rank=same; pool; free0_0; }
+	pool:free -> free0_0;
 	pool [label=<
 <TABLE BORDER="0">
 	<TR><TD COLSPAN="3" ALIGN="LEFT"><FONT COLOR="Gray85">&lt;keyval&gt;pool: struct keyval</FONT></TD></TR>
@@ -11,13 +20,13 @@ digraph {
 	</TR>
 	<TR>
 		<TD BORDER="0" ALIGN="RIGHT">slots</TD>
-		<TD BORDER="0" ALIGN="RIGHT">3</TD>
+		<TD BORDER="0" ALIGN="RIGHT">2</TD>
 		<TD PORT="slots" BORDER="0" ALIGN="RIGHT">3</TD>
 	</TR>
 	<TR>
 		<TD BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">freeheap0</TD>
-		<TD BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">0</TD>
-		<TD PORT="free" BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">9</TD>
+		<TD BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">4</TD>
+		<TD PORT="free" BORDER="0" ALIGN="RIGHT" BGCOLOR="Gray90">4</TD>
 	</TR>
 </TABLE>>];
 	pool:slots -> slots;
@@ -30,37 +39,53 @@ digraph {
 	</TR>
 	<TR>
 		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Buy-izub</TD>
-		<TD PORT="0" ALIGN="RIGHT" BGCOLOR="Gray90">0</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Ickgolug</TD>
+		<TD PORT="0" ALIGN="RIGHT" BGCOLOR="Gray90">7</TD>
 	</TR>
 	<TR>
 		<TD ALIGN="RIGHT">1</TD>
-		<TD ALIGN="LEFT">Ronkthiub</TD>
-		<TD PORT="1" ALIGN="RIGHT">4</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">2</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Bosharn</TD>
-		<TD PORT="2" ALIGN="RIGHT" BGCOLOR="Gray90">5</TD>
+		<TD ALIGN="LEFT">Kruldurb</TD>
+		<TD PORT="1" ALIGN="RIGHT">6</TD>
 	</TR>
 </TABLE>>];
 	slots:0 -> slab0;
 	slab0 [label=<
 <TABLE BORDER="0">
-	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Buy-izub</FONT></TD></TR>
-	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT FACE="Times-Italic">count 0</FONT></TD></TR>
+	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Ickgolug</FONT></TD></TR>
+	<TR>
+		<TD PORT="0" ALIGN="RIGHT" BGCOLOR="Gray90">0</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">67_Latien</TD>
+	</TR>
+	<TR>
+		<TD PORT="1" ALIGN="RIGHT">1</TD>
+		<TD ALIGN="LEFT"><FONT COLOR="Gray75">deleted</FONT></TD>
+	</TR>
+	<TR>
+		<TD PORT="2" ALIGN="RIGHT" BGCOLOR="Gray90">2</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90"><FONT COLOR="Gray75">deleted</FONT></TD>
+	</TR>
+	<TR>
+		<TD PORT="3" ALIGN="RIGHT">3</TD>
+		<TD ALIGN="LEFT">173_Etteash</TD>
+	</TR>
+	<TR>
+		<TD PORT="4" ALIGN="RIGHT" BGCOLOR="Gray90">4</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90"><FONT COLOR="Gray75">deleted</FONT></TD>
+	</TR>
+	<TR>
+		<TD PORT="5" ALIGN="RIGHT">5</TD>
+		<TD ALIGN="LEFT"><FONT COLOR="Gray75">deleted</FONT></TD>
+	</TR>
+	<TR>
+		<TD PORT="6" ALIGN="RIGHT" BGCOLOR="Gray90">6</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">625_Ormalul</TD>
+	</TR>
 </TABLE>>];
 	slots:1 -> slab1;
 	slab1 [label=<
 <TABLE BORDER="0">
-	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Ronkthiub</FONT></TD></TR>
-	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT FACE="Times-Italic">count 4</FONT></TD></TR>
-</TABLE>>];
-	slots:2 -> slab2;
-	slab2 [label=<
-<TABLE BORDER="0">
-	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Bosharn</FONT></TD></TR>
-	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT FACE="Times-Italic">count 5</FONT></TD></TR>
+	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Kruldurb</FONT></TD></TR>
+	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT FACE="Times-Italic">count 6</FONT></TD></TR>
 </TABLE>>];
 	node [fillcolour=red];
 }
