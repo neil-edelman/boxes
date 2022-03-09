@@ -15,22 +15,22 @@ Header [src/pool\.h](src/pool.h) depends on [src/heap\.h](src/heap.h) and [src/a
 
 ![Example of Pool](doc/pool.png)
 
-[&lt;P&gt;pool](#user-content-tag-8aba39cb) is a memory pool that stores [&lt;PP&gt;type](#user-content-typedef-7560d92f)\. Pointers to valid items in the pool are stable, but not generally in any order\. When removal is ongoing and uniformly sampled while reaching a steady\-state size, it will eventually settle in one contiguous region\.
+[&lt;P&gt;pool](#user-content-tag-8aba39cb) is a memory pool that stores [&lt;PP&gt;type](#user-content-typedef-7560d92f) using [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation)\. Pointers to valid items in the pool are stable, but not generally in any order\. When removal is ongoing and uniformly sampled while reaching a steady\-state size, it will eventually settle in one contiguous region\.
 
 
 
  * Parameter: POOL\_NAME, POOL\_TYPE  
    `<P>` that satisfies `C` naming conventions when mangled and a valid tag type, [&lt;PP&gt;type](#user-content-typedef-7560d92f), associated therewith; required\. `<PP>` is private, whose names are prefixed in a manner to avoid collisions\.
- * Parameter: POOL\_CHUNK\_MIN\_CAPACITY  
-   Default is 8; optional number in `[2, (SIZE_MAX - sizeof pool_chunk) / sizeof <PP>type]` that the capacity can not go below\.
  * Parameter: POOL\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: POOL\_TO\_STRING\_NAME, POOL\_TO\_STRING  
-   To string trait contained in [to\_string\.h](to_string.h); `<PSZ>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\. There can be multiple to string traits, but only one can omit `POOL_TO_STRING_NAME`\. This container is only partially iterable: the values are only the first chunk, so this is not very useful except for debugging\.
+   To string trait contained in [to\_string\.h](to_string.h); `<PSZ>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\. There can be multiple to string traits, but only one can omit `POOL_TO_STRING_NAME`\. This container is only iterable in the first slab, so this is not very useful except for debugging\.
  * Standard:  
    C89
  * Dependancies:  
    [array](https://github.com/neil-edelman/array), [heap](https://github.com/neil-edelman/heap)
+ * Caveat:  
+   The `uintptr_t` is C99; we rely on comparisons with `void *`, which is technically undefined behaviour\.
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -57,7 +57,7 @@ A valid tag type set by `POOL_TYPE`\.
 
 <code>struct <strong>&lt;P&gt;pool</strong> { struct &lt;PP&gt;slot_array slots; struct poolfree_heap free0; size_t capacity0; };</code>
 
-Consists of a map of several chunks of increasing size and a free\-heap\. Zeroed data is a valid state\. To instantiate to an idle state, see [&lt;P&gt;pool](#user-content-fn-8aba39cb), `POOL_IDLE`, `{0}` \(`C99`,\) or being `static`\.
+This is a slab memory\-manager and free\-heap for slab zero\. A zeroed pool is a valid state\. To instantiate to an idle state, see [&lt;P&gt;pool](#user-content-fn-8aba39cb), `POOL_IDLE`, `{0}` \(`C99`,\) or being `static`\.
 
 ![States.](doc/states.png)
 
@@ -147,6 +147,10 @@ This pointer is constant until it gets [&lt;P&gt;pool_remove](#user-content-fn-9
 
 Deletes `data` from `pool`\. Do not remove data that is not in `pool`\.
 
+This memory\-pool has an element of undefined behaviour \(C89\) or implementation\-defined behaviour \(with `stdint.h`\) because it must do an ordered test to see which memory segment is in\. This will most likely be a problem in segmented memory models\. There is no system\-independent fix that we are aware of\.
+
+
+
  * Return:  
    Success\.
  * Order:  
@@ -177,8 +181,6 @@ Removes all from `pool`, but keeps it's active state, only freeing the smaller b
    Address of the static buffer\.
  * Order:  
    &#920;\(1\)
-
-
 
 
 

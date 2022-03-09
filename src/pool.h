@@ -73,6 +73,12 @@ static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
 #define HEAP_TYPE size_t
 #define HEAP_COMPARE &pool_index_compare
 #include "heap.h"
+#ifndef __STDC_VERSION__ /* <-- c90 */
+#define POOL_PTR (const void *)
+#else /* c90 --><!-- !c90 */
+#include <stdint.h>
+#define POOL_PTR (const uintptr_t)(const void *)
+#endif /* !c90 --> */
 #endif /* idempotent --> */
 
 
@@ -120,9 +126,10 @@ static size_t PP_(upper)(const struct PP_(slot_array) *const slots,
 	/* The last one is a special case: it doesn't have an upper bound. */
 	for(b0 = 1, --n; n; n /= 2) {
 		b1 = b0 + n / 2;
-		if((const void *)x < (const void *)base[b1].slab)
+		/* Cast to `void *` then `uintptr_t` if available. */
+		if(POOL_PTR x < POOL_PTR base[b1].slab)
 			{ continue; }
-		else if((const void *)base[b1 + 1].slab <= (const void *)x)
+		else if(POOL_PTR base[b1 + 1].slab <= POOL_PTR x)
 			{ b0 = b1 + 1; n--; continue; }
 		else
 			{ return b1 + 1; }
@@ -276,6 +283,12 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 }
 
 /** Deletes `data` from `pool`. Do not remove data that is not in `pool`.
+
+ This memory-pool has an element of undefined behaviour (C89) or
+ implementation-defined behaviour (with `stdint.h`) because it must do an
+ ordered test to see which memory segment is in. This will most likely be a
+ problem in segmented memory models. There is no system-independent fix that we
+ are aware of.
  @return Success. @order \O(\log \log `items`) @allow */
 static int P_(pool_remove)(struct P_(pool) *const pool,
 	PP_(type) *const data) { return PP_(remove)(pool, data); }
