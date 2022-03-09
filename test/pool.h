@@ -9,7 +9,8 @@
 
  ![Example of Pool](../doc/pool.png)
 
- <tag:<P>pool> is a memory pool that stores <typedef:<PP>type>. Pointers to
+ <tag:<P>pool> is a memory pool that stores <typedef:<PP>type> using
+ [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation). Pointers to
  valid items in the pool are stable, but not generally in any order. When
  removal is ongoing and uniformly sampled while reaching a steady-state size,
  it will eventually settle in one contiguous region.
@@ -19,11 +20,6 @@
  <typedef:<PP>type>, associated therewith; required. `<PP>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
- @param[POOL_CHUNK_MIN_CAPACITY]
- Default is 8; optional number in
- `[2, (SIZE_MAX - sizeof pool_chunk) / sizeof <PP>type]` that the capacity can
- not go below.
-
  @param[POOL_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a trait.
 
@@ -31,11 +27,13 @@
  To string trait contained in <to_string.h>; `<PSZ>` that satisfies `C` naming
  conventions when mangled and function implementing <typedef:<PSZ>to_string_fn>.
  There can be multiple to string traits, but only one can omit
- `POOL_TO_STRING_NAME`. This container is only partially iterable: the values
- are only the first chunk, so this is not very useful except for debugging.
+ `POOL_TO_STRING_NAME`. This container is only iterable in the first slab, so
+ this is not very useful except for debugging.
 
  @depend [array](https://github.com/neil-edelman/array)
  @depend [heap](https://github.com/neil-edelman/heap)
+ @fixme The `uintptr_t` is C99; we rely on comparisons with `void *`, which is
+ technically undefined behaviour.
  @std C89 */
 
 #if !defined(POOL_NAME) || !defined(POOL_TYPE)
@@ -75,41 +73,48 @@ static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
 #define HEAP_TYPE size_t
 #define HEAP_COMPARE &pool_index_compare
 #include "heap.h"
+#ifndef __STDC_VERSION__ /* <-- c90 */
+#define POOL_PTR (const void *)
+#else /* c90 --><!-- !c90 */
+#include <stdint.h>
+#define POOL_PTR (const uintptr_t)(const void *)
+#endif /* !c90 --> */
 #endif /* idempotent --> */
 
 
 #if POOL_TRAITS == 0 /* <!-- base code */
 
 
-#ifndef POOL_CHUNK_MIN_CAPACITY /* <!-- !min */
-#define POOL_CHUNK_MIN_CAPACITY 8
+/* Undocumented: set the initial size. */
+#ifndef POOL_SLAB_MIN_CAPACITY /* <!-- !min */
+#define POOL_SLAB_MIN_CAPACITY 8
 #endif /* !min --> */
-#if POOL_CHUNK_MIN_CAPACITY < 2
-#error Pool chunk capacity error.
+#if POOL_SLAB_MIN_CAPACITY < 2
+#error Pool slab capacity error.
 #endif
 
 /** A valid tag type set by `POOL_TYPE`. */
 typedef POOL_TYPE PP_(type);
 
-/* Size and chunk, which goes into a sorted array. */
-struct PP_(slot) { size_t size; PP_(type) *chunk; };
+/* Goes into a slab-sorted array. */
+struct PP_(slot) { size_t size; PP_(type) *slab; };
 #define ARRAY_NAME PP_(slot)
 #define ARRAY_TYPE struct PP_(slot)
 #include "array.h"
 
-/** Consists of a map of several chunks of increasing size and a free-heap.
- Zeroed data is a valid state. To instantiate to an idle state, see
- <fn:<P>pool>, `POOL_IDLE`, `{0}` (`C99`,) or being `static`.
+/** This is a slab memory-manager and free-heap for slab zero. A zeroed pool is
+ a valid state. To instantiate to an idle state, see <fn:<P>pool>, `POOL_IDLE`,
+ `{0}` (`C99`,) or being `static`.
 
  ![States.](../doc/states.png) */
 struct P_(pool) {
 	struct PP_(slot_array) slots;
-	struct poolfree_heap free0; /* Free-list in chunk-zero. */
-	size_t capacity0; /* Capacity of chunk-zero. */
+	struct poolfree_heap free0; /* Free-heap in slab-zero. */
+	size_t capacity0; /* Capacity of slab-zero. */
 };
 
-/** @return Index of sorted chunk that is higher than `x` in `slots`, but
- treating zero as special. @order \O(\log `chunks`) */
+/** @return Index of slot that is higher than `x` in `slots`, but treating zero
+ as special. @order \O(\log `slots`) */
 static size_t PP_(upper)(const struct PP_(slot_array) *const slots,
 	const PP_(type) *const x) {
 	const struct PP_(slot) *const base = slots->data;
@@ -121,25 +126,31 @@ static size_t PP_(upper)(const struct PP_(slot_array) *const slots,
 	/* The last one is a special case: it doesn't have an upper bound. */
 	for(b0 = 1, --n; n; n /= 2) {
 		b1 = b0 + n / 2;
-		if(x < base[b1].chunk) { continue; }
-		else if(base[b1 + 1].chunk <= x) { b0 = b1 + 1; n--; continue; }
-		else { return b1 + 1; }
+		/* Cast to `void *` then `uintptr_t` if available. */
+		if(POOL_PTR x < POOL_PTR base[b1].slab)
+			{ continue; }
+		else if(POOL_PTR base[b1 + 1].slab <= POOL_PTR x)
+			{ b0 = b1 + 1; n--; continue; }
+		else
+			{ return b1 + 1; }
 	}
-	return b0 + (x >= base[slots->size - 1].chunk);
+	return b0 + ((const void *)x >= (const void *)base[slots->size - 1].slab);
 }
 
-/** Which chunk is `x` in `pool`?
- @order \O(\log `chunks`), \O(\log \log `size`)? */
-static size_t PP_(chunk_idx)(const struct P_(pool) *const pool,
+/** Which slot contains the slab that has `x` in `pool`?
+ @order \O(\log `slots`), \O(\log \log `size`)? */
+static size_t PP_(slot_idx)(const struct P_(pool) *const pool,
 	const PP_(type) *const x) {
 	struct PP_(slot) *const base = pool->slots.data;
 	size_t up;
 	assert(pool && pool->slots.size && base && x);
-	/* One chunk, assume it's in that chunk; first chunk is `capacity0`. */
+	/* There's only one option. */
 	if(pool->slots.size <= 1
-		|| (x >= base[0].chunk && x < base[0].chunk + pool->capacity0))
-		return assert(x >= base[0].chunk && x < base[0].chunk + pool->capacity0),
-		0;
+		|| ((const void *)x >= (const void *)base[0].slab
+		&& (const void *)x < (const void *)(base[0].slab + pool->capacity0)))
+		return assert(pool->slots.size >= 1
+		&& (const void *)x >= (const void *)base[0].slab
+		&& (const void *)x < (const void *)(base[0].slab + pool->capacity0)), 0;
 	up = PP_(upper)(&pool->slots, x);
 	return assert(up), up - 1;
 }
@@ -147,14 +158,14 @@ static size_t PP_(chunk_idx)(const struct P_(pool) *const pool,
 /** Makes sure there are space for `n` further items in `pool`.
  @return Success. */
 static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
-	const size_t min_size = POOL_CHUNK_MIN_CAPACITY,
+	const size_t min_size = POOL_SLAB_MIN_CAPACITY,
 		max_size = (size_t)-1 / sizeof(PP_(type));
 	struct PP_(slot) *base = pool->slots.data, *slot;
-	PP_(type) *chunk;
+	PP_(type) *slab;
 	size_t c, insert;
 	int is_recycled = 0;
 	assert(pool && min_size <= max_size && pool->capacity0 <= max_size &&
-		(!pool->slots.size && !pool->free0.a.size /* !chunks[0] -> !free0 */
+		(!pool->slots.size && !pool->free0.a.size /* !slots[0] -> !free0 */
 		|| pool->slots.size && base
 		&& base[0].size <= pool->capacity0
 		&& (!pool->free0.a.size
@@ -168,7 +179,7 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	if(!PP_(slot_array_buffer)(&pool->slots, 1)) return 0;
 	base = pool->slots.data; /* It may have moved! */
 
-	/* Figure out the capacity of the next chunk. */
+	/* Figure out the capacity of the next slab. */
 	c = pool->capacity0;
 	if(pool->slots.size && base[0].size) { /* ~Golden ratio. */
 		size_t c1 = c + (c >> 1) + (c >> 3);
@@ -177,37 +188,36 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	if(c < min_size) c = min_size;
 	if(c < n) c = n;
 
-	/* Allocate it. */
+	/* Allocate it; check if the current one is empty. */
 	if(pool->slots.size && !base[0].size)
-		is_recycled = 1, chunk = realloc(base[0].chunk, c * sizeof *chunk);
-	else chunk = malloc(c * sizeof *chunk);
-	if(!chunk) { if(!errno) errno = ERANGE; return 0; }
-	pool->capacity0 = c; /* We only need to store the capacity of chunk 0. */
-	if(is_recycled) return base[0].size = 0, base[0].chunk = chunk, 1;
+		is_recycled = 1, slab = realloc(base[0].slab, c * sizeof *slab);
+	else slab = malloc(c * sizeof *slab);
+	if(!slab) { if(!errno) errno = ERANGE; return 0; }
+	pool->capacity0 = c; /* We only need to store the capacity of slab 0. */
+	if(is_recycled) return base[0].size = 0, base[0].slab = slab, 1;
 
-	/* Evict chunk 0. */
+	/* Evict slot 0. */
 	if(!pool->slots.size) insert = 0;
-	else insert = PP_(upper)(&pool->slots, base[0].chunk);
+	else insert = PP_(upper)(&pool->slots, base[0].slab);
 	assert(insert <= pool->slots.size);
 	slot = PP_(slot_array_insert)(&pool->slots, 1, insert);
 	assert(slot); /* Made space for it before. */
-	slot->chunk = base[0].chunk, slot->size = base[0].size;
-	base[0].chunk = chunk, base[0].size = 0;
+	slot->slab = base[0].slab, slot->size = base[0].size;
+	base[0].slab = slab, base[0].size = 0;
 	return 1;
 }
 
-/** Either `data` in `pool` is in a secondary chunk, in which case it
- decrements the size, or it's the zero-chunk, where it gets added to the
- free-heap.
+/** Either `data` in `pool` is in a secondary slab, in which case it decrements
+ the size, or it's the zero-slab, where it gets added to the free-heap.
  @return Success. It may fail due to a free-heap memory allocation error.
  @order Amortized \O(\log \log `items`) @throws[realloc] */
 static int PP_(remove)(struct P_(pool) *const pool,
 	const PP_(type) *const data) {
-	size_t c = PP_(chunk_idx)(pool, data);
+	size_t c = PP_(slot_idx)(pool, data);
 	struct PP_(slot) *slot = pool->slots.data + c;
 	assert(pool && pool->slots.size && data);
 	if(!c) { /* It's in the zero-slot, we need to deal with the free-heap. */
-		const size_t idx = (size_t)(data - slot->chunk);
+		const size_t idx = (size_t)(data - slot->slab);
 		assert(pool->capacity0 && slot->size <= pool->capacity0
 			&& idx < slot->size);
 		if(idx + 1 == slot->size) {
@@ -220,9 +230,9 @@ static int PP_(remove)(struct P_(pool) *const pool,
 			}
 		} else if(!poolfree_heap_add(&pool->free0, idx)) return 0;
 	} else if(assert(slot->size), !--slot->size) {
-		PP_(type) *const chunk = slot->chunk;
+		PP_(type) *const slab = slot->slab;
 		PP_(slot_array_remove)(&pool->slots, pool->slots.data + c);
-		free(chunk);
+		free(slab);
 	}
 	return 1;
 }
@@ -237,7 +247,7 @@ static void P_(pool_)(struct P_(pool) *const pool) {
 	struct PP_(slot) *s, *s_end;
 	assert(pool);
 	for(s = pool->slots.data, s_end = s + pool->slots.size; s < s_end; s++)
-		assert(s->chunk), free(s->chunk);
+		assert(s->slab), free(s->slab);
 	PP_(slot_array_)(&pool->slots);
 	poolfree_heap_(&pool->free0);
 	P_(pool)(pool);
@@ -264,15 +274,21 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 		 doesn't really matter, so take the one off the array used for heap. */
 		size_t *free;
 		free = heap_poolfree_node_array_pop(&pool->free0.a);
-		return assert(free), pool->slots.data[0].chunk + *free;
+		return assert(free), pool->slots.data[0].slab + *free;
 	}
 	/* The free-heap is empty; guaranteed by <fn:<PP>buffer>. */
 	slot0 = pool->slots.data + 0;
 	assert(slot0 && slot0->size < pool->capacity0);
-	return slot0->chunk + slot0->size++;
+	return slot0->slab + slot0->size++;
 }
 
 /** Deletes `data` from `pool`. Do not remove data that is not in `pool`.
+
+ This is undefined behaviour (C89) or implementation-defined behaviour (with
+ `stdint.h`) because it must do an ordered test to see which memory segment is
+ in. There is no system-independent fix that we are aware of, but it is
+ reasonable to think it works. This will most likely be a problem in segmented
+ memory models.
  @return Success. @order \O(\log \log `items`) @allow */
 static int P_(pool_remove)(struct P_(pool) *const pool,
 	PP_(type) *const data) { return PP_(remove)(pool, data); }
@@ -284,7 +300,7 @@ static void P_(pool_clear)(struct P_(pool) *const pool) {
 	assert(pool);
 	if(!pool->slots.size) { assert(!pool->free0.a.size); return; }
 	for(s = pool->slots.data + 1, s_end = s - 1 + pool->slots.size;
-		s < s_end; s++) assert(s->chunk && s->size), free(s->chunk);
+		s < s_end; s++) assert(s->slab && s->size), free(s->slab);
 	pool->slots.data[0].size = 0;
 	pool->slots.size = 1;
 	poolfree_heap_clear(&pool->free0);
@@ -310,7 +326,7 @@ static void PP_(begin)(struct PP_(iterator) *const it,
 static const PP_(type) *PP_(next)(struct PP_(iterator) *const it) {
 	assert(it);
 	return it->slot0 && it->i < it->slot0->size
-		? it->slot0->chunk + it->i++ : 0;
+		? it->slot0->slab + it->i++ : 0;
 }
 
 /* iterate --> */
