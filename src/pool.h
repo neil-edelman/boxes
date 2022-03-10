@@ -2,8 +2,8 @@
  [MIT License](https://opensource.org/licenses/MIT).
 
  @abstract Header <src/pool.h> depends on <src/heap.h> and <src/array.h>;
- examples <test/test_pool.c>; if on a compatible workstation, `make` creates
- the test suite of the examples.
+ examples <test/test_pool.c>; article <doc/pool.pdf>. If on a compatible
+ workstation, `make` creates the test suite of the examples.
 
  @subtitle Stable pool
 
@@ -284,11 +284,9 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 
 /** Deletes `data` from `pool`. Do not remove data that is not in `pool`.
 
- This is undefined behaviour (C89) or implementation-defined behaviour (with
- `stdint.h`) because it must do an ordered test to see which memory segment is
- in. There is no system-independent fix that we are aware of, but it is
- reasonable to think it works. This will most likely be a problem in segmented
- memory models.
+ This relies on undefined behaviour (C89) or implementation-defined behaviour
+ (with `uintptr_t` from `stdint.h`) because it must place the memory in order. There is no system-independent fix that we are aware of. This will most likely
+ be a problem in segmented memory models.
  @return Success. @order \O(\log \log `items`) @allow */
 static int P_(pool_remove)(struct P_(pool) *const pool,
 	PP_(type) *const data) { return PP_(remove)(pool, data); }

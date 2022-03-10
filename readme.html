@@ -33,7 +33,7 @@
 
 <h1>pool.h</h1>
 
-<p>Header <a href = "src/pool.h">src/pool.h</a> depends on <a href = "src/heap.h">src/heap.h</a> and <a href = "src/array.h">src/array.h</a>; examples <a href = "test/test_pool.c">test/test_pool.c</a>; if on a compatible workstation, <code>make</code> creates the test suite of the examples.</p>
+<p>Header <a href = "src/pool.h">src/pool.h</a> depends on <a href = "src/heap.h">src/heap.h</a> and <a href = "src/array.h">src/array.h</a>; examples <a href = "test/test_pool.c">test/test_pool.c</a>; article <a href = "doc/pool.pdf">doc/pool.pdf</a>. If on a compatible workstation, <code>make</code> creates the test suite of the examples.</p>
 
 <h2>Stable pool</h2>
 
@@ -209,7 +209,7 @@
 
 <p>Deletes <code>data</code> from <code>pool</code>. Do not remove data that is not in <code>pool</code>.</p>
 
-<p>This is undefined behaviour (C89) or implementation-defined behaviour (with <code>stdint.h</code>) because it must do an ordered test to see which memory segment is in. There is no system-independent fix that we are aware of, but it is reasonable to think it works. This will most likely be a problem in segmented memory models.</p>
+<p>This relies on undefined behaviour (C89) or implementation-defined behaviour (with <code>uintptr_t</code> from <code>stdint.h</code>) because it must place the memory in order. There is no system-independent fix that we are aware of. This will most likely be a problem in segmented memory models.</p>
 
 </div>
 
