@@ -52,7 +52,7 @@
 
 <p><img alt = "Example of Pool" src = "doc/pool.png" width = 712 height = 469></p>
 
-<p><a href = "#tag:&lt;P&gt;pool">&lt;P&gt;pool</a> is a memory pool that stores <a href = "#typedef:&lt;PP&gt;type">&lt;PP&gt;type</a> using <a href = "https://en.wikipedia.org/wiki/Slab_allocation">slab allocation</a>. Pointers to valid items in the pool are stable, but not generally in any order. When removal is ongoing and uniformly sampled while reaching a steady-state size, it will eventually settle in one contiguous region.</p>
+<p><a href = "#tag:&lt;P&gt;pool">&lt;P&gt;pool</a> is a memory pool that stores only one type, <a href = "#typedef:&lt;PP&gt;type">&lt;PP&gt;type</a>, using <a href = "https://en.wikipedia.org/wiki/Slab_allocation">slab allocation</a>. Pointers to valid items in the pool are stable, but not generally in any order. When removal is ongoing and uniformly sampled while reaching a steady-state size, it will eventually settle in one contiguous region.</p>
 
 </div>
 

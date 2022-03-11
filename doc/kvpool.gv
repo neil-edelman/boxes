@@ -2,11 +2,11 @@ digraph {
 	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontface=modern];
 	node [shape=box, style=filled, fillcolor="Gray95"];
 	free0_0 [label=<<FONT COLOR="Gray75">5</FONT>>, shape=circle];
-	free0_1 [label=<<FONT COLOR="Gray75">2</FONT>>, shape=circle];
+	free0_1 [label=<<FONT COLOR="Gray75">4</FONT>>, shape=circle];
 	free0_1 -> free0_0 [dir=back];
-	free0_2 [label=<<FONT COLOR="Gray75">4</FONT>>, shape=circle];
+	free0_2 [label=<<FONT COLOR="Gray75">2</FONT>>, shape=circle];
 	free0_2 -> free0_0 [dir=back];
-	free0_3 [label=<<FONT COLOR="Gray75">1</FONT>>, shape=circle];
+	free0_3 [label=<<FONT COLOR="Gray75">3</FONT>>, shape=circle];
 	free0_3 -> free0_1 [dir=back];
 	{rank=same; pool; free0_0; }
 	pool:free -> free0_0;
@@ -20,7 +20,7 @@ digraph {
 	</TR>
 	<TR>
 		<TD BORDER="0" ALIGN="RIGHT">slots</TD>
-		<TD BORDER="0" ALIGN="RIGHT">2</TD>
+		<TD BORDER="0" ALIGN="RIGHT">3</TD>
 		<TD PORT="slots" BORDER="0" ALIGN="RIGHT">3</TD>
 	</TR>
 	<TR>
@@ -34,31 +34,36 @@ digraph {
 <TABLE BORDER="0">
 	<TR>
 		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Italic">slab</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Italic">chunk</FONT></TD>
 		<TD BORDER="0"><FONT FACE="Times-Italic">size</FONT></TD>
 	</TR>
 	<TR>
 		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Ickgolug</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Kraafunda</TD>
 		<TD PORT="0" ALIGN="RIGHT" BGCOLOR="Gray90">7</TD>
 	</TR>
 	<TR>
 		<TD ALIGN="RIGHT">1</TD>
-		<TD ALIGN="LEFT">Kruldurb</TD>
-		<TD PORT="1" ALIGN="RIGHT">6</TD>
+		<TD ALIGN="LEFT">Ettedurb</TD>
+		<TD PORT="1" ALIGN="RIGHT">3</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" BGCOLOR="Gray90">2</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">Dabishi</TD>
+		<TD PORT="2" ALIGN="RIGHT" BGCOLOR="Gray90">5</TD>
 	</TR>
 </TABLE>>];
-	slots:0 -> slab0;
-	slab0 [label=<
+	slots:0 -> chunk0;
+	chunk0 [label=<
 <TABLE BORDER="0">
-	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Ickgolug</FONT></TD></TR>
+	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Kraafunda</FONT></TD></TR>
 	<TR>
 		<TD PORT="0" ALIGN="RIGHT" BGCOLOR="Gray90">0</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">67_Latien</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">580_Oobagun</TD>
 	</TR>
 	<TR>
 		<TD PORT="1" ALIGN="RIGHT">1</TD>
-		<TD ALIGN="LEFT"><FONT COLOR="Gray75">deleted</FONT></TD>
+		<TD ALIGN="LEFT">91_Ashannp</TD>
 	</TR>
 	<TR>
 		<TD PORT="2" ALIGN="RIGHT" BGCOLOR="Gray90">2</TD>
@@ -66,7 +71,7 @@ digraph {
 	</TR>
 	<TR>
 		<TD PORT="3" ALIGN="RIGHT">3</TD>
-		<TD ALIGN="LEFT">173_Etteash</TD>
+		<TD ALIGN="LEFT"><FONT COLOR="Gray75">deleted</FONT></TD>
 	</TR>
 	<TR>
 		<TD PORT="4" ALIGN="RIGHT" BGCOLOR="Gray90">4</TD>
@@ -78,14 +83,20 @@ digraph {
 	</TR>
 	<TR>
 		<TD PORT="6" ALIGN="RIGHT" BGCOLOR="Gray90">6</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">625_Ormalul</TD>
+		<TD ALIGN="LEFT" BGCOLOR="Gray90">480_Ioniagr</TD>
 	</TR>
 </TABLE>>];
-	slots:1 -> slab1;
-	slab1 [label=<
+	slots:1 -> chunk1;
+	chunk1 [label=<
 <TABLE BORDER="0">
-	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Kruldurb</FONT></TD></TR>
-	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT FACE="Times-Italic">count 6</FONT></TD></TR>
+	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Ettedurb</FONT></TD></TR>
+	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT FACE="Times-Italic">count 3</FONT></TD></TR>
+</TABLE>>];
+	slots:2 -> chunk2;
+	chunk2 [label=<
+<TABLE BORDER="0">
+	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Dabishi</FONT></TD></TR>
+	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT FACE="Times-Italic">count 5</FONT></TD></TR>
 </TABLE>>];
 	node [fillcolour=red];
 }

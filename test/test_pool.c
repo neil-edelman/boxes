@@ -107,7 +107,7 @@ static void special(void) {
 		is_kv[r] = 0;
 	}
 finally:
-	pool_keyval_graph(&kvp, "doc/kvpool.gv");
+	pool_keyval_graph(&kvp, "graph/kvpool.gv");
 	keyval_pool_(&kvp);
 }
 

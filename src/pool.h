@@ -9,11 +9,11 @@
 
  ![Example of Pool](../doc/pool.png)
 
- <tag:<P>pool> is a memory pool that stores <typedef:<PP>type> using
- [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation). Pointers to
- valid items in the pool are stable, but not generally in any order. When
- removal is ongoing and uniformly sampled while reaching a steady-state size,
- it will eventually settle in one contiguous region.
+ <tag:<P>pool> is a memory pool that stores only one type, <typedef:<PP>type>,
+ using [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation).
+ Pointers to valid items in the pool are stable, but not generally in any
+ order. When removal is ongoing and uniformly sampled while reaching a
+ steady-state size, it will eventually settle in one contiguous region.
 
  @param[POOL_NAME, POOL_TYPE]
  `<P>` that satisfies `C` naming conventions when mangled and a valid tag type,

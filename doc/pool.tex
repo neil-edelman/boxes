@@ -76,7 +76,7 @@
 
 \maketitle
 
-\abstract{A pool is a slab allocator parameterized to one type, offering packed random-access insertion and deletion. Pointers to valid items in the pool are stable, but not generally in any order. When removal is ongoing and uniformly sampled while reaching a steady-state size, it will eventually settle in one contiguous region.}
+\abstract{Our pool is a slab allocator parameterized to one type, offering packed random-access insertion and deletion. Pointers to valid items in the pool are stable, but not generally in any order. When removal is ongoing and uniformly sampled while reaching a steady-state size, it will eventually settle in one contiguous region.}
 
 \section{Motivation}
 
@@ -90,9 +90,9 @@ To reach the ideal contiguous slab of memory, we only allocate memory to an item
 
 \subsection{Marking Entries as Deleted}
 
-We face a similar problem as garbage collection: in the active chunk$_0$, we need some way to tell which are deleted. The first choice is a free-list. When adding an entry, check if the free-list is not empty, and if it is not, we recycle deleted entries by shifting the list. Alternately, popping the free-list works, too, but on average, shifting yields lower, more compact addresses.
+We face a similar problem as garbage collection: in the active slab$_0$, we need some way to tell which are deleted. The first choice is a free-list. When adding an entry, check if the free-list is not empty, and if it is not, we recycle deleted entries by shifting the list. Alternately, popping the free-list works, too, but on average, shifting yields lower, more compact addresses.
 
-The free-list is $\mathcal{O}(1)$ amortized run-time, but hard $\Theta(\sum_n\text{capacity of chunk}_n)$\cite{knuth1976big} space requirement. Alternately, we could use an implicit complete binary-tree free-heap\cite{williams1964heap}. This will negatively affect the run-time, $\mathcal{O}(\log \text{chunk}_0)$, but space requirement is much more reasonable, $\mathcal{O}(\text{chunk}_0)$. A reference count suffices on the secondary chunks.
+The free-list is $\mathcal{O}(1)$ amortized run-time, but could take up to $\Theta(\sum_n\text{capacity of slab}_n)$\cite{knuth1976big} space requirement, depending on the design of the free-list. Alternately, we could use an implicit complete binary-tree free-heap\cite{williams1964heap}. This will negatively affect the run-time, $\mathcal{O}(\log \text{slab}_0)$, but space requirement is much more reasonable, $\mathcal{O}(\text{slab}_0)$. A reference count suffices on the secondary slabs.
 
 \begin{figure}%
 	\centering%
@@ -136,13 +136,13 @@ Figure~\ref{compare} compares a hypothetical \code{struct keyval} with an \code{
 
 With a free-list, all the items in a block that are non-deleted have a null pointer attached to them. A free-heap saves initializing and reading the list, and only needs the space for what one has deleted. This is not without a downside: there is no guarantee that one will be able to expand the heap to account for a deletion; it could be that deleting an item fails.
 
-\subsection{Which chunk are they in?}
+\subsection{Which slab are they in?}
 
-Except primary chunk$_0$, we maintain the chunks sorted by memory location. Whenever we allocate a new chunk$_0$ in response to the old chunk$_0$ being full, it requires that we binary search the array of chunks and insert the old, $\mathcal{O}(\log \text{chunks} + \text{chunks}) = \mathcal{O}(\text{chunks})$. Similarly for deleting a chunk. Because the exponential growth of chunks, this happens $\mathcal{O}(\log \text{items})$. Thus, the worst-case time to delete is, $\mathcal{O}(\text{chunks} + \log \text{items in chunk$_0$}) = \mathcal{O}(\log \text{items})$.
+Except primary slab$_0$, we maintain the slabs sorted by memory location. Whenever we allocate a new slab$_0$ in response to the old slab$_0$ being full, it requires that we binary search the array of slabs and insert the old, $\mathcal{O}(\log \text{slabs} + \text{slabs}) = \mathcal{O}(\text{slabs})$. Similarly for deleting a slab. Because the exponential growth of slabs, this happens $\mathcal{O}(\log \text{items})$. Thus, the worst-case time to delete is, $\mathcal{O}(\text{slabs} + \log \text{items in slab$_0$}) = \mathcal{O}(\log \text{items})$.
 
-Insertion is amortized $\mathcal{O}(1)$. In the case where chunk$_0$ is full, we allocate a new chunk for at least $(1+\epsilon)n$ new entries, and each entry bears a transfer of constant time. In practice, we use an approximation to golden ratio for the growth factor.
+Insertion is amortized $\mathcal{O}(1)$. In the case where slab$_0$ is full, we allocate a new slab for at least $(1+\epsilon)n$ new entries, and each entry bears a transfer of constant time. In practice, we use an approximation to golden ratio for the growth factor.
 
-In the case where the free-heap is empty, just return chunk$_0[$size$_0]$. If there's any addresses in the maximum free-heap, just pop an address from the array of which the heap is made and return it; we know that it is lower in the binary-tree heap than those higher up. We prefer to have low-numbers, but any number would do.
+In the case where the free-heap is empty, return slab$_0[$size$_0]$. If there's any addresses in the maximum free-heap, pop an address from the array of which the heap is made and return it; we know that it is lower in the binary-tree heap than those higher up. We prefer to have low-numbers, but any number would do.
 
 %\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
 \begin{figure}
@@ -183,7 +183,7 @@ In the case where the free-heap is empty, just return chunk$_0[$size$_0]$. If th
 <TABLE BORDER="0">
 	<TR>
 		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Italic">chunk</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Italic">slab</FONT></TD>
 		<TD BORDER="0"><FONT FACE="Times-Italic">size</FONT></TD>
 	</TR>
 	<TR>
@@ -202,8 +202,8 @@ In the case where the free-heap is empty, just return chunk$_0[$size$_0]$. If th
 		<TD PORT="2" ALIGN="RIGHT" BGCOLOR="Gray90">5</TD>
 	</TR>
 </TABLE>>];
-	slots:0 -> chunk0;
-	chunk0 [label=<
+	slots:0 -> slab0;
+	slab0 [label=<
 <TABLE BORDER="0">
 	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Kraafunda</FONT></TD></TR>
 	<TR>
@@ -235,20 +235,20 @@ In the case where the free-heap is empty, just return chunk$_0[$size$_0]$. If th
 		<TD ALIGN="LEFT" BGCOLOR="Gray90">480_Ioniagr</TD>
 	</TR>
 </TABLE>>];
-	slots:1 -> chunk1;
-	chunk1 [label=<
+	slots:1 -> slab1;
+	slab1 [label=<
 <TABLE BORDER="0">
 	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Ettedurb</FONT></TD></TR>
 	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT FACE="Times-Italic">count 3</FONT></TD></TR>
 </TABLE>>];
-	slots:2 -> chunk2;
-	chunk2 [label=<
+	slots:2 -> slab2;
+	slab2 [label=<
 <TABLE BORDER="0">
 	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT COLOR="Gray85">Dabishi</FONT></TD></TR>
 	<TR><TD COLSPAN="2" ALIGN="LEFT"><FONT FACE="Times-Italic">count 5</FONT></TD></TR>
 </TABLE>>];
 	}
-	\caption{A pool consists of several chunks of packed data managed by an array, and a free-heap for chunk$_0$.}
+	\caption{A pool consists of several slabs of packed data managed by an array, and a free-heap for slab$_0$.}
 	\label{pool}
 \end{figure}
 
@@ -256,7 +256,7 @@ Figure~\ref{pool} shows a diagram of a pool. This is the {\it free-heap} design 
 
 \subsection{Heap implementation}
 
-This implements an invariant that the end of the list is never deleted. A maximum-heap with which we can compare the data in the maximum position in chunk$_0$ on deletion. If it matches, we decrement the max value and pop from the stack until $\text{top} < \text{address}_\text{end}$. The procedure is amortized. For example, in Figure~\ref{pool}, if we deleted the data at chunk$_0$, index 6, \code{480\_Ioniagr}, then it would result in successive amortized deletions of all the heap; the $size$ would be 2.
+This implements an invariant that the end of the list is never deleted. A maximum-heap with which we can compare the data in the maximum position in slab$_0$ on deletion. If it matches, we decrement the max value and pop from the stack until $\text{top} < \text{address}_\text{end}$. The procedure is amortized. For example, in Figure~\ref{pool}, if we deleted the data at slab$_0$, index 6, \code{480\_Ioniagr}, then it would result in successive amortized deletions of all the heap; the $size$ would be 2.
 
 %This can be seen as a form of path-compression\cite{tarjan1979compression}, where the compressed nodes are deleted. But is it?
 
