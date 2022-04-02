@@ -19,7 +19,7 @@
  `TRIE_VALUE` is an optional payload to go with the integral-type,
  <typedef:<PB>value>.
 
- @param[TREE_EXPECB_TRAIT]
+ @param[TREE_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
  trait.
 
@@ -40,10 +40,7 @@
 #endif
 #define TREE_TRAITS TREE_TO_STRING_TRAIT
 #if TREE_TRAITS > 1
-#error Only one trait per include is allowed; use TREE_EXPECB_TRAIT.
-#endif
-#if defined(TREE_TYPE_IN_VALUE) && !defined(TREE_VALUE)
-#error TREE_TYPE_IN_VALUE needs TREE_VALUE.
+#error Only one trait per include is allowed; use TREE_EXPECT_TRAIT.
 #endif
 #if defined(TREE_TEST) && !defined(TREE_TO_STRING)
 #error TREE_TEST requires TREE_TO_STRING.
@@ -89,8 +86,8 @@ static const char *const tree_result_str[] = { TREE_RESULT };
 #ifndef TREE_TYPE
 #define TREE_TYPE unsigned
 #endif
-/** An unsigned type used as the key, defaults to `unsigned int`. */
-typedef TREE_TYPE PB_(key);
+/** An integral type, defaults to `unsigned int`. */
+typedef TREE_TYPE PB_(type);
 
 #ifdef TREE_VALUE
 /** On `TREE_VALUE`, otherwise just a set of numbers. */
@@ -101,8 +98,8 @@ typedef TREE_VALUE PB_(value);
  `TREE_ORDER`. Drawing a B-tree, the links on the outer nodes are all null. We
  just don't include them. */
 struct PB_(outer) {
-	unsigned char keys;
-	PB_(key) key[TREE_ORDER - 1];
+	unsigned char nos;
+	PB_(type) no[TREE_ORDER - 1];
 #ifdef TREE_VALUE
 	PB_(value) value[TREE_ORDER - 1];
 #endif
@@ -121,28 +118,12 @@ static const struct PB_(inner) *PB_(inner_c)(const struct PB_(outer) *
 #if defined(TREE_VALUE) /* <!-- value */
 /** On `TREE_VALUE`, creates a map from type to value. */
 struct B_(tree_entry) { PB_(type) type; PB_(value) value; }
-/** On `TREE_VALUE`, otherwise it's just an alias for <typedef:<PB>key>. */
+/** On `TREE_VALUE`, otherwise it's just an alias for <typedef:<PB>type>. */
 typedef struct B_(tree_entry) PB_(entry);
 #else /* value --><!-- !value */
-typedef PB_(key) PB_(value);
+typedef PB_(type) PB_(value);
 typedef PB_(value) PB_(entry);
 #endif /* !entry --> */
-
-/** If `TREE_TYPE_IN_VALUE` is set, responsible for picking out the
- null-terminated string from the <typedef:<PB>value>, (in which case, the same
- as <typedef:<PB>entry>.) */
-typedef PB_(key) (*PB_(key_fn))(const PB_(entry));
-
-#ifdef TREE_TYPE_IN_VALUE
-static PB_(key_fn) PB_(to_key) = (TREE_TYPE_IN_VALUE);
-#elif defined(TREE_VALUE)
-static const char *PB_(entry_key)(const struct PB_(entry) entry)
-	{ return entry.key; }
-static PB_(key_fn) PB_(to_key) = &PB_(entry_key);
-#else
-static PB_(key) PB_(id_key)(const PB_(key) key) { return key; }
-static PB_(key_fn) PB_(to_key) = &PB_(id_key);
-#endif
 
 /** To initialize it to an idle state, see <fn:<U>tree>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`.
@@ -152,32 +133,32 @@ struct B_(tree);
 struct B_(tree) { struct PB_(outer) *root; unsigned height; };
 
 struct PB_(iterator) {
-	const struct B_(trie) *tree;
-	struct PB_(outer) *current, *end;
-	unsigned leaf, leaf_end;
+	const struct B_(tree) *forest;
+	struct PB_(outer) *tree;
+	unsigned idx;
 };
 
-/** <Bottenbruch, 1962 ALGOL>.
- @return Finds `key` in `tree`, or null. @order \O(\log |`tree`|) */
-static PB_(entry) *PB_(get)(const struct B_(tree) *const tree,
-	const PB_(key) key) {
-	struct { unsigned h, a0; } a;
+/** @return Finds the smallest entry in `tree` that is not less than `no`, or
+ null. @order \O(\log |`tree`|) */
+static PB_(entry) *PB_(match)(const struct B_(tree) *const tree,
+	const PB_(type) no) {
+	unsigned h, a0;
 	const struct PB_(outer) *trunk;
-	assert(tree && key);
-	if(!(a.h = tree->height)) return 0;
+	assert(tree && no);
+	if(!(h = tree->height)) return 0;
 	for(trunk = tree->root, assert(trunk); ;
-		trunk = PB_(inner_c)(trunk)->link[a.a0]) {
-		unsigned a1 = trunk->keys;
-		a.h--, a.a0 = 0;
-		while(a.a0 < a1) {
-			const unsigned m = (a.a0 + a1) / 2;
-			const PB_(key) k = trunk->key[m];
-			if(k < key) a.a0 = m + 1;
-			else a1 = m;
-		}
-		if(!d.h) break;
+		trunk = PB_(inner_c)(trunk)->link[a0]) {
+		PB_(type) cmp;
+		unsigned a1 = trunk->nos;
+		h--, a0 = 0, assert(a1);
+		do {
+			const unsigned m = (a0 + a1) / 2;
+			cmp = trunk->no[m];
+			if(no > cmp) a0 = m + 1; else a1 = m;
+		} while(a0 < a1);
+		if(!h || no == cmp) break;
 	}
-	return PB_(outer)(d.trunk)->leaf + d.lf;
+	return trunk->no + a0;
 }
 
 /** @return Exact match for `key` in `trie` or null. */
