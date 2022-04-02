@@ -6,13 +6,13 @@
 
  @subtitle Integral tree
 
- A <tag:<U>tree> is an ordered set or map from an integer-type
+ A <tag:<U>tree> is a collection of ordered integers
  <typedef:<PU>key> to an optional <typedef:<PU>value>, stored in a B-tree,
  described in <Bayer, McCreight, 1972 Large>.
 
  @param[TREE_NAME, TREE_KEY]
  `<U>` that satisfies `C` naming conventions when mangled, required, and an
- optional unsigned type, <typedef:<PU>key>, whose default is `unsigned int`.
+ optional integral type, <typedef:<PU>key>, whose default is `unsigned int`.
  `<PU>` is private, whose names are prefixed in a manner to avoid collisions.
 
  @param[TREE_VALUE, TREE_KEY_IN_VALUE]
@@ -70,37 +70,14 @@
 #define TREE_CAT(n, m) TREE_CAT_(n, m)
 #define U_(n) TREE_CAT(TREE_NAME, n)
 #define PU_(n) TREE_CAT(tree, U_(n))
-#define TREE_BRANCHES 2
-#if TREE_BRANCHES < 1 || TREE_BRANCHES > UCHAR_MAX
-#error TREE_BRANCHES parameter range `[1, UCHAR_MAX]`.
+#define TREE_KEYS 2
+#if TREE_KEYS < 1 || TREE_KEYS > UCHAR_MAX
+#error TREE_KEYS parameter range `[1, UCHAR_MAX]`.
 #endif
-#define TREE_ORDER (TREE_BRANCHES + 1) /* Maximum branching factor/leaves. */
-
-#if 0
-/* A trie is a forest of non-empty complete binary trees; this is a tree that
- links to other trees. In <Knuth, 1998 Art 3> terminology, this structure is
- a B-tree internal node of `TRIE_ORDER`. 'Node' already has conflicting
- meaning in the level below, so we use 'tree'. Outer tree (node) is defined
- later because it's parameterized. */
-struct trie_inner_tree
-	{ struct trie_trunk trunk; struct trie_inner_leaf leaf[TRIE_ORDER]; };
-/** @return Upcasts `trunk` to an inner tree. */
-static const struct trie_inner_tree *trie_inner_c(const struct trie_trunk *
-	const trunk) { return (const struct trie_inner_tree *)(const void *)
-	((const char *)trunk - offsetof(struct trie_inner_tree, trunk)); }
-/* Determined by the depth, parameters of private fuctions. */
-enum trie_tree_type { TRIE_INNER, TRIE_OUTER };
-/* Binary-search temporaries. */
-struct trie_trunk_descend {
-	struct trie_trunk *trunk;
-	size_t h, diff;
-	unsigned br0, br1, lf, unused;
-};
-#endif
-
+#define TREE_ORDER (TREE_KEYS + 1) /* Maximum branching factor/leaves. */
 #define TREE_RESULT X(ERROR), X(UNIQUE), X(YIELD), X(REPLACE)
 #define X(n) TREE_##n
-/** A result of modifying the table, of which `TRIE_ERROR` is false.
+/** A result of modifying the table, of which `TREE_ERROR` is false.
  ![A diagram of the result states.](../doc/put.png) */
 enum tree_result { TREE_RESULT };
 #undef X
@@ -118,24 +95,30 @@ static const char *const tree_result_str[] = { TREE_RESULT };
 /** An unsigned type used as the key, defaults to `unsigned int`. */
 typedef TREE_KEY PU_(key);
 
-struct PU_(trunk) { unsigned char bsize; };
-
 #ifdef TREE_VALUE
 /** On `TREE_VALUE`, otherwise just a set of numbers. */
 typedef TREE_VALUE PU_(value);
 #endif
 
-struct PU_(inner) {
-	struct PU_(trunk) trunk;
-	PU_(key) branch[TREE_BRANCHES];
+/* In <Knuth, 1998 Art 3> terminology, external B-tree node of `TREE_ORDER`,
+ `TREE_KEYS + 1`. */
+struct PU_(outer) {
+	unsigned char keys;
+	PU_(key) key[TREE_KEYS];
 #ifdef TREE_VALUE
-	PU_(value) leaf[TREE_ORDER];
+	PU_(value) value[TREE_KEYS];
 #endif
 };
-/** @return Upcasts `trunk` to an inner tree. */
-static struct PU_(tree_inner) *tree_inner(struct PU_(trunk) *const trunk)
-	{ return (struct PU_(tree_inner) *)(void *)
-	((char *)trunk - offsetof(struct PU_(inner), trunk)); }
+/* B-tree internal node of `TRIE_ORDER` inherits from external. */
+struct PU_(inner) { struct PU_(outer) base, *link[TREE_ORDER]; };
+/** @return Upcasts `outer` to an inner tree. */
+static struct PU_(inner) *PU_(inner)(struct PU_(outer) *const outer)
+	{ return (struct PU_(inner) *)(void *)
+	((char *)outer - offsetof(struct PU_(inner), base)); }
+/** @return Upcasts `outer` to an inner tree. */
+static const struct PU_(inner) *PU_(inner_c)(const struct PU_(outer) *
+	const outer) { return (const struct PU_(inner) *)(const void *)
+	((const char *)outer - offsetof(struct PU_(inner), base)); }
 
 #if defined(TREE_VALUE) && !defined(TREE_KEY_IN_VALUE) /* <!-- entry */
 /** On `TREE_VALUE` but not `TREE_KEY_IN_VALUE`, creates a map from key to
@@ -165,62 +148,36 @@ static PU_(key) PU_(id_key)(const PU_(key) key) { return key; }
 static PU_(key_fn) PU_(to_key) = &PU_(id_key);
 #endif
 
-/* Leaf/external B-tree node/tree. */
-struct PU_(outer) {
-	struct PU_(trunk) trunk;
-	////// what??
-	PU_(entry) leaf[TRIE_ORDER];
-};
-/** @return Upcasts `trunk` to an outer tree. */
-static struct PT_(outer_tree) *PT_(outer)(struct trie_trunk *const trunk)
-	{ return (struct PT_(outer_tree) *)(void *)
-	((char *)trunk - offsetof(struct PT_(outer_tree), trunk)); }
-/** @return Upcasts `trunk` to an outer tree. */
-static const struct PT_(outer_tree) *PT_(outer_c)(const struct trie_trunk *
-	const trunk) { return (const struct PT_(outer_tree) *)(const void *)
-	((const char *)trunk - offsetof(struct PT_(outer_tree), trunk)); }
-
-/** To initialize it to an idle state, see <fn:<T>trie>, `TRIE_IDLE`, `{0}`
+/** To initialize it to an idle state, see <fn:<U>tree>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`.
 
  ![States.](../doc/states.png) */
-struct T_(trie);
-struct T_(trie) { struct trie_trunk *root; size_t node_height; };
+struct U_(tree);
+struct U_(tree) { struct PU_(outer) *root; unsigned height; };
 
-struct PT_(iterator) {
-	const struct T_(trie) *trie;
-	struct PT_(outer_tree) *current;
-	struct trie_trunk *end;
+struct PU_(iterator) {
+	const struct U_(trie) *tree;
+	struct PU_(outer) *current, *end;
 	unsigned leaf, leaf_end;
 };
 
-union PT_(leaf_ptr) { struct trie_inner_leaf *inner; PT_(entry) *outer; };
-
-/** @return A candidate match for `key` in `trie`, or null, if `key` is
- definitely not in `trie`. @order \O(|`key`|) */
-static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
-	const char *const key) {
-	struct trie_trunk_descend d;
-	struct { size_t cur, next; } byte; /* `key` null checks. */
-	assert(trie && key);
-	if(!(d.h = trie->node_height)) return 0;
-	/* Every path though the forest has the same height. */
-	for(d.trunk = trie->root, assert(d.trunk), d.diff = 0, byte.cur = 0; ;
-		d.trunk = trie_inner(d.trunk)->leaf[d.lf].link) {
-		assert(d.trunk->skip < d.h), d.h -= 1 + d.trunk->skip;
-		d.br0 = 0, d.br1 = d.trunk->bsize, d.lf = 0;
-		while(d.br0 < d.br1) {
-			const struct trie_branch *const branch = d.trunk->branch + d.br0;
-			/* Advance to the bit that has a difference in `key`. */
-			for(byte.next = (d.diff += branch->skip) / CHAR_BIT;
-				byte.cur < byte.next; byte.cur++)
-				if(key[byte.cur] == '\0') return 0; /* Too short. */
-			if(!TRIE_QUERY(key, d.diff))
-				d.br1 = ++d.br0 + branch->left;
-			else
-				d.br0 += branch->left + 1,
-				d.lf += branch->left + 1;
-			d.diff++;
+/** <Bottenbruch, 1962 ALGOL>.
+ @return Finds `key` in `tree`, or null. @order \O(\log |`tree`|) */
+static PU_(entry) *PU_(get)(const struct U_(tree) *const tree,
+	const PU_(key) key) {
+	struct { unsigned h, a0; } a;
+	const struct PU_(outer) *trunk;
+	assert(tree && key);
+	if(!(a.h = tree->height)) return 0;
+	for(trunk = tree->root, assert(trunk); ;
+		trunk = PU_(inner_c)(trunk)->link[a.a0]) {
+		unsigned a1 = trunk->keys;
+		a.h--, a.a0 = 0;
+		while(a.a0 < a1) {
+			const unsigned m = (a.a0 + a1) / 2;
+			const PU_(key) k = trunk->key[m];
+			if(k < key) a.a0 = m + 1;
+			else a1 = m;
 		}
 		if(!d.h) break;
 	}
