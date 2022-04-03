@@ -103,6 +103,7 @@ static void PB_(test)(void) {
 	size_t i;
 
 	/* Idle. */
+	errno = 0;
 	PB_(valid)(0);
 	PB_(valid)(&tree);
 	B_(tree)(&tree), PB_(valid)(&tree);
@@ -114,6 +115,14 @@ static void PB_(test)(void) {
 	it = B_(tree_lower)(&tree, PB_(to_x)(n + 0)), assert(!it.i.tree);
 	value = B_(tree_get)(&tree, PB_(to_x)(n + 0)), assert(!value);
 	for(i = 0; i < n_size; i++) {
+		char z[12];
+		PB_(to_string)(n + i, &z);
+		printf("Adding %s.\n", z);
+		value = B_(bulk_add)(&tree, PB_(to_x)(n + i));
+		assert(value);
+#ifdef TREE_VALUE
+		assert(0); /* Copy. */
+#endif
 	}
 	B_(tree_)(&tree), assert(!tree.root), PB_(valid)(&tree);
 	assert(!errno);
@@ -130,7 +139,6 @@ static void B_(tree_test)(void) {
 #endif
 		" TRIE_TEST <" QUOTE(TREE_TEST) ">;"
 		" testing:\n");
-	errno = 0;
 	PB_(test)();
 	fprintf(stderr, "Done tests of <" QUOTE(TREE_NAME) ">trie.\n\n");
 }

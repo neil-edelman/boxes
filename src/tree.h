@@ -67,10 +67,11 @@
 #define TREE_CAT(n, m) TREE_CAT_(n, m)
 #define B_(n) TREE_CAT(TREE_NAME, n)
 #define PB_(n) TREE_CAT(tree, B_(n))
-#define TREE_ORDER 2 /* Maximum branching factor. */
-#if TREE_ORDER < 2 || TREE_ORDER > UCHAR_MAX
-#error TREE_ORDER parameter range `[2, UCHAR_MAX]`.
+#define TREE_MAX 2
+#if TREE_MAX < 2 || TREE_MAX > UCHAR_MAX
+#error TREE_MAX parameter range `[2, UCHAR_MAX]`.
 #endif
+#define TREE_ORDER (TREE_MAX + 1) /* Maximum branching factor. */
 #define TREE_IDLE { 0, 0 }
 #endif /* idempotent --> */
 
@@ -114,9 +115,9 @@ static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
  just don't include them. */
 struct PB_(outer) {
 	unsigned char size;
-	PB_(type) x[TREE_ORDER - 1];
+	PB_(type) x[TREE_MAX];
 #ifdef TREE_VALUE
-	PB_(value) value[TREE_ORDER - 1];
+	PB_(value) value[TREE_MAX];
 #endif
 };
 /* Internal node of `TRIE_ORDER` inherits from <tag:<PB>outer>, and links.
@@ -453,16 +454,16 @@ finish:
 
 /** Frees `tr` at `h` and it's children recursively. `height` is the node
  height, (height plus one.) */
-static void PB_(clear_r)(struct PB_(outer) *const tr, size_t height) {
-	/* This doesn't want to clear one. */
-	assert(tr && height);
-	if(height--) {
+static void PB_(clear_r)(struct PB_(outer) *const tree, size_t height) {
+	/* FIXME: This doesn't want to clear one. */
+	assert(tree && height);
+	if(--height) {
 		unsigned i;
-		for(i = 0; i <= tr->size; i++)
-			PB_(clear_r)(PB_(inner)(tr)->link[i], height);
-		free(PB_(inner)(tr));
+		for(i = 0; i <= tree->size; i++)
+			PB_(clear_r)(PB_(inner)(tree)->link[i], height);
+		free(PB_(inner)(tree));
 	} else {
-		free(tr);
+		free(tree);
 	}
 }
 
@@ -499,16 +500,32 @@ static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
 }
 
 /** `x` must be not less than the largest element in `tree`. */
-static PB_(value) *PB_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
-	struct PB_(iterator) it;
-	if(!(it = PB_(lower)(tree, x)).tree) return 0;
-	assert(it.trunk && it.idx < it.trunk->size);
-	if(it.trunk->size >= TREE_ORDER - 1) {
-		assert(0);
+static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
+	struct { struct PB_(outer) *o; unsigned h; } a, back = { 0, 0 };
+	assert(tree);
+	printf("bulk()\n");
+	/* Zero entries. */
+	if(!(a.h = tree->height)) {
+		if(!(a.o = tree->root) && !(a.o = malloc(sizeof *a.o)))
+			{ if(!errno) errno = ERANGE; return 0; }
+		a.o->size = 0, tree->root = a.o, tree->height = a.h = 1;
+		printf("empty root node\n");
 	} else {
-
+		a.o = tree->root, assert(a.o);
 	}
-	return 0;
+	/* Figure out where the end is. */
+	do if(a.h--, a.o->size < TREE_MAX) back.o = a.o, back.h = a.h;
+	while(a.h && a.o->size);
+	if(!a.h) a.o = back.o, a.h = back.h;
+	while(a.h) { assert(0); }
+	assert(a.o && a.o->size < TREE_MAX);
+	/*  */
+	a.o->x[a.o->size] = x;
+#ifdef TREE_VALUE
+	return a.o->value + a.o->size++;
+#else
+	return a.o->x + a.o->size++;
+#endif
 }
 
 #if 0
