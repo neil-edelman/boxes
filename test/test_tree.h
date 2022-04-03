@@ -34,8 +34,8 @@ static void PB_(subgraph)(const struct PB_(outer) *const outer,
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
 		char z[12];
 		PB_(to_string)(outer->x + i, &z);
-		fprintf(fp, "\t<TR><TD ALIGN=\"LEFT\" PORT=\"%u\"%s>%s</FONT>"
-			"</TD></TR>\n", i, bgc, z);
+		fprintf(fp, "\t<TR><TD ALIGN=\"LEFT\" PORT=\"%u:n\"%s>%s</TD></TR>\n",
+			i, bgc, z);
 	}
 	/* . . . */
 #if 0
@@ -115,7 +115,7 @@ static void PB_(test)(void) {
 	it = B_(tree_lower)(&tree, PB_(to_x)(n + 0)), assert(!it.i.tree);
 	value = B_(tree_get)(&tree, PB_(to_x)(n + 0)), assert(!value);
 	for(i = 0; i < n_size; i++) {
-		char z[12];
+		char z[12], fn[64];
 		PB_(to_string)(n + i, &z);
 		printf("Adding %s.\n", z);
 		value = B_(bulk_add)(&tree, PB_(to_x)(n + i));
@@ -123,6 +123,8 @@ static void PB_(test)(void) {
 #ifdef TREE_VALUE
 		assert(0); /* Copy. */
 #endif
+		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u.gv", ++PB_(no));
+		PB_(graph)(&tree, fn);
 	}
 	B_(tree_)(&tree), assert(!tree.root), PB_(valid)(&tree);
 	assert(!errno);
