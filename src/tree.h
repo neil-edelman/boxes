@@ -478,7 +478,8 @@ static void B_(tree)(struct B_(tree) *const tree)
 static void B_(tree_)(struct B_(tree) *const tree) {
 	/*struct PB_(outer_tree) *clear_all = (struct PB_(outer_tree) *)1;*/
 	assert(tree);
-	PB_(clear_r)(tree->root, tree->height);
+	if(tree->height) PB_(clear_r)(tree->root, tree->height);
+	else free(tree->root);
 	B_(tree)(tree);
 }
 

@@ -63,6 +63,7 @@ static void PB_(subgraph)(const struct PB_(outer) *const outer,
 		PB_(graph_tree_mem)(inner->leaf[i].link, height, bit, fp);
 	}
 #endif
+	fprintf(fp, "</TABLE>>];\n");
 }
 
 /** Draw a graph of `tree` to `fn` in Graphviz format. */
@@ -80,7 +81,6 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 	if(!tree->root) fprintf(fp, "\tidle;\n");
 	else if(!(h = tree->height)) fprintf(fp, "\tempty;\n");
 	else PB_(subgraph)(tree->root, tree->height, fp);
-	fprintf(fp, "</TABLE>>];\n");
 	fprintf(fp, "\tnode [color = \"Red\"];\n"
 		"}\n");
 	fclose(fp);
@@ -106,11 +106,15 @@ static void PB_(test)(void) {
 	PB_(valid)(0);
 	PB_(valid)(&tree);
 	B_(tree)(&tree), PB_(valid)(&tree);
-	PB_(graph)(&tree, "graph/" QUOTE(TRIE_NAME) "-idle.gv");
+	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
 	for(i = 0; i < n_size; i++) PB_(filler)(n + i);
+	it = B_(tree_lower)(0, PB_(to_x)(n + 0)), assert(!it.i.tree);
+	value = B_(tree_get)(0, PB_(to_x)(n + 0)), assert(!value);
 	it = B_(tree_lower)(&tree, PB_(to_x)(n + 0)), assert(!it.i.tree);
-	//x = B_(trie_get)(&trie, PB_(to_x)(n + 0)), assert(!data);
+	value = B_(tree_get)(&tree, PB_(to_x)(n + 0)), assert(!value);
+	for(i = 0; i < n_size; i++) {
+	}
 	B_(tree_)(&tree), assert(!tree.root), PB_(valid)(&tree);
 	assert(!errno);
 }
@@ -126,6 +130,7 @@ static void B_(tree_test)(void) {
 #endif
 		" TRIE_TEST <" QUOTE(TREE_TEST) ">;"
 		" testing:\n");
+	errno = 0;
 	PB_(test)();
 	fprintf(stderr, "Done tests of <" QUOTE(TREE_NAME) ">trie.\n\n");
 }
