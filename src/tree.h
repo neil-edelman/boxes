@@ -6,12 +6,10 @@
 
  @subtitle Integral tree
 
- A <tag:<B>tree> is an ordered collection of integer-types, <typedef:<PB>type>,
- and an optional <typedef:<PB>value> to go with them.
-
- The difference between it and `Java`'s `TreeMap` is that it allows multiple
- keys. It's more of `C++`'s `multimap`. Internally, this is a B-tree, described
- in <Bayer, McCreight, 1972 Large>.
+ A <tag:<B>tree> is an ordered collection of read-only <typedef:<PB>type>, and
+ an optional <typedef:<PB>value> to go with them. One can make this a map, but
+ in general, it can have identical keys. Internally, this is a B-tree,
+ described in <Bayer, McCreight, 1972 Large>.
 
  @param[TREE_NAME, TREE_TYPE]
  `<B>` that satisfies `C` naming conventions when mangled, required, and an
@@ -19,8 +17,11 @@
  private, whose names are prefixed in a manner to avoid collisions.
 
  @param[TREE_VALUE]
- `TRIE_VALUE` is an optional payload to go with the integral-type,
- <typedef:<PB>value>.
+ `TRIE_VALUE` is an optional payload to go with the type, <typedef:<PB>value>.
+
+ @param[TREE_COMPARE]
+ A function satisfying <typedef:<PB>compare_fn>. Defaults to ascending order.
+ Required if `TREE_TYPE` is changed to an incomparable type.
 
  @param[TREE_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
@@ -45,15 +46,13 @@
 #if TREE_TRAITS > 1
 #error Only one trait per include is allowed; use TREE_EXPECT_TRAIT.
 #endif
-#if defined(TREE_TEST) && !defined(TREE_TO_STRING)
-#error TREE_TEST requires TREE_TO_STRING.
-#endif
 #if defined(TREE_TO_STRING_NAME) && !defined(TREE_TO_STRING)
 #error TREE_TO_STRING_NAME requires TREE_TO_STRING.
 #endif
 
 #ifndef TREE_H /* <!-- idempotent */
 #define TREE_H
+#include <stddef.h> /* ? */
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -75,6 +74,10 @@
 #define TREE_IDLE { 0, 0 }
 #endif /* idempotent --> */
 
+
+#if TREE_TRAITS == 0 /* <!-- base code */
+
+
 #ifndef TREE_TYPE
 #define TREE_TYPE unsigned
 #endif
@@ -88,12 +91,30 @@ typedef TREE_TYPE PB_(type);
 typedef TREE_VALUE PB_(value);
 #endif
 
+/** Returns a positive result if `a` is out-of-order with respect to `b`,
+ inducing a strict pre-order. This is compatible, but less strict then the
+ comparators from `bsearch` and `qsort`; it only needs to divide entries into
+ two instead of three categories. */
+typedef int (*PB_(compare_fn))(const PB_(type) a, const PB_(type) b);
+
+#ifndef TREE_COMPARE /* <!-- !cmp */
+/** The default `TREE_COMPARE` on `a` and `b` is `a > b`, which makes ascending
+ order. @implements <typedef:<PH>compare_fn> */
+static int PB_(default_compare)(const PB_(type) a, const PB_(type) b)
+	{ return a > b; }
+#define TREE_COMPARE &PB_(default_compare)
+#endif /* !cmp --> */
+
+/* Check that `TREE_COMPARE` is a function implementing
+ <typedef:<PB>compare_fn>, if defined. */
+static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
+
 /* In <Knuth, 1998 Art 3> terminology, leaf B-tree node (external trunk) of
  `TREE_ORDER`. Drawing a B-tree, the links on the outer nodes are all null. We
  just don't include them. */
 struct PB_(outer) {
-	unsigned char nos;
-	PB_(type) no[TREE_ORDER - 1];
+	unsigned char size;
+	PB_(type) x[TREE_ORDER - 1];
 #ifdef TREE_VALUE
 	PB_(value) value[TREE_ORDER - 1];
 #endif
@@ -111,17 +132,17 @@ static const struct PB_(inner) *PB_(inner_c)(const struct PB_(outer) *
 	((const char *)outer - offsetof(struct PB_(inner), base)); }
 
 #if defined(TREE_VALUE) /* <!-- value */
-/** On `TREE_VALUE`, creates a map from type to value. */
-struct B_(tree_entry) { PB_(type) type; PB_(value) value; }
+/** On `TREE_VALUE`, creates a map from type to pointer-to-value. (One can
+ modify the `value`, but not the `x`.) */
+struct B_(tree_entry) { PB_(type) x; PB_(value) *value; }
 /** On `TREE_VALUE`, otherwise it's just an alias for <typedef:<PB>type>. */
 typedef struct B_(tree_entry) PB_(entry);
-static PB_(type) PB_(to_type)(const PB_(entry) *const entry)
-	{ return entry->type; }
+static PB_(type) PB_(to_x)(const PB_(entry) *const entry)
+	{ return entry->x; }
 #else /* value --><!-- !value */
 typedef PB_(type) PB_(value);
 typedef PB_(value) PB_(entry);
-static PB_(type) PB_(to_type)(const PB_(entry) *const entry)
-	{ return *entry; }
+static PB_(type) PB_(to_x)(const PB_(type) *const x) { return *x; }
 #endif /* !entry --> */
 
 /** To initialize it to an idle state, see <fn:<U>tree>, `TRIE_IDLE`, `{0}`
@@ -144,17 +165,18 @@ static struct PB_(iterator) PB_(lower)(const struct B_(tree) *const tree,
 	const PB_(type) no) {
 	unsigned h, a0;
 	struct PB_(outer) *trunk;
-	struct PB_(iterator) it = { tree, 0, 0 };
+	struct PB_(iterator) it = { 0, 0, 0 };
 	if(!tree || !(h = tree->height)) return it;
 	for(trunk = tree->root, assert(trunk); ;
 		trunk = PB_(inner_c)(trunk)->link[a0]) {
 		PB_(type) cmp;
-		unsigned a1 = trunk->nos;
+		unsigned a1 = trunk->size;
 		h--, a0 = 0, assert(a1);
 		do {
 			const unsigned m = (a0 + a1) / 2;
-			cmp = trunk->no[m];
-			if(no > cmp) a0 = m + 1; else a1 = m;
+			cmp = trunk->x[m];
+			if(/* no > cmp */ PB_(compare)(no, cmp) > 0) a0 = m + 1;
+			else a1 = m;
 		} while(a0 < a1);
 		if(!h || no == cmp) break;
 	}
@@ -162,12 +184,12 @@ static struct PB_(iterator) PB_(lower)(const struct B_(tree) *const tree,
 	return it;
 }
 
+#if 0
 /** Right side of `left`, which must be full, moves to `right`, (which is
  clobbered.) The root of `left` is also clobbered. */
 static void PB_(split)(struct PB_(outer) *const left,
 	struct PB_(outer) *const right) {
 	assert(0);
-#if 0
 	unsigned char leaves_split = left->trunk.branch[0].left + 1;;
 	assert(left && right && left->trunk.bsize == TRIE_BRANCHES);
 	right->trunk.bsize = left->trunk.bsize - leaves_split;
@@ -182,10 +204,8 @@ static void PB_(split)(struct PB_(outer) *const left,
 		sizeof *left->trunk.branch * (left->trunk.bsize + 1));
 	memmove(left->leaf, left->leaf + 1,
 		sizeof *left->leaf * (left->trunk.bsize + 2));
-#endif
 }
 
-#if 0
 /** Open up a spot in the tree. Used in <fn:<PT>add_unique>. This is no longer
  well-defined if any parameters are off.
  @param[key] New <fn:<PT>to_key>.
@@ -248,8 +268,17 @@ static union PB_(leaf_ptr) PB_(tree_open)(enum trie_tree_type type,
 	trunk->bsize++;
 	return ret;
 }
+struct PB_(iterator) it;
+if(!(it = PB_(lower)(tree, x)).tree) return 0;
+assert(it.trunk && it.idx < it.trunk->size);
+if(it.trunk->size >= TRIE_ORDER - 1) {
+	assert(0);
+} else {
+
+}
 #endif
 
+#if 0
 /** Adds `x` in the first spot on `tree`. @return A pointer to the new value.
  @throw[malloc, ERANGE] */
 static PB_(value) *PB_(add)(struct B_(tree) *const tree, PB_(type) x) {
@@ -366,216 +395,122 @@ catch:
 	if(!errno) errno = ERANGE;
 	return 0;
 }
-
-/** A bi-predicate; returns true if the `replace` replaces the `original`; used
- in <fn:<T>trie_policy_put>. */
-typedef int (*PB_(replace_fn))(PB_(entry) *original, PB_(entry) *replace);
-
-/** Adds `x` to `trie` and, if `eject` is non-null, stores the collided
- element, if any, as long as `replace` is null or returns true.
- @param[eject] If not-null, the ejected datum. If `replace` returns false, then
- `*eject == datum`, but it will still return true.
- @return Success. @throws[realloc, ERANGE] */
-static int PB_(put)(struct B_(trie) *const trie, PB_(entry) x,
-	PB_(entry) **const eject, const PB_(replace_fn) replace) {
-	const char *key;
-	PB_(entry) *leaf;
-	assert(trie && x);
-	key = PB_(to_key)(x);
-	/* Add if absent. */
-	assert(0);
-	if(!(leaf = PB_(get)(trie, key)))
-		{ if(eject) *eject = 0; return PB_(add_unique)(trie, x); }
-	/* Collision policy. */
-	if(replace && !replace(leaf, &x)) {
-		if(eject) *eject = &x;
-	} else {
-		if(eject) *eject = leaf;
-		*leaf = x;
-	}
-	return 1;
-}
-
-/** Counts the new iterator `it`. @order \O(|`it`|) */
-static size_t PB_(size_r)(const struct PB_(iterator) *const it) {
-	size_t size;
-	unsigned i;
-	size_t height = it->trie->node_height; /* No. */
-	struct trie_trunk *trunk = it->trie->root;
-	assert(it && height);
-	/*if(!it->root || !(next = it->next)) return 0;
-	assert(next == it->end
-		&& it->leaf <= it->leaf_end && it->leaf_end <= next->bsize + 1);
-	size = it->leaf_end - it->leaf;
-	for(i = it->leaf; i < it->leaf_end; i++)
-		size += PB_(sub_size)(next->leaf[i].child) - 1;*/
-	assert(0);
-	assert(trunk && trunk->skip < height);
-	if(height -= 1 + trunk->skip) {
-		const struct trie_inner_tree *const inner = trie_inner_c(trunk);
-		for(size = 0, i = 0; i <= trunk->bsize; i++)
-			size += 1/*PB_(size_r)(inner->link[i], height)*/;
-	} else {
-		size = trunk->bsize + 1;
-	}
-	return size;
-}
+#endif
 
 /* <!-- iterate interface */
 
-/** Loads the first element of `trie` (can be null) into `it`.
+/** Loads the first element of `tree` (can be null) into `it`.
  @implements begin */
 static void PB_(begin)(struct PB_(iterator) *const it,
-	const struct B_(trie) *const trie) {
-	PB_(match_prefix)(trie, "", it);
-	it->end = 0; /* More robust to concurrent modifications. */
+	const struct B_(tree) *const tree) {
+	unsigned h;
+	struct PB_(outer) *t;
+	assert(it);
+	it->tree = 0, it->trunk = 0, it->idx = 0;
+	if(!tree || !(h = tree->height)) return;
+	for(t = tree->root; ; t = PB_(inner_c)(t)->link[0]) {
+		if(!t->size) return; /* Was bulk loading? */
+		if(!--h) break;
+	}
+	it->tree = tree, it->trunk = t, it->idx = 0;
 }
 
 /** Advances `it`. @return The previous value or null. @implements next */
-const static PB_(entry) *PB_(next)(struct PB_(iterator) *const it) {
+const static PB_(type) *PB_(next)(struct PB_(iterator) *const it) {
 	assert(it);
 	printf("_next_\n");
-	if(!it->trie) return 0;
-	assert(it->current && it->end);
-	if(&it->current->trunk == it->end) {
-		/* Only dealing with one tree. */
-		if(it->leaf > it->leaf_end || it->leaf > it->current->trunk.bsize)
-			{ it->trie = 0; return 0; }
-	} else if(it->leaf > it->current->trunk.bsize) {
-		/* Off the end of the tree; keep track of the next branch when doing a
-		 look-up of the last entry when the end is past. */
-		const char *key
-			= PB_(to_key)(it->current->leaf[it->current->trunk.bsize]);
-		const struct trie_trunk *trunk1 = &it->current->trunk;
-		struct trie_trunk *trunk2, *next = 0;
-		size_t h2 = it->trie->node_height, bit2;
-		struct { unsigned br0, br1, lf; } t2;
-		int is_past_end = !it->end; /* Or else go through the entire trie. */
-		assert(key);
-		printf("next: %s is the last one on the tree.\n", key);
-		for(it->current = 0, trunk2 = it->trie->root, assert(trunk2), bit2 = 0;
-			; trunk2 = trie_inner(trunk2)->leaf[t2.lf].link) {
-			int is_considering = 0;
-			if(trunk2 == trunk1) break; /* Reached the tree. */
-			assert(trunk2->skip < h2), h2 -= 1 + trunk2->skip;
-			if(!h2) { printf("next: bailing.\n"); break; } /* Concurrent modification? */
-			t2.br0 = 0, t2.br1 = trunk2->bsize, t2.lf = 0;
-			while(t2.br0 < t2.br1) {
-				const struct trie_branch *const branch2
-					= trunk2->branch + t2.br0;
-				bit2 += branch2->skip;
-				if(!TRIE_QUERY(key, bit2))
-					t2.br1 = ++t2.br0 + branch2->left;
-				else
-					t2.br0 += branch2->left + 1,
-					t2.lf += branch2->left + 1;
-				bit2++;
-			}
-			/* Past the end? */
-			if(is_past_end) {
-				is_considering = 1;
-			} else if(trunk2 == it->end) {
-				is_past_end = 1;
-				if(t2.lf < it->leaf_end) is_considering = 1;
-			}
-			/* Set it to the next value. */
-			if(is_considering && t2.lf < trunk2->bsize)
-				next = trunk2, it->leaf = t2.lf + 1,
-				printf("next: continues in tree %s, leaf %u.\n",
-				orcify(trunk2), it->leaf);
+	if(!it->tree || !it->trunk || !it->trunk->size) return 0;
+	if(it->idx > it->trunk->size) {
+		/* Off the end of the trunk; keep track of the next trunk. */
+		unsigned h, a0, next_h;
+		struct PB_(outer) *trunk, *next = 0;
+		PB_(type) prev;
+		if(!(h = it->tree->height)) goto finish; /* Empty now? */
+		prev = it->trunk->x[it->trunk->size - 1];
+		for(trunk = it->tree->root; ; trunk = PB_(inner_c)(trunk)->link[a0]) {
+			PB_(type) cmp;
+			unsigned a1 = trunk->size;
+			if(!a1) goto finish; /* Non-valid concurrent modification? */
+			if(--h) break;
+			a0 = 0;
+			do {
+				const unsigned m = (a0 + a1) / 2;
+				cmp = trunk->x[m];
+				if(PB_(compare)(prev, cmp)) a0 = m + 1; else a1 = m;
+			} while(a0 < a1);
+			if(a0 < trunk->size - 1)
+				next = PB_(inner_c)(trunk)->link[a0 + 1], next_h = h;
 		}
-		if(!next) { printf("next: fin\n"); it->trie = 0; return 0; } /* No more. */
-		while(h2) trunk2 = trie_inner_c(trunk2)->leaf[it->leaf].link,
-			it->leaf = 0, assert(trunk2->skip < h2), h2 -= 1 + trunk2->skip;
-		it->current = PB_(outer)(trunk2);
+		if(!next) goto finish;
+		assert(0);
 	}
-	return it->current->leaf + it->leaf++;
+	return it->trunk->x + it->idx++;
+finish:
+	{ it->trunk = 0; return 0; }
 }
 
 /* iterate --> */
 
-/** Frees `tr` at `h` and it's children recursively. Stores any one outer tree
- in `one`. `height` is the node height, (height plus one.) */
-static void PB_(clear_r)(struct trie_trunk *const tr, size_t height,
-	struct PB_(outer_tree) **const one) {
-	unsigned i;
-	assert(tr && height > tr->skip && one);
-	if(height -= 1 + tr->skip) {
-		for(i = 0; i <= tr->bsize; i++)
-			PB_(clear_r)(trie_inner(tr)->leaf[i].link, height, one);
-		free(trie_inner(tr));
-	} else if(!*one) {
-		*one = PB_(outer)(tr);
+/** Frees `tr` at `h` and it's children recursively. `height` is the node
+ height, (height plus one.) */
+static void PB_(clear_r)(struct PB_(outer) *const tr, size_t height) {
+	/* This doesn't want to clear one. */
+	assert(tr && height);
+	if(height--) {
+		unsigned i;
+		for(i = 0; i <= tr->size; i++)
+			PB_(clear_r)(PB_(inner)(tr)->link[i], height);
+		free(PB_(inner)(tr));
 	} else {
-		free(PB_(outer)(tr));
+		free(tr);
 	}
 }
 
-/** Stores an iteration range in a trie. Any changes in the topology of the
- trie invalidate it. */
-struct B_(trie_iterator) { struct PB_(iterator) i; };
+/** Stores an iteration in a tree. Generally, changes in the topology of the
+ tree invalidate it. */
+struct B_(tree_iterator) { struct PB_(iterator) i; };
 
-/** Initializes `trie` to idle. @order \Theta(1) @allow */
-static void B_(trie)(struct B_(trie) *const trie)
-	{ assert(trie); trie->root = 0; }
+/** Initializes `tree` to idle. @order \Theta(1) @allow */
+static void B_(tree)(struct B_(tree) *const tree)
+	{ assert(tree); tree->root = 0; tree->height = 0; }
 
-/** Returns an initialized `trie` to idle. @allow */
-static void B_(trie_)(struct B_(trie) *const trie) {
-	struct PB_(outer_tree) *clear_all = (struct PB_(outer_tree) *)1;
-	assert(trie);
-	PB_(clear_r)(trie->root, trie->node_height, &clear_all);
-	B_(trie)(trie);
+/** Returns an initialized `tree` to idle. @allow */
+static void B_(tree_)(struct B_(tree) *const tree) {
+	/*struct PB_(outer_tree) *clear_all = (struct PB_(outer_tree) *)1;*/
+	assert(tree);
+	PB_(clear_r)(tree->root, tree->height);
+	B_(tree)(tree);
 }
 
-/** Clears every entry in a valid `trie`, but it continues to be active if it
- is not idle. */
-static void B_(trie_clear)(struct B_(trie) *const trie) {
-	struct PB_(outer_tree) *will_be_root = 0;
-	assert(trie);
-	PB_(clear_r)(trie->root, trie->node_height, &will_be_root);
-	B_(trie)(trie);
-	trie->root = &will_be_root->trunk; /* Hysteresis. */
+/** @param[tree] Can be null. @return Finds the smallest entry in `tree` that
+ is not less than `x`. If `x` is higher than any of `tree`, it will be placed
+ just passed the end. @order \O(\log |`tree`|) @allow */
+static struct B_(tree_iterator) B_(tree_lower)(const struct B_(tree)
+	*const tree, const PB_(type) x)
+	{ struct B_(tree_iterator) it; it.i = PB_(lower)(tree, x); return it; }
+
+/** @return Lowest match for `x` in `tree` or null no such item exists.
+ @order \O(\log |`tree`|) @allow */
+static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
+	const PB_(type) x) {
+	const struct PB_(iterator) i = PB_(lower)(tree, x);
+	return i.tree && i.trunk ? i.trunk->x + i.idx : 0;
+}
+
+/** `x` must be not less than the largest element in `tree`. */
+static PB_(value) *PB_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
+	struct PB_(iterator) it;
+	if(!(it = PB_(lower)(tree, x)).tree) return 0;
+	assert(it.trunk && it.idx < it.trunk->size);
+	if(it.trunk->size >= TREE_ORDER - 1) {
+		assert(0);
+	} else {
+
+	}
+	return 0;
 }
 
 #if 0
-/** Initializes `trie` from an `array` of pointers-to-`<T>` of `array_size`.
- @return Success. @throws[realloc] @order \O(`array_size`) @allow
- @fixme Write this function, somehow. */
-static int B_(trie_from_array)(struct B_(trie) *const trie,
-	PB_(type) *const*const array, const size_t array_size) {
-	return assert(trie && array && array_size),
-		PB_(init)(trie, array, array_size);
-}
-#endif
-
-/** @return Whether `key` is in `trie`; in case either one is null, returns
- false. @order \O(\log `trie.size`) or \O(|`key`|) */
-static int B_(trie_is)(const struct B_(trie) *const trie,
-	const char *const key) { return !(!trie || !key || !PB_(get)(trie, key)); }
-
-/** @return Looks at only the index of `trie` for potential `key` matches,
- but will ignore the values of the bits that are not in the index.
- @order \O(|`key`|) @allow */
-static PB_(entry) *B_(trie_match)(const struct B_(trie) *const trie,
-	const char *const key) { return PB_(match)(trie, key); }
-
-/** @return Exact match for `key` in `trie` or null no such item exists.
- @order \O(|`key`|), <Thareja 2011, Data>. @allow */
-static PB_(entry) B_(trie_get)(const struct B_(trie) *const trie,
-	const char *const key) { return PB_(get)(trie, key); }
-
-/** Adds a pointer to `x` into `trie` if the key doesn't exist already.
- @return If the key did not exist and it was created, returns true. If the key
- of `x` is already in `trie`, or an error occurred, returns false.
- @throws[realloc, ERANGE] Set `errno = 0` before to tell if the operation
- failed due to error. @order \O(|`key`|) @allow */
-static enum trie_result B_(trie_try)(struct B_(trie) *const trie,
-	PB_(entry) entry) {
-	if(!trie || !entry) return printf("add: null\n"), TRIE_ERROR;
-	printf("add: trie %s; entry <<%s>>.\n", orcify(trie), PB_(to_key)(entry));
-	return PB_(get)(trie, PB_(to_key)(entry)) ? TRIE_YIELD :
-		(PB_(add_unique)(trie, entry), TRIE_UNIQUE); }
-
 /** Updates or adds a pointer to `x` into `trie`.
  @param[eject] If not null, on success it will hold the overwritten value or
  a pointer-to-null if it did not overwrite any value.
@@ -599,55 +534,26 @@ static int B_(trie_policy)(struct B_(trie) *const trie, const PB_(entry) x,
 /** Tries to remove `key` from `trie`. @return Success. */
 static int B_(trie_remove)(struct B_(trie) *const trie,
 	const char *const key) { return PB_(remove)(trie, key); }
-
-/** Fills `it` with iteration parameters that find values of keys that start
- with `prefix` in `trie`.
- @param[prefix] To fill `it` with the entire `trie`, use the empty string.
- @param[it] A pointer to an iterator that gets filled. It is valid until a
- topological change to `trie`. Calling <fn:<T>trie_next> will iterate them in
- order. @order \O(\log `trie.size`) or \O(|`prefix`|) @allow */
-static void B_(trie_prefix)(struct B_(trie) *const trie,
-	const char *const prefix, struct B_(trie_iterator) *const it)
-	{ assert(it); PB_(prefix)(trie, prefix, &it->i); }
+#endif
 
 /** Advances `it`. @return The previous value or null. @allow */
-static const PB_(entry) *B_(trie_next)(struct B_(trie_iterator) *const it)
+static const PB_(entry) *B_(trie_next)(struct B_(tree_iterator) *const it)
 	{ return PB_(next)(&it->i); }
 
+#if 0
 /** Counts the of the items in initialized `it`. @order \O(|`it`|) @allow */
 static size_t B_(trie_size)(const struct B_(trie_iterator) *const it)
 	{ return assert(it), PB_(size_r)(&it->i); }
+#endif
 
-/* <!-- box: Define these for traits. */
+/* <!-- box */
 #define BOX_ PB_
-#define BOX_CONTAINER struct B_(trie)
-#define BOX_CONTENTS PB_(entry)
-
-#ifdef TRIE_TO_STRING /* <!-- str */
-/** Uses the natural `a` -> `z` that is defined by `TRIE_KEY_IN_VALUE`. */
-static void PB_(to_string)(const PB_(entry) *a, char (*const z)[12])
-	{ assert(a && *a && z); sprintf(*z, "%.11s", PB_(to_key)(*a)); }
-#define SZ_(n) TRIE_CAT(B_(trie), n)
-#define TO_STRING &PB_(to_string)
-#define TO_STRING_LEFT '{'
-#define TO_STRING_RIGHT '}'
-#include "to_string.h" /** \include */
-#undef SZ_
-#undef TRIE_TO_STRING
-#endif /* str --> */
-
-#ifdef TRIE_TEST /* <!-- test */
-#include "../test/test_trie.h" /** \include */
-#endif /* test --> */
-
-#undef BOX_
-#undef BOX_CONTAINER
-#undef BOX_CONTENTS
-/* box --> */
+#define BOX_CONTAINER struct B_(tree)
+#define BOX_CONTENTS PB_(value)
 
 #ifdef TREE_TEST /* <!-- test */
 /* Forward-declare. */
-static void (*PB_(to_string))(const PA_(type) *, char (*)[12]);
+static void (*PB_(to_string))(const PB_(type) *, char (*)[12]);
 static const char *(*PB_(tree_to_string))(const struct B_(tree) *);
 #include "../test/test_tree.h"
 #endif /* test --> */
@@ -669,6 +575,8 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 #define SZ_(n) TREE_CAT(B_(tree), n)
 #endif
 #define TO_STRING TREE_TO_STRING
+#define TO_STRING_LEFT '{'
+#define TO_STRING_RIGHT '}'
 #include "to_string.h" /** \include */
 #ifdef TREE_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef TREE_TEST
@@ -694,16 +602,17 @@ static const char *(*PB_(tree_to_string))(const struct B_(tree) *)
 #endif
 #undef TREE_NAME
 #undef TREE_TYPE
+#undef TREE_COMPARE
 #ifdef TREE_VALUE
 #undef TREE_VALUE
 #endif
 #ifdef TREE_TEST
 #undef TREE_TEST
 #endif
-/* Iteration. */
 #undef BOX_
 #undef BOX_CONTAINER
 #undef BOX_CONTENTS
+/* box --> */
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT
 #undef ARRAY_TRAITS

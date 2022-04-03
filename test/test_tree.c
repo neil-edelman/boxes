@@ -6,6 +6,23 @@
 #include <errno.h>  /* errno */
 #include <time.h>   /* clock time */
 
+/* This is the minimum tree, but not useful to test. */
+#define TREE_NAME foo
+#include "../src/tree.h"
+
+static void unsigned_filler(unsigned *entry) { *entry = (unsigned)rand(); }
+static void unsigned_to_string(const unsigned *n, char (*const z)[12])
+	{ sprintf(*z, "%u", *n); }
+/* Plus the tests. */
+#define TREE_NAME unsigned
+#define TREE_TEST &unsigned_filler
+#define TREE_EXPECT_TRAIT
+#include "../src/tree.h"
+#define TREE_TO_STRING &unsigned_to_string
+#include "../src/tree.h"
+
+
+#if 0
 /** Manually tested. This will not, and can not work, leaving the strings
  uninitialized. Do _not_ call <fn:str_trie_test>. */
 static void str_filler(const char *c) { assert(c != 0); }
@@ -16,8 +33,6 @@ static void str_filler(const char *c) { assert(c != 0); }
 #define TREE_TO_STRING
 #define TREE_TEST &str_filler
 #include "../src/tree.h"
-
-#if 0
 
 /* You can have an `enum` in a `trie`, pointing to a fixed set of strings. */
 #define PARAM(A) A
@@ -117,8 +132,6 @@ static const char *keyval_key(const struct keyval *const kv)
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
-#endif /* 0 */
-
 /** Manual testing for default string trie, that is, no associated information,
  just a set of `char *`. */
 static void contrived_str_test(void) {
@@ -164,14 +177,11 @@ static void contrived_str_test(void) {
 	}
 	str_trie_(&strs);
 }
+#endif /* 0 */
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	contrived_str_test();
-	/*colour_trie_test();
-	star_trie_test();
-	str4_trie_test();
-	keyval_trie_test();*/
+	unsigned_tree_test();
 	return EXIT_SUCCESS;
 }
