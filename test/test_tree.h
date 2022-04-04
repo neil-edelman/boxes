@@ -20,50 +20,34 @@ static unsigned PB_(no);
 
 static void PB_(subgraph)(const struct PB_(outer) *const outer,
 	unsigned height, FILE *fp) {
+	const struct PB_(inner) *inner;
 	unsigned i;
 	assert(outer && height && fp);
 	fprintf(fp, "\ttrunk%p [shape = box, "
 		"style = filled, fillcolor = Gray95, label = <\n"
 		"<TABLE BORDER=\"0\">\n"
-		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">"
+		"\t<TR><TD ALIGN=\"LEFT\">"
 		"<FONT COLOR=\"Gray85\">%s</FONT></TD></TR>\n"
-		"\t<TR><TD ALIGN=\"LEFT\"><FONT FACE=\"Times-Italic\">"
+		"\t<TR><TD ALIGN=\"LEFT\" PORT=\"0\"><FONT FACE=\"Times-Italic\">"
 		"height %u</FONT></TD></TR>\n",
 		(const void *)outer, orcify(outer), height);
 	for(i = 0; i < outer->size; i++) {
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
 		char z[12];
 		PB_(to_string)(outer->x + i, &z);
-		fprintf(fp, "\t<TR><TD ALIGN=\"LEFT\" PORT=\"%u:n\"%s>%s</TD></TR>\n",
-			i, bgc, z);
+		fprintf(fp, "\t<TR><TD ALIGN=\"LEFT\" PORT=\"%u\"%s>%s</TD></TR>\n",
+			i + 1, bgc, z);
 	}
-	/* . . . */
-#if 0
-	/* Draw the lines between trees. */
-	if(!height) return;
-	inner = trie_inner_c(tr);
-	for(i = 0; i <= tr->bsize; i++)
-		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[style = dashed, arrowhead = %snormal];\n", (const void *)inner, i,
-		(const void *)inner->leaf[i].link, PB_(leaf_to_dir)(tr, i));
-	/* Recurse. */
-	for(i = 0; i <= tr->bsize; i++) {
-		struct { unsigned br0, br1, lf; } in_tree;
-		size_t bit = treebit;
-		in_tree.br0 = 0, in_tree.br1 = tr->bsize, in_tree.lf = 0;
-		while(in_tree.br0 < in_tree.br1) {
-			branch = tr->branch + in_tree.br0;
-			bit += branch->skip;
-			if(i <= in_tree.lf + branch->left)
-				in_tree.br1 = ++in_tree.br0 + branch->left;
-			else
-				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
-			bit++;
-		}
-		PB_(graph_tree_mem)(inner->leaf[i].link, height, bit, fp);
-	}
-#endif
 	fprintf(fp, "</TABLE>>];\n");
+	if(!--height) return;
+	/* Draw the lines between trees. */
+	inner = PB_(inner_c)(outer);
+	for(i = 0; i <= outer->size; i++)
+		fprintf(fp, "\ttrunk%p:%u:se -> trunk%p;\n",
+		(const void *)outer, i, (const void *)inner->link[i]);
+	/* Recurse. */
+	for(i = 0; i <= outer->size; i++)
+		PB_(subgraph)(inner->link[i], height, fp);
 }
 
 /** Draw a graph of `tree` to `fn` in Graphviz format. */
@@ -78,7 +62,7 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 		" fontname=\"Bitstream Vera Sans\"];\n"
 		"\tnode [shape=record, style=filled, fillcolor=\"Grey95\","
 		" fontname=\"Bitstream Vera Sans\"];\n"
-		"\tedge [fontname=\"Bitstream Vera Sans\"];\n"
+		"\tedge [fontname=\"Bitstream Vera Sans\", style=dashed];\n"
 		"\n");
 	if(!tree->root) fprintf(fp, "\tidle;\n");
 	else if(!(h = tree->height)) fprintf(fp, "\tempty;\n");
