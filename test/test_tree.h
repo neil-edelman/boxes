@@ -114,7 +114,7 @@ static void PB_(valid)(const struct B_(tree) *const tree) {
 static void PB_(test)(void) {
 	struct B_(tree) tree = TREE_IDLE;
 	struct B_(tree_iterator) it;
-	PB_(entry) n[3];
+	PB_(entry) n[4];
 	const size_t n_size = sizeof n / sizeof *n;
 	PB_(value) *value;
 	size_t i;

@@ -499,6 +499,7 @@ static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
 	return i.tree && i.trunk ? i.trunk->x + i.idx : 0;
 }
 
+#include "orcish.h"
 static void PB_(print)(const struct B_(tree) *const tree);
 
 /** `x` must be not less than the largest element in `tree`.
@@ -522,11 +523,11 @@ static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 			back.root = t.root, back.height = t.height;
 		while(t.root->size && (last = t.root->x + t.root->size - 1, 1)
 			&& t.height);
-		assert(last); printf("last: %u\n", *last);
+		assert(last); printf("non-empty last: %u\n", *last);
 		if(PB_(compare)(*last, x)) { errno = EDOM; return 0; }
 		if(!t.height) t.root = back.root, t.height = back.height;
 		new_nodes = n = t.root ? t.height : tree->height + 1;
-		printf("new nodes: %u\n", new_nodes);
+		printf("new nodes: %u; ptr %s\n", new_nodes, orcify(t.root));
 		/* New nodes: one outer, and the rest inner. */
 		if(n) {
 			if(!(outer = malloc(sizeof *outer))) goto catch;
