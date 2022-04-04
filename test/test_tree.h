@@ -18,11 +18,12 @@ static const PB_(action_fn) PB_(filler) = (TREE_TEST);
 /* Debug number, which is the number printed next to the graphs, _etc_. */
 static unsigned PB_(no);
 
+/** Recursively draws `outer` in `fp` with the actual `height`. */
 static void PB_(subgraph)(const struct PB_(outer) *const outer,
-	unsigned height, FILE *fp) {
+	const unsigned height, FILE *fp) {
 	const struct PB_(inner) *inner;
 	unsigned i;
-	assert(outer && height && fp);
+	assert(outer && fp);
 	fprintf(fp, "\ttrunk%p [shape = box, "
 		"style = filled, fillcolor = Gray95, label = <\n"
 		"<TABLE BORDER=\"0\">\n"
@@ -39,7 +40,7 @@ static void PB_(subgraph)(const struct PB_(outer) *const outer,
 			i + 1, bgc, z);
 	}
 	fprintf(fp, "</TABLE>>];\n");
-	if(!--height) return;
+	if(!height) return;
 	/* Draw the lines between trees. */
 	inner = PB_(inner_c)(outer);
 	for(i = 0; i <= outer->size; i++)
@@ -47,7 +48,7 @@ static void PB_(subgraph)(const struct PB_(outer) *const outer,
 		(const void *)outer, i, (const void *)inner->link[i]);
 	/* Recurse. */
 	for(i = 0; i <= outer->size; i++)
-		PB_(subgraph)(inner->link[i], height, fp);
+		PB_(subgraph)(inner->link[i], height - 1, fp);
 }
 
 /** Draw a graph of `tree` to `fn` in Graphviz format. */
@@ -56,6 +57,7 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 	FILE *fp;
 	unsigned h;
 	assert(tree && fn);
+	printf("*** %s.\n", fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
 		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
@@ -66,7 +68,7 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 		"\n");
 	if(!tree->root) fprintf(fp, "\tidle;\n");
 	else if(!(h = tree->height)) fprintf(fp, "\tempty;\n");
-	else PB_(subgraph)(tree->root, tree->height, fp);
+	else PB_(subgraph)(tree->root, tree->height - 1, fp);
 	fprintf(fp, "\tnode [color = \"Red\"];\n"
 		"}\n");
 	fclose(fp);

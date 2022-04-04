@@ -151,7 +151,7 @@ static PB_(type) PB_(to_x)(const PB_(type) *const x) { return *x; }
 
  ![States.](../doc/states.png) */
 struct B_(tree);
-struct B_(tree) { struct PB_(outer) *root; unsigned height; };
+struct B_(tree) { struct PB_(outer) *root; unsigned height; }; /* Height +1. */
 
 struct PB_(iterator) {
 	const struct B_(tree) *tree;
@@ -171,232 +171,17 @@ static struct PB_(iterator) PB_(lower)(const struct B_(tree) *const tree,
 	for(trunk = tree->root, assert(trunk); ;
 		trunk = PB_(inner_c)(trunk)->link[a0]) {
 		PB_(type) cmp;
-		unsigned a1 = trunk->size;
-		h--, a0 = 0, assert(a1);
+		unsigned a1 = trunk->size; a0 = 0, assert(a1);
 		do {
 			const unsigned m = (a0 + a1) / 2;
 			cmp = trunk->x[m];
-			if(/* no > cmp */ PB_(compare)(no, cmp) > 0) a0 = m + 1;
-			else a1 = m;
+			if(PB_(compare)(no, cmp) > 0) a0 = m + 1; else a1 = m;
 		} while(a0 < a1);
-		if(!h || no == cmp) break;
+		if(!--h || no == cmp) break; /* +1 differentiate between empty. */
 	}
 	it.tree = tree, it.trunk = trunk, it.idx = a0;
 	return it;
 }
-
-#if 0
-/** Right side of `left`, which must be full, moves to `right`, (which is
- clobbered.) The root of `left` is also clobbered. */
-static void PB_(split)(struct PB_(outer) *const left,
-	struct PB_(outer) *const right) {
-	assert(0);
-	unsigned char leaves_split = left->trunk.branch[0].left + 1;;
-	assert(left && right && left->trunk.bsize == TRIE_BRANCHES);
-	right->trunk.bsize = left->trunk.bsize - leaves_split;
-	right->trunk.skip = left->trunk.skip; /* Maybe? */
-	memcpy(right->trunk.branch, left->trunk.branch + leaves_split,
-		sizeof *left->trunk.branch * right->trunk.bsize);
-	memcpy(right->leaf, left->leaf + leaves_split,
-		sizeof *left->leaf * (right->trunk.bsize + 1));
-	/* Move back the branches of the left to account for the promotion. */
-	left->trunk.bsize = leaves_split - 1;
-	memmove(left->trunk.branch, left->trunk.branch + 1,
-		sizeof *left->trunk.branch * (left->trunk.bsize + 1));
-	memmove(left->leaf, left->leaf + 1,
-		sizeof *left->leaf * (left->trunk.bsize + 2));
-}
-
-/** Open up a spot in the tree. Used in <fn:<PT>add_unique>. This is no longer
- well-defined if any parameters are off.
- @param[key] New <fn:<PT>to_key>.
- @param[diff] Calculated bit where the difference occurs. Has to be zero on
- `type = TRIE_INNER`.
- @param[trunk] Tree-trunk in which the difference occurs. Cannot be full.
- @param[bit0] Tree start bit.
- @param[type] Inner (link) or outer (leaf) type of the `trunk`.
- @return The uninitialized leaf/link. */
-static union PB_(leaf_ptr) PB_(tree_open)(enum trie_tree_type type,
-	const char *const key, const size_t diff, struct trie_trunk *const trunk,
-	size_t bit0, union PB_(leaf_ptr) spot_for_tree_root) {
-	struct { unsigned br0, br1, lf; } t;
-	struct trie_branch *branch;
-	size_t tr1;
-	unsigned is_right;
-	union PB_(leaf_ptr) ret;
-	assert(key && trunk && trunk->bsize < TRIE_BRANCHES
-		&& (type == TRIE_OUTER || type == TRIE_INNER)
-		&& (type != TRIE_OUTER || bit0 <= diff && spot_for_tree_root.outer)
-		&& (type != TRIE_INNER || !bit0 && spot_for_tree_root.inner));
-	/* Modify the tree's left branches to account for the new leaf. */
-	t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
-	while(t.br0 < t.br1) { /* Tree. */
-		branch = trunk->branch + t.br0;
-		tr1 = bit0 + branch->skip;
-		/* Decision bits can never be the site of a difference. */
-		if(type == TRIE_OUTER && diff <= tr1) { assert(diff < tr1); break; }
-		if(!TRIE_QUERY(key, tr1))
-			t.br1 = ++t.br0 + branch->left++;
-		else
-			t.br0 += branch->left + 1, t.lf += branch->left + 1;
-		bit0 = tr1 + 1;
-	}
-	assert(bit0 <= diff && diff - bit0 <= UCHAR_MAX);
-	/* Should be the same as the first descent. */
-	if(is_right = type == TRIE_OUTER && !!TRIE_QUERY(key, diff))
-		t.lf += t.br1 - t.br0 + 1;
-
-	/************************ also promote the root ****************/
-	/* Expand the tree to include one more leaf and branch. */
-	assert(t.lf <= trunk->bsize + 1);
-	if(type == TRIE_INNER) {
-		struct trie_inner_leaf *const leaf = trie_inner(trunk)->leaf + t.lf;
-		memmove(leaf + 1, leaf, sizeof *leaf * ((trunk->bsize + 1) - t.lf));
-		ret.inner = leaf;
-	} else {
-		PB_(entry) *const leaf = PB_(outer)(trunk)->leaf + t.lf;
-		memmove(leaf + 1, leaf, sizeof *leaf * ((trunk->bsize + 1) - t.lf));
-		ret.outer = leaf;
-	}
-	branch = trunk->branch + t.br0;
-	if(t.br0 != t.br1) { /* Split with existing branch. */
-		assert(t.br0 < t.br1 && diff + 1 <= bit0 + branch->skip);
-		branch->skip -= diff - bit0 + 1;
-	}
-	memmove(branch + 1, branch, sizeof *branch * (trunk->bsize - t.br0));
-	branch->left = is_right ? (unsigned char)(t.br1 - t.br0) : 0;
-	branch->skip = (unsigned char)(diff - bit0);
-	trunk->bsize++;
-	return ret;
-}
-struct PB_(iterator) it;
-if(!(it = PB_(lower)(tree, x)).tree) return 0;
-assert(it.trunk && it.idx < it.trunk->size);
-if(it.trunk->size >= TRIE_ORDER - 1) {
-	assert(0);
-} else {
-
-}
-#endif
-
-#if 0
-/** Adds `x` in the first spot on `tree`. @return A pointer to the new value.
- @throw[malloc, ERANGE] */
-static PB_(value) *PB_(add)(struct B_(tree) *const tree, PB_(type) x) {
-	struct { /* Last inner trie that is not full. */
-		struct { struct trie_trunk *trunk; size_t height, diff; } unfull;
-		size_t full; /* Count after the last. */
-	} history;
-	PB_(type) cmp;
-	struct PB_(inner) *inner = 0;
-	struct PB_(outer) *outer = 0;
-	struct trie_inner_tree *new_root = 0;
-	assert(tree && x && x);
-
-	printf("unique: adding \"%s\".\n", x);
-start:
-	if(!(d.h = trie->node_height)) { /* Solitary. */
-		if(tree->root) outer = PB_(outer)(tree->root);
-		else if(outer = malloc(sizeof *outer)) trie->root = &outer->trunk;
-		else goto catch;
-		outer->trunk.bsize = 0, outer->trunk.skip = 0, outer->leaf[0] = x;
-		trie->node_height = 1;
-		printf("add: new outer %s-tree that holds \"%s\"=>\"%s\".\n",
-			orcify(outer), PB_(to_key)(x), PB_(to_key)(outer->leaf[0]));
-		return 1;
-	}
-
-	/* Find the first bit not in the tree. */
-	history.unfull.trunk = 0, history.unfull.height = 0,
-		history.unfull.diff = 0, history.full = 0;
-	for(d.trunk = trie->root, assert(d.trunk), d.diff = 0; ;
-		d.trunk = trie_inner(d.trunk)->leaf[d.lf].link) {
-		const int is_full = TRIE_BRANCHES <= d.trunk->bsize;
-		trunk_diff = d.diff;
-		assert(d.trunk->skip < d.h), d.h -= 1 + d.trunk->skip;
-		history.full = is_full ? history.full + 1 : 0;
-		sample = PB_(sample)(d.trunk, d.h, 0);
-		printf("add: find, %s-tree, sample %s.\n", orcify(d.trunk), sample);
-		d.br0 = 0, d.br1 = d.trunk->bsize, d.lf = 0;
-		while(d.br0 < d.br1) {
-			const struct trie_branch *const branch = d.trunk->branch + d.br0;
-			const size_t bit1 = d.diff + branch->skip;
-			for( ; d.diff < bit1; d.diff++)
-				if(TRIE_DIFF(key, sample, d.diff)) goto found;
-			if(!TRIE_QUERY(key, d.diff)) {
-				d.br1 = ++d.br0 + branch->left;
-			} else {
-				d.br0 += branch->left + 1, d.lf += branch->left + 1;
-				sample = PB_(sample)(d.trunk, d.h, d.lf);
-			}
-			d.diff++;
-		}
-		if(!d.h) break;
-		if(!is_full) history.unfull.trunk = d.trunk,
-			history.unfull.height = d.h, history.unfull.diff = trunk_diff;
-	}
-	{ /* Got to a leaf without getting a difference. */
-		const size_t limit = d.diff + UCHAR_MAX;
-		while(!TRIE_DIFF(key, sample, d.diff))
-			if(++d.diff > limit) return errno = EILSEQ, 0;
-	}
-found:
-	/* Account for choosing the right leaf. */
-	if(!!TRIE_QUERY(key, d.diff)) d.lf += d.br1 - d.br0 + 1;
-
-	/* If the tree is full, backtrack and split. */
-	if(history.full) goto split;
-split_end:
-
-	{ /* Insert into unfilled tree. */
-		union PB_(leaf_ptr) dumb;
-		dumb.outer = &x;
-		union PB_(leaf_ptr) ptr = PB_(tree_open)(TRIE_OUTER, key, d.diff,
-			d.trunk, trunk_diff, dumb);
-		memcpy(ptr.outer, &x, sizeof x);
-	}
-	return 1;
-
-split:
-	do {
-		size_t add_outer = 1,
-			add_inner = history.full - !d.h + !history.unfull.trunk;
-		int is_above = d.br0 == 0 && d.br1 == d.trunk->bsize;
-		printf("add: history last unfull, %s-tree, followed by %lu full.\n",
-			orcify(history.unfull.trunk),
-			(unsigned long)history.full);
-		printf("add: we will need an additional %lu outer tree"
-			" and %lu inner trees.\n", add_outer, add_inner);
-		printf("add: is above %s.\n", is_above ? "yes" : "no");
-		printf("add: %s-tree, height %lu.\n", orcify(d.trunk), d.h);
-		if(!history.unfull.trunk) { /* Trie is full -- increase height. */
-			if(!(new_root = malloc(sizeof *new_root))) goto catch;
-			printf("add: new root %s.\n", orcify(&new_root->trunk));
-		} else { /* Add to not-full. */
-			struct trie_inner_leaf dumb;
-			union PB_(leaf_ptr) ptr;
-			ptr.inner = &dumb;
-			/********* I want a state machine ***************/
-			/* machine parameters: key, trunk, diff, height */
-			PB_(tree_open)(TRIE_INNER, key, 0, history.unfull.trunk,
-				history.unfull.diff, ptr);
-			assert(0);
-		}
-		assert(0);
-	} while(--history.full);
-	//trunk = history.unfull.trunk, trunk_diff = history.unfull.trunk_diff;
-	assert(0);
-	/* It was in the promoted bit's skip and "Might be full now," was true.
-	 Don't have enough information to recover, but ca'n't get here twice. */
-	if(TRIE_BRANCHES <= d.trunk->bsize) { assert(!restarts++); goto start; }
-	goto split_end;
-
-catch:
-	free(inner), free(outer), free(new_root);
-	if(!errno) errno = ERANGE;
-	return 0;
-}
-#endif
 
 /* <!-- iterate interface */
 
@@ -411,7 +196,7 @@ static void PB_(begin)(struct PB_(iterator) *const it,
 	if(!tree || !(h = tree->height)) return;
 	for(t = tree->root; ; t = PB_(inner_c)(t)->link[0]) {
 		if(!t->size) return; /* Was bulk loading? */
-		if(!--h) break;
+		if(!--h) break; /* Height +1. */
 	}
 	it->tree = tree, it->trunk = t, it->idx = 0;
 }
@@ -432,7 +217,7 @@ const static PB_(type) *PB_(next)(struct PB_(iterator) *const it) {
 			PB_(type) cmp;
 			unsigned a1 = trunk->size;
 			if(!a1) goto finish; /* Non-valid concurrent modification? */
-			if(--h) break;
+			if(--h) break; /* +1 */
 			a0 = 0;
 			do {
 				const unsigned m = (a0 + a1) / 2;
@@ -452,15 +237,14 @@ finish:
 
 /* iterate --> */
 
-/** Frees `tr` at `h` and it's children recursively. `height` is the node
- height, (height plus one.) */
-static void PB_(clear_r)(struct PB_(outer) *const tree, size_t height) {
+/** Frees `tr` at `h` and it's children recursively. Actual `height`. */
+static void PB_(clear_r)(struct PB_(outer) *const tree, const size_t height) {
 	/* FIXME: This doesn't want to clear one. */
 	assert(tree && height);
-	if(--height) {
+	if(height) {
 		unsigned i;
 		for(i = 0; i <= tree->size; i++)
-			PB_(clear_r)(PB_(inner)(tree)->link[i], height);
+			PB_(clear_r)(PB_(inner)(tree)->link[i], height - 1);
 		free(PB_(inner)(tree));
 	} else {
 		free(tree);
@@ -479,7 +263,7 @@ static void B_(tree)(struct B_(tree) *const tree)
 static void B_(tree_)(struct B_(tree) *const tree) {
 	/*struct PB_(outer_tree) *clear_all = (struct PB_(outer_tree) *)1;*/
 	assert(tree);
-	if(tree->height) PB_(clear_r)(tree->root, tree->height);
+	if(tree->height) PB_(clear_r)(tree->root, tree->height - 1); /* +1 */
 	else free(tree->root);
 	B_(tree)(tree);
 }
@@ -519,12 +303,15 @@ static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 		unsigned new_nodes, n;
 		/* Figure out where the end is. */
 		t.root = tree->root, assert(t.root);
-		do if(t.height--, t.root->size < TREE_MAX)
-			back.root = t.root, back.height = t.height;
-		while(t.root->size && (last = t.root->x + t.root->size - 1, 1)
-			&& t.height);
+		do {
+			if(t.root->size < TREE_MAX)
+				back.root = t.root, back.height = t.height;
+			if(!t.root->size) break;
+			last = t.root->x + t.root->size - 1;
+		} while(t.root = PB_(inner)(t.root)->link[t.root->size - 1], --t.height);
+		printf("dowhile %s height %u\n", orcify(t.root), t.height);
 		assert(last); printf("non-empty last: %u\n", *last);
-		if(PB_(compare)(*last, x)) { errno = EDOM; return 0; }
+		if(PB_(compare)(*last, x)) { errno = EDOM; return 0; } /* Not max. */
 		if(!t.height) t.root = back.root, t.height = back.height;
 		new_nodes = n = t.root ? t.height : tree->height + 1;
 		printf("new nodes: %u; ptr %s\n", new_nodes, orcify(t.root));
@@ -552,7 +339,7 @@ static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 			tree->root = t.root = &inner->base, tree->height++;
 			printf("now tree root size is %u.\n", t.root->size);
 			assert(!t.root->size);
-		} else if(t.height) { /* Adding side. */
+		} else if(t.height > 1) { /* Adding side. */
 			printf("more nodes\n");
 			assert(t.root->size < TREE_MAX);
 			inner = PB_(inner)(t.root);
