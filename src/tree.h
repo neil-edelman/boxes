@@ -499,33 +499,88 @@ static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
 	return i.tree && i.trunk ? i.trunk->x + i.idx : 0;
 }
 
-/** `x` must be not less than the largest element in `tree`. */
+static void PB_(print)(const struct B_(tree) *const tree);
+
+/** `x` must be not less than the largest element in `tree`.
+ @throws[EDOM] `x` is smaller than the largest element in `tree`.
+ @throws[malloc] */
 static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
-	struct { struct PB_(outer) *o; unsigned h; } a, back = { 0, 0 };
+	struct B_(tree) t;
+	struct PB_(outer) *outer = 0;
+	struct PB_(inner) *inner = 0;
 	assert(tree);
 	printf("bulk()\n");
-	/* Zero entries. */
-	if(!(a.h = tree->height)) {
-		if(!(a.o = tree->root) && !(a.o = malloc(sizeof *a.o)))
-			{ if(!errno) errno = ERANGE; return 0; }
-		a.o->size = 0, tree->root = a.o, tree->height = a.h = 1;
-		printf("empty root node\n");
+	if(t.height = tree->height) {
+		struct B_(tree) back = { 0, 0 };
+		PB_(type) *last = 0;
+		struct PB_(inner) *tail = 0;
+		struct PB_(outer) *head;
+		unsigned new_nodes, n;
+		/* Figure out where the end is. */
+		t.root = tree->root, assert(t.root);
+		do if(t.height--, t.root->size < TREE_MAX)
+			back.root = t.root, back.height = t.height;
+		while(t.root->size && (last = t.root->x + t.root->size - 1, 1)
+			&& t.height);
+		assert(last); printf("last: %u\n", *last);
+		if(PB_(compare)(*last, x)) { errno = EDOM; return 0; }
+		if(!t.height) t.root = back.root, t.height = back.height;
+		new_nodes = n = t.root ? t.height : tree->height + 1;
+		printf("new nodes: %u\n", new_nodes);
+		/* New nodes: one outer, and the rest inner. */
+		if(n) {
+			if(!(outer = malloc(sizeof *outer))) goto catch;
+			outer->size = 0;
+			n--;
+		}
+		while(n) {
+			struct PB_(inner) *a;
+			if(!(a = malloc(sizeof *a))) goto catch;
+			a->base.size = 0;
+			if(inner) a->link[0] = &inner->base; else a->link[0] = 0, tail = a;
+			inner = a;
+			n--;
+		}
+		/* Now we are past the catch; modify the original. */
+		if(tail) tail->link[0] = outer, head = &inner->base;
+		else head = outer;
+		if(!t.root) { /* Adding level. */
+			printf("adding maximal\n");
+			assert(new_nodes > 1);
+			inner->link[1] = inner->link[0], inner->link[0] = tree->root;
+			tree->root = t.root = &inner->base, tree->height++;
+			printf("now tree root size is %u.\n", t.root->size);
+			assert(!t.root->size);
+		} else if(t.height) { /* Adding side. */
+			printf("more nodes\n");
+			assert(t.root->size < TREE_MAX);
+			inner = PB_(inner)(t.root);
+			inner->link[inner->base.size] = head;
+			assert(0);
+		}
 	} else {
-		a.o = tree->root, assert(a.o);
+		/* Empty tree. */
+		if(!(t.root = tree->root) && !(t.root = malloc(sizeof *t.root)))
+			goto catch;
+		t.root->size = 0, tree->root = t.root, tree->height = t.height = 1;
+		printf("empty root node\n");
 	}
-	/* Figure out where the end is. */
-	do if(a.h--, a.o->size < TREE_MAX) back.o = a.o, back.h = a.h;
-	while(a.h && a.o->size);
-	if(!a.h) a.o = back.o, a.h = back.h;
-	while(a.h) { assert(0); }
-	assert(a.o && a.o->size < TREE_MAX);
-	/*  */
-	a.o->x[a.o->size] = x;
+	assert(t.root && t.root->size < TREE_MAX);
+	t.root->x[t.root->size++] = x;
+	PB_(print)(tree);
 #ifdef TREE_VALUE
-	return a.o->value + a.o->size++;
+	return t.root->value + t.root->size;
 #else
-	return a.o->x + a.o->size++;
+	return t.root->x + t.root->size;
 #endif
+catch:
+	free(outer);
+	if(inner) for( ; ; ) {
+		outer = inner->link[0]; free(inner);
+		if(!outer) break; inner = PB_(inner)(outer);
+	}
+	if(!errno) errno = ERANGE;
+	return 0;
 }
 
 #if 0

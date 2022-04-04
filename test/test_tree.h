@@ -74,9 +74,11 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 	assert(tree && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
-		"\tgraph [truecolor=true, bgcolor=transparent];\n"
-		"\tfontface=modern;\n"
-		"\tnode [shape=none];\n"
+		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
+		" fontname=\"Bitstream Vera Sans\"];\n"
+		"\tnode [shape=record, style=filled, fillcolor=\"Grey95\","
+		" fontname=\"Bitstream Vera Sans\"];\n"
+		"\tedge [fontname=\"Bitstream Vera Sans\"];\n"
 		"\n");
 	if(!tree->root) fprintf(fp, "\tidle;\n");
 	else if(!(h = tree->height)) fprintf(fp, "\tempty;\n");
@@ -84,6 +86,38 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 	fprintf(fp, "\tnode [color = \"Red\"];\n"
 		"}\n");
 	fclose(fp);
+}
+
+static void PB_(print_r)(const struct PB_(outer) *const node,
+	const unsigned height) {
+	const struct PB_(inner) *inner = 0;
+	unsigned i;
+	assert(node);
+	printf("\\");
+	if(height) inner = PB_(inner_c)(node);
+	for(i = 0; ; i++) {
+		char z[12];
+		const PB_(entry) *e;
+		if(inner) PB_(print_r)(inner->link[i], height - 1);
+		if(i == node->size) break;
+		e = node->x + i;
+		PB_(to_string)(e, &z);
+		printf("%s%s", i ? ", " : "", z);
+	}
+	printf("/");
+}
+static void PB_(print)(const struct B_(tree) *const tree) {
+	unsigned h;
+	printf("Inorder: ");
+	if(!tree) printf("null");
+	if(!(h = tree->height)) {
+		if(!tree->root) printf("idle");
+		else printf("empty");
+	} else {
+		assert(tree->root);
+		PB_(print_r)(tree->root, tree->height - 1);
+	}
+	printf("\n");
 }
 
 /** Makes sure the `trie` is in a valid state. */
@@ -96,9 +130,8 @@ static void PB_(valid)(const struct B_(tree) *const tree) {
 static void PB_(test)(void) {
 	struct B_(tree) tree = TREE_IDLE;
 	struct B_(tree_iterator) it;
-	PB_(entry) n[2];
+	PB_(entry) n[3];
 	const size_t n_size = sizeof n / sizeof *n;
-	PB_(type) x;
 	PB_(value) *value;
 	size_t i;
 
@@ -109,6 +142,7 @@ static void PB_(test)(void) {
 	B_(tree)(&tree), PB_(valid)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
+	/* Fill. */
 	for(i = 0; i < n_size; i++) PB_(filler)(n + i);
 	it = B_(tree_lower)(0, PB_(to_x)(n + 0)), assert(!it.i.tree);
 	value = B_(tree_get)(0, PB_(to_x)(n + 0)), assert(!value);
@@ -116,6 +150,7 @@ static void PB_(test)(void) {
 	value = B_(tree_get)(&tree, PB_(to_x)(n + 0)), assert(!value);
 	for(i = 0; i < n_size; i++) {
 		char z[12], fn[64];
+		n[i] = i;
 		PB_(to_string)(n + i, &z);
 		printf("Adding %s.\n", z);
 		value = B_(bulk_add)(&tree, PB_(to_x)(n + i));
