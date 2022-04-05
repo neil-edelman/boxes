@@ -315,8 +315,8 @@ static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 				orcify(t.root), t.root->size, t.height_p1);
 			if(t.root->size < TREE_MAX)
 				back.root = t.root, back.height_p1 = t.height_p1;
-			if(!t.root->size) break;
-			last = t.root->x + t.root->size - 1;
+			/*if(!t.root->size) break;*/
+			last = t.root->x + (t.root->size ? t.root->size - 1 : 0);
 			if(t.height_p1 == 1) break;
 			t.root = PB_(inner)(t.root)->link[t.root->size], --t.height_p1;
 		}
