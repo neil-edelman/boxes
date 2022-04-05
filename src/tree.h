@@ -150,8 +150,8 @@ static PB_(type) PB_(to_x)(const PB_(type) *const x) { return *x; }
  (`C99`), or being `static`.
 
  ![States.](../doc/states.png) */
-struct B_(tree);
-struct B_(tree) { struct PB_(outer) *root; unsigned height; }; /* Height +1. */
+struct B_(tree); /* +1 to differentiate empty from one node. */
+struct B_(tree) { struct PB_(outer) *root; unsigned height_p1; };
 
 struct PB_(iterator) {
 	const struct B_(tree) *tree;
@@ -167,7 +167,7 @@ static struct PB_(iterator) PB_(lower)(const struct B_(tree) *const tree,
 	unsigned h, a0;
 	struct PB_(outer) *trunk;
 	struct PB_(iterator) it = { 0, 0, 0 };
-	if(!tree || !(h = tree->height)) return it;
+	if(!tree || !(h = tree->height_p1)) return it;
 	for(trunk = tree->root, assert(trunk); ;
 		trunk = PB_(inner_c)(trunk)->link[a0]) {
 		PB_(type) cmp;
@@ -193,7 +193,7 @@ static void PB_(begin)(struct PB_(iterator) *const it,
 	struct PB_(outer) *t;
 	assert(it);
 	it->tree = 0, it->trunk = 0, it->idx = 0;
-	if(!tree || !(h = tree->height)) return;
+	if(!tree || !(h = tree->height_p1)) return;
 	for(t = tree->root; ; t = PB_(inner_c)(t)->link[0]) {
 		if(!t->size) return; /* Was bulk loading? */
 		if(!--h) break; /* Height +1. */
@@ -211,7 +211,7 @@ const static PB_(type) *PB_(next)(struct PB_(iterator) *const it) {
 		unsigned h, a0, next_h;
 		struct PB_(outer) *trunk, *next = 0;
 		PB_(type) prev;
-		if(!(h = it->tree->height)) goto finish; /* Empty now? */
+		if(!(h = it->tree->height_p1)) goto finish; /* Empty now? */
 		prev = it->trunk->x[it->trunk->size - 1];
 		for(trunk = it->tree->root; ; trunk = PB_(inner_c)(trunk)->link[a0]) {
 			PB_(type) cmp;
@@ -240,7 +240,7 @@ finish:
 /** Frees `tr` at `h` and it's children recursively. Actual `height`. */
 static void PB_(clear_r)(struct PB_(outer) *const tree, const size_t height) {
 	/* FIXME: This doesn't want to clear one. */
-	assert(tree && height);
+	assert(tree);
 	if(height) {
 		unsigned i;
 		for(i = 0; i <= tree->size; i++)
@@ -257,13 +257,13 @@ struct B_(tree_iterator) { struct PB_(iterator) i; };
 
 /** Initializes `tree` to idle. @order \Theta(1) @allow */
 static void B_(tree)(struct B_(tree) *const tree)
-	{ assert(tree); tree->root = 0; tree->height = 0; }
+	{ assert(tree); tree->root = 0; tree->height_p1 = 0; }
 
 /** Returns an initialized `tree` to idle. @allow */
 static void B_(tree_)(struct B_(tree) *const tree) {
 	/*struct PB_(outer_tree) *clear_all = (struct PB_(outer_tree) *)1;*/
 	assert(tree);
-	if(tree->height) PB_(clear_r)(tree->root, tree->height - 1); /* +1 */
+	if(tree->height_p1) PB_(clear_r)(tree->root, tree->height_p1 - 1); /* +1 */
 	else free(tree->root);
 	B_(tree)(tree);
 }
@@ -295,26 +295,32 @@ static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 	struct PB_(inner) *inner = 0;
 	assert(tree);
 	printf("bulk()\n");
-	if(t.height = tree->height) {
+	if(t.height_p1 = tree->height_p1) {
 		struct B_(tree) back = { 0, 0 };
 		PB_(type) *last = 0;
 		struct PB_(inner) *tail = 0;
 		struct PB_(outer) *head;
 		unsigned new_nodes, n;
+		PB_(print)(tree);
 		/* Figure out where the end is. */
 		t.root = tree->root, assert(t.root);
-		do {
+		for( ; ; ) {
+			printf("dowhile root %s with %u size, height_p1 %u\n",
+				orcify(t.root), t.root->size, t.height_p1);
 			if(t.root->size < TREE_MAX)
-				back.root = t.root, back.height = t.height;
+				back.root = t.root, back.height_p1 = t.height_p1;
 			if(!t.root->size) break;
 			last = t.root->x + t.root->size - 1;
-		} while(t.root = PB_(inner)(t.root)->link[t.root->size - 1], --t.height);
-		printf("dowhile %s height %u\n", orcify(t.root), t.height);
+			if(t.height_p1 == 1) break;
+			t.root = PB_(inner)(t.root)->link[t.root->size], --t.height_p1;
+		}
+		printf("dowhile finished %s height_p1 %u\n",
+			orcify(t.root), t.height_p1);
 		assert(last); printf("non-empty last: %u\n", *last);
 		if(PB_(compare)(*last, x)) { errno = EDOM; return 0; } /* Not max. */
-		if(!t.height) t.root = back.root, t.height = back.height;
-		new_nodes = n = t.root ? t.height : tree->height + 1;
-		printf("new nodes: %u; ptr %s\n", new_nodes, orcify(t.root));
+		if(t.height_p1 == 1) t.root = back.root, t.height_p1 = back.height_p1;
+		new_nodes = n = t.root ? t.height_p1 - 1: tree->height_p1 + 1;
+		printf("new: %s; nodes %u\n", orcify(t.root), new_nodes);
 		/* New nodes: one outer, and the rest inner. */
 		if(n) {
 			if(!(outer = malloc(sizeof *outer))) goto catch;
@@ -336,10 +342,9 @@ static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 			printf("adding maximal\n");
 			assert(new_nodes > 1);
 			inner->link[1] = inner->link[0], inner->link[0] = tree->root;
-			tree->root = t.root = &inner->base, tree->height++;
-			printf("now tree root size is %u.\n", t.root->size);
+			tree->root = t.root = &inner->base, tree->height_p1++;
 			assert(!t.root->size);
-		} else if(t.height > 1) { /* Adding side. */
+		} else if(t.height_p1 > 1) { /* Adding side. */
 			printf("more nodes\n");
 			assert(t.root->size < TREE_MAX);
 			inner = PB_(inner)(t.root);
@@ -350,7 +355,7 @@ static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 		/* Empty tree. */
 		if(!(t.root = tree->root) && !(t.root = malloc(sizeof *t.root)))
 			goto catch;
-		t.root->size = 0, tree->root = t.root, tree->height = t.height = 1;
+		t.root->size = 0, tree->root = t.root, tree->height_p1 = 1;
 		printf("empty root node\n");
 	}
 	assert(t.root && t.root->size < TREE_MAX);

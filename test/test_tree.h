@@ -57,7 +57,7 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 	FILE *fp;
 	unsigned h;
 	assert(tree && fn);
-	printf("*** %s.\n", fn);
+	printf("*** %s.\n\n", fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
 		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
@@ -67,8 +67,8 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 		"\tedge [fontname=\"Bitstream Vera Sans\", style=dashed];\n"
 		"\n");
 	if(!tree->root) fprintf(fp, "\tidle;\n");
-	else if(!(h = tree->height)) fprintf(fp, "\tempty;\n");
-	else PB_(subgraph)(tree->root, tree->height - 1, fp);
+	else if(!(h = tree->height_p1)) fprintf(fp, "\tempty;\n");
+	else PB_(subgraph)(tree->root, tree->height_p1 - 1, fp);
 	fprintf(fp, "\tnode [color = \"Red\"];\n"
 		"}\n");
 	fclose(fp);
@@ -96,19 +96,19 @@ static void PB_(print)(const struct B_(tree) *const tree) {
 	unsigned h;
 	printf("Inorder: ");
 	if(!tree) printf("null");
-	if(!(h = tree->height)) {
+	if(!(h = tree->height_p1)) {
 		if(!tree->root) printf("idle");
 		else printf("empty");
 	} else {
 		assert(tree->root);
-		PB_(print_r)(tree->root, tree->height - 1);
+		PB_(print_r)(tree->root, tree->height_p1 - 1);
 	}
 	printf("\n");
 }
 
 /** Makes sure the `trie` is in a valid state. */
 static void PB_(valid)(const struct B_(tree) *const tree) {
-	if(!tree || !tree->height) return;
+	if(!tree || !tree->height_p1) return;
 	assert(tree->root);
 	/*...*/
 }
@@ -136,7 +136,7 @@ static void PB_(test)(void) {
 	value = B_(tree_get)(&tree, PB_(to_x)(n + 0)), assert(!value);
 	for(i = 0; i < n_size; i++) {
 		char z[12], fn[64];
-		n[i] = i;
+		n[i] = i + 1;
 		PB_(to_string)(n + i, &z);
 		printf("Adding %s.\n", z);
 		value = B_(bulk_add)(&tree, PB_(to_x)(n + i));
