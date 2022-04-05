@@ -116,7 +116,7 @@ static void PB_(valid)(const struct B_(tree) *const tree) {
 static void PB_(test)(void) {
 	struct B_(tree) tree = TREE_IDLE;
 	struct B_(tree_iterator) it;
-	PB_(entry) n[4];
+	PB_(entry) n[6];
 	const size_t n_size = sizeof n / sizeof *n;
 	PB_(value) *value;
 	size_t i;
@@ -136,7 +136,7 @@ static void PB_(test)(void) {
 	value = B_(tree_get)(&tree, PB_(to_x)(n + 0)), assert(!value);
 	for(i = 0; i < n_size; i++) {
 		char z[12], fn[64];
-		n[i] = i + 1;
+		n[i] = (unsigned)i + 1;
 		PB_(to_string)(n + i, &z);
 		printf("Adding %s.\n", z);
 		value = B_(bulk_add)(&tree, PB_(to_x)(n + i));

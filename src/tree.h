@@ -295,7 +295,13 @@ static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 	struct PB_(inner) *inner = 0;
 	assert(tree);
 	printf("bulk()\n");
-	if(t.height_p1 = tree->height_p1) {
+	if(!(t.height_p1 = tree->height_p1)) {
+		/* Empty tree. */
+		if(!(t.root = tree->root) && !(t.root = malloc(sizeof *t.root)))
+			goto catch;
+		t.root->size = 0, tree->root = t.root, tree->height_p1 = 1;
+		printf("empty root node %s\n", orcify(t.root));
+	} else {
 		struct B_(tree) back = { 0, 0 };
 		PB_(type) *last = 0;
 		struct PB_(inner) *tail = 0;
@@ -324,12 +330,14 @@ static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 		/* New nodes: one outer, and the rest inner. */
 		if(n) {
 			if(!(outer = malloc(sizeof *outer))) goto catch;
+			printf("outer: %s.\n", orcify(outer));
 			outer->size = 0;
 			n--;
 		}
 		while(n) {
 			struct PB_(inner) *a;
 			if(!(a = malloc(sizeof *a))) goto catch;
+			printf("inner: %s.\n", orcify(a));
 			a->base.size = 0;
 			if(inner) a->link[0] = &inner->base; else a->link[0] = 0, tail = a;
 			inner = a;
@@ -345,18 +353,10 @@ static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 			tree->root = t.root = &inner->base, tree->height_p1++;
 			assert(!t.root->size);
 		} else if(t.height_p1 > 1) { /* Adding side. */
-			printf("more nodes\n");
-			assert(t.root->size < TREE_MAX);
-			inner = PB_(inner)(t.root);
-			inner->link[inner->base.size] = head;
-			assert(0);
+			struct PB_(inner) *const expand = PB_(inner)(t.root);
+			expand->link[expand->base.size + 1] = head;
+			printf("limited %s[%u]\n", orcify(t.root), expand->base.size);
 		}
-	} else {
-		/* Empty tree. */
-		if(!(t.root = tree->root) && !(t.root = malloc(sizeof *t.root)))
-			goto catch;
-		t.root->size = 0, tree->root = t.root, tree->height_p1 = 1;
-		printf("empty root node\n");
 	}
 	assert(t.root && t.root->size < TREE_MAX);
 	t.root->x[t.root->size++] = x;
