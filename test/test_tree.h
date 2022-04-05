@@ -113,7 +113,24 @@ static void PB_(valid)(const struct B_(tree) *const tree) {
 	/*...*/
 }
 
+static void PB_(sort)(PB_(entry) *a, const size_t size) {
+	PB_(entry) temp;
+	size_t i;
+	for(i = 1; i < size; i++) {
+		size_t j;
+		for(j = i; j; j--) if(!(PB_(compare)(PB_(to_x)(a + j - 1),
+			PB_(to_x)(a + i)) > 0)) break;
+		if(j == i) continue;
+		/* memcpy(&temp, a + i, sizeof *a);
+		memcpy(a + j, &temp, sizeof *a); */
+		temp = a[i];
+		memmove(a + j + 1, a + j, sizeof *a * (i - j));
+		a[j] = temp;
+	}
+}
+
 static void PB_(test)(void) {
+	char z[12];
 	struct B_(tree) tree = TREE_IDLE;
 	struct B_(tree_iterator) it;
 	PB_(entry) n[20];
@@ -121,22 +138,28 @@ static void PB_(test)(void) {
 	PB_(value) *value;
 	size_t i;
 
-	/* Idle. */
 	errno = 0;
+
+	/* Fill. */
+	for(i = 0; i < n_size; i++) PB_(filler)(n + i);
+	PB_(sort)(n, n_size);
+	for(i = 0; i < n_size; i++)
+		PB_(to_string)(n + i, &z), printf("%s\n", z);
+
+	/* Idle. */
 	PB_(valid)(0);
 	PB_(valid)(&tree);
 	B_(tree)(&tree), PB_(valid)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
-	/* Fill. */
-	for(i = 0; i < n_size; i++) PB_(filler)(n + i);
 	it = B_(tree_lower)(0, PB_(to_x)(n + 0)), assert(!it.i.tree);
 	value = B_(tree_get)(0, PB_(to_x)(n + 0)), assert(!value);
 	it = B_(tree_lower)(&tree, PB_(to_x)(n + 0)), assert(!it.i.tree);
 	value = B_(tree_get)(&tree, PB_(to_x)(n + 0)), assert(!value);
+
+	/* Test. */
 	for(i = 0; i < n_size; i++) {
-		char z[12], fn[64];
-		n[i] = (unsigned)i + 1;
+		char fn[64];
 		PB_(to_string)(n + i, &z);
 		printf("Adding %s.\n", z);
 		value = B_(bulk_add)(&tree, PB_(to_x)(n + i));

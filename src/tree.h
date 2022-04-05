@@ -315,39 +315,39 @@ static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 				orcify(t.root), t.root->size, t.height_p1);
 			if(t.root->size < TREE_MAX)
 				back.root = t.root, back.height_p1 = t.height_p1;
-			/*if(!t.root->size) break;*/
-			last = t.root->x + (t.root->size ? t.root->size - 1 : 0);
+			if(t.root->size) last = t.root->x + t.root->size - 1;
 			if(t.height_p1 == 1) break;
 			t.root = PB_(inner)(t.root)->link[t.root->size], --t.height_p1;
 		}
 		printf("dowhile finished %s height_p1 %u\n",
 			orcify(t.root), t.height_p1);
 		assert(last); printf("non-empty last: %u\n", *last);
-		if(PB_(compare)(*last, x)) { errno = EDOM; return 0; } /* Not max. */
+		if(PB_(compare)(*last, x)) {
+			printf("wwhhhat? %u %u\n", *last, x);
+			errno = EDOM; goto catch; } /* Not max. */
 		if(t.height_p1 == 1) t.root = back.root, t.height_p1 = back.height_p1;
 		new_nodes = n = t.root ? t.height_p1 - 1: tree->height_p1 + 1;
-		printf("new: %s; nodes %u\n", orcify(t.root), new_nodes);
 		/* New nodes: one outer, and the rest inner. */
 		if(n) {
 			if(!(outer = malloc(sizeof *outer))) goto catch;
-			printf("outer: %s.\n", orcify(outer));
 			outer->size = 0;
+			printf("outer: %s.\n", orcify(outer));
 			n--;
 		}
 		while(n) {
 			struct PB_(inner) *a;
 			if(!(a = malloc(sizeof *a))) goto catch;
-			printf("inner: %s.\n", orcify(a));
 			a->base.size = 0;
+			printf("inner: %s.\n", orcify(a));
 			if(inner) a->link[0] = &inner->base; else a->link[0] = 0, tail = a;
 			inner = a;
 			n--;
 		}
+		/* test: if(!t.root && tree->height_p1 + 1 == 3) goto catch; */
 		/* Now we are past the catch; modify the original. */
 		if(tail) tail->link[0] = outer, head = &inner->base;
 		else head = outer;
-		if(!t.root) { /* Adding level. */
-			printf("adding maximal\n");
+		if(!t.root) { /* Adding whole other level. */
 			assert(new_nodes > 1);
 			inner->link[1] = inner->link[0], inner->link[0] = tree->root;
 			tree->root = t.root = &inner->base, tree->height_p1++;
@@ -355,7 +355,6 @@ static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 		} else if(t.height_p1 > 1) { /* Adding side. */
 			struct PB_(inner) *const expand = PB_(inner)(t.root);
 			expand->link[expand->base.size + 1] = head;
-			printf("limited %s[%u]\n", orcify(t.root), expand->base.size);
 		}
 	}
 	assert(t.root && t.root->size < TREE_MAX);
@@ -367,8 +366,10 @@ static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 	return t.root->x + t.root->size;
 #endif
 catch:
+	printf("*** freeing %s\n", orcify(outer));
 	free(outer);
 	if(inner) for( ; ; ) {
+		printf("*** freeing %s\n", orcify(inner));
 		outer = inner->link[0]; free(inner);
 		if(!outer) break; inner = PB_(inner)(outer);
 	}

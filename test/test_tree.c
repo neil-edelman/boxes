@@ -6,14 +6,17 @@
 #include <errno.h>  /* errno */
 #include <time.h>   /* clock time */
 
-/* This is the minimum tree, but not useful to test. */
+/* Unsigned numbers: this is the minimum tree, but not useful to test. */
 #define TREE_NAME foo
 #include "../src/tree.h"
 
-static void unsigned_filler(unsigned *entry) { *entry = (unsigned)rand(); }
-static void unsigned_to_string(const unsigned *n, char (*const z)[12])
-	{ sprintf(*z, "%u", *n); }
-/* Plus the tests. */
+/* Unsigned numbers: testing framework. */
+#if 99999999999 < RAND_MAX
+#error RAND_MAX is too big; the example will have to be tweaked.
+#endif
+static void unsigned_filler(unsigned *x) { *x = (unsigned)rand() % 10; }
+static void unsigned_to_string(const unsigned *x, char (*const z)[12])
+	{ sprintf(*z, "%u", *x); }
 #define TREE_NAME unsigned
 #define TREE_TEST &unsigned_filler
 #define TREE_EXPECT_TRAIT
