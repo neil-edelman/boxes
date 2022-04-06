@@ -25,6 +25,24 @@ static void unsigned_to_string(const unsigned *x, char (*const z)[12])
 #include "../src/tree.h"
 
 
+/* Unsigned numbers and values. */
+struct pair_tree_entry;
+static void pair_filler(struct pair_tree_entry *);
+static void pair_to_string(const struct pair_tree_entry *, char (*)[12]);
+#define TREE_NAME pair
+#define TREE_VALUE unsigned
+#define TREE_TEST &pair_filler
+#define TREE_EXPECT_TRAIT
+#include "../src/tree.h"
+#define TREE_TO_STRING &unsigned_to_string
+#include "../src/tree.h"
+static void pair_filler(struct pair_tree_entry *x)
+	{ x->x = (unsigned)rand() / RAND_MAX / 10; *x->value = (unsigned)rand(); }
+static void pair_to_string(const struct pair_tree_entry *x, char (*const z)[12])
+	{ sprintf(*z, "%u", x->x); }
+
+
+
 #if 0
 /** Manually tested. This will not, and can not work, leaving the strings
  uninitialized. Do _not_ call <fn:str_trie_test>. */

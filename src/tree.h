@@ -4,12 +4,12 @@
  @abstract Stand-alone header <src/tree.h>; examples <test/test_tree.c>. On a
  compatible workstation, `make` creates the test suite of the examples.
 
- @subtitle Integral tree
+ @subtitle Ordered tree
 
  A <tag:<B>tree> is an ordered collection of read-only <typedef:<PB>type>, and
- an optional <typedef:<PB>value> to go with them. One can make this a map, but
- in general, it can have identical keys. Internally, this is a B-tree,
- described in <Bayer, McCreight, 1972 Large>.
+ an optional <typedef:<PB>value> to go with them. One can make this a map or
+ set, but in general, it can have identical keys, (a multi-map). Internally,
+ this is a B-tree, described in <Bayer, McCreight, 1972 Large>.
 
  @param[TREE_NAME, TREE_TYPE]
  `<B>` that satisfies `C` naming conventions when mangled, required, and an
@@ -82,9 +82,7 @@
 #ifndef TREE_TYPE
 #define TREE_TYPE unsigned
 #endif
-/** An integral type, defaults to `unsigned int`. (We couldh've made this a
- more general comparable type with a comparison function, but we wanted the
- extra cache coherency.) */
+/** A comparable type, defaults to `unsigned`. */
 typedef TREE_TYPE PB_(type);
 
 #ifdef TREE_VALUE
@@ -110,32 +108,31 @@ static int PB_(default_compare)(const PB_(type) a, const PB_(type) b)
  <typedef:<PB>compare_fn>, if defined. */
 static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
 
-/* In <Knuth, 1998 Art 3> terminology, leaf B-tree node (external trunk) of
- `TREE_ORDER`. Drawing a B-tree, the links on the outer nodes are all null. We
- just don't include them. */
+/* In <Knuth, 1998 Art 3> terminology, external, height zero, B-tree node of
+ `TREE_ORDER`. Since the leaves carry no information, we just don't include
+ them. With this optimization, it looks a lot like a leaf. */
 struct PB_(outer) {
 	unsigned char size;
-	PB_(type) x[TREE_MAX];
+	PB_(type) x[TREE_MAX]; /* Cache friendly. */
 #ifdef TREE_VALUE
-	PB_(value) value[TREE_MAX];
+	PB_(value) value[TREE_MAX]; /* Don't care about the value except the end. */
 #endif
 };
-/* Internal node of `TRIE_ORDER` inherits from <tag:<PB>outer>, and links.
- Collectively, <tag:<PB>inner> and <tag:<PB>outer> are nodes called trunks. */
+/* Internal node of `TRIE_ORDER` inherits from <tag:<PB>outer>. Since
+ `height > 0`, there are `size + 1` links to other nodes. */
 struct PB_(inner) { struct PB_(outer) base, *link[TREE_ORDER]; };
-/** @return Upcasts `outer` to an inner trunk. */
+/** @return Upcasts `outer` to an inner node. */
 static struct PB_(inner) *PB_(inner)(struct PB_(outer) *const outer)
 	{ return (struct PB_(inner) *)(void *)
 	((char *)outer - offsetof(struct PB_(inner), base)); }
-/** @return Upcasts `outer` to an inner trunk. */
+/** @return Upcasts `outer` to a constant inner node. */
 static const struct PB_(inner) *PB_(inner_c)(const struct PB_(outer) *
 	const outer) { return (const struct PB_(inner) *)(const void *)
 	((const char *)outer - offsetof(struct PB_(inner), base)); }
 
 #if defined(TREE_VALUE) /* <!-- value */
-/** On `TREE_VALUE`, creates a map from type to pointer-to-value. (One can
- modify the `value`, but not the `x`.) */
-struct B_(tree_entry) { PB_(type) x; PB_(value) *value; }
+/** On `TREE_VALUE`, creates a map from type to pointer-to-value. */
+struct B_(tree_entry) { PB_(type) x; PB_(value) *value; };
 /** On `TREE_VALUE`, otherwise it's just an alias for <typedef:<PB>type>. */
 typedef struct B_(tree_entry) PB_(entry);
 static PB_(type) PB_(to_x)(const PB_(entry) *const entry)
@@ -150,92 +147,97 @@ static PB_(type) PB_(to_x)(const PB_(type) *const x) { return *x; }
  (`C99`), or being `static`.
 
  ![States.](../doc/states.png) */
-struct B_(tree); /* +1 to differentiate empty from one node. */
-struct B_(tree) { struct PB_(outer) *root; unsigned height_p1; };
+struct B_(tree);
+struct B_(tree) {
+	struct PB_(outer) *node;
+	unsigned height; /* Flag UINT_MAX means that it is empty but non-idle. */
+};
+
+/* <!-- iterate interface */
 
 struct PB_(iterator) {
 	const struct B_(tree) *tree;
-	struct PB_(outer) *trunk;
-	unsigned idx;
+	struct B_(tree) n;
+	unsigned idx; /* Could pack it, but probably not worth the extra code. */
 };
+
+/** Corrects `it` for going off the end.
+ @return Whether it is addressing a valid item. */
+static int PB_(pin)(struct PB_(iterator) *const it) {
+	unsigned a0;
+	struct B_(tree) t, next;
+	PB_(type) x;
+	assert(it);
+	if(!it->tree || it->tree->height == UINT_MAX) return 0; /* Empty. */
+	if(!it->n.node) { /* Begin. */
+		it->n.node = it->tree->node, assert(it->n.node),
+			it->n.height = it->tree->height, it->idx = 0;
+		while(it->n.height) it->n.height--,
+			it->n.node = PB_(inner_c)(it->n.node)->link[0], assert(it->n.node);
+	}
+	if(it->idx < it->n.node->size) return 1; /* Likely. */
+	if(!it->n.node->size) return 0; /* The empty nodes are always at the end. */
+	next.node = 0, x = it->n.node->x[it->n.node->size - 1];
+	for(t = *it->tree; t.height;
+		t.node = PB_(inner_c)(t.node)->link[a0], t.height--) {
+		PB_(type) cmp;
+		unsigned a1 = t.node->size;
+		a0 = 0;
+		while(a0 < a1) {
+			const unsigned m = (a0 + a1) / 2;
+			cmp = t.node->x[m];
+			if(PB_(compare)(x, cmp)) a0 = m + 1; else a1 = m;
+		}
+		if(a0 + 1 < t.node->size)
+			next.node = PB_(inner_c)(t.node)->link[a0 + 1],
+			next.height = t.height - 1;
+	}
+	if(!next.node) return 0; /* The end, normally. */
+	it->n = next;
+	return 1; /* Jumped nodes. */
+}
+
+/** Loads the first element of `tree` (can be null) into `it`.
+ @implements begin */
+static void PB_(begin)(struct PB_(iterator) *const it,
+	const struct B_(tree) *const tree)
+	{ assert(it); it->tree = tree, it->n.node = 0; }
+
+/** Advances `it` and returns the last or null.  @implements next */
+const static PB_(entry) *PB_(next)(struct PB_(iterator) *const it) {
+	assert(it);
+	printf("_next_\n");
+	return PB_(pin)(it) ? it->n.node->x + it->idx++ : 0;
+}
+
+
+/* iterate --> */
+
 
 /** @param[tree] Can be null. @return Finds the smallest entry in `tree` that
  is not less than `no`. If `no` is higher than any of `tree`, it will be placed
  just passed the end. @order \O(\log |`tree`|) */
 static struct PB_(iterator) PB_(lower)(const struct B_(tree) *const tree,
-	const PB_(type) no) {
-	unsigned h, a0;
-	struct PB_(outer) *trunk;
-	struct PB_(iterator) it = { 0, 0, 0 };
-	if(!tree || !(h = tree->height_p1)) return it;
+	const PB_(type) x) {
+	struct B_(tree) t;
+	struct PB_(iterator) it;
+	unsigned a0;
+	it.tree = tree;
+	if(!tree || (h = tree->height) == UINT_MAX) return it;
 	for(trunk = tree->root, assert(trunk); ;
-		trunk = PB_(inner_c)(trunk)->link[a0]) {
+		trunk = PB_(inner_c)(trunk)->link[a0], h--) {
 		PB_(type) cmp;
 		unsigned a1 = trunk->size; a0 = 0, assert(a1);
 		do {
 			const unsigned m = (a0 + a1) / 2;
 			cmp = trunk->x[m];
-			if(PB_(compare)(no, cmp) > 0) a0 = m + 1; else a1 = m;
+			if(PB_(compare)(x, cmp) > 0) a0 = m + 1; else a1 = m;
 		} while(a0 < a1);
-		if(!--h || no == cmp) break; /* +1 differentiate between empty. */
+		if(!h || x == cmp) break;
 	}
-	it.tree = tree, it.trunk = trunk, it.idx = a0;
+	it.tree = tree, it.node = trunk, it.height = h, it.idx = a0;
 	return it;
 }
-
-/* <!-- iterate interface */
-
-/** Loads the first element of `tree` (can be null) into `it`.
- @implements begin */
-static void PB_(begin)(struct PB_(iterator) *const it,
-	const struct B_(tree) *const tree) {
-	unsigned h;
-	struct PB_(outer) *t;
-	assert(it);
-	it->tree = 0, it->trunk = 0, it->idx = 0;
-	if(!tree || !(h = tree->height_p1)) return;
-	for(t = tree->root; ; t = PB_(inner_c)(t)->link[0]) {
-		if(!t->size) return; /* Was bulk loading? */
-		if(!--h) break; /* Height +1. */
-	}
-	it->tree = tree, it->trunk = t, it->idx = 0;
-}
-
-/** Advances `it`. @return The previous value or null. @implements next */
-const static PB_(type) *PB_(next)(struct PB_(iterator) *const it) {
-	assert(it);
-	printf("_next_\n");
-	if(!it->tree || !it->trunk || !it->trunk->size) return 0;
-	if(it->idx > it->trunk->size) {
-		/* Off the end of the trunk; keep track of the next trunk. */
-		unsigned h, a0, next_h;
-		struct PB_(outer) *trunk, *next = 0;
-		PB_(type) prev;
-		if(!(h = it->tree->height_p1)) goto finish; /* Empty now? */
-		prev = it->trunk->x[it->trunk->size - 1];
-		for(trunk = it->tree->root; ; trunk = PB_(inner_c)(trunk)->link[a0]) {
-			PB_(type) cmp;
-			unsigned a1 = trunk->size;
-			if(!a1) goto finish; /* Non-valid concurrent modification? */
-			if(--h) break; /* +1 */
-			a0 = 0;
-			do {
-				const unsigned m = (a0 + a1) / 2;
-				cmp = trunk->x[m];
-				if(PB_(compare)(prev, cmp)) a0 = m + 1; else a1 = m;
-			} while(a0 < a1);
-			if(a0 < trunk->size - 1)
-				next = PB_(inner_c)(trunk)->link[a0 + 1], next_h = h;
-		}
-		if(!next) goto finish;
-		assert(0);
-	}
-	return it->trunk->x + it->idx++;
-finish:
-	{ it->trunk = 0; return 0; }
-}
-
-/* iterate --> */
 
 /** Frees `tr` at `h` and it's children recursively. Actual `height`. */
 static void PB_(clear_r)(struct PB_(outer) *const tree, const size_t height) {
@@ -280,7 +282,7 @@ static struct B_(tree_iterator) B_(tree_lower)(const struct B_(tree)
 static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
 	const PB_(type) x) {
 	const struct PB_(iterator) i = PB_(lower)(tree, x);
-	return i.tree && i.trunk ? i.trunk->x + i.idx : 0;
+	return i.tree && i.node ? i.node->x + i.idx : 0;
 }
 
 #include "orcish.h"
