@@ -90,16 +90,18 @@ typedef TREE_TYPE PB_(type);
 typedef TREE_VALUE PB_(value);
 #endif
 
-/** Returns a positive result if `a` is out-of-order with respect to `b`, zero
- if they are equal, and negative if they are in order, inducing a total order.
- This is compatible with comparators from `bsearch` and `qsort`. */
+/** Returns a positive result if `a` is out-of-order with respect to `b`,
+ inducing a total order. This is compatible, but less strict then the
+ comparators from `bsearch` and `qsort`; it only needs to divide entries into
+ two instead of three categories. */
+inducing a strict pre-order.
 typedef int (*PB_(compare_fn))(const PB_(type) a, const PB_(type) b);
 
 #ifndef TREE_COMPARE /* <!-- !cmp */
 /** The default `TREE_COMPARE` on `a` and `b` is integer comparison that
  results in ascending order. @implements <typedef:<PH>compare_fn> */
 static int PB_(default_compare)(const PB_(type) a, const PB_(type) b)
-	{ return (a > b) - (a < b); }
+	{ return a > b; }
 #define TREE_COMPARE &PB_(default_compare)
 #endif /* !cmp --> */
 
@@ -224,10 +226,10 @@ static struct PB_(iterator) PB_(lower)(const struct B_(tree) *const tree,
 		if(!a1) continue;
 		do {
 			const unsigned m = (a0 + a1) / 2;
-			cmp = PB_(compare)(x, t.node->x[m]);
-			if(cmp > 0) a0 = m + 1; else a1 = m;
+			if(PB_(compare)(x, t.node->x[m]) > 0) a0 = m + 1; else a1 = m;
 		} while(a0 < a1);
-		if(!t.height || !cmp) break;
+		/* [!(x > m) -> x <= m] && [m <= x] -> [x == m]? */
+		if(!t.height || PB_(compare)(t.node->x[m], x) <= 0) break;
 	}
 	it.tree = tree, it.n = t, it.idx = a0;
 	return it;
