@@ -12,17 +12,20 @@
  `TREE_TEST`. */
 typedef void (*PB_(action_fn))(PB_(entry) *);
 
-/* `TREE_TEST` must be a function that implements <typedef:<PT>action_fn>. */
+/** `TREE_TEST` must be a function that implements <typedef:<PT>action_fn>.
+ Requires an added temporary buffer for the value if defined; _ie_, creates
+ the new entry, and if successful, copies the value into it. This is a little
+ unintuitive, but the simplest we could think of. */
 static const PB_(action_fn) PB_(filler) = (TREE_TEST);
 
 /* Debug number, which is the number printed next to the graphs, _etc_. */
 static unsigned PB_(no);
 
 /** Recursively draws `outer` in `fp` with the actual `height`. */
-static void PB_(subgraph)(const struct B_(tree) tree, FILE *fp) {
+static void PB_(subgraph)(const struct B_(tree) sub, FILE *fp) {
 	const struct PB_(inner) *inner;
 	unsigned i;
-	assert(tree.node && fp);
+	assert(sub.node && fp);
 	fprintf(fp, "\ttrunk%p [shape = box, "
 		"style = filled, fillcolor = Gray95, label = <\n"
 		"<TABLE BORDER=\"0\">\n"
@@ -30,25 +33,27 @@ static void PB_(subgraph)(const struct B_(tree) tree, FILE *fp) {
 		"<FONT COLOR=\"Gray85\">%s</FONT></TD></TR>\n"
 		"\t<TR><TD ALIGN=\"LEFT\" PORT=\"0\"><FONT FACE=\"Times-Italic\">"
 		"height %u</FONT></TD></TR>\n",
-		(const void *)tree.node, orcify(tree.node), tree.height);
-	for(i = 0; i < tree.node->size; i++) {
+		(const void *)sub.node, orcify(sub.node), sub.height);
+	for(i = 0; i < sub.node->size; i++) {
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
 		char z[12];
-		PB_(to_string)(tree.node->x + i, &z);
+		PB_(entry) e;
+		PB_(fill_entry)(&e, sub.node, i), PB_(to_string)(&e, &z);
 		fprintf(fp, "\t<TR><TD ALIGN=\"LEFT\" PORT=\"%u\"%s>%s</TD></TR>\n",
 			i + 1, bgc, z);
 	}
 	fprintf(fp, "</TABLE>>];\n");
-	if(!tree.height) return;
+	if(!sub.height) return;
 	/* Draw the lines between trees. */
-	inner = PB_(inner_c)(tree.node);
-	for(i = 0; i <= tree.node->size; i++)
+	inner = PB_(inner_c)(sub.node);
+	for(i = 0; i <= sub.node->size; i++)
 		fprintf(fp, "\ttrunk%p:%u:se -> trunk%p;\n",
-		(const void *)tree.node, i, (const void *)inner->link[i]);
+		(const void *)sub.node, i, (const void *)inner->link[i]);
 	/* Recurse. */
-	for(i = 0; i <= tree.node->size; i++) {
-		const struct B_(tree) sub = { inner->link[i], tree.height - 1 };
-		PB_(subgraph)(sub, fp);
+	for(i = 0; i <= sub.node->size; i++) {
+		struct B_(tree) subsub;
+		subsub.node = inner->link[i], subsub.height = sub.height - 1;
+		PB_(subgraph)(subsub, fp);
 	}
 }
 
@@ -66,8 +71,10 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 		" fontname=\"Bitstream Vera Sans\"];\n"
 		"\tedge [fontname=\"Bitstream Vera Sans\", style=dashed];\n"
 		"\n");
-	if(!tree->node) fprintf(fp, "\tidle;\n");
-	else if(tree->height == UINT_MAX) fprintf(fp, "\tempty;\n");
+	if(!tree->node)
+		fprintf(fp, "\tidle [shape=plaintext, fillcolor=\"none\"];\n");
+	else if(tree->height == UINT_MAX)
+		fprintf(fp, "\tempty [shape=plaintext, fillcolor=\"none\"];\n");
 	else PB_(subgraph)(*tree, fp);
 	fprintf(fp, "\tnode [color = \"Red\"];\n"
 		"}\n");
@@ -86,17 +93,20 @@ static void PB_(print_r)(const struct B_(tree) tree) {
 	}
 	for(i = 0; ; i++) {
 		char z[12];
-		const PB_(entry) *e;
+		PB_(entry) e;
 		if(tree.height) sub.node = inner->link[i], PB_(print_r)(sub);
 		if(i == tree.node->size) break;
-		e = tree.node->x + i;
-		PB_(to_string)(e, &z);
+#ifdef TREE_VALUE
+		e.x = tree.node->x[i], e.value = tree.node->value + i;
+#else
+		e = tree.node->x[i];
+#endif
+		PB_(to_string)(&e, &z);
 		printf("%s%s", i ? ", " : "", z);
 	}
 	printf("/");
 }
 static void PB_(print)(const struct B_(tree) *const tree) {
-	unsigned h;
 	printf("Inorder: ");
 	if(!tree) {
 		printf("null");
@@ -113,7 +123,9 @@ static void PB_(print)(const struct B_(tree) *const tree) {
 
 /** Makes sure the `trie` is in a valid state. */
 static void PB_(valid)(const struct B_(tree) *const tree) {
-	if(!tree || !tree->height_p1) return;
+	if(!tree) return; /* Null. */
+	if(!tree->node) { assert(!tree->height); return; } /* Idle. */
+	if(tree->height == UINT_MAX) { assert(tree->node); return; } /* Empty. */
 	assert(tree->node);
 	/*...*/
 }
@@ -123,14 +135,18 @@ static void PB_(sort)(PB_(entry) *a, const size_t size) {
 	size_t i;
 	for(i = 1; i < size; i++) {
 		size_t j;
-		for(j = i; j; j--) if(!(PB_(compare)(PB_(to_x)(a + j - 1),
+		for(j = i; j; j--) {
+			char n[12], m[12];
+			PB_(to_string)(a + j - 1, &n);
+			PB_(to_string)(a + i, &m);
+			printf("cmp %s and %s\n", n, m);
+			if(!(PB_(compare)(PB_(to_x)(a + j - 1),
 			PB_(to_x)(a + i)) > 0)) break;
+		}
 		if(j == i) continue;
-		/* memcpy(&temp, a + i, sizeof *a);
-		memcpy(a + j, &temp, sizeof *a); */
-		temp = a[i];
+		/*temp = a[i];*/ memcpy(&temp, a + i, sizeof *a);
 		memmove(a + j + 1, a + j, sizeof *a * (i - j));
-		a[j] = temp;
+		/*a[j] = temp;*/ memcpy(a + j, &temp, sizeof *a);
 	}
 }
 
@@ -138,7 +154,7 @@ static void PB_(test)(void) {
 	char z[12];
 	struct B_(tree) tree = TREE_IDLE;
 	struct B_(tree_iterator) it;
-	PB_(entry) n[20];
+	PB_(entry) n[3];
 	const size_t n_size = sizeof n / sizeof *n;
 	PB_(value) *value;
 	size_t i;
@@ -157,20 +173,22 @@ static void PB_(test)(void) {
 	B_(tree)(&tree), PB_(valid)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
-	it = B_(tree_lower)(0, PB_(to_x)(n + 0)), assert(!it.i.tree);
+	it = B_(tree_lower)(0, PB_(to_x)(n + 0)), assert(!it.it.tree);
 	value = B_(tree_get)(0, PB_(to_x)(n + 0)), assert(!value);
-	it = B_(tree_lower)(&tree, PB_(to_x)(n + 0)), assert(!it.i.tree);
+	it = B_(tree_lower)(&tree, PB_(to_x)(n + 0)), assert(!it.it.tree);
 	value = B_(tree_get)(&tree, PB_(to_x)(n + 0)), assert(!value);
 
 	/* Test. */
 	for(i = 0; i < n_size; i++) {
+		PB_(entry) *const e = n + i;
 		char fn[64];
-		PB_(to_string)(n + i, &z);
+		PB_(to_string)(e, &z);
 		printf("Adding %s.\n", z);
-		value = B_(bulk_add)(&tree, PB_(to_x)(n + i));
+		value = B_(tree_bulk_add)(&tree, PB_(to_x)(e));
 		assert(value);
 #ifdef TREE_VALUE
-		assert(0); /* Copy. */
+		memcpy(value, &e->value, sizeof e->value); /* Untested. */
+		printf("%u:%u\n", e->x, *e->value);
 #endif
 		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u.gv", ++PB_(no));
 		PB_(graph)(&tree, fn);

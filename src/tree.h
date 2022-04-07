@@ -94,7 +94,6 @@ typedef TREE_VALUE PB_(value);
  inducing a total order. This is compatible, but less strict then the
  comparators from `bsearch` and `qsort`; it only needs to divide entries into
  two instead of three categories. */
-inducing a strict pre-order.
 typedef int (*PB_(compare_fn))(const PB_(type) a, const PB_(type) b);
 
 #ifndef TREE_COMPARE /* <!-- !cmp */
@@ -136,11 +135,17 @@ static const struct PB_(inner) *PB_(inner_c)(const struct PB_(outer) *
 struct B_(tree_entry) { PB_(type) x; PB_(value) *value; };
 /** On `TREE_VALUE`, otherwise it's just an alias for <typedef:<PB>type>. */
 typedef struct B_(tree_entry) PB_(entry);
+static void PB_(fill_entry)(PB_(entry) *const entry,
+	struct PB_(outer) *const outer, const unsigned i)
+	{ entry->x = outer->x[i], entry->value = outer->value + i; }
 static PB_(type) PB_(to_x)(const PB_(entry) *const entry)
 	{ return entry->x; }
 #else /* value --><!-- !value */
 typedef PB_(type) PB_(value);
 typedef PB_(value) PB_(entry);
+static void PB_(fill_entry)(PB_(entry) *const entry,
+	struct PB_(outer) *const outer, const unsigned i)
+	{ *entry = outer->x[i]; }
 static PB_(type) PB_(to_x)(const PB_(type) *const x) { return *x; }
 #endif /* !entry --> */
 
@@ -202,11 +207,13 @@ static void PB_(begin)(struct PB_(iterator) *const it,
 	const struct B_(tree) *const tree)
 	{ assert(it); it->tree = tree, it->n.node = 0; }
 
-/** Advances `it` and returns the last or null.  @implements next */
+/** Advances `it` and returns the last or null in a static entry.
+ @implements next */
 const static PB_(entry) *PB_(next)(struct PB_(iterator) *const it) {
+	static PB_(entry) e;
 	assert(it);
 	printf("_next_\n");
-	return PB_(pin)(it) ? it->n.node->x + it->idx++ : 0;
+	return PB_(pin)(it) ? (PB_(fill_entry)(&e, it->n.node, it->idx++), &e) : 0;
 }
 
 /* iterate --> */
@@ -220,16 +227,17 @@ static struct PB_(iterator) PB_(lower)(const struct B_(tree) *const tree,
 	struct PB_(iterator) it;
 	unsigned a0;
 	it.tree = 0;
-	if(!tree || tree->height == UINT_MAX) return it;
+	if(!tree || !tree->node || tree->height == UINT_MAX) return it;
 	for(t = *tree; ; t.node = PB_(inner_c)(t.node)->link[a0], t.height--) {
-		int cmp; unsigned a1 = t.node->size; a0 = 0;
+		unsigned a1 = t.node->size; PB_(type) m; a0 = 0;
 		if(!a1) continue;
 		do {
-			const unsigned m = (a0 + a1) / 2;
-			if(PB_(compare)(x, t.node->x[m]) > 0) a0 = m + 1; else a1 = m;
+			const unsigned mi = (a0 + a1) / 2;
+			m = t.node->x[mi];
+			if(PB_(compare)(x, m) > 0) a0 = mi + 1; else a1 = mi;
 		} while(a0 < a1);
 		/* [!(x > m) -> x <= m] && [m <= x] -> [x == m]? */
-		if(!t.height || PB_(compare)(t.node->x[m], x) <= 0) break;
+		if(!t.height || PB_(compare)(m, x) <= 0) break;
 	}
 	it.tree = tree, it.n = t, it.idx = a0;
 	return it;
@@ -251,20 +259,17 @@ static void PB_(clear_r)(struct B_(tree) tree) {
 	}
 }
 
-/** Stores an iteration in a tree. Generally, changes in the topology of the
- tree invalidate it. */
-struct B_(tree_iterator) { struct PB_(iterator) it; };
-
 /** Initializes `tree` to idle. @order \Theta(1) @allow */
 static void B_(tree)(struct B_(tree) *const tree)
 	{ assert(tree); tree->node = 0; tree->height = 0; }
 
 /** Returns an initialized `tree` to idle, `tree` can be null. @allow */
 static void B_(tree_)(struct B_(tree) *const tree) {
-	if(!tree) return;
-	if(tree->height == UINT_MAX) {
-		assert(tree->node);
-		free(tree->node);
+	if(!tree) return; /* Null. */
+	if(!tree->node) { /* Idle. */
+		assert(!tree->height);
+	} else if(tree->height == UINT_MAX) { /* Empty. */
+		assert(tree->node); free(tree->node);
 	} else {
 		struct B_(tree) t = *tree;
 		PB_(clear_r)(t);
@@ -272,6 +277,27 @@ static void B_(tree_)(struct B_(tree) *const tree) {
 	/*struct PB_(outer_tree) *clear_all = (struct PB_(outer_tree) *)1;*/
 	B_(tree)(tree);
 }
+
+/** Stores an iteration in a tree. Generally, changes in the topology of the
+ tree invalidate it. */
+struct B_(tree_iterator) { struct PB_(iterator) it; };
+
+/** Loads the first element of `tree` (can be null) into `it`. */
+static void B_(tree_begin)(struct B_(tree_iterator) *const it,
+	const struct B_(tree) *const tree) { PB_(begin)(&it->it, tree); }
+
+/** Advances `it`.
+ @return If the iteration is finished, null, otherwise, if `TREE_VALUE`, a
+ static <typedef:<B>tree_entry> of a copy of the key and pointer to the value,
+ otherwise, a pointer to key. @allow */
+static const PB_(entry) *B_(tree_next)(struct B_(tree_iterator) *const it)
+	{ return PB_(next)(&it->it); }
+
+#if 0
+/** Counts the of the items in initialized `it`. @order \O(|`it`|) @allow */
+static size_t B_(trie_size)(const struct B_(trie_iterator) *const it)
+	{ return assert(it), PB_(size_r)(&it->i); }
+#endif
 
 /** @param[tree] Can be null. @return Finds the smallest entry in `tree` that
  is not less than `x`. If `x` is higher than any of `tree`, it will be placed
@@ -288,96 +314,107 @@ static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
 	return it.tree && it.n.node ? it.n.node->x + it.idx : 0;
 }
 
-#include "orcish.h"
+#include "../test/orcish.h"
 static void PB_(print)(const struct B_(tree) *const tree);
 
 /** `x` must be not less than the largest element in `tree`.
  @throws[EDOM] `x` is smaller than the largest element in `tree`.
  @throws[malloc] */
-static PB_(value) *B_(bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
-	struct B_(tree) t;
-	struct PB_(outer) *outer = 0;
-	struct PB_(inner) *inner = 0;
+static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
+	struct PB_(outer) *node = 0;
+	struct PB_(inner) *head = 0;
 	printf("bulk():\n");
 	if(!tree) return 0;
 	if(!tree->node) { /* Idle tree. */
-		printf("Idle tree.\n");
 		assert(!tree->height);
-		if(!(outer = malloc(sizeof *outer))) goto catch;
-		outer->size = 0;
-		tree->node = outer;
+		if(!(node = malloc(sizeof *node))) goto catch;
+		node->size = 0;
+		tree->node = node;
+		printf("Idle tree: new %s.\n", orcify(node));
 	} else if(tree->height == UINT_MAX) { /* Empty tree. */
-		printf("Empty tree, %s.\n", orcify(tree->node));
 		tree->height = 0;
-		tree->node->size = 0;
+		node = tree->node;
+		node->size = 0;
+		printf("Empty tree, %s.\n", orcify(node));
 	} else {
-		struct B_(tree) back = { 0, 0 };
-		PB_(type) *last = 0;
-		struct PB_(inner) *tail = 0;
-		struct PB_(outer) *head;
-		unsigned new_nodes, n;
+		struct B_(tree) space = { 0, 0 }; /* Furthest node with space. */
+		PB_(type) *last = 0; /* Key of the last for comparing with arg. */
+		unsigned new_nodes, n; /* Count new nodes. */
+		struct PB_(outer) *tail = 0; /* New nodes. */
+		struct PB_(inner) *pretail = 0;
 		PB_(print)(tree);
-		/* Figure out where the end is. */
-		for(t = *tree; ;
-			t.node = PB_(inner)(t.node)->link[t.node->size], t.height--) {
-			printf("dowhile node %s with %u size, height %u\n",
-				orcify(t.node), t.node->size, t.height);
-			if(t.node->size < TREE_MAX) back = t;
-			if(t.node->size) last = t.node->x + t.node->size - 1;
-			if(!t.height) break;
+
+		{ /* Figure out where `space` and `last` are in `log size`. */
+			struct B_(tree) expl;
+
+			for(expl = *tree; ; expl.node
+				= PB_(inner)(expl.node)->link[expl.node->size], expl.height--) {
+				printf("dowhile expl %s:%u with %u size\n",
+					orcify(expl.node), expl.height, expl.node->size);
+				if(expl.node->size < TREE_MAX) space = expl;
+				if(expl.node->size) last = expl.node->x + expl.node->size - 1;
+				if(!expl.height) break;
+			}
+			assert(last); /* Else it would be empty and we would not be here. */
+			printf("dowhile expl finished %s:%u, last: %u, space %s:%u\n",
+				orcify(expl.node), expl.height, *last,
+				orcify(space.node), space.height);
 		}
-		printf("dowhile finished %s height %u\n", orcify(t.node), t.height);
-		assert(last); printf("non-empty last: %u\n", *last);
-		if(PB_(compare)(*last, x)) {
-			printf("wwhhhat? %u %u\n", *last, x);
-			errno = EDOM; goto catch; } /* Not max. */
-		if(!t.height) t = back;
-		new_nodes = n = t.node ? t.height: tree->height + 1;
-		/* New nodes: one outer, and the rest inner. */
-		if(n) {
-			if(!(outer = malloc(sizeof *outer))) goto catch;
-			outer->size = 0;
-			printf("outer: %s.\n", orcify(outer));
-			n--;
+
+		/* Verify that the argument is not smaller than the largest in tree. */
+		if(PB_(compare)(*last, x) > 0) {
+			printf("wwhhhat? %u > %u\n", *last, x);
+			errno = EDOM; goto catch; }
+
+		/* One outer, and the rest inner. */
+		new_nodes = n = space.node ? space.height : tree->height + 2;
+		printf("new_nodes: %u, tree height %u\n", new_nodes, tree->height);
+		if(!n) {
+			node = space.node;
+		} else {
+			if(!(node = tail = malloc(sizeof *tail))) goto catch;
+			tail->size = 0;
+			printf("tail: %s.\n", orcify(tail));
+			while(--n) {
+				struct PB_(inner) *inner;
+				if(!(inner = malloc(sizeof *inner))) goto catch;
+				inner->base.size = 0;
+				printf("inner: %s.\n", orcify(inner));
+				if(!head) inner->link[0] = 0, pretail = inner; /* First loop. */
+				else inner->link[0] = &head->base; /* Not first loop. */
+				head = inner;
+			}
 		}
-		while(n) {
-			struct PB_(inner) *a;
-			if(!(a = malloc(sizeof *a))) goto catch;
-			a->base.size = 0;
-			printf("inner: %s.\n", orcify(a));
-			if(inner) a->link[0] = &inner->base; else a->link[0] = 0, tail = a;
-			inner = a;
-			n--;
-		}
-		/* test: if(!t.node && tree->height_p1 + 1 == 3) goto catch; */
-		/* Now we are past the catch; modify the original. */
-		if(tail) tail->link[0] = outer, head = &inner->base;
-		else head = outer;
-		if(!t.node) { /* Adding whole other level. */
+
+		/* Post-error; modify the original as needed. */
+		if(pretail) pretail->link[0] = tail;
+		if(!space.node) { /* Add tree to head. */
 			assert(new_nodes > 1);
-			inner->link[1] = inner->link[0], inner->link[0] = tree->node;
-			tree->node = t.node = &inner->base, tree->height++;
-			assert(!t.node->size);
-		} else if(t.height) { /* Adding side. */
-			struct PB_(inner) *const expand = PB_(inner)(t.node);
+			head->link[1] = head->link[0], head->link[0] = tree->node;
+			node = tree->node = &head->base, tree->height++;
+		} else if(space.height) { /* Add head to tree. */
+			assert(new_nodes);
+			struct PB_(inner) *const expand = PB_(inner)(space.node);
 			expand->link[expand->base.size + 1] = head;
 		}
 	}
-	assert(t.node && t.node->size < TREE_MAX);
-	t.node->x[t.node->size++] = x;
+	assert(node && node->size < TREE_MAX);
+	node->x[node->size++] = x;
 	PB_(print)(tree);
 #ifdef TREE_VALUE
-	return t.node->value + t.node->size;
+	return node->value + node->size;
 #else
-	return t.node->x + t.node->size;
+	return node->x + node->size;
 #endif
 catch:
-	printf("*** freeing %s\n", orcify(outer));
-	free(outer);
-	if(inner) for( ; ; ) {
-		printf("*** freeing %s\n", orcify(inner));
-		outer = inner->link[0]; free(inner);
-		if(!outer) break; inner = PB_(inner)(outer);
+	printf("!!! freeing %s\n", orcify(node));
+	free(node);
+	if(head) for( ; ; ) {
+		struct PB_(outer) *const next = head->link[0];
+		printf("!!! freeing %s\n", orcify(head));
+		free(head);
+		if(!next) break;
+		head = PB_(inner)(next);
 	}
 	if(!errno) errno = ERANGE;
 	return 0;
@@ -409,31 +446,24 @@ static int B_(trie_remove)(struct B_(trie) *const trie,
 	const char *const key) { return PB_(remove)(trie, key); }
 #endif
 
-/** Advances `it`. @return The previous value or null. @allow */
-static const PB_(entry) *B_(trie_next)(struct B_(tree_iterator) *const it)
-	{ return PB_(next)(&it->it); }
-
-#if 0
-/** Counts the of the items in initialized `it`. @order \O(|`it`|) @allow */
-static size_t B_(trie_size)(const struct B_(trie_iterator) *const it)
-	{ return assert(it), PB_(size_r)(&it->i); }
-#endif
-
 /* <!-- box */
 #define BOX_ PB_
 #define BOX_CONTAINER struct B_(tree)
-#define BOX_CONTENTS PB_(value)
+#define BOX_CONTENTS PB_(entry)
 
 #ifdef TREE_TEST /* <!-- test */
 /* Forward-declare. */
-static void (*PB_(to_string))(const PB_(type) *, char (*)[12]);
+static void (*PB_(to_string))(const PB_(entry) *, char (*)[12]);
 static const char *(*PB_(tree_to_string))(const struct B_(tree) *);
 #include "../test/test_tree.h"
 #endif /* test --> */
 
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
-	PB_(begin)(0, 0);
+	B_(tree)(0); B_(tree_)(0); B_(tree_begin)(0, 0); B_(tree_next)(0);
+	B_(tree_lower)(0, 0);
+	B_(tree_get)(0, 0);
+	B_(tree_bulk_add)(0, 0);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
@@ -487,5 +517,5 @@ static const char *(*PB_(tree_to_string))(const struct B_(tree) *)
 #undef BOX_CONTENTS
 /* box --> */
 #endif /* !trait --> */
-#undef ARRAY_TO_STRING_TRAIT
-#undef ARRAY_TRAITS
+#undef TREE_TO_STRING_TRAIT
+#undef TREE_TRAITS

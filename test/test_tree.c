@@ -11,10 +11,11 @@
 #include "../src/tree.h"
 
 /* Unsigned numbers: testing framework. */
-#if 99999999999 < RAND_MAX
+/*#if 99999999999 < RAND_MAX
 #error RAND_MAX is too big; the example will have to be tweaked.
-#endif
-static void unsigned_filler(unsigned *x) { *x = (unsigned)rand() % 10; }
+#endif*/
+static void unsigned_filler(unsigned *x)
+	{ *x = (unsigned)rand() / (RAND_MAX / 1000 + 1); }
 static void unsigned_to_string(const unsigned *x, char (*const z)[12])
 	{ sprintf(*z, "%u", *x); }
 #define TREE_NAME unsigned
@@ -34,12 +35,16 @@ static void pair_to_string(const struct pair_tree_entry *, char (*)[12]);
 #define TREE_TEST &pair_filler
 #define TREE_EXPECT_TRAIT
 #include "../src/tree.h"
-#define TREE_TO_STRING &unsigned_to_string
+#define TREE_TO_STRING &pair_to_string
 #include "../src/tree.h"
-static void pair_filler(struct pair_tree_entry *x)
-	{ x->x = (unsigned)rand() / RAND_MAX / 10; *x->value = (unsigned)rand(); }
+static void pair_filler(struct pair_tree_entry *x) {
+	static unsigned value;
+	unsigned_filler(&x->x);
+	value = (unsigned)rand() / (RAND_MAX / 1000000 + 1), x->value = &value;
+	printf("generated %u:%u\n", x->x, *x->value);
+}
 static void pair_to_string(const struct pair_tree_entry *x, char (*const z)[12])
-	{ sprintf(*z, "%u", x->x); }
+	{ sprintf(*z, "%u:%u", x->x, *x->value); }
 
 
 
@@ -204,5 +209,6 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	unsigned_tree_test();
+	pair_tree_test();
 	return EXIT_SUCCESS;
 }
