@@ -155,7 +155,7 @@ static void PB_(sort)(PB_(entry) *a, const size_t size) {
 
 static void PB_(test)(void) {
 	char z[12];
-	struct B_(tree) tree = TREE_IDLE;
+	struct B_(tree) tree = B_(tree)();
 	struct B_(tree_iterator) it;
 	PB_(entry) n[3];
 #ifdef TREE_VALUE
@@ -182,7 +182,6 @@ static void PB_(test)(void) {
 	/* Idle. */
 	PB_(valid)(0);
 	PB_(valid)(&tree);
-	B_(tree)(&tree), PB_(valid)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
 	it = B_(tree_lower)(0, PB_(to_x)(n + 0)), assert(!it.it.tree);

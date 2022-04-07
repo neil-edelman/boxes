@@ -39,11 +39,11 @@ static void pair_to_string(const struct pair_tree_entry *, char (*)[12]);
 #include "../src/tree.h"
 static void pair_filler(struct pair_tree_entry *x) {
 	unsigned_filler(&x->x);
-	*x->value = (unsigned)rand() / (RAND_MAX / 1000000 + 1);
+	*x->value = (unsigned)rand() / (RAND_MAX / 100000 + 1);
 	printf("generated %u->%u\n", x->x, *x->value);
 }
 static void pair_to_string(const struct pair_tree_entry *x, char (*const z)[12])
-	{ sprintf(*z, "%u->%u", x->x, *x->value); }
+	{ sprintf(*z, "%u→%u", x->x, *x->value); } /* 3 + 3 + 5 */
 
 
 
@@ -207,6 +207,7 @@ static void contrived_str_test(void) {
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
+	printf("%lu %lu %lu\n", sizeof "→", sizeof "a", sizeof "é");
 	unsigned_tree_test();
 	pair_tree_test();
 	return EXIT_SUCCESS;

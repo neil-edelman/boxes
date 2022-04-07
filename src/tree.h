@@ -72,7 +72,6 @@
 #error TREE_MAX parameter range `[2, UCHAR_MAX]`.
 #endif
 #define TREE_ORDER (TREE_MAX + 1) /* Maximum branching factor. */
-#define TREE_IDLE { 0, 0 }
 #endif /* idempotent --> */
 
 
@@ -260,8 +259,8 @@ static void PB_(clear_r)(struct B_(tree) tree) {
 }
 
 /** Initializes `tree` to idle. @order \Theta(1) @allow */
-static void B_(tree)(struct B_(tree) *const tree)
-	{ assert(tree); tree->node = 0; tree->height = 0; }
+static struct B_(tree) B_(tree)(void)
+	{ struct B_(tree) tree; tree.node = 0; tree.height = 0; return tree; }
 
 /** Returns an initialized `tree` to idle, `tree` can be null. @allow */
 static void B_(tree_)(struct B_(tree) *const tree) {
@@ -275,7 +274,7 @@ static void B_(tree_)(struct B_(tree) *const tree) {
 		PB_(clear_r)(t);
 	}
 	/*struct PB_(outer_tree) *clear_all = (struct PB_(outer_tree) *)1;*/
-	B_(tree)(tree);
+	*tree = B_(tree)();
 }
 
 /** Stores an iteration in a tree. Generally, changes in the topology of the
@@ -317,8 +316,8 @@ static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
 #include "../test/orcish.h"
 static void PB_(print)(const struct B_(tree) *const tree);
 
-/** `x` must be not less than the largest element in `tree`.
- @throws[EDOM] `x` is smaller than the largest element in `tree`.
+/** `x` must be not less than the largest key in `tree`.
+ @throws[EDOM] `x` is smaller than the largest key in `tree`.
  @throws[malloc] */
 static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 	struct PB_(outer) *node = 0;
@@ -362,9 +361,7 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 		}
 
 		/* Verify that the argument is not smaller than the largest in tree. */
-		if(PB_(compare)(*last, x) > 0) {
-			printf("wwhhhat? %u > %u\n", *last, x);
-			errno = EDOM; goto catch; }
+		if(PB_(compare)(*last, x) > 0) { errno = EDOM; goto catch; }
 
 		/* One outer, and the rest inner. */
 		new_nodes = n = space.node ? space.height : tree->height + 2;
@@ -395,16 +392,16 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 		} else if(space.height) { /* Add head to tree. */
 			assert(new_nodes);
 			struct PB_(inner) *const expand = PB_(inner)(space.node);
-			expand->link[expand->base.size + 1] = head;
+			expand->link[expand->base.size + 1] = &head->base;
 		}
 	}
 	assert(node && node->size < TREE_MAX);
-	node->x[node->size++] = x;
-	PB_(print)(tree);
+	node->x[node->size] = x;
+	/*PB_(print)(tree); uninitialized */
 #ifdef TREE_VALUE
-	return node->value + node->size;
+	return node->value + node->size++;
 #else
-	return node->x + node->size;
+	return node->x + node->size++;
 #endif
 catch:
 	printf("!!! freeing %s\n", orcify(node));
@@ -460,7 +457,7 @@ static const char *(*PB_(tree_to_string))(const struct B_(tree) *);
 
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
-	B_(tree)(0); B_(tree_)(0); B_(tree_begin)(0, 0); B_(tree_next)(0);
+	B_(tree)(); B_(tree_)(0); B_(tree_begin)(0, 0); B_(tree_next)(0);
 	B_(tree_lower)(0, 0);
 	B_(tree_get)(0, 0);
 	B_(tree_bulk_add)(0, 0);
