@@ -16,8 +16,8 @@
 static void unsigned_filler(unsigned *x)
 	{ *x = (unsigned)rand() / (RAND_MAX / 1000 + 1); }
 /** @implements <typedef:<PSZ>to_string_fn> */
-static void unsigned_to_string(const unsigned *x, char (*const z)[12])
-	{ sprintf(*z, "%u", *x); }
+static void unsigned_to_string(const unsigned x, char (*const z)[12])
+	{ sprintf(*z, "%u", x); }
 #define TREE_NAME unsigned
 #define TREE_TEST &unsigned_filler
 #define TREE_EXPECT_TRAIT
@@ -26,6 +26,7 @@ static void unsigned_to_string(const unsigned *x, char (*const z)[12])
 #include "../src/tree.h"
 
 
+#if 0
 /* Unsigned numbers and values. Prototype a value. */
 struct pair_tree_entry;
 static void pair_filler(struct pair_tree_entry *);
@@ -101,13 +102,14 @@ static void star_filler(struct star_tree_entry *x) {
 /** @implements <typedef:<PSZ>to_string_fn> */
 static void star_to_string(const struct star_tree_entry *x, char (*const z)[12])
 	{ sprintf(*z, "%.11s", *x->value); }
+#endif
 
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	unsigned_tree_test();
-	pair_tree_test();
-	star_tree_test();
+	/*pair_tree_test();
+	star_tree_test();*/
 	return EXIT_SUCCESS;
 }

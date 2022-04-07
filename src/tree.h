@@ -134,17 +134,19 @@ static const struct PB_(inner) *PB_(inner_c)(const struct PB_(outer) *
 struct B_(tree_entry) { PB_(type) x; PB_(value) *value; };
 /** On `TREE_VALUE`, otherwise it's just an alias for <typedef:<PB>type>. */
 typedef struct B_(tree_entry) PB_(entry);
-static void PB_(fill_entry)(PB_(entry) *const entry,
-	struct PB_(outer) *const outer, const unsigned i)
-	{ entry->x = outer->x[i], entry->value = outer->value + i; }
+static PB_(entry) PB_(to_entry)(struct PB_(outer) *const outer,
+	const unsigned i) {
+	struct PB_(entry) e;
+	e->x = outer->x[i], e->value = outer->value + i;
+	return e;
+}
 static PB_(type) PB_(to_x)(const PB_(entry) *const entry)
 	{ return entry->x; }
 #else /* value --><!-- !value */
 typedef PB_(type) PB_(value);
 typedef PB_(value) PB_(entry);
-static void PB_(fill_entry)(PB_(entry) *const entry,
-	struct PB_(outer) *const outer, const unsigned i)
-	{ *entry = outer->x[i]; }
+static PB_(entry) PB_(to_entry)(struct PB_(outer) *const outer,
+	const unsigned i) { return outer->x[i]; }
 static PB_(type) PB_(to_x)(const PB_(type) *const x) { return *x; }
 #endif /* !entry --> */
 
@@ -202,17 +204,14 @@ static int PB_(pin)(struct PB_(iterator) *const it) {
 
 /** Loads the first element of `tree` (can be null) into `it`.
  @implements begin */
-static void PB_(begin)(struct PB_(iterator) *const it,
-	const struct B_(tree) *const tree)
-	{ assert(it); it->tree = tree, it->n.node = 0; }
+static struct PB_(iterator) PB_(begin)(const struct B_(tree) *const tree)
+	{ struct PB_(iterator) it; it.tree = tree, it.n.node = 0; return it; }
 
 /** Advances `it` and returns the last or null in a static entry.
  @implements next */
-static const PB_(entry) *PB_(next)(struct PB_(iterator) *const it) {
-	static PB_(entry) e;
-	assert(it);
+static PB_(entry) PB_(next)(struct PB_(iterator) *const it) {
 	printf("_next_\n");
-	return PB_(pin)(it) ? (PB_(fill_entry)(&e, it->n.node, it->idx++), &e) : 0;
+	return assert(it), PB_(pin)(it) ? PB_(to_entry)(it->n.node, it->idx++) : 0;
 }
 
 /* iterate --> */
@@ -284,13 +283,13 @@ struct B_(tree_iterator) { struct PB_(iterator) it; };
 /** Loads the first element of `tree` (can be null) into `it`. */
 static struct B_(tree_iterator) B_(tree_begin)(const struct B_(tree) *const
 	tree)
-	{ struct B_(tree_iterator) it; PB_(begin)(&it.it, tree); return it; }
+	{ struct B_(tree_iterator) it; it.it = PB_(begin)(tree); return it; }
 
 /** Advances `it`.
  @return If the iteration is finished, null, otherwise, if `TREE_VALUE`, a
  static <typedef:<B>tree_entry> of a copy of the key and pointer to the value,
  otherwise, a pointer to key. @allow */
-static const PB_(entry) *B_(tree_next)(struct B_(tree_iterator) *const it)
+static PB_(entry) B_(tree_next)(struct B_(tree_iterator) *const it)
 	{ return PB_(next)(&it->it); }
 
 #if 0
@@ -308,7 +307,7 @@ static struct B_(tree_iterator) B_(tree_lower)(const struct B_(tree)
 
 /** @return Lowest match for `x` in `tree` or null no such item exists.
  @order \O(\log |`tree`|) @allow */
-static const PB_(entry) *B_(tree_get)(const struct B_(tree) *const tree,
+static PB_(entry) B_(tree_get)(const struct B_(tree) *const tree,
 	const PB_(type) x) {
 	struct PB_(iterator) it = PB_(lower)(tree, x);
 	/*return it.tree && it.n.node ? it.n.node->x + it.idx : 0;*/
@@ -462,7 +461,7 @@ static int B_(trie_remove)(struct B_(trie) *const trie,
 
 #ifdef TREE_TEST /* <!-- test */
 /* Forward-declare. */
-static void (*PB_(to_string))(const PB_(entry) *, char (*)[12]);
+static void (*PB_(to_string))(const PB_(entry), char (*)[12]);
 static const char *(*PB_(tree_to_string))(const struct B_(tree) *);
 #include "../test/test_tree.h"
 #endif /* test --> */

@@ -33,8 +33,8 @@ static void PB_(subgraph)(const struct B_(tree) sub, FILE *fp) {
 	for(i = 0; i < sub.node->size; i++) {
 		const char *const bgc = i & 1 ? "" : " bgcolor=\"Gray90\"";
 		char z[12];
-		PB_(entry) e;
-		PB_(fill_entry)(&e, sub.node, i), PB_(to_string)(&e, &z);
+		PB_(entry) e = PB_(to_entry)(sub.node, i);
+		PB_(to_string)(e, &z);
 		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
 			"  port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
 	}
@@ -91,12 +91,8 @@ static void PB_(print_r)(const struct B_(tree) tree) {
 		PB_(entry) e;
 		if(tree.height) sub.node = inner->link[i], PB_(print_r)(sub);
 		if(i == tree.node->size) break;
-#ifdef TREE_VALUE
-		e.x = tree.node->x[i], e.value = tree.node->value + i;
-#else
-		e = tree.node->x[i];
-#endif
-		PB_(to_string)(&e, &z);
+		e = PB_(to_entry)(tree.node, i);
+		PB_(to_string)(e, &z);
 		printf("%s%s", i ? ", " : "", z);
 	}
 	printf("/");
@@ -135,8 +131,8 @@ static void PB_(sort)(PB_(entry) *a, const size_t size) {
 		size_t j;
 		for(j = i; j; j--) {
 			char n[12], m[12];
-			PB_(to_string)(a + j - 1, &n);
-			PB_(to_string)(a + i, &m);
+			PB_(to_string)(a[j - 1], &n);
+			PB_(to_string)(a[i], &m);
 			/*printf("cmp %s and %s\n", n, m);*/
 			if(!(PB_(compare)(PB_(to_x)(a + j - 1),
 			PB_(to_x)(a + i)) > 0)) break;
@@ -158,7 +154,7 @@ static void PB_(test)(void) {
 	PB_(value) copy_values[sizeof n / sizeof *n];
 #endif
 	const size_t n_size = sizeof n / sizeof *n;
-	const PB_(entry) *entry;
+	PB_(entry) entry;
 	size_t i;
 
 	errno = 0;
@@ -191,7 +187,7 @@ static void PB_(test)(void) {
 		PB_(entry) *const e = n + i;
 		PB_(value) *value;
 		char fn[64];
-		PB_(to_string)(e, &z);
+		PB_(to_string)(*e, &z);
 		printf("Adding %s.\n", z);
 		value = B_(tree_bulk_add)(&tree, PB_(to_x)(e));
 		assert(value);

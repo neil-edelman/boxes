@@ -82,12 +82,12 @@ static unsigned to_string_buffer_i;
 typedef BOX_CONTAINER PSZ_(box);
 
 /* An alias to the individual type contained in the box. */
-typedef BOX_CONTENTS PSZ_(type);
+typedef BOX_CONTENTS PSZ_(ref);
 
 /** <to_string.h>: responsible for turning the argument into a 12-`char`
  null-terminated output string. `<PSZ>type` is contracted to be an internal
  iteration type of the box. */
-typedef void (*PSZ_(to_string_fn))(const PSZ_(type) *, char (*)[12]);
+typedef void (*PSZ_(to_string_fn))(const PSZ_(ref), char (*)[12]);
 /* Check that `TO_STRING` is a function implementing
  <typedef:<PSZ>to_string>. */
 static const PSZ_(to_string_fn) PSZ_(to_string) = (TO_STRING);
@@ -103,7 +103,7 @@ static const char *SZ_(to_string)(const PSZ_(box) *const box) {
 	const size_t ellipsis_len = strlen(ellipsis);
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance, size;
-	const PSZ_(type) *x;
+	PSZ_(ref) x;
 	struct BOX_(iterator) it;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
@@ -112,7 +112,7 @@ static const char *SZ_(to_string)(const PSZ_(box) *const box) {
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
 	/* Begin iteration. */
-	BOX_(begin)(&it, box);
+	it = BOX_(begin)(box);
 	*b++ = left;
 	while(x = BOX_(next)(&it)) {
 		PSZ_(to_string)(x, (char (*)[12])b);
