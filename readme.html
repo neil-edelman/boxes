@@ -39,7 +39,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PA>type">&lt;PA&gt;type</a>, <a href = "#typedef:<PAC>box">&lt;PAC&gt;box</a>, <a href = "#typedef:<PAC>type">&lt;PAC&gt;type</a>, <a href = "#typedef:<PAC>action_fn">&lt;PAC&gt;action_fn</a>, <a href = "#typedef:<PAC>predicate_fn">&lt;PAC&gt;predicate_fn</a>, <a href = "#typedef:<PAC>bipredicate_fn">&lt;PAC&gt;bipredicate_fn</a>, <a href = "#typedef:<PAC>compare_fn">&lt;PAC&gt;compare_fn</a>, <a href = "#typedef:<PAC>biaction_fn">&lt;PAC&gt;biaction_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PA>type">&lt;PA&gt;type</a>, <a href = "#typedef:<PAC>box">&lt;PAC&gt;box</a>, <a href = "#typedef:<PAC>enum">&lt;PAC&gt;enum</a>, <a href = "#typedef:<PAC>action_fn">&lt;PAC&gt;action_fn</a>, <a href = "#typedef:<PAC>predicate_fn">&lt;PAC&gt;predicate_fn</a>, <a href = "#typedef:<PAC>bipredicate_fn">&lt;PAC&gt;bipredicate_fn</a>, <a href = "#typedef:<PAC>compare_fn">&lt;PAC&gt;compare_fn</a>, <a href = "#typedef:<PAC>biaction_fn">&lt;PAC&gt;biaction_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<A>array">&lt;A&gt;array</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -89,7 +89,7 @@
 
 <h3><a id = "typedef:<PAC>box" name = "typedef:<PAC>box">&lt;PAC&gt;box</a></h3>
 
-<p><code>typedef BOX_CONTAINER <strong>&lt;PAC&gt;box</strong>;</code></p>
+<p><code>typedef BOX <strong>&lt;PAC&gt;box</strong>;</code></p>
 
 <p><a href = "src/array_coda.h">src/array_coda.h</a>: an alias to the box.</p>
 
@@ -97,9 +97,9 @@
 
 <div>
 
-<h3><a id = "typedef:<PAC>type" name = "typedef:<PAC>type">&lt;PAC&gt;type</a></h3>
+<h3><a id = "typedef:<PAC>enum" name = "typedef:<PAC>enum">&lt;PAC&gt;enum</a></h3>
 
-<p><code>typedef BOX_CONTENTS <strong>&lt;PAC&gt;type</strong>;</code></p>
+<p><code>typedef BOX_ENUM <strong>&lt;PAC&gt;enum</strong>;</code></p>
 
 <p><a href = "src/array_coda.h">src/array_coda.h</a>: an alias to the individual type contained in the box.</p>
 
@@ -109,9 +109,9 @@
 
 <h3><a id = "typedef:<PAC>action_fn" name = "typedef:<PAC>action_fn">&lt;PAC&gt;action_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PAC&gt;action_fn</strong>)(&lt;PAC&gt;type *);</code></p>
+<p><code>typedef void(*<strong>&lt;PAC&gt;action_fn</strong>)(&lt;PAC&gt;enum);</code></p>
 
-<p><a href = "src/array_coda.h">src/array_coda.h</a>: Operates by side-effects on <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Operates by side-effects on <a href = "#typedef:&lt;PAC&gt;enum">&lt;PAC&gt;enum</a>.</p>
 
 </div>
 
@@ -119,9 +119,9 @@
 
 <h3><a id = "typedef:<PAC>predicate_fn" name = "typedef:<PAC>predicate_fn">&lt;PAC&gt;predicate_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PAC&gt;predicate_fn</strong>)(const &lt;PAC&gt;type *);</code></p>
+<p><code>typedef int(*<strong>&lt;PAC&gt;predicate_fn</strong>)(const &lt;PAC&gt;enum);</code></p>
 
-<p><a href = "src/array_coda.h">src/array_coda.h</a>: Returns a boolean given read-only <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Returns a boolean given read-only <a href = "#typedef:&lt;PAC&gt;enum">&lt;PAC&gt;enum</a>.</p>
 
 </div>
 
@@ -129,9 +129,9 @@
 
 <h3><a id = "typedef:<PAC>bipredicate_fn" name = "typedef:<PAC>bipredicate_fn">&lt;PAC&gt;bipredicate_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PAC&gt;bipredicate_fn</strong>)(const &lt;PAC&gt;type *, const &lt;PAC&gt;type *);</code></p>
+<p><code>typedef int(*<strong>&lt;PAC&gt;bipredicate_fn</strong>)(const &lt;PAC&gt;enum, const &lt;PAC&gt;enum);</code></p>
 
-<p><a href = "src/array_coda.h">src/array_coda.h</a>: Returns a boolean given two read-only <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Returns a boolean given two read-only <a href = "#typedef:&lt;PAC&gt;enum">&lt;PAC&gt;enum</a>.</p>
 
 </div>
 
@@ -139,9 +139,9 @@
 
 <h3><a id = "typedef:<PAC>compare_fn" name = "typedef:<PAC>compare_fn">&lt;PAC&gt;compare_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PAC&gt;compare_fn</strong>)(const &lt;PAC&gt;type *a, const &lt;PAC&gt;type *b);</code></p>
+<p><code>typedef int(*<strong>&lt;PAC&gt;compare_fn</strong>)(const &lt;PAC&gt;enum a, const &lt;PAC&gt;enum b);</code></p>
 
-<p><a href = "src/array_coda.h">src/array_coda.h</a>: Three-way comparison on a totally order set of <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>; returns an integer value less then, equal to, greater then zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Three-way comparison on a totally order set of <a href = "#typedef:&lt;PAC&gt;enum">&lt;PAC&gt;enum</a>; returns an integer value less then, equal to, greater then zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
 
 </div>
 
@@ -149,9 +149,9 @@
 
 <h3><a id = "typedef:<PAC>biaction_fn" name = "typedef:<PAC>biaction_fn">&lt;PAC&gt;biaction_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PAC&gt;biaction_fn</strong>)(&lt;PAC&gt;type *, &lt;PAC&gt;type *);</code></p>
+<p><code>typedef int(*<strong>&lt;PAC&gt;biaction_fn</strong>)(&lt;PAC&gt;enum, &lt;PAC&gt;enum);</code></p>
 
-<p><a href = "src/array_coda.h">src/array_coda.h</a>: Returns a boolean given two <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: Returns a boolean given two <a href = "#typedef:&lt;PAC&gt;enum">&lt;PAC&gt;enum</a>.</p>
 
 </div>
 
@@ -159,7 +159,7 @@
 
 <h3><a id = "typedef:<PSZ>to_string_fn" name = "typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(&lt;PSZ&gt;enum_c, char(*)[12]);</code></p>
 
 <p><a href = "to_string.h">to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string. <code>&lt;PSZ&gt;type</code> is contracted to be an internal iteration type of the box.</p>
 
@@ -187,7 +187,7 @@
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<A>array">&lt;A&gt;array</a></td><td>a</td></tr>
+<tr><td align = right>static struct &lt;A&gt;array</td><td><a href = "#fn:<A>array">&lt;A&gt;array</a></td><td></td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<A>array_">&lt;A&gt;array_</a></td><td>a</td></tr>
 
@@ -213,9 +213,9 @@
 
 <tr><td align = right>static int</td><td><a href = "#fn:<A>array_splice">&lt;A&gt;array_splice</a></td><td>a, b, i0, i1</td></tr>
 
-<tr><td align = right>static &lt;PAC&gt;type *</td><td><a href = "#fn:<AC>previous">&lt;AC&gt;previous</a></td><td>box, x</td></tr>
+<tr><td align = right>static &lt;PAC&gt;enum</td><td><a href = "#fn:<AC>previous">&lt;AC&gt;previous</a></td><td>box, x</td></tr>
 
-<tr><td align = right>static &lt;PAC&gt;type *</td><td><a href = "#fn:<AC>next">&lt;AC&gt;next</a></td><td>box, x</td></tr>
+<tr><td align = right>static &lt;PAC&gt;enum</td><td><a href = "#fn:<AC>next">&lt;AC&gt;next</a></td><td>box, x</td></tr>
 
 <tr><td align = right>static size_t</td><td><a href = "#fn:<AC>clip">&lt;AC&gt;clip</a></td><td>box, i</td></tr>
 
@@ -229,7 +229,7 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<AC>if_each">&lt;AC&gt;if_each</a></td><td>box, predicate, action</td></tr>
 
-<tr><td align = right>static const &lt;PAC&gt;type *</td><td><a href = "#fn:<AC>any">&lt;AC&gt;any</a></td><td>box, predicate</td></tr>
+<tr><td align = right>static &lt;PAC&gt;enum</td><td><a href = "#fn:<AC>any">&lt;AC&gt;any</a></td><td>box, predicate</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<ACC>compare">&lt;ACC&gt;compare</a></td><td>a, b</td></tr>
 
@@ -263,11 +263,11 @@
 
 <h3><a id = "fn:<A>array" name = "fn:<A>array">&lt;A&gt;array</a></h3>
 
-<p><code>static void <strong>&lt;A&gt;array</strong>(struct &lt;A&gt;array *const <em>a</em>)</code></p>
-
-<p>Initialises <code>a</code> to idle.</p>
+<p><code>static struct &lt;A&gt;array <strong>&lt;A&gt;array</strong>(void)</code></p>
 
 <dl>
+	<dt>Return:</dt>
+	<dd>An initial idle array that takes no extra memory.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
@@ -280,7 +280,7 @@
 
 <p><code>static void <strong>&lt;A&gt;array_</strong>(struct &lt;A&gt;array *const <em>a</em>)</code></p>
 
-<p>Destroys <code>a</code> and returns it to idle.</p>
+<p>If <code>a</code> is not null, destroys and returns it to idle.</p>
 
 </div>
 
@@ -326,7 +326,7 @@
 
 <p><code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_insert</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>n</em>, const size_t <em>at</em>)</code></p>
 
-<p>Adds <code>n</code> un-initialised elements at position <code>at</code> in <code>a</code>. The buffer holds enough elements or it will invalidate any pointers in <code>a</code>.</p>
+<p>Adds <code>n</code> un-initialised elements at position <code>at</code> in <code>a</code>. It will invalidate any pointers in <code>a</code> if the buffer holds too few elements.</p>
 
 <dl>
 	<dt>Parameter: <em>at</em></dt>
@@ -346,7 +346,7 @@
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Adds (push back) one new element of <code>a</code>. The buffer holds an element or it will invalidate pointers in <code>a</code>.</dd>
+	<dd>Adds (push back) one new element of <code>a</code>. The buffer space holds at least one element, or it may invalidate pointers in <code>a</code>.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
 	<dt>Order:</dt>
 	<dd>amortised &#927;(1)</dd>
@@ -455,7 +455,7 @@
 
 <dl>
 	<dt>Parameter: <em>b</em></dt>
-	<dd>Can be null, which acts as empty, but cannot be <code>a</code>.</dd>
+	<dd>Can be null, which acts as empty, but cannot overlap with <code>a</code>.</dd>
 	<dt>Return:</dt>
 	<dd>Success.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
@@ -467,7 +467,7 @@
 
 <h3><a id = "fn:<AC>previous" name = "fn:<AC>previous">&lt;AC&gt;previous</a></h3>
 
-<p><code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;previous</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code></p>
+<p><code>static &lt;PAC&gt;enum <strong>&lt;AC&gt;previous</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;enum <em>x</em>)</code></p>
 
 <p><a href = "src/array_coda.h">src/array_coda.h</a></p>
 
@@ -484,7 +484,7 @@
 
 <h3><a id = "fn:<AC>next" name = "fn:<AC>next">&lt;AC&gt;next</a></h3>
 
-<p><code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;next</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code></p>
+<p><code>static &lt;PAC&gt;enum <strong>&lt;AC&gt;next</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;enum <em>x</em>)</code></p>
 
 <p><a href = "src/array_coda.h">src/array_coda.h</a></p>
 
@@ -594,7 +594,7 @@
 
 <h3><a id = "fn:<AC>any" name = "fn:<AC>any">&lt;AC&gt;any</a></h3>
 
-<p><code>static const &lt;PAC&gt;type *<strong>&lt;AC&gt;any</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code></p>
+<p><code>static &lt;PAC&gt;enum <strong>&lt;AC&gt;any</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code></p>
 
 <p><a href = "src/array_coda.h">src/array_coda.h</a>: Iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
 
@@ -628,7 +628,7 @@
 
 <h3><a id = "fn:<ACC>lower_bound" name = "fn:<ACC>lower_bound">&lt;ACC&gt;lower_bound</a></h3>
 
-<p><code>static size_t <strong>&lt;ACC&gt;lower_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code></p>
+<p><code>static size_t <strong>&lt;ACC&gt;lower_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;enum *const <em>value</em>)</code></p>
 
 <p><a href = "src/array_coda.h">src/array_coda.h</a>: <code>box</code> should be partitioned true/false with less-then <code>value</code>.</p>
 
@@ -645,9 +645,9 @@
 
 <h3><a id = "fn:<ACC>upper_bound" name = "fn:<ACC>upper_bound">&lt;ACC&gt;upper_bound</a></h3>
 
-<p><code>static size_t <strong>&lt;ACC&gt;upper_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code></p>
+<p><code>static size_t <strong>&lt;ACC&gt;upper_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;enum *const <em>value</em>)</code></p>
 
-<p><a href = "src/array_coda.h">src/array_coda.h</a>: <code>box</code> should be partitioned false/true with greater-than or equal-to <a href = "#typedef:&lt;PAC&gt;type">&lt;PAC&gt;type</a> <code>value</code>.</p>
+<p><a href = "src/array_coda.h">src/array_coda.h</a>: <code>box</code> should be partitioned false/true with greater-than or equal-to <a href = "#typedef:&lt;PAC&gt;enum">&lt;PAC&gt;enum</a> <code>value</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -662,7 +662,7 @@
 
 <h3><a id = "fn:<ACC>insert_after" name = "fn:<ACC>insert_after">&lt;ACC&gt;insert_after</a></h3>
 
-<p><code>static int <strong>&lt;ACC&gt;insert_after</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code></p>
+<p><code>static int <strong>&lt;ACC&gt;insert_after</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;enum *const <em>value</em>)</code></p>
 
 <p><a href = "src/array_coda.h">src/array_coda.h</a>: Copies <code>value</code> at the upper bound of a sorted <code>box</code>.</p>
 

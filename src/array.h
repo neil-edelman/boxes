@@ -81,7 +81,6 @@
 #define ARRAY_CAT(n, m) ARRAY_CAT_(n, m)
 #define A_(n) ARRAY_CAT(ARRAY_NAME, n)
 #define PA_(n) ARRAY_CAT(array, A_(n))
-#define ARRAY_IDLE { 0, 0, 0 }
 #endif /* idempotent --> */
 
 
@@ -109,7 +108,21 @@ struct A_(array) { PA_(type) *data; size_t size, capacity; };
 #define BOX struct A_(array)
 #define BOX_ENUM PA_(type) *
 
-/** @return An idle array. @order \Theta(1) @allow */
+/* <!-- iterate interface */
+/* Contains all iteration parameters. */
+struct PA_(iterator) { const struct A_(array) *a; size_t i; };
+/** @return A iterator that is at the first element of `a`. @implements begin */
+static struct PA_(iterator) PA_(begin)(const struct A_(array) *const a)
+	{ struct PA_(iterator) it; it.a = a, it.i = 0; return it; }
+/** Advances `it` to the next element. @return A pointer to the current
+ element. @implements next */
+static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
+	return assert(it && it->a), it->i < it->a->size ? it->a->data + it->i++ : 0;
+}
+/* iterate --> */
+
+/** @return An initial idle array that takes no extra memory.
+ @order \Theta(1) @allow */
 static struct A_(array) A_(array)(void)
 	{ struct A_(array) a; a.data = 0, a.capacity = a.size = 0; return a; }
 
@@ -164,14 +177,13 @@ static PA_(type) *A_(array_buffer)(struct A_(array) *const a, const size_t n) {
  <fn:<A>array_append>. */
 static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n) {
 	PA_(type) *b;
-	assert(a);
 	if(!(b = A_(array_buffer)(a, n))) return 0;
 	assert(n <= a->capacity && a->size <= a->capacity - n);
 	return a->size += n, b;
 }
 
-/** Adds `n` un-initialised elements at position `at` in `a`. The buffer holds
- enough elements or it will invalidate any pointers in `a`.
+/** Adds `n` un-initialised elements at position `at` in `a`. It will
+ invalidate any pointers in `a` if the buffer holds too few elements.
  @param[at] A number smaller than or equal to `a.size`; if `a.size`, this
  function behaves as <fn:<A>array_append>.
  @return A pointer to the start of the new region, where there are `n`
@@ -186,15 +198,15 @@ static PA_(type) *A_(array_insert)(struct A_(array) *const a,
 	return a->data + at;
 }
 
-/** @return Adds (push back) one new element of `a`. The buffer holds an
- element or it will invalidate pointers in `a`.
+/** @return Adds (push back) one new element of `a`. The buffer space holds at
+ least one element, or it may invalidate pointers in `a`.
  @order amortised \O(1) @throws[realloc, ERANGE] @allow */
 static PA_(type) *A_(array_new)(struct A_(array) *const a)
 	{ return PA_(append)(a, 1); }
 
 /** Shrinks the capacity `a` to the size, freeing unused memory. If the size is
  zero, it will be in an idle state. Invalidates pointers in `a`.
- @return Success. @throws[ERANGE, realloc] Unlikely `realloc` error. */
+ @return Success. @throws[ERANGE, realloc] (Unlikely) `realloc` error. */
 static int A_(array_shrink)(struct A_(array) *const a) {
 	PA_(type) *data;
 	size_t c;
@@ -248,7 +260,7 @@ static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n)
 	{ return PA_(append)(a, n); }
 
 /** Indices [`i0`, `i1`) of `a` will be replaced with a copy of `b`.
- @param[b] Can be null, which acts as empty, but cannot be `a`.
+ @param[b] Can be null, which acts as empty, but cannot overlap with `a`.
  @return Success. @throws[realloc, ERANGE] @allow */
 static int A_(array_splice)(/*restrict*/ struct A_(array) *const a,
 	/*restrict*/ const struct A_(array) *const b,
@@ -270,19 +282,7 @@ static int A_(array_splice)(/*restrict*/ struct A_(array) *const a,
 	return 1;
 }
 
-/* <!-- iterate interface */
-/* Contains all iteration parameters. */
-struct PA_(iterator) { const struct A_(array) *a; size_t i; };
-/** Loads `a` into `it`. @implements begin */
-static struct PA_(iterator) PA_(begin)(const struct A_(array) *const a)
-	{ struct PA_(iterator) it; it.a = a, it.i = 0; return it; }
-/** Advances `it`. @implements next */
-static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
-	return assert(it && it->a), it->i < it->a->size ? it->a->data + it->i++ : 0;
-}
-/* iterate --> */
-
-/* <!-- coda interface */
+/* <!-- coda interface (This needs work.) */
 /** @return `a`. */
 static const struct A_(array) *PA_(id_c)(const struct A_(array) *const a)
 	{ return a; }
@@ -302,7 +302,7 @@ static struct A_(array) *PA_(id)(struct A_(array) *const a) { return a; }
 /* Forward-declare. */
 static void (*PA_(to_string))(const PA_(type) *, char (*)[12]);
 static const char *(*PA_(array_to_string))(const struct A_(array) *);
-#include "../test/test_array.h" /* (this will needlessly confuse) \include */
+#include "../test/test_array.h"
 #endif /* test --> */
 
 static void PA_(unused_base_coda)(void);

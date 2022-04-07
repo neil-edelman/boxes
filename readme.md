@@ -5,7 +5,7 @@ Stand\-alone header [src/array\.h](src/array.h); examples [test/test\_array\.c](
 ## Contiguous dynamic array ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), [&lt;PAC&gt;box](#user-content-typedef-66d14de2), [&lt;PAC&gt;type](#user-content-typedef-b6e4909d), [&lt;PAC&gt;action_fn](#user-content-typedef-6f318a4), [&lt;PAC&gt;predicate_fn](#user-content-typedef-13605483), [&lt;PAC&gt;bipredicate_fn](#user-content-typedef-6cd1ff8a), [&lt;PAC&gt;compare_fn](#user-content-typedef-355f3451), [&lt;PAC&gt;biaction_fn](#user-content-typedef-a314f7fb), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), [&lt;PAC&gt;box](#user-content-typedef-66d14de2), [&lt;PAC&gt;enum](#user-content-typedef-41f86750), [&lt;PAC&gt;action_fn](#user-content-typedef-6f318a4), [&lt;PAC&gt;predicate_fn](#user-content-typedef-13605483), [&lt;PAC&gt;bipredicate_fn](#user-content-typedef-6cd1ff8a), [&lt;PAC&gt;compare_fn](#user-content-typedef-355f3451), [&lt;PAC&gt;biaction_fn](#user-content-typedef-a314f7fb), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;A&gt;array](#user-content-tag-8049be0d)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -47,15 +47,15 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 ### <a id = "user-content-typedef-66d14de2" name = "user-content-typedef-66d14de2">&lt;PAC&gt;box</a> ###
 
-<code>typedef BOX_CONTAINER <strong>&lt;PAC&gt;box</strong>;</code>
+<code>typedef BOX <strong>&lt;PAC&gt;box</strong>;</code>
 
 [src/array\_coda\.h](src/array_coda.h): an alias to the box\.
 
 
 
-### <a id = "user-content-typedef-b6e4909d" name = "user-content-typedef-b6e4909d">&lt;PAC&gt;type</a> ###
+### <a id = "user-content-typedef-41f86750" name = "user-content-typedef-41f86750">&lt;PAC&gt;enum</a> ###
 
-<code>typedef BOX_CONTENTS <strong>&lt;PAC&gt;type</strong>;</code>
+<code>typedef BOX_ENUM <strong>&lt;PAC&gt;enum</strong>;</code>
 
 [src/array\_coda\.h](src/array_coda.h): an alias to the individual type contained in the box\.
 
@@ -63,47 +63,47 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 ### <a id = "user-content-typedef-6f318a4" name = "user-content-typedef-6f318a4">&lt;PAC&gt;action_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PAC&gt;action_fn</strong>)(&lt;PAC&gt;type *);</code>
+<code>typedef void(*<strong>&lt;PAC&gt;action_fn</strong>)(&lt;PAC&gt;enum);</code>
 
-[src/array\_coda\.h](src/array_coda.h): Operates by side\-effects on [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
+[src/array\_coda\.h](src/array_coda.h): Operates by side\-effects on [&lt;PAC&gt;enum](#user-content-typedef-41f86750)\.
 
 
 
 ### <a id = "user-content-typedef-13605483" name = "user-content-typedef-13605483">&lt;PAC&gt;predicate_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PAC&gt;predicate_fn</strong>)(const &lt;PAC&gt;type *);</code>
+<code>typedef int(*<strong>&lt;PAC&gt;predicate_fn</strong>)(const &lt;PAC&gt;enum);</code>
 
-[src/array\_coda\.h](src/array_coda.h): Returns a boolean given read\-only [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
+[src/array\_coda\.h](src/array_coda.h): Returns a boolean given read\-only [&lt;PAC&gt;enum](#user-content-typedef-41f86750)\.
 
 
 
 ### <a id = "user-content-typedef-6cd1ff8a" name = "user-content-typedef-6cd1ff8a">&lt;PAC&gt;bipredicate_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PAC&gt;bipredicate_fn</strong>)(const &lt;PAC&gt;type *, const &lt;PAC&gt;type *);</code>
+<code>typedef int(*<strong>&lt;PAC&gt;bipredicate_fn</strong>)(const &lt;PAC&gt;enum, const &lt;PAC&gt;enum);</code>
 
-[src/array\_coda\.h](src/array_coda.h): Returns a boolean given two read\-only [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
+[src/array\_coda\.h](src/array_coda.h): Returns a boolean given two read\-only [&lt;PAC&gt;enum](#user-content-typedef-41f86750)\.
 
 
 
 ### <a id = "user-content-typedef-355f3451" name = "user-content-typedef-355f3451">&lt;PAC&gt;compare_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PAC&gt;compare_fn</strong>)(const &lt;PAC&gt;type *a, const &lt;PAC&gt;type *b);</code>
+<code>typedef int(*<strong>&lt;PAC&gt;compare_fn</strong>)(const &lt;PAC&gt;enum a, const &lt;PAC&gt;enum b);</code>
 
-[src/array\_coda\.h](src/array_coda.h): Three\-way comparison on a totally order set of [&lt;PAC&gt;type](#user-content-typedef-b6e4909d); returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
+[src/array\_coda\.h](src/array_coda.h): Three\-way comparison on a totally order set of [&lt;PAC&gt;enum](#user-content-typedef-41f86750); returns an integer value less then, equal to, greater then zero, if `a < b`, `a == b`, `a > b`, respectively\.
 
 
 
 ### <a id = "user-content-typedef-a314f7fb" name = "user-content-typedef-a314f7fb">&lt;PAC&gt;biaction_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PAC&gt;biaction_fn</strong>)(&lt;PAC&gt;type *, &lt;PAC&gt;type *);</code>
+<code>typedef int(*<strong>&lt;PAC&gt;biaction_fn</strong>)(&lt;PAC&gt;enum, &lt;PAC&gt;enum);</code>
 
-[src/array\_coda\.h](src/array_coda.h): Returns a boolean given two [&lt;PAC&gt;type](#user-content-typedef-b6e4909d)\.
+[src/array\_coda\.h](src/array_coda.h): Returns a boolean given two [&lt;PAC&gt;enum](#user-content-typedef-41f86750)\.
 
 
 
 ### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(&lt;PSZ&gt;enum_c, char(*)[12]);</code>
 
 [to\_string\.h](to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\. `<PSZ>type` is contracted to be an internal iteration type of the box\.
 
@@ -127,7 +127,7 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-8049be0d">&lt;A&gt;array</a></td><td>a</td></tr>
+<tr><td align = right>static struct &lt;A&gt;array</td><td><a href = "#user-content-fn-8049be0d">&lt;A&gt;array</a></td><td></td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-46169b16">&lt;A&gt;array_</a></td><td>a</td></tr>
 
@@ -153,9 +153,9 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-bce1c326">&lt;A&gt;array_splice</a></td><td>a, b, i0, i1</td></tr>
 
-<tr><td align = right>static &lt;PAC&gt;type *</td><td><a href = "#user-content-fn-b346708e">&lt;AC&gt;previous</a></td><td>box, x</td></tr>
+<tr><td align = right>static &lt;PAC&gt;enum</td><td><a href = "#user-content-fn-b346708e">&lt;AC&gt;previous</a></td><td>box, x</td></tr>
 
-<tr><td align = right>static &lt;PAC&gt;type *</td><td><a href = "#user-content-fn-60e57f42">&lt;AC&gt;next</a></td><td>box, x</td></tr>
+<tr><td align = right>static &lt;PAC&gt;enum</td><td><a href = "#user-content-fn-60e57f42">&lt;AC&gt;next</a></td><td>box, x</td></tr>
 
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-86c2328d">&lt;AC&gt;clip</a></td><td>box, i</td></tr>
 
@@ -169,7 +169,7 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-d0650740">&lt;AC&gt;if_each</a></td><td>box, predicate, action</td></tr>
 
-<tr><td align = right>static const &lt;PAC&gt;type *</td><td><a href = "#user-content-fn-ed02e52b">&lt;AC&gt;any</a></td><td>box, predicate</td></tr>
+<tr><td align = right>static &lt;PAC&gt;enum</td><td><a href = "#user-content-fn-ed02e52b">&lt;AC&gt;any</a></td><td>box, predicate</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-a4e64b3d">&lt;ACC&gt;compare</a></td><td>a, b</td></tr>
 
@@ -199,10 +199,10 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 ### <a id = "user-content-fn-8049be0d" name = "user-content-fn-8049be0d">&lt;A&gt;array</a> ###
 
-<code>static void <strong>&lt;A&gt;array</strong>(struct &lt;A&gt;array *const <em>a</em>)</code>
+<code>static struct &lt;A&gt;array <strong>&lt;A&gt;array</strong>(void)</code>
 
-Initialises `a` to idle\.
-
+ * Return:  
+   An initial idle array that takes no extra memory\.
  * Order:  
    &#920;\(1\)
 
@@ -213,7 +213,7 @@ Initialises `a` to idle\.
 
 <code>static void <strong>&lt;A&gt;array_</strong>(struct &lt;A&gt;array *const <em>a</em>)</code>
 
-Destroys `a` and returns it to idle\.
+If `a` is not null, destroys and returns it to idle\.
 
 
 
@@ -251,7 +251,7 @@ The capacity of `a` will be increased to at least `n` elements beyond the size\.
 
 <code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_insert</strong>(struct &lt;A&gt;array *const <em>a</em>, const size_t <em>n</em>, const size_t <em>at</em>)</code>
 
-Adds `n` un\-initialised elements at position `at` in `a`\. The buffer holds enough elements or it will invalidate any pointers in `a`\.
+Adds `n` un\-initialised elements at position `at` in `a`\. It will invalidate any pointers in `a` if the buffer holds too few elements\.
 
  * Parameter: _at_  
    A number smaller than or equal to `a.size`; if `a.size`, this function behaves as [&lt;A&gt;array_append](#user-content-fn-2d92b62)\.
@@ -267,7 +267,7 @@ Adds `n` un\-initialised elements at position `at` in `a`\. The buffer holds eno
 <code>static &lt;PA&gt;type *<strong>&lt;A&gt;array_new</strong>(struct &lt;A&gt;array *const <em>a</em>)</code>
 
  * Return:  
-   Adds \(push back\) one new element of `a`\. The buffer holds an element or it will invalidate pointers in `a`\.
+   Adds \(push back\) one new element of `a`\. The buffer space holds at least one element, or it may invalidate pointers in `a`\.
  * Exceptional return: realloc, ERANGE  
  * Order:  
    amortised &#927;\(1\)
@@ -355,7 +355,7 @@ Adds `n` elements to the back of `a`\. It will invalidate pointers in `a` if `n`
 Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
  * Parameter: _b_  
-   Can be null, which acts as empty, but cannot be `a`\.
+   Can be null, which acts as empty, but cannot overlap with `a`\.
  * Return:  
    Success\.
  * Exceptional return: realloc, ERANGE  
@@ -365,7 +365,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 ### <a id = "user-content-fn-b346708e" name = "user-content-fn-b346708e">&lt;AC&gt;previous</a> ###
 
-<code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;previous</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code>
+<code>static &lt;PAC&gt;enum <strong>&lt;AC&gt;previous</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;enum <em>x</em>)</code>
 
 [src/array\_coda\.h](src/array_coda.h)
 
@@ -379,7 +379,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 ### <a id = "user-content-fn-60e57f42" name = "user-content-fn-60e57f42">&lt;AC&gt;next</a> ###
 
-<code>static &lt;PAC&gt;type *<strong>&lt;AC&gt;next</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>x</em>)</code>
+<code>static &lt;PAC&gt;enum <strong>&lt;AC&gt;next</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;enum <em>x</em>)</code>
 
 [src/array\_coda\.h](src/array_coda.h)
 
@@ -468,7 +468,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 ### <a id = "user-content-fn-ed02e52b" name = "user-content-fn-ed02e52b">&lt;AC&gt;any</a> ###
 
-<code>static const &lt;PAC&gt;type *<strong>&lt;AC&gt;any</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code>
+<code>static &lt;PAC&gt;enum <strong>&lt;AC&gt;any</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;predicate_fn <em>predicate</em>)</code>
 
 [src/array\_coda\.h](src/array_coda.h): Iterates through `box` and calls `predicate` until it returns true\.
 
@@ -496,7 +496,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 ### <a id = "user-content-fn-5214478c" name = "user-content-fn-5214478c">&lt;ACC&gt;lower_bound</a> ###
 
-<code>static size_t <strong>&lt;ACC&gt;lower_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code>
+<code>static size_t <strong>&lt;ACC&gt;lower_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;enum *const <em>value</em>)</code>
 
 [src/array\_coda\.h](src/array_coda.h): `box` should be partitioned true/false with less\-then `value`\.
 
@@ -510,9 +510,9 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 ### <a id = "user-content-fn-aa46e23d" name = "user-content-fn-aa46e23d">&lt;ACC&gt;upper_bound</a> ###
 
-<code>static size_t <strong>&lt;ACC&gt;upper_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code>
+<code>static size_t <strong>&lt;ACC&gt;upper_bound</strong>(const &lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;enum *const <em>value</em>)</code>
 
-[src/array\_coda\.h](src/array_coda.h): `box` should be partitioned false/true with greater\-than or equal\-to [&lt;PAC&gt;type](#user-content-typedef-b6e4909d) `value`\.
+[src/array\_coda\.h](src/array_coda.h): `box` should be partitioned false/true with greater\-than or equal\-to [&lt;PAC&gt;enum](#user-content-typedef-41f86750) `value`\.
 
  * Return:  
    The first index of `box` that is greater than `value`\.
@@ -524,7 +524,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 ### <a id = "user-content-fn-4789a122" name = "user-content-fn-4789a122">&lt;ACC&gt;insert_after</a> ###
 
-<code>static int <strong>&lt;ACC&gt;insert_after</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;type *const <em>value</em>)</code>
+<code>static int <strong>&lt;ACC&gt;insert_after</strong>(&lt;PAC&gt;box *const <em>box</em>, const &lt;PAC&gt;enum *const <em>value</em>)</code>
 
 [src/array\_coda\.h](src/array_coda.h): Copies `value` at the upper bound of a sorted `box`\.
 

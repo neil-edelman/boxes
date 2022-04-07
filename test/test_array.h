@@ -350,7 +350,7 @@ static int PA_(keep_deterministic)(PA_(type) *const data) {
 static void PA_(test_keep)(void) {
 	PA_(type) ts[17], *t, *t1, *e;
 	const size_t ts_size = sizeof ts / sizeof *ts;
-	struct A_(array) a = ARRAY_IDLE, b = ARRAY_IDLE;
+	struct A_(array) a = A_(array)(), b = A_(array)();
 	int ret;
 	memset(ts, 0, sizeof ts); /* Valgrind. */
 	PA_(valid_state)(&a);
@@ -397,7 +397,7 @@ static int PA_(true)(PA_(type) *const t) {
 }
 
 static void PA_(test_each)(void) {
-	struct A_(array) empty = ARRAY_IDLE, one = ARRAY_IDLE;
+	struct A_(array) empty = A_(array)(), one = A_(array)();
 	const PA_(type) *t;
 	t = A_(array_new)(&one);
 	assert(t);
@@ -421,7 +421,7 @@ static void PA_(test_each)(void) {
 }
 
 static void PA_(test_insert)(void) {
-	struct A_(array) a = ARRAY_IDLE;
+	struct A_(array) a = A_(array)();
 	PA_(type) original[17], solitary, *t, *t1, *e;
 	const size_t original_size = sizeof original / sizeof *original;
 	size_t i;

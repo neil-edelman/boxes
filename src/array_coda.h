@@ -54,10 +54,11 @@ static PAC_(box_to_array) PAC_(b2a) = (ARRAY_CODA_BOX_TO);
 #if !defined(BOX_IS_EQUAL) && !defined(BOX_COMPARE) /* <!-- functions */
 
 
-/** <src/array_coda.h>: Operates by side-effects on <typedef:<PAC>type>. */
+/** <src/array_coda.h>: Operates by side-effects on <typedef:<PAC>enum>. */
 typedef void (*PAC_(action_fn))(PAC_(enum));
 
-/** <src/array_coda.h>: Returns a boolean given read-only <typedef:<PAC>type>. */
+/** <src/array_coda.h>: Returns a boolean given read-only
+ <typedef:<PAC>enum>. */
 typedef int (*PAC_(predicate_fn))(const PAC_(enum));
 
 /** <src/array_coda.h> @param[x] A valid entry or null to start from the last.
@@ -95,9 +96,9 @@ static size_t AC_(clip)(const PAC_(box) *const box, const long i) {
 		: (size_t)i > a->size ? a->size : (size_t)i;
 }
 
-/** <src/array_coda.h>: For all elements of `b`, calls `copy`, and if true, lazily
- copies the elements to `a`. `a` and `b` can not be the same but `b` can be
- null, (in which case, it does nothing.)
+/** <src/array_coda.h>: For all elements of `b`, calls `copy`, and if true,
+ lazily copies the elements to `a`. `a` and `b` can not be the same but `b` can
+ be null, (in which case, it does nothing.)
  @order \O(`b.size` \times `copy`) @throws[ERANGE, realloc] @allow */
 static int AC_(copy_if)(PAC_(box) *const a, const PAC_(predicate_fn) copy,
 	const PAC_(box) *const b) {
@@ -165,8 +166,8 @@ static void AC_(keep_if)(PAC_(box) *const box,
 	a->size = (size_t)(erase - a->data);
 }
 
-/** <src/array_coda.h>: Removes at either end of `box` of things that `predicate`
- returns true. @order \O(`box.size` \times `predicate`) @allow */
+/** <src/array_coda.h>: Removes at either end of `box` of things that
+ `predicate` returns true. @order \O(`box.size` \times `predicate`) @allow */
 static void AC_(trim)(PAC_(box) *const box,
 	const PAC_(predicate_fn) predicate) {
 	PAC_(array) *const a = PAC_(b2a)(box);
@@ -228,13 +229,13 @@ static void PAC_(unused_function_coda)(void) { PAC_(unused_function)(); }
 
 #ifndef ARRAY_CODA_COMPARE_ONCE /* <!-- once */
 #define ARRAY_CODA_COMPARE_ONCE
-/** <src/array_coda.h>: Returns a boolean given two read-only <typedef:<PAC>type>. */
+/** <src/array_coda.h>: Returns a boolean given two read-only <typedef:<PAC>enum>. */
 typedef int (*PAC_(bipredicate_fn))(const PAC_(enum), const PAC_(enum));
 /** <src/array_coda.h>: Three-way comparison on a totally order set of
- <typedef:<PAC>type>; returns an integer value less then, equal to, greater
+ <typedef:<PAC>enum>; returns an integer value less then, equal to, greater
  then zero, if `a < b`, `a == b`, `a > b`, respectively. */
 typedef int (*PAC_(compare_fn))(const PAC_(enum) a, const PAC_(enum) b);
-/** <src/array_coda.h>: Returns a boolean given two <typedef:<PAC>type>. */
+/** <src/array_coda.h>: Returns a boolean given two <typedef:<PAC>enum>. */
 typedef int (*PAC_(biaction_fn))(PAC_(enum), PAC_(enum));
 #endif /* once --> */
 
@@ -289,9 +290,9 @@ static size_t ACC_(lower_bound)(const PAC_(box) *const box,
 	return low;
 }
 
-/** <src/array_coda.h>: `box` should be partitioned false/true with greater-than or
- equal-to <typedef:<PAC>type> `value`. @return The first index of `box` that is
- greater than `value`. @order \O(log `a.size`) @allow */
+/** <src/array_coda.h>: `box` should be partitioned false/true with
+ greater-than or equal-to <typedef:<PAC>enum> `value`. @return The first index
+ of `box` that is greater than `value`. @order \O(log `a.size`) @allow */
 static size_t ACC_(upper_bound)(const PAC_(box) *const box,
 	const PAC_(enum) *const value) {
 	const PAC_(array) *a = PAC_(b2a_c)(box);
