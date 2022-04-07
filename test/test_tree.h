@@ -130,6 +130,9 @@ static void PB_(valid)(const struct B_(tree) *const tree) {
 	/*...*/
 }
 
+/** Ca'n't use `qsort` with `size` because we don't have a comparison;
+ <data:<PB>compare> only has to separate it into two, not three. (One can use
+ `qsort` compare in this compare, but generally not the other way around.) */
 static void PB_(sort)(PB_(entry) *a, const size_t size) {
 	PB_(entry) temp;
 	size_t i;
@@ -139,14 +142,14 @@ static void PB_(sort)(PB_(entry) *a, const size_t size) {
 			char n[12], m[12];
 			PB_(to_string)(a + j - 1, &n);
 			PB_(to_string)(a + i, &m);
-			printf("cmp %s and %s\n", n, m);
+			/*printf("cmp %s and %s\n", n, m);*/
 			if(!(PB_(compare)(PB_(to_x)(a + j - 1),
 			PB_(to_x)(a + i)) > 0)) break;
 		}
 		if(j == i) continue;
-		/*temp = a[i];*/ memcpy(&temp, a + i, sizeof *a);
+		temp = a[i]; /*memcpy(&temp, a + i, sizeof *a);*/
 		memmove(a + j + 1, a + j, sizeof *a * (i - j));
-		/*a[j] = temp;*/ memcpy(a + j, &temp, sizeof *a);
+		a[j] = temp; /*memcpy(a + j, &temp, sizeof *a);*/
 	}
 }
 
@@ -155,6 +158,10 @@ static void PB_(test)(void) {
 	struct B_(tree) tree = TREE_IDLE;
 	struct B_(tree_iterator) it;
 	PB_(entry) n[3];
+#ifdef TREE_VALUE
+	/* Values go here for when they are needed, then they are copied. */
+	PB_(value) copy_values[sizeof n / sizeof *n];
+#endif
 	const size_t n_size = sizeof n / sizeof *n;
 	PB_(value) *value;
 	size_t i;
@@ -162,10 +169,15 @@ static void PB_(test)(void) {
 	errno = 0;
 
 	/* Fill. */
-	for(i = 0; i < n_size; i++) PB_(filler)(n + i);
+	for(i = 0; i < n_size; i++) {
+#ifdef TREE_VALUE
+		n[i].value = copy_values + i; /* Must have value a valid pointer. */
+#endif
+		PB_(filler)(n + i);
+	}
 	PB_(sort)(n, n_size);
-	for(i = 0; i < n_size; i++)
-		PB_(to_string)(n + i, &z), printf("%s\n", z);
+	/*for(i = 0; i < n_size; i++)
+		PB_(to_string)(n + i, &z), printf("%s\n", z);*/
 
 	/* Idle. */
 	PB_(valid)(0);
@@ -188,7 +200,6 @@ static void PB_(test)(void) {
 		assert(value);
 #ifdef TREE_VALUE
 		memcpy(value, &e->value, sizeof e->value); /* Untested. */
-		printf("%u:%u\n", e->x, *e->value);
 #endif
 		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u.gv", ++PB_(no));
 		PB_(graph)(&tree, fn);
