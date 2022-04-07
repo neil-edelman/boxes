@@ -208,7 +208,7 @@ static void PB_(begin)(struct PB_(iterator) *const it,
 
 /** Advances `it` and returns the last or null in a static entry.
  @implements next */
-const static PB_(entry) *PB_(next)(struct PB_(iterator) *const it) {
+static const PB_(entry) *PB_(next)(struct PB_(iterator) *const it) {
 	static PB_(entry) e;
 	assert(it);
 	printf("_next_\n");
@@ -282,8 +282,9 @@ static void B_(tree_)(struct B_(tree) *const tree) {
 struct B_(tree_iterator) { struct PB_(iterator) it; };
 
 /** Loads the first element of `tree` (can be null) into `it`. */
-static void B_(tree_begin)(struct B_(tree_iterator) *const it,
-	const struct B_(tree) *const tree) { PB_(begin)(&it->it, tree); }
+static struct B_(tree_iterator) B_(tree_begin)(const struct B_(tree) *const
+	tree)
+	{ struct B_(tree_iterator) it; PB_(begin)(&it.it, tree); return it; }
 
 /** Advances `it`.
  @return If the iteration is finished, null, otherwise, if `TREE_VALUE`, a
@@ -307,14 +308,19 @@ static struct B_(tree_iterator) B_(tree_lower)(const struct B_(tree)
 
 /** @return Lowest match for `x` in `tree` or null no such item exists.
  @order \O(\log |`tree`|) @allow */
-static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
+static const PB_(entry) *B_(tree_get)(const struct B_(tree) *const tree,
 	const PB_(type) x) {
-	const struct PB_(iterator) it = PB_(lower)(tree, x);
-	return it.tree && it.n.node ? it.n.node->x + it.idx : 0;
+	struct PB_(iterator) it = PB_(lower)(tree, x);
+	/*return it.tree && it.n.node ? it.n.node->x + it.idx : 0;*/
+	return PB_(next)(&it);
 }
 
 #include "../test/orcish.h"
 static void PB_(print)(const struct B_(tree) *const tree);
+#ifndef TREE_TEST
+static void PB_(print)(const struct B_(tree) *const tree)
+	{ (void)tree, printf("not printable\n"); }
+#endif
 
 /** `x` must be not less than the largest key in `tree`.
  @throws[EDOM] `x` is smaller than the largest key in `tree`.
@@ -356,7 +362,7 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 			}
 			assert(last); /* Else it would be empty and we would not be here. */
 			printf("dowhile expl finished %s:%u, last: %u, space %s:%u\n",
-				orcify(expl.node), expl.height, *last,
+				orcify(expl.node), expl.height, 0/**last*/,
 				orcify(space.node), space.height);
 		}
 
@@ -463,7 +469,7 @@ static const char *(*PB_(tree_to_string))(const struct B_(tree) *);
 
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
-	B_(tree)(); B_(tree_)(0); B_(tree_begin)(0, 0); B_(tree_next)(0);
+	B_(tree)(); B_(tree_)(0); B_(tree_begin)(0); B_(tree_next)(0);
 	B_(tree_lower)(0, 0);
 	B_(tree_get)(0, 0);
 	B_(tree_bulk_add)(0, 0);

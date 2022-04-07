@@ -10,12 +10,12 @@
 #define TREE_NAME foo
 #include "../src/tree.h"
 
+
 /* Unsigned numbers: testing framework. */
-/*#if 99999999999 < RAND_MAX
-#error RAND_MAX is too big; the example will have to be tweaked.
-#endif*/
+/** @implements <typedef:<PB>action_fn> */
 static void unsigned_filler(unsigned *x)
 	{ *x = (unsigned)rand() / (RAND_MAX / 1000 + 1); }
+/** @implements <typedef:<PSZ>to_string_fn> */
 static void unsigned_to_string(const unsigned *x, char (*const z)[12])
 	{ sprintf(*z, "%u", *x); }
 #define TREE_NAME unsigned
@@ -26,7 +26,7 @@ static void unsigned_to_string(const unsigned *x, char (*const z)[12])
 #include "../src/tree.h"
 
 
-/* Unsigned numbers and values. */
+/* Unsigned numbers and values. Prototype a value. */
 struct pair_tree_entry;
 static void pair_filler(struct pair_tree_entry *);
 static void pair_to_string(const struct pair_tree_entry *, char (*)[12]);
@@ -37,56 +37,20 @@ static void pair_to_string(const struct pair_tree_entry *, char (*)[12]);
 #include "../src/tree.h"
 #define TREE_TO_STRING &pair_to_string
 #include "../src/tree.h"
+/** @implements <typedef:<PB>action_fn> */
 static void pair_filler(struct pair_tree_entry *x) {
 	unsigned_filler(&x->x);
 	*x->value = (unsigned)rand() / (RAND_MAX / 100000 + 1);
-	printf("generated %u->%u\n", x->x, *x->value);
+	/*printf("generated %u->%u\n", x->x, *x->value);*/
 }
+/** @implements <typedef:<PSZ>to_string_fn> */
 static void pair_to_string(const struct pair_tree_entry *x, char (*const z)[12])
 	{ sprintf(*z, "%u→%u", x->x, *x->value); } /* 3 + 3 + 5 */
 
 
-
-#if 0
-/** Manually tested. This will not, and can not work, leaving the strings
- uninitialized. Do _not_ call <fn:str_trie_test>. */
-static void str_filler(const char *c) { assert(c != 0); }
-/* A set of strings. `TRIE_TO_STRING` and `TRIE_TEST` are for graphing; one
- doesn't need them otherwise. */
-#define TREE_NAME str
-#define TREE_EXCECT_TRAIT
-#define TREE_TO_STRING
-#define TREE_TEST &str_filler
-#include "../src/tree.h"
-
-/* You can have an `enum` in a `trie`, pointing to a fixed set of strings. */
-#define PARAM(A) A
-#define STRINGIZE(A) #A
-#define COLOUR(X) \
-	X(White), X(Silver), X(Gray), X(Black), X(Red), X(Maroon), X(Bisque), \
-	X(Wheat), X(Tan), X(Sienna), X(Brown), X(Yellow), X(Khaki), X(Gold), \
-	X(Olive), X(Lime), X(Green), X(Aqua), X(Cyan), X(Teal), X(Salmon), \
-	X(Orange), X(Powder), X(Sky), X(Steel), X(Royal), X(Blue), X(Navy), \
-	X(Fuchsia), X(Pink), X(Purple)
-enum colour { COLOUR(PARAM) };
-static const char *const colours[] = { COLOUR(STRINGIZE) };
-static const size_t colour_size = sizeof colours / sizeof *colours;
-static void colour_filler(enum colour *const c)
-	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
-static const char *colour_key(const enum colour *const c)
-	{ return colours[*c]; }
-#define TRIE_NAME colour
-#define TRIE_VALUE enum colour
-#define TRIE_KEY_IN_VALUE &colour_key
-#define TRIE_TEST &colour_filler
-#define TRIE_TO_STRING
-#include "../src/trie.h"
-
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
- Sol. This is just a little bit more complex than colours, storing a pointer to
- a static name and the distance in a struct. */
-#define PARAM2(A, B) { #A, B }
-#define STARS(X) \
+ Sol. We define a tree of ascending distances. */
+#define STARS \
 	X(Sol, 0), X(Sirius, 8.6), X(Canopus, 310), X(Rigil Kentaurus, 4.4), \
 	X(Toliman, 4.4), X(Arcturus, 37), X(Vega, 25), X(Capella, 43), \
 	X(Rigel, 860), X(Procyon, 11), X(Achernar, 139), X(Betelgeuse, 700), \
@@ -111,103 +75,39 @@ static const char *colour_key(const enum colour *const c)
 	X(Merak, 79), X(Ankaa, 77), X(Girtab, 460), X(Enif, 670), X(Scheat, 200), \
 	X(Sabik, 88), X(Phecda, 84), X(Aludra, 2000), X(Markeb, 540), \
 	X(Navi, 610), X(Markab, 140), X(Aljanah, 72), X(Acrab, 404)
-/* Tau Ceti? */
-struct star { char *name; double distance; };
-static const struct star stars[] = { STARS(PARAM2) };
-static const size_t stars_size = sizeof stars / sizeof *stars;
-static void star_filler(struct star *const s) {
-	const struct star *r = stars
-		+ (unsigned)rand() / (RAND_MAX / stars_size + 1);
-	s->name = r->name;
-	s->distance = r->distance;
+#define X(n, m) #n
+static const char *star_names[] = { STARS };
+#undef X
+#define X(n, m) m
+static double star_distances[] = { STARS };
+#undef X
+static size_t star_size = sizeof star_names / sizeof *star_names;
+struct star_tree_entry;
+static void star_filler(struct star_tree_entry *);
+static void star_to_string(const struct star_tree_entry *, char (*)[12]);
+#define TREE_NAME star
+#define TREE_TYPE double
+#define TREE_VALUE const char *
+#define TREE_TEST &star_filler
+#define TREE_EXPECT_TRAIT
+#include "../src/tree.h"
+#define TREE_TO_STRING &star_to_string
+#include "../src/tree.h"
+/** @implements <typedef:<PB>action_fn> */
+static void star_filler(struct star_tree_entry *x) {
+	const unsigned i = (unsigned)rand() / (RAND_MAX / star_size + 1);
+	x->x = star_distances[i], *x->value = star_names[i];
 }
-static const char *star_key(const struct star *const star)
-	{ return star->name; }
-#define TRIE_NAME star
-#define TRIE_VALUE struct star
-#define TRIE_KEY_IN_VALUE &star_key
-#define TRIE_TEST &star_filler
-#define TRIE_TO_STRING
-#include "../src/trie.h"
+/** @implements <typedef:<PSZ>to_string_fn> */
+static void star_to_string(const struct star_tree_entry *x, char (*const z)[12])
+	{ sprintf(*z, "%.11s", *x->value); }
 
-/* Stores a value in the item itself. If the string changes while in the trie,
- the trie is now undefined, don't do that. */
-struct str4 { char value[4]; };
-static void str4_filler(struct str4 *const s)
-	{ orcish(s->value, sizeof s->value); }
-static const char *str4_key(const struct str4 *const s) { return s->value; }
-#define TRIE_NAME str4
-#define TRIE_VALUE struct str4
-#define TRIE_KEY_IN_VALUE &str4_key
-#define TRIE_TEST &str4_filler
-#define TRIE_TO_STRING
-#include "../src/trie.h"
-
-/* This is organized, alphabetized, and supports range-queries by key. */
-struct keyval { char key[12]; int value; };
-static void keyval_filler(struct keyval *const kv)
-	{ kv->value = rand() / (RAND_MAX / 1098 + 1) - 99;
-	orcish(kv->key, sizeof kv->key); }
-static const char *keyval_key(const struct keyval *const kv)
-	{ return kv->key; }
-#define TRIE_NAME keyval
-#define TRIE_VALUE struct keyval
-#define TRIE_KEY_IN_VALUE &keyval_key
-#define TRIE_TEST &keyval_filler
-#define TRIE_TO_STRING
-#include "../src/trie.h"
-
-/** Manual testing for default string trie, that is, no associated information,
- just a set of `char *`. */
-static void contrived_str_test(void) {
-	struct str_trie strs = TRIE_IDLE;
-	size_t i, j;
-	int show;
-	const char *str_array[] = { "a", "b", "c", "ba", "bb", "", "A", "Z", "z",
-		"â", "foobar", "foo", "dictionary", "dictionaries" };
-	size_t str_array_size = sizeof str_array / sizeof *str_array;
-	printf("Contrived manual test of string set trie.\n");
-	trie_str_no = 0;
-	for(i = 0; i < sizeof str_array / sizeof *str_array; i++) {
-		show = 1;//!((i + 1) & i) || i + 1 == str_array_size;
-		if(show) trie_str_no++;
-		if(show) printf("%lu: adding \"%s\".\n",
-			(unsigned long)i, str_array[i]);
-		if(!str_trie_try(&strs, str_array[i]))
-			{ printf("%lu: %s not unique?\n", (unsigned long)i, str_array[i]);
-			assert(0); continue; }
-		if(show) trie_str_graph(&strs, "graph/str-add.gv");
-		for(j = 0; j <= i; j++) {
-			const char *sz = str_trie_get(&strs, str_array[j]);
-			/*printf("Test get(\"%s\") = \"%s\".\n",
-				str_array[j], sz ? sz : "<didn't find>");*/
-			assert(sz == str_array[j]);
-		}
-	}
-	for( ; i; i--) {
-		int is;
-		show = 1/*!(i & (i - 1))*/;
-		if(show) trie_str_no++;
-		if(show) printf("\"%s\" remove.\n", str_array[i - 1]);
-		is = str_trie_remove(&strs, str_array[i - 1]);
-		if(show) trie_str_graph(&strs, "graph/str-deleted.gv");
-		for(j = 0; j < sizeof str_array / sizeof *str_array; j++) {
-			const char *get = str_trie_get(&strs, str_array[j]);
-			const int want_to_get = j < i - 1;
-			printf("Test get(%s) = %s, (%swant to get.)\n",
-				str_array[j], get ? get : "<didn't find>",
-				want_to_get ? "" : "DON'T ");
-			assert(!(want_to_get ^ (get == str_array[j])));
-		}
-	}
-	str_trie_(&strs);
-}
-#endif /* 0 */
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	unsigned_tree_test();
 	pair_tree_test();
+	star_tree_test();
 	return EXIT_SUCCESS;
 }

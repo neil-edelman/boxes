@@ -158,18 +158,20 @@ static void PB_(test)(void) {
 	PB_(value) copy_values[sizeof n / sizeof *n];
 #endif
 	const size_t n_size = sizeof n / sizeof *n;
-	PB_(value) *value;
+	const PB_(entry) *entry;
 	size_t i;
 
 	errno = 0;
 
 	/* Fill. */
+	printf("fill\n");
 	for(i = 0; i < n_size; i++) {
 #ifdef TREE_VALUE
 		n[i].value = copy_values + i; /* Must have value a valid pointer. */
 #endif
 		PB_(filler)(n + i);
 	}
+	printf("sort\n");
 	PB_(sort)(n, n_size);
 	/*for(i = 0; i < n_size; i++)
 		PB_(to_string)(n + i, &z), printf("%s\n", z);*/
@@ -180,13 +182,14 @@ static void PB_(test)(void) {
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
 	it = B_(tree_lower)(0, PB_(to_x)(n + 0)), assert(!it.it.tree);
-	value = B_(tree_get)(0, PB_(to_x)(n + 0)), assert(!value);
+	entry = B_(tree_get)(0, PB_(to_x)(n + 0)), assert(!entry);
 	it = B_(tree_lower)(&tree, PB_(to_x)(n + 0)), assert(!it.it.tree);
-	value = B_(tree_get)(&tree, PB_(to_x)(n + 0)), assert(!value);
+	entry = B_(tree_get)(&tree, PB_(to_x)(n + 0)), assert(!entry);
 
 	/* Test. */
 	for(i = 0; i < n_size; i++) {
 		PB_(entry) *const e = n + i;
+		PB_(value) *value;
 		char fn[64];
 		PB_(to_string)(e, &z);
 		printf("Adding %s.\n", z);
@@ -198,6 +201,10 @@ static void PB_(test)(void) {
 		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u.gv", ++PB_(no));
 		PB_(graph)(&tree, fn);
 	}
+	/* Iteration. */
+	it = B_(tree_begin)(&tree), i = 0;
+	//while(entry = B_(tree_next)(it)) i++;
+
 	B_(tree_)(&tree), assert(!tree.node), PB_(valid)(&tree);
 	assert(!errno);
 }
