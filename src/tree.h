@@ -320,8 +320,8 @@ static void PB_(print)(const struct B_(tree) *const tree);
  @throws[EDOM] `x` is smaller than the largest key in `tree`.
  @throws[malloc] */
 static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
-	struct PB_(outer) *node = 0;
-	struct PB_(inner) *head = 0;
+	/* `node` is outer and `head` is inner up to the point where they merge. */
+	struct PB_(outer) *node = 0, *head = 0;
 	printf("bulk():\n");
 	if(!tree) return 0;
 	if(!tree->node) { /* Idle tree. */
@@ -371,28 +371,34 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 		} else {
 			if(!(node = tail = malloc(sizeof *tail))) goto catch;
 			tail->size = 0;
-			printf("tail: %s.\n", orcify(tail));
+			printf("new tail: %s.\n", orcify(tail));
 			while(--n) {
 				struct PB_(inner) *inner;
 				if(!(inner = malloc(sizeof *inner))) goto catch;
 				inner->base.size = 0;
-				printf("inner: %s.\n", orcify(inner));
+				printf("new inner: %s.\n", orcify(inner));
 				if(!head) inner->link[0] = 0, pretail = inner; /* First loop. */
-				else inner->link[0] = &head->base; /* Not first loop. */
-				head = inner;
+				else inner->link[0] = head; /* Not first loop. */
+				head = &inner->base;
 			}
 		}
 
 		/* Post-error; modify the original as needed. */
 		if(pretail) pretail->link[0] = tail;
+		else head = node;
 		if(!space.node) { /* Add tree to head. */
+			struct PB_(inner) *const inner = PB_(inner)(head);
+			printf("adding the existing root, %s to %s\n",
+				orcify(tree->node), orcify(head));
 			assert(new_nodes > 1);
-			head->link[1] = head->link[0], head->link[0] = tree->node;
-			node = tree->node = &head->base, tree->height++;
+			inner->link[1] = inner->link[0], inner->link[0] = tree->node;
+			node = tree->node = head, tree->height++;
 		} else if(space.height) { /* Add head to tree. */
+			struct PB_(inner) *const inner = PB_(inner)(node = space.node);
+			printf("adding the linked list, %s to %s at %u\n",
+				orcify(head), orcify(inner), inner->base.size + 1);
 			assert(new_nodes);
-			struct PB_(inner) *const expand = PB_(inner)(space.node);
-			expand->link[expand->base.size + 1] = &head->base;
+			inner->link[inner->base.size + 1] = head;
 		}
 	}
 	assert(node && node->size < TREE_MAX);
@@ -407,11 +413,11 @@ catch:
 	printf("!!! freeing %s\n", orcify(node));
 	free(node);
 	if(head) for( ; ; ) {
-		struct PB_(outer) *const next = head->link[0];
+		struct PB_(outer) *const next = PB_(inner)(head)->link[0];
 		printf("!!! freeing %s\n", orcify(head));
 		free(head);
 		if(!next) break;
-		head = PB_(inner)(next);
+		head = next;
 	}
 	if(!errno) errno = ERANGE;
 	return 0;

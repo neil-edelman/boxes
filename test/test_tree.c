@@ -207,8 +207,7 @@ static void contrived_str_test(void) {
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	printf("%lu %lu %lu\n", sizeof "→", sizeof "a", sizeof "é");
 	unsigned_tree_test();
-	pair_tree_test();
+	/*pair_tree_test();*/
 	return EXIT_SUCCESS;
 }

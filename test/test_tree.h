@@ -155,7 +155,7 @@ static void PB_(test)(void) {
 	char z[12];
 	struct B_(tree) tree = B_(tree)();
 	struct B_(tree_iterator) it;
-	PB_(entry) n[3];
+	PB_(entry) n[6];
 #ifdef TREE_VALUE
 	/* Values go here for when they are needed, then they are copied. */
 	PB_(value) copy_values[sizeof n / sizeof *n];
