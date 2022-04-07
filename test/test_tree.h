@@ -8,14 +8,12 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-/** Works by side-effects, _ie_ fills the type with data. Only defined if
- `TREE_TEST`. */
+/** Works by side-effects. Only defined if `TREE_TEST`. */
 typedef void (*PB_(action_fn))(PB_(entry) *);
 
 /** `TREE_TEST` must be a function that implements <typedef:<PT>action_fn>.
- Requires an added temporary buffer for the value if defined; _ie_, creates
- the new entry, and if successful, copies the value into it. This is a little
- unintuitive, but the simplest we could think of. */
+ The value pointer is valid, if it exists, and should be filled; this will copy
+ the value on successful creation. */
 static const PB_(action_fn) PB_(filler) = (TREE_TEST);
 
 /* Debug number, which is the number printed next to the graphs, _etc_. */
