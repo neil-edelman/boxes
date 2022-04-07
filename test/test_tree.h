@@ -198,7 +198,7 @@ static void PB_(test)(void) {
 		value = B_(tree_bulk_add)(&tree, PB_(to_x)(e));
 		assert(value);
 #ifdef TREE_VALUE
-		memcpy(value, &e->value, sizeof e->value); /* Untested. */
+		*value = *e->value;
 #endif
 		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u.gv", ++PB_(no));
 		PB_(graph)(&tree, fn);
