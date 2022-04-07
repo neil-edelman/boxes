@@ -24,23 +24,21 @@ static void PB_(subgraph)(const struct B_(tree) sub, FILE *fp) {
 	const struct PB_(inner) *inner;
 	unsigned i;
 	assert(sub.node && fp);
-	fprintf(fp, "\ttrunk%p [shape = box, "
-		"style = filled, fillcolor = Gray95, label = <\n"
-		"<TABLE BORDER=\"0\">\n"
-		"\t<TR><TD ALIGN=\"LEFT\">"
-		"<FONT COLOR=\"Gray85\">%s</FONT></TD></TR>\n"
-		"\t<TR><TD ALIGN=\"LEFT\" PORT=\"0\"><FONT FACE=\"Times-Italic\">"
-		"height %u</FONT></TD></TR>\n",
-		(const void *)sub.node, orcify(sub.node), sub.height);
+	/* It still has a margin, augh. */
+	fprintf(fp, "\ttrunk%p [label = <\n"
+		"<table border=\"1\" cellspacing=\"0\" bgcolor=\"Grey95\">\n"
+		"\t<tr><td border=\"0\" port=\"0\">"
+		"<font color=\"Gray75\">%s</font></td></tr>\n",
+		(const void *)sub.node, orcify(sub.node));
 	for(i = 0; i < sub.node->size; i++) {
-		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
+		const char *const bgc = i & 1 ? "" : " bgcolor=\"Gray90\"";
 		char z[12];
 		PB_(entry) e;
 		PB_(fill_entry)(&e, sub.node, i), PB_(to_string)(&e, &z);
-		fprintf(fp, "\t<TR><TD ALIGN=\"LEFT\" PORT=\"%u\"%s>%s</TD></TR>\n",
-			i + 1, bgc, z);
+		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
+			"  port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
 	}
-	fprintf(fp, "</TABLE>>];\n");
+	fprintf(fp, "</table>>];\n");
 	if(!sub.height) return;
 	/* Draw the lines between trees. */
 	inner = PB_(inner_c)(sub.node);
@@ -65,16 +63,15 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 	fprintf(fp, "digraph {\n"
 		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
 		" fontname=\"Bitstream Vera Sans\"];\n"
-		"\tnode [shape=record, style=filled, fillcolor=\"Grey95\","
-		" fontname=\"Bitstream Vera Sans\"];\n"
+		"\tnode [shape=none, fontname=\"Bitstream Vera Sans\"];\n"
 		"\tedge [fontname=\"Bitstream Vera Sans\", style=dashed];\n"
 		"\n");
 	if(!tree->node)
-		fprintf(fp, "\tidle [shape=plaintext, fillcolor=\"none\"];\n");
+		fprintf(fp, "\tidle [shape=plaintext];\n");
 	else if(tree->height == UINT_MAX)
-		fprintf(fp, "\tempty [shape=plaintext, fillcolor=\"none\"];\n");
+		fprintf(fp, "\tempty [shape=plaintext];\n");
 	else PB_(subgraph)(*tree, fp);
-	fprintf(fp, "\tnode [color = \"Red\"];\n"
+	fprintf(fp, "\tnode [color=\"Red\"];\n"
 		"}\n");
 	fclose(fp);
 }
@@ -155,7 +152,7 @@ static void PB_(test)(void) {
 	char z[12];
 	struct B_(tree) tree = B_(tree)();
 	struct B_(tree_iterator) it;
-	PB_(entry) n[6];
+	PB_(entry) n[20];
 #ifdef TREE_VALUE
 	/* Values go here for when they are needed, then they are copied. */
 	PB_(value) copy_values[sizeof n / sizeof *n];

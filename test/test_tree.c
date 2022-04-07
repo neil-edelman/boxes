@@ -208,6 +208,6 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	unsigned_tree_test();
-	/*pair_tree_test();*/
+	pair_tree_test();
 	return EXIT_SUCCESS;
 }
