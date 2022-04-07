@@ -41,6 +41,7 @@ static void colour_filler(enum colour *const c)
 #include "../src/array.h"
 
 
+#if 0
 /* Struct array. */
 struct str4 { char value[4]; };
 static void str4_to_string(const struct str4 *s, char (*const a)[12])
@@ -108,6 +109,7 @@ static int keyval_value_cmp(const struct keyval *const a,
 #define ARRAY_TO_STRING_NAME value
 #define ARRAY_TO_STRING &keyval_value_to_string
 #include "../src/array.h"
+#endif
 
 
 /** Tests; assert crashes on failed test. @return `EXIT_SUCCESS`. */
@@ -117,12 +119,12 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	colour_array_test();
-	str4_array_test();
+	/*str4_array_test();
 	int_array_test();
 	int_array_compare_test();
 	keyval_array_test();
 	keyval_array_compare_test();
-	keyval_array_value_compare_test();
+	keyval_array_value_compare_test();*/
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

@@ -67,7 +67,7 @@ no_data:
 }
 
 /** @implements <PA>Predicate @return Is `t` zero-filled? */
-static int PA_(zero_filled)(const PA_(type) *const t) {
+static int PA_(zero_filled)(PA_(type) *const t) {
 	const char *c = (const char *)t, *const end = (const char *)(t + 1);
 	assert(t);
 	while(c < end) if(*c++) return 0;
@@ -75,7 +75,7 @@ static int PA_(zero_filled)(const PA_(type) *const t) {
 }
 
 static void PA_(test_basic)(void) {
-	struct A_(array) a;
+	struct A_(array) a = A_(array)();
 	PA_(type) ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
 	size_t i;
@@ -85,7 +85,6 @@ static void PA_(test_basic)(void) {
 	PA_(valid_state)(0);
 
 	printf("Test empty.\n");
-	A_(array)(&a);
 	t = (PA_(type) *)1;
 	assert(errno == 0);
 	PA_(valid_state)(&a);
@@ -199,12 +198,11 @@ static void PA_(test_basic)(void) {
 }
 
 static void PA_(test_random)(void) {
-	struct A_(array) a;
+	struct A_(array) a = A_(array)();
 	const size_t mult = 1; /* For long tests. */
 	/* This parameter controls how many iterations. */
 	size_t i, i_end = 1000 * mult, size = 0;
 	/* Random. */
-	A_(array)(&a);
 	for(i = 0; i < i_end; i++) {
 		PA_(type) *data;
 		char str[12];
@@ -254,7 +252,7 @@ static void PA_(test_random)(void) {
 static void PA_(test_replace)(void) {
 	PA_(type) ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
-	struct A_(array) a, b;
+	struct A_(array) a = A_(array)(), b = A_(array)();
 	PA_(type) *e;
 	int success;
 
@@ -263,13 +261,11 @@ static void PA_(test_replace)(void) {
 	/* Get elements. */
 	for(t = ts, t1 = t + ts_size; t < t1; t++) PA_(filler)(t);
 	printf("Test replace.\n");
-	A_(array)(&a);
 	for(t = ts, t1 = t + ts_size; t < t1; t++) {
 		e = A_(array_new)(&a), assert(e);
 		memcpy(e, t, sizeof *t);
 	}
 	assert(a.size == ts_size);	
-	A_(array)(&b);
 	/* No-op. */
 	success = A_(array_splice)(&a, 0, 0, 0);
 	printf("Array %s.\n", PA_(array_to_string)(&a));
@@ -342,7 +338,7 @@ static void PA_(test_replace)(void) {
 
 /** @implements <PA>Predicate
  @return A set sequence of ones and zeros, independant of `data`. */
-static int PA_(keep_deterministic)(const PA_(type) *const data) {
+static int PA_(keep_deterministic)(PA_(type) *const data) {
 	static size_t i;
 	static const int things[] = { 1,0,0,0,0,1,0,0,1,1, 0,1,0,1,0,1,0 };
 	const int predicate = things[i++];
@@ -395,7 +391,7 @@ static void PA_(increment)(PA_(type) *const t) {
 
 /** True, independent of `t`.
  @implements <PA>Predicate */
-static int PA_(true)(const PA_(type) *const t) {
+static int PA_(true)(PA_(type) *const t) {
 	(void)t;
 	return 1;
 }

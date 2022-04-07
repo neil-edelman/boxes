@@ -105,13 +105,17 @@ typedef ARRAY_TYPE PA_(type);
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
-/** Initialises `a` to idle. @order \Theta(1) @allow */
-static void A_(array)(struct A_(array) *const a)
-	{ assert(a), a->data = 0, a->capacity = a->size = 0; }
+#define BOX_ PA_
+#define BOX struct A_(array)
+#define BOX_ENUM PA_(type) *
 
-/** Destroys `a` and returns it to idle. @allow */
+/** @return An idle array. @order \Theta(1) @allow */
+static struct A_(array) A_(array)(void)
+	{ struct A_(array) a; a.data = 0, a.capacity = a.size = 0; return a; }
+
+/** If `a` is not null, destroys and returns it to idle. @allow */
 static void A_(array_)(struct A_(array) *const a)
-	{ assert(a), free(a->data), A_(array)(a); }
+	{ if(a) free(a->data), *a = A_(array)(); }
 
 /** Ensures `min` capacity of `a`. Invalidates pointers in `a`. @param[min] If
  zero, does nothing. @return Success; otherwise, `errno` will be set.
@@ -270,15 +274,12 @@ static int A_(array_splice)(/*restrict*/ struct A_(array) *const a,
 /* Contains all iteration parameters. */
 struct PA_(iterator) { const struct A_(array) *a; size_t i; };
 /** Loads `a` into `it`. @implements begin */
-static void PA_(begin)(struct PA_(iterator) *const it,
-	const struct A_(array) *const a) { assert(it && a), it->a = a, it->i = 0; }
+static struct PA_(iterator) PA_(begin)(const struct A_(array) *const a)
+	{ struct PA_(iterator) it; it.a = a, it.i = 0; return it; }
 /** Advances `it`. @implements next */
 static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 	return assert(it && it->a), it->i < it->a->size ? it->a->data + it->i++ : 0;
 }
-#define BOX_ PA_
-#define BOX_CONTAINER struct A_(array)
-#define BOX_CONTENTS PA_(type)
 /* iterate --> */
 
 /* <!-- coda interface */
@@ -306,11 +307,11 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *);
 
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void)
-	{ A_(array_)(0); A_(array_insert)(0, 0, 0); A_(array_new)(0);
+	{ A_(array)(); A_(array_)(0); A_(array_insert)(0, 0, 0); A_(array_new)(0);
 	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
 	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
 	A_(array_append)(0, 0); A_(array_splice)(0, 0, 0, 0);
-	PA_(begin)(0, 0); PA_(next)(0); PA_(id)(0); PA_(id_c)(0);
+	PA_(begin)(0); PA_(next)(0); PA_(id)(0); PA_(id_c)(0);
 	PA_(unused_base_coda)(); }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
@@ -380,8 +381,8 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #undef ARRAY_TYPE
 /* Iteration. */
 #undef BOX_
-#undef BOX_CONTAINER
-#undef BOX_CONTENTS
+#undef BOX
+#undef BOX_ENUM
 /* Coda. */
 #undef ARRAY_CODA_TYPE
 #undef ARRAY_CODA_BOX_TO_C
