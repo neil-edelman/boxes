@@ -87,7 +87,7 @@ struct star_tree_entry;
 static void star_filler(struct star_tree_entry *);
 static void star_to_string(const struct star_tree_entry *, char (*)[12]);
 #define TREE_NAME star
-#define TREE_TYPE double
+#define TREE_KEY double
 #define TREE_VALUE const char *
 #define TREE_TEST &star_filler
 #define TREE_EXPECT_TRAIT

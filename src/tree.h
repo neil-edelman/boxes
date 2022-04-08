@@ -6,12 +6,12 @@
 
  @subtitle Ordered tree
 
- A <tag:<B>tree> is an ordered collection of read-only <typedef:<PB>type>, and
- an optional <typedef:<PB>value> to go with them. One can make this a map or
- set, but in general, it can have identical keys, (a multi-map). Internally,
- this is a B-tree, described in <Bayer, McCreight, 1972 Large>.
+ A <tag:<B>tree> is an ordered collection of read-only <typedef:<PB>key>, and
+ an optional <typedef:<PB>value> to go with them. This can be a map or set, but
+ in general, it can have identical keys, (a multi-map). Internally, this is a
+ B-tree, described in <Bayer, McCreight, 1972 Large>.
 
- @param[TREE_NAME, TREE_TYPE]
+ @param[TREE_NAME, TREE_KEY]
  `<B>` that satisfies `C` naming conventions when mangled, required, and an
  integral type, <typedef:<PB>type>, whose default is `unsigned int`. `<PB>` is
  private, whose names are prefixed in a manner to avoid collisions.
@@ -21,7 +21,7 @@
 
  @param[TREE_COMPARE]
  A function satisfying <typedef:<PB>compare_fn>. Defaults to ascending order.
- Required if `TREE_TYPE` is changed to an incomparable type.
+ Required if `TREE_KEY` is changed to an incomparable type.
 
  @param[TREE_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
@@ -78,11 +78,11 @@
 #if TREE_TRAITS == 0 /* <!-- base code */
 
 
-#ifndef TREE_TYPE
-#define TREE_TYPE unsigned
+#ifndef TREE_KEY
+#define TREE_KEY unsigned
 #endif
 /** A comparable type, defaults to `unsigned`. */
-typedef TREE_TYPE PB_(type);
+typedef TREE_KEY PB_(type);
 
 #ifdef TREE_VALUE
 /** On `TREE_VALUE`, otherwise just a set of integers. */
@@ -90,9 +90,9 @@ typedef TREE_VALUE PB_(value);
 #endif
 
 /** Returns a positive result if `a` is out-of-order with respect to `b`,
- inducing a total order. This is compatible, but less strict then the
- comparators from `bsearch` and `qsort`; it only needs to divide entries into
- two instead of three categories. */
+ inducing a strict weak order. This is compatible, but less strict then the
+ comparators from `bsearch` and `qsort`; it only needs to divide entries
+ into two instead of three categories. */
 typedef int (*PB_(compare_fn))(const PB_(type) a, const PB_(type) b);
 
 #ifndef TREE_COMPARE /* <!-- !cmp */
@@ -155,19 +155,22 @@ static PB_(type) PB_(to_x)(const PB_(type) *const x) { return *x; }
 
  ![States.](../doc/states.png) */
 struct B_(tree);
-struct B_(tree) {
-	struct PB_(outer) *node; /* Root if top level. */
-	unsigned height; /* Top level flag UINT_MAX: empty but non-idle. */
-};
+struct B_(tree) { struct PB_(outer) *node; unsigned height; };
+/* Top level tree: `node` is root, flag UINT_MAX: empty but non-idle. */
+
+#define BOX_ PB_
+#define BOX struct B_(tree)
+#define BOX_ENUM PB_(entry)
 
 /* <!-- iterate interface */
-
 struct PB_(iterator) {
 	const struct B_(tree) *tree;
 	struct B_(tree) n;
 	unsigned idx; /* Could pack it, but probably not worth the extra code. */
 };
-
+/** Stores an iteration in a tree. Generally, changes in the topology of the
+ tree invalidate it. */
+struct B_(tree_iterator) { struct PB_(iterator) priv; };
 /** Corrects `it` for going off the end.
  @return Whether it is addressing a valid item. */
 static int PB_(pin)(struct PB_(iterator) *const it) {
@@ -201,19 +204,24 @@ static int PB_(pin)(struct PB_(iterator) *const it) {
 	it->n = next;
 	return 1; /* Jumped nodes. */
 }
-
-/** Loads the first element of `tree` (can be null) into `it`.
+/** @return An iterator to the first element of `tree`. Can be null.
  @implements begin */
 static struct PB_(iterator) PB_(begin)(const struct B_(tree) *const tree)
 	{ struct PB_(iterator) it; it.tree = tree, it.n.node = 0; return it; }
-
-/** Advances `it` and returns the last or null in a static entry.
- @implements next */
+/** Advances `it` to the next element. @return A pointer to the current
+ element or null. @implements next */
 static PB_(entry) PB_(next)(struct PB_(iterator) *const it) {
 	printf("_next_\n");
 	return assert(it), PB_(pin)(it) ? PB_(to_entry)(it->n.node, it->idx++) : 0;
 }
-
+/** @return An iterator to the first element of `tree`. Can be null. @allow */
+static struct B_(tree_iterator) B_(tree_begin)(const struct B_(tree) *const
+	tree)
+	{ struct B_(tree_iterator) it; it.priv = PB_(begin)(tree); return it; }
+/** Advances `it` to the next element. @return A pointer to the current
+ element or null. @allow */
+static PB_(entry) B_(tree_next)(struct B_(tree_iterator) *const it)
+	{ return PB_(next)(&it->priv); }
 /* iterate --> */
 
 /** @param[tree] Can be null. @return Finds the smallest entry in `tree` that
@@ -276,22 +284,6 @@ static void B_(tree_)(struct B_(tree) *const tree) {
 	*tree = B_(tree)();
 }
 
-/** Stores an iteration in a tree. Generally, changes in the topology of the
- tree invalidate it. */
-struct B_(tree_iterator) { struct PB_(iterator) it; };
-
-/** Loads the first element of `tree` (can be null) into `it`. */
-static struct B_(tree_iterator) B_(tree_begin)(const struct B_(tree) *const
-	tree)
-	{ struct B_(tree_iterator) it; it.it = PB_(begin)(tree); return it; }
-
-/** Advances `it`.
- @return If the iteration is finished, null, otherwise, if `TREE_VALUE`, a
- static <typedef:<B>tree_entry> of a copy of the key and pointer to the value,
- otherwise, a pointer to key. @allow */
-static PB_(entry) B_(tree_next)(struct B_(tree_iterator) *const it)
-	{ return PB_(next)(&it->it); }
-
 #if 0
 /** Counts the of the items in initialized `it`. @order \O(|`it`|) @allow */
 static size_t B_(trie_size)(const struct B_(trie_iterator) *const it)
@@ -303,7 +295,7 @@ static size_t B_(trie_size)(const struct B_(trie_iterator) *const it)
  just passed the end. @order \O(\log |`tree`|) @allow */
 static struct B_(tree_iterator) B_(tree_lower)(const struct B_(tree)
 	*const tree, const PB_(type) x)
-	{ struct B_(tree_iterator) it; it.it = PB_(lower)(tree, x); return it; }
+	{ struct B_(tree_iterator) it; it.priv = PB_(lower)(tree, x); return it; }
 
 /** @return Lowest match for `x` in `tree` or null no such item exists.
  @order \O(\log |`tree`|) @allow */
@@ -454,11 +446,6 @@ static int B_(trie_remove)(struct B_(trie) *const trie,
 	const char *const key) { return PB_(remove)(trie, key); }
 #endif
 
-/* <!-- box */
-#define BOX_ PB_
-#define BOX_CONTAINER struct B_(tree)
-#define BOX_CONTENTS PB_(entry)
-
 #ifdef TREE_TEST /* <!-- test */
 /* Forward-declare. */
 static void (*PB_(to_string))(const PB_(entry), char (*)[12]);
@@ -512,7 +499,7 @@ static const char *(*PB_(tree_to_string))(const struct B_(tree) *)
 #error No TREE_TO_STRING traits defined for TREE_TEST.
 #endif
 #undef TREE_NAME
-#undef TREE_TYPE
+#undef TREE_KEY
 #undef TREE_COMPARE
 #ifdef TREE_VALUE
 #undef TREE_VALUE
@@ -521,9 +508,8 @@ static const char *(*PB_(tree_to_string))(const struct B_(tree) *)
 #undef TREE_TEST
 #endif
 #undef BOX_
-#undef BOX_CONTAINER
-#undef BOX_CONTENTS
-/* box --> */
+#undef BOX
+#undef BOX_ENUM
 #endif /* !trait --> */
 #undef TREE_TO_STRING_TRAIT
 #undef TREE_TRAITS

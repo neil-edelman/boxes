@@ -177,9 +177,9 @@ static void PB_(test)(void) {
 	PB_(valid)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
-	it = B_(tree_lower)(0, PB_(to_x)(n + 0)), assert(!it.it.tree);
+	it = B_(tree_lower)(0, PB_(to_x)(n + 0)), assert(!it.priv.tree);
 	entry = B_(tree_get)(0, PB_(to_x)(n + 0)), assert(!entry);
-	it = B_(tree_lower)(&tree, PB_(to_x)(n + 0)), assert(!it.it.tree);
+	it = B_(tree_lower)(&tree, PB_(to_x)(n + 0)), assert(!it.priv.tree);
 	entry = B_(tree_get)(&tree, PB_(to_x)(n + 0)), assert(!entry);
 
 	/* Test. */
@@ -209,7 +209,7 @@ static void PB_(test)(void) {
  defining `assert`. @allow */
 static void B_(tree_test)(void) {
 	printf("<" QUOTE(TREE_NAME) ">trie"
-		" of type <" QUOTE(TREE_TYPE) ">"
+		" of type <" QUOTE(TREE_KEY) ">"
 		" was created using:"
 #ifdef TREE_VALUE
 		" TREE_VALUE<" QUOTE(TREE_VALUE) ">;"
