@@ -48,7 +48,6 @@
 
 #ifndef TO_STRING_H /* <!-- idempotent */
 #define TO_STRING_H
-#include <string.h>
 #if defined(TO_STRING_CAT_) || defined(TO_STRING_CAT) || defined(PSZ_)
 #error Unexpected defines.
 #endif
