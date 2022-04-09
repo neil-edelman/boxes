@@ -125,6 +125,10 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <code>struct <strong>&lt;PA&gt;iterator</strong> { const struct &lt;A&gt;array *a; size_t i; };</code>
 
+ * Implements:  
+   `iterator`
+
+
 
 
 ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##

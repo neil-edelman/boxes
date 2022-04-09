@@ -112,13 +112,13 @@ struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* <!-- iterate interface */
 /** @implements `iterator` */
 struct PA_(iterator) { const struct A_(array) *a; size_t i; };
-/** @implements `begin` */
+/** Before `a`. @implements `begin` */
 static struct PA_(iterator) PA_(begin)(const struct A_(array) *const a)
 	{ struct PA_(iterator) it; it.a = a, it.i = 0; return it; }
-/** @implements `has_next` */
+/** @return Whether `it` has next. @implements `has_next` */
 static int PA_(has_next)(struct PA_(iterator) *const it)
 	{ return assert(it), it->a && it->i < it->a->size; }
-/** @implements `next` */
+/** @return The cursor of `it`. @implements `next` */
 static PA_(type) *PA_(next)(struct PA_(iterator) *const it)
 	{ return it->a->data + it->i++; }
 /* iterate --> */
