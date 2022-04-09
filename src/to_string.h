@@ -3,9 +3,14 @@
 
  @subtitle To string trait
 
- A trait relying on the iterate interface (`iterator`, `begin`, `next`.)
+ Interface (defined by `BOX_`):
 
- @param[SZ_]
+ \* `struct <BOX>iterator`;
+ \* `struct <BOX>iterator <BOX>begin(const <PSZ>box *)` (defined by `BOX`);
+ \* `int <BOX>has_next(struct <BOX>iterator *)`
+ \* `<PSZ>cursor_c <BOX>next(struct <BOX>iterator *)` (defined by `BOX_CURSOR`.)
+
+ @param[SZ_(n)]
  A one-argument macro producing a name that is responsible for the name of the
  to string function. Should be something like
  `SZ_(to_string) -> widget_foo_to_string`. The caller is responsible for
@@ -27,9 +32,9 @@
 
  @std C89 */
 
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_ENUM) \
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CURSOR) \
 	|| !defined(SZ_) || !defined(TO_STRING)
-#error Unexpected preprocessor symbols. Check that one including it as a trait.
+#error Unexpected preprocessor symbols. Check that it is included it as a trait.
 #endif
 
 #if defined(TO_STRING_H) \
@@ -78,52 +83,48 @@ static unsigned to_string_buffer_i;
 #define TO_STRING_RIGHT ')'
 #endif
 
-/* An alias to the box. */
 typedef BOX PSZ_(box);
+typedef const BOX_CURSOR PSZ_(cursor_c);
 
-/* An alias to the a type individual type contained in the box. */
-typedef BOX_ENUM PSZ_(enum);
-typedef const BOX_ENUM PSZ_(enum_c);
-
-/** <to_string.h>: responsible for turning the argument into a 12-`char`
- null-terminated output string. `<PSZ>type` is contracted to be an internal
- iteration type of the box. */
-typedef void (*PSZ_(to_string_fn))(PSZ_(enum_c), char (*)[12]);
+/** <src/to_string.h>: responsible for turning the argument into a 12-`char`
+ null-terminated output string. */
+typedef void (*PSZ_(to_string_fn))(PSZ_(cursor_c), char (*)[12]);
 /* Check that `TO_STRING` is a function implementing
  <typedef:<PSZ>to_string>. */
 static const PSZ_(to_string_fn) PSZ_(to_string) = (TO_STRING);
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
- 256 bytes, with limitations of only printing 4 things at a time. `<PSZ>box` is
- contracted to be the box itself. `<SZ>` is loosely contracted to be a name
- `<X>box[<X_TO_STRING_NAME>]`.
+ 256 bytes, with limitations of only printing 4 things at a time. `<SZ>` is
+ loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`.
  @return Address of the static buffer. @order \Theta(1) @allow */
 static const char *SZ_(to_string)(const PSZ_(box) *const box) {
 	const char comma = ',', space = ' ', *const ellipsis = "…",
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;
-	const size_t ellipsis_len = strlen(ellipsis);
+	const size_t ellipsis_len = sizeof ellipsis - 1;
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance, size;
+	PSZ_(box) *promise_box;
 	struct BOX_(iterator) it;
-	PSZ_(enum) x;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
 	assert(box && !(to_string_buffers_no & (to_string_buffers_no - 1))
 		&& to_string_buffer_size >= 1 + 11 + 1 + ellipsis_len + 1 + 1);
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
-	/* Begin iteration. */
-	it = BOX_(begin)(box);
+	/* We want iteration to modify the values sometimes, so it is theoretically
+	 possible to modify box, but we just don't. Promise. */
+	memcpy(&promise_box, &box, sizeof box), assert(box == promise_box);
+	it = BOX_(begin)(promise_box);
 	*b++ = left;
-	while(x = BOX_(next)(&it)) {
-		PSZ_(to_string)(x, (char (*)[12])b);
+	while(BOX_(has_next)(&it)) {
+		PSZ_(to_string)(BOX_(next)(&it), (char (*)[12])b);
 		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size = (size_t)(b - buffer))
 			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1)
-			{ if(BOX_(next)(&it)) goto ellipsis; else break; }
+			{ if(BOX_(has_next)(&it)) goto ellipsis; else break; }
 	}
 	if(is_sep) b -= 2;
 	*b++ = right;

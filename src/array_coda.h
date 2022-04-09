@@ -20,7 +20,7 @@
 
  @std C89 */
 
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_ENUM) \
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CURSOR) \
 	|| !defined(ARRAY_CODA_TYPE) || !defined(ARRAY_CODA_BOX_TO_C) \
 	|| !defined(ARRAY_CODA_BOX_TO) || !defined(AC_) \
 	|| defined(BOX_IS_EQUAL) && defined(BOX_COMPARE)
@@ -41,7 +41,7 @@
 /** <src/array_coda.h>: an alias to the box. */
 typedef BOX PAC_(box);
 /** <src/array_coda.h>: an alias to the individual type contained in the box. */
-typedef BOX_ENUM PAC_(enum);
+typedef BOX_CURSOR PAC_(enum);
 /* Downcasting. */
 typedef ARRAY_CODA_TYPE PAC_(array);
 typedef const PAC_(array) *(*PAC_(box_to_array_c))(const PAC_(box) *);

@@ -104,24 +104,25 @@ typedef ARRAY_TYPE PA_(type);
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
+/* <!-- iterate interface */
 #define BOX_ PA_
 #define BOX struct A_(array)
-#define BOX_ENUM PA_(type) *
-
-/* <!-- iterate interface */
-/* Contains all iteration parameters. */
+#define BOX_CURSOR PA_(type) *
+/** @implements iterator */
 struct PA_(iterator) { const struct A_(array) *a; size_t i; };
-/** @return A iterator that is at the first element of `a`. @implements begin */
+/** @implements begin */
 static struct PA_(iterator) PA_(begin)(const struct A_(array) *const a)
 	{ struct PA_(iterator) it; it.a = a, it.i = 0; return it; }
-/** Advances `it` to the next element. @return A pointer to the current
- element. @implements next */
-static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
-	return assert(it && it->a), it->i < it->a->size ? it->a->data + it->i++ : 0;
-}
+/** @implements has_next */
+static int PA_(has_next)(struct PA_(iterator) *const it)
+	{ return assert(it), it->a && it->i < it->a->size; }
+/** @implements next */
+static PA_(type) *PA_(next)(struct PA_(iterator) *const it)
+	{ return it->a->data + it->i++; }
 /* iterate --> */
 
-/** @return An initial idle array that takes no extra memory.
+/** This is the same as `{ 0 }` in `C99`, therefore static data is already
+ initialized. @return An initial idle array that takes no extra memory.
  @order \Theta(1) @allow */
 static struct A_(array) A_(array)(void)
 	{ struct A_(array) a; a.data = 0, a.capacity = a.size = 0; return a; }
@@ -311,7 +312,7 @@ static void PA_(unused_base)(void)
 	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
 	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
 	A_(array_append)(0, 0); A_(array_splice)(0, 0, 0, 0);
-	PA_(begin)(0); PA_(next)(0); PA_(id)(0); PA_(id_c)(0);
+	PA_(begin)(0); PA_(has_next)(0); PA_(next)(0); PA_(id)(0); PA_(id_c)(0);
 	PA_(unused_base_coda)(); }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
@@ -382,7 +383,7 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 /* Iteration. */
 #undef BOX_
 #undef BOX
-#undef BOX_ENUM
+#undef BOX_CURSOR
 /* Coda. */
 #undef ARRAY_CODA_TYPE
 #undef ARRAY_CODA_BOX_TO_C

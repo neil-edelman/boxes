@@ -27,7 +27,7 @@
 enum colour { COLOUR(PARAM) };
 static const char *const colours[] = { COLOUR(STRINGISE) };
 static const size_t colour_size = sizeof colours / sizeof *colours;
-static void colour_to_string(const enum colour *c, char (*const a)[12])
+static void colour_to_string(const enum colour *const c, char (*const a)[12])
 	{ assert(*c < colour_size); sprintf(*a, "%s", colours[*c]); }
 static void colour_filler(enum colour *const c)
 	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
