@@ -40,7 +40,7 @@
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
 	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PA>type">&lt;PA&gt;type</a>, <a href = "#typedef:<PAC>box">&lt;PAC&gt;box</a>, <a href = "#typedef:<PAC>enum">&lt;PAC&gt;enum</a>, <a href = "#typedef:<PAC>action_fn">&lt;PAC&gt;action_fn</a>, <a href = "#typedef:<PAC>predicate_fn">&lt;PAC&gt;predicate_fn</a>, <a href = "#typedef:<PAC>bipredicate_fn">&lt;PAC&gt;bipredicate_fn</a>, <a href = "#typedef:<PAC>compare_fn">&lt;PAC&gt;compare_fn</a>, <a href = "#typedef:<PAC>biaction_fn">&lt;PAC&gt;biaction_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<A>array">&lt;A&gt;array</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<A>array">&lt;A&gt;array</a>, <a href = "#tag:<PA>iterator">&lt;PA&gt;iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -99,7 +99,7 @@
 
 <h3><a id = "typedef:<PAC>enum" name = "typedef:<PAC>enum">&lt;PAC&gt;enum</a></h3>
 
-<p><code>typedef BOX_ENUM <strong>&lt;PAC&gt;enum</strong>;</code></p>
+<p><code>typedef BOX_CURSOR <strong>&lt;PAC&gt;enum</strong>;</code></p>
 
 <p><a href = "src/array_coda.h">src/array_coda.h</a>: an alias to the individual type contained in the box.</p>
 
@@ -159,9 +159,9 @@
 
 <h3><a id = "typedef:<PSZ>to_string_fn" name = "typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(&lt;PSZ&gt;enum_c, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(&lt;PSZ&gt;cursor_c, char(*)[12]);</code></p>
 
-<p><a href = "to_string.h">to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string. <code>&lt;PSZ&gt;type</code> is contracted to be an internal iteration type of the box.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string.</p>
 
 </div>
 
@@ -176,6 +176,14 @@
 <p>Manages the array field <code>data</code> which has <code>size</code> elements. The space is indexed up to <code>capacity</code>, which is at least <code>size</code>. To initialize it to an idle state, see <a href = "#fn:&lt;A&gt;array">&lt;A&gt;array</a>, <code>ARRAY_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>. The fields should be treated as read-only; any modification is liable to cause the array to go into an invalid state.</p>
 
 <p><img alt = "States." src = "doc/states.png" width = 901 height = 137></p>
+
+</div>
+
+<div>
+
+<h3><a id = "tag:<PA>iterator" name = "tag:<PA>iterator">&lt;PA&gt;iterator</a></h3>
+
+<p><code>struct <strong>&lt;PA&gt;iterator</strong> { const struct &lt;A&gt;array *a; size_t i; };</code></p>
 
 </div>
 
@@ -264,6 +272,8 @@
 <h3><a id = "fn:<A>array" name = "fn:<A>array">&lt;A&gt;array</a></h3>
 
 <p><code>static struct &lt;A&gt;array <strong>&lt;A&gt;array</strong>(void)</code></p>
+
+<p>This is the same as <code>{ 0 }</code> in <code>C99</code>, therefore static data is already initialized.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -449,7 +459,7 @@
 
 <h3><a id = "fn:<A>array_splice" name = "fn:<A>array_splice">&lt;A&gt;array_splice</a></h3>
 
-<p><code>static int <strong>&lt;A&gt;array_splice</strong>(struct &lt;A&gt;array *const <em>a</em>, const struct &lt;A&gt;array *const <em>b</em>, const size_t <em>i0</em>, const size_t <em>i1</em>)</code></p>
+<p><code>static int <strong>&lt;A&gt;array_splice</strong>(struct &lt;A&gt;array */*restrict*/const <em>a</em>, const struct &lt;A&gt;array */*restrict*/const <em>b</em>, const size_t <em>i0</em>, const size_t <em>i1</em>)</code></p>
 
 <p>Indices [<code>i0</code>, <code>i1</code>) of <code>a</code> will be replaced with a copy of <code>b</code>.</p>
 
@@ -761,7 +771,7 @@
 
 <p><code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;PSZ&gt;box</code> is contracted to be the box itself. <code>&lt;SZ&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;SZ&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
 
 <dl>
 	<dt>Return:</dt>

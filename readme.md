@@ -6,7 +6,7 @@ Stand\-alone header [src/array\.h](src/array.h); examples [test/test\_array\.c](
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), [&lt;PAC&gt;box](#user-content-typedef-66d14de2), [&lt;PAC&gt;enum](#user-content-typedef-41f86750), [&lt;PAC&gt;action_fn](#user-content-typedef-6f318a4), [&lt;PAC&gt;predicate_fn](#user-content-typedef-13605483), [&lt;PAC&gt;bipredicate_fn](#user-content-typedef-6cd1ff8a), [&lt;PAC&gt;compare_fn](#user-content-typedef-355f3451), [&lt;PAC&gt;biaction_fn](#user-content-typedef-a314f7fb), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;A&gt;array](#user-content-tag-8049be0d)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;A&gt;array](#user-content-tag-8049be0d), [&lt;PA&gt;iterator](#user-content-tag-e6ddd8f0)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -55,7 +55,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 ### <a id = "user-content-typedef-41f86750" name = "user-content-typedef-41f86750">&lt;PAC&gt;enum</a> ###
 
-<code>typedef BOX_ENUM <strong>&lt;PAC&gt;enum</strong>;</code>
+<code>typedef BOX_CURSOR <strong>&lt;PAC&gt;enum</strong>;</code>
 
 [src/array\_coda\.h](src/array_coda.h): an alias to the individual type contained in the box\.
 
@@ -103,9 +103,9 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 ### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(&lt;PSZ&gt;enum_c, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(&lt;PSZ&gt;cursor_c, char(*)[12]);</code>
 
-[to\_string\.h](to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\. `<PSZ>type` is contracted to be an internal iteration type of the box\.
+[src/to\_string\.h](src/to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\.
 
 
 
@@ -118,6 +118,12 @@ A valid tag type set by `ARRAY_TYPE`\.
 Manages the array field `data` which has `size` elements\. The space is indexed up to `capacity`, which is at least `size`\. To initialize it to an idle state, see [&lt;A&gt;array](#user-content-fn-8049be0d), `ARRAY_IDLE`, `{0}` \(`C99`,\) or being `static`\. The fields should be treated as read\-only; any modification is liable to cause the array to go into an invalid state\.
 
 ![States.](doc/states.png)
+
+
+
+### <a id = "user-content-tag-e6ddd8f0" name = "user-content-tag-e6ddd8f0">&lt;PA&gt;iterator</a> ###
+
+<code>struct <strong>&lt;PA&gt;iterator</strong> { const struct &lt;A&gt;array *a; size_t i; };</code>
 
 
 
@@ -200,6 +206,8 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 ### <a id = "user-content-fn-8049be0d" name = "user-content-fn-8049be0d">&lt;A&gt;array</a> ###
 
 <code>static struct &lt;A&gt;array <strong>&lt;A&gt;array</strong>(void)</code>
+
+This is the same as `{ 0 }` in `C99`, therefore static data is already initialized\.
 
  * Return:  
    An initial idle array that takes no extra memory\.
@@ -350,7 +358,7 @@ Adds `n` elements to the back of `a`\. It will invalidate pointers in `a` if `n`
 
 ### <a id = "user-content-fn-bce1c326" name = "user-content-fn-bce1c326">&lt;A&gt;array_splice</a> ###
 
-<code>static int <strong>&lt;A&gt;array_splice</strong>(struct &lt;A&gt;array *const <em>a</em>, const struct &lt;A&gt;array *const <em>b</em>, const size_t <em>i0</em>, const size_t <em>i1</em>)</code>
+<code>static int <strong>&lt;A&gt;array_splice</strong>(struct &lt;A&gt;array */*restrict*/const <em>a</em>, const struct &lt;A&gt;array */*restrict*/const <em>b</em>, const size_t <em>i0</em>, const size_t <em>i1</em>)</code>
 
 Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
@@ -605,7 +613,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<PSZ>box` is contracted to be the box itself\. `<SZ>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<SZ>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
 
  * Return:  
    Address of the static buffer\.

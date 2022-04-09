@@ -87,6 +87,11 @@
 #if ARRAY_TRAITS == 0 /* <!-- base code */
 
 
+/* Box override information. */
+#define BOX_ PA_
+#define BOX struct A_(array)
+#define BOX_CURSOR PA_(type) *
+
 #ifndef ARRAY_MIN_CAPACITY /* <!-- !min; */
 #define ARRAY_MIN_CAPACITY 3 /* > 1 */
 #endif /* !min --> */
@@ -105,18 +110,15 @@ struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
 /* <!-- iterate interface */
-#define BOX_ PA_
-#define BOX struct A_(array)
-#define BOX_CURSOR PA_(type) *
-/** @implements iterator */
+/** @implements `iterator` */
 struct PA_(iterator) { const struct A_(array) *a; size_t i; };
-/** @implements begin */
+/** @implements `begin` */
 static struct PA_(iterator) PA_(begin)(const struct A_(array) *const a)
 	{ struct PA_(iterator) it; it.a = a, it.i = 0; return it; }
-/** @implements has_next */
+/** @implements `has_next` */
 static int PA_(has_next)(struct PA_(iterator) *const it)
 	{ return assert(it), it->a && it->i < it->a->size; }
-/** @implements next */
+/** @implements `next` */
 static PA_(type) *PA_(next)(struct PA_(iterator) *const it)
 	{ return it->a->data + it->i++; }
 /* iterate --> */
@@ -263,8 +265,8 @@ static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n)
 /** Indices [`i0`, `i1`) of `a` will be replaced with a copy of `b`.
  @param[b] Can be null, which acts as empty, but cannot overlap with `a`.
  @return Success. @throws[realloc, ERANGE] @allow */
-static int A_(array_splice)(/*restrict*/ struct A_(array) *const a,
-	/*restrict*/ const struct A_(array) *const b,
+static int A_(array_splice)(struct A_(array) */*restrict*/const a,
+	const struct A_(array) */*restrict*/const b,
 	const size_t i0, const size_t i1) {
 	const size_t a_range = i1 - i0, b_range = b ? b->size : 0;
 	assert(a && a != b && i0 <= i1 && i1 <= a->size);
@@ -380,7 +382,6 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #endif
 #undef ARRAY_NAME
 #undef ARRAY_TYPE
-/* Iteration. */
 #undef BOX_
 #undef BOX
 #undef BOX_CURSOR
