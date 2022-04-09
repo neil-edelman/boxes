@@ -27,7 +27,7 @@
 
  @std C89 */
 
-#if !defined(BOX_) || !defined(BOX_CONTAINER) || !defined(BOX_CONTENTS) \
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_ENUM) \
 	|| !defined(SZ_) || !defined(TO_STRING)
 #error Unexpected preprocessor symbols. Check that one including it as a trait.
 #endif
@@ -79,15 +79,16 @@ static unsigned to_string_buffer_i;
 #endif
 
 /* An alias to the box. */
-typedef BOX_CONTAINER PSZ_(box);
+typedef BOX PSZ_(box);
 
-/* An alias to the individual type contained in the box. */
-typedef BOX_CONTENTS PSZ_(type);
+/* An alias to the a type individual type contained in the box. */
+typedef BOX_ENUM PSZ_(enum);
+typedef const BOX_ENUM PSZ_(enum_c);
 
 /** <to_string.h>: responsible for turning the argument into a 12-`char`
  null-terminated output string. `<PSZ>type` is contracted to be an internal
  iteration type of the box. */
-typedef void (*PSZ_(to_string_fn))(const PSZ_(type) *, char (*)[12]);
+typedef void (*PSZ_(to_string_fn))(PSZ_(enum_c), char (*)[12]);
 /* Check that `TO_STRING` is a function implementing
  <typedef:<PSZ>to_string>. */
 static const PSZ_(to_string_fn) PSZ_(to_string) = (TO_STRING);
@@ -103,18 +104,22 @@ static const char *SZ_(to_string)(const PSZ_(box) *const box) {
 	const size_t ellipsis_len = strlen(ellipsis);
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance, size;
-	const PSZ_(type) *x;
+	PSZ_(box) *promise_box;
 	struct BOX_(iterator) it;
+	PSZ_(enum) x;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
 	assert(box && !(to_string_buffers_no & (to_string_buffers_no - 1))
 		&& to_string_buffer_size >= 1 + 11 + 1 + ellipsis_len + 1 + 1);
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
+	/* We want iteration to modify the values sometimes, so it is theoretically
+	 possible to modify box, but we just don't. Promise. */
+	memcpy(&promise_box, &box, sizeof box);
 	/* Begin iteration. */
-	BOX_(begin)(&it, box);
+	it = BOX_(begin)(promise_box);
 	*b++ = left;
-	while(x = BOX_(next)(&it)) {
+	while(BOX_(next)(&it, &x)) {
 		PSZ_(to_string)(x, (char (*)[12])b);
 		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
@@ -122,7 +127,7 @@ static const char *SZ_(to_string)(const PSZ_(box) *const box) {
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size = (size_t)(b - buffer))
 			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1)
-			{ if(BOX_(next)(&it)) goto ellipsis; else break; }
+			{ if(BOX_(next)(&it, &x)) goto ellipsis; else break; }
 	}
 	if(is_sep) b -= 2;
 	*b++ = right;
