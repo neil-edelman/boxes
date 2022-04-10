@@ -81,7 +81,6 @@
 /* Box override information. */
 #define BOX_ PA_
 #define BOX struct A_(array)
-#define BOX_CURSOR PA_(type) *
 
 #ifndef ARRAY_MIN_CAPACITY /* <!-- !min; */
 #define ARRAY_MIN_CAPACITY 3 /* > 1 */
@@ -99,10 +98,9 @@ typedef ARRAY_TYPE PA_(type);
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
+#define BOX_CURSOR PA_(type) *
 /** Is `datum` not null? @implements `is_cursor` */
 static int PA_(is_cursor)(const PA_(type) *const datum) { return !!datum; }
-/** Size of `a`. @implements `size` */
-static size_t PA_(size)(const struct A_(array) *a) { return a ? a->size : 0; }
 /** @implements `iterator` */
 struct PA_(iterator) { const struct A_(array) *a; size_t i; };
 /** @return Iterator before `a`. @implements `begin` */
@@ -112,6 +110,8 @@ static struct PA_(iterator) PA_(begin)(const struct A_(array) *const a)
 static PA_(type) *PA_(next)(struct PA_(iterator) *const it)
 	{ return assert(it), it->a && it->i < it->a->size
 	? it->a->data + it->i++ : 0; }
+
+#define BOX_REVERSE /* Depends on `BOX_CURSOR`. */
 /** After `a`. @implements `end` */
 static struct PA_(iterator) PA_(end)(const struct A_(array) *const a)
 	{ struct PA_(iterator) it; it.a = a, it.i = a ? a->size : 0; return it; }
@@ -119,6 +119,15 @@ static struct PA_(iterator) PA_(end)(const struct A_(array) *const a)
 static PA_(type) *PA_(previous)(struct PA_(iterator) *const it)
 	{ return assert(it), it->i && it->i <= it->a->size
 	? it->a->data + --it->i : 0; }
+
+#define BOX_ACCESS
+/** Size of `a`. @implements `size` */
+static size_t PA_(size)(const struct A_(array) *a) { return a ? a->size : 0; }
+/** Element `idx` of `a`. @implements `get` */
+static PA_(type) *PA_(get)(const struct A_(array) *a, const size_t idx)
+	{ return a->data + idx; }
+
+#define BOX_CONTIGUOUS /* Depends on `BOX_ACCESS`. */
 
 /** This is the same as `{ 0 }` in `C99`, therefore static data is already
  initialized. @return An initial idle array that takes no extra memory.
@@ -305,15 +314,17 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *);
 #endif /* test --> */
 
 static void PA_(unused_base_coda)(void);
-static void PA_(unused_base)(void)
-	{ A_(array)(); A_(array_)(0); A_(array_insert)(0, 0, 0); A_(array_new)(0);
+static void PA_(unused_base)(void) {
+	PA_(is_cursor)(0); PA_(begin)(0); PA_(next)(0);
+	PA_(end)(0); PA_(previous)(0);
+	PA_(size)(0); PA_(get)(0, 0);
+	/*rm*/PA_(id)(0); PA_(id_c)(0);
+	A_(array)(); A_(array_)(0); A_(array_insert)(0, 0, 0); A_(array_new)(0);
 	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
 	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
 	A_(array_append)(0, 0); A_(array_splice)(0, 0, 0, 0);
-	PA_(is_cursor)(0); PA_(size)(0);
-	PA_(begin)(0); PA_(next)(0); PA_(end)(0); PA_(previous)(0);
-	/*rm*/PA_(id)(0); PA_(id_c)(0);
-	PA_(unused_base_coda)(); }
+	PA_(unused_base_coda)();
+}
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 
@@ -384,7 +395,9 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #undef BOX_
 #undef BOX
 #undef BOX_CURSOR
-
+#undef BOX_REVERSE
+#undef BOX_ACCESS
+#undef BOX_CONTIGUOUS
 /* Coda. */
 #undef ARRAY_CODA_TYPE
 #undef ARRAY_CODA_BOX_TO_C

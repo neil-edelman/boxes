@@ -6,6 +6,7 @@
  Interface (defined by `BOX_`, `BOX`, and `BOX_CURSOR`):
 
  \* `int <BOX>is_cursor(<PCMP>cursor_c)`;
+ \* (maybe) `size_t <BOX>size(const <PCMP>box *)`;
  \* `struct <BOX>iterator <BOX>begin(const <PCMP>box *)`;
  \* `<PCMP>cursor <BOX>next(struct <BOX>iterator *)`;
  \* `size_t <BOX>size(const <PCMP>box *)`;
@@ -20,10 +21,14 @@
  Function implementing <typedef:<PCMP>is_equal_fn> or
  <typedef:<PCMP>compare_fn>. One is required, (but not two.)
 
+ @param[COMPARE_QSORT]
+ A contiguous array of elements, and a pointer <typedef:<BOX>cursor>, allows
+ `qsort`, otherwise, we have to do merge sort, which is stable, but more slow.
+
  @std C89 */
 
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CURSOR) || !defined(CMP_) \
-	|| !(defined(COMPARE_IS_EQUAL) ^ defined(COMPARE))
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CURSOR) \
+	|| !defined(CMP_) || !(defined(COMPARE_IS_EQUAL) ^ defined(COMPARE))
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -40,11 +45,10 @@
 #define PCMP_(n) COMPARE_CAT(compare, CMP_(n))
 #endif /* idempotent --> */
 
-#ifndef COMPARE_ONCE /* <!-- once */
-#define COMPARE_ONCE
 typedef BOX PCMP_(box);
 typedef BOX_CURSOR PCMP_(cursor);
 typedef const BOX_CURSOR PCMP_(cursor_c);
+
 /** <src/compare.h>: Returns a boolean given two read-only elements. */
 typedef int (*PCMP_(bipredicate_fn))(const PCMP_(cursor), const PCMP_(cursor));
 /** <src/compare.h>: Three-way comparison on a totally order set; returns an
@@ -54,7 +58,6 @@ typedef int (*PCMP_(compare_fn))(const PCMP_(cursor_c) a,
 	const PCMP_(cursor_c) b);
 /** <src/compare.h>: Returns a boolean given two modifiable arguments. */
 typedef int (*PCMP_(biaction_fn))(PCMP_(cursor), PCMP_(cursor));
-#endif /* once --> */
 
 
 #ifdef COMPARE /* <!-- compare */
@@ -78,37 +81,36 @@ static int CMP_(compare)(const PCMP_(box) *const a, const PCMP_(box) *const b) {
 	}
 }
 
-#if 0 /* <!-----------------------------------------------*/
+#ifdef BOX_ACCESS /* <!-- access */
 
 /** <src/array_coda.h>: `box` should be partitioned true/false with less-then
- `value`. @return The first index of `a` that is not less than `value`.
+ `value`. @return The first index of `a` that is not less than `value`. Only
+ if the the box supports random access.
  @order \O(log `a.size`) @allow */
-static size_t ACC_(lower_bound)(const PCMP_(box) *const box,
-	const PCMP_(enum) *const value) {
-	const PCMP_(array) *a = PCMP_(b2a_c)(box);
-	size_t low = 0, high = a->size, mid;
-	assert(box && a && value);
+static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
+	const PCMP_(cursor_c) cursor) {
+	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(PACC_(compare)(value, a->data + (mid = low + (high - low) / 2)) <= 0)
-			high = mid;
-		else
-			low = mid + 1;
+		if(PCMP_(compare)(cursor, BOX_(get)(box,
+			mid = low + (high - low) / 2)) <= 0) high = mid;
+		else low = mid + 1;
 	return low;
 }
 
 /** <src/array_coda.h>: `box` should be partitioned false/true with
  greater-than or equal-to <typedef:<PAC>enum> `value`. @return The first index
  of `box` that is greater than `value`. @order \O(log `a.size`) @allow */
-static size_t ACC_(upper_bound)(const PCMP_(box) *const box,
-	const PCMP_(enum) *const value) {
-	const PCMP_(array) *a = PCMP_(b2a_c)(box);
-	size_t low = 0, high = a->size, mid;
-	assert(box && a && value);
-	while(low < high) if(PACC_(compare)(value, a->data
-		+ (mid = low + ((high - low) >> 1))) >= 0) low = mid + 1;
+static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
+	const PCMP_(cursor_c) cursor) {
+	size_t low = 0, high = BOX_(size)(box), mid;
+	while(low < high)
+		if(PCMP_(compare)(cursor, BOX_(get)(box,
+			mid = low + (high - low) / 2)) >= 0) low = mid + 1;
 		else high = mid;
 	return low;
 }
+
+#if 0 /* <!-----------------------------------------------*/
 
 /** <src/array_coda.h>: Copies `value` at the upper bound of a sorted `box`.
  @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] @allow */
@@ -125,17 +127,32 @@ static int ACC_(insert_after)(PCMP_(box) *const box,
 	return 1;
 }
 
-/** Wrapper with void `a` and `b`. @implements qsort bsearch */
-static int PACC_(vcompar)(const void *const a, const void *const b)
-	{ return PACC_(compare)(a, b); }
+#endif
 
-/** <src/array_coda.h>: Sorts `box` by `qsort`.
- @order \O(`a.size` \log `box.size`) @allow */
-static void ACC_(sort)(PCMP_(box) *const box) {
-	const PCMP_(array) *a = PCMP_(b2a_c)(box);
-	assert(box && a);
-	qsort(a->data, a->size, sizeof *a->data, &PACC_(vcompar));
+#endif
+
+/** Wrapper with void `a` and `b`. @implements qsort bsearch */
+static int PCMP_(vcompar)(const void *const a, const void *const b)
+	{ return PCMP_(compare)(a, b); }
+
+/** <src/compare.h>: Sorts `box` by `qsort`. @fixme: must be contiguous!
+ (We have no such non-contiguous boxes that need sorting . . . )
+ @order \O(|`a`| \log |`b`|) @allow */
+static void CMP_(sort)(PCMP_(box) *const box) {
+	const size_t size = BOX_(size)(box);
+	struct BOX_(iterator) it;
+	PCMP_(cursor) first;
+	if(!size) return;
+	it = BOX_(begin)(box);
+	first = BOX_(next)(&it);
+	if(!BOX_(is_cursor)(first)) return; /* That was weird. */
+	/* FIXME: sizeof is a problem, and more generally this will not work if it's
+	 not contiguous; have a parameter that chooses between `qsort` and merge
+	 sort (not merged into this code.) */
+	qsort(first, size, sizeof *first, &PCMP_(vcompar));
 }
+
+#if 0
 
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
 static int PACC_(vrevers)(const void *const a, const void *const b)

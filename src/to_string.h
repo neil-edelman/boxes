@@ -34,7 +34,7 @@
 
 #if !defined(BOX_) || !defined(BOX) || !defined(BOX_CURSOR) \
 	|| !defined(STR_) || !defined(TO_STRING)
-#error Unexpected preprocessor symbols. Check that it is included it as a trait.
+#error Unexpected preprocessor symbols.
 #endif
 
 #if defined(TO_STRING_H) \

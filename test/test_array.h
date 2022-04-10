@@ -511,50 +511,6 @@ static void PACC_(test_compactify)(void) {
 	A_(array_)(&a);
 }
 
-static void PACC_(test_bounds)(void) {
-#ifdef ARRAY_COMPARE /* <!-- compare */
-	struct A_(array) a = A_(array)();
-	const size_t size = 10;
-	size_t i, low, high;
-	PA_(type) elem;
-	char z[12];
-	int t;
-	if(!A_(array_append)(&a, size)) { assert(0); return; }
-	for(i = 0; i < size; i++) PA_(filler)(a.data + i);
-	PA_(filler)(&elem);
-	printf("bounds: %s\n", PA_(array_to_string)(&a));
-	ACC_(sort)(&a);
-	printf("sorted: %s.\n", PA_(array_to_string)(&a));
-	PA_(to_string)(&elem, &z), printf("elem: %s\n", z);
-	low = ACC_(lower_bound)(&a, &elem);
-	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
-	assert(low <= a.size);
-	assert(!low || PACC_(compare)(a.data + low - 1, &elem) < 0);
-	assert(low == a.size || PACC_(compare)(&elem, a.data + low) <= 0);
-	high = ACC_(upper_bound)(&a, &elem);
-	printf(QUOTE(ARRAY_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
-	assert(high <= a.size);
-	assert(!high || PACC_(compare)(a.data + high - 1, &elem) <= 0);
-	assert(high == a.size || PACC_(compare)(&elem, a.data + high) < 0);
-	t = ACC_(insert_after)(&a, &elem);
-	printf("insert: %s.\n", PA_(array_to_string)(&a));
-	assert(t && a.size == size + 1);
-	t = memcmp(&elem, a.data + low, sizeof elem);
-	assert(!t);
-	A_(array_clear)(&a);
-	A_(array_append)(&a, size);
-	for(i = 0; i < size; i++) memcpy(a.data + i, &elem, sizeof elem);
-	printf("bounds: %s.\n", PA_(array_to_string)(&a));
-	low = ACC_(lower_bound)(&a, &elem);
-	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
-	assert(low == 0);
-	high = ACC_(upper_bound)(&a, &elem);
-	printf(QUOTE(ARRAY_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
-	assert(high == a.size);
-	A_(array_)(&a);
-#endif /* compare --> */
-}
-
 static void PACC_(test_contiguous)(void) {
 	/* FIXME: this is not tested. */
 #ifdef ARRAY_CODA /* <!-- contiguous */
@@ -603,6 +559,7 @@ static void PCMP_(test_sort)(void) {
 	const size_t as_size = sizeof as / sizeof *as;
 	const struct A_(array) *const as_end = as + as_size;
 	int cmp;
+	printf("\ntest sort:\n");
 	/* Random array of Arrays. */
 	for(a = as; a < as_end; a++) {
 		size_t size = (unsigned)rand() / (RAND_MAX / 5 + 1), i;
@@ -613,26 +570,67 @@ static void PCMP_(test_sort)(void) {
 		if(!size) continue;
 		assert(x);
 		for(i = 0; i < size; i++) PA_(filler)(a->data + i); /* Emplace. */
-		/*ACC_(sort)(a);*/
-		for(x = a->data; x < x_end - 1; x++) {
-			char y[12], z[12];
-			PA_(to_string)(x, &y), PA_(to_string)(x + 1, &z);
-			cmp = PCMP_(compare)(x, x + 1)/*, assert(cmp <= 0)*/;
-			printf("cmp %s, %s = %d\n", y, z, cmp);
-		}
-		printf("\n");
+		CMP_(sort)(a);
+		for(x = a->data; x < x_end - 1; x++)
+			cmp = PCMP_(compare)(x, x + 1), assert(cmp <= 0);
 	}
 	/* Now sort the lists. */
-	/*qsort(as, as_size, sizeof *as, &PACC_(cmp_void));
+	qsort(as, as_size, sizeof *as, &PCMP_(cmp_void));
 	printf("Sorted array of sorted <" QUOTE(ARRAY_NAME) ">array by "
 		   QUOTE(ARRAY_COMPARE) ":\n");
 	for(a = as; a < as_end; a++) {
 		printf("array: %s.\n", PA_(array_to_string)(a));
 		if(a == as) continue;
-		cmp = ACC_(compare)(a - 1, a);
+		cmp = CMP_(compare)(a - 1, a);
 		assert(cmp <= 0);
-	}*/
+	}
 #endif /* comp --> */
+}
+
+static void PCMP_(test_bounds)(void) {
+#ifdef ARRAY_COMPARE /* <!-- compare */
+	struct A_(array) a = A_(array)();
+	const size_t size = 10;
+	size_t i, low, high;
+	PA_(type) elem;
+	char z[12];
+	int t;
+	printf("\ntest bounds:\n");
+	if(!A_(array_append)(&a, size)) { assert(0); return; }
+	for(i = 0; i < size; i++) PA_(filler)(a.data + i);
+	PA_(filler)(&elem);
+	CMP_(sort)(&a);
+	printf("sorted: %s.\n", PA_(array_to_string)(&a));
+	PA_(to_string)(&elem, &z), printf("element to compare: %s\n", z);
+	low = CMP_(lower_bound)(&a, &elem);
+	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
+	assert(low <= a.size);
+	assert(!low || PCMP_(compare)(a.data + low - 1, &elem) < 0);
+	assert(low == a.size || PCMP_(compare)(&elem, a.data + low) <= 0);
+	high = CMP_(upper_bound)(&a, &elem);
+	printf(QUOTE(ARRAY_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
+	assert(high <= a.size);
+	assert(!high || PCMP_(compare)(a.data + high - 1, &elem) <= 0);
+	assert(high == a.size || PCMP_(compare)(&elem, a.data + high) < 0);
+#if 0
+	t = CMP_(insert_after)(&a, &elem);
+	printf("insert: %s.\n", PA_(array_to_string)(&a));
+	assert(t && a.size == size + 1);
+	t = memcmp(&elem, a.data + low, sizeof elem);
+	assert(!t);
+	A_(array_clear)(&a);
+	A_(array_append)(&a, size);
+	for(i = 0; i < size; i++) memcpy(a.data + i, &elem, sizeof elem);
+	printf("bounds: %s.\n", PA_(array_to_string)(&a));
+	low = ACC_(lower_bound)(&a, &elem);
+	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
+	assert(low == 0);
+	high = ACC_(upper_bound)(&a, &elem);
+	printf(QUOTE(ARRAY_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
+	assert(high == a.size);
+#endif
+	A_(array_)(&a);
+#endif /* compare --> */
 }
 
 
@@ -653,11 +651,10 @@ static void CMP_(compare_test)(void) {
 #endif
 		">:\n");
 	/*PACC_(test_compactify)();
-	PACC_(test_bounds)();
 	PACC_(test_sort)();
 	PACC_(test_contiguous)();*/
 	PCMP_(test_sort)();
-	CMP_(compare)(0, 0);
+	PCMP_(test_bounds)();
 	assert(errno == 0);
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array compare.\n\n");
 }
