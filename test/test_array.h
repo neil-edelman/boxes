@@ -477,7 +477,7 @@ static int PACC_(fill_unique)(PAC_(type) *const fill,
 }
 
 static void PACC_(test_compactify)(void) {
-	struct A_(array) a = ARRAY_IDLE;
+	struct A_(array) a = A_(array)();
 	PA_(type) ts[9], *t, *t1, *t_prev;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 
@@ -511,7 +511,7 @@ static void PACC_(test_compactify)(void) {
 
 static void PACC_(test_bounds)(void) {
 #ifdef ARRAY_COMPARE /* <!-- compare */
-	struct A_(array) a = ARRAY_IDLE;
+	struct A_(array) a = A_(array)();
 	const size_t size = 10;
 	size_t i, low, high;
 	PA_(type) elem;
@@ -568,7 +568,7 @@ static void PACC_(test_sort)(void) {
 	for(a = as; a < as_end; a++) {
 		size_t size = (unsigned)rand() / (RAND_MAX / 5 + 1), i;
 		PA_(type) *x, *x_end;
-		A_(array)(a);
+		*a = A_(array)();
 		x = A_(array_append)(a, size);
 		x_end = x + size;
 		if(!size) continue;
@@ -592,8 +592,9 @@ static void PACC_(test_sort)(void) {
 }
 
 static void PACC_(test_contiguous)(void) {
+	/* FIXME: this is not tested. */
 #ifdef ARRAY_CODA /* <!-- contiguous */
-	struct A_(array) a = ARRAY_IDLE;
+	struct A_(array) a = A_(array)();
 	PA_(type) ts[9], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	size_t i;

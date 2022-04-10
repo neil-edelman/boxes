@@ -41,7 +41,7 @@
 /** <src/array_coda.h>: an alias to the box. */
 typedef BOX PAC_(box);
 /** <src/array_coda.h>: an alias to the individual type contained in the box. */
-typedef BOX_CURSOR PAC_(enum);
+typedef BOX_CURSOR PAC_(cursor);
 /* Downcasting. */
 typedef ARRAY_CODA_TYPE PAC_(array);
 typedef const PAC_(array) *(*PAC_(box_to_array_c))(const PAC_(box) *);
@@ -55,17 +55,17 @@ static PAC_(box_to_array) PAC_(b2a) = (ARRAY_CODA_BOX_TO);
 
 
 /** <src/array_coda.h>: Operates by side-effects on <typedef:<PAC>enum>. */
-typedef void (*PAC_(action_fn))(PAC_(enum));
+typedef void (*PAC_(action_fn))(PAC_(cursor));
 
 /** <src/array_coda.h>: Returns a boolean given read-only
  <typedef:<PAC>enum>. */
-typedef int (*PAC_(predicate_fn))(const PAC_(enum));
+typedef int (*PAC_(predicate_fn))(const PAC_(cursor));
 
 /** <src/array_coda.h> @param[x] A valid entry or null to start from the last.
  @return The previous valid entry from `box` (which could be null) or null if
  this was the first. @allow */
-static PAC_(enum) AC_(previous)(const PAC_(box) *const box,
-	const PAC_(enum) x) {
+static PAC_(cursor) AC_(previous)(const PAC_(box) *const box,
+	const PAC_(cursor) x) {
 	const PAC_(array) *a;
 	size_t i;
 	if(!box || !(a = PAC_(b2a_c)(box))->data) return 0;
@@ -76,7 +76,7 @@ static PAC_(enum) AC_(previous)(const PAC_(box) *const box,
 /** <src/array_coda.h> @param[x] A valid entry or null to start from the first.
  @return The next valid entry from `box` (which could be null) or null if this
  was the last. @allow */
-static PAC_(enum) AC_(next)(const PAC_(box) *const box, const PAC_(enum) x) {
+static PAC_(cursor) AC_(next)(const PAC_(box) *const box, const PAC_(cursor) x) {
 	const PAC_(array) *a;
 	size_t i;
 	if(!box || !(a = PAC_(b2a_c)(box))->data) return 0;
@@ -104,7 +104,7 @@ static int AC_(copy_if)(PAC_(box) *const a, const PAC_(predicate_fn) copy,
 	const PAC_(box) *const b) {
 	PAC_(array) *const aa = PAC_(b2a)(a);
 	const PAC_(array) *const bb = b ? PAC_(b2a_c)(b) : 0;
-	PAC_(enum) i, fresh, end, rise = 0;
+	PAC_(cursor) i, fresh, end, rise = 0;
 	size_t add;
 	int difcpy = 0;
 	assert(a && aa && !(!b ^ !bb) && copy && a != b && aa != bb);
@@ -135,7 +135,7 @@ static int AC_(copy_if)(PAC_(box) *const a, const PAC_(predicate_fn) copy,
 static void AC_(keep_if)(PAC_(box) *const box,
 	const PAC_(predicate_fn) keep, const PAC_(action_fn) destruct) {
 	PAC_(array) *const a = PAC_(b2a)(box);
-	PAC_(enum) erase = 0, t, retain = 0, end;
+	PAC_(cursor) erase = 0, t, retain = 0, end;
 	int keep0 = 1, keep1 = 0;
 	assert(box && a && keep);
 	for(t = a->data, end = t + a->size; t < end; keep0 = keep1, t++) {
@@ -185,7 +185,7 @@ static void AC_(trim)(PAC_(box) *const box,
  @order \O(`box.size` \times `action`) @allow */
 static void AC_(each)(PAC_(box) *const box, const PAC_(action_fn) action) {
 	PAC_(array) *const a = PAC_(b2a)(box);
-	PAC_(enum) i, end;
+	PAC_(cursor) i, end;
 	assert(box && a && action);
 	for(i = a->data, end = i + a->size; i < end; i++) action(i);
 }
@@ -197,7 +197,7 @@ static void AC_(each)(PAC_(box) *const box, const PAC_(action_fn) action) {
 static void AC_(if_each)(PAC_(box) *const box,
 	const PAC_(predicate_fn) predicate, const PAC_(action_fn) action) {
 	PAC_(array) *const a = PAC_(b2a)(box);
-	PAC_(enum) i, end;
+	PAC_(cursor) i, end;
 	assert(box && a && predicate && action);
 	for(i = a->data, end = i + a->size; i < end; i++)
 		if(predicate(i)) action(i);
@@ -207,10 +207,10 @@ static void AC_(if_each)(PAC_(box) *const box,
  returns true.
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null. @order \O(`box.size` \times `predicate`) @allow */
-static PAC_(enum) AC_(any)(const PAC_(box) *const box,
+static PAC_(cursor) AC_(any)(const PAC_(box) *const box,
 	const PAC_(predicate_fn) predicate) {
 	const PAC_(array) *const a = PAC_(b2a_c)(box);
-	PAC_(enum) i, end;
+	PAC_(cursor) i, end;
 	assert(box && a && predicate);
 	for(i = a->data, end = i + a->size; i < end; i++)
 		if(predicate(i)) return i;
@@ -230,13 +230,13 @@ static void PAC_(unused_function_coda)(void) { PAC_(unused_function)(); }
 #ifndef ARRAY_CODA_COMPARE_ONCE /* <!-- once */
 #define ARRAY_CODA_COMPARE_ONCE
 /** <src/array_coda.h>: Returns a boolean given two read-only <typedef:<PAC>enum>. */
-typedef int (*PAC_(bipredicate_fn))(const PAC_(enum), const PAC_(enum));
+typedef int (*PAC_(bipredicate_fn))(const PAC_(cursor), const PAC_(cursor));
 /** <src/array_coda.h>: Three-way comparison on a totally order set of
  <typedef:<PAC>enum>; returns an integer value less then, equal to, greater
  then zero, if `a < b`, `a == b`, `a > b`, respectively. */
-typedef int (*PAC_(compare_fn))(const PAC_(enum) a, const PAC_(enum) b);
+typedef int (*PAC_(compare_fn))(const PAC_(cursor) a, const PAC_(cursor) b);
 /** <src/array_coda.h>: Returns a boolean given two <typedef:<PAC>enum>. */
-typedef int (*PAC_(biaction_fn))(PAC_(enum), PAC_(enum));
+typedef int (*PAC_(biaction_fn))(PAC_(cursor), PAC_(cursor));
 #endif /* once --> */
 
 #ifdef ARRAY_CODA_NAME
@@ -257,7 +257,7 @@ static const PAC_(compare_fn) PACC_(compare) = (BOX_COMPARE);
  `a > b`: positive. @order \O(`a.size`) @allow */
 static int ACC_(compare)(const PAC_(box) *const a, const PAC_(box) *const b) {
 	const PAC_(array) *aa, *bb;
-	PAC_(enum) *ad, *bd, *end;
+	PAC_(cursor) *ad, *bd, *end;
 	int diff;
 	/* Null counts as `-\infty`. */
 	if(!a) return b ? -1 : 0;
@@ -278,7 +278,7 @@ static int ACC_(compare)(const PAC_(box) *const a, const PAC_(box) *const b) {
  `value`. @return The first index of `a` that is not less than `value`.
  @order \O(log `a.size`) @allow */
 static size_t ACC_(lower_bound)(const PAC_(box) *const box,
-	const PAC_(enum) *const value) {
+	const PAC_(cursor) *const value) {
 	const PAC_(array) *a = PAC_(b2a_c)(box);
 	size_t low = 0, high = a->size, mid;
 	assert(box && a && value);
@@ -294,7 +294,7 @@ static size_t ACC_(lower_bound)(const PAC_(box) *const box,
  greater-than or equal-to <typedef:<PAC>enum> `value`. @return The first index
  of `box` that is greater than `value`. @order \O(log `a.size`) @allow */
 static size_t ACC_(upper_bound)(const PAC_(box) *const box,
-	const PAC_(enum) *const value) {
+	const PAC_(cursor) *const value) {
 	const PAC_(array) *a = PAC_(b2a_c)(box);
 	size_t low = 0, high = a->size, mid;
 	assert(box && a && value);
@@ -307,7 +307,7 @@ static size_t ACC_(upper_bound)(const PAC_(box) *const box,
 /** <src/array_coda.h>: Copies `value` at the upper bound of a sorted `box`.
  @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] @allow */
 static int ACC_(insert_after)(PAC_(box) *const box,
-	const PAC_(enum) *const value) {
+	const PAC_(cursor) *const value) {
 	PAC_(array) *a = PAC_(b2a)(box);
 	size_t bound;
 	assert(box && a && value);
@@ -345,7 +345,7 @@ static void ACC_(reverse)(PAC_(box) *const box) {
 
 /** !compare(`a`, `b`) == equals(`a`, `b`).
  @implements <typedef:<PAC>bipredicate_fn> */
-static int PACC_(is_equal)(const PAC_(enum) *const a, const PAC_(enum) *const b)
+static int PACC_(is_equal)(const PAC_(cursor) *const a, const PAC_(cursor) *const b)
 	{ return !PACC_(compare)(a, b); }
 
 #else /* compare --><!-- is equal */
@@ -361,7 +361,7 @@ static const PAC_(bipredicate_fn) PACC_(is_equal) = (BOX_IS_EQUAL);
 static int ACC_(is_equal)(const PAC_(box) *const a, const PAC_(box) *const b)
 {
 	const PAC_(array) *aa, *bb;
-	const PAC_(enum) *ad, *bd, *end;
+	const PAC_(cursor) ad, bd, end;
 	if(!a) return !b;
 	if(!b) return 0;
 	aa = PAC_(b2a_c)(a), bb = PAC_(b2a_c)(a), assert(aa && bb);

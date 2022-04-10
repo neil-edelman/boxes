@@ -5,9 +5,9 @@
 
  Interface (defined by `BOX_`):
 
+ \* `int <BOX>is_cursor(<PSZ>cursor_c)` (defined by `BOX_CURSOR`);
  \* `struct <BOX>iterator`;
  \* `struct <BOX>iterator <BOX>begin(const <PSZ>box *)` (defined by `BOX`);
- \* `int <BOX>has_next(struct <BOX>iterator *)`
  \* `<PSZ>cursor_c <BOX>next(struct <BOX>iterator *)` (defined by `BOX_CURSOR`.)
 
  @param[SZ_(n)]
@@ -103,6 +103,7 @@ static const char *SZ_(to_string)(const PSZ_(box) *const box) {
 	const size_t ellipsis_len = sizeof ellipsis - 1;
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance, size;
+	PSZ_(cursor_c) x;
 	PSZ_(box) *promise_box;
 	struct BOX_(iterator) it;
 	int is_sep = 0;
@@ -116,15 +117,16 @@ static const char *SZ_(to_string)(const PSZ_(box) *const box) {
 	memcpy(&promise_box, &box, sizeof box), assert(box == promise_box);
 	it = BOX_(begin)(promise_box);
 	*b++ = left;
-	while(BOX_(has_next)(&it)) {
-		PSZ_(to_string)(BOX_(next)(&it), (char (*)[12])b);
+	while(BOX_(is_cursor)(x = BOX_(next)(&it))) {
+		PSZ_(to_string)(x, (char (*)[12])b);
 		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size = (size_t)(b - buffer))
 			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1)
-			{ if(BOX_(has_next)(&it)) goto ellipsis; else break; }
+			{ if(BOX_(is_cursor)(BOX_(next)(&it))) goto ellipsis;
+			else break; }
 	}
 	if(is_sep) b -= 2;
 	*b++ = right;

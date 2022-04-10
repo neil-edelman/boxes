@@ -41,7 +41,6 @@ static void colour_filler(enum colour *const c)
 #include "../src/array.h"
 
 
-#if 0
 /* Struct array. */
 struct str4 { char value[4]; };
 static void str4_to_string(const struct str4 *s, char (*const a)[12])
@@ -57,6 +56,7 @@ static void str4_filler(struct str4 *const s)
 #include "../src/array.h"
 
 
+#if 0
 /* Int array with compare. */
 static void int_to_string(const int *i, char (*const a)[12])
 	{ sprintf(*a, "%d", *i); }
@@ -119,8 +119,8 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	colour_array_test();
-	/*str4_array_test();
-	int_array_test();
+	str4_array_test();
+	/*int_array_test();
 	int_array_compare_test();
 	keyval_array_test();
 	keyval_array_compare_test();

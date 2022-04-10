@@ -17,14 +17,6 @@
  <typedef:<PA>type>, associated therewith; required. `<PA>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
- @param[ARRAY_CODA]
- Include more functions contained in <src/array_coda.h>, where `<AC>` is
- `<A>array`.
-
- @param[ARRAY_MIN_CAPACITY]
- Default is 3; optional number in `[2, SIZE_MAX]` that the capacity can not go
- below.
-
  @param[ARRAY_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
  trait.
@@ -72,8 +64,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#if defined(ARRAY_CAT_) || defined(ARRAY_CAT) || defined(A_) || defined(PA_) \
-	|| defined(ARRAY_IDLE)
+#if defined(ARRAY_CAT_) || defined(ARRAY_CAT) || defined(A_) || defined(PA_)
 #error Unexpected defines.
 #endif
 /* <Kernighan and Ritchie, 1988, p. 231>. */
@@ -100,27 +91,37 @@
 typedef ARRAY_TYPE PA_(type);
 
 /** Manages the array field `data` which has `size` elements. The space is
- indexed up to `capacity`, which is at least `size`. To initialize it to an
- idle state, see <fn:<A>array>, `ARRAY_IDLE`, `{0}` (`C99`,) or being `static`.
- The fields should be treated as read-only; any modification is liable to cause
- the array to go into an invalid state.
+ indexed up to `capacity`, which is at least `size`. The fields should be
+ treated as read-only; any modification is liable to cause the array to go into
+ an invalid state.
 
  ![States.](../doc/states.png) */
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
 /* <!-- iterate interface */
+/** @implements `is_cursor` */
+static int PA_(is_cursor)(const PA_(type) *const datum) { return !!datum; }
 /** @implements `iterator` */
 struct PA_(iterator) { const struct A_(array) *a; size_t i; };
-/** Before `a`. @implements `begin` */
+/** @return Iterator before `a`. @implements `begin` */
 static struct PA_(iterator) PA_(begin)(const struct A_(array) *const a)
 	{ struct PA_(iterator) it; it.a = a, it.i = 0; return it; }
-/** @return Whether `it` has next. @implements `has_next` */
-static int PA_(has_next)(struct PA_(iterator) *const it)
-	{ return assert(it), it->a && it->i < it->a->size; }
 /** @return The cursor of `it`. @implements `next` */
 static PA_(type) *PA_(next)(struct PA_(iterator) *const it)
-	{ return it->a->data + it->i++; }
+	{ return assert(it), it->a && it->i < it->a->size
+	? it->a->data + it->i++ : 0; }
+#if 0
+/** After `a`. @implements `end` */
+static struct PA_(iterator) PA_(end)(const struct A_(array) *const a)
+	{ struct PA_(iterator) it; it.a = a, it.i = a ? a->size : 0; return it; }
+/** @return Whether `it` has next. @implements `has_next` */
+static int PA_(has_previous)(struct PA_(iterator) *const it)
+	{ return assert(it), it->a && it->i && it->i <= it->a->size; }
+/** @return The cursor of `it`. @implements `next` */
+static PA_(type) *PA_(previous)(struct PA_(iterator) *const it)
+	{ return it->a->data + --it->i; }
+#endif
 /* iterate --> */
 
 /** This is the same as `{ 0 }` in `C99`, therefore static data is already
@@ -176,8 +177,7 @@ static PA_(type) *A_(array_buffer)(struct A_(array) *const a, const size_t n) {
 	return A_(array_reserve)(a, a->size + n) && a->data ? a->data + a->size : 0;
 }
 
-/** Appends `n` items on the back of `a`. This is used in the coda and
- <fn:<A>array_append>. */
+/** Appends `n` contiguous items on the back of `a`. @implements `append` */
 static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n) {
 	PA_(type) *b;
 	if(!(b = A_(array_buffer)(a, n))) return 0;
@@ -314,7 +314,7 @@ static void PA_(unused_base)(void)
 	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
 	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
 	A_(array_append)(0, 0); A_(array_splice)(0, 0, 0, 0);
-	PA_(begin)(0); PA_(has_next)(0); PA_(next)(0); PA_(id)(0); PA_(id_c)(0);
+	PA_(is_cursor)(0); PA_(begin)(0); PA_(next)(0); /*rm*/PA_(id)(0); PA_(id_c)(0);
 	PA_(unused_base_coda)(); }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
@@ -385,6 +385,7 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #undef BOX_
 #undef BOX
 #undef BOX_CURSOR
+
 /* Coda. */
 #undef ARRAY_CODA_TYPE
 #undef ARRAY_CODA_BOX_TO_C
@@ -394,6 +395,7 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #ifdef ARRAY_CODA_COMPARE_ONCE
 #undef ARRAY_CODA_COMPARE_ONCE
 #endif
+
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT
 #undef ARRAY_COMPARE_TRAIT
