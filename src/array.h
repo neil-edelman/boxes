@@ -111,17 +111,13 @@ static struct PA_(iterator) PA_(begin)(const struct A_(array) *const a)
 static PA_(type) *PA_(next)(struct PA_(iterator) *const it)
 	{ return assert(it), it->a && it->i < it->a->size
 	? it->a->data + it->i++ : 0; }
-#if 0
 /** After `a`. @implements `end` */
 static struct PA_(iterator) PA_(end)(const struct A_(array) *const a)
 	{ struct PA_(iterator) it; it.a = a, it.i = a ? a->size : 0; return it; }
-/** @return Whether `it` has next. @implements `has_next` */
-static int PA_(has_previous)(struct PA_(iterator) *const it)
-	{ return assert(it), it->a && it->i && it->i <= it->a->size; }
-/** @return The cursor of `it`. @implements `next` */
+/** @return The cursor of `it`. @implements `previous` */
 static PA_(type) *PA_(previous)(struct PA_(iterator) *const it)
-	{ return it->a->data + --it->i; }
-#endif
+	{ return assert(it), it->i && it->i <= it->a->size
+	? it->a->data + --it->i : 0; }
 /* iterate --> */
 
 /** This is the same as `{ 0 }` in `C99`, therefore static data is already
@@ -314,7 +310,9 @@ static void PA_(unused_base)(void)
 	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
 	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
 	A_(array_append)(0, 0); A_(array_splice)(0, 0, 0, 0);
-	PA_(is_cursor)(0); PA_(begin)(0); PA_(next)(0); /*rm*/PA_(id)(0); PA_(id_c)(0);
+	PA_(is_cursor)(0);
+	PA_(begin)(0); PA_(next)(0); PA_(end)(0); PA_(previous)(0);
+	/*rm*/PA_(id)(0); PA_(id_c)(0);
 	PA_(unused_base_coda)(); }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
@@ -323,19 +321,19 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 
 #ifdef ARRAY_TO_STRING_NAME
-#define SZ_(n) ARRAY_CAT(A_(array), ARRAY_CAT(ARRAY_TO_STRING_NAME, n))
+#define STR_(n) ARRAY_CAT(A_(array), ARRAY_CAT(ARRAY_TO_STRING_NAME, n))
 #else
-#define SZ_(n) ARRAY_CAT(A_(array), n)
+#define STR_(n) ARRAY_CAT(A_(array), n)
 #endif
 #define TO_STRING ARRAY_TO_STRING
 #include "to_string.h" /** \include */
 #ifdef ARRAY_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef ARRAY_TEST
-static PSZ_(to_string_fn) PA_(to_string) = PSZ_(to_string);
+static PSTR_(to_string_fn) PA_(to_string) = PSTR_(to_string);
 static const char *(*PA_(array_to_string))(const struct A_(array) *)
-	= &SZ_(to_string);
+	= &STR_(to_string);
 #endif /* expect --> */
-#undef SZ_
+#undef STR_
 #undef ARRAY_TO_STRING
 #ifdef ARRAY_TO_STRING_NAME
 #undef ARRAY_TO_STRING_NAME
