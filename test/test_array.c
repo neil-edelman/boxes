@@ -56,6 +56,25 @@ static void str4_filler(struct str4 *const s)
 #include "../src/array.h"
 
 
+/* Int array with compare. */
+static void int_to_string(const int *i, char (*const a)[12])
+	{ sprintf(*a, "%d", *i); }
+static void int_filler(int *const i)
+	{ *i = rand() / (RAND_MAX / 1998 + 1) - 999; }
+static int int_cmp(const int *const a, const int *const b)
+	{ return (*a > *b) - (*b > *a); }
+#define ARRAY_NAME int
+#define ARRAY_TYPE int
+#define ARRAY_TEST &int_filler
+#define ARRAY_EXPECT_TRAIT
+#include "../src/array.h"
+#define ARRAY_COMPARE &int_cmp
+#define ARRAY_EXPECT_TRAIT
+#include "../src/array.h"
+/* Always include to string last, as it undefines ARRAY_TEST. */
+#define ARRAY_TO_STRING &int_to_string
+#include "../src/array.h"
+
 #if 0
 /* Int array with compare. */
 static void int_to_string(const int *i, char (*const a)[12])
@@ -120,8 +139,8 @@ int main(void) {
 	errno = 0;
 	colour_array_test();
 	str4_array_test();
-	/*int_array_test();
-	int_array_compare_test();
+	int_array_test();
+	/*int_array_compare_test();
 	keyval_array_test();
 	keyval_array_compare_test();
 	keyval_array_value_compare_test();*/

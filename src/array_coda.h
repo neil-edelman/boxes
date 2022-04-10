@@ -227,6 +227,8 @@ static void PAC_(unused_function_coda)(void) { PAC_(unused_function)(); }
 
 #else /* functions --><!-- compare/is equal */
 
+#if 0 /* <!------------------------------------------------------------------*/
+
 #ifndef ARRAY_CODA_COMPARE_ONCE /* <!-- once */
 #define ARRAY_CODA_COMPARE_ONCE
 /** <src/array_coda.h>: Returns a boolean given two read-only <typedef:<PAC>enum>. */
@@ -431,5 +433,7 @@ static void PACC_(unused_compare_coda)(void) { PACC_(unused_compare)(); }
 #endif
 /*#undef AC_C_
 #undef PACC_ Need for tests. */
+
+#endif /* ----------------------------------------------------------------->*/
 
 #endif /* compare/is equal --> */
