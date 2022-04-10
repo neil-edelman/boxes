@@ -140,8 +140,8 @@ int main(void) {
 	colour_array_test();
 	str4_array_test();
 	int_array_test();
-	/*int_array_compare_test();
-	keyval_array_test();
+	int_array_compare_test();
+	/*keyval_array_test();
 	keyval_array_compare_test();
 	keyval_array_value_compare_test();*/
 	printf("Test success.\n\n");

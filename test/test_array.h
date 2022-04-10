@@ -555,44 +555,6 @@ static void PACC_(test_bounds)(void) {
 #endif /* compare --> */
 }
 
-#ifdef ARRAY_COMPARE /* <!-- comp */
-static int PACC_(cmp_void)(const void *const a, const void *const b)
-	{ return ACC_(compare)(a, b); }
-#endif /* comp --> */
-
-static void PACC_(test_sort)(void) {
-#ifdef ARRAY_COMPARE /* <!-- comp */
-	struct A_(array) as[64], *a;
-	const size_t as_size = sizeof as / sizeof *as;
-	const struct A_(array) *const as_end = as + as_size;
-	int cmp;
-	/* Random array of Arrays. */
-	for(a = as; a < as_end; a++) {
-		size_t size = (unsigned)rand() / (RAND_MAX / 5 + 1), i;
-		PA_(type) *x, *x_end;
-		*a = A_(array)();
-		x = A_(array_append)(a, size);
-		x_end = x + size;
-		if(!size) continue;
-		assert(x);
-		for(i = 0; i < size; i++) PA_(filler)(a->data + i);
-		ACC_(sort)(a);
-		for(x = a->data; x < x_end - 1; x++)
-			cmp = PACC_(compare)(x, x + 1), assert(cmp <= 0);
-	}
-	/* Now sort the lists. */
-	qsort(as, as_size, sizeof *as, &PACC_(cmp_void));
-	printf("Sorted array of sorted <" QUOTE(ARRAY_NAME) ">array by "
-		   QUOTE(ARRAY_COMPARE) ":\n");
-	for(a = as; a < as_end; a++) {
-		printf("array: %s.\n", PA_(array_to_string)(a));
-		if(a == as) continue;
-		cmp = ACC_(compare)(a - 1, a);
-		assert(cmp <= 0);
-	}
-#endif /* comp --> */
-}
-
 static void PACC_(test_contiguous)(void) {
 	/* FIXME: this is not tested. */
 #ifdef ARRAY_CODA /* <!-- contiguous */
@@ -630,6 +592,50 @@ static void PACC_(test_contiguous)(void) {
 
 #endif /* ----------------------------------------------------------------> */
 
+#ifdef ARRAY_COMPARE /* <!-- comp */
+static int PCMP_(cmp_void)(const void *const a, const void *const b)
+	{ return CMP_(compare)(a, b); }
+#endif /* comp --> */
+
+static void PCMP_(test_sort)(void) {
+#ifdef ARRAY_COMPARE /* <!-- comp */
+	struct A_(array) as[64], *a;
+	const size_t as_size = sizeof as / sizeof *as;
+	const struct A_(array) *const as_end = as + as_size;
+	int cmp;
+	/* Random array of Arrays. */
+	for(a = as; a < as_end; a++) {
+		size_t size = (unsigned)rand() / (RAND_MAX / 5 + 1), i;
+		PA_(type) *x, *x_end;
+		*a = A_(array)();
+		x = A_(array_append)(a, size);
+		x_end = x + size;
+		if(!size) continue;
+		assert(x);
+		for(i = 0; i < size; i++) PA_(filler)(a->data + i); /* Emplace. */
+		/*ACC_(sort)(a);*/
+		for(x = a->data; x < x_end - 1; x++) {
+			char y[12], z[12];
+			PA_(to_string)(x, &y), PA_(to_string)(x + 1, &z);
+			cmp = PCMP_(compare)(x, x + 1)/*, assert(cmp <= 0)*/;
+			printf("cmp %s, %s = %d\n", y, z, cmp);
+		}
+		printf("\n");
+	}
+	/* Now sort the lists. */
+	/*qsort(as, as_size, sizeof *as, &PACC_(cmp_void));
+	printf("Sorted array of sorted <" QUOTE(ARRAY_NAME) ">array by "
+		   QUOTE(ARRAY_COMPARE) ":\n");
+	for(a = as; a < as_end; a++) {
+		printf("array: %s.\n", PA_(array_to_string)(a));
+		if(a == as) continue;
+		cmp = ACC_(compare)(a - 1, a);
+		assert(cmp <= 0);
+	}*/
+#endif /* comp --> */
+}
+
+
 /** `ARRAY_TEST`, `ARRAY_COMPARE` -> `ARRAY_TO_STRING`, !`NDEBUG`: will be
  tested on stdout. @allow */
 static void CMP_(compare_test)(void) {
@@ -650,6 +656,8 @@ static void CMP_(compare_test)(void) {
 	PACC_(test_bounds)();
 	PACC_(test_sort)();
 	PACC_(test_contiguous)();*/
+	PCMP_(test_sort)();
+	CMP_(compare)(0, 0);
 	assert(errno == 0);
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array compare.\n\n");
 }

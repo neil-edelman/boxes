@@ -344,20 +344,21 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 
 
 #ifdef ARRAY_COMPARE_NAME
-#define ARRAY_CODA_NAME ARRAY_COMPARE_NAME
+#define CMP_(n) ARRAY_CAT(A_(array), ARRAY_CAT(ARRAY_COMPARE_NAME, n))
+#else
+#define CMP_(n) ARRAY_CAT(A_(array), n)
 #endif
 #ifdef ARRAY_COMPARE /* <!-- cmp */
-#define BOX_COMPARE ARRAY_COMPARE
+#define COMPARE ARRAY_COMPARE
 #else /* cmp --><!-- eq */
-#define BOX_IS_EQUAL ARRAY_IS_EQUAL
+#define COMPARE_IS_EQUAL ARRAY_IS_EQUAL
 #endif /* eq --> */
-#include "array_coda.h" /* (Already included.) */
+#include "compare.h" /* \include */
 #ifdef ARRAY_TEST /* <!-- test: this detects and outputs compare test. */
 #include "../test/test_array.h"
 #endif /* test --> */
-#undef ACC_
-#undef PACC_
-#undef ARRAY_CODA_NAME
+#undef PCMP_
+#undef CMP_
 #ifdef ARRAY_COMPARE_NAME
 #undef ARRAY_COMPARE_NAME
 #endif

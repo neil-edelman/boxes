@@ -31,7 +31,7 @@
 #define COMPARE_H
 #include <stddef.h>
 #include <limits.h>
-#if defined(TO_STRING_CAT_) || defined(TO_STRING_CAT) || defined(PCMP_)
+#if defined(COMPARE_CAT_) || defined(COMPARE_CAT) || defined(PCMP_)
 #error Unexpected defines.
 #endif
 /* <Kernighan and Ritchie, 1988, p. 231>. */
@@ -42,17 +42,18 @@
 
 #ifndef COMPARE_ONCE /* <!-- once */
 #define COMPARE_ONCE
+typedef BOX PCMP_(box);
+typedef BOX_CURSOR PCMP_(cursor);
+typedef const BOX_CURSOR PCMP_(cursor_c);
 /** <src/compare.h>: Returns a boolean given two read-only elements. */
 typedef int (*PCMP_(bipredicate_fn))(const PCMP_(cursor), const PCMP_(cursor));
 /** <src/compare.h>: Three-way comparison on a totally order set; returns an
  integer value less than, equal to, greater than zero, if `a < b`, `a == b`,
  `a > b`, respectively. */
-typedef int (*PCMP_(compare_fn))(const PCMP_(cursor) a, const PCMP_(cursor) b);
+typedef int (*PCMP_(compare_fn))(const PCMP_(cursor_c) a,
+	const PCMP_(cursor_c) b);
 /** <src/compare.h>: Returns a boolean given two modifiable arguments. */
 typedef int (*PCMP_(biaction_fn))(PCMP_(cursor), PCMP_(cursor));
-typedef BOX PCMP_(box);
-typedef BOX_CURSOR PCMP_(cursor);
-typedef const BOX_CURSOR PCMP_(cursor_c);
 #endif /* once --> */
 
 
@@ -61,29 +62,23 @@ typedef const BOX_CURSOR PCMP_(cursor_c);
 
 /* Check that `BOX_COMPARE` is a function implementing
  <typedef:<PCMP>compare_fn>. */
-static const PCMP_(compare_fn) PCMP_(compare) = (BOX_COMPARE);
+static const PCMP_(compare_fn) PCMP_(compare) = (COMPARE);
 
 /** <src/compare.h>: Lexicographically compares `a` to `b`. Both can be null,
  with null values before everything. @return `a < b`: negative; `a == b`: zero;
  `a > b`: positive. @order \O(`|a|` & `|b|`) @allow */
 static int CMP_(compare)(const PCMP_(box) *const a, const PCMP_(box) *const b) {
-	struct BOX_(iterator) ia = begin(a);
-	PCMP_(cursor_c) *ad, *bd, *end;
-	int diff;
-	/* Null counts as `-\infty`. */
-	if(!a) return b ? -1 : 0;
-	else if(!b) return 1;
-
-	if(BOX_(size)(a) > BOX_(size)(b)) {
-		for(ad = aa->data, bd = bb->data, end = bd + bb->size; bd < end;
-			ad++, bd++) if((diff = PACC_(compare)(ad, bd))) return diff;
-		return 1;
-	} else {
-		for(ad = a->data, bd = b->data, end = ad + a->size; ad < end;
-			ad++, bd++) if((diff = PACC_(compare)(ad, bd))) return diff;
-		return -(aa->size != bb->size);
+	struct BOX_(iterator) ia = BOX_(begin)(a), ib = BOX_(begin)(b);
+	for( ; ; ) {
+		const PCMP_(cursor_c) x = BOX_(next)(&ia), y = BOX_(next)(&ib);
+		int diff;
+		if(!BOX_(is_cursor)(x)) return BOX_(is_cursor)(y) ? -1 : 0;
+		else if(!BOX_(is_cursor)(y)) return 1;
+		if(diff = PCMP_(compare)(x, y)) return diff;
 	}
 }
+
+#if 0 /* <!-----------------------------------------------*/
 
 /** <src/array_coda.h>: `box` should be partitioned true/false with less-then
  `value`. @return The first index of `a` that is not less than `value`.
@@ -159,26 +154,28 @@ static void ACC_(reverse)(PCMP_(box) *const box) {
 static int PACC_(is_equal)(const PCMP_(enum) *const a, const PCMP_(enum) *const b)
 	{ return !PACC_(compare)(a, b); }
 
+#endif /* --------------------------------------> */
+
 #else /* compare --><!-- is equal */
 
 /* Check that `BOX_IS_EQUAL` is a function implementing
  <typedef:<PAC>bipredicate_fn>. */
-static const PCMP_(bipredicate_fn) PACC_(is_equal) = (BOX_IS_EQUAL);
+/*static const PCMP_(bipredicate_fn) PACC_(is_equal) = (BOX_IS_EQUAL);*/
 
 #endif /* is equal --> */
 
+#if 0 /* <!-----------------------------------------*/
 /** <src/array_coda.h> @return If `a` piecewise equals `b`, which both can be null.
  @order \O(`size`) @allow */
-static int ACC_(is_equal)(const PCMP_(box) *const a, const PCMP_(box) *const b)
-{
-	const PCMP_(array) *aa, *bb;
-	const PCMP_(enum) *ad, *bd, *end;
-	if(!a) return !b;
-	if(!b) return 0;
-	aa = PCMP_(b2a_c)(a), bb = PCMP_(b2a_c)(a), assert(aa && bb);
-	if(aa->size != bb->size) return 0;
-	for(ad = aa->data, bd = bb->data, end = ad + aa->size; ad < end; ad++, bd++)
-		if(!PACC_(is_equal)(ad, bd)) return 0;
+static int CMP_(is_equal)(const PCMP_(box) *const a,
+	const PCMP_(box) *const b) {
+	struct BOX_(iterator) ia = BOX_(begin)(a), ib = BOX_(begin)(b);
+	for( ; ; ) {
+		const PCMP_(cursor_c) x = BOX_(next)(&ia), y = BOX_(next)(&ib);
+		if(!BOX_(is_cursor)(x)) return !BOX_(is_cursor)(y);
+		else if(!BOX_(is_cursor)(y)) return 0;
+		if(!PCMP_(is_equal)(x, y)) return 0;
+	}
 	return 1;
 }
 
@@ -231,8 +228,6 @@ static void PACC_(unused_compare)(void) {
 	PACC_(unused_compare_coda)(); }
 static void PACC_(unused_compare_coda)(void) { PACC_(unused_compare)(); }
 
-#endif /*0*/
-
 #ifdef BOX_COMPARE
 #undef BOX_COMPARE
 #endif
@@ -245,4 +240,5 @@ static void PACC_(unused_compare_coda)(void) { PACC_(unused_compare)(); }
 /*#undef CMP_C_
 #undef PACC_ Need for tests. */
 
-#endif /* compare/is equal --> */
+#endif /* ---------------------------------------------> */
+/* compare/is equal --> */
