@@ -123,8 +123,8 @@ static PA_(type) *PA_(previous)(struct PA_(iterator) *const it)
 #define BOX_ACCESS
 /** Size of `a`. @implements `size` */
 static size_t PA_(size)(const struct A_(array) *a) { return a ? a->size : 0; }
-/** Element `idx` of `a`. @implements `get` */
-static PA_(type) *PA_(get)(const struct A_(array) *a, const size_t idx)
+/** Element `idx` of `a`. @implements `at` */
+static PA_(type) *PA_(at)(const struct A_(array) *a, const size_t idx)
 	{ return a->data + idx; }
 
 #define BOX_CONTIGUOUS /* Depends on `BOX_ACCESS`. */
@@ -317,7 +317,7 @@ static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
 	PA_(is_cursor)(0); PA_(begin)(0); PA_(next)(0);
 	PA_(end)(0); PA_(previous)(0);
-	PA_(size)(0); PA_(get)(0, 0);
+	PA_(size)(0); PA_(at)(0, 0);
 	/*rm*/PA_(id)(0); PA_(id_c)(0);
 	A_(array)(); A_(array_)(0); A_(array_insert)(0, 0, 0); A_(array_new)(0);
 	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);

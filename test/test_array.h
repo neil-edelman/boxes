@@ -594,7 +594,7 @@ static void PCMP_(test_bounds)(void) {
 	size_t i, low, high;
 	PA_(type) elem;
 	char z[12];
-	int t;
+	int ret;
 	printf("\ntest bounds:\n");
 	if(!A_(array_append)(&a, size)) { assert(0); return; }
 	for(i = 0; i < size; i++) PA_(filler)(a.data + i);
@@ -612,23 +612,21 @@ static void PCMP_(test_bounds)(void) {
 	assert(high <= a.size);
 	assert(!high || PCMP_(compare)(a.data + high - 1, &elem) <= 0);
 	assert(high == a.size || PCMP_(compare)(&elem, a.data + high) < 0);
-#if 0
-	t = CMP_(insert_after)(&a, &elem);
+	/*ret = CMP_(insert_after)(&a, &elem);
 	printf("insert: %s.\n", PA_(array_to_string)(&a));
-	assert(t && a.size == size + 1);
-	t = memcmp(&elem, a.data + low, sizeof elem);
-	assert(!t);
+	assert(ret && a.size == size + 1);
+	ret = memcmp(&elem, a.data + low, sizeof elem);
+	assert(!ret);*/
 	A_(array_clear)(&a);
 	A_(array_append)(&a, size);
 	for(i = 0; i < size; i++) memcpy(a.data + i, &elem, sizeof elem);
 	printf("bounds: %s.\n", PA_(array_to_string)(&a));
-	low = ACC_(lower_bound)(&a, &elem);
+	low = CMP_(lower_bound)(&a, &elem);
 	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
 	assert(low == 0);
-	high = ACC_(upper_bound)(&a, &elem);
+	high = CMP_(upper_bound)(&a, &elem);
 	printf(QUOTE(ARRAY_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
 	assert(high == a.size);
-#endif
 	A_(array_)(&a);
 #endif /* compare --> */
 }

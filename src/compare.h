@@ -83,39 +83,38 @@ static int CMP_(compare)(const PCMP_(box) *const a, const PCMP_(box) *const b) {
 
 #ifdef BOX_ACCESS /* <!-- access */
 
-/** <src/array_coda.h>: `box` should be partitioned true/false with less-then
- `value`. @return The first index of `a` that is not less than `value`. Only
- if the the box supports random access.
+/** <src/compare.h>: `box` should be partitioned true/false with less-then
+ `value`. @return The first index of `a` that is not less than `cursor`.
  @order \O(log `a.size`) @allow */
 static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
 	const PCMP_(cursor_c) cursor) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(PCMP_(compare)(cursor, BOX_(get)(box,
+		if(PCMP_(compare)(cursor, BOX_(at)(box,
 			mid = low + (high - low) / 2)) <= 0) high = mid;
 		else low = mid + 1;
 	return low;
 }
 
-/** <src/array_coda.h>: `box` should be partitioned false/true with
+/** <src/compare.h>: `box` should be partitioned false/true with
  greater-than or equal-to <typedef:<PAC>enum> `value`. @return The first index
- of `box` that is greater than `value`. @order \O(log `a.size`) @allow */
+ of `box` that is greater than `cursor`. @order \O(log `a.size`) @allow */
 static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
 	const PCMP_(cursor_c) cursor) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(PCMP_(compare)(cursor, BOX_(get)(box,
+		if(PCMP_(compare)(cursor, BOX_(at)(box,
 			mid = low + (high - low) / 2)) >= 0) low = mid + 1;
 		else high = mid;
 	return low;
 }
 
-#if 0 /* <!-----------------------------------------------*/
-
-/** <src/array_coda.h>: Copies `value` at the upper bound of a sorted `box`.
- @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] @allow */
+#if 0
+/** <src/compare.h>: Copies `value` at the upper bound of a sorted `box`.
+ @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] @allow
+ Don't know how we would do this... */
 static int ACC_(insert_after)(PCMP_(box) *const box,
-	const PCMP_(enum) *const value) {
+	const PCMP_(cursor) *const value) {
 	PCMP_(array) *a = PCMP_(b2a)(box);
 	size_t bound;
 	assert(box && a && value);
@@ -126,7 +125,6 @@ static int ACC_(insert_after)(PCMP_(box) *const box,
 	memcpy(a->data + bound, value, sizeof *value);
 	return 1;
 }
-
 #endif
 
 #endif
@@ -158,7 +156,7 @@ static void CMP_(sort)(PCMP_(box) *const box) {
 static int PACC_(vrevers)(const void *const a, const void *const b)
 	{ return PACC_(compare)(b, a); }
 
-/** <src/array_coda.h>: Sorts `box` in reverse by `qsort`.
+/** <src/compare.h>: Sorts `box` in reverse by `qsort`.
  @order \O(`a.size` \log `a.size`) @allow */
 static void ACC_(reverse)(PCMP_(box) *const box) {
 	const PCMP_(array) *a = PCMP_(b2a_c)(box);
@@ -182,7 +180,7 @@ static int PACC_(is_equal)(const PCMP_(enum) *const a, const PCMP_(enum) *const 
 #endif /* is equal --> */
 
 #if 0 /* <!-----------------------------------------*/
-/** <src/array_coda.h> @return If `a` piecewise equals `b`, which both can be null.
+/** <src/compare.h> @return If `a` piecewise equals `b`, which both can be null.
  @order \O(`size`) @allow */
 static int CMP_(is_equal)(const PCMP_(box) *const a,
 	const PCMP_(box) *const b) {
@@ -196,7 +194,7 @@ static int CMP_(is_equal)(const PCMP_(box) *const a,
 	return 1;
 }
 
-/** <src/array_coda.h>: Removes consecutive duplicate elements in `box`.
+/** <src/compare.h>: Removes consecutive duplicate elements in `box`.
  @param[merge] Controls surjection. Called with duplicate elements, if false
  `(x, y)->(x)`, if true `(x,y)->(y)`. More complex functions, `(x, y)->(x+y)`
  can be simulated by mixing the two in the value returned. Can be null: behaves
@@ -231,7 +229,7 @@ static void ACC_(unique_merge)(PCMP_(box) *const box,
 	a->size = target;
 }
 
-/** <src/array_coda.h>: Removes consecutive duplicate elements in `a`.
+/** <src/compare.h>: Removes consecutive duplicate elements in `a`.
  @order \O(`a.size`) @allow */
 static void ACC_(unique)(PCMP_(box) *const a) { ACC_(unique_merge)(a, 0); }
 
