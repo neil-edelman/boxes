@@ -138,13 +138,20 @@ static void PA_(test_basic)(void) {
 
 	printf("Testing lazy remove:\n");
 	it = A_(array_begin)(&a), ret = A_(array_lazy_remove)(&it), assert(!ret);
-	it = A_(array_end)(&a), ret = A_(array_lazy_remove)(&it), assert(!ret);
-	it = A_(array_before)(&a, 0), ret = A_(array_lazy_remove)(&it), assert(!ret);
+	item = A_(array_next)(&it), assert(item);
+	{
+		char z[12];
+		PA_(to_string)(item, &z);
+		printf("%s will be removed\n", z);
+	}
+	ret = A_(array_lazy_remove)(&it), assert(ret);
 	assert(a.size == 2);
 	item = a.data;
 	assert(!memcmp(item, items + 2, sizeof *item) && !memcmp(item + 1, items + 1, sizeof *item));
 	A_(array_clear)(&a);
 	assert(!a.size);
+
+	it = A_(array_end)(&a), ret = A_(array_lazy_remove)(&it), assert(!ret);
 
 	printf("Testing %lu elements.\n", (unsigned long)items_size);
 	for(i = 0; i < items_size; i++) {

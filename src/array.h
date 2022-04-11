@@ -273,16 +273,17 @@ static int A_(array_remove)(const struct A_(array_iterator) *const it) {
 	return 1;
 }
 
-/** Removes the current element `it` and replaces it with the tail. The
- iterator will be at the (erstwhile) tail. @return Whether `it` pointed at
- anything. @order \O(1). @allow */
+/** Removes the previous element of `it` and replaces it with the tail.
+ @return Whether there was a previous element. @order \O(1). @allow */
 static int A_(array_lazy_remove)(const struct A_(array_iterator) *const it) {
 	size_t n;
 	assert(it);
+	printf("it: next %lu\n", it->_.next);
 	if(!it->_.a || it->_.next == 0
 		|| (n = it->_.next - 1) >= it->_.a->size) return 0;
-	if(--it->_.a->size != n) memcpy(it->_.a + n,
-		it->_.a + it->_.a->size, sizeof *it->_.a);
+	printf("it: n %lu, size=%lu\n", n, it->_.a->size);
+	if(--it->_.a->size != n) memcpy(it->_.a->data + n,
+		it->_.a->data + it->_.a->size, sizeof *it->_.a->data);
 	return 1;
 }
 
