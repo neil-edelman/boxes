@@ -615,7 +615,6 @@ static void PCMP_(test_bounds)(void) {
 	size_t i, low, high;
 	PA_(type) elem;
 	char z[12];
-	int ret;
 	printf("\ntest bounds:\n");
 	if(!A_(array_append)(&a, size)) { assert(0); return; }
 	for(i = 0; i < size; i++) PA_(filler)(a.data + i);

@@ -100,7 +100,7 @@ struct A_(array) { PA_(type) *data; size_t size, capacity; };
 
 #define BOX_CURSOR PA_(type) *
 /** Is `datum` not null? @implements `is_cursor` */
-static int PA_(is_cursor)(const PA_(type) *const datum) { return !!datum; }
+static int PA_(is_cursor)(const PA_(type) *const x) { return !!x; }
 /** @implements `iterator_c` */
 struct PA_(iterator_c) { const struct A_(array) *a; size_t next; };
 /** @implements `iterator` */
@@ -139,7 +139,6 @@ static struct PA_(iterator) PA_(at)(struct A_(array) *a, size_t idx)
 /** @return Element `idx` of `a`. @implements `get` */
 static PA_(type) *PA_(get)(const struct A_(array) *a, const size_t idx)
 	{ return a->data + idx; }
-
 
 #define BOX_CONTIGUOUS /* Depends on `BOX_ACCESS`. */
 
@@ -360,8 +359,12 @@ static void PA_(unused_base)(void) {
 	PA_(is_cursor)(0); PA_(begin_c)(0); PA_(begin)(0); PA_(next)(0);
 	PA_(next_c)(0); PA_(end)(0); PA_(previous)(0);
 	PA_(size)(0); PA_(at)(0, 0); PA_(get)(0, 0);
+
+
 	/*rm*/PA_(id)(0); PA_(id_c)(0);
-	A_(array)(); A_(array_)(0); A_(array_insert)(0, 0); A_(array_new)(0);
+	A_(array)(); A_(array_)(0); A_(array_begin)(0); A_(array_end)(0);
+	A_(array_at)(0, 0); A_(array_next)(0); A_(array_previous)(0);
+	A_(array_insert)(0, 0); A_(array_new)(0);
 	A_(array_shrink)(0); A_(array_remove)(0); A_(array_lazy_remove)(0);
 	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
 	A_(array_append)(0, 0); A_(array_splice)(0, 0, 0, 0);
