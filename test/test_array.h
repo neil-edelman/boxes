@@ -129,19 +129,17 @@ static void PA_(test_basic)(void) {
 	assert(i == 3);
 	for(i = 0; i < 3; i++) {
 		char z[12];
-		it = A_(array_at)(&a, i);
-		item = A_(array_current)(&it), assert(item);
+		it = A_(array_before)(&a, i);
+		item = A_(array_next)(&it), assert(item);
 		PA_(to_string)(item, &z), printf("a[%lu] = %s\n", (unsigned long)i, z);
 		assert(!memcmp(item, items + i, sizeof *item));
 	}
-	it = A_(array_at)(&a, i);
-	item = A_(array_current)(&it);
-	assert(!item);
+	it = A_(array_before)(&a, i), item = A_(array_next)(&it), assert(!item);
 
 	printf("Testing lazy remove:\n");
 	it = A_(array_begin)(&a), ret = A_(array_lazy_remove)(&it), assert(!ret);
 	it = A_(array_end)(&a), ret = A_(array_lazy_remove)(&it), assert(!ret);
-	it = A_(array_at)(&a, 0), ret = A_(array_lazy_remove)(&it), assert(ret);
+	it = A_(array_before)(&a, 0), ret = A_(array_lazy_remove)(&it), assert(!ret);
 	assert(a.size == 2);
 	item = a.data;
 	assert(!memcmp(item, items + 2, sizeof *item) && !memcmp(item + 1, items + 1, sizeof *item));

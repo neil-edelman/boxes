@@ -90,7 +90,7 @@ static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
 	const PCMP_(cursor_c) cursor) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(PCMP_(compare)(cursor, BOX_(get)(box,
+		if(PCMP_(compare)(cursor, BOX_(at)(box,
 			mid = low + (high - low) / 2)) <= 0) high = mid;
 		else low = mid + 1;
 	return low;
@@ -103,7 +103,7 @@ static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
 	const PCMP_(cursor_c) cursor) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(PCMP_(compare)(cursor, BOX_(get)(box,
+		if(PCMP_(compare)(cursor, BOX_(at)(box,
 			mid = low + (high - low) / 2)) >= 0) low = mid + 1;
 		else high = mid;
 	return low;
