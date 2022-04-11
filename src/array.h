@@ -111,11 +111,19 @@ static struct PA_(iterator_c) PA_(begin_c)(const struct A_(array) *const a)
 /** @return Iterator before `a`. @implements `begin` */
 static struct PA_(iterator) PA_(begin)(struct A_(array) *const a)
 	{ struct PA_(iterator) it; it.a = a, it.next = 0; return it; }
-/** Move to next. @return The cursor of `it`. @implements `next` */
+/** @return The cursor of `it`. @implements `current_c` */
+static const PA_(type) *PA_(current_c)(struct PA_(iterator_c) *const it)
+	{ return assert(it), it->a && it->next && it->next <= it->a->size
+	? it->a->data + it->next - 1 : 0; }
+/** Move to next. @return The cursor of `it`. @implements `current` */
+static PA_(type) *PA_(current)(struct PA_(iterator) *const it)
+	{ return assert(it), it->a && it->next && it->next <= it->a->size
+	? it->a->data + it->next - 1 : 0; }
+/** @return The next cursor of `it`. @implements `next` */
 static const PA_(type) *PA_(next_c)(struct PA_(iterator_c) *const it)
 	{ return assert(it), it->a && it->next < it->a->size
 	? it->a->data + it->next++ : 0; }
-/** Move to next. @return The cursor of `it`. @implements `next` */
+/** @return The next cursor of `it`. @implements `next` */
 static PA_(type) *PA_(next)(struct PA_(iterator) *const it)
 	{ return assert(it), it->a && it->next < it->a->size
 	? it->a->data + it->next++ : 0; }
@@ -134,8 +142,7 @@ static PA_(type) *PA_(previous)(struct PA_(iterator) *const it)
 static size_t PA_(size)(const struct A_(array) *a) { return a ? a->size : 0; }
 /** @return Iterator to element `idx` of `a`, clipped. @implements `at` */
 static struct PA_(iterator) PA_(at)(struct A_(array) *a, size_t idx)
-	{ struct PA_(iterator) it; it.a = a, it.next = a && a->size && idx
-	? idx < a->size ? idx + 1 : a->size : 0; return it; }
+	{ struct PA_(iterator) it; it.a = a, it.next = idx + 1; return it; }
 /** @return Element `idx` of `a`. @implements `get` */
 static PA_(type) *PA_(get)(const struct A_(array) *a, const size_t idx)
 	{ return a->data + idx; }
@@ -162,12 +169,16 @@ static struct A_(array_iterator) A_(array_begin)(struct A_(array) *a)
 /** @return An iterator after the end of `a`. */
 static struct A_(array_iterator) A_(array_end)(struct A_(array) *a)
 	{ struct A_(array_iterator) it; it._ = PA_(end)(a); return it; }
-/** @return An iterator at `idx` (clipped) of `a`. */
+/** @return An iterator at `idx` of `a`. */
 static struct A_(array_iterator) A_(array_at)(struct A_(array) *a, size_t idx)
 	{ struct A_(array_iterator) it; it._ = PA_(at)(a, idx); return it; }
-/** @return An iterator before the front of `a`. */
+/** @return Returns the element. */
+static PA_(type) *A_(array_current)(struct A_(array_iterator) *const it)
+	{ return assert(it), PA_(current)(&it->_); }
+/** @return The next element. */
 static PA_(type) *A_(array_next)(struct A_(array_iterator) *const it)
 	{ return assert(it), PA_(next)(&it->_); }
+/** @return The previous element. */
 static PA_(type) *A_(array_previous)(struct A_(array_iterator) *const it)
 	{ return assert(it), PA_(previous)(&it->_); }
 
@@ -357,13 +368,12 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *);
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
 	PA_(is_cursor)(0); PA_(begin_c)(0); PA_(begin)(0); PA_(next)(0);
-	PA_(next_c)(0); PA_(end)(0); PA_(previous)(0);
-	PA_(size)(0); PA_(at)(0, 0); PA_(get)(0, 0);
-
-
+	PA_(current_c)(0); PA_(current)(0); PA_(next_c)(0);
+	PA_(end)(0); PA_(previous)(0); PA_(size)(0); PA_(at)(0, 0); PA_(get)(0, 0);
 	/*rm*/PA_(id)(0); PA_(id_c)(0);
-	A_(array)(); A_(array_)(0); A_(array_begin)(0); A_(array_end)(0);
-	A_(array_at)(0, 0); A_(array_next)(0); A_(array_previous)(0);
+	A_(array)(); A_(array_)(0);
+	A_(array_begin)(0); A_(array_end)(0); A_(array_at)(0, 0);
+	A_(array_previous)(0); A_(array_next)(0); A_(array_previous)(0);
 	A_(array_insert)(0, 0); A_(array_new)(0);
 	A_(array_shrink)(0); A_(array_remove)(0); A_(array_lazy_remove)(0);
 	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);

@@ -77,8 +77,8 @@ static int PA_(zero_filled)(PA_(type) *const t) {
 static void PA_(test_basic)(void) {
 	struct A_(array) a = A_(array)();
 	struct A_(array_iterator) it;
-	PA_(type) ts[5], *t, *t1;
-	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
+	PA_(type) items[5], *item, *item1;
+	const size_t items_size = sizeof items / sizeof *items, big = 1000;
 	size_t i;
 	int is_zero, ret;
 
@@ -86,122 +86,124 @@ static void PA_(test_basic)(void) {
 	PA_(valid_state)(0);
 
 	printf("Test empty.\n");
-	t = (PA_(type) *)1;
+	item = (PA_(type) *)1;
 	assert(errno == 0);
 	PA_(valid_state)(&a);
 
 	/* This is un-necessary, but `valgrind` reports an error if we don't. */
-	memset(ts, 0, sizeof ts);
+	memset(items, 0, sizeof items);
 	/* Get elements. */
-	for(t = ts, t1 = t + ts_size; t < t1; t++) PA_(filler)(t);
+	for(item = items, item1 = item + items_size; item < item1; item++) PA_(filler)(item);
 
 	printf("Test one element.\n");
-	t = A_(array_new)(&a); /* Add. */
-	assert(t && a.data == t && a.size == 1);
-	assert(A_(array_peek)(&a) == t);
-	t1 = A_(array_pop)(&a); /* Remove. */
-	assert(t1 == t);
+	item = A_(array_new)(&a); /* Add. */
+	assert(item && a.data == item && a.size == 1);
+	assert(A_(array_peek)(&a) == item);
+	item1 = A_(array_pop)(&a); /* Remove. */
+	assert(item1 == item);
 	assert(A_(array_peek)(&a) == 0);
-	t = A_(array_new)(&a); /* Add. */
-	assert(t && a.size == 1 && a.capacity >= 1);
+	item = A_(array_new)(&a); /* Add. */
+	assert(item && a.size == 1 && a.capacity >= 1);
 	A_(array_shrink)(&a);
 	assert(ARRAY_MIN_CAPACITY > 1);
 	assert(a.size == 1 && a.capacity == ARRAY_MIN_CAPACITY);
-	t = A_(array_new)(&a); /* Add: 2. */
-	assert(t && a.size == 2 && a.capacity >= 2);
+	item = A_(array_new)(&a); /* Add: 2. */
+	assert(item && a.size == 2 && a.capacity >= 2);
 	A_(array_clear)(&a);
 	assert(A_(array_peek)(&a) == 0);
 	PA_(valid_state)(&a);
 
-	assert(ts_size >= 3);
+	assert(items_size >= 3);
 	for(i = 0; i < 3; i++) {
-		t = A_(array_new)(&a);
-		assert(t);
-		memcpy(t, ts + i, sizeof *t);
+		item = A_(array_new)(&a);
+		assert(item);
+		memcpy(item, items + i, sizeof *item);
 	}
 	printf("Testing iteration, a = %s.\n",
 		PA_(array_to_string)(&a));
-	for(it = A_(array_begin)(&a), i = 0; t = A_(array_next)(&it); i++)
-		assert(!memcmp(t, ts + i, sizeof *t));
+	for(it = A_(array_begin)(&a), i = 0; item = A_(array_next)(&it); i++)
+		assert(!memcmp(item, items + i, sizeof *item));
 	assert(i == 3);
-	for(it = A_(array_end)(&a), i = 0; t = A_(array_previous)(&it); i++)
-		assert(!memcmp(t, ts + 2 - i, sizeof *t));
+	for(it = A_(array_end)(&a), i = 0; item = A_(array_previous)(&it); i++)
+		assert(!memcmp(item, items + 2 - i, sizeof *item));
 	assert(i == 3);
 	for(i = 0; i < 3; i++) {
+		char z[12];
 		it = A_(array_at)(&a, i);
-		t = A_(array_next)(&it), assert(t);
-		assert(t && !memcmp(t, ts + i, sizeof *t));
+		item = A_(array_current)(&it), assert(item);
+		PA_(to_string)(item, &z), printf("a[%lu] = %s\n", (unsigned long)i, z);
+		assert(!memcmp(item, items + i, sizeof *item));
 	}
 	it = A_(array_at)(&a, i);
-	t = A_(array_next)(&it);
-	assert(!memcmp(t, ts + 2, sizeof *t));
+	item = A_(array_current)(&it);
+	assert(!item);
 
 	printf("Testing lazy remove:\n");
 	it = A_(array_begin)(&a), ret = A_(array_lazy_remove)(&it), assert(!ret);
 	it = A_(array_end)(&a), ret = A_(array_lazy_remove)(&it), assert(!ret);
 	it = A_(array_at)(&a, 0), ret = A_(array_lazy_remove)(&it), assert(ret);
 	assert(a.size == 2);
-	t = a.data;
-	assert(!memcmp(t, ts + 2, sizeof *t) && !memcmp(t + 1, ts + 1, sizeof *t));
+	item = a.data;
+	assert(!memcmp(item, items + 2, sizeof *item) && !memcmp(item + 1, items + 1, sizeof *item));
 	A_(array_clear)(&a);
 	assert(!a.size);
 
-	printf("Testing %lu elements.\n", (unsigned long)ts_size);
-	for(i = 0; i < ts_size; i++) {
-		t = A_(array_new)(&a);
-		assert(t);
-		memcpy(t, ts + i, sizeof *t);
+	printf("Testing %lu elements.\n", (unsigned long)items_size);
+	for(i = 0; i < items_size; i++) {
+		item = A_(array_new)(&a);
+		assert(item);
+		memcpy(item, items + i, sizeof *item);
 	}
 	assert(A_(array_peek)(&a));
 	printf("Now: %s.\n", PA_(array_to_string)(&a));
-	assert(a.size == ts_size);
-	t = a.data + ts_size - 2;
+	assert(a.size == items_size);
+	item = a.data + items_size - 2;
 	//A_(array_remove)(&a, t);
-	t = a.data + ts_size - 3;
+	item = a.data + items_size - 3;
 	//A_(array_remove)(&a, t);
 	printf("Now: %s.\n", PA_(array_to_string)(&a));
 
-	assert(a.size == ts_size - 2);
+	assert(a.size == items_size - 2);
 	A_(array_append)(&a, 2);
-	memcpy(t + 1, ts + 3, sizeof *t * 2);
-	assert(a.size == ts_size);
+	memcpy(item + 1, items + 3, sizeof *item * 2);
+	assert(a.size == items_size);
 	PA_(valid_state)(&a);
 	printf("Now: %s.\n", PA_(array_to_string)(&a));
 
 	/* Peek/Pop. */
-	t = A_(array_peek)(&a);
-	assert(t && !memcmp(t, ts + ts_size - 1, sizeof *t));
-	t = A_(array_pop)(&a);
-	assert(t && !memcmp(t, ts + ts_size - 1, sizeof *t));
-	t = A_(array_pop)(&a);
-	assert(t && !memcmp(t, ts + ts_size - 2, sizeof *t));
+	item = A_(array_peek)(&a);
+	assert(item && !memcmp(item, items + items_size - 1, sizeof *item));
+	item = A_(array_pop)(&a);
+	assert(item && !memcmp(item, items + items_size - 1, sizeof *item));
+	item = A_(array_pop)(&a);
+	assert(item && !memcmp(item, items + items_size - 2, sizeof *item));
 	A_(array_clear)(&a);
 	assert(a.size == 0);
 
 	/* Trim 1. */
-	t = A_(array_new)(&a);
-	assert(t);
-	memset(t, 0, sizeof *t);
+	item = A_(array_new)(&a);
+	assert(item);
+	memset(item, 0, sizeof *item);
 	A_(array_trim)(&a, &PA_(zero_filled));
 	assert(a.size == 0);
 	/* Trim 3. */
-	t = A_(array_new)(&a);
-	assert(t);
-	memset(t, 0, sizeof *t);
-	t = A_(array_new)(&a);
-	assert(t);
-	PA_(filler)(t);
-	is_zero = PA_(zero_filled)(t);
-	t = A_(array_new)(&a);
-	assert(t);
-	memset(t, 0, sizeof *t);
+	item = A_(array_new)(&a);
+	assert(item);
+	memset(item, 0, sizeof *item);
+	item = A_(array_new)(&a);
+	assert(item);
+	PA_(filler)(item);
+	is_zero = PA_(zero_filled)(item);
+	item = A_(array_new)(&a);
+	assert(item);
+	memset(item, 0, sizeof *item);
 	A_(array_trim)(&a, &PA_(zero_filled));
 	assert(a.size == !is_zero);
 
 	/* Big. */
 	for(i = 0; i < big; i++) {
-		t = A_(array_new)(&a), assert(t);
-		PA_(filler)(t);
+		item = A_(array_new)(&a), assert(item);
+		PA_(filler)(item);
 	}
 	printf("%s.\n", PA_(array_to_string)(&a));
 	PA_(valid_state)(&a);
