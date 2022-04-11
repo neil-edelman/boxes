@@ -132,10 +132,10 @@ static PA_(type) *PA_(previous)(struct PA_(iterator) *const it)
 #define BOX_ACCESS
 /** Size of `a`. @implements `size` */
 static size_t PA_(size)(const struct A_(array) *a) { return a ? a->size : 0; }
-/** @return Iterator to element `idx` of `a`. @implements `at` */
+/** @return Iterator to element `idx` of `a`, clipped. @implements `at` */
 static struct PA_(iterator) PA_(at)(struct A_(array) *a, size_t idx)
-	{ struct PA_(iterator) it; it.a = a,
-	it.next = a ? idx <= a->size ? idx : a->size : 0; return it; }
+	{ struct PA_(iterator) it; it.a = a, it.next = a && a->size && idx
+	? idx < a->size ? idx + 1 : a->size : 0; return it; }
 /** @return Element `idx` of `a`. @implements `get` */
 static PA_(type) *PA_(get)(const struct A_(array) *a, const size_t idx)
 	{ return a->data + idx; }

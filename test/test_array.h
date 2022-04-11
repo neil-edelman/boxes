@@ -80,7 +80,7 @@ static void PA_(test_basic)(void) {
 	PA_(type) ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
 	size_t i;
-	int is_zero;
+	int is_zero, ret;
 
 	assert(errno == 0);
 	PA_(valid_state)(0);
@@ -127,20 +127,19 @@ static void PA_(test_basic)(void) {
 	for(it = A_(array_end)(&a), i = 0; t = A_(array_previous)(&it); i++)
 		assert(!memcmp(t, ts + 2 - i, sizeof *t));
 	assert(i == 3);
-	for(i = 0; ; i++) {
+	for(i = 0; i < 3; i++) {
 		it = A_(array_at)(&a, i);
-		if(!(t = A_(array_next)(&it))) break;
-		assert(!memcmp(t, ts + i, sizeof *t));
+		t = A_(array_next)(&it), assert(t);
+		assert(t && !memcmp(t, ts + i, sizeof *t));
 	}
-	assert(i == 3);
-	it = A_(array_at)(&a, 100);
-	t = A_(array_previous)(&it);
+	it = A_(array_at)(&a, i);
+	t = A_(array_next)(&it);
 	assert(!memcmp(t, ts + 2, sizeof *t));
 
 	printf("Testing lazy remove:\n");
-	t = A_(array_next)(&it);
-	t = A_(array_next)(&it);
-	//A_(array_lazy_remove)(&a, a.data);
+	it = A_(array_begin)(&a), ret = A_(array_lazy_remove)(&it), assert(!ret);
+	it = A_(array_end)(&a), ret = A_(array_lazy_remove)(&it), assert(!ret);
+	it = A_(array_at)(&a, 0), ret = A_(array_lazy_remove)(&it), assert(ret);
 	assert(a.size == 2);
 	t = a.data;
 	assert(!memcmp(t, ts + 2, sizeof *t) && !memcmp(t + 1, ts + 1, sizeof *t));
