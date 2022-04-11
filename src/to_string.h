@@ -3,12 +3,12 @@
 
  @subtitle To string trait
 
- Interface (defined by `BOX_`):
+ Interface (defined by `BOX_`, `BOX`, and `BOX_CURSOR`):
 
- \* `int <BOX>is_cursor(<PSZ>cursor_c)` (defined by `BOX_CURSOR`);
- \* `struct <BOX>iterator`;
- \* `struct <BOX>iterator <BOX>begin(const <PSZ>box *)` (defined by `BOX`);
- \* `<PSZ>cursor_c <BOX>next(struct <BOX>iterator *)` (defined by `BOX_CURSOR`.)
+ \* `int <BOX>is_cursor(<PSZ>cursor_c)`;
+ \* `struct <BOX>iterator_c`;
+ \* `struct <BOX>iterator <BOX>begin_c(const <PSZ>box *)`;
+ \* `<PSZ>cursor_c <BOX>next_c(struct <BOX>iterator *)`.
 
  @param[STR_(n)]
  A one-argument macro producing a name that is responsible for the name of the
@@ -104,20 +104,16 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance, size;
 	PSTR_(cursor_c) x;
-	PSTR_(box) *promise_box;
-	struct BOX_(iterator) it;
+	struct BOX_(iterator_c) it;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
 	assert(box && !(to_string_buffers_no & (to_string_buffers_no - 1))
 		&& to_string_buffer_size >= 1 + 11 + 1 + ellipsis_len + 1 + 1);
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
-	/* We want iteration to modify the values sometimes, so it is theoretically
-	 possible to modify box, but we just don't. Promise. */
-	memcpy(&promise_box, &box, sizeof box), assert(box == promise_box);
-	it = BOX_(begin)(promise_box);
+	it = BOX_(begin_c)(box);
 	*b++ = left;
-	while(BOX_(is_cursor)(x = BOX_(next)(&it))) {
+	while(BOX_(is_cursor)(x = BOX_(next_c)(&it))) {
 		PSTR_(to_string)(x, (char (*)[12])b);
 		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
@@ -125,7 +121,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size = (size_t)(b - buffer))
 			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1)
-			{ if(BOX_(is_cursor)(BOX_(next)(&it))) goto ellipsis;
+			{ if(BOX_(is_cursor)(BOX_(next_c)(&it))) goto ellipsis;
 			else break; }
 	}
 	if(is_sep) b -= 2;

@@ -71,9 +71,9 @@ static const PCMP_(compare_fn) PCMP_(compare) = (COMPARE);
  with null values before everything. @return `a < b`: negative; `a == b`: zero;
  `a > b`: positive. @order \O(`|a|` & `|b|`) @allow */
 static int CMP_(compare)(const PCMP_(box) *const a, const PCMP_(box) *const b) {
-	struct BOX_(iterator) ia = BOX_(begin)(a), ib = BOX_(begin)(b);
+	struct BOX_(iterator_c) ia = BOX_(begin_c)(a), ib = BOX_(begin_c)(b);
 	for( ; ; ) {
-		const PCMP_(cursor_c) x = BOX_(next)(&ia), y = BOX_(next)(&ib);
+		const PCMP_(cursor_c) x = BOX_(next_c)(&ia), y = BOX_(next_c)(&ib);
 		int diff;
 		if(!BOX_(is_cursor)(x)) return BOX_(is_cursor)(y) ? -1 : 0;
 		else if(!BOX_(is_cursor)(y)) return 1;
@@ -90,7 +90,7 @@ static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
 	const PCMP_(cursor_c) cursor) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(PCMP_(compare)(cursor, BOX_(at)(box,
+		if(PCMP_(compare)(cursor, BOX_(get)(box,
 			mid = low + (high - low) / 2)) <= 0) high = mid;
 		else low = mid + 1;
 	return low;
@@ -103,7 +103,7 @@ static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
 	const PCMP_(cursor_c) cursor) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(PCMP_(compare)(cursor, BOX_(at)(box,
+		if(PCMP_(compare)(cursor, BOX_(get)(box,
 			mid = low + (high - low) / 2)) >= 0) low = mid + 1;
 		else high = mid;
 	return low;

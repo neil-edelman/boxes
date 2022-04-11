@@ -61,29 +61,6 @@ typedef void (*PAC_(action_fn))(PAC_(cursor));
  <typedef:<PAC>enum>. */
 typedef int (*PAC_(predicate_fn))(const PAC_(cursor));
 
-/** <src/array_coda.h> @param[x] A valid entry or null to start from the last.
- @return The previous valid entry from `box` (which could be null) or null if
- this was the first. @allow */
-static PAC_(cursor) AC_(previous)(const PAC_(box) *const box,
-	const PAC_(cursor) x) {
-	const PAC_(array) *a;
-	size_t i;
-	if(!box || !(a = PAC_(b2a_c)(box))->data) return 0;
-	if(!x) return a->size ? a->data + a->size - 1 : 0;
-	return (i = (size_t)(x - a->data)) ? a->data + i - 1 : 0;
-}
-
-/** <src/array_coda.h> @param[x] A valid entry or null to start from the first.
- @return The next valid entry from `box` (which could be null) or null if this
- was the last. @allow */
-static PAC_(cursor) AC_(next)(const PAC_(box) *const box, const PAC_(cursor) x) {
-	const PAC_(array) *a;
-	size_t i;
-	if(!box || !(a = PAC_(b2a_c)(box))->data) return 0;
-	if(!x) return a->size ? a->data + 0 : 0;
-	return (i = (size_t)(x - a->data) + 1) < a->size ? a->data + i : 0;
-}
-
 /** <src/array_coda.h> @return Converts `i` to an index in `box` from
  [0, `box.size`]. Negative values are wrapped. @order \Theta(1) @allow */
 static size_t AC_(clip)(const PAC_(box) *const box, const long i) {
@@ -219,7 +196,7 @@ static PAC_(cursor) AC_(any)(const PAC_(box) *const box,
 
 static void PAC_(unused_function_coda)(void);
 static void PAC_(unused_function)(void)
-	{ AC_(previous)(0, 0); AC_(next)(0, 0); AC_(clip)(0, 0);
+	{ AC_(clip)(0, 0);
 	AC_(copy_if)(0, 0, 0); AC_(keep_if)(0, 0, 0); AC_(trim)(0, 0);
 	AC_(each)(0, 0); AC_(if_each)(0, 0, 0); AC_(any)(0, 0);
 	PAC_(unused_function_coda)(); }

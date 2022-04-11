@@ -76,6 +76,7 @@ static int PA_(zero_filled)(PA_(type) *const t) {
 
 static void PA_(test_basic)(void) {
 	struct A_(array) a = A_(array)();
+	struct A_(array_iterator) it;
 	PA_(type) ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts, big = 1000;
 	size_t i;
@@ -106,20 +107,40 @@ static void PA_(test_basic)(void) {
 	A_(array_shrink)(&a);
 	assert(ARRAY_MIN_CAPACITY > 1);
 	assert(a.size == 1 && a.capacity == ARRAY_MIN_CAPACITY);
-	t = A_(array_new)(&a); /* Add 2. */
+	t = A_(array_new)(&a); /* Add: 2. */
 	assert(t && a.size == 2 && a.capacity >= 2);
 	A_(array_clear)(&a);
 	assert(A_(array_peek)(&a) == 0);
 	PA_(valid_state)(&a);
 
-	printf("Testing lazy remove.\n");
 	assert(ts_size >= 3);
 	for(i = 0; i < 3; i++) {
 		t = A_(array_new)(&a);
 		assert(t);
 		memcpy(t, ts + i, sizeof *t);
 	}
-	A_(array_lazy_remove)(&a, a.data);
+	printf("Testing iteration, a = %s.\n",
+		PA_(array_to_string)(&a));
+	for(it = A_(array_begin)(&a), i = 0; t = A_(array_next)(&it); i++)
+		assert(!memcmp(t, ts + i, sizeof *t));
+	assert(i == 3);
+	for(it = A_(array_end)(&a), i = 0; t = A_(array_previous)(&it); i++)
+		assert(!memcmp(t, ts + 2 - i, sizeof *t));
+	assert(i == 3);
+	for(i = 0; ; i++) {
+		it = A_(array_at)(&a, i);
+		if(!(t = A_(array_next)(&it))) break;
+		assert(!memcmp(t, ts + i, sizeof *t));
+	}
+	assert(i == 3);
+	it = A_(array_at)(&a, 100);
+	t = A_(array_previous)(&it);
+	assert(!memcmp(t, ts + 2, sizeof *t));
+
+	printf("Testing lazy remove:\n");
+	t = A_(array_next)(&it);
+	t = A_(array_next)(&it);
+	//A_(array_lazy_remove)(&a, a.data);
 	assert(a.size == 2);
 	t = a.data;
 	assert(!memcmp(t, ts + 2, sizeof *t) && !memcmp(t + 1, ts + 1, sizeof *t));
@@ -136,9 +157,9 @@ static void PA_(test_basic)(void) {
 	printf("Now: %s.\n", PA_(array_to_string)(&a));
 	assert(a.size == ts_size);
 	t = a.data + ts_size - 2;
-	A_(array_remove)(&a, t);
+	//A_(array_remove)(&a, t);
 	t = a.data + ts_size - 3;
-	A_(array_remove)(&a, t);
+	//A_(array_remove)(&a, t);
 	printf("Now: %s.\n", PA_(array_to_string)(&a));
 
 	assert(a.size == ts_size - 2);
@@ -232,7 +253,7 @@ static void PA_(test_random)(void) {
 				PA_(to_string)(data, &str);
 				if(is_print)
 					printf("removing %s at %lu.", str, (unsigned long)idx);
-				A_(array_remove)(&a, data);
+				//A_(array_remove)(&a, data);
 			}
 			size--;
 		}
@@ -435,7 +456,7 @@ static void PA_(test_insert)(void) {
 		memcpy(e, original, sizeof original);
 		if(!i) printf("a = %s.\n", PA_(array_to_string)(&a));
 		PA_(valid_state)(&a);
-		e = A_(array_insert)(&a, 1, i), assert(e);
+		//e = A_(array_insert)(&a, 1, i), assert(e);
 		memcpy(e, &solitary, sizeof solitary);
 		printf("After insert(%lu) a = %s.\n",
 			(unsigned long)i, PA_(array_to_string)(&a));
