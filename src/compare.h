@@ -27,7 +27,7 @@
 
  @std C89 */
 
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CURSOR) \
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_FORWARD) \
 	|| !defined(CMP_) || !(defined(COMPARE_IS_EQUAL) ^ defined(COMPARE))
 #error Unexpected preprocessor symbols.
 #endif
@@ -46,18 +46,18 @@
 #endif /* idempotent --> */
 
 typedef BOX PCMP_(box);
-typedef BOX_CURSOR PCMP_(cursor);
-typedef const BOX_CURSOR PCMP_(cursor_c);
+typedef BOX_FORWARD PCMP_(element);
+typedef const BOX_FORWARD PCMP_(element_c);
 
 /** <src/compare.h>: Returns a boolean given two read-only elements. */
-typedef int (*PCMP_(bipredicate_fn))(const PCMP_(cursor), const PCMP_(cursor));
+typedef int (*PCMP_(bipredicate_fn))(const PCMP_(element), const PCMP_(element));
 /** <src/compare.h>: Three-way comparison on a totally order set; returns an
  integer value less than, equal to, greater than zero, if `a < b`, `a == b`,
  `a > b`, respectively. */
-typedef int (*PCMP_(compare_fn))(const PCMP_(cursor_c) a,
-	const PCMP_(cursor_c) b);
+typedef int (*PCMP_(compare_fn))(const PCMP_(element_c) a,
+	const PCMP_(element_c) b);
 /** <src/compare.h>: Returns a boolean given two modifiable arguments. */
-typedef int (*PCMP_(biaction_fn))(PCMP_(cursor), PCMP_(cursor));
+typedef int (*PCMP_(biaction_fn))(PCMP_(element), PCMP_(element));
 
 
 #ifdef COMPARE /* <!-- compare */
@@ -71,12 +71,14 @@ static const PCMP_(compare_fn) PCMP_(compare) = (COMPARE);
  with null values before everything. @return `a < b`: negative; `a == b`: zero;
  `a > b`: positive. @order \O(`|a|` & `|b|`) @allow */
 static int CMP_(compare)(const PCMP_(box) *const a, const PCMP_(box) *const b) {
-	struct BOX_(iterator_c) ia = BOX_(begin_c)(a), ib = BOX_(begin_c)(b);
+	struct BOX_(forward) ia = BOX_(forward_begin)(a),
+		ib = BOX_(forward_begin)(b);
 	for( ; ; ) {
-		const PCMP_(cursor_c) x = BOX_(next_c)(&ia), y = BOX_(next_c)(&ib);
+		const PCMP_(element_c) x = BOX_(forward_next)(&ia),
+			y = BOX_(forward_next)(&ib);
 		int diff;
-		if(!BOX_(is_cursor)(x)) return BOX_(is_cursor)(y) ? -1 : 0;
-		else if(!BOX_(is_cursor)(y)) return 1;
+		if(!BOX_(is_element)(x)) return BOX_(is_element)(y) ? -1 : 0;
+		else if(!BOX_(is_element)(y)) return 1;
 		if(diff = PCMP_(compare)(x, y)) return diff;
 	}
 }
@@ -87,7 +89,7 @@ static int CMP_(compare)(const PCMP_(box) *const a, const PCMP_(box) *const b) {
  `value`. @return The first index of `a` that is not less than `cursor`.
  @order \O(log `a.size`) @allow */
 static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
-	const PCMP_(cursor_c) cursor) {
+	const PCMP_(element_c) cursor) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
 		if(PCMP_(compare)(cursor, BOX_(at)(box,
@@ -100,7 +102,7 @@ static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
  greater-than or equal-to <typedef:<PAC>enum> `value`. @return The first index
  of `box` that is greater than `cursor`. @order \O(log `a.size`) @allow */
 static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
-	const PCMP_(cursor_c) cursor) {
+	const PCMP_(element_c) cursor) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
 		if(PCMP_(compare)(cursor, BOX_(at)(box,
@@ -114,7 +116,7 @@ static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
  @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] @allow
  Don't know how we would do this... */
 static int ACC_(insert_after)(PCMP_(box) *const box,
-	const PCMP_(cursor) *const value) {
+	const PCMP_(element) *const value) {
 	PCMP_(array) *a = PCMP_(b2a)(box);
 	size_t bound;
 	assert(box && a && value);
@@ -139,11 +141,11 @@ static int PCMP_(vcompar)(const void *const a, const void *const b)
 static void CMP_(sort)(PCMP_(box) *const box) {
 	const size_t size = BOX_(size)(box);
 	struct BOX_(iterator) it;
-	PCMP_(cursor) first;
+	PCMP_(element) first;
 	if(!size) return;
 	it = BOX_(begin)(box);
 	first = BOX_(next)(&it);
-	if(!BOX_(is_cursor)(first)) return; /* That was weird. */
+	if(!BOX_(is_element)(first)) return; /* That was weird. */
 	/* FIXME: sizeof is a problem, and more generally this will not work if it's
 	 not contiguous; have a parameter that chooses between `qsort` and merge
 	 sort (not merged into this code.) */
@@ -186,7 +188,7 @@ static int CMP_(is_equal)(const PCMP_(box) *const a,
 	const PCMP_(box) *const b) {
 	struct BOX_(iterator) ia = BOX_(begin)(a), ib = BOX_(begin)(b);
 	for( ; ; ) {
-		const PCMP_(cursor_c) x = BOX_(next)(&ia), y = BOX_(next)(&ib);
+		const PCMP_(element_c) x = BOX_(next)(&ia), y = BOX_(next)(&ib);
 		if(!BOX_(is_cursor)(x)) return !BOX_(is_cursor)(y);
 		else if(!BOX_(is_cursor)(y)) return 0;
 		if(!PCMP_(is_equal)(x, y)) return 0;

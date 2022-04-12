@@ -77,9 +77,10 @@ static int PA_(zero_filled)(PA_(type) *const t) {
 static void PA_(test_basic)(void) {
 	struct A_(array) a = A_(array)();
 	struct A_(array_iterator) it;
+	char z[12];
 	PA_(type) items[5], *item, *item1;
 	const size_t items_size = sizeof items / sizeof *items, big = 1000;
-	size_t i;
+	size_t i, n;
 	int is_zero, ret;
 
 	assert(errno == 0);
@@ -127,43 +128,55 @@ static void PA_(test_basic)(void) {
 	for(it = A_(array_end)(&a), i = 0; item = A_(array_previous)(&it); i++)
 		assert(!memcmp(item, items + 2 - i, sizeof *item));
 	assert(i == 3);
+	it = A_(array_begin)(&a);
+	item = A_(array_next)(&it), assert(item), PA_(to_string)(item, &z);
+	A_(array_next)(&it), item = A_(array_previous)(&it);
+	assert(!memcmp(item, items + 0, sizeof *item));
 	for(i = 0; i < 3; i++) {
-		char z[12];
 		it = A_(array_before)(&a, i);
 		item = A_(array_next)(&it), assert(item);
 		PA_(to_string)(item, &z), printf("a[%lu] = %s\n", (unsigned long)i, z);
 		assert(!memcmp(item, items + i, sizeof *item));
 	}
 	it = A_(array_before)(&a, i), item = A_(array_next)(&it), assert(!item);
+	it = A_(array_begin)(&a);
+	item = A_(array_previous)(&it), assert(!item);
+	item = A_(array_next)(&it), assert(!memcmp(item, items + 0, sizeof *item));
+	item = A_(array_previous)(&it), assert(!item);
+	A_(array_next)(&it);
+	item = A_(array_next)(&it), assert(!memcmp(item, items + 1, sizeof *item));
+	item = A_(array_previous)(&it),
+		assert(!memcmp(item, items + 0, sizeof *item));
+	item = A_(array_previous)(&it), assert(!item);
+	it = A_(array_end)(&a);
+	item = A_(array_next)(&it), assert(!item);
+	item = A_(array_previous)(&it),
+		assert(!memcmp(item, items + 2, sizeof *item));
+	item = A_(array_next)(&it), assert(!item);
 
 	printf("Testing lazy remove:\n");
-	it = A_(array_begin)(&a), ret = A_(array_lazy_remove)(&it), assert(!ret);
-	item = A_(array_next)(&it), assert(item);
-	{
-		char z[12];
-		PA_(to_string)(item, &z);
-		printf("%s will be removed\n", z);
-	}
+	it = A_(array_begin)(&a);
 	ret = A_(array_lazy_remove)(&it), assert(ret);
+	item = A_(array_next)(&it), assert(item);
 	assert(a.size == 2);
 	item = a.data;
-	assert(!memcmp(item, items + 2, sizeof *item) && !memcmp(item + 1, items + 1, sizeof *item));
+	assert(!memcmp(item, items + 2, sizeof *item)
+		&& !memcmp(item + 1, items + 1, sizeof *item));
 	A_(array_clear)(&a);
 	assert(!a.size);
-
 	it = A_(array_end)(&a), ret = A_(array_lazy_remove)(&it), assert(!ret);
 
-	printf("Testing %lu elements.\n", (unsigned long)items_size);
 	for(i = 0; i < items_size; i++) {
 		item = A_(array_new)(&a);
 		assert(item);
 		memcpy(item, items + i, sizeof *item);
 	}
 	assert(A_(array_peek)(&a));
-	printf("Now: %s.\n", PA_(array_to_string)(&a));
+	printf("Now %lu elements: %s.\n",
+		(unsigned long)items_size, PA_(array_to_string)(&a));
 	assert(a.size == items_size);
-	item = a.data + items_size - 2;
-	//A_(array_remove)(&a, t);
+	it = A_(array_before)(&a, items_size - 2), A_(array_next)(&it);
+	ret = A_(array_remove)(&it), assert(ret);
 	item = a.data + items_size - 3;
 	//A_(array_remove)(&a, t);
 	printf("Now: %s.\n", PA_(array_to_string)(&a));

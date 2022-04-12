@@ -3,12 +3,12 @@
 
  @subtitle To string trait
 
- Interface (defined by `BOX_`, `BOX`, and `BOX_CURSOR`):
+ Interface (defined by `BOX_`, `BOX`, and `BOX_FORWARD`):
 
- \* `int <BOX>is_cursor(<PSZ>cursor_c)`;
- \* `struct <BOX>iterator_c`;
- \* `struct <BOX>iterator <BOX>begin_c(const <PSZ>box *)`;
- \* `<PSZ>cursor_c <BOX>next_c(struct <BOX>iterator *)`.
+ \* `int <BOX>is_element(<PSZ>element_c)`;
+ \* `struct <BOX>forward`;
+ \* `struct <BOX>forward <BOX>forward_begin(const <PSZ>box *)`;
+ \* `<PSZ>element_c <BOX>forward_next(struct <BOX>iterator *)`.
 
  @param[STR_(n)]
  A one-argument macro producing a name that is responsible for the name of the
@@ -32,7 +32,7 @@
 
  @std C89 */
 
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CURSOR) \
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_FORWARD) \
 	|| !defined(STR_) || !defined(TO_STRING)
 #error Unexpected preprocessor symbols.
 #endif
@@ -84,11 +84,11 @@ static unsigned to_string_buffer_i;
 #endif
 
 typedef BOX PSTR_(box);
-typedef const BOX_CURSOR PSTR_(cursor_c);
+typedef const BOX_FORWARD PSTR_(element_c);
 
 /** <src/to_string.h>: responsible for turning the argument into a 12-`char`
  null-terminated output string. */
-typedef void (*PSTR_(to_string_fn))(PSTR_(cursor_c), char (*)[12]);
+typedef void (*PSTR_(to_string_fn))(PSTR_(element_c), char (*)[12]);
 /* Check that `TO_STRING` is a function implementing
  <typedef:<PSZ>to_string>. */
 static const PSTR_(to_string_fn) PSTR_(to_string) = (TO_STRING);
@@ -103,17 +103,17 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	const size_t ellipsis_len = sizeof ellipsis - 1;
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance, size;
-	PSTR_(cursor_c) x;
-	struct BOX_(iterator_c) it;
+	PSTR_(element_c) x;
+	struct BOX_(forward) it;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
 	assert(box && !(to_string_buffers_no & (to_string_buffers_no - 1))
 		&& to_string_buffer_size >= 1 + 11 + 1 + ellipsis_len + 1 + 1);
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
-	it = BOX_(begin_c)(box);
+	it = BOX_(forward_begin)(box);
 	*b++ = left;
-	while(BOX_(is_cursor)(x = BOX_(next_c)(&it))) {
+	while(BOX_(is_element)(x = BOX_(forward_next)(&it))) {
 		PSTR_(to_string)(x, (char (*)[12])b);
 		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
@@ -121,8 +121,8 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size = (size_t)(b - buffer))
 			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1)
-			{ if(BOX_(is_cursor)(BOX_(next_c)(&it))) goto ellipsis;
-			else break; }
+			if(BOX_(is_element)(BOX_(forward_next)(&it))) goto ellipsis;
+			else break;
 	}
 	if(is_sep) b -= 2;
 	*b++ = right;
