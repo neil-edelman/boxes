@@ -27,7 +27,7 @@
 
  @std C89 */
 
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_FORWARD) \
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
 	|| !defined(CMP_) || !(defined(COMPARE_IS_EQUAL) ^ defined(COMPARE))
 #error Unexpected preprocessor symbols.
 #endif
@@ -46,8 +46,8 @@
 #endif /* idempotent --> */
 
 typedef BOX PCMP_(box);
-typedef BOX_FORWARD PCMP_(element);
-typedef const BOX_FORWARD PCMP_(element_c);
+typedef BOX_CONTENT PCMP_(element);
+typedef const BOX_CONTENT PCMP_(element_c);
 
 /** <src/compare.h>: Returns a boolean given two read-only elements. */
 typedef int (*PCMP_(bipredicate_fn))(const PCMP_(element), const PCMP_(element));
@@ -77,8 +77,8 @@ static int CMP_(compare)(const PCMP_(box) *const a, const PCMP_(box) *const b) {
 		const PCMP_(element_c) x = BOX_(forward_next)(&ia),
 			y = BOX_(forward_next)(&ib);
 		int diff;
-		if(!BOX_(is_element)(x)) return BOX_(is_element)(y) ? -1 : 0;
-		else if(!BOX_(is_element)(y)) return 1;
+		if(!BOX_(is_content)(x)) return BOX_(is_content)(y) ? -1 : 0;
+		else if(!BOX_(is_content)(y)) return 1;
 		if(diff = PCMP_(compare)(x, y)) return diff;
 	}
 }
@@ -145,7 +145,7 @@ static void CMP_(sort)(PCMP_(box) *const box) {
 	if(!size) return;
 	it = BOX_(begin)(box);
 	first = BOX_(next)(&it);
-	if(!BOX_(is_element)(first)) return; /* That was weird. */
+	if(!BOX_(is_content)(first)) return; /* That was weird. */
 	/* FIXME: sizeof is a problem, and more generally this will not work if it's
 	 not contiguous; have a parameter that chooses between `qsort` and merge
 	 sort (not merged into this code.) */

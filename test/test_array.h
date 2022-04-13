@@ -80,7 +80,7 @@ static void PA_(test_basic)(void) {
 	char z[12];
 	PA_(type) items[5], *item, *item1;
 	const size_t items_size = sizeof items / sizeof *items, big = 1000;
-	size_t i, n;
+	size_t i;
 	int is_zero, ret;
 
 	assert(errno == 0);
@@ -133,23 +133,31 @@ static void PA_(test_basic)(void) {
 	A_(array_next)(&it), item = A_(array_previous)(&it);
 	assert(!memcmp(item, items + 0, sizeof *item));
 	for(i = 0; i < 3; i++) {
-		it = A_(array_before)(&a, i);
+		it = A_(array_index)(&a, i);
 		item = A_(array_next)(&it), assert(item);
 		PA_(to_string)(item, &z), printf("a[%lu] = %s\n", (unsigned long)i, z);
 		assert(!memcmp(item, items + i, sizeof *item));
 	}
-	it = A_(array_before)(&a, i), item = A_(array_next)(&it), assert(!item);
+	it = A_(array_index)(&a,i/*3*/), item = A_(array_next)(&it), assert(!item);
+	/* One previous. */
 	it = A_(array_begin)(&a);
+	item = A_(array_previous)(&it),
+		assert(!memcmp(item, items + 0, sizeof *item));
 	item = A_(array_previous)(&it), assert(!item);
+	/* Iteration and back. */
 	item = A_(array_next)(&it), assert(!memcmp(item, items + 0, sizeof *item));
 	item = A_(array_previous)(&it), assert(!item);
-	A_(array_next)(&it);
+	/* Two iterations and back. */
+	item = A_(array_next)(&it), assert(!memcmp(item, items + 0, sizeof *item));
 	item = A_(array_next)(&it), assert(!memcmp(item, items + 1, sizeof *item));
 	item = A_(array_previous)(&it),
 		assert(!memcmp(item, items + 0, sizeof *item));
 	item = A_(array_previous)(&it), assert(!item);
+	/* End iteration. */
 	it = A_(array_end)(&a);
+	item = A_(array_next)(&it), assert(!memcmp(item, items + 2, sizeof *item));
 	item = A_(array_next)(&it), assert(!item);
+	/* Iteration and back. */
 	item = A_(array_previous)(&it),
 		assert(!memcmp(item, items + 2, sizeof *item));
 	item = A_(array_next)(&it), assert(!item);
@@ -175,7 +183,7 @@ static void PA_(test_basic)(void) {
 	printf("Now %lu elements: %s.\n",
 		(unsigned long)items_size, PA_(array_to_string)(&a));
 	assert(a.size == items_size);
-	it = A_(array_before)(&a, items_size - 2), A_(array_next)(&it);
+	it = A_(array_index)(&a, items_size - 2), A_(array_next)(&it);
 	ret = A_(array_remove)(&it), assert(ret);
 	item = a.data + items_size - 3;
 	//A_(array_remove)(&a, t);

@@ -3,7 +3,7 @@
 
  @subtitle To string trait
 
- Interface (defined by `BOX_`, `BOX`, and `BOX_FORWARD`):
+ Interface (defined by `BOX_`, `BOX`, and `BOX_OUTPUT`):
 
  \* `int <BOX>is_element(<PSZ>element_c)`;
  \* `struct <BOX>forward`;
@@ -32,7 +32,7 @@
 
  @std C89 */
 
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_FORWARD) \
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
 	|| !defined(STR_) || !defined(TO_STRING)
 #error Unexpected preprocessor symbols.
 #endif
@@ -84,7 +84,7 @@ static unsigned to_string_buffer_i;
 #endif
 
 typedef BOX PSTR_(box);
-typedef const BOX_FORWARD PSTR_(element_c);
+typedef const BOX_CONTENT PSTR_(element_c);
 
 /** <src/to_string.h>: responsible for turning the argument into a 12-`char`
  null-terminated output string. */
@@ -113,7 +113,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	to_string_buffer_i &= to_string_buffers_no - 1;
 	it = BOX_(forward_begin)(box);
 	*b++ = left;
-	while(BOX_(is_element)(x = BOX_(forward_next)(&it))) {
+	while(BOX_(is_content)(x = BOX_(forward_next)(&it))) {
 		PSTR_(to_string)(x, (char (*)[12])b);
 		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
@@ -121,7 +121,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size = (size_t)(b - buffer))
 			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1)
-			if(BOX_(is_element)(BOX_(forward_next)(&it))) goto ellipsis;
+			if(BOX_(is_content)(BOX_(forward_next)(&it))) goto ellipsis;
 			else break;
 	}
 	if(is_sep) b -= 2;

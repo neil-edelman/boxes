@@ -20,7 +20,7 @@
 
  @std C89 */
 
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_FORWARD) \
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
 	|| !defined(ARRAY_CODA_TYPE) || !defined(ARRAY_CODA_BOX_TO_C) \
 	|| !defined(ARRAY_CODA_BOX_TO) || !defined(AC_) \
 	|| defined(BOX_IS_EQUAL) && defined(BOX_COMPARE)
@@ -41,7 +41,7 @@
 /** <src/array_coda.h>: an alias to the box. */
 typedef BOX PAC_(box);
 /** <src/array_coda.h>: an alias to the individual type contained in the box. */
-typedef BOX_FORWARD PAC_(element);
+typedef BOX_CONTENT PAC_(element);
 /* Downcasting. */
 typedef ARRAY_CODA_TYPE PAC_(array);
 typedef const PAC_(array) *(*PAC_(box_to_array_c))(const PAC_(box) *);
@@ -106,8 +106,8 @@ static int AC_(copy_if)(PAC_(box) *const a, const PAC_(predicate_fn) copy,
 	return 1;
 }
 
-/** <src/array_coda.h>: For all elements of `box`, calls `keep`, and if false, lazy
- deletes that item, calling `destruct` (if not-null).
+/** <src/array_coda.h>: For all elements of `box`, calls `keep`, and if false,
+ lazy deletes that item, calling `destruct` (if not-null).
  @order \O(`a.size` \times `keep` \times `destruct`) @allow */
 static void AC_(keep_if)(PAC_(box) *const box,
 	const PAC_(predicate_fn) keep, const PAC_(action_fn) destruct) {
