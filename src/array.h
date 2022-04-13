@@ -152,6 +152,22 @@ static PA_(type) *PA_(previous)(struct PA_(iterator) *const it) {
 	it->dir = -1;
 	return it->a->data + it->cur;
 }
+/** Removes the current `it`. Symmetry breaks forward. @return Success.
+ @implements `lazy_remove` */
+static int PA_(lazy_remove)(struct PA_(iterator) *const it) {
+	size_t n;
+	assert(it);
+	if(!it->a || (n = it->cur) >= it->a->size) return 0;
+	printf("n = %lu\n", n);
+	assert(0);
+	printf("it: n %lu, size=%lu\n", n, it->a->size);
+	if(--it->a->size > n) {
+		memcpy(it->a->data + n, it->a->data + it->a->size, sizeof *it->a->data);
+	} else { /* Removing from the end. */
+
+	}
+	return 1;
+}
 
 #define BOX_ACCESS
 /** @return Iterator immediately before element `idx` of `a`.
@@ -292,32 +308,19 @@ static PA_(type) *A_(array_insert)(struct A_(array_iterator) *const it,
  @return Whether there was an element. @order \O(`a.size`). @allow */
 static int A_(array_remove)(struct A_(array_iterator) *const it) {
 	size_t n;
+	assert(0);
 	assert(it);
 	if(!it->_.a || (n = it->_.cur) >= it->_.a->size) return 0;
 	memmove(it->_.a->data + n, it->_.a->data + n + 1,
 		sizeof *it->_.a->data * (--it->_.a->size - n));
 	it->_.dir = 0;
-	if(it->_.dir) it->_.cur;
 	return 1;
 }
 
 /** Removes the previous element of `it` and replaces it with the tail.
  @return Whether there was a previous element. @order \O(1). @allow */
-static int A_(array_lazy_remove)(struct A_(array_iterator) *const it) {
-	size_t n;
-	assert(it);
-	if(!it->_.a || (n = it->_.cur) >= it->_.a->size) return 0;
-	/*it->_.dir = 0; *//* no */
-	printf("n = %lu\n", n);
-	assert(0);
-	/*printf("it: next %lu\n", it->_.next);
-	if(!it->_.a || it->_.next == 0
-		|| (n = it->_.next - 1) >= it->_.a->size) return 0;*/
-	printf("it: n %lu, size=%lu\n", n, it->_.a->size);
-	if(--it->_.a->size != n) memcpy(it->_.a->data + n,
-		it->_.a->data + it->_.a->size, sizeof *it->_.a->data);
-	return 1;
-}
+static int A_(array_lazy_remove)(struct A_(array_iterator) *const it)
+	{ return PA_(lazy_remove)(&it->_); }
 
 /** Sets `a` to be empty. That is, the size of `a` will be zero, but if it was
  previously in an active non-idle state, it continues to be.
