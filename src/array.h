@@ -101,7 +101,8 @@ struct A_(array) { PA_(type) *data; size_t size, capacity; };
 #define BOX_CONTENT PA_(type) *
 /** Is `x` not null? @implements `is_content` */
 static int PA_(is_content)(const PA_(type) *const x) { return !!x; }
-/** Enumerate the contents. @implements `forward` */
+/** Enumerate the contents (`input_or_output_const_iterator`.)
+ @implements `forward` */
 struct PA_(forward) { const struct A_(array) *a; size_t next; };
 /** @return Before `a`. @implements `forward_begin` */
 static struct PA_(forward) PA_(forward_begin)(const struct A_(array) *const a) {
@@ -114,46 +115,41 @@ static const PA_(type) *PA_(forward_next)(struct PA_(forward) *const it)
 #define BOX_ITERATOR /* Also `is_content`. */
 /** More complex iterator that supports bi-directional movement and write.
  @implements `iterator` */
-struct PA_(iterator) { struct A_(array) *a; size_t cur; int is_moving; };
+struct PA_(iterator) { struct A_(array) *a; size_t cur; int dir; };
 /** @return Before `a`. @implements `begin` */
 static struct PA_(iterator) PA_(begin)(struct A_(array) *const a)
-	{ struct PA_(iterator) it; it.a = a, it.cur = 0, it.is_moving = 0;
+	{ struct PA_(iterator) it; it.a = a, it.cur = 0, it.dir = 0;
 	return it; }
 /** After `a`. @implements `end` */
 static struct PA_(iterator) PA_(end)(struct A_(array) *const a)
 	{ struct PA_(iterator) it; it.a = a;
-	it.cur = a && a->size ? a->size - 1 : 0, it.is_moving = 0; return it; }
+	it.cur = a && a->size ? a->size - 1 : 0, it.dir = 0; return it; }
 /** Move to next `it`. @return Element or null. @implements `next` */
 static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 	size_t size;
 	assert(it);
-	if(!it->a || !(size = it->a->size))
-		{ it->cur = 0, it->is_moving = 0; return 0; }
-	if(it->is_moving) {
-		if(it->cur >= size - 1)
-			{ it->cur = size - 1, it->is_moving = 0; return 0; }
+	if(!it->a || !(size = it->a->size)) { it->cur = 0, it->dir = 0; return 0; }
+	if(it->dir) {
+		if(it->cur >= size - 1) { it->cur = size - 1, it->dir = 0; return 0; }
 		it->cur++;
 	} else {
-		if(it->cur >= size)
-			{ it->cur = size - 1; return 0; }
-		it->is_moving = 1;
+		if(it->cur >= size) { it->cur = size - 1; return 0; }
 	}
+	it->dir = 1;
 	return it->a->data + it->cur;
 }
 /** Move to previous `it`. @return Element or null. @implements `previous` */
 static PA_(type) *PA_(previous)(struct PA_(iterator) *const it) {
 	size_t size;
 	assert(it);
-	if(!it->a || !(size = it->a->size))
-		{ it->cur = 0, it->is_moving = 0; return 0; }
-	if(it->cur >= size)
-		{ it->cur = size - 1, it->is_moving = 0; return 0; }
-	if(it->is_moving) {
-		if(!it->cur) { it->is_moving = 0; return 0; }
+	if(!it->a || !(size = it->a->size)) { it->cur = 0, it->dir = 0; return 0; }
+	if(it->cur >= size) /* Invalid state. */
+		{ it->cur = size - 1, it->dir = 0; return 0; }
+	if(it->dir) {
+		if(!it->cur) { it->dir = 0; return 0; }
 		it->cur--;
-	} else {
-		it->is_moving = 1;
 	}
+	it->dir = -1;
 	return it->a->data + it->cur;
 }
 
@@ -161,8 +157,7 @@ static PA_(type) *PA_(previous)(struct PA_(iterator) *const it) {
 /** @return Iterator immediately before element `idx` of `a`.
  @implements `index` */
 static struct PA_(iterator) PA_(index)(struct A_(array) *a, size_t idx)
-	{ struct PA_(iterator) it; it.a = a, it.cur = idx, it.is_moving = 0;
-	return it; }
+	{ struct PA_(iterator) it; it.a = a, it.cur = idx, it.dir = 0; return it; }
 /** Size of `a`. @implements `size` */
 static size_t PA_(size)(const struct A_(array) *a) { return a ? a->size : 0; }
 /** @return Element `idx` of `a`. @implements `at` */
@@ -301,8 +296,8 @@ static int A_(array_remove)(struct A_(array_iterator) *const it) {
 	if(!it->_.a || (n = it->_.cur) >= it->_.a->size) return 0;
 	memmove(it->_.a->data + n, it->_.a->data + n + 1,
 		sizeof *it->_.a->data * (--it->_.a->size - n));
-	it->_.is_moving = 0;
-	if(it->_.is_moving) it->_.cur;
+	it->_.dir = 0;
+	if(it->_.dir) it->_.cur;
 	return 1;
 }
 
