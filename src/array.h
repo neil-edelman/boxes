@@ -22,9 +22,9 @@
  trait.
 
  @param[ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
- Compare trait contained in <src/array_coda.h>. An optional mangled name for
- uniqueness and a function implementing either <typedef:<PAC>compare_fn> or
- <typedef:<PAC>bipredicate_fn>.
+ Compare trait contained in <src/compare.h>. An optional mangled name for
+ uniqueness and a function implementing either <typedef:<PCMP>compare_fn> or
+ <typedef:<PCMP>bipredicate_fn>.
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
  To string trait contained in <src/to_string.h>. An optional mangled name for
@@ -389,22 +389,6 @@ static int A_(array_splice)(struct A_(array) */*restrict*/const a,
 #undef FWD_
 #endif /* iterating --> */
 
-/* <!-- coda interface (This needs work.) */
-/** @return `a`. */
-static const struct A_(array) *PA_(id_c)(const struct A_(array) *const a)
-	{ return a; }
-/** @return `a`. */
-static struct A_(array) *PA_(id)(struct A_(array) *const a) { return a; }
-#define ARRAY_CODA_TYPE struct A_(array) /* Also box. */
-#define ARRAY_CODA_BOX_TO_C &PA_(id_c)
-#define ARRAY_CODA_BOX_TO &PA_(id)
-#define AC_(n) ARRAY_CAT(A_(array), n)
-/* coda --> */
-
-#ifdef ARRAY_CODA /* <!-- coda: More functions. */
-#include "array_coda.h" /** \include */
-#endif /* coda --> */
-
 #ifdef ARRAY_TEST /* <!-- test */
 /* Forward-declare. */
 static void (*PA_(to_string))(const PA_(type) *, char (*)[12]);
@@ -415,8 +399,7 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *);
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
 	PA_(is_content)(0); PA_(forward_begin)(0); PA_(forward_next)(0);
-	PA_(remove)(0); PA_(size)(0); PA_(at)(0, 0);
-	/*rm*/PA_(id)(0); PA_(id_c)(0);
+	PA_(remove)(0); PA_(size)(0); PA_(at)(0, 0); PA_(tell_size)(0, 0);
 	A_(array)(); A_(array_)(0);
 	A_(array_begin)(0); A_(array_end)(0); A_(array_index)(0, 0);
 	A_(array_previous)(0); A_(array_next)(0); A_(array_previous)(0);

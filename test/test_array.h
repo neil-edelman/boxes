@@ -692,7 +692,6 @@ static void CMP_(compare_test)(void) {
 #endif
 		">:\n");
 	/*PACC_(test_compactify)();
-	PACC_(test_sort)();
 	PACC_(test_contiguous)();*/
 	PCMP_(test_sort)();
 	PCMP_(test_bounds)();
