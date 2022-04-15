@@ -125,7 +125,9 @@ static void PA_(test_basic)(void) {
 	for(it = A_(array_begin)(&a), i = 0; item = A_(array_next)(&it); i++)
 		assert(!memcmp(item, items + i, sizeof *item));
 	assert(i == 3);
+	printf("Backwards:\n");
 	for(it = A_(array_end)(&a), i = 0; item = A_(array_previous)(&it); i++)
+		PA_(to_string)(item, &z), printf("%s\n", z),
 		assert(!memcmp(item, items + 2 - i, sizeof *item));
 	assert(i == 3);
 	it = A_(array_begin)(&a);
@@ -141,8 +143,6 @@ static void PA_(test_basic)(void) {
 	it = A_(array_index)(&a,i/*3*/), item = A_(array_next)(&it), assert(!item);
 	/* One previous. */
 	it = A_(array_begin)(&a);
-	item = A_(array_previous)(&it),
-		assert(!memcmp(item, items + 0, sizeof *item));
 	item = A_(array_previous)(&it), assert(!item);
 	/* Iteration and back. */
 	item = A_(array_next)(&it), assert(!memcmp(item, items + 0, sizeof *item));
@@ -155,7 +155,6 @@ static void PA_(test_basic)(void) {
 	item = A_(array_previous)(&it), assert(!item);
 	/* End iteration. */
 	it = A_(array_end)(&a);
-	item = A_(array_next)(&it), assert(!memcmp(item, items + 2, sizeof *item));
 	item = A_(array_next)(&it), assert(!item);
 	/* Iteration and back. */
 	item = A_(array_previous)(&it),

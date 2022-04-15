@@ -153,16 +153,17 @@ static PA_(type) *PA_(previous)(struct PA_(iterator) *const it) {
 	} else if(it->dir) { /* Right. */
 		it->dir = 0;
 		/* Clip. */
-		if(size > it->cur) element = it->a->data + (it->cur = size) - 1;
+		if(size < it->cur) element = it->a->data + (it->cur = size) - 1;
 		else if(it->cur) element = it->a->data + it->cur - 1;
 		else element = 0; /* Ended by next-prev. */
 	} else if(!it->cur) { /* Left and already ended. */
 		element = 0;
 	} else { /* Left. */
-		if(size > it->cur) element = it->a->data + (it->cur = size) - 1;
+		if(size < it->cur) element = it->a->data + (it->cur = size) - 1;
 		else if(--it->cur) element = it->a->data + it->cur - 1;
 		else element = 0; /* Just ended. */
 	}
+	printf("(%lu; %d)\n", it->cur, it->dir);
 	return element;
 }
 /* Removal is hard? */
