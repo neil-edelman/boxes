@@ -152,20 +152,17 @@ static PA_(type) *PA_(previous)(struct PA_(iterator) *const it) {
 	it->dir = -1;
 	return it->a->data + it->cur;
 }
-/** Removes the current `it`. Symmetry breaks forward. @return Success.
- @implements `lazy_remove` */
-static int PA_(lazy_remove)(struct PA_(iterator) *const it) {
+/* Removal is hard? */
+/** Removes the element last returned by `it`.
+ @return Whether there was an element. @order \O(`a.size`). @allow */
+static int PA_(remove)(struct PA_(iterator) *const it) {
 	size_t n;
-	assert(it);
-	if(!it->a || (n = it->cur) >= it->a->size) return 0;
-	printf("n = %lu\n", n);
 	assert(0);
-	printf("it: n %lu, size=%lu\n", n, it->a->size);
-	if(--it->a->size > n) {
-		memcpy(it->a->data + n, it->a->data + it->a->size, sizeof *it->a->data);
-	} else { /* Removing from the end. */
-
-	}
+	assert(it);
+	if(!it->dir || !it->a || (n = it->cur) >= it->a->size) return 0;
+	memmove(it->a->data + n, it->a->data + n + 1,
+		sizeof *it->a->data * (--it->a->size - n));
+	it->dir = 0;
 	return 1;
 }
 
@@ -249,7 +246,7 @@ static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
  size. Invalidates any pointers in `a`.
  @return The start of the buffered space at the back of the array. If `a` is
  idle and `buffer` is zero, a null pointer is returned, otherwise null
- indicates an error. @throws[realloc, ERANGE] @allow */
+ indicates an error. @throws[realloc] @allow */
 static PA_(type) *A_(array_buffer)(struct A_(array) *const a, const size_t n) {
 	assert(a);
 	if(a->size > (size_t)-1 - n) { errno = ERANGE; return 0; }
@@ -316,6 +313,18 @@ static int A_(array_remove)(struct A_(array_iterator) *const it) {
 	it->_.dir = 0;
 	return 1;
 }
+
+Attempting to
+ remove an element that is not in `a`.
+/** Removes `datum` from `a` and replaces it with the tail.
+ @order \O(1). @allow */
+static void A_(array_lazy_remove)(struct A_(array) *const a,
+	PA_(type) *const datum) {
+	size_t n = (size_t)(datum - a->data);
+	assert(a && datum && datum >= a->data && datum < a->data + a->size);
+	if(--a->size != n) memcpy(datum, a->data + a->size, sizeof *datum);
+}
+
 
 /** Removes the previous element of `it` and replaces it with the tail.
  @return Whether there was a previous element. @order \O(1). @allow */
