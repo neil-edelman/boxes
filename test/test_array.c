@@ -33,8 +33,7 @@ static void colour_filler(enum colour *const c)
 	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
 #define ARRAY_NAME colour
 #define ARRAY_TYPE enum colour
-/*#define ARRAY_CODA*/
-#define ARRAY_ITERATING
+#define ARRAY_ITERATE
 #define ARRAY_TEST &colour_filler
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"

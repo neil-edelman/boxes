@@ -112,7 +112,7 @@ static const PA_(type) *PA_(forward_next)(struct PA_(forward) *const it)
 	{ return assert(it), it->a && it->next < it->a->size
 	? it->a->data + it->next++ : 0; }
 
-#define BOX_ITERATOR /* Also `is_content`. */
+#define BOX_ITERATOR /* Further to `BOX_CONTENT`. */
 /** More complex iterator that supports bi-directional movement and write. The
  cursor is half way between elements, `cur = cursor - 0.5`, pointing left
  (`dir` false) or right (`dir` true). @implements `iterator` */
@@ -383,11 +383,11 @@ static int A_(array_splice)(struct A_(array) */*restrict*/const a,
 	return 1;
 }
 
-#ifdef ARRAY_ITERATING /* <!-- iterating */
+#ifdef ARRAY_ITERATE /* <!-- iterate */
 #define FWD_(n) ARRAY_CAT(A_(array), n)
-#include "iterating.h"
+#include "iterate.h"
 #undef FWD_
-#endif /* iterating --> */
+#endif /* iterate --> */
 
 #ifdef ARRAY_TEST /* <!-- test */
 /* Forward-declare. */
