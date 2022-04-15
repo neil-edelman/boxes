@@ -113,44 +113,57 @@ static const PA_(type) *PA_(forward_next)(struct PA_(forward) *const it)
 	? it->a->data + it->next++ : 0; }
 
 #define BOX_ITERATOR /* Also `is_content`. */
-/** More complex iterator that supports bi-directional movement and write.
- @implements `iterator` */
+/** More complex iterator that supports bi-directional movement and write. The
+ cursor is half way between elements, `cur = cursor - 0.5`, pointing left
+ (`dir` false) or right (`dir` true). @implements `iterator` */
 struct PA_(iterator) { struct A_(array) *a; size_t cur; int dir; };
 /** @return Before `a`. @implements `begin` */
 static struct PA_(iterator) PA_(begin)(struct A_(array) *const a)
-	{ struct PA_(iterator) it; it.a = a, it.cur = 0, it.dir = 0;
-	return it; }
+	{ struct PA_(iterator) it; it.a = a, it.cur = 0, it.dir = 0; return it; }
 /** After `a`. @implements `end` */
 static struct PA_(iterator) PA_(end)(struct A_(array) *const a)
-	{ struct PA_(iterator) it; it.a = a;
-	it.cur = a && a->size ? a->size - 1 : 0, it.dir = 0; return it; }
+	{ struct PA_(iterator) it; it.a = a, it.cur = a ? a->size : 0, it.dir = 1;
+	return it; }
 /** Move to next `it`. @return Element or null. @implements `next` */
 static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
 	size_t size;
+	PA_(type) *element;
 	assert(it);
-	if(!it->a || !(size = it->a->size)) { it->cur = 0, it->dir = 0; return 0; }
-	if(it->dir) {
-		if(it->cur >= size - 1) { it->cur = size - 1, it->dir = 0; return 0; }
-		it->cur++;
-	} else {
-		if(it->cur >= size) { it->cur = size - 1; return 0; }
+	if(!it->a || !(size = it->a->size)) { /* Null or empty. */
+		it->cur = 0, it->dir = 0, element = 0;
+	} else if(!it->dir) { /* Left. */
+		it->dir = 1;
+		if(it->cur < size) element = it->a->data + it->cur;
+		else it->cur = size, element = 0; /* Ended by prev-next. */
+	} else if(size <= it->cur) { /* Right and already ended. */
+		it->cur = size, element = 0;
+	} else { /* Right. */
+		if(++it->cur < size) element = it->a->data + it->cur;
+		else element = 0; /* Just ended. */
 	}
-	it->dir = 1;
-	return it->a->data + it->cur;
+	return element;
 }
 /** Move to previous `it`. @return Element or null. @implements `previous` */
 static PA_(type) *PA_(previous)(struct PA_(iterator) *const it) {
 	size_t size;
+	PA_(type) *element;
 	assert(it);
-	if(!it->a || !(size = it->a->size)) { it->cur = 0, it->dir = 0; return 0; }
-	if(it->cur >= size) /* Invalid state. */
-		{ it->cur = size - 1, it->dir = 0; return 0; }
-	if(it->dir) {
-		if(!it->cur) { it->dir = 0; return 0; }
-		it->cur--;
+	if(!it->a || !(size = it->a->size)) { /* Null or empty. */
+		it->cur = 0, it->dir = 0, element = 0;
+	} else if(it->dir) { /* Right. */
+		it->dir = 0;
+		/* Clip. */
+		if(size > it->cur) element = it->a->data + (it->cur = size) - 1;
+		else if(it->cur) element = it->a->data + it->cur - 1;
+		else element = 0; /* Ended by next-prev. */
+	} else if(!it->cur) { /* Left and already ended. */
+		element = 0;
+	} else { /* Left. */
+		if(size > it->cur) element = it->a->data + (it->cur = size) - 1;
+		else if(--it->cur) element = it->a->data + it->cur - 1;
+		else element = 0; /* Just ended. */
 	}
-	it->dir = -1;
-	return it->a->data + it->cur;
+	return element;
 }
 /* Removal is hard? */
 /** Removes the element last returned by `it`.
@@ -261,6 +274,23 @@ static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n) {
 	return a->size += n, b;
 }
 
+/** Adds `n` un-initialised elements at position `at` in `a`. It will
+ invalidate any pointers in `a` if the buffer holds too few elements.
+ @param[at] A number smaller than or equal to `a.size`; if `a.size`, this
+ function behaves as <fn:<A>array_append>.
+ @return A pointer to the start of the new region, where there are `n`
+ elements. @throws[realloc, ERANGE] @allow
+ Fixme: this is the odd-one out. */
+static PA_(type) *A_(array_insert)(struct A_(array) *const a,
+	const size_t n, const size_t at) {
+	const size_t old_size = a->size;
+	PA_(type) *const b = PA_(append)(a, n);
+	assert(a && at <= old_size);
+	if(!b) return 0;
+	memmove(a->data + at + n, a->data + at, sizeof *a->data * (old_size - at));
+	return a->data + at;
+}
+
 /** @return Adds (push back) one new element of `a`. The buffer space holds at
  least one element, or it may invalidate pointers in `a`.
  @order amortised \O(1) @throws[realloc, ERANGE] @allow */
@@ -282,54 +312,23 @@ static int A_(array_shrink)(struct A_(array) *const a) {
 	return 1;
 }
 
-/** Adds `n` un-initialised elements past `it`. It will invalidate any pointers
- in `a` if the buffer holds too few elements.
- @return A pointer to the start of the new region, where there are `n`
- elements. @throws[realloc, ERANGE] @allow */
-static PA_(type) *A_(array_insert)(struct A_(array_iterator) *const it,
-	const size_t n) {
-	struct A_(array) *a;
-	size_t old_size, at;
-	PA_(type) *fresh;
-	assert(it);
-	if(!n || !(a = it->_.a)
-		|| (old_size = a->size, fresh = PA_(append)(a, n))) return 0;
-	//at = it->_.next < old_size ? it->_.next : old_size;
-	//memmove(a->data + at + n, a->data + at, sizeof *a->data * (old_size - at));
-	assert(0);
-	return a->data + at;
+/** Removes `element` from `a`. Do not attempt to remove an element that is not
+ in `a`. @order \O(`a.size`). @allow */
+static void A_(array_remove)(struct A_(array) *const a,
+	PA_(type) *const element) {
+	const size_t n = (size_t)(element - a->data);
+	assert(a && element && element >= a->data && element < a->data + a->size);
+	memmove(element, element + 1, sizeof *element * (--a->size - n));
 }
 
-/** Removes the element last returned or at `it`, (in which case, the iterator
- prefers the next.)
- @return Whether there was an element. @order \O(`a.size`). @allow */
-static int A_(array_remove)(struct A_(array_iterator) *const it) {
-	size_t n;
-	assert(0);
-	assert(it);
-	if(!it->_.a || (n = it->_.cur) >= it->_.a->size) return 0;
-	memmove(it->_.a->data + n, it->_.a->data + n + 1,
-		sizeof *it->_.a->data * (--it->_.a->size - n));
-	it->_.dir = 0;
-	return 1;
-}
-
-Attempting to
- remove an element that is not in `a`.
-/** Removes `datum` from `a` and replaces it with the tail.
- @order \O(1). @allow */
+/** Removes `datum` from `a` and replaces it with the tail. Do not attempt to
+ remove an element that is not in `a`. @order \O(1). @allow */
 static void A_(array_lazy_remove)(struct A_(array) *const a,
 	PA_(type) *const datum) {
 	size_t n = (size_t)(datum - a->data);
 	assert(a && datum && datum >= a->data && datum < a->data + a->size);
 	if(--a->size != n) memcpy(datum, a->data + a->size, sizeof *datum);
 }
-
-
-/** Removes the previous element of `it` and replaces it with the tail.
- @return Whether there was a previous element. @order \O(1). @allow */
-static int A_(array_lazy_remove)(struct A_(array_iterator) *const it)
-	{ return PA_(lazy_remove)(&it->_); }
 
 /** Sets `a` to be empty. That is, the size of `a` will be zero, but if it was
  previously in an active non-idle state, it continues to be.
@@ -408,8 +407,8 @@ static void PA_(unused_base)(void) {
 	A_(array)(); A_(array_)(0);
 	A_(array_begin)(0); A_(array_end)(0); A_(array_index)(0, 0);
 	A_(array_previous)(0); A_(array_next)(0); A_(array_previous)(0);
-	A_(array_insert)(0, 0); A_(array_new)(0);
-	A_(array_shrink)(0); A_(array_remove)(0); A_(array_lazy_remove)(0);
+	A_(array_insert)(0, 0, 0); A_(array_new)(0);
+	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
 	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
 	A_(array_append)(0, 0); A_(array_splice)(0, 0, 0, 0);
 	PA_(unused_base_coda)();
