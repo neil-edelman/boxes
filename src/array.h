@@ -166,17 +166,19 @@ static PA_(type) *PA_(previous)(struct PA_(iterator) *const it) {
 	printf("(%lu; %d)\n", it->cur, it->dir);
 	return element;
 }
-/* Removal is hard? */
-/** Removes the element last returned by `it`.
- @return Whether there was an element. @order \O(`a.size`). @allow */
+/** Removes the element last returned by `it`. (Untested.)
+ @return There was an element. @order \O(`a.size`). @implements `remove` */
 static int PA_(remove)(struct PA_(iterator) *const it) {
-	size_t n;
-	assert(0);
-	assert(it);
-	if(!it->dir || !it->a || (n = it->cur) >= it->a->size) return 0;
-	memmove(it->a->data + n, it->a->data + n + 1,
-		sizeof *it->a->data * (--it->a->size - n));
-	it->dir = 0;
+	assert(0 && it);
+	if(!it->dir || !it->a) return 0;
+	if(it->dir) {
+		if(it->a->size <= it->cur) return 0;
+	} else {
+		if(!it->cur || it->a->size < it->cur) return 0;
+		it->cur--;
+	}
+	memmove(it->a->data + it->cur, it->a->data + it->cur + 1,
+		sizeof *it->a->data * (--it->a->size - it->cur));
 	return 1;
 }
 
@@ -403,7 +405,7 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *);
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
 	PA_(is_content)(0); PA_(forward_begin)(0); PA_(forward_next)(0);
-	PA_(size)(0); PA_(at)(0, 0);
+	PA_(remove)(0); PA_(size)(0); PA_(at)(0, 0);
 	/*rm*/PA_(id)(0); PA_(id_c)(0);
 	A_(array)(); A_(array_)(0);
 	A_(array_begin)(0); A_(array_end)(0); A_(array_index)(0, 0);

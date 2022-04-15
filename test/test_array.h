@@ -276,7 +276,7 @@ static void PA_(test_random)(void) {
 				PA_(to_string)(data, &str);
 				if(is_print)
 					printf("removing %s at %lu.", str, (unsigned long)idx);
-				//A_(array_remove)(&a, data);
+				A_(array_remove)(&a, data);
 			}
 			size--;
 		}
