@@ -194,6 +194,9 @@ static PA_(type) *PA_(at)(const struct A_(array) *a, const size_t idx)
 	{ return a->data + idx; }
 
 #define BOX_CONTIGUOUS /* Depends on `BOX_ACCESS`. */
+/** @implements `tell_size` */
+static void PA_(tell_size)(struct A_(array) *a, const size_t size)
+	{ assert(a); a->size = size; }
 
 /** Cursor. */
 struct A_(array_iterator);
