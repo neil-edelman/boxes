@@ -3,14 +3,7 @@
 
  @subtitle Compare trait
 
- Interface: minimum `BOX_`, `BOX`, `BOX_CURSOR`:
-
- \* `int <BOX>is_cursor(<PCMP>cursor_c)`;
- \* `struct <BOX>forward <BOX>forward_begin(const <PCMP>box *)`;
- \* `<PCMP>element_c <BOX>forward_next(struct <BOX>forward *)`;
- \* `BOX_ACCESS`: `size_t <BOX>size(const <PCMP>box *)`;
- \* `BOX_ACCESS`: `<PCMP>element <BOX>append(<PCMP>box *, size_t)`;
- \* _etc_.
+ Interface minimum: `BOX_`, `BOX`, `BOX_CONTENT`.
 
  @param[CMP_(n)]
  A one-argument macro producing a name that is responsible for the name of the
@@ -20,10 +13,6 @@
  @param[COMPARE_IS_EQUAL, COMPARE]
  Function implementing <typedef:<PCMP>is_equal_fn> or
  <typedef:<PCMP>compare_fn>. One is required, (but not two.)
-
- @param[COMPARE_QSORT]
- A contiguous array of elements, and a pointer <typedef:<BOX>cursor>, allows
- `qsort`, otherwise, we have to do merge sort, which is stable, but more slow.
 
  @std C89 */
 

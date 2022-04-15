@@ -193,7 +193,7 @@ static size_t PA_(size)(const struct A_(array) *a) { return a ? a->size : 0; }
 static PA_(type) *PA_(at)(const struct A_(array) *a, const size_t idx)
 	{ return a->data + idx; }
 
-#define BOX_CONTIGUOUS /* Depends on `BOX_ACCESS`. */
+#define BOX_CONTIGUOUS /* Depends on `BOX_ACCESS`. Also, `append` later. */
 /** @implements `tell_size` */
 static void PA_(tell_size)(struct A_(array) *a, const size_t size)
 	{ assert(a); a->size = size; }
@@ -272,7 +272,8 @@ static PA_(type) *A_(array_buffer)(struct A_(array) *const a, const size_t n) {
 	return A_(array_reserve)(a, a->size + n) && a->data ? a->data + a->size : 0;
 }
 
-/** Appends `n` contiguous items on the back of `a`. @implements `append` */
+/** Appends `n` contiguous items on the back of `a`.
+ @implements `append` from `BOX_CONTIGUOUS` */
 static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n) {
 	PA_(type) *b;
 	if(!(b = A_(array_buffer)(a, n))) return 0;
@@ -381,6 +382,12 @@ static int A_(array_splice)(struct A_(array) */*restrict*/const a,
 	if(b) memcpy(a->data + i0, b->data, b->size * sizeof *a->data);
 	return 1;
 }
+
+#ifdef ARRAY_ITERATING /* <!-- iterating */
+#define FWD_(n) ARRAY_CAT(A_(array), n)
+#include "iterating.h"
+#undef FWD_
+#endif /* iterating --> */
 
 /* <!-- coda interface (This needs work.) */
 /** @return `a`. */

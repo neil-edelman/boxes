@@ -363,11 +363,11 @@ static void PA_(test_replace)(void) {
 	printf("2: a = %s.\n", PA_(array_to_string)(&a));
 	/* a = [[1],[2],[3],[4],[0],[2],[3]] */
 	assert(a.size == 7);
-	A_(array_splice)(&a, &b, A_(array_clip)(&a, 2), A_(array_clip)(&a, -4));
+	A_(array_splice)(&a, &b, 2, 3);
 	printf("3: a = %s.\n", PA_(array_to_string)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[3]] */
 	assert(a.size == 8);
-	A_(array_splice)(&a, &b, 7, A_(array_clip)(&a, -1) + 1);
+	A_(array_splice)(&a, &b, 7, 8);
 	printf("4: a = %s.\n", PA_(array_to_string)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[2],[3]] */
 	assert(a.size == 9 &&
@@ -414,9 +414,9 @@ static void PA_(test_keep)(void) {
 		&& !memcmp(ts + 13, a.data + 5, sizeof *t * 1)
 		&& !memcmp(ts + 15, a.data + 6, sizeof *t * 1));
 	PA_(valid_state)(&a);
-	ret = A_(array_copy_if)(&b, &PA_(keep_deterministic), 0);
+	ret = A_(array_copy_if)(&b, 0, &PA_(keep_deterministic));
 	assert(ret && !b.size);
-	ret = A_(array_copy_if)(&b, &PA_(keep_deterministic), &a);
+	ret = A_(array_copy_if)(&b, &a, &PA_(keep_deterministic));
 	printf("b = k(a) = %s.\n", PA_(array_to_string)(&b));
 	assert(ret && b.size == 2
 		&& !memcmp(ts + 0, b.data + 0, sizeof *t * 1)
