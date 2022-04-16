@@ -74,24 +74,24 @@ and private names for the trait labeled `X`. With these definitions,
 
 <table>
 	<tr><td>typedef BOX &lt;PX&gt;box</td></tr>
-	<tr><td>typedef BOX_CONTENT \<PX\>element</td></tr>
-	<tr><td>typedef const BOX_CONTENT \<PX\>element_c</td></tr>
+	<tr><td>typedef BOX_CONTENT &lt;PX&gt;element</td></tr>
+	<tr><td>typedef const BOX_CONTENT &lt;PX&gt;element_c</td></tr>
 </table>
 
 Possible interfaces include,
 
 <table><tr>
-	<td>int \<BOX\>is_content(const <PX>element_c)`</td>
+	<td>int &lt;BOX&gt;is_content(const &lt;PX&gt;element_c)</td>
 	<td>Must have some element that is false.</td>
-	<td>`BOX_CONTENT`</td>
+	<td>BOX_CONTENT</td>
 </tr><tr>
-	<td>`struct <BOX>forward`</td>
-	<td>A constant forward iterator, (`input_or_output_iterator`.)</td>
-	<td>`BOX_CONTENT`</td>
+	<td>struct &lt;BOX&gt;forward</td>
+	<td>A forward constant iterator, (input_or_output_iterator.)</td>
+	<td>BOX_CONTENT</td>
 </tr><tr>
-	<td>`struct <BOX>forward <PX>forward_begin(const <PX>box *)`</td>
+	<td>struct &lt;BOX&gt;forward &lt;PX&gt;forward_begin(const &lt;PX&gt;box *)</td>
 	<td>Initializes to before the elements.</td>
-	<td>`BOX_CONTENT`</td>
+	<td>BOX_CONTENT</td>
 </tr></table>
 
 ## License ##
