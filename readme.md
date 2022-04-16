@@ -44,7 +44,7 @@
 	<td><a href = "https://github.com/neil-edelman/trie">trie</a></td>
 	<td>prefix tree</td>
 	<td>to_string</td>
-	<td>bmp (maybe)</td>
+	<td></td>
 </tr><tr>
 	<td>disjoint</td>
 	<td>upcoming</td>
@@ -52,34 +52,47 @@
 	<td>array?</td>
 </tr></table>
 
-`boxes` is a very simple automated dependancy and build system for
-separate `C89` data structure projects. These projects are intended
-to generate lightweight, independent, and statically type-safe
-containers as drop-ins for new and existing code. The `sh`-script
-`autoclone`, downloads them all.
-
-Most of the projects make extensive use of code generation: in the
-background, it uses the `C89` pre-processor for template meta-programming
-to do compile-time polymorphism.  The documented parameters are
-pre-processor macros defined before including the file, and they
-are generally undefined automatically before the box is complete
-for convenience.  In a project, one can pick and choose which ones
-are appropriate.
+These `C89` data structure projects use compile-time polymorphism
+to generate lightweight and statically type-safe containers.  The
+documented parameters in each project are pre-processor macros.
+`boxes` is a simple automated dependancy and build system, ensuring
+these independent but related projects all work together during
+development.  The `sh`-script `autoclone`, downloads them all.
 
 ## Details ##
 
-Assertions are used to ensure data integrity at runtime; to stop
-them, define `#define NDEBUG` before `assert.h`, included in the
-files. Errors are returned with the standard `errno`. Since this
-is portable `C89` code, we have limited options for returning our
-own errors, namely, `EDOM`, `ERANGE`, `EISEQ` (1994 Amendment 1 to
-`C90`); standard library functions may provide their own values,
-which are passed on.
+Errors are returned with `errno`. Assertions are used at runtime;
+to stop them, define `#define NDEBUG` before `assert.h`. The source
+files are `UTF-8` and may contain multi-byte literals. No effort
+has been made to synchronize for multi-threaded execution. In a
+project, one can pick and choose which ones are appropriate.
 
-The source files are `UTF-8` and may contain multi-byte literals.
-Some specific terminals don't have this as a default.
+## Internal Interace ##
 
-No effort has been made to synchronize for multi-threaded execution.
+The `BOX_(n)` macro is used to define `<X>n` and `<PX>n`, public
+and private names for the trait labeled `X`. With these definitions,
+
+<table>
+	<tr><td>`typedef BOX <PX>box`</td></tr>
+	<tr><td>`typedef BOX_CONTENT <PX>element`</td></tr>
+	<tr><td>`typedef const BOX_CONTENT <PX>element_c`</td></tr>
+</table>
+
+Possible interfaces include,
+
+<table><tr>
+	<td>`int <BOX>is_content(const <PX>element_c)`</td>
+	<td>Must have some element that is false.</td>
+	<td>`BOX_CONTENT`</td>
+</tr><tr>
+	<td>`struct <BOX>forward`</td>
+	<td>A constant forward iterator, (`input_or_output_iterator`.)</td>
+	<td>`BOX_CONTENT`</td>
+</tr><tr>
+	<td>`struct <BOX>forward <PX>forward_begin(const <PX>box *)`</td>
+	<td>Initializes to before the elements.</td>
+	<td>`BOX_CONTENT`</td>
+</tr></table>
 
 ## License ##
 
