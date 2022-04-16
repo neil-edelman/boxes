@@ -92,6 +92,10 @@ Possible interfaces include,
 	<td>struct &lt;BOX&gt;forward &lt;PX&gt;forward_begin(const &lt;PX&gt;box *)</td>
 	<td>Initializes to before the elements.</td>
 	<td>BOX_CONTENT</td>
+</tr><tr>
+	<td>&lt;BOX&gt;element_c &lt;PX&gt;forward_next(const &lt;PX&gt;forward *)</td>
+	<td>Returns the element passed-though to get to the next, or null if there are no more.</td>
+	<td>BOX_CONTENT</td>
 </tr></table>
 
 ## License ##
