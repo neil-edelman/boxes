@@ -83,7 +83,7 @@ possible interfaces include,
 <table><tr>
 	<td>int &lt;BOX&gt;is_content(const &lt;PX&gt;element_c)</td>
 	<td>Must have some elements that are false; that is null.</td>
-	<td>BOX_CONTENT BOX_ITERATOR</td>
+	<td>BOX_CONTENT BOX_ITERATOR BOX_ACCESS</td>
 </tr><tr>
 	<td>struct &lt;BOX&gt;forward</td>
 	<td>A forward constant iterator, (input_or_output_iterator.) Must return null when past the end.</td>
@@ -98,9 +98,9 @@ possible interfaces include,
 	<td>BOX_CONTENT</td>
 </tr><tr>
 	<td>struct &lt;BOX&gt;iterator</td>
-	<td>A bi-directional iterator that supports removal. It has a direction, and the state
+	<td>A bi-directional iterator that supports (at least symbolic) removal. It has a direction, and the state
 	can be one-off the ends at either side.</td>
-	<td>BOX_ITERATOR</td>
+	<td>BOX_ITERATOR BOX_ACCESS</td>
 </tr><tr>
 	<td>struct &lt;BOX&gt;iterator &lt;PX&gt;begin(const &lt;PX&gt;box *)</td>
 	<td>Initializes to before the elements.</td>
@@ -117,17 +117,33 @@ possible interfaces include,
 	<td>&lt;BOX&gt;element &lt;PX&gt;previous(&lt;PX&gt;iterator *)</td>
 	<td>Returns the element passed-though to get to the previous, or null if there are no more.</td>
 	<td>BOX_ITERATOR</td>
+</tr><tr>
+	<td>int &lt;PX&gt;remove(&lt;PX&gt;iterator *)</td>
+	<td>Returns whether the element is and has been removed.</td>
+	<td>BOX_ITERATOR</td>
+</tr><tr>
+	<td>size_t &lt;PX&gt;size(&lt;PX&gt;box *)</td>
+	<td>Returns the size, or, passed null, 0.</td>
+	<td>BOX_ACCESS</td>
+</tr><tr>
+	<td>&lt;PX&gt;iterator &lt;PX&gt;index(const &lt;PX&gt;box *, size_t)</td>
+	<td>Iterator immediately before subscripted element.</td>
+	<td>BOX_ACCESS</td>
+</tr><tr>
+	<td>&lt;PX&gt;element &lt;PX&gt;at(const &lt;PX&gt;box *, size_t)</td>
+	<td>The subscripted element of the box.</td>
+	<td>BOX_ACCESS</td>
+</tr><tr>
+	<td>void &lt;PX&gt;decrease_size(&lt;PX&gt;box *, size_t)</td>
+	<td>Decreases the size.</td>
+	<td>BOX_CONTIGUOUS</td>
+</tr><tr>
+	<td>&lt;PX&gt;element &lt;PX&gt;append(&lt;PX&gt;box *, size_t)</td>
+	<td>True if the unintialized elements have been added to the back.</td>
+	<td>BOX_CONTIGUOUS</td>
 </tr></table>
 
 ## License ##
 
 2016 Neil Edelman, distributed under the terms of the [MIT
 License](https://opensource.org/licenses/MIT).
-
-## Todo ##
-
-Compiling with all warnings turned on in some compilers is an endless
-race with the `lint`-like warnings. Most of them are super-useful,
-but some are not. One may have issues with, for example,
-`_CRT_SECURE_NO_WARNINGS`, `-Wno-comma`, `-Wno-logical-op-parentheses`,
-`-Wno-parentheses`, `-Wno-shift-op-parentheses`.
