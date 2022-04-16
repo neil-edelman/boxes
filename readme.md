@@ -73,7 +73,7 @@ The `BOX_(n)` macro is used to define `<X>n` and `<PX>n`, public
 and private names for the trait labeled `X`. With these definitions,
 
 <table>
-	<tr><td>typedef BOX \<PX\>box</td></tr>
+	<tr><td>typedef BOX &lt;PX&gt;box</td></tr>
 	<tr><td>typedef BOX_CONTENT \<PX\>element</td></tr>
 	<tr><td>typedef const BOX_CONTENT \<PX\>element_c</td></tr>
 </table>
