@@ -78,24 +78,45 @@ and private names for the trait labeled `X`. With these definitions,
 	<tr><td>typedef const BOX_CONTENT &lt;PX&gt;element_c</td></tr>
 </table>
 
-Possible interfaces include,
+possible interfaces include,
 
 <table><tr>
 	<td>int &lt;BOX&gt;is_content(const &lt;PX&gt;element_c)</td>
-	<td>Must have some element that is false.</td>
-	<td>BOX_CONTENT</td>
+	<td>Must have some elements that are false; that is null.</td>
+	<td>BOX_CONTENT BOX_ITERATOR</td>
 </tr><tr>
 	<td>struct &lt;BOX&gt;forward</td>
-	<td>A forward constant iterator, (input_or_output_iterator.)</td>
+	<td>A forward constant iterator, (input_or_output_iterator.) Must return null when past the end.</td>
 	<td>BOX_CONTENT</td>
 </tr><tr>
 	<td>struct &lt;BOX&gt;forward &lt;PX&gt;forward_begin(const &lt;PX&gt;box *)</td>
 	<td>Initializes to before the elements.</td>
 	<td>BOX_CONTENT</td>
 </tr><tr>
-	<td>&lt;BOX&gt;element_c &lt;PX&gt;forward_next(const &lt;PX&gt;forward *)</td>
+	<td>&lt;BOX&gt;element_c &lt;PX&gt;forward_next(&lt;PX&gt;forward *)</td>
 	<td>Returns the element passed-though to get to the next, or null if there are no more.</td>
 	<td>BOX_CONTENT</td>
+</tr><tr>
+	<td>struct &lt;BOX&gt;iterator</td>
+	<td>A bi-directional iterator that supports removal. It has a direction, and the state
+	can be one-off the ends at either side.</td>
+	<td>BOX_ITERATOR</td>
+</tr><tr>
+	<td>struct &lt;BOX&gt;iterator &lt;PX&gt;begin(const &lt;PX&gt;box *)</td>
+	<td>Initializes to before the elements.</td>
+	<td>BOX_ITERATOR</td>
+</tr><tr>
+	<td>struct &lt;BOX&gt;iterator &lt;PX&gt;end(const &lt;PX&gt;box *)</td>
+	<td>Initializes to after the elements.</td>
+	<td>BOX_ITERATOR</td>
+</tr><tr>
+	<td>&lt;BOX&gt;element &lt;PX&gt;next(&lt;PX&gt;iterator *)</td>
+	<td>Returns the element passed-though to get to the next, or null if there are no more.</td>
+	<td>BOX_ITERATOR</td>
+</tr><tr>
+	<td>&lt;BOX&gt;element &lt;PX&gt;previous(&lt;PX&gt;iterator *)</td>
+	<td>Returns the element passed-though to get to the previous, or null if there are no more.</td>
+	<td>BOX_ITERATOR</td>
 </tr></table>
 
 ## License ##
