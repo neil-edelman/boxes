@@ -73,15 +73,15 @@ The `BOX_(n)` macro is used to define `<X>n` and `<PX>n`, public
 and private names for the trait labeled `X`. With these definitions,
 
 <table>
-	<tr><td>`typedef BOX <PX>box`</td></tr>
-	<tr><td>`typedef BOX_CONTENT <PX>element`</td></tr>
-	<tr><td>`typedef const BOX_CONTENT <PX>element_c`</td></tr>
+	<tr><td>typedef BOX \<PX\>box</td></tr>
+	<tr><td>typedef BOX_CONTENT \<PX\>element</td></tr>
+	<tr><td>typedef const BOX_CONTENT \<PX\>element_c</td></tr>
 </table>
 
 Possible interfaces include,
 
 <table><tr>
-	<td>`int <BOX>is_content(const <PX>element_c)`</td>
+	<td>int \<BOX\>is_content(const <PX>element_c)`</td>
 	<td>Must have some element that is false.</td>
 	<td>`BOX_CONTENT`</td>
 </tr><tr>
