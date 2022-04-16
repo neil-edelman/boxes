@@ -15,31 +15,9 @@
 #include "../src/array.h"
 
 
-/* Enum array with extra functions. */
-#define PARAM(A) A
-#define STRINGISE(A) #A
-#define COLOUR(X) /* Max 11 letters. */ \
-	X(White), X(Silver), X(Gray), X(Black), X(Red), X(Maroon), X(Bisque), \
-	X(Wheat), X(Tan), X(Sienna), X(Brown), X(Yellow), X(Khaki), X(Gold), \
-	X(Olive), X(Lime), X(Green), X(Aqua), X(Cyan), X(Teal), X(Salmon), \
-	X(Orange), X(Powder), X(Sky), X(Steel), X(Royal), X(Blue), X(Navy), \
-	X(Fuchsia), X(Pink), X(Purple)
-enum colour { COLOUR(PARAM) };
-static const char *const colours[] = { COLOUR(STRINGISE) };
-static const size_t colour_size = sizeof colours / sizeof *colours;
-static void colour_to_string(const enum colour *const c, char (*const a)[12])
-	{ assert(*c < colour_size); sprintf(*a, "%s", colours[*c]); }
-static void colour_filler(enum colour *const c)
-	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
-#define ARRAY_NAME colour
-#define ARRAY_TYPE enum colour
-#define ARRAY_ITERATE
-#define ARRAY_TEST &colour_filler
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
-#define ARRAY_TO_STRING &colour_to_string
-#include "../src/array.h"
 
+#define HAVE_ITERATE_H /* This should not be here, but there is now a
+ dependency with TEST on ITERATE, (that should not be there.) */
 
 /* Struct array. */
 struct str4 { char value[4]; };
@@ -56,26 +34,40 @@ static void str4_filler(struct str4 *const s)
 #include "../src/array.h"
 
 
-/* Int array with compare. */
-static void int_to_string(const int *i, char (*const a)[12])
-	{ sprintf(*a, "%d", *i); }
-static void int_filler(int *const i)
-	{ *i = rand() / (RAND_MAX / 1998 + 1) - 999; }
-static int int_cmp(const int *const a, const int *const b)
-	{ return (*a > *b) - (*b > *a); }
-#define ARRAY_NAME int
-#define ARRAY_TYPE int
-#define ARRAY_TEST &int_filler
+#define HAVE_ITERATE_H /* More tests. */
+
+/* Enum array. */
+#define PARAM(A) A
+#define STRINGISE(A) #A
+#define COLOUR(X) \
+	X(White), X(Silver), X(Gray), X(Black), X(Red), X(Maroon), X(Bisque), \
+	X(Wheat), X(Tan), X(Sienna), X(Brown), X(Yellow), X(Khaki), X(Gold), \
+	X(Olive), X(Lime), X(Green), X(Aqua), X(Cyan), X(Teal), X(Salmon), \
+	X(Orange), X(Powder), X(Sky), X(Steel), X(Royal), X(Blue), X(Navy), \
+	X(Fuchsia), X(Pink), X(Purple)
+enum colour { COLOUR(PARAM) };
+static const char *const colours[] = { COLOUR(STRINGISE) };
+static const size_t colour_size = sizeof colours / sizeof *colours;
+static void colour_filler(enum colour *const c)
+	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
+static void colour_to_string(const enum colour *const c, char (*const a)[12])
+	{ assert(*c < colour_size); sprintf(*a, "%.11s", colours[*c]); }
+static int colour_is_equal(const enum colour *const a,
+	const enum colour *const b) { return a == b; }
+#define ARRAY_NAME colour
+#define ARRAY_TYPE enum colour
+#define ARRAY_TEST &colour_filler
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
-#define ARRAY_COMPARE &int_cmp
+#define ARRAY_IS_EQUAL &colour_is_equal
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
-/* Always include to string last, as it undefines ARRAY_TEST. */
-#define ARRAY_TO_STRING &int_to_string
+#define ARRAY_TO_STRING &colour_to_string
 #include "../src/array.h"
 
-#if 0
+
+
+
 /* Int array with compare. */
 static void int_to_string(const int *i, char (*const a)[12])
 	{ sprintf(*a, "%d", *i); }
@@ -91,7 +83,7 @@ static int int_cmp(const int *const a, const int *const b)
 #define ARRAY_COMPARE &int_cmp
 #define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
-/* Always include to string last, as it undefines ARRAY_TEST. */
+/* On testing, always include to string last, as it un-defines ARRAY_TEST. */
 #define ARRAY_TO_STRING &int_to_string
 #include "../src/array.h"
 
@@ -128,7 +120,6 @@ static int keyval_value_cmp(const struct keyval *const a,
 #define ARRAY_TO_STRING_NAME value
 #define ARRAY_TO_STRING &keyval_value_to_string
 #include "../src/array.h"
-#endif
 
 
 /** Tests; assert crashes on failed test. @return `EXIT_SUCCESS`. */
@@ -137,13 +128,14 @@ int main(void) {
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
-	colour_array_test();
 	str4_array_test();
+	colour_array_test();
+	colour_array_compare_test();
 	int_array_test();
 	int_array_compare_test();
-	/*keyval_array_test();
+	keyval_array_test();
 	keyval_array_compare_test();
-	keyval_array_value_compare_test();*/
+	keyval_array_value_compare_test();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

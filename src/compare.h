@@ -40,7 +40,8 @@ typedef BOX_CONTENT PCMP_(element);
 typedef const BOX_CONTENT PCMP_(element_c);
 
 /** <src/compare.h>: Returns a boolean given two read-only elements. */
-typedef int (*PCMP_(bipredicate_fn))(const PCMP_(element), const PCMP_(element));
+typedef int (*PCMP_(bipredicate_fn))(const PCMP_(element_c),
+	const PCMP_(element_c));
 /** <src/compare.h>: Three-way comparison on a totally order set; returns an
  integer value less than, equal to, greater than zero, if `a < b`, `a == b`,
  `a > b`, respectively. */
@@ -164,7 +165,7 @@ static int PCMP_(is_equal)(const PCMP_(element_c) a, const PCMP_(element_c) b)
 
 /* Check that `COMPARE_IS_EQUAL` is a function implementing
  <typedef:<PCMP>bipredicate_fn>. */
-static const PCMP_(bipredicate_fn) PCMP_(is_equal) = (BOX_IS_EQUAL);
+static const PCMP_(bipredicate_fn) PCMP_(is_equal) = (COMPARE_IS_EQUAL);
 
 #endif /* is equal --> */
 

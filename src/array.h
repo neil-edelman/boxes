@@ -383,9 +383,9 @@ static int A_(array_splice)(struct A_(array) */*restrict*/const a,
 	return 1;
 }
 
-#ifdef ARRAY_ITERATE /* <!-- iterate */
+#ifdef HAVE_ITERATE_H /* <!-- iterate */
 #define ITR_(n) ARRAY_CAT(A_(array), n)
-#include "iterate.h"
+#include "iterate.h" /** \include */
 #undef ITR_
 #endif /* iterate --> */
 
@@ -452,7 +452,6 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #ifdef ARRAY_TEST /* <!-- test: this detects and outputs compare test. */
 #include "../test/test_array.h"
 #endif /* test --> */
-#undef PCMP_
 #undef CMP_
 #ifdef ARRAY_COMPARE_NAME
 #undef ARRAY_COMPARE_NAME

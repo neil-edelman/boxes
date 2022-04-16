@@ -479,7 +479,7 @@ static void PA_(test_insert)(void) {
 		memcpy(e, original, sizeof original);
 		if(!i) printf("a = %s.\n", PA_(array_to_string)(&a));
 		PA_(valid_state)(&a);
-		//e = A_(array_insert)(&a, 1, i), assert(e);
+		e = A_(array_insert)(&a, 1, i), assert(e);
 		memcpy(e, &solitary, sizeof solitary);
 		printf("After insert(%lu) a = %s.\n",
 			(unsigned long)i, PA_(array_to_string)(&a));

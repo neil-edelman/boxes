@@ -11,23 +11,28 @@
  responsible for undefining `ITR_`.
 
  @std C89 */
+/**
+ @param[HAVE_ITERATE_H]
+ The `<ITR>` functions need this value. This includes <src/iterate.h>, which
+ take no parameters. Some functions may only be available for some boxes.
+ */
 
 /* `BOX_CONTENT`: is_content, forward, forward_begin, forward_next. */
 #if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) || !defined(ITR_)
 #error Unexpected preprocessor symbols.
 #endif
 
-#ifndef ITERATION_H /* <!-- idempotent */
-#define ITERATION_H
+#ifndef ITERATE_H /* <!-- idempotent */
+#define ITERATE_H
 #include <stddef.h>
 #include <limits.h>
-#if defined(ITERATION_CAT_) || defined(ITERATION_CAT) || defined(PITR_)
+#if defined(ITERATE_CAT_) || defined(ITERATE_CAT) || defined(PITR_)
 #error Unexpected defines.
 #endif
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#define ITERATION_CAT_(n, m) n ## _ ## m
-#define ITERATION_CAT(n, m) ITERATION_CAT_(n, m)
-#define PITR_(n) ITERATION_CAT(iterate, ITR_(n))
+#define ITERATE_CAT_(n, m) n ## _ ## m
+#define ITERATE_CAT(n, m) ITERATE_CAT_(n, m)
+#define PITR_(n) ITERATE_CAT(iterate, ITR_(n))
 #endif /* idempotent --> */
 
 typedef BOX PITR_(box);
@@ -40,6 +45,47 @@ typedef void (*PITR_(action_fn))(PITR_(element));
 typedef int (*PITR_(predicate_fn))(const PITR_(element));
 
 #ifdef BOX_CONTIGUOUS /* <!-- contiguous */
+
+/* <!-- fixme: could be implemented with a less restrictive setting than
+ `BOX_ITERATOR`, as they only need `BOX_CONTENT`. */
+
+/** <src/iteration.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
+ `action` on all the elements. The topology of the list must not change while
+ in this function.
+ @order \O(|`box`| \times `action`) @allow */
+static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
+	PITR_(element) i, end;
+	assert(box && action);
+	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end; i++)
+		action(i);
+}
+
+/** <src/iteration.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
+ `action` on all the elements for which `predicate` returns true. The topology
+ of the list should not change while in this function.
+ @order \O(`box.size` \times `predicate` \times `action`) @allow */
+static void ITR_(if_each)(PITR_(box) *const box,
+	const PITR_(predicate_fn) predicate, const PITR_(action_fn) action) {
+	PITR_(element) i, end;
+	assert(box && predicate && action);
+	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end; i++)
+		if(predicate(i)) action(i);
+}
+
+/** <src/iteration.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
+ `predicate` until it returns true.
+ @return The first `predicate` that returned true, or, if the statement is
+ false on all, null. @order \O(`box.size` \times `predicate`) @allow */
+static PITR_(element) ITR_(any)(const PITR_(box) *const box,
+	const PITR_(predicate_fn) predicate) {
+	PITR_(element) i, end;
+	assert(box && predicate);
+	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end; i++)
+		if(predicate(i)) return i;
+	return 0;
+}
+
+/* --> */
 
 /** <src/iteration.h>, `BOX_CONTIGUOUS`: For all elements of `src`, calls `copy`,
  and if true, lazily copies the elements to `dst`. `dst` and `src` can not be
@@ -126,45 +172,6 @@ static void ITR_(trim)(PITR_(box) *const box,
 	assert(left <= right);
 	if(left) memmove(first, first + left, sizeof *first * (right - left));
 	BOX_(tell_size)(box, right - left);
-}
-
-/* fixme: These further fns could be implemented with a less restrictive
- setting than `BOX_ITERATOR`, as they only need `BOX_FORWARD`. */
-
-/** <src/iteration.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
- `action` on all the elements. The topology of the list must not change while
- in this function.
- @order \O(|`box`| \times `action`) @allow */
-static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
-	PITR_(element) i, end;
-	assert(box && action);
-	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end; i++)
-		action(i);
-}
-
-/** <src/iteration.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
- `action` on all the elements for which `predicate` returns true. The topology
- of the list should not change while in this function.
- @order \O(`box.size` \times `predicate` \times `action`) @allow */
-static void ITR_(if_each)(PITR_(box) *const box,
-	const PITR_(predicate_fn) predicate, const PITR_(action_fn) action) {
-	PITR_(element) i, end;
-	assert(box && predicate && action);
-	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end; i++)
-		if(predicate(i)) action(i);
-}
-
-/** <src/iteration.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
- `predicate` until it returns true.
- @return The first `predicate` that returned true, or, if the statement is
- false on all, null. @order \O(`box.size` \times `predicate`) @allow */
-static PITR_(element) ITR_(any)(const PITR_(box) *const box,
-	const PITR_(predicate_fn) predicate) {
-	PITR_(element) i, end;
-	assert(box && predicate);
-	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end; i++)
-		if(predicate(i)) return i;
-	return 0;
 }
 
 #endif /* contiguous --> */
