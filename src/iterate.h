@@ -5,15 +5,15 @@
 
  Interface minimum: `BOX_`, `BOX`, `BOX_CONTENT`.
 
- @param[FWD_]
+ @param[ITR_]
  A one-argument macro producing a name that is responsible for the name of the
- functions. Should be something like `FWD_(x) -> foo_widget_x`. The caller is
- responsible for undefining `FWD_`.
+ functions. Should be something like `ITR_(x) -> foo_widget_x`. The caller is
+ responsible for undefining `ITR_`.
 
  @std C89 */
 
 /* `BOX_CONTENT`: is_content, forward, forward_begin, forward_next. */
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) || !defined(FWD_)
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) || !defined(ITR_)
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -21,23 +21,23 @@
 #define ITERATION_H
 #include <stddef.h>
 #include <limits.h>
-#if defined(ITERATION_CAT_) || defined(ITERATION_CAT) || defined(PFWD_)
+#if defined(ITERATION_CAT_) || defined(ITERATION_CAT) || defined(PITR_)
 #error Unexpected defines.
 #endif
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #define ITERATION_CAT_(n, m) n ## _ ## m
 #define ITERATION_CAT(n, m) ITERATION_CAT_(n, m)
-#define PFWD_(n) ITERATION_CAT(iterate, FWD_(n))
+#define PITR_(n) ITERATION_CAT(iterate, ITR_(n))
 #endif /* idempotent --> */
 
-typedef BOX PFWD_(box);
-typedef BOX_CONTENT PFWD_(element);
-typedef const BOX_CONTENT PFWD_(element_c);
+typedef BOX PITR_(box);
+typedef BOX_CONTENT PITR_(element);
+typedef const BOX_CONTENT PITR_(element_c);
 
 /** <src/iteration.h>: Operates by side-effects. */
-typedef void (*PFWD_(action_fn))(PFWD_(element));
+typedef void (*PITR_(action_fn))(PITR_(element));
 /** <src/iteration.h>: Returns a boolean given read-only. */
-typedef int (*PFWD_(predicate_fn))(const PFWD_(element));
+typedef int (*PITR_(predicate_fn))(const PITR_(element));
 
 #ifdef BOX_CONTIGUOUS /* <!-- contiguous */
 
@@ -45,9 +45,9 @@ typedef int (*PFWD_(predicate_fn))(const PFWD_(element));
  and if true, lazily copies the elements to `dst`. `dst` and `src` can not be
  the same but `src` can be null, (in which case, it does nothing.)
  @order \O(|`src`| \times `copy`) @throws[realloc] @allow */
-static int FWD_(copy_if)(PFWD_(box) */*restrict*/const dst,
-	const PFWD_(box) */*restrict*/const src, const PFWD_(predicate_fn) copy) {
-	PFWD_(element) i, fresh, end, rise = 0;
+static int ITR_(copy_if)(PITR_(box) */*restrict*/const dst,
+	const PITR_(box) */*restrict*/const src, const PITR_(predicate_fn) copy) {
+	PITR_(element) i, fresh, end, rise = 0;
 	size_t add;
 	int difcpy = 0;
 	assert(dst && copy && dst != src);
@@ -75,9 +75,9 @@ static int FWD_(copy_if)(PFWD_(box) */*restrict*/const dst,
 /** <src/iteration.h>, `BOX_CONTIGUOUS`: For all elements of `box`, calls `keep`,
  and if false, lazy deletes that item. Calls `destruct` if not-null before
  deleting. @order \O(|`box`| \times `keep` \times `destruct`) @allow */
-static void FWD_(keep_if)(PFWD_(box) *const box,
-	const PFWD_(predicate_fn) keep, const PFWD_(action_fn) destruct) {
-	PFWD_(element) erase = 0, i, retain = 0, end;
+static void ITR_(keep_if)(PITR_(box) *const box,
+	const PITR_(predicate_fn) keep, const PITR_(action_fn) destruct) {
+	PITR_(element) erase = 0, i, retain = 0, end;
 	int keep0 = 1, keep1 = 0;
 	assert(box && keep);
 	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end;
@@ -112,10 +112,10 @@ static void FWD_(keep_if)(PFWD_(box) *const box,
 /** <src/iteration.h>, `BOX_CONTIGUOUS`: Removes at either end of `box` the
  things that `predicate`, if it exists, returns true.
  @order \O(`box.size` \times `predicate`) @allow */
-static void FWD_(trim)(PFWD_(box) *const box,
-	const PFWD_(predicate_fn) predicate) {
+static void ITR_(trim)(PITR_(box) *const box,
+	const PITR_(predicate_fn) predicate) {
 	size_t right, left;
-	PFWD_(element) first;
+	PITR_(element) first;
 	assert(box);
 	if(!predicate) return;
 	right = BOX_(size)(box);
@@ -135,8 +135,8 @@ static void FWD_(trim)(PFWD_(box) *const box,
  `action` on all the elements. The topology of the list must not change while
  in this function.
  @order \O(|`box`| \times `action`) @allow */
-static void FWD_(each)(PFWD_(box) *const box, const PFWD_(action_fn) action) {
-	PFWD_(element) i, end;
+static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
+	PITR_(element) i, end;
 	assert(box && action);
 	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end; i++)
 		action(i);
@@ -146,9 +146,9 @@ static void FWD_(each)(PFWD_(box) *const box, const PFWD_(action_fn) action) {
  `action` on all the elements for which `predicate` returns true. The topology
  of the list should not change while in this function.
  @order \O(`box.size` \times `predicate` \times `action`) @allow */
-static void FWD_(if_each)(PFWD_(box) *const box,
-	const PFWD_(predicate_fn) predicate, const PFWD_(action_fn) action) {
-	PFWD_(element) i, end;
+static void ITR_(if_each)(PITR_(box) *const box,
+	const PITR_(predicate_fn) predicate, const PITR_(action_fn) action) {
+	PITR_(element) i, end;
 	assert(box && predicate && action);
 	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end; i++)
 		if(predicate(i)) action(i);
@@ -158,9 +158,9 @@ static void FWD_(if_each)(PFWD_(box) *const box,
  `predicate` until it returns true.
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null. @order \O(`box.size` \times `predicate`) @allow */
-static PFWD_(element) FWD_(any)(const PFWD_(box) *const box,
-	const PFWD_(predicate_fn) predicate) {
-	PFWD_(element) i, end;
+static PITR_(element) ITR_(any)(const PITR_(box) *const box,
+	const PITR_(predicate_fn) predicate) {
+	PITR_(element) i, end;
 	assert(box && predicate);
 	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end; i++)
 		if(predicate(i)) return i;
@@ -169,9 +169,9 @@ static PFWD_(element) FWD_(any)(const PFWD_(box) *const box,
 
 #endif /* contiguous --> */
 
-/*static void PFWD_(unused_function_coda)(void);
-static void PFWD_(unused_function)(void)
-	{ FWD_(copy_if)(0, 0, 0); FWD_(keep_if)(0, 0, 0); FWD_(trim)(0, 0);
-	FWD_(each)(0, 0); FWD_(if_each)(0, 0, 0); FWD_(any)(0, 0);
-	PFWD_(unused_function_coda)(); }
-static void PFWD_(unused_function_coda)(void) { PFWD_(unused_function)(); }*/
+/*static void PITR_(unused_function_coda)(void);
+static void PITR_(unused_function)(void)
+	{ ITR_(copy_if)(0, 0, 0); ITR_(keep_if)(0, 0, 0); ITR_(trim)(0, 0);
+	ITR_(each)(0, 0); ITR_(if_each)(0, 0, 0); ITR_(any)(0, 0);
+	PITR_(unused_function_coda)(); }
+static void PITR_(unused_function_coda)(void) { PITR_(unused_function)(); }*/

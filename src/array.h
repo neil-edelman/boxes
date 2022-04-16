@@ -112,7 +112,7 @@ static const PA_(type) *PA_(forward_next)(struct PA_(forward) *const it)
 	{ return assert(it), it->a && it->next < it->a->size
 	? it->a->data + it->next++ : 0; }
 
-#define BOX_ITERATOR /* Further to `BOX_CONTENT`. */
+#define BOX_ITERATOR
 /** More complex iterator that supports bi-directional movement and write. The
  cursor is half way between elements, `cur = cursor - 0.5`, pointing left
  (`dir` false) or right (`dir` true). @implements `iterator` */
@@ -384,9 +384,9 @@ static int A_(array_splice)(struct A_(array) */*restrict*/const a,
 }
 
 #ifdef ARRAY_ITERATE /* <!-- iterate */
-#define FWD_(n) ARRAY_CAT(A_(array), n)
+#define ITR_(n) ARRAY_CAT(A_(array), n)
 #include "iterate.h"
-#undef FWD_
+#undef ITR_
 #endif /* iterate --> */
 
 #ifdef ARRAY_TEST /* <!-- test */
@@ -478,20 +478,10 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #undef ARRAY_TYPE
 #undef BOX_
 #undef BOX
-#undef BOX_CURSOR
-#undef BOX_REVERSE
+#undef BOX_CONTENT
+#undef BOX_ITERATOR
 #undef BOX_ACCESS
 #undef BOX_CONTIGUOUS
-/* Coda. */
-#undef ARRAY_CODA_TYPE
-#undef ARRAY_CODA_BOX_TO_C
-#undef ARRAY_CODA_BOX_TO
-#undef AC_
-#undef ARRAY_CODA_ONCE
-#ifdef ARRAY_CODA_COMPARE_ONCE
-#undef ARRAY_CODA_COMPARE_ONCE
-#endif
-
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT
 #undef ARRAY_COMPARE_TRAIT
