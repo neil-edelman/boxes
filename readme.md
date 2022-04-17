@@ -134,8 +134,8 @@ possible interfaces include,
 	<td>The subscripted element of the box.</td>
 	<td>BOX_ACCESS</td>
 </tr><tr>
-	<td>void &lt;BOX&gt;decrease_size(&lt;PX&gt;box *, size_t)</td>
-	<td>Decreases the size.</td>
+	<td>void &lt;BOX&gt;tell_size(&lt;PX&gt;box *, size_t)</td>
+	<td>Sets size.</td>
 	<td>BOX_CONTIGUOUS</td>
 </tr><tr>
 	<td>&lt;PX&gt;element &lt;BOX&gt;append(&lt;PX&gt;box *, size_t)</td>
