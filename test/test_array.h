@@ -470,6 +470,7 @@ static void PA_(test_trim)(void) {
 	memset(item, 0, sizeof *item);
 	A_(array_trim)(&a, &PA_(zero_filled));
 	assert(a.size == !is_zero);
+	A_(array_)(&a);
 #endif
 }
 
@@ -645,6 +646,7 @@ static void PCMP_(test_sort)(void) {
 		cmp = CMP_(compare)(a - 1, a);
 		assert(cmp <= 0);
 	}
+	for(a = as; a < as_end; a++) A_(array_)(a);
 #endif /* comp --> */
 }
 
