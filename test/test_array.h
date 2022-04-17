@@ -682,6 +682,7 @@ static void PCMP_(test_bounds)(void) {
 	assert(ret && a.size == size + 1);
 	printf("insert: now %s.\n", PA_(array_to_string)(&a));
 	ret = memcmp(&elem, a.data + low, sizeof elem), assert(!ret);
+	printf("AHA!!! low = %u/%u.\n", (unsigned)low, (unsigned)size);
 	A_(array_clear)(&a);
 	cont = A_(array_append)(&a, size), assert(cont);
 	printf("HERE:\n");
