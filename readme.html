@@ -127,7 +127,7 @@
 
 <h3><a id = "typedef:<PCMP>compare_fn" name = "typedef:<PCMP>compare_fn">&lt;PCMP&gt;compare_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PCMP&gt;compare_fn</strong>)(const &lt;PCMP&gt;element_c a, const &lt;PCMP&gt;element_c b);</code></p>
+<p><code>typedef int(*<strong>&lt;PCMP&gt;compare_fn</strong>)(const &lt;PCMP&gt;element_c restrict a, const &lt;PCMP&gt;element_c restrict b);</code></p>
 
 <p><a href = "src/compare.h">src/compare.h</a>: Three-way comparison on a totally order set; returns an integer value less than, equal to, greater than zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
 
@@ -137,7 +137,7 @@
 
 <h3><a id = "typedef:<PCMP>biaction_fn" name = "typedef:<PCMP>biaction_fn">&lt;PCMP&gt;biaction_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PCMP&gt;biaction_fn</strong>)(&lt;PCMP&gt;element, &lt;PCMP&gt;element);</code></p>
+<p><code>typedef int(*<strong>&lt;PCMP&gt;biaction_fn</strong>)(&lt;PCMP&gt;element restrict, &lt;PCMP&gt;element restrict);</code></p>
 
 <p><a href = "src/compare.h">src/compare.h</a>: Returns a boolean given two modifiable arguments.</p>
 
@@ -433,7 +433,7 @@
 
 <h3><a id = "fn:<A>array_splice" name = "fn:<A>array_splice">&lt;A&gt;array_splice</a></h3>
 
-<p><code>static int <strong>&lt;A&gt;array_splice</strong>(struct &lt;A&gt;array */*restrict*/const <em>a</em>, const struct &lt;A&gt;array */*restrict*/const <em>b</em>, const size_t <em>i0</em>, const size_t <em>i1</em>)</code></p>
+<p><code>static int <strong>&lt;A&gt;array_splice</strong>(struct &lt;A&gt;array *restrict const <em>a</em>, const struct &lt;A&gt;array *restrict const <em>b</em>, const size_t <em>i0</em>, const size_t <em>i1</em>)</code></p>
 
 <p>Indices [<code>i0</code>, <code>i1</code>) of <code>a</code> will be replaced with a copy of <code>b</code>.</p>
 
@@ -498,7 +498,7 @@
 
 <h3><a id = "fn:<ITR>copy_if" name = "fn:<ITR>copy_if">&lt;ITR&gt;copy_if</a></h3>
 
-<p><code>static int <strong>&lt;ITR&gt;copy_if</strong>(&lt;PITR&gt;box */*restrict*/const <em>dst</em>, const &lt;PITR&gt;box */*restrict*/const <em>src</em>, const &lt;PITR&gt;predicate_fn <em>copy</em>)</code></p>
+<p><code>static int <strong>&lt;ITR&gt;copy_if</strong>(&lt;PITR&gt;box *restrict const <em>dst</em>, const &lt;PITR&gt;box *restrict const <em>src</em>, const &lt;PITR&gt;predicate_fn <em>copy</em>)</code></p>
 
 <p><a href = "src/iterate.h">src/iterate.h</a>, <code>BOX_CONTIGUOUS</code>: For all elements of <code>src</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>dst</code>. <code>dst</code> and <code>src</code> can not be the same but <code>src</code> can be null, (in which case, it does nothing.)</p>
 
@@ -561,7 +561,7 @@
 
 <h3><a id = "fn:<CMP>compare" name = "fn:<CMP>compare">&lt;CMP&gt;compare</a></h3>
 
-<p><code>static int <strong>&lt;CMP&gt;compare</strong>(const &lt;PCMP&gt;box *const <em>a</em>, const &lt;PCMP&gt;box *const <em>b</em>)</code></p>
+<p><code>static int <strong>&lt;CMP&gt;compare</strong>(const &lt;PCMP&gt;box *restrict const <em>a</em>, const &lt;PCMP&gt;box *restrict const <em>b</em>)</code></p>
 
 <p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>: Lexicographically compares <code>a</code> to <code>b</code>. Both can be null, with null values before everything.</p>
 
@@ -660,7 +660,7 @@
 
 <h3><a id = "fn:<CMP>is_equal" name = "fn:<CMP>is_equal">&lt;CMP&gt;is_equal</a></h3>
 
-<p><code>static int <strong>&lt;CMP&gt;is_equal</strong>(const &lt;PCMP&gt;box *const <em>a</em>, const &lt;PCMP&gt;box *const <em>b</em>)</code></p>
+<p><code>static int <strong>&lt;CMP&gt;is_equal</strong>(const &lt;PCMP&gt;box *restrict const <em>a</em>, const &lt;PCMP&gt;box *restrict const <em>b</em>)</code></p>
 
 <p><a href = "src/compare.h">src/compare.h</a></p>
 

@@ -77,7 +77,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 ### <a id = "user-content-typedef-2c6ed2db" name = "user-content-typedef-2c6ed2db">&lt;PCMP&gt;compare_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PCMP&gt;compare_fn</strong>)(const &lt;PCMP&gt;element_c a, const &lt;PCMP&gt;element_c b);</code>
+<code>typedef int(*<strong>&lt;PCMP&gt;compare_fn</strong>)(const &lt;PCMP&gt;element_c restrict a, const &lt;PCMP&gt;element_c restrict b);</code>
 
 [src/compare\.h](src/compare.h): Three\-way comparison on a totally order set; returns an integer value less than, equal to, greater than zero, if `a < b`, `a == b`, `a > b`, respectively\.
 
@@ -85,7 +85,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 ### <a id = "user-content-typedef-f8efb17d" name = "user-content-typedef-f8efb17d">&lt;PCMP&gt;biaction_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PCMP&gt;biaction_fn</strong>)(&lt;PCMP&gt;element, &lt;PCMP&gt;element);</code>
+<code>typedef int(*<strong>&lt;PCMP&gt;biaction_fn</strong>)(&lt;PCMP&gt;element restrict, &lt;PCMP&gt;element restrict);</code>
 
 [src/compare\.h](src/compare.h): Returns a boolean given two modifiable arguments\.
 
@@ -336,7 +336,7 @@ Adds `n` elements to the back of `a`\. It will invalidate pointers in `a` if `n`
 
 ### <a id = "user-content-fn-bce1c326" name = "user-content-fn-bce1c326">&lt;A&gt;array_splice</a> ###
 
-<code>static int <strong>&lt;A&gt;array_splice</strong>(struct &lt;A&gt;array */*restrict*/const <em>a</em>, const struct &lt;A&gt;array */*restrict*/const <em>b</em>, const size_t <em>i0</em>, const size_t <em>i1</em>)</code>
+<code>static int <strong>&lt;A&gt;array_splice</strong>(struct &lt;A&gt;array *restrict const <em>a</em>, const struct &lt;A&gt;array *restrict const <em>b</em>, const size_t <em>i0</em>, const size_t <em>i1</em>)</code>
 
 Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
@@ -389,7 +389,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 ### <a id = "user-content-fn-4b2c205b" name = "user-content-fn-4b2c205b">&lt;ITR&gt;copy_if</a> ###
 
-<code>static int <strong>&lt;ITR&gt;copy_if</strong>(&lt;PITR&gt;box */*restrict*/const <em>dst</em>, const &lt;PITR&gt;box */*restrict*/const <em>src</em>, const &lt;PITR&gt;predicate_fn <em>copy</em>)</code>
+<code>static int <strong>&lt;ITR&gt;copy_if</strong>(&lt;PITR&gt;box *restrict const <em>dst</em>, const &lt;PITR&gt;box *restrict const <em>src</em>, const &lt;PITR&gt;predicate_fn <em>copy</em>)</code>
 
 [src/iterate\.h](src/iterate.h), `BOX_CONTIGUOUS`: For all elements of `src`, calls `copy`, and if true, lazily copies the elements to `dst`\. `dst` and `src` can not be the same but `src` can be null, \(in which case, it does nothing\.\)
 
@@ -440,7 +440,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 ### <a id = "user-content-fn-c2fff878" name = "user-content-fn-c2fff878">&lt;CMP&gt;compare</a> ###
 
-<code>static int <strong>&lt;CMP&gt;compare</strong>(const &lt;PCMP&gt;box *const <em>a</em>, const &lt;PCMP&gt;box *const <em>b</em>)</code>
+<code>static int <strong>&lt;CMP&gt;compare</strong>(const &lt;PCMP&gt;box *restrict const <em>a</em>, const &lt;PCMP&gt;box *restrict const <em>b</em>)</code>
 
 [src/compare\.h](src/compare.h), `COMPARE`: Lexicographically compares `a` to `b`\. Both can be null, with null values before everything\.
 
@@ -521,7 +521,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 ### <a id = "user-content-fn-82b7806" name = "user-content-fn-82b7806">&lt;CMP&gt;is_equal</a> ###
 
-<code>static int <strong>&lt;CMP&gt;is_equal</strong>(const &lt;PCMP&gt;box *const <em>a</em>, const &lt;PCMP&gt;box *const <em>b</em>)</code>
+<code>static int <strong>&lt;CMP&gt;is_equal</strong>(const &lt;PCMP&gt;box *restrict const <em>a</em>, const &lt;PCMP&gt;box *restrict const <em>b</em>)</code>
 
 [src/compare\.h](src/compare.h)
 
