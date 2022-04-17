@@ -47,7 +47,7 @@ static unsigned test_orc(struct orc **const orc_ptr) {
 	return orc->health;
 }
 #define HEAP_NAME orc
-#define HEAP_VALUE struct orc
+#define HEAP_VALUE struct orc *
 #define HEAP_TEST &test_orc
 #define HEAP_EXPECT_TRAIT
 #include "../src/heap.h"
