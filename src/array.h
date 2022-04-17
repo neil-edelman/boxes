@@ -74,6 +74,12 @@
 #define PA_(n) ARRAY_CAT(array, A_(n))
 #endif /* idempotent --> */
 
+#if !defined(__STDC__) || !defined(__STDC_VERSION__) \
+	|| __STDC_VERSION__ < 199901L
+#define ARRAY_RESTRICT
+#define restrict /* Attribute only in C99+. */
+#endif
+
 
 #if ARRAY_TRAITS == 0 /* <!-- base code */
 
@@ -364,8 +370,8 @@ static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n)
 /** Indices [`i0`, `i1`) of `a` will be replaced with a copy of `b`.
  @param[b] Can be null, which acts as empty, but cannot overlap with `a`.
  @return Success. @throws[realloc, ERANGE] @allow */
-static int A_(array_splice)(struct A_(array) */*restrict*/const a,
-	const struct A_(array) */*restrict*/const b,
+static int A_(array_splice)(struct A_(array) *restrict const a,
+	const struct A_(array) *restrict const b,
 	const size_t i0, const size_t i1) {
 	const size_t a_range = i1 - i0, b_range = b ? b->size : 0;
 	assert(a && a != b && i0 <= i1 && i1 <= a->size);
@@ -486,3 +492,6 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #undef ARRAY_TO_STRING_TRAIT
 #undef ARRAY_COMPARE_TRAIT
 #undef ARRAY_TRAITS
+#ifdef ARRAY_RESTRICT
+#undef restrict
+#endif

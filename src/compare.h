@@ -45,10 +45,11 @@ typedef int (*PCMP_(bipredicate_fn))(const PCMP_(element_c),
 /** <src/compare.h>: Three-way comparison on a totally order set; returns an
  integer value less than, equal to, greater than zero, if `a < b`, `a == b`,
  `a > b`, respectively. */
-typedef int (*PCMP_(compare_fn))(const PCMP_(element_c) a,
-	const PCMP_(element_c) b);
+typedef int (*PCMP_(compare_fn))(const PCMP_(element_c) restrict a,
+	const PCMP_(element_c) restrict b);
 /** <src/compare.h>: Returns a boolean given two modifiable arguments. */
-typedef int (*PCMP_(biaction_fn))(PCMP_(element), PCMP_(element));
+typedef int (*PCMP_(biaction_fn))(PCMP_(element) restrict,
+	PCMP_(element) restrict);
 
 #ifdef COMPARE /* <!-- compare: <typedef:<PCMP>compare_fn>. */
 
@@ -60,7 +61,8 @@ static const PCMP_(compare_fn) PCMP_(compare) = (COMPARE);
  be null, with null values before everything.
  @return `a < b`: negative; `a == b`: zero; `a > b`: positive.
  @order \O(`|a|` & `|b|`) @allow */
-static int CMP_(compare)(const PCMP_(box) *const a, const PCMP_(box) *const b) {
+static int CMP_(compare)(const PCMP_(box) *restrict const a,
+	const PCMP_(box) *restrict const b) {
 	struct BOX_(forward) ia = BOX_(forward_begin)(a),
 		ib = BOX_(forward_begin)(b);
 	for( ; ; ) {
@@ -120,8 +122,8 @@ static int CMP_(insert_after)(PCMP_(box) *const box,
 }
 
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
-static int PCMP_(vcompar)(const void *const a, const void *const b)
-	{ return PCMP_(compare)(a, b); }
+static int PCMP_(vcompar)(const void *restrict const a,
+	const void *restrict const b) { return PCMP_(compare)(a, b); }
 
 /** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`,
  (which has a high-context-switching cost, but is easy.)
@@ -136,8 +138,8 @@ static void CMP_(sort)(PCMP_(box) *const box) {
 }
 
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
-static int PCMP_(vrevers)(const void *const a, const void *const b)
-	{ return PCMP_(compare)(b, a); }
+static int PCMP_(vrevers)(const void *restrict const a,
+	const void *restrict const b) { return PCMP_(compare)(b, a); }
 
 /** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` in reverse by
  `qsort`. @order \O(|`box`| \log |`box`|) @allow */
@@ -157,8 +159,8 @@ static void CMP_(reverse)(PCMP_(box) *const box) {
 /** !compare(`a`, `b`) == equals(`a`, `b`).
  (This makes `COMPARE` encompass `COMPARE_IS_EQUAL`.)
  @implements <typedef:<PCMP>bipredicate_fn> */
-static int PCMP_(is_equal)(const PCMP_(element_c) a, const PCMP_(element_c) b)
-	{ return !PCMP_(compare)(a, b); }
+static int PCMP_(is_equal)(const PCMP_(element_c) restrict a,
+	const PCMP_(element_c) restrict b) { return !PCMP_(compare)(a, b); }
 
 #else /* compare --><!-- is equal */
 
@@ -170,8 +172,8 @@ static const PCMP_(bipredicate_fn) PCMP_(is_equal) = (COMPARE_IS_EQUAL);
 
 /** <src/compare.h> @return If `a` piecewise equals `b`,
  which both can be null. @order \O(|`a`| & |`b`|) @allow */
-static int CMP_(is_equal)(const PCMP_(box) *const a,
-	const PCMP_(box) *const b) {
+static int CMP_(is_equal)(const PCMP_(box) *restrict const a,
+	const PCMP_(box) *restrict const b) {
 	struct BOX_(forward) ia = BOX_(forward_begin)(a),
 		ib = BOX_(forward_begin)(b);
 	for( ; ; ) {

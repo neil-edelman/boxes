@@ -90,8 +90,8 @@ static void ITR_(if_each)(PITR_(box) *const box,
  and if true, lazily copies the elements to `dst`. `dst` and `src` can not be
  the same but `src` can be null, (in which case, it does nothing.)
  @order \O(|`src`|) \times \O(`copy`) @throws[realloc] @allow */
-static int ITR_(copy_if)(PITR_(box) */*restrict*/const dst,
-	const PITR_(box) */*restrict*/const src, const PITR_(predicate_fn) copy) {
+static int ITR_(copy_if)(PITR_(box) *restrict const dst,
+	const PITR_(box) *restrict const src, const PITR_(predicate_fn) copy) {
 	PITR_(element) i, fresh, end, rise = 0;
 	size_t add;
 	int difcpy = 0;
