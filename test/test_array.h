@@ -661,7 +661,7 @@ static void PCMP_(test_bounds)(void) {
 	printf("\ntest bounds:\n");
 	if(!A_(array_append)(&a, size)) { assert(0); return; }
 	for(i = 0; i < size; i++) PA_(filler)(a.data + i);
-	PA_(filler)(&elem);
+	memset(&elem, 0, sizeof elem), PA_(filler)(&elem);
 	CMP_(sort)(&a);
 	printf("sorted: %s.\n", PA_(array_to_string)(&a));
 	PA_(to_string)(&elem, &z), printf("element to compare: %s\n", z);
