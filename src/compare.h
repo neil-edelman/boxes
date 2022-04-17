@@ -76,8 +76,8 @@ static int CMP_(compare)(const PCMP_(box) *const a, const PCMP_(box) *const b) {
 #ifdef BOX_ACCESS /* <!-- access: size, at. */
 
 /** <src/compare.h>, `COMPARE`, `BOX_ACCESS`: `box` should be partitioned
- true/false with less-then `value`. @return The first index of `a` that is not
- less than `cursor`. @order \O(log `a.size`) @allow */
+ true/false with less-then `element`. @return The first index of `a` that is
+ not less than `cursor`. @order \O(log `a.size`) @allow */
 static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
 	const PCMP_(element_c) element) {
 	size_t low = 0, high = BOX_(size)(box), mid;
@@ -89,7 +89,7 @@ static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
 }
 
 /** <src/compare.h>, `COMPARE`, `BOX_ACCESS`: `box` should be partitioned
- false/true with greater-than or equal-to <typedef:<PAC>enum> `element`.
+ false/true with greater-than or equal-to `element`.
  @return The first index of `box` that is greater than `element`.
  @order \O(log |`box`|) @allow */
 static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
@@ -155,7 +155,7 @@ static void CMP_(reverse)(PCMP_(box) *const box) {
 #endif /* access --> */
 
 /** !compare(`a`, `b`) == equals(`a`, `b`).
- (This makes `COMPARE` > `COMPARE_IS_EQUAL`.)
+ (This makes `COMPARE` encompass `COMPARE_IS_EQUAL`.)
  @implements <typedef:<PCMP>bipredicate_fn> */
 static int PCMP_(is_equal)(const PCMP_(element_c) a, const PCMP_(element_c) b)
 	{ return !PCMP_(compare)(a, b); }
@@ -193,7 +193,7 @@ static int CMP_(is_equal)(const PCMP_(box) *const a,
  `(x, y)->(x)`, if true `(x,y)->(y)`. More complex functions, `(x, y)->(x+y)`
  can be simulated by mixing the two in the value returned. Can be null: behaves
  like false, always deleting the second element.
- @order \O(`a.size`) \times \O(`merge`) @allow */
+ @order \O(|`box`|) \times \O(`merge`) @allow */
 static void CMP_(unique_merge)(PCMP_(box) *const box,
 	const PCMP_(biaction_fn) merge) {
 	size_t target, from, cursor, choice, next, move;

@@ -14,7 +14,8 @@
 /**
  @param[HAVE_ITERATE_H]
  The `<ITR>` functions need this value. This includes <src/iterate.h>, which
- take no parameters. Some functions may only be available for some boxes.
+ take no parameters. Some functions may only be available for some boxes. This
+ does not expire after box completion.
  */
 
 /* `BOX_CONTENT`: is_content, forward, forward_begin, forward_next. */
@@ -39,9 +40,9 @@ typedef BOX PITR_(box);
 typedef BOX_CONTENT PITR_(element);
 typedef const BOX_CONTENT PITR_(element_c);
 
-/** <src/iteration.h>: Operates by side-effects. */
+/** <src/iterate.h>: Operates by side-effects. */
 typedef void (*PITR_(action_fn))(PITR_(element));
-/** <src/iteration.h>: Returns a boolean given read-only. */
+/** <src/iterate.h>: Returns a boolean given read-only. */
 typedef int (*PITR_(predicate_fn))(const PITR_(element));
 
 #ifdef BOX_CONTIGUOUS /* <!-- contiguous */
@@ -49,7 +50,7 @@ typedef int (*PITR_(predicate_fn))(const PITR_(element));
 /* <!-- fixme: could be implemented with a less restrictive setting than
  `BOX_ITERATOR`, as they only need `BOX_CONTENT`. */
 
-/** <src/iteration.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
+/** <src/iterate.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
  `action` on all the elements. The topology of the list must not change while
  in this function.
  @order \O(|`box`| \times `action`) @allow */
@@ -60,7 +61,7 @@ static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
 		action(i);
 }
 
-/** <src/iteration.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
+/** <src/iterate.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
  `action` on all the elements for which `predicate` returns true. The topology
  of the list should not change while in this function.
  @order \O(`box.size` \times `predicate` \times `action`) @allow */
@@ -72,7 +73,7 @@ static void ITR_(if_each)(PITR_(box) *const box,
 		if(predicate(i)) action(i);
 }
 
-/** <src/iteration.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
+/** <src/iterate.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
  `predicate` until it returns true.
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null. @order \O(`box.size` \times `predicate`) @allow */
@@ -87,7 +88,7 @@ static PITR_(element) ITR_(any)(const PITR_(box) *const box,
 
 /* --> */
 
-/** <src/iteration.h>, `BOX_CONTIGUOUS`: For all elements of `src`, calls `copy`,
+/** <src/iterate.h>, `BOX_CONTIGUOUS`: For all elements of `src`, calls `copy`,
  and if true, lazily copies the elements to `dst`. `dst` and `src` can not be
  the same but `src` can be null, (in which case, it does nothing.)
  @order \O(|`src`| \times `copy`) @throws[realloc] @allow */
@@ -118,7 +119,7 @@ static int ITR_(copy_if)(PITR_(box) */*restrict*/const dst,
 	return 1;
 }
 
-/** <src/iteration.h>, `BOX_CONTIGUOUS`: For all elements of `box`, calls `keep`,
+/** <src/iterate.h>, `BOX_CONTIGUOUS`: For all elements of `box`, calls `keep`,
  and if false, lazy deletes that item. Calls `destruct` if not-null before
  deleting. @order \O(|`box`| \times `keep` \times `destruct`) @allow */
 static void ITR_(keep_if)(PITR_(box) *const box,
@@ -155,7 +156,7 @@ static void ITR_(keep_if)(PITR_(box) *const box,
 	BOX_(tell_size)(box, (size_t)(erase - BOX_(at)(box, 0)));
 }
 
-/** <src/iteration.h>, `BOX_CONTIGUOUS`: Removes at either end of `box` the
+/** <src/iterate.h>, `BOX_CONTIGUOUS`: Removes at either end of `box` the
  things that `predicate`, if it exists, returns true.
  @order \O(`box.size` \times `predicate`) @allow */
 static void ITR_(trim)(PITR_(box) *const box,

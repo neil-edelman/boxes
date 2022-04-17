@@ -28,7 +28,7 @@
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
  To string trait contained in <src/to_string.h>. An optional mangled name for
- uniqueness and function implementing <typedef:<PSZ>to_string_fn>.
+ uniqueness and function implementing <typedef:<PSTR>to_string_fn>.
 
  @std C89 */
 
@@ -101,7 +101,7 @@ struct A_(array) { PA_(type) *data; size_t size, capacity; };
 #define BOX_CONTENT PA_(type) *
 /** Is `x` not null? @implements `is_content` */
 static int PA_(is_content)(const PA_(type) *const x) { return !!x; }
-/** Enumerate the contents (`input_or_output_const_iterator`.)
+/* Enumerate the contents (`input_or_output_const_iterator`.)
  @implements `forward` */
 struct PA_(forward) { const struct A_(array) *a; size_t next; };
 /** @return Before `a`. @implements `forward_begin` */
@@ -113,7 +113,7 @@ static const PA_(type) *PA_(forward_next)(struct PA_(forward) *const it)
 	? it->a->data + it->next++ : 0; }
 
 #define BOX_ITERATOR
-/** More complex iterator that supports bi-directional movement and write. The
+/* More complex iterator that supports bi-directional movement and write. The
  cursor is half way between elements, `cur = cursor - 0.5`, pointing left
  (`dir` false) or right (`dir` true). @implements `iterator` */
 struct PA_(iterator) { struct A_(array) *a; size_t cur; int dir; };
@@ -193,11 +193,12 @@ static PA_(type) *PA_(at)(const struct A_(array) *a, const size_t idx)
 	{ return a->data + idx; }
 
 #define BOX_CONTIGUOUS /* Depends on `BOX_ACCESS`. Also, `append` later. */
-/** @implements `tell_size` */
+/** Writes `size` to `a`. @implements `tell_size` */
 static void PA_(tell_size)(struct A_(array) *a, const size_t size)
 	{ assert(a); a->size = size; }
 
-/** Cursor. */
+/** Cursor; may become invalid after a topological change to any items
+ previous. */
 struct A_(array_iterator);
 struct A_(array_iterator) { struct PA_(iterator) _; };
 
@@ -221,10 +222,10 @@ static struct A_(array_iterator) A_(array_end)(struct A_(array) *a)
 static struct A_(array_iterator) A_(array_index)(struct A_(array) *a,
 	size_t idx) { struct A_(array_iterator) it;
 	it._ = PA_(index)(a, idx); return it; }
-/** @return The next element. */
+/** @return `it` next element. */
 static PA_(type) *A_(array_next)(struct A_(array_iterator) *const it)
 	{ return assert(it), PA_(next)(&it->_); }
-/** @return The previous element. */
+/** @return `it` previous element. */
 static PA_(type) *A_(array_previous)(struct A_(array_iterator) *const it)
 	{ return assert(it), PA_(previous)(&it->_); }
 
@@ -285,10 +286,11 @@ static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n) {
  @param[at] A number smaller than or equal to `a.size`; if `a.size`, this
  function behaves as <fn:<A>array_append>.
  @return A pointer to the start of the new region, where there are `n`
- elements. @throws[realloc, ERANGE] @allow
- Fixme: this is the odd-one out. */
+ elements. @throws[realloc, ERANGE] @allow */
 static PA_(type) *A_(array_insert)(struct A_(array) *const a,
 	const size_t n, const size_t at) {
+	/* Investigate `n` is better than `element`; all the other one's are
+	 element. But also, when would I ever use this? */
 	const size_t old_size = a->size;
 	PA_(type) *const b = PA_(append)(a, n);
 	assert(a && at <= old_size);
@@ -447,7 +449,7 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #else /* cmp --><!-- eq */
 #define COMPARE_IS_EQUAL ARRAY_IS_EQUAL
 #endif /* eq --> */
-#include "compare.h" /* \include */
+#include "compare.h" /** \include */
 #ifdef ARRAY_TEST /* <!-- test: this detects and outputs compare test. */
 #include "../test/test_array.h"
 #endif /* test --> */
