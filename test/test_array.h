@@ -66,14 +66,6 @@ no_data:
 	fclose(fp);
 }
 
-/** @implements <PA>Predicate @return Is `t` zero-filled? */
-static int PA_(zero_filled)(PA_(type) *const t) {
-	const char *c = (const char *)t, *const end = (const char *)(t + 1);
-	assert(t);
-	while(c < end) if(*c++) return 0;
-	return 1;
-}
-
 static void PA_(test_basic)(void) {
 	struct A_(array) a = A_(array)();
 	struct A_(array_iterator) it;
@@ -81,7 +73,6 @@ static void PA_(test_basic)(void) {
 	PA_(type) items[5], *item, *item1;
 	const size_t items_size = sizeof items / sizeof *items, big = 1000;
 	size_t i;
-	int is_zero;
 
 	assert(errno == 0);
 	PA_(valid_state)(0);
@@ -201,26 +192,6 @@ static void PA_(test_basic)(void) {
 	assert(item && !memcmp(item, items + items_size - 2, sizeof *item));
 	A_(array_clear)(&a);
 	assert(a.size == 0);
-
-	/* Trim 1. */
-	item = A_(array_new)(&a);
-	assert(item);
-	memset(item, 0, sizeof *item);
-	A_(array_trim)(&a, &PA_(zero_filled));
-	assert(a.size == 0);
-	/* Trim 3. */
-	item = A_(array_new)(&a);
-	assert(item);
-	memset(item, 0, sizeof *item);
-	item = A_(array_new)(&a);
-	assert(item);
-	PA_(filler)(item);
-	is_zero = PA_(zero_filled)(item);
-	item = A_(array_new)(&a);
-	assert(item);
-	memset(item, 0, sizeof *item);
-	A_(array_trim)(&a, &PA_(zero_filled));
-	assert(a.size == !is_zero);
 
 	/* Big. */
 	for(i = 0; i < big; i++) {
@@ -380,6 +351,7 @@ static void PA_(test_replace)(void) {
 	A_(array_)(&a);
 }
 
+#ifdef HAVE_ITERATE_H /* <!-- iterate */
 /** @implements <PA>Predicate
  @return A set sequence of ones and zeros, independant of `data`. */
 static int PA_(keep_deterministic)(PA_(type) *const data) {
@@ -391,7 +363,32 @@ static int PA_(keep_deterministic)(PA_(type) *const data) {
 	return predicate;
 }
 
+static int PA_(num);
+
+/** Increments a global variable, independent of `t`. @implements <PA>action */
+static void PA_(increment)(PA_(type) *const t) {
+	(void)t;
+	PA_(num)++;
+}
+
+/** True, independent of `t`.
+ @implements <PA>Predicate */
+static int PA_(true)(PA_(type) *const t) {
+	(void)t;
+	return 1;
+}
+
+/** @implements <PA>Predicate @return Is `t` zero-filled? */
+static int PA_(zero_filled)(PA_(type) *const t) {
+	const char *c = (const char *)t, *const end = (const char *)(t + 1);
+	assert(t);
+	while(c < end) if(*c++) return 0;
+	return 1;
+}
+#endif /* iterate --> */
+
 static void PA_(test_keep)(void) {
+#ifdef HAVE_ITERATE_H
 	PA_(type) ts[17], *t, *t1, *e;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	struct A_(array) a = A_(array)(), b = A_(array)();
@@ -423,24 +420,11 @@ static void PA_(test_keep)(void) {
 		&& !memcmp(ts + 13, b.data + 1, sizeof *t * 1));
 	A_(array_)(&a);
 	A_(array_)(&b);
-}
-
-static int PA_(num);
-
-/** Increments a global variable, independent of `t`. @implements <PA>action */
-static void PA_(increment)(PA_(type) *const t) {
-	(void)t;
-	PA_(num)++;
-}
-
-/** True, independent of `t`.
- @implements <PA>Predicate */
-static int PA_(true)(PA_(type) *const t) {
-	(void)t;
-	return 1;
+#endif
 }
 
 static void PA_(test_each)(void) {
+#ifdef HAVE_ITERATE_H
 	struct A_(array) empty = A_(array)(), one = A_(array)();
 	const PA_(type) *t;
 	t = A_(array_new)(&one);
@@ -462,6 +446,34 @@ static void PA_(test_each)(void) {
 	t = A_(array_any)(&one, &PA_(true));
 	assert(t == one.data);
 	A_(array_)(&one);
+#endif
+}
+
+static void PA_(test_trim)(void) {
+#ifdef HAVE_ITERATE_H
+	struct A_(array) a = A_(array)();
+	PA_(type) *item;
+	int is_zero;
+	/* Trim 1. */
+	item = A_(array_new)(&a);
+	assert(item);
+	memset(item, 0, sizeof *item);
+	A_(array_trim)(&a, &PA_(zero_filled));
+	assert(a.size == 0);
+	/* Trim 3. */
+	item = A_(array_new)(&a);
+	assert(item);
+	memset(item, 0, sizeof *item);
+	item = A_(array_new)(&a);
+	assert(item);
+	PA_(filler)(item);
+	is_zero = PA_(zero_filled)(item);
+	item = A_(array_new)(&a);
+	assert(item);
+	memset(item, 0, sizeof *item);
+	A_(array_trim)(&a, &PA_(zero_filled));
+	assert(a.size == !is_zero);
+#endif
 }
 
 static void PA_(test_insert)(void) {
@@ -500,6 +512,7 @@ static void A_(array_test)(void) {
 	PA_(test_replace)();
 	PA_(test_keep)();
 	PA_(test_each)();
+	PA_(test_trim)();
 	PA_(test_insert)();
 	fprintf(stderr, "Done tests of array<" QUOTE(ARRAY_NAME) ">.\n\n");
 }
@@ -508,54 +521,53 @@ static void A_(array_test)(void) {
 /* !traits --><!-- compare */
 #elif defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL)
 
-#if 0 /* <!---------------------------------------------------------------*/
-
 /** Fills `fill` that is not equal to `neq` if possible. */
-static int PACC_(fill_unique)(PAC_(type) *const fill,
-	const PAC_(type) *const neq) {
+static int PCMP_(fill_unique)(PA_(type) *const fill,
+	const PA_(type) *const neq) {
 	size_t i;
 	assert(fill);
 	for(i = 0; i < 1000; i++) {
 		PA_(filler)(fill);
-		if(!neq || PACC_(compare)(neq, fill)) return 1;
+		if(!neq || !PCMP_(is_equal)(neq, fill)) return 1;
 	}
 	assert(0); return 0;
 }
 
-static void PACC_(test_compactify)(void) {
+static void PCMP_(test_compactify)(void) {
 	struct A_(array) a = A_(array)();
 	PA_(type) ts[9], *t, *t1, *t_prev;
 	const size_t ts_size = sizeof ts / sizeof *ts;
-
 	/* `valgrind` is giving me grief if I don't do this? */
 	memset(ts, 0, sizeof ts);
 	/* Get elements. */
 	assert(ts_size % 3 == 0);
 	for(t_prev = 0, t = ts, t1 = t + ts_size; t < t1; t_prev = t, t += 3) {
-		if(!PACC_(fill_unique)(t, t_prev)) { assert(0); return; }
+		if(!PCMP_(fill_unique)(t, t_prev)) { assert(0); return; }
 		memcpy(t + 1, t, sizeof *t);
 		memcpy(t + 2, t, sizeof *t);
 	}
 	if(!A_(array_append)(&a, ts_size)) { assert(0); return; }
 	memcpy(a.data, ts, sizeof *t * ts_size);
 	printf("Before: %s.\n", PA_(array_to_string)(&a));
-	ACC_(unique)(&a);
+	CMP_(unique)(&a);
 	printf("Compactified: %s.\n", PA_(array_to_string)(&a));
 	assert(a.size == ts_size / 3);
 #ifdef ARRAY_COMPARE /* <!-- compare */
-	ACC_(sort)(&a);
+	CMP_(sort)(&a);
 	printf("Sorted: %s.\n", PA_(array_to_string)(&a));
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(PACC_(compare)(t, t + 1) <= 0);
-	ACC_(reverse)(&a);
+		assert(PCMP_(compare)(t, t + 1) <= 0);
+	CMP_(reverse)(&a);
 	printf("Reverse: %s.\n", PA_(array_to_string)(&a));
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(PACC_(compare)(t, t + 1) >= 0);
+		assert(PCMP_(compare)(t, t + 1) >= 0);
 #endif /* compare --> */
 	A_(array_)(&a);
 }
 
-static void PACC_(test_contiguous)(void) {
+#if 0 /* <!---------------------------------------------------------------*/
+
+static void PCMP_(test_contiguous)(void) {
 	/* FIXME: this is not tested. */
 #ifdef ARRAY_CODA /* <!-- contiguous */
 	struct A_(array) a = A_(array)();
@@ -691,8 +703,8 @@ static void CMP_(compare_test)(void) {
 		"is equal <" QUOTE(ARRAY_IS_EQUAL)
 #endif
 		">:\n");
-	/*PACC_(test_compactify)();
-	PACC_(test_contiguous)();*/
+	PCMP_(test_compactify)();
+	/*PCMP_(test_contiguous)();*/
 	PCMP_(test_sort)();
 	PCMP_(test_bounds)();
 	assert(errno == 0);

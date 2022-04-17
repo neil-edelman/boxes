@@ -15,9 +15,9 @@
 #include "../src/array.h"
 
 
-
-#define HAVE_ITERATE_H /* This should not be here, but there is now a
+/* This should not be here, but there is now a
  dependency with TEST on ITERATE, (that should not be there.) */
+//#define HAVE_ITERATE_H
 
 /* Struct array. */
 struct str4 { char value[4]; };
@@ -53,7 +53,7 @@ static void colour_filler(enum colour *const c)
 static void colour_to_string(const enum colour *const c, char (*const a)[12])
 	{ assert(*c < colour_size); sprintf(*a, "%.11s", colours[*c]); }
 static int colour_is_equal(const enum colour *const a,
-	const enum colour *const b) { return a == b; }
+	const enum colour *const b) { return *a == *b; }
 #define ARRAY_NAME colour
 #define ARRAY_TYPE enum colour
 #define ARRAY_TEST &colour_filler
@@ -64,8 +64,6 @@ static int colour_is_equal(const enum colour *const a,
 #include "../src/array.h"
 #define ARRAY_TO_STRING &colour_to_string
 #include "../src/array.h"
-
-
 
 
 /* Int array with compare. */

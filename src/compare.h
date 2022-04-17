@@ -194,7 +194,7 @@ static int CMP_(is_equal)(const PCMP_(box) *const a,
  `(x, y)->(x)`, if true `(x,y)->(y)`. More complex functions, `(x, y)->(x+y)`
  can be simulated by mixing the two in the value returned. Can be null: behaves
  like false, always deleting the second element.
- @order \O(`a.size` \times `merge`) @allow */
+ @order \O(`a.size`) \times \O(`merge`) @allow */
 static void CMP_(unique_merge)(PCMP_(box) *const box,
 	const PCMP_(biaction_fn) merge) {
 	size_t target, from, cursor, choice, next, move;
@@ -204,11 +204,12 @@ static void CMP_(unique_merge)(PCMP_(box) *const box,
 	assert(box);
 	for(target = from = cursor = 0; cursor < last; cursor += next) {
 		/* Bijective `[from, cursor)` is moved lazily. */
-		for(choice = 0, next = 1; cursor + next < last
-			&& PCMP_(is_equal)(BOX_(at)(box, cursor + choice),
-			BOX_(at)(box, cursor + next)); next++)
-			if(merge && merge(BOX_(at)(box, choice), BOX_(at)(box, next)))
-			choice = next;
+		for(choice = 0, next = 1; cursor + next < last; next++) {
+			const PCMP_(element) a = BOX_(at)(box, cursor + choice),
+				b = BOX_(at)(box, cursor + next);
+			if(!PCMP_(is_equal)(a, b)) break;
+			if(merge && merge(a, b)) choice = next;
+		}
 		if(next == 1) continue;
 		/* Must move injective `cursor + choice \in [cursor, cursor + next)`. */
 		is_first = !choice;
