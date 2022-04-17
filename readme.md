@@ -53,7 +53,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 ### <a id = "user-content-typedef-c5016dba" name = "user-content-typedef-c5016dba">&lt;PITR&gt;predicate_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PITR&gt;predicate_fn</strong>)(const &lt;PITR&gt;element);</code>
+<code>typedef int(*<strong>&lt;PITR&gt;predicate_fn</strong>)(const &lt;PITR&gt;element_c);</code>
 
 [src/iterate\.h](src/iterate.h): Returns a boolean given read\-only\.
 
@@ -143,11 +143,11 @@ Cursor; may become invalid after a topological change to any items previous\.
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-bce1c326">&lt;A&gt;array_splice</a></td><td>a, b, i0, i1</td></tr>
 
+<tr><td align = right>static &lt;PITR&gt;element</td><td><a href = "#user-content-fn-73c52918">&lt;ITR&gt;any</a></td><td>box, predicate</td></tr>
+
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-96abfbdb">&lt;ITR&gt;each</a></td><td>box, action</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-6e4cf157">&lt;ITR&gt;if_each</a></td><td>box, predicate, action</td></tr>
-
-<tr><td align = right>static &lt;PITR&gt;element</td><td><a href = "#user-content-fn-73c52918">&lt;ITR&gt;any</a></td><td>box, predicate</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-4b2c205b">&lt;ITR&gt;copy_if</a></td><td>dst, src, copy</td></tr>
 
@@ -349,14 +349,28 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 
 
+### <a id = "user-content-fn-73c52918" name = "user-content-fn-73c52918">&lt;ITR&gt;any</a> ###
+
+<code>static &lt;PITR&gt;element <strong>&lt;ITR&gt;any</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code>
+
+[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `predicate` until it returns true\.
+
+ * Return:  
+   The first `predicate` that returned true, or, if the statement is false on all, null\.
+ * Order:  
+   &#927;\(`box.size`\) &#215; &#927;\(`predicate`\)
+
+
+
+
 ### <a id = "user-content-fn-96abfbdb" name = "user-content-fn-96abfbdb">&lt;ITR&gt;each</a> ###
 
 <code>static void <strong>&lt;ITR&gt;each</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;action_fn <em>action</em>)</code>
 
-[src/iterate\.h](src/iterate.h), `BOX_CONTIGUOUS`: Iterates through `box` and calls `action` on all the elements\. The topology of the list must not change while in this function\.
+[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements\. The topology of the list must not change while in this function\.
 
  * Order:  
-   &#927;\(|`box`| &#215; `action`\)
+   &#927;\(|`box`|\) &#215; &#927;\(`action`\)
 
 
 
@@ -365,24 +379,10 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;ITR&gt;if_each</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>, const &lt;PITR&gt;action_fn <em>action</em>)</code>
 
-[src/iterate\.h](src/iterate.h), `BOX_CONTIGUOUS`: Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list should not change while in this function\.
+[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list must not change while in this function\.
 
  * Order:  
-   &#927;\(`box.size` &#215; `predicate` &#215; `action`\)
-
-
-
-
-### <a id = "user-content-fn-73c52918" name = "user-content-fn-73c52918">&lt;ITR&gt;any</a> ###
-
-<code>static &lt;PITR&gt;element <strong>&lt;ITR&gt;any</strong>(const &lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code>
-
-[src/iterate\.h](src/iterate.h), `BOX_CONTIGUOUS`: Iterates through `box` and calls `predicate` until it returns true\.
-
- * Return:  
-   The first `predicate` that returned true, or, if the statement is false on all, null\.
- * Order:  
-   &#927;\(`box.size` &#215; `predicate`\)
+   &#927;\(`box.size`\) &#215; \(&#927;\(`predicate`\) \+ &#927;\(`action`\)\)
 
 
 
@@ -395,7 +395,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
  * Exceptional return: realloc  
  * Order:  
-   &#927;\(|`src`| &#215; `copy`\)
+   &#927;\(|`src`|\) &#215; &#927;\(`copy`\)
 
 
 
@@ -407,7 +407,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 [src/iterate\.h](src/iterate.h), `BOX_CONTIGUOUS`: For all elements of `box`, calls `keep`, and if false, lazy deletes that item\. Calls `destruct` if not\-null before deleting\.
 
  * Order:  
-   &#927;\(|`box`| &#215; `keep` &#215; `destruct`\)
+   &#927;\(|`box`|\) \(&#215; O\(`keep`\) \+ O\(`destruct`\)\)
 
 
 
@@ -419,7 +419,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 [src/iterate\.h](src/iterate.h), `BOX_CONTIGUOUS`: Removes at either end of `box` the things that `predicate`, if it exists, returns true\.
 
  * Order:  
-   &#927;\(`box.size` &#215; `predicate`\)
+   &#927;\(`box.size`\) &#215; &#927;\(`predicate`\)
 
 
 

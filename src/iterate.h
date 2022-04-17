@@ -47,10 +47,10 @@ typedef void (*PITR_(action_fn))(PITR_(element));
 typedef int (*PITR_(predicate_fn))(const PITR_(element_c));
 
 
-/** <src/iterate.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
- `predicate` until it returns true.
- @return The first `predicate` that returned true, or, if the statement is
- false on all, null. @order \O(`box.size` \times `predicate`) @allow */
+/** <src/iterate.h>: Iterates through `box` and calls `predicate` until it
+ returns true. @return The first `predicate` that returned true, or, if the
+ statement is false on all, null.
+ @order \O(`box.size`) \times \O(`predicate`) @allow */
 static PITR_(element) ITR_(any)(PITR_(box) *const box,
 	const PITR_(predicate_fn) predicate) {
 	struct BOX_(iterator) it;
@@ -61,9 +61,9 @@ static PITR_(element) ITR_(any)(PITR_(box) *const box,
 	return 0;
 }
 
-/** <src/iterate.h>, `BOX_ITERATOR`: Iterates through `box` and calls `action`
- on all the elements. The topology of the list must not change while in this
- function. @order \O(|`box`| \times `action`) @allow */
+/** <src/iterate.h>: Iterates through `box` and calls `action` on all the
+ elements. The topology of the list must not change while in this function.
+ @order \O(|`box`|) \times \O(`action`) @allow */
 static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
 	struct BOX_(iterator) it;
 	PITR_(element) i;
@@ -71,10 +71,10 @@ static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
 	for(it = BOX_(begin)(box); i = BOX_(next)(&it); ) action(i);
 }
 
-/** <src/iterate.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
- `action` on all the elements for which `predicate` returns true. The topology
- of the list should not change while in this function.
- @order \O(`box.size` \times `predicate` \times `action`) @allow */
+/** <src/iterate.h>: Iterates through `box` and calls `action` on all the
+ elements for which `predicate` returns true. The topology of the list must not
+ change while in this function.
+ @order \O(`box.size`) \times (\O(`predicate`) + \O(`action`)) @allow */
 static void ITR_(if_each)(PITR_(box) *const box,
 	const PITR_(predicate_fn) predicate, const PITR_(action_fn) action) {
 	struct BOX_(iterator) it;
@@ -84,15 +84,12 @@ static void ITR_(if_each)(PITR_(box) *const box,
 		if(predicate(i)) action(i);
 }
 
-/* <!-- fixme: could be implemented with a less restrictive setting than
- `BOX_ITERATOR`, as they only need `BOX_CONTENT`. */
 #ifdef BOX_CONTIGUOUS /* <!-- contiguous */
-/* --> */
 
 /** <src/iterate.h>, `BOX_CONTIGUOUS`: For all elements of `src`, calls `copy`,
  and if true, lazily copies the elements to `dst`. `dst` and `src` can not be
  the same but `src` can be null, (in which case, it does nothing.)
- @order \O(|`src`| \times `copy`) @throws[realloc] @allow */
+ @order \O(|`src`|) \times \O(`copy`) @throws[realloc] @allow */
 static int ITR_(copy_if)(PITR_(box) */*restrict*/const dst,
 	const PITR_(box) */*restrict*/const src, const PITR_(predicate_fn) copy) {
 	PITR_(element) i, fresh, end, rise = 0;
@@ -122,7 +119,7 @@ static int ITR_(copy_if)(PITR_(box) */*restrict*/const dst,
 
 /** <src/iterate.h>, `BOX_CONTIGUOUS`: For all elements of `box`, calls `keep`,
  and if false, lazy deletes that item. Calls `destruct` if not-null before
- deleting. @order \O(|`box`| \times `keep` \times `destruct`) @allow */
+ deleting. @order \O(|`box`|) (\times O(`keep`) + O(`destruct`)) @allow */
 static void ITR_(keep_if)(PITR_(box) *const box,
 	const PITR_(predicate_fn) keep, const PITR_(action_fn) destruct) {
 	PITR_(element) erase = 0, i, retain = 0, end;
@@ -159,7 +156,7 @@ static void ITR_(keep_if)(PITR_(box) *const box,
 
 /** <src/iterate.h>, `BOX_CONTIGUOUS`: Removes at either end of `box` the
  things that `predicate`, if it exists, returns true.
- @order \O(`box.size` \times `predicate`) @allow */
+ @order \O(`box.size`) \times \O(`predicate`) @allow */
 static void ITR_(trim)(PITR_(box) *const box,
 	const PITR_(predicate_fn) predicate) {
 	size_t right, left;
@@ -180,8 +177,8 @@ static void ITR_(trim)(PITR_(box) *const box,
 
 static void PITR_(unused_iterate_coda)(void);
 static void PITR_(unused_function)(void) {
-#ifdef BOX_CONTIGUOUS
 	ITR_(any)(0, 0); ITR_(each)(0, 0); ITR_(if_each)(0, 0, 0);
+#ifdef BOX_CONTIGUOUS
 	ITR_(copy_if)(0, 0, 0); ITR_(keep_if)(0, 0, 0); ITR_(trim)(0, 0);
 #endif
 	PITR_(unused_iterate_coda)(); }
