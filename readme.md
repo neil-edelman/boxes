@@ -57,15 +57,17 @@ to generate lightweight and statically type-safe containers.  The
 documented parameters in each project are pre-processor macros.
 `boxes` is a simple automated dependancy and build system, ensuring
 these independent but related projects all work together during
-development.  The `sh`-script `autoclone`, downloads them all.
+development.
 
 ## Details ##
 
 Errors are returned with `errno`. Assertions are used at runtime;
 to stop them, define `#define NDEBUG` before `assert.h`. The source
 files are `UTF-8` and may contain multi-byte literals. No effort
-has been made to synchronize for multi-threaded execution. In a
-project, one can pick and choose which ones are appropriate.
+has been made to synchronize for multi-threaded execution. One does
+not need to download `boxes` to use the individual projects: one
+can pick which ones are appropriate. The `sh`-script `autoclone`
+downloads them all.
 
 ## Internal Interace ##
 
