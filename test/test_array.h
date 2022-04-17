@@ -680,14 +680,11 @@ static void PCMP_(test_bounds)(void) {
 		z, PA_(array_to_string)(&a), (unsigned long)size);
 	ret = CMP_(insert_after)(&a, &elem);
 	assert(ret && a.size == size + 1);
-	printf("insert: now %s.\n", PA_(array_to_string)(&a));
 	ret = memcmp(&elem, a.data + low, sizeof elem), assert(!ret);
-	printf("AHA!!! low = %u/%u.\n", (unsigned)low, (unsigned)size);
 	A_(array_clear)(&a);
 	cont = A_(array_append)(&a, size), assert(cont);
-	printf("HERE:\n");
 	for(i = 0; i < size; i++) memcpy(cont + i, &elem, sizeof elem);
-	printf("bounds: %s.\n", PA_(array_to_string)(&a));
+	printf("bounds: now %s.\n", PA_(array_to_string)(&a));
 	low = CMP_(lower_bound)(&a, &elem);
 	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
 	assert(low == 0);
