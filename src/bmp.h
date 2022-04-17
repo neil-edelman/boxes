@@ -10,7 +10,8 @@
  most-signifiant bit first.
 
  @param[BMP_NAME, BMP_BITS]
- `<B>` that satisfies `C` naming conventions when mangled and a number of bits associated therewith, which must be positive; required. `<PB>` is private,
+ `<B>` that satisfies `C` naming conventions when mangled and a number of bits
+ associated therewith, which must be positive; required. `<PB>` is private,
  whose names are prefixed in a manner to avoid collisions.
 
  @std C89/90 */
