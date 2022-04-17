@@ -19,7 +19,8 @@
  */
 
 /* `BOX_CONTENT`: is_content, forward, forward_begin, forward_next. */
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) || !defined(ITR_)
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
+	|| !defined(BOX_ITERATOR) || !defined(ITR_)
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -43,22 +44,31 @@ typedef const BOX_CONTENT PITR_(element_c);
 /** <src/iterate.h>: Operates by side-effects. */
 typedef void (*PITR_(action_fn))(PITR_(element));
 /** <src/iterate.h>: Returns a boolean given read-only. */
-typedef int (*PITR_(predicate_fn))(const PITR_(element));
+typedef int (*PITR_(predicate_fn))(const PITR_(element_c));
 
-#ifdef BOX_CONTIGUOUS /* <!-- contiguous */
-
-/* <!-- fixme: could be implemented with a less restrictive setting than
- `BOX_ITERATOR`, as they only need `BOX_CONTENT`. */
 
 /** <src/iterate.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
- `action` on all the elements. The topology of the list must not change while
- in this function.
- @order \O(|`box`| \times `action`) @allow */
+ `predicate` until it returns true.
+ @return The first `predicate` that returned true, or, if the statement is
+ false on all, null. @order \O(`box.size` \times `predicate`) @allow */
+static PITR_(element) ITR_(any)(PITR_(box) *const box,
+	const PITR_(predicate_fn) predicate) {
+	struct BOX_(iterator) it;
+	PITR_(element) i;
+	assert(box && predicate);
+	for(it = BOX_(begin)(box); i = BOX_(next)(&it); )
+		if(predicate(i)) return i;
+	return 0;
+}
+
+/** <src/iterate.h>, `BOX_ITERATOR`: Iterates through `box` and calls `action`
+ on all the elements. The topology of the list must not change while in this
+ function. @order \O(|`box`| \times `action`) @allow */
 static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
-	PITR_(element) i, end;
+	struct BOX_(iterator) it;
+	PITR_(element) i;
 	assert(box && action);
-	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end; i++)
-		action(i);
+	for(it = BOX_(begin)(box); i = BOX_(next)(&it); ) action(i);
 }
 
 /** <src/iterate.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
@@ -67,25 +77,16 @@ static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
  @order \O(`box.size` \times `predicate` \times `action`) @allow */
 static void ITR_(if_each)(PITR_(box) *const box,
 	const PITR_(predicate_fn) predicate, const PITR_(action_fn) action) {
-	PITR_(element) i, end;
+	struct BOX_(iterator) it;
+	PITR_(element) i;
 	assert(box && predicate && action);
-	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end; i++)
+	for(it = BOX_(begin)(box); i = BOX_(next)(&it); )
 		if(predicate(i)) action(i);
 }
 
-/** <src/iterate.h>, `BOX_CONTIGUOUS`: Iterates through `box` and calls
- `predicate` until it returns true.
- @return The first `predicate` that returned true, or, if the statement is
- false on all, null. @order \O(`box.size` \times `predicate`) @allow */
-static PITR_(element) ITR_(any)(const PITR_(box) *const box,
-	const PITR_(predicate_fn) predicate) {
-	PITR_(element) i, end;
-	assert(box && predicate);
-	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end; i++)
-		if(predicate(i)) return i;
-	return 0;
-}
-
+/* <!-- fixme: could be implemented with a less restrictive setting than
+ `BOX_ITERATOR`, as they only need `BOX_CONTENT`. */
+#ifdef BOX_CONTIGUOUS /* <!-- contiguous */
 /* --> */
 
 /** <src/iterate.h>, `BOX_CONTIGUOUS`: For all elements of `src`, calls `copy`,
@@ -180,7 +181,7 @@ static void ITR_(trim)(PITR_(box) *const box,
 static void PITR_(unused_iterate_coda)(void);
 static void PITR_(unused_function)(void) {
 #ifdef BOX_CONTIGUOUS
-	ITR_(each)(0, 0); ITR_(if_each)(0, 0, 0); ITR_(any)(0, 0);
+	ITR_(any)(0, 0); ITR_(each)(0, 0); ITR_(if_each)(0, 0, 0);
 	ITR_(copy_if)(0, 0, 0); ITR_(keep_if)(0, 0, 0); ITR_(trim)(0, 0);
 #endif
 	PITR_(unused_iterate_coda)(); }

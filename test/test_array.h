@@ -355,7 +355,7 @@ static void PA_(test_replace)(void) {
 #ifdef HAVE_ITERATE_H /* <!-- iterate */
 /** @implements <PA>Predicate
  @return A set sequence of ones and zeros, independant of `data`. */
-static int PA_(keep_deterministic)(PA_(type) *const data) {
+static int PA_(keep_deterministic)(const PA_(type) *const data) {
 	static size_t i;
 	static const int things[] = { 1,0,0,0,0,1,0,0,1,1, 0,1,0,1,0,1,0 };
 	const int predicate = things[i++];
@@ -371,12 +371,12 @@ static void PA_(increment)(PA_(type) *const t) {
 }
 /** True, independent of `t`.
  @implements <PA>Predicate */
-static int PA_(true)(PA_(type) *const t) {
+static int PA_(true)(const PA_(type) *const t) {
 	(void)t;
 	return 1;
 }
 /** @implements <PA>Predicate @return Is `t` zero-filled? */
-static int PA_(zero_filled)(PA_(type) *const t) {
+static int PA_(zero_filled)(const PA_(type) *const t) {
 	const char *c = (const char *)t, *const end = (const char *)(t + 1);
 	assert(t);
 	while(c < end) if(*c++) return 0;
