@@ -8,7 +8,7 @@
 </tr><tr>
 	<td><a href="https://github.com/neil-edelman/array">array</a></td>
 	<td>contiguous dynamic array</td>
-	<td>array_coda, to_string</td>
+	<td>to_string, iterate, compare</td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/bmp">bmp</a></td>
