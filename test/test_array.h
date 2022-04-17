@@ -684,6 +684,7 @@ static void PCMP_(test_bounds)(void) {
 	ret = memcmp(&elem, a.data + low, sizeof elem), assert(!ret);
 	A_(array_clear)(&a);
 	cont = A_(array_append)(&a, size), assert(cont);
+	printf("HERE:\n");
 	for(i = 0; i < size; i++) memcpy(cont + i, &elem, sizeof elem);
 	printf("bounds: %s.\n", PA_(array_to_string)(&a));
 	low = CMP_(lower_bound)(&a, &elem);
