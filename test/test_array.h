@@ -85,7 +85,8 @@ static void PA_(test_basic)(void) {
 	/* This is un-necessary, but `valgrind` reports an error if we don't. */
 	memset(items, 0, sizeof items);
 	/* Get elements. */
-	for(item = items, item1 = item + items_size; item < item1; item++) PA_(filler)(item);
+	for(item = items, item1 = item + items_size; item < item1; item++)
+		PA_(filler)(item);
 
 	printf("Test one element.\n");
 	item = A_(array_new)(&a); /* Add. */
@@ -362,22 +363,18 @@ static int PA_(keep_deterministic)(PA_(type) *const data) {
 	i %= sizeof things / sizeof *things;
 	return predicate;
 }
-
 static int PA_(num);
-
 /** Increments a global variable, independent of `t`. @implements <PA>action */
 static void PA_(increment)(PA_(type) *const t) {
 	(void)t;
 	PA_(num)++;
 }
-
 /** True, independent of `t`.
  @implements <PA>Predicate */
 static int PA_(true)(PA_(type) *const t) {
 	(void)t;
 	return 1;
 }
-
 /** @implements <PA>Predicate @return Is `t` zero-filled? */
 static int PA_(zero_filled)(PA_(type) *const t) {
 	const char *c = (const char *)t, *const end = (const char *)(t + 1);
@@ -521,6 +518,7 @@ static void A_(array_test)(void) {
 /* !traits --><!-- compare */
 #elif defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL)
 
+
 /** Fills `fill` that is not equal to `neq` if possible. */
 static int PCMP_(fill_unique)(PA_(type) *const fill,
 	const PA_(type) *const neq) {
@@ -548,61 +546,68 @@ static void PCMP_(test_compactify)(void) {
 	}
 	if(!A_(array_append)(&a, ts_size)) { assert(0); return; }
 	memcpy(a.data, ts, sizeof *t * ts_size);
-	printf("Before: %s.\n", PA_(array_to_string)(&a));
+	printf("\ntest compactify: %s.\n", PA_(array_to_string)(&a));
 	CMP_(unique)(&a);
 	printf("Compactified: %s.\n", PA_(array_to_string)(&a));
 	assert(a.size == ts_size / 3);
 #ifdef ARRAY_COMPARE /* <!-- compare */
-	CMP_(sort)(&a);
-	printf("Sorted: %s.\n", PA_(array_to_string)(&a));
-	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(PCMP_(compare)(t, t + 1) <= 0);
 	CMP_(reverse)(&a);
 	printf("Reverse: %s.\n", PA_(array_to_string)(&a));
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
 		assert(PCMP_(compare)(t, t + 1) >= 0);
+	CMP_(sort)(&a);
+	printf("Sorted: %s.\n", PA_(array_to_string)(&a));
+	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
+		assert(PCMP_(compare)(t, t + 1) <= 0);
 #endif /* compare --> */
 	A_(array_)(&a);
 }
 
-#if 0 /* <!---------------------------------------------------------------*/
-
-static void PCMP_(test_contiguous)(void) {
-	/* FIXME: this is not tested. */
-#ifdef ARRAY_CODA /* <!-- contiguous */
-	struct A_(array) a = A_(array)();
+static void PCMP_(test_compare)(void) {
+	struct A_(array) a = A_(array)(), b = A_(array)();
+	struct A_(array_iterator) it;
 	PA_(type) ts[9], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	size_t i;
-	assert(A_(array_previous)(0, t) == 0);
-	assert(A_(array_next)(0, t) == 0);
+	int cmp;
 	/* `valgrind` is giving me grief if I don't do this? */
 	memset(ts, 0, sizeof ts);
 	/* Get elements. */
 	for(t = ts, t1 = t + ts_size; t < t1; t++) PA_(filler)(t);
 	if(!A_(array_append)(&a, ts_size)) { assert(0); return; }
 	memcpy(a.data, ts, sizeof *t * ts_size);
-	printf("Contiguous: %s.\n", PA_(array_to_string)(&a));
+	printf("\ntest compare: %s.\n", PA_(array_to_string)(&a));
 	assert(ts_size == a.size);
 	t = 0, i = 0;
-	while(t = A_(array_next)(&a, t)) {
+	it = A_(array_begin)(&a);
+	while(t = A_(array_next)(&it)) {
 		char z[12];
 		PA_(to_string)(t, &z);
-		printf("next %s;\n", z);
+		printf("next %s; ", z);
 		assert(t = a.data + i++);
 	}
-	t = 0, i = ts_size;
-	while(t = A_(array_previous)(&a, t)) {
+	assert(i == ts_size);
+	while(t = A_(array_previous)(&it)) {
 		char z[12];
 		PA_(to_string)(t, &z);
-		printf("previous %s;\n", z);
+		printf("previous %s; ", z);
 		assert(t = a.data + --i);
 	}
+	printf("done.\n");
+	assert(!i);
+	cmp = CMP_(is_equal)(0, 0), assert(cmp);
+	printf("a: %s.\n"
+		"b: %s.\n", PA_(array_to_string)(&a), PA_(array_to_string)(&b));
+	cmp = CMP_(is_equal)(&a, &b), assert(!cmp);
+	cmp = CMP_(is_equal)(&a, 0), assert(!cmp);
+	cmp = CMP_(is_equal)(0, &b), assert(cmp); /* Null == size 0. */
+	if(!A_(array_append)(&b, ts_size)) { assert(0); return; }
+	memcpy(b.data, ts, sizeof *t * ts_size);
+	printf("now b: %s.\n", PA_(array_to_string)(&b));
+	cmp = CMP_(is_equal)(&a, &b), assert(cmp);
 	A_(array_)(&a);
-#endif /* contiguous --> */
+	A_(array_)(&b);
 }
-
-#endif /* ----------------------------------------------------------------> */
 
 #ifdef ARRAY_COMPARE /* <!-- comp */
 static int PCMP_(cmp_void)(const void *const a, const void *const b)
@@ -649,6 +654,7 @@ static void PCMP_(test_bounds)(void) {
 	const size_t size = 10;
 	size_t i, low, high;
 	PA_(type) elem;
+	int ret;
 	char z[12];
 	printf("\ntest bounds:\n");
 	if(!A_(array_append)(&a, size)) { assert(0); return; }
@@ -667,11 +673,11 @@ static void PCMP_(test_bounds)(void) {
 	assert(high <= a.size);
 	assert(!high || PCMP_(compare)(a.data + high - 1, &elem) <= 0);
 	assert(high == a.size || PCMP_(compare)(&elem, a.data + high) < 0);
-	/*ret = CMP_(insert_after)(&a, &elem);
+	ret = CMP_(insert_after)(&a, &elem);
 	printf("insert: %s.\n", PA_(array_to_string)(&a));
 	assert(ret && a.size == size + 1);
 	ret = memcmp(&elem, a.data + low, sizeof elem);
-	assert(!ret);*/
+	assert(!ret);
 	A_(array_clear)(&a);
 	A_(array_append)(&a, size);
 	for(i = 0; i < size; i++) memcpy(a.data + i, &elem, sizeof elem);
@@ -685,7 +691,6 @@ static void PCMP_(test_bounds)(void) {
 	A_(array_)(&a);
 #endif /* compare --> */
 }
-
 
 /** `ARRAY_TEST`, `ARRAY_COMPARE` -> `ARRAY_TO_STRING`, !`NDEBUG`: will be
  tested on stdout. @allow */
@@ -703,10 +708,11 @@ static void CMP_(compare_test)(void) {
 		"is equal <" QUOTE(ARRAY_IS_EQUAL)
 #endif
 		">:\n");
-	PCMP_(test_compactify)();
-	/*PCMP_(test_contiguous)();*/
+	errno = 0;
 	PCMP_(test_sort)();
 	PCMP_(test_bounds)();
+	PCMP_(test_compactify)();
+	PCMP_(test_compare)();
 	assert(errno == 0);
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array compare.\n\n");
 }

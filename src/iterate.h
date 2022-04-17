@@ -176,9 +176,11 @@ static void ITR_(trim)(PITR_(box) *const box,
 
 #endif /* contiguous --> */
 
-/*static void PITR_(unused_function_coda)(void);
-static void PITR_(unused_function)(void)
-	{ ITR_(copy_if)(0, 0, 0); ITR_(keep_if)(0, 0, 0); ITR_(trim)(0, 0);
+static void PITR_(unused_iterate_coda)(void);
+static void PITR_(unused_function)(void) {
+#ifdef BOX_CONTIGUOUS
 	ITR_(each)(0, 0); ITR_(if_each)(0, 0, 0); ITR_(any)(0, 0);
-	PITR_(unused_function_coda)(); }
-static void PITR_(unused_function_coda)(void) { PITR_(unused_function)(); }*/
+	ITR_(copy_if)(0, 0, 0); ITR_(keep_if)(0, 0, 0); ITR_(trim)(0, 0);
+#endif
+	PITR_(unused_iterate_coda)(); }
+static void PITR_(unused_iterate_coda)(void) { PITR_(unused_function)(); }

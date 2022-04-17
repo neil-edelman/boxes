@@ -163,7 +163,6 @@ static PA_(type) *PA_(previous)(struct PA_(iterator) *const it) {
 		else if(--it->cur) element = it->a->data + it->cur - 1;
 		else element = 0; /* Just ended. */
 	}
-	printf("(%lu; %d)\n", it->cur, it->dir);
 	return element;
 }
 /** Removes the element last returned by `it`. (Untested.)

@@ -15,10 +15,6 @@
 #include "../src/array.h"
 
 
-/* This should not be here, but there is now a
- dependency with TEST on ITERATE, (that should not be there.) */
-//#define HAVE_ITERATE_H
-
 /* Struct array. */
 struct str4 { char value[4]; };
 static void str4_to_string(const struct str4 *s, char (*const a)[12])

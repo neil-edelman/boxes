@@ -110,9 +110,8 @@ static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
 static int CMP_(insert_after)(PCMP_(box) *const box,
 	const PCMP_(element_c) element) {
 	size_t bound;
-	assert(0 && box && element);
+	assert(box && element);
 	bound = CMP_(upper_bound)(box, element);
-	assert(0);
 	if(!BOX_(append)(box, 1)) return 0;
 	memmove(BOX_(at)(box, bound + 1), BOX_(at)(box, bound),
 		sizeof *element * (BOX_(size)(box) - bound - 1));
@@ -238,12 +237,18 @@ static void CMP_(unique)(PCMP_(box) *const box) { CMP_(unique_merge)(box, 0); }
 
 static void PCMP_(unused_compare_coda)(void);
 static void PCMP_(unused_compare)(void) {
-#if 0
-#ifdef BOX_COMPARE /* <!-- compare */
-	ACC_(compare)(0, 0); ACC_(lower_bound)(0, 0); ACC_(upper_bound)(0, 0);
-	ACC_(insert_after)(0, 0); ACC_(sort)(0); ACC_(reverse)(0);
+#ifdef COMPARE /* <!-- compare */
+	CMP_(compare)(0, 0);
+#ifdef BOX_ACCESS
+	CMP_(lower_bound)(0, 0); CMP_(upper_bound)(0, 0);
+#ifdef BOX_CONTIGUOUS
+	CMP_(insert_after)(0, 0); CMP_(sort)(0); CMP_(reverse)(0);
+#endif
+#endif
 #endif /* compare --> */
-	ACC_(is_equal)(0, 0); ACC_(unique_merge)(0, 0); ACC_(unique)(0);
+	CMP_(is_equal)(0, 0);
+#ifdef BOX_CONTIGUOUS
+	CMP_(unique_merge)(0, 0); CMP_(unique)(0);
 #endif
 	PCMP_(unused_compare_coda)();
 }
