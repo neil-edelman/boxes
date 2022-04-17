@@ -675,13 +675,13 @@ static void PCMP_(test_bounds)(void) {
 	assert(high <= a.size);
 	assert(!high || PCMP_(compare)(a.data + high - 1, &elem) <= 0);
 	assert(high == a.size || PCMP_(compare)(&elem, a.data + high) < 0);
-	ret = CMP_(insert_after)(&a, &elem);
-	assert(ret && a.size == size + 1);
-	ret = memcmp(&elem, a.data + low, sizeof elem);
 	PA_(to_string)(&elem, &z);
 	printf("insert: %s into %s of size %lu.\n",
 		z, PA_(array_to_string)(&a), (unsigned long)size);
-	assert(!ret);
+	ret = CMP_(insert_after)(&a, &elem);
+	assert(ret && a.size == size + 1);
+	printf("insert: now %s.\n", PA_(array_to_string)(&a));
+	ret = memcmp(&elem, a.data + low, sizeof elem), assert(!ret);
 	A_(array_clear)(&a);
 	cont = A_(array_append)(&a, size), assert(cont);
 	for(i = 0; i < size; i++) memcpy(cont + i, &elem, sizeof elem);
