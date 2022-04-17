@@ -655,7 +655,7 @@ static void PCMP_(test_bounds)(void) {
 	struct A_(array) a = A_(array)();
 	const size_t size = 10;
 	size_t i, low, high;
-	PA_(type) elem;
+	PA_(type) elem, *cont;
 	int ret;
 	char z[12];
 	printf("\ntest bounds:\n");
@@ -676,13 +676,15 @@ static void PCMP_(test_bounds)(void) {
 	assert(!high || PCMP_(compare)(a.data + high - 1, &elem) <= 0);
 	assert(high == a.size || PCMP_(compare)(&elem, a.data + high) < 0);
 	ret = CMP_(insert_after)(&a, &elem);
-	printf("insert: %s.\n", PA_(array_to_string)(&a));
 	assert(ret && a.size == size + 1);
 	ret = memcmp(&elem, a.data + low, sizeof elem);
+	PA_(to_string)(&elem, &z);
+	printf("insert: %s into %s of size %lu.\n",
+		z, PA_(array_to_string)(&a), (unsigned long)size);
 	assert(!ret);
 	A_(array_clear)(&a);
-	A_(array_append)(&a, size);
-	for(i = 0; i < size; i++) memcpy(a.data + i, &elem, sizeof elem);
+	cont = A_(array_append)(&a, size), assert(cont);
+	for(i = 0; i < size; i++) memcpy(cont + i, &elem, sizeof elem);
 	printf("bounds: %s.\n", PA_(array_to_string)(&a));
 	low = CMP_(lower_bound)(&a, &elem);
 	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
