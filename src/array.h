@@ -74,9 +74,9 @@
 #define PA_(n) ARRAY_CAT(array, A_(n))
 #endif /* idempotent --> */
 
-#if !defined(__STDC__) || !defined(__STDC_VERSION__) \
-	|| __STDC_VERSION__ < 199901L
-#define ARRAY_RESTRICT
+#if !defined(restrict) && (!defined(__STDC__) || !defined(__STDC_VERSION__) \
+	|| __STDC_VERSION__ < 199901L)
+#define ARRAY_RESTRICT /* Undo this at the end. */
 #define restrict /* Attribute only in C99+. */
 #endif
 
@@ -493,5 +493,6 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #undef ARRAY_COMPARE_TRAIT
 #undef ARRAY_TRAITS
 #ifdef ARRAY_RESTRICT
+#undef ARRAY_RESTRICT
 #undef restrict
 #endif
