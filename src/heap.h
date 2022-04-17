@@ -340,12 +340,6 @@ static int H_(heap_affix)(struct H_(heap) *restrict const heap,
 	return 1;
 }
 
-#ifdef HAVE_ITERATE_H /* <!-- iterate */
-#define ITR_(n) ARRAY_CAT(H_(heap), n)
-#include "iterate.h" /** \include */
-#undef ITR_
-#endif /* iterate --> */
-
 #ifdef HEAP_TEST /* <!-- test */
 /* Forward-declare. */
 static void (*PH_(to_string))(const PH_(node) *, char (*const)[12]);
