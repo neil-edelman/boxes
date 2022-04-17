@@ -5,7 +5,7 @@ Header [src/heap\.h](src/heap.h) depends on [src/array\.h](src/array.h); example
 ## Priority\-queue ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PH&gt;node](#user-content-typedef-23ae637f), [&lt;PITR&gt;action_fn](#user-content-typedef-49d9168b), [&lt;PITR&gt;predicate_fn](#user-content-typedef-c5016dba), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PH&gt;node](#user-content-typedef-23ae637f), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;heapnode](#user-content-tag-9938042f), [&lt;H&gt;heap](#user-content-tag-8ef1078f)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -29,8 +29,6 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Wil
    Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
  * Parameter: HEAP\_TO\_STRING\_NAME, HEAP\_TO\_STRING  
    To string trait contained in [src/to\_string\.h](src/to_string.h)\. An optional mangled name for uniqueness and function implementing [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
- * Parameter: HAVE\_ITERATE\_H  
-   The `<ITR>` functions need this value\. This includes [src/iterate\.h](src/iterate.h), which take no parameters\. Some functions may only be available for some boxes\. This does not expire after box completion\.
  * Standard:  
    C89
  * Dependancies:  
@@ -60,22 +58,6 @@ Returns a positive result if `a` is out\-of\-order with respect to `b`, inducing
 <code>typedef struct &lt;H&gt;heapnode <strong>&lt;PH&gt;node</strong>;</code>
 
 If `HEAP_VALUE` is set, \(priority, value\) set by [&lt;H&gt;heapnode](#user-content-tag-9938042f), otherwise it's a \(priority\) set directly by [&lt;PH&gt;priority](#user-content-typedef-775cba47)\.
-
-
-
-### <a id = "user-content-typedef-49d9168b" name = "user-content-typedef-49d9168b">&lt;PITR&gt;action_fn</a> ###
-
-<code>typedef void(*<strong>&lt;PITR&gt;action_fn</strong>)(&lt;PITR&gt;element);</code>
-
-[src/iterate\.h](src/iterate.h): Operates by side\-effects\.
-
-
-
-### <a id = "user-content-typedef-c5016dba" name = "user-content-typedef-c5016dba">&lt;PITR&gt;predicate_fn</a> ###
-
-<code>typedef int(*<strong>&lt;PITR&gt;predicate_fn</strong>)(const &lt;PITR&gt;element_c);</code>
-
-[src/iterate\.h](src/iterate.h): Returns a boolean given read\-only\.
 
 
 
@@ -132,18 +114,6 @@ Stores the heap as an implicit binary tree in an array called `a`\. To initializ
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-9c9f1648">&lt;H&gt;heap_append</a></td><td>heap, n</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-380c6f8a">&lt;H&gt;heap_affix</a></td><td>heap, master</td></tr>
-
-<tr><td align = right>static &lt;PITR&gt;element</td><td><a href = "#user-content-fn-73c52918">&lt;ITR&gt;any</a></td><td>box, predicate</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-96abfbdb">&lt;ITR&gt;each</a></td><td>box, action</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-6e4cf157">&lt;ITR&gt;if_each</a></td><td>box, predicate, action</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-4b2c205b">&lt;ITR&gt;copy_if</a></td><td>dst, src, copy</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-d816173b">&lt;ITR&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-108e9df6">&lt;ITR&gt;trim</a></td><td>box, predicate</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
@@ -286,81 +256,6 @@ Shallow\-copies and heapifies `master` into `heap`\.
  * Exceptional return: ERANGE, realloc  
  * Order:  
    &#927;\(`heap.size` \+ `copy.size`\)
-
-
-
-
-### <a id = "user-content-fn-73c52918" name = "user-content-fn-73c52918">&lt;ITR&gt;any</a> ###
-
-<code>static &lt;PITR&gt;element <strong>&lt;ITR&gt;any</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code>
-
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `predicate` until it returns true\.
-
- * Return:  
-   The first `predicate` that returned true, or, if the statement is false on all, null\.
- * Order:  
-   &#927;\(`box.size`\) &#215; &#927;\(`predicate`\)
-
-
-
-
-### <a id = "user-content-fn-96abfbdb" name = "user-content-fn-96abfbdb">&lt;ITR&gt;each</a> ###
-
-<code>static void <strong>&lt;ITR&gt;each</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;action_fn <em>action</em>)</code>
-
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements\. The topology of the list must not change while in this function\.
-
- * Order:  
-   &#927;\(|`box`|\) &#215; &#927;\(`action`\)
-
-
-
-
-### <a id = "user-content-fn-6e4cf157" name = "user-content-fn-6e4cf157">&lt;ITR&gt;if_each</a> ###
-
-<code>static void <strong>&lt;ITR&gt;if_each</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>, const &lt;PITR&gt;action_fn <em>action</em>)</code>
-
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list must not change while in this function\.
-
- * Order:  
-   &#927;\(`box.size`\) &#215; \(&#927;\(`predicate`\) \+ &#927;\(`action`\)\)
-
-
-
-
-### <a id = "user-content-fn-4b2c205b" name = "user-content-fn-4b2c205b">&lt;ITR&gt;copy_if</a> ###
-
-<code>static int <strong>&lt;ITR&gt;copy_if</strong>(&lt;PITR&gt;box *restrict const <em>dst</em>, const &lt;PITR&gt;box *restrict const <em>src</em>, const &lt;PITR&gt;predicate_fn <em>copy</em>)</code>
-
-[src/iterate\.h](src/iterate.h), `BOX_CONTIGUOUS`: For all elements of `src`, calls `copy`, and if true, lazily copies the elements to `dst`\. `dst` and `src` can not be the same but `src` can be null, \(in which case, it does nothing\.\)
-
- * Exceptional return: realloc  
- * Order:  
-   &#927;\(|`src`|\) &#215; &#927;\(`copy`\)
-
-
-
-
-### <a id = "user-content-fn-d816173b" name = "user-content-fn-d816173b">&lt;ITR&gt;keep_if</a> ###
-
-<code>static void <strong>&lt;ITR&gt;keep_if</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>keep</em>, const &lt;PITR&gt;action_fn <em>destruct</em>)</code>
-
-[src/iterate\.h](src/iterate.h), `BOX_CONTIGUOUS`: For all elements of `box`, calls `keep`, and if false, lazy deletes that item\. Calls `destruct` if not\-null before deleting\.
-
- * Order:  
-   &#927;\(|`box`|\) \(&#215; O\(`keep`\) \+ O\(`destruct`\)\)
-
-
-
-
-### <a id = "user-content-fn-108e9df6" name = "user-content-fn-108e9df6">&lt;ITR&gt;trim</a> ###
-
-<code>static void <strong>&lt;ITR&gt;trim</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code>
-
-[src/iterate\.h](src/iterate.h), `BOX_CONTIGUOUS`: Removes at either end of `box` the things that `predicate`, if it exists, returns true\.
-
- * Order:  
-   &#927;\(`box.size`\) &#215; &#927;\(`predicate`\)
 
 
 
