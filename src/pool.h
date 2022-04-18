@@ -325,7 +325,7 @@ static const char *(*PP_(pool_to_string))(const struct P_(pool) *);
 
 static void PP_(unused_base_coda)(void);
 static void PP_(unused_base)(void) {
-	PP_(forward_begin)(0); PP_(forward_next)(0);
+	PP_(is_content)(0); PP_(forward_begin)(0); PP_(forward_next)(0);
 	P_(pool)(); P_(pool_)(0); P_(pool_buffer)(0, 0); P_(pool_new)(0);
 	P_(pool_remove)(0, 0); P_(pool_clear)(0); PP_(unused_base_coda)();
 }
