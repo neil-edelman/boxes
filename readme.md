@@ -185,10 +185,10 @@ Cursor; may become invalid after a topological change to any items previous\.
 
 <code>static struct &lt;A&gt;array <strong>&lt;A&gt;array</strong>(void)</code>
 
-This is the same as `{ 0 }` in `C99`, therefore static data is already initialized\.
+Zeroed data \(not all\-bits\-zero\) is initialized\.
 
  * Return:  
-   An initial idle array that takes no extra memory\.
+   An idle array\.
  * Order:  
    &#920;\(1\)
 

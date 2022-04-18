@@ -247,11 +247,11 @@
 
 <p><code>static struct &lt;A&gt;array <strong>&lt;A&gt;array</strong>(void)</code></p>
 
-<p>This is the same as <code>{ 0 }</code> in <code>C99</code>, therefore static data is already initialized.</p>
+<p>Zeroed data (not all-bits-zero) is initialized.</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>An initial idle array that takes no extra memory.</dd>
+	<dd>An idle array.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>

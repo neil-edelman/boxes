@@ -50,6 +50,9 @@
 #if ARRAY_TRAITS > 1
 #error Only one trait per include is allowed; use ARRAY_EXPECT_TRAIT.
 #endif
+#if ARRAY_TRAITS && !defined(BOX)
+#error Trying to define a trait without defining the base datatype.
+#endif
 #if defined(ARRAY_TO_STRING_NAME) && !defined(ARRAY_TO_STRING)
 #error ARRAY_TO_STRING_NAME requires ARRAY_TO_STRING.
 #endif
@@ -82,6 +85,7 @@
 
 
 #if ARRAY_TRAITS == 0 /* <!-- base code */
+#define ARRAY_BASE
 
 
 /* Box override information. */
@@ -208,9 +212,8 @@ static void PA_(tell_size)(struct A_(array) *a, const size_t size)
 struct A_(array_iterator);
 struct A_(array_iterator) { struct PA_(iterator) _; };
 
-/** This is the same as `{ 0 }` in `C99`, therefore static data is already
- initialized. @return An initial idle array that takes no extra memory.
- @order \Theta(1) @allow */
+/** Zeroed data (not all-bits-zero) is initialized.
+ @return An idle array. @order \Theta(1) @allow */
 static struct A_(array) A_(array)(void)
 	{ struct A_(array) a; a.data = 0, a.capacity = a.size = 0; return a; }
 
