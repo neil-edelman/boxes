@@ -99,6 +99,10 @@ possible interfaces include,
 	<td>Returns the element passed-though to get to the next, or null if there are no more.</td>
 	<td>BOX_CONTENT</td>
 </tr><tr>
+	<td>int &lt;BOX&gt;to_back(&lt;BOX&gt;iterator *, &lt;PX&gt;box *restrict)</td>
+	<td>Proposed: Either moves or copies the element under the iterator to another box.</td>
+	<td>BOX_ITERATOR</td>
+</tr><tr>
 	<td>struct &lt;BOX&gt;iterator</td>
 	<td>A bi-directional iterator that supports (at least symbolic) removal. It has a direction, and the state
 	can be one-off the ends at either side.</td>
