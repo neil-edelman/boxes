@@ -54,6 +54,9 @@
 #if HEAP_TRAITS > 1
 #error Only one trait per include is allowed; use HEAP_EXPECT_TRAIT.
 #endif
+#if HEAP_TRAITS && !defined(BOX)
+#error Trying to define a trait without defining the base datatype.
+#endif
 #if defined(HEAP_TO_STRING_NAME) && !defined(HEAP_TO_STRING)
 #error HEAP_TO_STRING_NAME requires HEAP_TO_STRING.
 #endif
