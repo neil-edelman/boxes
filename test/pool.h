@@ -52,8 +52,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <errno.h>
-#if defined(POOL_CAT_) || defined(POOL_CAT) || defined(P_) || defined(PP_) \
-	|| defined(POOL_IDLE)
+#if defined(POOL_CAT_) || defined(POOL_CAT) || defined(P_) || defined(PP_)
 #error Unexpected defines.
 #endif
 /* <Kernighan and Ritchie, 1988, p. 231>. */
@@ -61,7 +60,6 @@
 #define POOL_CAT(n, m) POOL_CAT_(n, m)
 #define P_(n) POOL_CAT(POOL_NAME, n)
 #define PP_(n) POOL_CAT(pool, P_(n))
-#define POOL_IDLE { ARRAY_IDLE, HEAP_IDLE, (size_t)0 }
 /** @return An order on `a`, `b` which specifies a max-heap. */
 static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
 #define HEAP_NAME poolfree
@@ -99,8 +97,8 @@ struct PP_(slot) { size_t size; PP_(type) *slab; };
 #include "array.h"
 
 /** This is a slab memory-manager and free-heap for slab zero. A zeroed pool is
- a valid state. To instantiate to an idle state, see <fn:<P>pool>, `POOL_IDLE`,
- `{0}` (`C99`,) or being `static`.
+ a valid state. To instantiate to an idle state, see <fn:<P>pool>, `{0}`
+ (`C99`,) or being `static`.
 
  ![States.](../doc/states.png) */
 struct P_(pool) {
