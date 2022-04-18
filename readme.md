@@ -5,7 +5,7 @@ Header [src/pool\.h](src/pool.h) depends on [src/heap\.h](src/heap.h) and [src/a
 ## Stable pool ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PP&gt;type](#user-content-typedef-7560d92f), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PP&gt;type](#user-content-typedef-7560d92f), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;P&gt;pool](#user-content-tag-8aba39cb)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -15,7 +15,7 @@ Header [src/pool\.h](src/pool.h) depends on [src/heap\.h](src/heap.h) and [src/a
 
 ![Example of Pool](doc/pool.png)
 
-[&lt;P&gt;pool](#user-content-tag-8aba39cb) is a memory pool that stores only one type, [&lt;PP&gt;type](#user-content-typedef-7560d92f), using [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation)\. Pointers to valid items in the pool are stable, but not generally in any order\. When removal is ongoing and uniformly sampled while reaching a steady\-state size, it will eventually settle in one contiguous region\.
+[&lt;P&gt;pool](#user-content-tag-8aba39cb) is a memory pool that stores only one type, [&lt;PP&gt;type](#user-content-typedef-7560d92f), using [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation)\. A free\-heap in the active\-slab allows random\-access insertions and deletions\. Pointers to valid items in the pool are stable, but not generally in any order\. When removal is ongoing and uniformly sampled while reaching a steady\-state size, it will eventually settle in one contiguous region\.
 
 
 
@@ -24,13 +24,11 @@ Header [src/pool\.h](src/pool.h) depends on [src/heap\.h](src/heap.h) and [src/a
  * Parameter: POOL\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a trait\.
  * Parameter: POOL\_TO\_STRING\_NAME, POOL\_TO\_STRING  
-   To string trait contained in [to\_string\.h](to_string.h); `<PSZ>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\. There can be multiple to string traits, but only one can omit `POOL_TO_STRING_NAME`\. This container is only iterable in the first slab, so this is not very useful except for debugging\.
+   To string trait contained in [src/to\_string\.h](src/to_string.h)\. An optional mangled name for uniqueness and function implementing [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\. \(This container is only iterable in the first slab, so this is not very useful except for debugging\.\)
  * Standard:  
-   C89
+   C89; however, when compiling for segmented memory models, C99 with `uintptr_t` is recommended because of it's implementation\-defined instead of undefined behaviour when comparing pointers from different objects\.
  * Dependancies:  
    [array](https://github.com/neil-edelman/array), [heap](https://github.com/neil-edelman/heap)
- * Caveat:  
-   The `uintptr_t` is C99; we rely on comparisons with `void *`, which is technically undefined behaviour\.
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -43,11 +41,11 @@ A valid tag type set by `POOL_TYPE`\.
 
 
 
-### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
+### <a id = "user-content-typedef-8a8349ca" name = "user-content-typedef-8a8349ca">&lt;PSTR&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(&lt;PSTR&gt;element_c, char(*)[12]);</code>
 
-[to\_string\.h](to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\. `<PSZ>type` is contracted to be an internal iteration type of the box\.
+[src/to\_string\.h](src/to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\.
 
 
 
@@ -69,7 +67,7 @@ This is a slab memory\-manager and free\-heap for slab zero\. A zeroed pool is a
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-8aba39cb">&lt;P&gt;pool</a></td><td>pool</td></tr>
+<tr><td align = right>static struct &lt;P&gt;pool</td><td><a href = "#user-content-fn-8aba39cb">&lt;P&gt;pool</a></td><td></td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-f728a3fc">&lt;P&gt;pool_</a></td><td>pool</td></tr>
 
@@ -81,7 +79,7 @@ This is a slab memory\-manager and free\-heap for slab zero\. A zeroed pool is a
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-96f5dc51">&lt;P&gt;pool_clear</a></td><td>pool</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -91,7 +89,7 @@ This is a slab memory\-manager and free\-heap for slab zero\. A zeroed pool is a
 
 ### <a id = "user-content-fn-8aba39cb" name = "user-content-fn-8aba39cb">&lt;P&gt;pool</a> ###
 
-<code>static void <strong>&lt;P&gt;pool</strong>(struct &lt;P&gt;pool *const <em>pool</em>)</code>
+<code>static struct &lt;P&gt;pool <strong>&lt;P&gt;pool</strong>(void)</code>
 
 Initializes `pool` to idle\.
 
@@ -147,10 +145,6 @@ This pointer is constant until it gets [&lt;P&gt;pool_remove](#user-content-fn-9
 
 Deletes `data` from `pool`\. Do not remove data that is not in `pool`\.
 
-This relies on undefined behaviour \(C89\) or implementation\-defined behaviour \(with `uintptr_t` from `stdint.h`\) because it must place the memory in order\. There is no system\-independent fix that we are aware of\. This will most likely be a problem in segmented memory models\.
-
-
-
  * Return:  
    Success\.
  * Order:  
@@ -171,16 +165,18 @@ Removes all from `pool`, but keeps it's active state, only freeing the smaller b
 
 
 
-### <a id = "user-content-fn-b11709d3" name = "user-content-fn-b11709d3">&lt;SZ&gt;to_string</a> ###
+### <a id = "user-content-fn-751c6337" name = "user-content-fn-751c6337">&lt;STR&gt;to_string</a> ###
 
-<code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
+<code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<PSZ>box` is contracted to be the box itself\. `<SZ>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<STR>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
 
  * Return:  
    Address of the static buffer\.
  * Order:  
    &#920;\(1\)
+
+
 
 
 

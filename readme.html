@@ -39,7 +39,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PP>type">&lt;PP&gt;type</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PP>type">&lt;PP&gt;type</a>, <a href = "#typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<P>pool">&lt;P&gt;pool</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -52,7 +52,7 @@
 
 <p><img alt = "Example of Pool" src = "doc/pool.png" width = 712 height = 469></p>
 
-<p><a href = "#tag:&lt;P&gt;pool">&lt;P&gt;pool</a> is a memory pool that stores only one type, <a href = "#typedef:&lt;PP&gt;type">&lt;PP&gt;type</a>, using <a href = "https://en.wikipedia.org/wiki/Slab_allocation">slab allocation</a>. Pointers to valid items in the pool are stable, but not generally in any order. When removal is ongoing and uniformly sampled while reaching a steady-state size, it will eventually settle in one contiguous region.</p>
+<p><a href = "#tag:&lt;P&gt;pool">&lt;P&gt;pool</a> is a memory pool that stores only one type, <a href = "#typedef:&lt;PP&gt;type">&lt;PP&gt;type</a>, using <a href = "https://en.wikipedia.org/wiki/Slab_allocation">slab allocation</a>. A free-heap in the active-slab allows random-access insertions and deletions. Pointers to valid items in the pool are stable, but not generally in any order. When removal is ongoing and uniformly sampled while reaching a steady-state size, it will eventually settle in one contiguous region.</p>
 
 </div>
 
@@ -62,13 +62,11 @@
 	<dt>Parameter: POOL_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
 	<dt>Parameter: POOL_TO_STRING_NAME, POOL_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; <code>&lt;PSZ&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>POOL_TO_STRING_NAME</code>. This container is only iterable in the first slab, so this is not very useful except for debugging.</dd>
+	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>. An optional mangled name for uniqueness and function implementing <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>. (This container is only iterable in the first slab, so this is not very useful except for debugging.)</dd>
 	<dt>Standard:</dt>
-	<dd>C89</dd>
+	<dd>C89; however, when compiling for segmented memory models, C99 with <code>uintptr_t</code> is recommended because of it's implementation-defined instead of undefined behaviour when comparing pointers from different objects.</dd>
 	<dt>Dependancies:</dt>
 	<dd><a href = "https://github.com/neil-edelman/array">array</a>, <a href = "https://github.com/neil-edelman/heap">heap</a></dd>
-	<dt>Caveat:</dt>
-	<dd>The <code>uintptr_t</code> is C99; we rely on comparisons with <code>void *</code>, which is technically undefined behaviour.</dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
@@ -85,11 +83,11 @@
 
 <div>
 
-<h3><a id = "typedef:<PSZ>to_string_fn" name = "typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></h3>
+<h3><a id = "typedef:<PSTR>to_string_fn" name = "typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(&lt;PSTR&gt;element_c, char(*)[12]);</code></p>
 
-<p><a href = "to_string.h">to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string. <code>&lt;PSZ&gt;type</code> is contracted to be an internal iteration type of the box.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string.</p>
 
 </div>
 
@@ -115,7 +113,7 @@
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<P>pool">&lt;P&gt;pool</a></td><td>pool</td></tr>
+<tr><td align = right>static struct &lt;P&gt;pool</td><td><a href = "#fn:<P>pool">&lt;P&gt;pool</a></td><td></td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<P>pool_">&lt;P&gt;pool_</a></td><td>pool</td></tr>
 
@@ -127,7 +125,7 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<P>pool_clear">&lt;P&gt;pool_clear</a></td><td>pool</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<STR>to_string">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -141,7 +139,7 @@
 
 <h3><a id = "fn:<P>pool" name = "fn:<P>pool">&lt;P&gt;pool</a></h3>
 
-<p><code>static void <strong>&lt;P&gt;pool</strong>(struct &lt;P&gt;pool *const <em>pool</em>)</code></p>
+<p><code>static struct &lt;P&gt;pool <strong>&lt;P&gt;pool</strong>(void)</code></p>
 
 <p>Initializes <code>pool</code> to idle.</p>
 
@@ -209,10 +207,6 @@
 
 <p>Deletes <code>data</code> from <code>pool</code>. Do not remove data that is not in <code>pool</code>.</p>
 
-<p>This relies on undefined behaviour (C89) or implementation-defined behaviour (with <code>uintptr_t</code> from <code>stdint.h</code>) because it must place the memory in order. There is no system-independent fix that we are aware of. This will most likely be a problem in segmented memory models.</p>
-
-</div>
-
 <dl>
 	<dt>Return:</dt>
 	<dd>Success.</dd>
@@ -239,11 +233,11 @@
 
 <div>
 
-<h3><a id = "fn:<SZ>to_string" name = "fn:<SZ>to_string">&lt;SZ&gt;to_string</a></h3>
+<h3><a id = "fn:<STR>to_string" name = "fn:<STR>to_string">&lt;STR&gt;to_string</a></h3>
 
-<p><code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code></p>
+<p><code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;PSZ&gt;box</code> is contracted to be the box itself. <code>&lt;SZ&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;STR&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -251,6 +245,8 @@
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
+
+</div>
 
 </div>
 

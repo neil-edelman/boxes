@@ -32,9 +32,9 @@
 
  @depend [array](https://github.com/neil-edelman/array)
  @depend [heap](https://github.com/neil-edelman/heap)
- @std C89; however, when compiling for segmented memory models, C99
- (`uintptr_t`) is recommended in practice because of undefined behaviour when
- comparing pointers from different objects. */
+ @std C89; however, when compiling for segmented memory models, C99 with
+ `uintptr_t` is recommended because of it's implementation-defined instead of
+ undefined behaviour when comparing pointers from different objects. */
 
 #if !defined(POOL_NAME) || !defined(POOL_TYPE)
 #error Name POOL_NAME undefined or tag type POOL_TYPE undefined.
@@ -304,10 +304,6 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 }
 
 /** Deletes `data` from `pool`. Do not remove data that is not in `pool`.
-
- This relies on undefined behaviour (C89) or implementation-defined behaviour
- (with `uintptr_t` from `stdint.h`) because it must place the memory in order. There is no system-independent fix that we are aware of. This will most likely
- be a problem in segmented memory models.
  @return Success. @order \O(\log \log `items`) @allow */
 static int P_(pool_remove)(struct P_(pool) *const pool,
 	PP_(type) *const data) { return PP_(remove)(pool, data); }
