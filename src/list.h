@@ -11,7 +11,7 @@
  In parlance of <Thareja 2014, Structures>, <tag:<L>list> is a circular
  header, or sentinel, to a doubly-linked list of <tag:<L>listlink>. This is a
  closed structure, such that with with a pointer to any element, it is possible
- to extract the entire list.
+ to extract the entire list. The links will be generally in a larger container.
 
  @param[LIST_NAME]
  `<L>` that satisfies `C` naming conventions when mangled; required. `<PL>` is
@@ -27,29 +27,29 @@
 
  @param[LIST_TO_STRING_NAME, LIST_TO_STRING]
  To string trait contained in <src/to_string.h>. An optional mangled name for
- uniqueness and function implementing <typedef:<PSZ>to_string_fn>.
+ uniqueness and function implementing <typedef:<PSTR>to_string_fn>.
 
  @std C89 */
 
 #ifndef LIST_NAME
 #error Name LIST_NAME undefined.
 #endif
-#if defined(LIST_TO_STRING_NAME) || defined(LIST_TO_STRING) /* <!-- str */
+#if defined(LIST_TO_STRING_NAME) || defined(LIST_TO_STRING)
 #define LIST_TO_STRING_TRAIT 1
-#else /* str --><!-- !str */
+#else
 #define LIST_TO_STRING_TRAIT 0
-#endif /* !str --> */
+#endif
 #if defined(LIST_COMPARE_NAME) || defined(LIST_COMPARE) \
-	|| defined(LIST_IS_EQUAL) /* <!-- comp */
+	|| defined(LIST_IS_EQUAL)
 #define LIST_COMPARE_TRAIT 1
-#else /* comp --><!-- !comp */
+#else
 #define LIST_COMPARE_TRAIT 0
-#endif /* !comp --> */
+#endif
 #define LIST_TRAITS LIST_TO_STRING_TRAIT + LIST_COMPARE_TRAIT
 #if LIST_TRAITS > 1
 #error Only one trait per include is allowed; use LIST_EXPECT_TRAIT.
 #endif
-#if LIST_TRAITS && !defined(LIST_BASE)
+#if LIST_TRAITS && !defined(BOX)
 #error Trying to define a trait without defining the base datatype.
 #endif
 #if defined(LIST_TO_STRING_NAME) && !defined(LIST_TO_STRING)
@@ -73,10 +73,20 @@
 #define PL_(n) LIST_CAT(list, L_(n))
 #endif /* idempotent --> */
 
+#if !defined(restrict) && (!defined(__STDC__) || !defined(__STDC_VERSION__) \
+	|| __STDC_VERSION__ < 199901L)
+#define LIST_RESTRICT /* Undo this at the end. */
+#define restrict /* Attribute only in C99+. */
+#endif
+
 
 #if LIST_TRAITS == 0 /* <!-- base code */
 #define LIST_BASE
 
+
+/* Box override information. */
+#define BOX_ PL_
+#define BOX struct L_(list)
 
 /** Storage of this structure is the responsibility of the caller, who must
  provide a stable pointer while in a list. Generally, one encloses this in a
@@ -84,7 +94,6 @@
  read-only while in the list.
 
  ![States.](../doc/node-states.png) */
-struct L_(listlink);
 struct L_(listlink) { struct L_(listlink) *next, *prev; };
 
 /** Serves as head and tail for linked-list of <tag:<L>listlink>. Use
@@ -103,6 +112,35 @@ struct L_(list) {
 		struct { struct L_(listlink) *next, *zero, *prev; } flat;
 	} u;
 };
+
+#define BOX_CONTENT struct L_(listlink) *
+/** Is `x` not null? @implements `is_content` */
+static int PL_(is_content)(const struct L_(listlink) *const x) { return !!x; }
+/* Since this is a permutation, the iteration is defined by none other then
+ itself. @implements `forward` */
+struct PL_(forward) { const struct L_(listlink) *x; };
+/** @return Before `a`. @implements `forward_begin` */
+static struct PL_(forward) PL_(forward_begin)(const struct L_(list) *const l)
+	{ struct PL_(forward) it; it.x = l ? &l->u.as_head.head : 0; return it; }
+/** Move to next `it`. @return Element or null. @implements `forward_next` */
+static const struct L_(listlink) *PL_(forward_next)(struct PL_(forward) *const
+	it) { return assert(it && it->x), it->x->next ? it->x = it->x->next : 0; }
+
+#if 0
+/** Loads `list` into `it`. @implements begin */
+static void PL_(begin)(struct PL_(iterator) *const it,
+	const struct L_(list) *const list)
+	{ assert(it && list), it->link = L_(list_head)(list); }
+/** Advances `it`. @implements next */
+static const struct L_(listlink) *PL_(next)(struct PL_(iterator) *const it) {
+	struct L_(listlink) *here = it->link;
+	assert(it);
+	if(!here) return 0;
+	it->link = L_(list_next)(it->link);
+	return here;
+}
+#endif
+
 
 /** Operates by side-effects on the node. */
 typedef void (*PL_(action_fn))(struct L_(listlink) *);
@@ -320,32 +358,13 @@ static void L_(list_self_correct)(struct L_(list) *const list) {
 	}
 }
 
-/* <!-- iterate interface */
-
-/* Contains all iteration parameters. (Since this is a permutation, the
- iteration is defined by none other then itself. Used for traits.) */
-struct PL_(iterator) { struct L_(listlink) *link; };
-
-/** Loads `list` into `it`. @implements begin */
-static void PL_(begin)(struct PL_(iterator) *const it,
-	const struct L_(list) *const list)
-	{ assert(it && list), it->link = L_(list_head)(list); }
-
-/** Advances `it`. @implements next */
-static const struct L_(listlink) *PL_(next)(struct PL_(iterator) *const it) {
-	struct L_(listlink) *here = it->link;
-	assert(it);
-	if(!here) return 0;
-	it->link = L_(list_next)(it->link);
-	return here;
-}
-
-/* iterate --> */
-
-/* <!-- box (multiple traits) */
-#define BOX_ PL_
-#define BOX_CONTAINER struct L_(list)
-#define BOX_CONTENTS struct L_(listlink)
+#if 0
+#ifdef HAVE_ITERATE_H /* <!-- iterate */
+#define ITR_(n) LIST_CAT(L_(list), n)
+#include "iterate.h" /** \include */
+#undef ITR_
+#endif /* iterate --> */
+#endif
 
 #ifdef LIST_TEST /* <!-- test */
 /* Forward-declare. */
@@ -362,7 +381,7 @@ static void PL_(unused_base)(void) {
 	L_(list_shift)(0); L_(list_pop)(0); L_(list_to)(0, 0);
 	L_(list_to_before)(0, 0); L_(list_to_if)(0, 0, 0); L_(list_for_each)(0, 0);
 	L_(list_any)(0, 0); L_(list_self_correct)(0);
-	PL_(begin)(0, 0); PL_(next)(0); PL_(unused_base_coda)();
+	PL_(unused_base_coda)();
 }
 static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 
@@ -370,20 +389,20 @@ static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 #elif defined(LIST_TO_STRING) /* base code --><!-- to string trait */
 
 
-#ifdef LIST_TO_STRING_NAME /* <!-- name */
-#define SZ_(n) LIST_CAT(L_(list), LIST_CAT(LIST_TO_STRING_NAME, n))
-#else /* name --><!-- !name */
-#define SZ_(n) LIST_CAT(L_(list), n)
-#endif /* !name --> */
+#ifdef LIST_TO_STRING_NAME
+#define STR_(n) LIST_CAT(L_(list), LIST_CAT(LIST_TO_STRING_NAME, n))
+#else
+#define STR_(n) LIST_CAT(L_(list), n)
+#endif
 #define TO_STRING LIST_TO_STRING
 #include "to_string.h" /** \include */
 #ifdef LIST_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef LIST_TEST
-static PSZ_(to_string_fn) PL_(to_string) = PSZ_(to_string);
+static PSTR_(to_string_fn) PL_(to_string) = PSTR_(to_string);
 static const char *(*PL_(list_to_string))(const struct L_(list) *)
-	= &SZ_(to_string);
+	= &STR_(to_string);
 #endif /* expect --> */
-#undef SZ_
+#undef STR_
 #undef LIST_TO_STRING
 #ifdef LIST_TO_STRING_NAME
 #undef LIST_TO_STRING_NAME
@@ -403,6 +422,10 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *)
 #include "../test/test_list.h"
 #endif /* test --> */
 #undef LC_
+
+/***************/
+
+
 #ifdef LIST_COMPARE_NAME
 #undef LIST_COMPARE_NAME
 #endif
@@ -425,11 +448,14 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *)
 #endif
 #undef LIST_NAME
 #undef BOX_
-#undef BOX_CONTAINER
-#undef BOX_CONTENTS
-#undef LIST_BASE
-/* box (multiple traits) --> */
+#undef BOX
+#undef BOX_CONTENT
+/*#undef BOX_ITERATOR*/
 #endif /* !trait --> */
 #undef LIST_TO_STRING_TRAIT
 #undef LIST_COMPARE_TRAIT
 #undef LIST_TRAITS
+#ifdef LIST_RESTRICT
+#undef LIST_RESTRICT
+#undef restrict
+#endif

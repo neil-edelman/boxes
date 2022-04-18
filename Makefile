@@ -31,7 +31,8 @@ java_srcs    := $(call rwildcard, $(src), *.java)
 all_c_srcs   := $(call rwildcard, $(src), *.c)
 c_re_srcs    := $(call rwildcard, $(src), *.re.c)
 c_rec_srcs   := $(call rwildcard, $(src), *.re_c.c)
-c_srcs       := $(filter-out $(c_re_srcs) $(c_rec_srcs), $(all_c_srcs))
+c_gperf_srcs := $(call rwildcard, $(src), *.gperf.c)
+c_srcs       := $(filter-out $(c_re_srcs) $(c_rec_srcs) $(c_gperf_srcs), $(all_c_srcs))
 h_srcs       := $(call rwildcard, $(src), *.h)
 y_srcs       := $(call rwildcard, $(src), *.y)
 all_c_tests  := $(call rwildcard, $(test), *.c)
@@ -55,9 +56,10 @@ c_re_test_builds := $(patsubst $(test)/%.re.c, $(build)/$(test)/%.c, $(c_re_test
 c_rec_builds := $(patsubst $(src)/%.re_c.c, $(build)/%.c, $(c_rec_srcs))
 c_rec_test_builds := $(patsubst $(test)/%.re_c.c, $(build)/%.c, $(c_rec_tests))
 c_y_builds := $(patsubst $(src)/%.y, $(build)/%.c, $(y_srcs))
-# together .re/.re_c/.y
+c_gperf_builds := $(patsubst $(src)/%.gperf.c, $(build)/%.c, $(c_gperf_srcs))
+# together .re/.re_c/.y/.gperf.c
 c_other_objs := $(patsubst $(build)/%.c, $(build)/%.o, $(c_re_builds) \
-$(c_rec_builds) $(c_re_test_builds) $(c_rec_test_builds) $(c_y_builds))
+$(c_rec_builds) $(c_re_test_builds) $(c_rec_test_builds) $(c_y_builds) $(c_gperf_builds))
 test_c_objs := $(patsubst $(test)/%.c, $(build)/$(test)/%.o, $(c_tests))
 html_docs  := $(patsubst $(src)/%.c, $(doc)/%.html, $(c_srcs))
 
@@ -68,6 +70,7 @@ cat   := cat
 zip   := zip
 bison := bison
 #lemon := lemon
+gperf := gperf
 
 target    := # -mwindows
 optimize  := -ffast-math
@@ -78,13 +81,20 @@ warnclang := -Wextra \
 -Wno-comma \
 -Wno-logical-op-parentheses \
 -Wno-parentheses \
--Wno-poison-system-directories \
 -Wno-documentation-unknown-command \
 -Wno-documentation \
 -Wno-shift-op-parentheses \
 -Wno-empty-body \
 -Wno-padded \
--Wdisabled-macro-expansion
+-Wno-switch-enum \
+-Wno-missing-noreturn
+
+# https://stackoverflow.com/a/12099167
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+	warnclang += -Wno-poison-system-directories
+endif
+
 warn := $(warnbasic) $(warnclang)
 
 CC   := clang # gcc
@@ -145,32 +155,39 @@ $(test_c_objs): $(build)/$(test)/%.o: $(test)/%.c $(all_h)
 	@$(mkdir) $(build)/$(test)
 	$(CC) $(CF) -c -o $@ $<
 
+# -8 made my file 32767 lines or longer
+
 $(c_re_builds): $(build)/%.c: $(src)/%.re.c
 	# *.re.c build rule
 	@$(mkdir) $(build)
-	$(re2c) -8 -W -T -o $@ $<
+	$(re2c) -W -T -o $@ $<
 
 $(c_re_test_builds): $(build)/$(test)/%.c: $(test)/%.re.c
 	# *.re.c tests rule
 	@$(mkdir) $(build)
 	@$(mkdir) $(build)/$(test)
-	$(re2c) -8 -W -T -o $@ $<
+	$(re2c) -W -T -o $@ $<
 
 $(c_rec_builds): $(build)/%.c: $(src)/%.re_c.c
 	# *.re_c.c (conditions) build rule
 	@$(mkdir) $(build)
-	$(re2c) -8 -W -T -c -o $@ $<
+	$(re2c) -W -T -c -o $@ $<
 
 $(c_rec_test_builds): $(build)/$(test)/%.c: $(test)/%.re_c.c
 	# *.re_c.c (conditions) tests rule
 	@$(mkdir) $(build)
 	@$(mkdir) $(build)/$(test)
-	$(re2c) -8 -W -T -c -o $@ $<
+	$(re2c) -W -T -c -o $@ $<
 
 $(c_y_builds): $(build)/%.c: $(src)/%.y # $(lemon)/$(bin)/$(lem)
 	# .y rule
 	@$(mkdir) $(build)
 	$(bison) -o $@ $<
+
+$(c_gperf_builds): $(build)/%.c: $(src)/%.gperf.c
+	# *.gperf.c build rule
+	@$(mkdir) $(build)
+	$(gperf) $@ --output-file $<
 
 $(html_docs): $(doc)/%.html: $(src)/%.c $(src)/%.h
 	# docs rule
@@ -211,6 +228,7 @@ setup: default icon
 
 # this needs work
 release: clean default
+	strip $(bin)/$(project)
 	# define NDEBUG
 
 install: release

@@ -407,10 +407,10 @@ Lexicographically compares `alist` to `blist`\. Null values are before everythin
 
  * Return:  
    `a < b`: negative; `a == b`: zero; `a > b`: positive\.
- * Implements:  
-   [&lt;PLC&gt;compare_fn](#user-content-typedef-f02f365a) \(one can `qsort` an array of lists, as long as one calls [&lt;L&gt;list_self_correct](#user-content-fn-1ce0c229) on it's elements\)
  * Order:  
    &#920;\(min\(|`alist`|, |`blist`|\)\)
+ * Implements:  
+   [&lt;PLC&gt;compare_fn](#user-content-typedef-f02f365a) \(one can `qsort` an array of lists, as long as one calls [&lt;L&gt;list_self_correct](#user-content-fn-1ce0c229) on it's elements\)
 
 
 

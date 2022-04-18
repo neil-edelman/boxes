@@ -36,7 +36,7 @@
 
  @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
  To string trait contained in <src/to_string.h>. An optional mangled name for
- uniqueness and function implementing <typedef:<PSZ>to_string_fn>.
+ uniqueness and function implementing <typedef:<PSTR>to_string_fn>.
 
  @std C89 */
 
@@ -319,19 +319,19 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 
 #ifdef ARRAY_TO_STRING_NAME
-#define SZ_(n) ARRAY_CAT(A_(array), ARRAY_CAT(ARRAY_TO_STRING_NAME, n))
+#define STR_(n) ARRAY_CAT(A_(array), ARRAY_CAT(ARRAY_TO_STRING_NAME, n))
 #else
-#define SZ_(n) ARRAY_CAT(A_(array), n)
+#define STR_(n) ARRAY_CAT(A_(array), n)
 #endif
 #define TO_STRING ARRAY_TO_STRING
 #include "to_string.h" /** \include */
 #ifdef ARRAY_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef ARRAY_TEST
-static PSZ_(to_string_fn) PA_(to_string) = PSZ_(to_string);
+static PSTR_(to_string_fn) PA_(to_string) = PSTR_(to_string);
 static const char *(*PA_(array_to_string))(const struct A_(array) *)
-	= &SZ_(to_string);
+	= &STR_(to_string);
 #endif /* expect --> */
-#undef SZ_
+#undef STR_
 #undef ARRAY_TO_STRING
 #ifdef ARRAY_TO_STRING_NAME
 #undef ARRAY_TO_STRING_NAME

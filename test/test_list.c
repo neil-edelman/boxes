@@ -26,6 +26,8 @@ static void permute_fill(struct permute_listlink *const p) { (void)(p); }
 #define LIST_TO_STRING &permute_to_string
 #include "../src/list.h"
 
+#define HAVE_ITERATE_H
+
 /* We have to have some way to store the test data. One could store it however,
  but it must be stable, so vectors (`<A>array`) are a problem. */
 #define POOL_NAME permutelink
