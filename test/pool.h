@@ -11,6 +11,7 @@
 
  <tag:<P>pool> is a memory pool that stores only one type, <typedef:<PP>type>,
  using [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation).
+ A free-heap in the active-slab allows random-access insertions and deletions.
  Pointers to valid items in the pool are stable, but not generally in any
  order. When removal is ongoing and uniformly sampled while reaching a
  steady-state size, it will eventually settle in one contiguous region.
@@ -20,21 +21,15 @@
  <typedef:<PP>type>, associated therewith; required. `<PP>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
- @param[POOL_EXPECT_TRAIT]
- Do not un-define certain variables for subsequent inclusion in a trait.
-
- @param[POOL_TO_STRING_NAME, POOL_TO_STRING]
- To string trait contained in <to_string.h>; `<PSTR>` that satisfies `C` naming
- conventions when mangled and function implementing <typedef:<PSTR>to_string_fn>.
- There can be multiple to string traits, but only one can omit
- `POOL_TO_STRING_NAME`. This container is only iterable in the first slab, so
- this is not very useful except for debugging.
-
  @depend [array](https://github.com/neil-edelman/array)
  @depend [heap](https://github.com/neil-edelman/heap)
- @fixme The `uintptr_t` is C99; we rely on comparisons with `void *`, which is
- technically undefined behaviour.
- @std C89 */
+ @std C89; however, when compiling for segmented memory models, C99 with
+ `uintptr_t` is recommended because of it's implementation-defined instead of
+ undefined-behaviour when comparing pointers from different objects. */
+
+/* `POOL_EXPECT_TRAIT`, `POOL_TO_STRING_NAME`, `POOL_TO_STRING` are
+ undocumented because this container is only iterable in the first slab, so
+ this is not very useful except for debugging. */
 
 #if !defined(POOL_NAME) || !defined(POOL_TYPE)
 #error Name POOL_NAME undefined or tag type POOL_TYPE undefined.
@@ -73,12 +68,13 @@ static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
 #define HEAP_TYPE size_t
 #define HEAP_COMPARE &pool_index_compare
 #include "heap.h"
-#ifndef __STDC_VERSION__ /* <-- c90 */
+#if !defined(__STDC__) || !defined(__STDC_VERSION__) \
+	|| __STDC_VERSION__ < 199901L /* < C99 */
 #define POOL_PTR (const void *)
-#else /* c90 --><!-- !c90 */
+#else /* < C99 --><!-- >= C99 */
 #include <stdint.h>
 #define POOL_PTR (const uintptr_t)(const void *)
-#endif /* !c90 --> */
+#endif /* >= C99 --> */
 #endif /* idempotent --> */
 
 
@@ -112,6 +108,26 @@ struct P_(pool) {
 	struct poolfree_heap free0; /* Free-heap in slab-zero. */
 	size_t capacity0; /* Capacity of slab-zero. */
 };
+
+/* Box override information. */
+#define BOX_ PP_
+#define BOX struct P_(pool)
+#define BOX_CONTENT PP_(type) *
+/** Is `x` not null? @implements `is_content` */
+static int PP_(is_content)(const PP_(type) *const x) { return !!x; }
+/* It is very useful in debugging, is required for `BOX_CONTENT`. Only iterates
+ on `slot0` and ignores the free-heap. We don't have enough information to do
+ otherwise, since (presumably) the memory address is in local variables and
+ will be freed (hopefully.) Unreliable. */
+struct PP_(forward) { struct PP_(slot) *slot0; size_t i; };
+/** @return Before `p`. @implements `forward_begin` */
+static struct PP_(forward) PP_(forward_begin)(const struct P_(pool) *const p)
+	{ struct PP_(forward) it; it.slot0 = p && p->slots.size
+	? p->slots.data + 0 : 0, it.i = 0; return it; }
+/** Move to next `it`. @return Element or null. @implements `forward_next` */
+static const PP_(type) *PP_(forward_next)(struct PP_(forward) *const it)
+	{ return assert(it), it->slot0 && it->i < it->slot0->size
+	? it->slot0->slab + it->i++ : 0; }
 
 /** @return Index of slot that is higher than `x` in `slots`, but treating zero
  as special. @order \O(\log `slots`) */
@@ -165,16 +181,16 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	size_t c, insert;
 	int is_recycled = 0;
 	assert(pool && min_size <= max_size && pool->capacity0 <= max_size &&
-		(!pool->slots.size && !pool->free0.a.size /* !slots[0] -> !free0 */
+		(!pool->slots.size && !pool->free0._.size /* !slots[0] -> !free0 */
 		|| pool->slots.size && base
 		&& base[0].size <= pool->capacity0
-		&& (!pool->free0.a.size
-		|| pool->free0.a.size < base[0].size
-		&& pool->free0.a.data[0] < base[0].size)));
+		&& (!pool->free0._.size
+		|| pool->free0._.size < base[0].size
+		&& pool->free0._.data[0] < base[0].size)));
 
 	/* Ensure space for new slot. */
 	if(!n || pool->slots.size && n <= pool->capacity0
-		- base[0].size + pool->free0.a.size) return 1; /* Already enough. */
+		- base[0].size + pool->free0._.size) return 1; /* Already enough. */
 	if(max_size < n) return errno = ERANGE, 1; /* Request unsatisfiable. */
 	if(!PP_(slot_array_buffer)(&pool->slots, 1)) return 0;
 	base = pool->slots.data; /* It may have moved! */
@@ -222,8 +238,8 @@ static int PP_(remove)(struct P_(pool) *const pool,
 			&& idx < slot->size);
 		if(idx + 1 == slot->size) {
 			/* Keep shrinking going while item on the free-heap are exposed. */
-			while(--slot->size && !poolfree_heap_is_empty(&pool->free0)) {
-				const size_t free = poolfree_heap_peek(&pool->free0);
+			while(--slot->size && poolfree_heap_size(&pool->free0)) {
+				const size_t free = *poolfree_heap_peek(&pool->free0);
 				if(free < slot->size - 1) break;
 				assert(free == slot->size - 1);
 				poolfree_heap_pop(&pool->free0);
@@ -237,20 +253,20 @@ static int PP_(remove)(struct P_(pool) *const pool,
 	return 1;
 }
 
-/** Initializes `pool` to idle. @order \Theta(1) @allow */
-static void P_(pool)(struct P_(pool) *const pool) { assert(pool),
-	PP_(slot_array)(&pool->slots), poolfree_heap(&pool->free0),
-	pool->capacity0 = 0; }
+/** @return An idle pool. @order \Theta(1) @allow */
+static struct P_(pool) P_(pool)(void) { struct P_(pool) p;
+	p.slots = PP_(slot_array)(), p.free0 = poolfree_heap(), p.capacity0 = 0;
+	return p; }
 
 /** Destroys `pool` and returns it to idle. @order \O(\log `data`) @allow */
 static void P_(pool_)(struct P_(pool) *const pool) {
 	struct PP_(slot) *s, *s_end;
-	assert(pool);
+	if(!pool) return;
 	for(s = pool->slots.data, s_end = s + pool->slots.size; s < s_end; s++)
 		assert(s->slab), free(s->slab);
 	PP_(slot_array_)(&pool->slots);
 	poolfree_heap_(&pool->free0);
-	P_(pool)(pool);
+	*pool = P_(pool)();
 }
 
 /** Ensure capacity of at least `n` further items in `pool`. Pre-sizing is
@@ -267,13 +283,13 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 	struct PP_(slot) *slot0;
 	assert(pool);
 	if(!PP_(buffer)(pool, 1)) return 0;
-	assert(pool->slots.size && (pool->free0.a.size ||
+	assert(pool->slots.size && (pool->free0._.size ||
 		pool->slots.data[0].size < pool->capacity0));
-	if(!poolfree_heap_is_empty(&pool->free0)) {
+	if(poolfree_heap_size(&pool->free0)) {
 		/* Cheating: we prefer the minimum index from a max-heap, but it
 		 doesn't really matter, so take the one off the array used for heap. */
 		size_t *free;
-		free = heap_poolfree_node_array_pop(&pool->free0.a);
+		free = heap_poolfree_node_array_pop(&pool->free0._);
 		return assert(free), pool->slots.data[0].slab + *free;
 	}
 	/* The free-heap is empty; guaranteed by <fn:<PP>buffer>. */
@@ -283,10 +299,6 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 }
 
 /** Deletes `data` from `pool`. Do not remove data that is not in `pool`.
-
- This relies on undefined behaviour (C89) or implementation-defined behaviour
- (with `uintptr_t` from `stdint.h`) because it must place the memory in order. There is no system-independent fix that we are aware of. This will most likely
- be a problem in segmented memory models.
  @return Success. @order \O(\log \log `items`) @allow */
 static int P_(pool_remove)(struct P_(pool) *const pool,
 	PP_(type) *const data) { return PP_(remove)(pool, data); }
@@ -296,38 +308,13 @@ static int P_(pool_remove)(struct P_(pool) *const pool,
 static void P_(pool_clear)(struct P_(pool) *const pool) {
 	struct PP_(slot) *s, *s_end;
 	assert(pool);
-	if(!pool->slots.size) { assert(!pool->free0.a.size); return; }
+	if(!pool->slots.size) { assert(!pool->free0._.size); return; }
 	for(s = pool->slots.data + 1, s_end = s - 1 + pool->slots.size;
 		s < s_end; s++) assert(s->slab && s->size), free(s->slab);
 	pool->slots.data[0].size = 0;
 	pool->slots.size = 1;
 	poolfree_heap_clear(&pool->free0);
 }
-
-/* <!-- iterate interface: it's not actually possible to iterate though given
- the information that we have, but placing it here for testing purposes.
- Iterates through the zero-slot, ignoring the free list. Do not call. */
-
-struct PP_(iterator);
-struct PP_(iterator) { struct PP_(slot) *slot0; size_t i; };
-
-/** Loads `pool` into `it`. @implements begin */
-static void PP_(begin)(struct PP_(iterator) *const it,
-	const struct P_(pool) *const pool) {
-	assert(it && pool);
-	if(pool->slots.size) it->slot0 = pool->slots.data + 0;
-	else it->slot0 = 0;
-	it->i = 0;
-}
-
-/** Advances `it`. @implements next */
-static const PP_(type) *PP_(next)(struct PP_(iterator) *const it) {
-	assert(it);
-	return it->slot0 && it->i < it->slot0->size
-		? it->slot0->slab + it->i++ : 0;
-}
-
-/* iterate --> */
 
 #ifdef POOL_TEST /* <!-- test */
 /* Forward-declare. */
@@ -336,16 +323,11 @@ static const char *(*PP_(pool_to_string))(const struct P_(pool) *);
 #include "../test/test_pool.h"
 #endif /* test --> */
 
-/* <!-- box (multiple traits) */
-#define BOX_ PP_
-#define BOX_CONTAINER struct P_(pool)
-#define BOX_CONTENTS PP_(type)
-
 static void PP_(unused_base_coda)(void);
 static void PP_(unused_base)(void) {
-	P_(pool)(0); P_(pool_)(0); P_(pool_buffer)(0, 0); P_(pool_new)(0);
-	P_(pool_remove)(0, 0); P_(pool_clear)(0); PP_(begin)(0, 0);
-	PP_(next)(0); PP_(unused_base_coda)();
+	PP_(is_content)(0); PP_(forward_begin)(0); PP_(forward_next)(0);
+	P_(pool)(); P_(pool_)(0); P_(pool_buffer)(0, 0); P_(pool_new)(0);
+	P_(pool_remove)(0, 0); P_(pool_clear)(0); PP_(unused_base_coda)();
 }
 static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 
@@ -359,7 +341,7 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 #define STR_(n) POOL_CAT(P_(pool), n)
 #endif /* !name --> */
 #define TO_STRING POOL_TO_STRING
-#include "to_string.h" /** \include */
+#include "to_string.h"
 #ifdef POOL_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef POOL_TEST
 static PSTR_(to_string_fn) PP_(to_string) = PSTR_(to_string);
@@ -385,9 +367,8 @@ static const char *(*PP_(pool_to_string))(const struct P_(pool) *)
 #undef POOL_NAME
 #undef POOL_TYPE
 #undef BOX_
-#undef BOX_CONTAINER
-#undef BOX_CONTENTS
-/* box (multiple traits) --> */
+#undef BOX
+#undef BOX_CONTENT
 #endif /* !trait --> */
 #undef POOL_TO_STRING_TRAIT
 #undef POOL_TRAITS
