@@ -43,7 +43,7 @@ A valid tag type set by `POOL_TYPE`\.
 
 <code>struct <strong>&lt;P&gt;pool</strong> { struct &lt;PP&gt;slot_array slots; struct poolfree_heap free0; size_t capacity0; };</code>
 
-This is a slab memory\-manager and free\-heap for slab zero\. A zeroed pool is a valid state\. To instantiate to an idle state, see [&lt;P&gt;pool](#user-content-fn-8aba39cb), `POOL_IDLE`, `{0}` \(`C99`,\) or being `static`\.
+This is a slab memory\-manager and free\-heap for slab zero\. A zeroed pool is a valid state\. To instantiate to an idle state, see [&lt;P&gt;pool](#user-content-fn-8aba39cb), `{0}` \(`C99`,\) or being `static`\.
 
 ![States.](doc/states.png)
 
