@@ -21,20 +21,15 @@
  <typedef:<PP>type>, associated therewith; required. `<PP>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
- @param[POOL_EXPECT_TRAIT]
- Do not un-define certain variables for subsequent inclusion in a trait.
-
- @param[POOL_TO_STRING_NAME, POOL_TO_STRING]
- To string trait contained in <src/to_string.h>. An optional mangled name for
- uniqueness and function implementing <typedef:<PSTR>to_string_fn>. (This
- container is only iterable in the first slab, so this is not very useful
- except for debugging.)
-
  @depend [array](https://github.com/neil-edelman/array)
  @depend [heap](https://github.com/neil-edelman/heap)
  @std C89; however, when compiling for segmented memory models, C99 with
  `uintptr_t` is recommended because of it's implementation-defined instead of
  undefined-behaviour when comparing pointers from different objects. */
+
+/* `POOL_EXPECT_TRAIT`, `POOL_TO_STRING_NAME`, `POOL_TO_STRING` are
+ undocumented because this container is only iterable in the first slab, so
+ this is not very useful except for debugging. */
 
 #if !defined(POOL_NAME) || !defined(POOL_TYPE)
 #error Name POOL_NAME undefined or tag type POOL_TYPE undefined.
@@ -258,7 +253,7 @@ static int PP_(remove)(struct P_(pool) *const pool,
 	return 1;
 }
 
-/** Initializes `pool` to idle. @order \Theta(1) @allow */
+/** @return An idle pool. @order \Theta(1) @allow */
 static struct P_(pool) P_(pool)(void) { struct P_(pool) p;
 	p.slots = PP_(slot_array)(), p.free0 = poolfree_heap(), p.capacity0 = 0;
 	return p; }

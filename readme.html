@@ -59,10 +59,6 @@
 <dl>
 	<dt>Parameter: POOL_NAME, POOL_TYPE</dt>
 	<dd><code>&lt;P&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag type, <a href = "#typedef:&lt;PP&gt;type">&lt;PP&gt;type</a>, associated therewith; required. <code>&lt;PP&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
-	<dt>Parameter: POOL_EXPECT_TRAIT</dt>
-	<dd>Do not un-define certain variables for subsequent inclusion in a trait.</dd>
-	<dt>Parameter: POOL_TO_STRING_NAME, POOL_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>. An optional mangled name for uniqueness and function implementing <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>. (This container is only iterable in the first slab, so this is not very useful except for debugging.)</dd>
 	<dt>Standard:</dt>
 	<dd>C89; however, when compiling for segmented memory models, C99 with <code>uintptr_t</code> is recommended because of it's implementation-defined instead of undefined-behaviour when comparing pointers from different objects.</dd>
 	<dt>Dependancies:</dt>
@@ -141,9 +137,9 @@
 
 <p><code>static struct &lt;P&gt;pool <strong>&lt;P&gt;pool</strong>(void)</code></p>
 
-<p>Initializes <code>pool</code> to idle.</p>
-
 <dl>
+	<dt>Return:</dt>
+	<dd>An idle pool.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>

@@ -21,10 +21,6 @@ Header [src/pool\.h](src/pool.h) depends on [src/heap\.h](src/heap.h) and [src/a
 
  * Parameter: POOL\_NAME, POOL\_TYPE  
    `<P>` that satisfies `C` naming conventions when mangled and a valid tag type, [&lt;PP&gt;type](#user-content-typedef-7560d92f), associated therewith; required\. `<PP>` is private, whose names are prefixed in a manner to avoid collisions\.
- * Parameter: POOL\_EXPECT\_TRAIT  
-   Do not un\-define certain variables for subsequent inclusion in a trait\.
- * Parameter: POOL\_TO\_STRING\_NAME, POOL\_TO\_STRING  
-   To string trait contained in [src/to\_string\.h](src/to_string.h)\. An optional mangled name for uniqueness and function implementing [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\. \(This container is only iterable in the first slab, so this is not very useful except for debugging\.\)
  * Standard:  
    C89; however, when compiling for segmented memory models, C99 with `uintptr_t` is recommended because of it's implementation\-defined instead of undefined\-behaviour when comparing pointers from different objects\.
  * Dependancies:  
@@ -91,8 +87,8 @@ This is a slab memory\-manager and free\-heap for slab zero\. A zeroed pool is a
 
 <code>static struct &lt;P&gt;pool <strong>&lt;P&gt;pool</strong>(void)</code>
 
-Initializes `pool` to idle\.
-
+ * Return:  
+   An idle pool\.
  * Order:  
    &#920;\(1\)
 
