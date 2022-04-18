@@ -102,7 +102,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;
 	const size_t ellipsis_len = sizeof ellipsis - 1;
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
-	size_t advance, size;
+	size_t advance;
 	PSTR_(element_c) x;
 	struct BOX_(forward) it;
 	int is_sep = 0;
@@ -119,7 +119,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
-		if((size = (size_t)(b - buffer))
+		if((size_t)(b - buffer)
 			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1)
 			if(BOX_(is_content)(BOX_(forward_next)(&it))) goto ellipsis;
 			else break;
