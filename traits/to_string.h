@@ -5,10 +5,10 @@
 
  Interface (defined by `BOX_`, `BOX`, and `BOX_OUTPUT`):
 
- \* `int <BOX>is_element(<PSZ>element_c)`;
+ \* `int <BOX>is_element(<PSTR>element_c)`;
  \* `struct <BOX>forward`;
- \* `struct <BOX>forward <BOX>forward_begin(const <PSZ>box *)`;
- \* `<PSZ>element_c <BOX>forward_next(struct <BOX>iterator *)`.
+ \* `struct <BOX>forward <BOX>forward_begin(const <PSTR>box *)`;
+ \* `<PSTR>element_c <BOX>forward_next(struct <BOX>iterator *)`.
 
  @param[STR_(n)]
  A one-argument macro producing a name that is responsible for the name of the
@@ -90,11 +90,11 @@ typedef const BOX_CONTENT PSTR_(element_c);
  null-terminated output string. */
 typedef void (*PSTR_(to_string_fn))(PSTR_(element_c), char (*)[12]);
 /* Check that `TO_STRING` is a function implementing
- <typedef:<PSZ>to_string>. */
+ <typedef:<PSTR>to_string>. */
 static const PSTR_(to_string_fn) PSTR_(to_string) = (TO_STRING);
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
- 256 bytes, with limitations of only printing 4 things at a time. `<SZ>` is
+ 256 bytes, with limitations of only printing 4 things at a time. `<STR>` is
  loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`.
  @return Address of the static buffer. @order \Theta(1) @allow */
 static const char *STR_(to_string)(const PSTR_(box) *const box) {
