@@ -52,7 +52,7 @@
 
 <p><img alt = "Example of heap." src = "doc/heap.png" width = 654 height = 347></p>
 
-<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. It can be used as an implementation of a priority queue; internally, it is a <code>&lt;&lt;PH&gt;node&gt;array</code> with implicit heap properties on <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> pointer value.</p>
+<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. It can be used as an implementation of a priority queue; internally, it is an array with implicit heap properties on <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> that is associated with the value.</p>
 
 </div>
 
@@ -60,9 +60,9 @@
 	<dt>Parameter: HEAP_NAME, HEAP_TYPE</dt>
 	<dd><code>&lt;H&gt;</code> that satisfies <code>C</code> naming conventions when mangled and an assignable type <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> associated therewith. <code>HEAP_NAME</code> is required; <code>HEAP_TYPE</code> defaults to <code>unsigned int</code>. <code>&lt;PH&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: HEAP_COMPARE</dt>
-	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a>. Defaults to minimum-hash. Required if <code>HEAP_TYPE</code> is changed to an incomparable type.</dd>
+	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a>. Defaults to minimum-hash. Required if <code>HEAP_TYPE</code> is changed to an incomparable type. For example, a maximum heap, <code>(a, b) -&gt; a &lt; b</code>.</dd>
 	<dt>Parameter: HEAP_VALUE</dt>
-	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that is stored in <a href = "#tag:&lt;H&gt;heapnode">&lt;H&gt;heapnode</a>, which is <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>. May decrease performance if too big, in which case, consider a pointer.</dd>
+	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that, on <code>HEAP_VALUE</code>, is stored in <a href = "#tag:&lt;H&gt;heapnode">&lt;H&gt;heapnode</a>, which is <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>.</dd>
 	<dt>Parameter: HEAP_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
 	<dt>Parameter: HEAP_TO_STRING_NAME, HEAP_TO_STRING</dt>
@@ -123,7 +123,7 @@
 
 <p><code>struct <strong>&lt;H&gt;heapnode</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code></p>
 
-<p>If <code>HEAP_VALUE</code> is set, this becomes <a href = "#typedef:&lt;PH&gt;node">&lt;PH&gt;node</a>. There is a lot of copying, so consider making this as small as possible.</p>
+<p>If <code>HEAP_VALUE</code> is set, this becomes <a href = "#typedef:&lt;PH&gt;node">&lt;PH&gt;node</a>.</p>
 
 </div>
 

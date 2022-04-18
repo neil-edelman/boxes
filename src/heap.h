@@ -12,8 +12,9 @@
  A <tag:<H>heap> is a binary heap, proposed by
  <Williams, 1964, Heapsort, p. 347> using terminology of
  <Knuth, 1973, Sorting>. It can be used as an implementation of a priority
- queue; internally, it is a `<<PH>node>array` with implicit heap properties on
- <typedef:<PH>priority> and an optional <typedef:<PH>value> pointer value.
+ queue; internally, it is an array with implicit heap properties on
+ <typedef:<PH>priority> and an optional <typedef:<PH>value> that is associated
+ with the value.
 
  @param[HEAP_NAME, HEAP_TYPE]
  `<H>` that satisfies `C` naming conventions when mangled and an assignable
@@ -23,12 +24,12 @@
 
  @param[HEAP_COMPARE]
  A function satisfying <typedef:<PH>compare_fn>. Defaults to minimum-hash.
- Required if `HEAP_TYPE` is changed to an incomparable type.
+ Required if `HEAP_TYPE` is changed to an incomparable type. For example, a
+ maximum heap, `(a, b) -> a < b`.
 
  @param[HEAP_VALUE]
- Optional value <typedef:<PH>value>, that is stored in <tag:<H>heapnode>, which
- is <typedef:<PH>value>. May decrease performance if too big, in which case,
- consider a pointer.
+ Optional value <typedef:<PH>value>, that, on `HEAP_VALUE`, is stored in
+ <tag:<H>heapnode>, which is <typedef:<PH>value>.
 
  @param[HEAP_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
@@ -106,8 +107,7 @@ static const PH_(compare_fn) PH_(compare) = (HEAP_COMPARE);
 #ifdef HEAP_VALUE /* <!-- value */
 typedef HEAP_VALUE PH_(value);
 typedef const HEAP_VALUE PH_(value_c);
-/** If `HEAP_VALUE` is set, this becomes <typedef:<PH>node>. There is a lot of
- copying, so consider making this as small as possible. */
+/** If `HEAP_VALUE` is set, this becomes <typedef:<PH>node>. */
 struct H_(heapnode) { PH_(priority) priority; PH_(value) value; };
 /** If `HEAP_VALUE` is set, (priority, value) set by <tag:<H>heapnode>,
  otherwise it's a (priority) set directly by <typedef:<PH>priority>. */

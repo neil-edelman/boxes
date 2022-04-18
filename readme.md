@@ -15,16 +15,16 @@ Header [src/heap\.h](src/heap.h) depends on [src/array\.h](src/array.h); example
 
 ![Example of heap.](doc/heap.png)
 
-A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. It can be used as an implementation of a priority queue; internally, it is a `<<PH>node>array` with implicit heap properties on [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) pointer value\.
+A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. It can be used as an implementation of a priority queue; internally, it is an array with implicit heap properties on [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) that is associated with the value\.
 
 
 
  * Parameter: HEAP\_NAME, HEAP\_TYPE  
    `<H>` that satisfies `C` naming conventions when mangled and an assignable type [&lt;PH&gt;priority](#user-content-typedef-775cba47) associated therewith\. `HEAP_NAME` is required; `HEAP_TYPE` defaults to `unsigned int`\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: HEAP\_COMPARE  
-   A function satisfying [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533)\. Defaults to minimum\-hash\. Required if `HEAP_TYPE` is changed to an incomparable type\.
+   A function satisfying [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533)\. Defaults to minimum\-hash\. Required if `HEAP_TYPE` is changed to an incomparable type\. For example, a maximum heap, `(a, b) -> a < b`\.
  * Parameter: HEAP\_VALUE  
-   Optional value [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), that is stored in [&lt;H&gt;heapnode](#user-content-tag-9938042f), which is [&lt;PH&gt;value](#user-content-typedef-a55b7cd4)\. May decrease performance if too big, in which case, consider a pointer\.
+   Optional value [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), that, on `HEAP_VALUE`, is stored in [&lt;H&gt;heapnode](#user-content-tag-9938042f), which is [&lt;PH&gt;value](#user-content-typedef-a55b7cd4)\.
  * Parameter: HEAP\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
  * Parameter: HEAP\_TO\_STRING\_NAME, HEAP\_TO\_STRING  
@@ -75,7 +75,7 @@ If `HEAP_VALUE` is set, \(priority, value\) set by [&lt;H&gt;heapnode](#user-con
 
 <code>struct <strong>&lt;H&gt;heapnode</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code>
 
-If `HEAP_VALUE` is set, this becomes [&lt;PH&gt;node](#user-content-typedef-23ae637f)\. There is a lot of copying, so consider making this as small as possible\.
+If `HEAP_VALUE` is set, this becomes [&lt;PH&gt;node](#user-content-typedef-23ae637f)\.
 
 
 
