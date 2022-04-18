@@ -341,7 +341,7 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 #define STR_(n) POOL_CAT(P_(pool), n)
 #endif /* !name --> */
 #define TO_STRING POOL_TO_STRING
-#include "to_string.h" /** \include */
+#include "to_string.h"
 #ifdef POOL_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef POOL_TEST
 static PSTR_(to_string_fn) PP_(to_string) = PSTR_(to_string);

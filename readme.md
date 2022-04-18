@@ -5,7 +5,7 @@ Header [src/pool\.h](src/pool.h) depends on [src/heap\.h](src/heap.h) and [src/a
 ## Stable pool ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PP&gt;type](#user-content-typedef-7560d92f), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PP&gt;type](#user-content-typedef-7560d92f)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;P&gt;pool](#user-content-tag-8aba39cb)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -34,14 +34,6 @@ Header [src/pool\.h](src/pool.h) depends on [src/heap\.h](src/heap.h) and [src/a
 <code>typedef POOL_TYPE <strong>&lt;PP&gt;type</strong>;</code>
 
 A valid tag type set by `POOL_TYPE`\.
-
-
-
-### <a id = "user-content-typedef-8a8349ca" name = "user-content-typedef-8a8349ca">&lt;PSTR&gt;to_string_fn</a> ###
-
-<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(&lt;PSTR&gt;element_c, char(*)[12]);</code>
-
-[src/to\_string\.h](src/to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\.
 
 
 
@@ -74,8 +66,6 @@ This is a slab memory\-manager and free\-heap for slab zero\. A zeroed pool is a
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-95972ccc">&lt;P&gt;pool_remove</a></td><td>pool, data</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-96f5dc51">&lt;P&gt;pool_clear</a></td><td>pool</td></tr>
-
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -157,20 +147,6 @@ Removes all from `pool`, but keeps it's active state, only freeing the smaller b
 
  * Order:  
    &#927;\(\\log `items`\)
-
-
-
-
-### <a id = "user-content-fn-751c6337" name = "user-content-fn-751c6337">&lt;STR&gt;to_string</a> ###
-
-<code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
-
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<STR>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
-
- * Return:  
-   Address of the static buffer\.
- * Order:  
-   &#920;\(1\)
 
 
 
