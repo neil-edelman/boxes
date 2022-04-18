@@ -34,7 +34,7 @@
  @depend [heap](https://github.com/neil-edelman/heap)
  @std C89; however, when compiling for segmented memory models, C99 with
  `uintptr_t` is recommended because of it's implementation-defined instead of
- undefined behaviour when comparing pointers from different objects. */
+ undefined-behaviour when comparing pointers from different objects. */
 
 #if !defined(POOL_NAME) || !defined(POOL_TYPE)
 #error Name POOL_NAME undefined or tag type POOL_TYPE undefined.

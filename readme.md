@@ -26,7 +26,7 @@ Header [src/pool\.h](src/pool.h) depends on [src/heap\.h](src/heap.h) and [src/a
  * Parameter: POOL\_TO\_STRING\_NAME, POOL\_TO\_STRING  
    To string trait contained in [src/to\_string\.h](src/to_string.h)\. An optional mangled name for uniqueness and function implementing [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\. \(This container is only iterable in the first slab, so this is not very useful except for debugging\.\)
  * Standard:  
-   C89; however, when compiling for segmented memory models, C99 with `uintptr_t` is recommended because of it's implementation\-defined instead of undefined behaviour when comparing pointers from different objects\.
+   C89; however, when compiling for segmented memory models, C99 with `uintptr_t` is recommended because of it's implementation\-defined instead of undefined\-behaviour when comparing pointers from different objects\.
  * Dependancies:  
    [array](https://github.com/neil-edelman/array), [heap](https://github.com/neil-edelman/heap)
 

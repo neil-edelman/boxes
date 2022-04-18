@@ -64,7 +64,7 @@
 	<dt>Parameter: POOL_TO_STRING_NAME, POOL_TO_STRING</dt>
 	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>. An optional mangled name for uniqueness and function implementing <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>. (This container is only iterable in the first slab, so this is not very useful except for debugging.)</dd>
 	<dt>Standard:</dt>
-	<dd>C89; however, when compiling for segmented memory models, C99 with <code>uintptr_t</code> is recommended because of it's implementation-defined instead of undefined behaviour when comparing pointers from different objects.</dd>
+	<dd>C89; however, when compiling for segmented memory models, C99 with <code>uintptr_t</code> is recommended because of it's implementation-defined instead of undefined-behaviour when comparing pointers from different objects.</dd>
 	<dt>Dependancies:</dt>
 	<dd><a href = "https://github.com/neil-edelman/array">array</a>, <a href = "https://github.com/neil-edelman/heap">heap</a></dd>
 </dl>
