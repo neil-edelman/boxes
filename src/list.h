@@ -375,6 +375,7 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *);
 
 static void PL_(unused_base_coda)(void);
 static void PL_(unused_base)(void) {
+	PL_(is_content)(0); PL_(forward_begin)(0); PL_(forward_next)(0);
 	L_(list_head)(0); L_(list_tail)(0); L_(list_previous)(0); L_(list_next)(0);
 	L_(list_clear)(0); L_(list_add_before)(0, 0); L_(list_add_after)(0, 0);
 	L_(list_unshift)(0, 0); L_(list_push)(0, 0); L_(list_remove)(0);
@@ -437,6 +438,149 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *)
 #define COMPARE_IS_EQUAL LIST_IS_EQUAL
 #endif
 #include "compare.h" /** \include */
+#ifdef LIST_COMPARE /* <!-- compare: override `qsort` -> natural merge sort. */
+#if 0
+/** Merges `from` into `to`, preferring elements from `to` go in the front.
+ @order \O(|`from`| + |`to`|). @allow */
+static void CMP_(merge)(struct L_(list) *restrict const to,
+	struct L_(list) *restrict const from) {
+	struct L_(listlink) *head, **x = &head, *prev = &to->u.as_head.head, *t, *f;
+	assert(to && to->u.flat.next && to->u.flat.prev
+		&& from && from->u.flat.next && from->u.flat.prev && from != to);
+	/* Empty. */
+	if(!(f = from->u.flat.next)->next) return;
+	if(!(t = to->u.flat.next)->next)
+		{ PL_(move)(from, &to->u.as_tail.tail); return; }
+	/* Exclude sentinel. */
+	from->u.flat.prev->next = to->u.flat.prev->next = 0;
+	/* Merge. */
+	for( ; ; ) {
+		if(PCMP_(compare)(t, f) <= 0) {
+			t->prev = prev, prev = *x = t, x = &t->next;
+			if(!(t = t->next)) { *x = f; goto from_left; }
+		} else {
+			f->prev = prev, prev = *x = f, x = &f->next;
+			if(!(f = f->next)) { *x = t; break; }
+		}
+	}
+	if(0) {
+from_left:
+		f->prev = prev;
+		/* Switch sentinels. */
+		f = from->u.flat.prev;
+		to->u.flat.prev = f;
+		f->next = &from->u.as_tail.tail;
+	} else {
+		t->prev = prev;
+	}
+	/* Erase `from`. */
+	from->u.flat.next = &from->u.as_tail.tail;
+	from->u.flat.prev = &from->u.as_head.head;
+}
+#endif
+/** Merges the two top runs referenced by `head_ptr` in stack form. */
+static void PCMP_(merge_runs)(struct L_(listlink) **const head_ptr) {
+	struct L_(listlink) *head = *head_ptr, **x = &head, *b = head, *a = b->prev,
+		*const prev = a->prev;
+	assert(head_ptr && a && b);
+	for( ; ; ) {
+		if(PCMP_(compare)(a, b) <= 0) {
+			*x = a, x = &a->next;
+			if(!(a = a->next)) { *x = b; break; }
+		} else {
+			*x = b, x = &b->next;
+			if(!(b = b->next)) { *x = a; break; }
+		}
+	}
+	head->prev = prev, *head_ptr = head; /* `prev` is the previous run. */
+}
+/** The list form of `list` is restored from `head` in stack form with two
+ runs. */
+static void PCMP_(merge_final)(struct L_(list) *const list,
+	struct L_(listlink) *head) {
+	struct L_(listlink) *prev = 0, **x = &list->u.flat.next,
+		*b = head, *a = head->prev;
+	assert(list && b && a && !a->prev);
+	for( ; ; ) {
+		if(PCMP_(compare)(a, b) <= 0) {
+			a->prev = prev, prev = *x = a, x = &a->next;
+			if(!(a = a->next)) { a = *x = b; break; }
+		} else {
+			b->prev = prev, prev = *x = b, x = &b->next;
+			if(!(b = b->next)) { *x = a; break; }
+		}
+	}
+	do; while(a->prev = prev, prev = a, a = a->next);
+	prev->next = &list->u.as_tail.tail, list->u.flat.prev = prev;
+	/* Not empty. */
+	assert(list->u.flat.next && list->u.flat.next != &list->u.as_tail.tail);
+	list->u.flat.next->prev = &list->u.as_head.head;
+}
+/** `LIST_COMPARE`: Natural merge sort `list`, a stable, adaptive sort,
+ according to `compare`. This list-only version is slower then `qsort`.
+ @order \Omega(|`list`|), \O(|`list`| log |`list`|) @allow */
+static void CMP_(sort)(struct L_(list) *const list) {
+	/* Add `[-1,0,1]`: unique identifier for nine weakly-ordered transitions. */
+	enum { DEC = 1, EQ = 4, INC = 7 };
+	int mono = EQ, cmp;
+	struct L_(listlink) *a, *b, *c, *dec_iso = /* Unused. */0;
+	struct { size_t count; struct L_(listlink) *head, *prev; } run;
+	/* Closed sentinel list. */
+	assert(list
+		&& list->u.flat.next && !list->u.flat.zero && list->u.flat.prev);
+	if(a = list->u.flat.next, !(b = a->next)) return; /* Empty. */
+	/* Identify runs of monotonicity until `b` sentinel. */
+	run.count = 0, run.prev = 0, run.head = a;
+	for(c = b->next; c; a = b, b = c, c = c->next) {
+		cmp = PCMP_(compare)(b, a);
+		switch(mono + (0 < cmp) - (cmp < 0)) {
+			/* Valley and mountain inflection. */
+		case INC - 1: a->next = 0; /* _Sic_. */
+		case DEC + 1: break;
+			/* Decreasing more and levelled off from decreasing. */
+		case DEC - 1: b->next = dec_iso; dec_iso = run.head = b; continue;
+		case DEC + 0: b->next = a->next; a->next = b; continue;
+			/* Turning down and up. */
+		case EQ  - 1: a->next = 0; b->next = run.head; dec_iso = run.head = b;
+			mono = DEC; continue;
+		case EQ  + 1: mono = INC; continue;
+		case EQ  + 0: /* Same. _Sic_. */
+		case INC + 0: /* Levelled off from increasing. _Sic_. */
+		case INC + 1: continue; /* Increasing more. */
+		}
+		/* Binary carry sequence, <https://oeis.org/A007814>, one delayed so
+		 always room for final merge. */
+		if(run.count) {
+			size_t rc;
+			for(rc = run.count - 1; rc & 1; rc >>= 1)
+				PCMP_(merge_runs)(&run.prev);
+		}
+		/* Add to runs, advance; `b` becomes `a` forthwith. */
+		run.head->prev = run.prev, run.prev = run.head, run.count++;
+		run.head = b, mono = EQ;
+	}
+	/* Last run; go into an accepting state. */
+	if(mono != DEC) {
+		if(!run.count) return; /* Sorted already. */
+		a->next = 0; /* Last one of increasing or equal. */
+	} else { /* Decreasing. */
+		assert(dec_iso);
+		run.head = dec_iso;
+		if(!run.count) { /* Restore the pointers without having two runs. */
+			list->u.flat.next = dec_iso, dec_iso->prev = &list->u.as_head.head;
+			for(a = dec_iso, b = a->next; b; a = b, b = b->next) b->prev = a;
+			list->u.flat.prev = a, a->next = &list->u.as_tail.tail;
+			return; /* Reverse sorted; now good as well. */
+		}
+	}
+	assert(run.count);
+	/* (Actually slower to merge the last one eagerly. So do nothing.) */
+	run.head->prev = run.prev, run.count++;
+	/* Merge leftovers from the other direction, saving one for final. */
+	while(run.head->prev->prev) PCMP_(merge_runs)(&run.head);
+	PCMP_(merge_final)(list, run.head);
+}
+#endif /* compare --> */
 #ifdef LIST_TEST /* <!-- test: this detects and outputs compare test. */
 #include "../test/test_list.h"
 #endif /* test --> */

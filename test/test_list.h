@@ -311,7 +311,7 @@ static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
 			L_(list_push)(list, link);
 			no_links--;
 		}
-		/*L_(list_sort)(list);*/
+		L_(list_sort)(list);
 		for(link_a = 0, link_b = L_(list_head)(list); link_b;
 			link_a = link_b, link_b = L_(list_next)(link_b)) {
 			if(!link_a) continue;
@@ -470,6 +470,7 @@ static void CMP_(compare_test)(struct L_(listlink)
 		"is equal <" QUOTE(LIST_IS_EQUAL)
 #endif
 		">:\n");
+	printf("max: %d\n", RAND_MAX);
 	PL_(test_sort)(parent_new, parent);
 	PL_(test_binary)(parent_new, parent);
 	printf("Done tests of " QUOTE(LIST_NAME) ".\n\n");

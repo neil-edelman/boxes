@@ -26,8 +26,6 @@ static void permute_fill(struct permute_listlink *const p) { (void)(p); }
 #define LIST_TO_STRING &permute_to_string
 #include "../src/list.h"
 
-#define HAVE_ITERATE_H
-
 /* We have to have some way to store the test data. One could store it however,
  but it must be stable, so vectors (`<A>array`) are a problem. */
 #define POOL_NAME permutelink
@@ -36,9 +34,11 @@ static void permute_fill(struct permute_listlink *const p) { (void)(p); }
 static struct permute_listlink *permute_from_pool(void *const vpool) {
 	struct permutelink_pool *const pool = vpool;
 	struct permute_listlink *p = permutelink_pool_new(pool);
-	assert(p); if(!p) return 0; return p;
+	return assert(p), p;
 }
 
+
+#define HAVE_ITERATE_H
 
 /* An integer linked-list that can be ordered. This uses nested structures,
  which is mostly what one wants. */
@@ -72,7 +72,7 @@ static int no_compare(const struct no_listlink *const al,
 }
 static void no_fill(struct no_listlink *const nl) {
 	struct no *const n = (struct no *)nl;
-	n->i = rand() / (RAND_MAX / 100000 + 1);
+	n->i = rand() / (RAND_MAX / 100/*000*/ + 1);
 }
 
 /* Pool is convenient to store <tag:no>. */
