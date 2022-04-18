@@ -90,7 +90,7 @@ static int keyval_value_cmp(const struct Keyval *const a,
 
 /** For paper. */
 static void special(void) {
-	struct keyval_pool kvp = POOL_IDLE;
+	struct keyval_pool kvp = keyval_pool();
 	struct keyval *kv[30];
 	int is_kv[sizeof kv / sizeof *kv];
 	size_t i;

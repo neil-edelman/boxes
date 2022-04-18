@@ -165,16 +165,16 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	size_t c, insert;
 	int is_recycled = 0;
 	assert(pool && min_size <= max_size && pool->capacity0 <= max_size &&
-		(!pool->slots.size && !pool->free0.a.size /* !slots[0] -> !free0 */
+		(!pool->slots.size && !pool->free0._.size /* !slots[0] -> !free0 */
 		|| pool->slots.size && base
 		&& base[0].size <= pool->capacity0
-		&& (!pool->free0.a.size
-		|| pool->free0.a.size < base[0].size
-		&& pool->free0.a.data[0] < base[0].size)));
+		&& (!pool->free0._.size
+		|| pool->free0._.size < base[0].size
+		&& pool->free0._.data[0] < base[0].size)));
 
 	/* Ensure space for new slot. */
 	if(!n || pool->slots.size && n <= pool->capacity0
-		- base[0].size + pool->free0.a.size) return 1; /* Already enough. */
+		- base[0].size + pool->free0._.size) return 1; /* Already enough. */
 	if(max_size < n) return errno = ERANGE, 1; /* Request unsatisfiable. */
 	if(!PP_(slot_array_buffer)(&pool->slots, 1)) return 0;
 	base = pool->slots.data; /* It may have moved! */
@@ -222,8 +222,8 @@ static int PP_(remove)(struct P_(pool) *const pool,
 			&& idx < slot->size);
 		if(idx + 1 == slot->size) {
 			/* Keep shrinking going while item on the free-heap are exposed. */
-			while(--slot->size && !poolfree_heap_is_empty(&pool->free0)) {
-				const size_t free = poolfree_heap_peek(&pool->free0);
+			while(--slot->size && poolfree_heap_size(&pool->free0)) {
+				const size_t free = *poolfree_heap_peek(&pool->free0);
 				if(free < slot->size - 1) break;
 				assert(free == slot->size - 1);
 				poolfree_heap_pop(&pool->free0);
@@ -238,19 +238,19 @@ static int PP_(remove)(struct P_(pool) *const pool,
 }
 
 /** Initializes `pool` to idle. @order \Theta(1) @allow */
-static void P_(pool)(struct P_(pool) *const pool) { assert(pool),
-	PP_(slot_array)(&pool->slots), poolfree_heap(&pool->free0),
-	pool->capacity0 = 0; }
+static struct P_(pool) P_(pool)(void) { struct P_(pool) p;
+	p.slots = PP_(slot_array)(), p.free0 = poolfree_heap(), p.capacity0 = 0;
+	return p; }
 
 /** Destroys `pool` and returns it to idle. @order \O(\log `data`) @allow */
 static void P_(pool_)(struct P_(pool) *const pool) {
 	struct PP_(slot) *s, *s_end;
-	assert(pool);
+	if(!pool) return;
 	for(s = pool->slots.data, s_end = s + pool->slots.size; s < s_end; s++)
 		assert(s->slab), free(s->slab);
 	PP_(slot_array_)(&pool->slots);
 	poolfree_heap_(&pool->free0);
-	P_(pool)(pool);
+	*pool = P_(pool)();
 }
 
 /** Ensure capacity of at least `n` further items in `pool`. Pre-sizing is
@@ -267,13 +267,13 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 	struct PP_(slot) *slot0;
 	assert(pool);
 	if(!PP_(buffer)(pool, 1)) return 0;
-	assert(pool->slots.size && (pool->free0.a.size ||
+	assert(pool->slots.size && (pool->free0._.size ||
 		pool->slots.data[0].size < pool->capacity0));
-	if(!poolfree_heap_is_empty(&pool->free0)) {
+	if(poolfree_heap_size(&pool->free0)) {
 		/* Cheating: we prefer the minimum index from a max-heap, but it
 		 doesn't really matter, so take the one off the array used for heap. */
 		size_t *free;
-		free = heap_poolfree_node_array_pop(&pool->free0.a);
+		free = heap_poolfree_node_array_pop(&pool->free0._);
 		return assert(free), pool->slots.data[0].slab + *free;
 	}
 	/* The free-heap is empty; guaranteed by <fn:<PP>buffer>. */
@@ -296,7 +296,7 @@ static int P_(pool_remove)(struct P_(pool) *const pool,
 static void P_(pool_clear)(struct P_(pool) *const pool) {
 	struct PP_(slot) *s, *s_end;
 	assert(pool);
-	if(!pool->slots.size) { assert(!pool->free0.a.size); return; }
+	if(!pool->slots.size) { assert(!pool->free0._.size); return; }
 	for(s = pool->slots.data + 1, s_end = s - 1 + pool->slots.size;
 		s < s_end; s++) assert(s->slab && s->size), free(s->slab);
 	pool->slots.data[0].size = 0;
@@ -343,7 +343,7 @@ static const char *(*PP_(pool_to_string))(const struct P_(pool) *);
 
 static void PP_(unused_base_coda)(void);
 static void PP_(unused_base)(void) {
-	P_(pool)(0); P_(pool_)(0); P_(pool_buffer)(0, 0); P_(pool_new)(0);
+	P_(pool)(); P_(pool_)(0); P_(pool_buffer)(0, 0); P_(pool_new)(0);
 	P_(pool_remove)(0, 0); P_(pool_clear)(0); PP_(begin)(0, 0);
 	PP_(next)(0); PP_(unused_base_coda)();
 }
