@@ -321,9 +321,10 @@ static void pandas_tests(void) {
 	name_list_clear(&names), where_list_clear(&wheres), fero_list_clear(&feros);
 	for(i = 0; i < 60; i++)
 		panda_from_pool_combined(&pandas, &names, &wheres, &feros);
-	name_list_sort(&names);
+	assert(0);
+	/*name_list_sort(&names);
 	where_list_sort(&wheres);
-	fero_list_sort(&feros);
+	fero_list_sort(&feros);*/
 	panda_graph(&names, &wheres, &feros);
 	panda_pool_(&pandas);
 }
@@ -1061,24 +1062,24 @@ int main(void) {
 	permute_list_test(&permute_from_pool, &permutes),
 		permutelink_pool_(&permutes);
 	no_list_test(&no_from_pool, &nos), no_pool_clear(&nos);
-	no_list_coda_test(&no_from_pool, &nos), no_pool_(&nos);
+	no_list_compare_test(&no_from_pool, &nos), no_pool_(&nos);
 	letter_list_test(&letter_from_pool, &ls), letter_pool_clear(&ls);
-	letter_list_coda_test(&letter_from_pool, &ls), letter_pool_(&ls);
+	letter_list_compare_test(&letter_from_pool, &ls), letter_pool_(&ls);
 	name_list_test(&panda_name_from_pool, &pandas), panda_pool_clear(&pandas);
-	name_list_coda_test(&panda_name_from_pool, &pandas),
+	name_list_compare_test(&panda_name_from_pool, &pandas),
 		panda_pool_clear(&pandas);
 	where_list_test(&panda_where_from_pool, &pandas), panda_pool_clear(&pandas);
-	where_list_coda_test(&panda_where_from_pool, &pandas),
+	where_list_compare_test(&panda_where_from_pool, &pandas),
 		panda_pool_clear(&pandas);
 	fero_list_test(&panda_fero_from_pool, &pandas), panda_pool_clear(&pandas);
-	fero_list_coda_test(&panda_fero_from_pool, &pandas),
+	fero_list_compare_test(&panda_fero_from_pool, &pandas),
 		panda_pool_clear(&pandas);
 	layer0_list_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
-	layer0_list_coda_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
+	layer0_list_compare_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
 	layer1_list_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
-	layer1_list_coda_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
+	layer1_list_compare_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
 	layer2_list_test(&l2_from_pool, &skips), skip_pool_clear(&skips);
-	layer2_list_coda_test(&l2_from_pool, &skips), skip_pool_clear(&skips);
+	layer2_list_compare_test(&l2_from_pool, &skips), skip_pool_clear(&skips);
 	skip_pool_(&skips);
 	pandas_tests();
 	skips_tests();

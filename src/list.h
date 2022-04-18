@@ -412,6 +412,7 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *)
 #else /* to string trait --><!-- compare trait */
 
 
+#if 0
 #ifdef LIST_COMPARE_NAME /* <!-- name */
 #define LC_(n) LIST_CAT(L_(list), LIST_CAT(LIST_COMPARE_NAME, n))
 #else /* name --><!-- !name */
@@ -422,8 +423,26 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *)
 #include "../test/test_list.h"
 #endif /* test --> */
 #undef LC_
-
+#else
 /***************/
+
+#ifdef LIST_COMPARE_NAME
+#define CMP_(n) LIST_CAT(L_(list), LIST_CAT(LIST_COMPARE_NAME, n))
+#else
+#define CMP_(n) LIST_CAT(L_(list), n)
+#endif
+#ifdef LIST_COMPARE
+#define COMPARE LIST_COMPARE
+#else
+#define COMPARE_IS_EQUAL LIST_IS_EQUAL
+#endif
+#include "compare.h" /** \include */
+#ifdef LIST_TEST /* <!-- test: this detects and outputs compare test. */
+#include "../test/test_list.h"
+#endif /* test --> */
+#undef CMP_
+
+#endif
 
 
 #ifdef LIST_COMPARE_NAME
