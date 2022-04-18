@@ -316,7 +316,7 @@ static void pandas_tests(void) {
 	struct name_list names;
 	struct where_list wheres;
 	struct fero_list feros;
-	struct panda_pool pandas = POOL_IDLE;
+	struct panda_pool pandas = panda_pool();
 	size_t i;
 	name_list_clear(&names), where_list_clear(&wheres), fero_list_clear(&feros);
 	for(i = 0; i < 60; i++)
@@ -481,7 +481,7 @@ static void skips_tests(void) {
 	const size_t i_lim = 1000/*0 <- Makes the graph a huge filesize. */;
 	size_t i;
 	unsigned r;
-	struct skip_pool skips = POOL_IDLE;
+	struct skip_pool skips = skip_pool();
 	struct skip_list s;
 	skip_clear(&s);
 	assert(RAND_MAX / 16 > i_lim);
@@ -527,7 +527,7 @@ static void skips_tests(void) {
 	}
 	skip_graph(&s);
 finally:
-	skip_pool(&skips);
+	skip_pool_(&skips);
 }
 
 
@@ -880,12 +880,11 @@ static void Animals_(void) {
 static void animal(void) {
 	struct bear *bear, *end;
 	id_list_clear(&animals.list);
-	/*assert() PoolIsIdle? */
-	sloth_pool(&animals.sloths);
-	emu_pool(&animals.emus);
-	bademu_pool(&animals.bad_emus);
-	llama_pool(&animals.llamas);
-	lemur_pool(&animals.lemurs);
+	animals.sloths = sloth_pool();
+	animals.emus = emu_pool();
+	animals.bad_emus = bademu_pool();
+	animals.llamas = llama_pool();
+	animals.lemurs = lemur_pool();
 	for(bear = animals.bears, end = bear + no_bears; bear < end; bear++)
 		bear->is_active = 0;
 }
@@ -1054,11 +1053,11 @@ static int animals_tests(void) {
 
 
 int main(void) {
-	struct permutelink_pool permutes = POOL_IDLE;
-	struct no_pool nos = POOL_IDLE;
-	struct letter_pool ls = POOL_IDLE;
-	struct panda_pool pandas = POOL_IDLE;
-	struct skip_pool skips = POOL_IDLE;
+	struct permutelink_pool permutes = permutelink_pool();
+	struct no_pool nos = no_pool();
+	struct letter_pool ls = letter_pool();
+	struct panda_pool pandas = panda_pool();
+	struct skip_pool skips = skip_pool();
 	permute_list_test(&permute_from_pool, &permutes),
 		permutelink_pool_(&permutes);
 	no_list_test(&no_from_pool, &nos), no_pool_clear(&nos);

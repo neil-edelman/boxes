@@ -39,7 +39,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PL>action_fn">&lt;PL&gt;action_fn</a>, <a href = "#typedef:<PL>predicate_fn">&lt;PL&gt;predicate_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a>, <a href = "#typedef:<PLC>bipredicate_fn">&lt;PLC&gt;bipredicate_fn</a>, <a href = "#typedef:<PLC>compare_fn">&lt;PLC&gt;compare_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PL>action_fn">&lt;PL&gt;action_fn</a>, <a href = "#typedef:<PL>predicate_fn">&lt;PL&gt;predicate_fn</a>, <a href = "#typedef:<PITR>action_fn">&lt;PITR&gt;action_fn</a>, <a href = "#typedef:<PITR>predicate_fn">&lt;PITR&gt;predicate_fn</a>, <a href = "#typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a>, <a href = "#typedef:<PLC>bipredicate_fn">&lt;PLC&gt;bipredicate_fn</a>, <a href = "#typedef:<PLC>compare_fn">&lt;PLC&gt;compare_fn</a>, <a href = "#typedef:<PCMP>bipredicate_fn">&lt;PCMP&gt;bipredicate_fn</a>, <a href = "#typedef:<PCMP>compare_fn">&lt;PCMP&gt;compare_fn</a>, <a href = "#typedef:<PCMP>biaction_fn">&lt;PCMP&gt;biaction_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<L>listlink">&lt;L&gt;listlink</a>, <a href = "#tag:<L>list">&lt;L&gt;list</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -52,7 +52,7 @@
 
 <p><img alt = "Example of a stochastic skip-list." src = "doc/list.png" width = 785 height = 556></p>
 
-<p>In parlance of <a href = "https://scholar.google.ca/scholar?q=Thareja+2014%2C+Structures">Thareja 2014, Structures</a>, <a href = "#tag:&lt;L&gt;list">&lt;L&gt;list</a> is a circular header, or sentinel, to a doubly-linked list of <a href = "#tag:&lt;L&gt;listlink">&lt;L&gt;listlink</a>. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list.</p>
+<p>In parlance of <a href = "https://scholar.google.ca/scholar?q=Thareja+2014%2C+Structures">Thareja 2014, Structures</a>, <a href = "#tag:&lt;L&gt;list">&lt;L&gt;list</a> is a circular header, or sentinel, to a doubly-linked list of <a href = "#tag:&lt;L&gt;listlink">&lt;L&gt;listlink</a>. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list. The links will be generally in a larger container.</p>
 
 </div>
 
@@ -64,7 +64,9 @@
 	<dt>Parameter: LIST_COMPARE_NAME, LIST_COMPARE, LIST_IS_EQUAL</dt>
 	<dd>Compare trait contained in <a href = "src/list_coda.h">src/list_coda.h</a>. An optional mangled name for uniqueness and a function implementing either <a href = "#typedef:&lt;PLC&gt;compare_fn">&lt;PLC&gt;compare_fn</a> or <a href = "#typedef:&lt;PLC&gt;bipredicate_fn">&lt;PLC&gt;bipredicate_fn</a>.</dd>
 	<dt>Parameter: LIST_TO_STRING_NAME, LIST_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>. An optional mangled name for uniqueness and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>.</dd>
+	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>. An optional mangled name for uniqueness and function implementing <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</dd>
+	<dt>Parameter: HAVE_ITERATE_H</dt>
+	<dd>The <code>&lt;ITR&gt;</code> functions need this value. This includes <a href = "src/iterate.h">src/iterate.h</a>, which take no parameters. Some functions may only be available for some boxes. This does not expire after box completion.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 </dl>
@@ -93,11 +95,31 @@
 
 <div>
 
-<h3><a id = "typedef:<PSZ>to_string_fn" name = "typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></h3>
+<h3><a id = "typedef:<PITR>action_fn" name = "typedef:<PITR>action_fn">&lt;PITR&gt;action_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PITR&gt;action_fn</strong>)(&lt;PITR&gt;element);</code></p>
 
-<p><a href = "to_string.h">to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string. <code>&lt;PSZ&gt;type</code> is contracted to be an internal iteration type of the box.</p>
+<p><a href = "src/iterate.h">src/iterate.h</a>: Operates by side-effects.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PITR>predicate_fn" name = "typedef:<PITR>predicate_fn">&lt;PITR&gt;predicate_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PITR&gt;predicate_fn</strong>)(const &lt;PITR&gt;element_c);</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>: Returns a boolean given read-only.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PSTR>to_string_fn" name = "typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(&lt;PSTR&gt;element_c, char(*)[12]);</code></p>
+
+<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string.</p>
 
 </div>
 
@@ -121,13 +143,43 @@
 
 </div>
 
+<div>
+
+<h3><a id = "typedef:<PCMP>bipredicate_fn" name = "typedef:<PCMP>bipredicate_fn">&lt;PCMP&gt;bipredicate_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PCMP&gt;bipredicate_fn</strong>)(const &lt;PCMP&gt;element_c, const &lt;PCMP&gt;element_c);</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>: Returns a boolean given two read-only elements.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PCMP>compare_fn" name = "typedef:<PCMP>compare_fn">&lt;PCMP&gt;compare_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PCMP&gt;compare_fn</strong>)(const &lt;PCMP&gt;element_c restrict a, const &lt;PCMP&gt;element_c restrict b);</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>: Three-way comparison on a totally order set; returns an integer value less than, equal to, greater than zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<PCMP>biaction_fn" name = "typedef:<PCMP>biaction_fn">&lt;PCMP&gt;biaction_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;PCMP&gt;biaction_fn</strong>)(&lt;PCMP&gt;element restrict, &lt;PCMP&gt;element restrict);</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>: Returns a boolean given two modifiable arguments.</p>
+
+</div>
+
 <h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
 
 <div>
 
 <h3><a id = "tag:<L>listlink" name = "tag:<L>listlink">&lt;L&gt;listlink</a></h3>
 
-<p><code>struct <strong>&lt;L&gt;listlink</strong>;</code></p>
+<p><code>struct <strong>&lt;L&gt;listlink</strong> { struct &lt;L&gt;listlink *next, *prev; };</code></p>
 
 <p>Storage of this structure is the responsibility of the caller, who must provide a stable pointer while in a list. Generally, one encloses this in a host <code>struct</code> or <code>union</code>. The contents of this structure should be treated as read-only while in the list.</p>
 
@@ -191,7 +243,19 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<L>list_self_correct">&lt;L&gt;list_self_correct</a></td><td>list</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static &lt;PITR&gt;element</td><td><a href = "#fn:<ITR>any">&lt;ITR&gt;any</a></td><td>box, predicate</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<ITR>each">&lt;ITR&gt;each</a></td><td>box, action</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<ITR>if_each">&lt;ITR&gt;if_each</a></td><td>box, predicate, action</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<ITR>copy_if">&lt;ITR&gt;copy_if</a></td><td>dst, src, copy</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<ITR>keep_if">&lt;ITR&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<ITR>trim">&lt;ITR&gt;trim</a></td><td>box, predicate</td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#fn:<STR>to_string">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<LC>compare">&lt;LC&gt;compare</a></td><td>alist, blist</td></tr>
 
@@ -208,6 +272,24 @@
 <tr><td align = right>static int</td><td><a href = "#fn:<LC>is_equal">&lt;LC&gt;is_equal</a></td><td>lista, listb</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<LC>duplicates_to">&lt;LC&gt;duplicates_to</a></td><td>from, to</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<CMP>compare">&lt;CMP&gt;compare</a></td><td>a, b</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#fn:<CMP>lower_bound">&lt;CMP&gt;lower_bound</a></td><td>box, element</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#fn:<CMP>upper_bound">&lt;CMP&gt;upper_bound</a></td><td>box, element</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<CMP>insert_after">&lt;CMP&gt;insert_after</a></td><td>box, element</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<CMP>sort">&lt;CMP&gt;sort</a></td><td>box</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<CMP>reverse">&lt;CMP&gt;reverse</a></td><td>box</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<CMP>is_equal">&lt;CMP&gt;is_equal</a></td><td>a, b</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<CMP>unique_merge">&lt;CMP&gt;unique_merge</a></td><td>box, merge</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<CMP>unique">&lt;CMP&gt;unique</a></td><td>box</td></tr>
 
 </table>
 
@@ -497,11 +579,104 @@
 
 <div>
 
-<h3><a id = "fn:<SZ>to_string" name = "fn:<SZ>to_string">&lt;SZ&gt;to_string</a></h3>
+<h3><a id = "fn:<ITR>any" name = "fn:<ITR>any">&lt;ITR&gt;any</a></h3>
 
-<p><code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code></p>
+<p><code>static &lt;PITR&gt;element <strong>&lt;ITR&gt;any</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;PSZ&gt;box</code> is contracted to be the box itself. <code>&lt;SZ&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
+<p><a href = "src/iterate.h">src/iterate.h</a>: Iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The first <code>predicate</code> that returned true, or, if the statement is false on all, null.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>box.size</code>) &#215; &#927;(<code>predicate</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<ITR>each" name = "fn:<ITR>each">&lt;ITR&gt;each</a></h3>
+
+<p><code>static void <strong>&lt;ITR&gt;each</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;action_fn <em>action</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements. The topology of the list must not change while in this function.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>box</code>|) &#215; &#927;(<code>action</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<ITR>if_each" name = "fn:<ITR>if_each">&lt;ITR&gt;if_each</a></h3>
+
+<p><code>static void <strong>&lt;ITR&gt;if_each</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>, const &lt;PITR&gt;action_fn <em>action</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements for which <code>predicate</code> returns true. The topology of the list must not change while in this function.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>box.size</code>) &#215; (&#927;(<code>predicate</code>) + &#927;(<code>action</code>))</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<ITR>copy_if" name = "fn:<ITR>copy_if">&lt;ITR&gt;copy_if</a></h3>
+
+<p><code>static int <strong>&lt;ITR&gt;copy_if</strong>(&lt;PITR&gt;box *restrict const <em>dst</em>, const &lt;PITR&gt;box *restrict const <em>src</em>, const &lt;PITR&gt;predicate_fn <em>copy</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>, <code>BOX_CONTIGUOUS</code>: For all elements of <code>src</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>dst</code>. <code>dst</code> and <code>src</code> can not be the same but <code>src</code> can be null, (in which case, it does nothing.)</p>
+
+<dl>
+	<dt>Exceptional return: realloc</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>src</code>|) &#215; &#927;(<code>copy</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<ITR>keep_if" name = "fn:<ITR>keep_if">&lt;ITR&gt;keep_if</a></h3>
+
+<p><code>static void <strong>&lt;ITR&gt;keep_if</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>keep</em>, const &lt;PITR&gt;action_fn <em>destruct</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>, <code>BOX_CONTIGUOUS</code>: For all elements of <code>box</code>, calls <code>keep</code>, and if false, lazy deletes that item. Calls <code>destruct</code> if not-null before deleting.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>box</code>|) (&#215; O(<code>keep</code>) + O(<code>destruct</code>))</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<ITR>trim" name = "fn:<ITR>trim">&lt;ITR&gt;trim</a></h3>
+
+<p><code>static void <strong>&lt;ITR&gt;trim</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>, <code>BOX_CONTIGUOUS</code>: Removes at either end of <code>box</code> the things that <code>predicate</code>, if it exists, returns true.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>box.size</code>) &#215; &#927;(<code>predicate</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<STR>to_string" name = "fn:<STR>to_string">&lt;STR&gt;to_string</a></h3>
+
+<p><code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code></p>
+
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;STR&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -647,6 +822,154 @@
 	<dt>Order:</dt>
 	<dd>&#927;(|<code>from</code>|)</dd>
 </dl>
+
+<div>
+
+<h3><a id = "fn:<CMP>compare" name = "fn:<CMP>compare">&lt;CMP&gt;compare</a></h3>
+
+<p><code>static int <strong>&lt;CMP&gt;compare</strong>(const &lt;PCMP&gt;box *restrict const <em>a</em>, const &lt;PCMP&gt;box *restrict const <em>b</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>: Lexicographically compares <code>a</code> to <code>b</code>. Both can be null, with null values before everything.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd><code>a &lt; b</code>: negative; <code>a == b</code>: zero; <code>a &gt; b</code>: positive.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>|a|</code> &amp; <code>|b|</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<CMP>lower_bound" name = "fn:<CMP>lower_bound">&lt;CMP&gt;lower_bound</a></h3>
+
+<p><code>static size_t <strong>&lt;CMP&gt;lower_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;element_c <em>element</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_ACCESS</code>: <code>box</code> should be partitioned true/false with less-then <code>element</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The first index of <code>a</code> that is not less than <code>cursor</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log <code>a.size</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<CMP>upper_bound" name = "fn:<CMP>upper_bound">&lt;CMP&gt;upper_bound</a></h3>
+
+<p><code>static size_t <strong>&lt;CMP&gt;upper_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;element_c <em>element</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_ACCESS</code>: <code>box</code> should be partitioned false/true with greater-than or equal-to <code>element</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The first index of <code>box</code> that is greater than <code>element</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>box</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<CMP>insert_after" name = "fn:<CMP>insert_after">&lt;CMP&gt;insert_after</a></h3>
+
+<p><code>static int <strong>&lt;CMP&gt;insert_after</strong>(&lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;element_c <em>element</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_CONTIGUOUS</code>: Copies <code>element</code> at the upper bound of a sorted <code>box</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>a.size</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<CMP>sort" name = "fn:<CMP>sort">&lt;CMP&gt;sort</a></h3>
+
+<p><code>static void <strong>&lt;CMP&gt;sort</strong>(&lt;PCMP&gt;box *const <em>box</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_CONTIGUOUS</code>: Sorts <code>box</code> by <code>qsort</code>, (which has a high-context-switching cost, but is easy.)</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>box</code>| \log |<code>box</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<CMP>reverse" name = "fn:<CMP>reverse">&lt;CMP&gt;reverse</a></h3>
+
+<p><code>static void <strong>&lt;CMP&gt;reverse</strong>(&lt;PCMP&gt;box *const <em>box</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_CONTIGUOUS</code>: Sorts <code>box</code> in reverse by <code>qsort</code>.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>box</code>| \log |<code>box</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<CMP>is_equal" name = "fn:<CMP>is_equal">&lt;CMP&gt;is_equal</a></h3>
+
+<p><code>static int <strong>&lt;CMP&gt;is_equal</strong>(const &lt;PCMP&gt;box *restrict const <em>a</em>, const &lt;PCMP&gt;box *restrict const <em>b</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>If <code>a</code> piecewise equals <code>b</code>, which both can be null.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>a</code>| &amp; |<code>b</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<CMP>unique_merge" name = "fn:<CMP>unique_merge">&lt;CMP&gt;unique_merge</a></h3>
+
+<p><code>static void <strong>&lt;CMP&gt;unique_merge</strong>(&lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;biaction_fn <em>merge</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>BOX_CONTIGUOUS</code>: Removes consecutive duplicate elements in <code>box</code> lazily.</p>
+
+<dl>
+	<dt>Parameter: <em>merge</em></dt>
+	<dd>Controls surjection. Called with duplicate elements, if false <code>(x, y)-&gt;(x)</code>, if true <code>(x,y)-&gt;(y)</code>. More complex functions, <code>(x, y)-&gt;(x+y)</code> can be simulated by mixing the two in the value returned. Can be null: behaves like false, always deleting the second element.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>box</code>|) &#215; &#927;(<code>merge</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<CMP>unique" name = "fn:<CMP>unique">&lt;CMP&gt;unique</a></h3>
+
+<p><code>static void <strong>&lt;CMP&gt;unique</strong>(&lt;PCMP&gt;box *const <em>box</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>BOX_CONTIGUOUS</code>: Removes consecutive duplicate elements in <code>box</code>.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>box</code>|)</dd>
+</dl>
+
+</div>
 
 <div>
 
