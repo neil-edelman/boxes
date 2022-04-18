@@ -283,34 +283,34 @@ static void PP_(test_states)(void) {
 	printf("Done basic tests.\n\n");
 }
 
-#define ARRAY_NAME PP_(test)
+/* #define ARRAY_NAME PP_(test)
 #define ARRAY_TYPE PP_(type) *
-#include "../src/array.h"
+#include "../src/array.h" <- Now BOX is defined in this; too much work. */
 
 static void PP_(test_random)(void) {
 	struct P_(pool) pool = P_(pool)();
-	struct PP_(test_array) test = PP_(test_array)();
+	/* This parameter controls how big the pool wants to be. */
+	struct { size_t size; PP_(type) *data[2*5000]; } test;
+	const size_t test_size = sizeof test.data / sizeof *test.data,
+		length = 120000; /* Controls how many iterations. */
 	size_t i;
-	const size_t length = 120000; /* Controls how many iterations. */
 	char graph_fn[64];
 	const size_t graph_max = 100000;
 	PP_(type) *data, **ptr;
 
+	test.size = 0;
 	for(i = 0; i < length; i++) {
 		char str[12];
 		unsigned r = (unsigned)rand();
 		int is_print = !(i & (i - 1));
-		/* This parameter controls how big the pool wants to be. */
-		if(r > test.size * (RAND_MAX / (2 * 5000))) {
+		if(r > test.size * (RAND_MAX / test_size) && test.size < test_size) {
 			/* Create. */
 			data = P_(pool_new)(&pool);
 			if(!data) { perror("Error"), assert(0); return;}
 			PP_(filler)(data);
 			PP_(to_string)(data, &str);
 			if(is_print) printf("%lu: Created %s.\n", (unsigned long)i, str);
-			ptr = PP_(test_array_new)(&test);
-			assert(ptr);
-			*ptr = data;
+			test.data[test.size++] = data;
 		} else {
 			/* Remove. */
 			int ret;
@@ -321,7 +321,9 @@ static void PP_(test_random)(void) {
 			ret = P_(pool_remove)(&pool, *ptr);
 			assert(ret || (perror("Removing"),
 				PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-rem-err.gv"), 0));
-			PP_(test_array_remove)(&test, ptr);
+			/* test.remove(ptr) */
+			memmove(ptr, ptr + 1,
+				sizeof *test.data * (--test.size - (size_t)(ptr - test.data)));
 		}
 		if(is_print) printf("test.size: %lu.\n", (unsigned long)test.size);
 		if(is_print && i < graph_max) {
@@ -337,7 +339,6 @@ static void PP_(test_random)(void) {
 			(unsigned long)i);
 		PP_(graph)(&pool, graph_fn);
 	}
-	PP_(test_array_)(&test);
 	P_(pool_)(&pool);
 }
 
