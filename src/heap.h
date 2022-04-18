@@ -303,10 +303,10 @@ static PH_(value) H_(heap_pop)(struct H_(heap) *const heap) {
 }
 
 /** The capacity of `heap` will be increased to at least `n` elements beyond
- the size. Invalidates pointers in `heap.a`. All the elements in `heap.a.size`
- are part of the heap, but `heap.a.size` <= `index` < `heap.a.capacity`
- can be used to construct new elements without immediately making them part of
- the heap, then <fn:<H>heap_append>.
+ the size. Invalidates pointers in `heap`. All the elements
+ `heap._.size` <= `index` < `heap._.capacity` can be used to construct new
+ elements without immediately making them part of the heap, then
+ <fn:<H>heap_append>.
  @return The start of the buffered space. If `a` is idle and `buffer` is zero,
  a null pointer is returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */

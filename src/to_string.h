@@ -5,10 +5,10 @@
 
  Interface (defined by `BOX_`, `BOX`, and `BOX_OUTPUT`):
 
- \* `int <BOX>is_element(<PSZ>element_c)`;
+ \* `int <BOX>is_element(<PSTR>element_c)`;
  \* `struct <BOX>forward`;
- \* `struct <BOX>forward <BOX>forward_begin(const <PSZ>box *)`;
- \* `<PSZ>element_c <BOX>forward_next(struct <BOX>iterator *)`.
+ \* `struct <BOX>forward <BOX>forward_begin(const <PSTR>box *)`;
+ \* `<PSTR>element_c <BOX>forward_next(struct <BOX>iterator *)`.
 
  @param[STR_(n)]
  A one-argument macro producing a name that is responsible for the name of the
@@ -90,11 +90,11 @@ typedef const BOX_CONTENT PSTR_(element_c);
  null-terminated output string. */
 typedef void (*PSTR_(to_string_fn))(PSTR_(element_c), char (*)[12]);
 /* Check that `TO_STRING` is a function implementing
- <typedef:<PSZ>to_string>. */
+ <typedef:<PSTR>to_string>. */
 static const PSTR_(to_string_fn) PSTR_(to_string) = (TO_STRING);
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
- 256 bytes, with limitations of only printing 4 things at a time. `<SZ>` is
+ 256 bytes, with limitations of only printing 4 things at a time. `<STR>` is
  loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`.
  @return Address of the static buffer. @order \Theta(1) @allow */
 static const char *STR_(to_string)(const PSTR_(box) *const box) {
@@ -102,7 +102,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;
 	const size_t ellipsis_len = sizeof ellipsis - 1;
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
-	size_t advance, size;
+	size_t advance;
 	PSTR_(element_c) x;
 	struct BOX_(forward) it;
 	int is_sep = 0;
@@ -119,7 +119,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
-		if((size = (size_t)(b - buffer))
+		if((size_t)(b - buffer)
 			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1)
 			if(BOX_(is_content)(BOX_(forward_next)(&it))) goto ellipsis;
 			else break;

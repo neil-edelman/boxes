@@ -218,7 +218,7 @@ Only defined when [&lt;H&gt;heap_size](#user-content-fn-2f5a4cc1) returns true\.
 
 <code>static &lt;PH&gt;node *<strong>&lt;H&gt;heap_buffer</strong>(struct &lt;H&gt;heap *const <em>heap</em>, const size_t <em>n</em>)</code>
 
-The capacity of `heap` will be increased to at least `n` elements beyond the size\. Invalidates pointers in `heap.a`\. All the elements in `heap.a.size` are part of the heap, but `heap.a.size` <= `index` < `heap.a.capacity` can be used to construct new elements without immediately making them part of the heap, then [&lt;H&gt;heap_append](#user-content-fn-9c9f1648)\.
+The capacity of `heap` will be increased to at least `n` elements beyond the size\. Invalidates pointers in `heap`\. All the elements `heap._.size` <= `index` < `heap._.capacity` can be used to construct new elements without immediately making them part of the heap, then [&lt;H&gt;heap_append](#user-content-fn-9c9f1648)\.
 
  * Return:  
    The start of the buffered space\. If `a` is idle and `buffer` is zero, a null pointer is returned, otherwise null indicates an error\.
@@ -264,7 +264,7 @@ Shallow\-copies and heapifies `master` into `heap`\.
 
 <code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<SZ>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<STR>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
 
  * Return:  
    Address of the static buffer\.

@@ -295,7 +295,7 @@
 
 <p><code>static &lt;PH&gt;node *<strong>&lt;H&gt;heap_buffer</strong>(struct &lt;H&gt;heap *const <em>heap</em>, const size_t <em>n</em>)</code></p>
 
-<p>The capacity of <code>heap</code> will be increased to at least <code>n</code> elements beyond the size. Invalidates pointers in <code>heap.a</code>. All the elements in <code>heap.a.size</code> are part of the heap, but <code>heap.a.size</code> &lt;= <code>index</code> &lt; <code>heap.a.capacity</code> can be used to construct new elements without immediately making them part of the heap, then <a href = "#fn:&lt;H&gt;heap_append">&lt;H&gt;heap_append</a>.</p>
+<p>The capacity of <code>heap</code> will be increased to at least <code>n</code> elements beyond the size. Invalidates pointers in <code>heap</code>. All the elements <code>heap._.size</code> &lt;= <code>index</code> &lt; <code>heap._.capacity</code> can be used to construct new elements without immediately making them part of the heap, then <a href = "#fn:&lt;H&gt;heap_append">&lt;H&gt;heap_append</a>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -350,7 +350,7 @@
 
 <p><code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;SZ&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;STR&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
 
 <dl>
 	<dt>Return:</dt>

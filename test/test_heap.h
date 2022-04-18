@@ -163,15 +163,16 @@ static void PH_(test_basic)(void) {
 	for(i = cum_size; i > 0; i--) {
 		char z[12];
 		node = H_(heap_peek)(&heap);
+		assert(node);
 		PH_(to_string)(node, &z);
-		x = H_(heap_pop)(&heap);
+		H_(heap_pop)(&heap);
 		if(!i || !(i & (i - 1))) {
 			printf("%lu: retreving %s.\n", (unsigned long)i, z);
 			sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-remove-%lu.gv",
 				(unsigned long)i);
 			PH_(graph)(&heap, fn);
 		}
-		assert(heap._.size == i - 1);
+		assert(heap._.size == i - 1 && H_(heap_size)(&heap) == i - 1);
 		PH_(valid)(&heap);
 		if(i != cum_size)
 			assert(PH_(compare)(last_priority, PH_(get_priority)(node)) <= 0);

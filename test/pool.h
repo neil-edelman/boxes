@@ -24,8 +24,8 @@
  Do not un-define certain variables for subsequent inclusion in a trait.
 
  @param[POOL_TO_STRING_NAME, POOL_TO_STRING]
- To string trait contained in <to_string.h>; `<PSZ>` that satisfies `C` naming
- conventions when mangled and function implementing <typedef:<PSZ>to_string_fn>.
+ To string trait contained in <to_string.h>; `<PSTR>` that satisfies `C` naming
+ conventions when mangled and function implementing <typedef:<PSTR>to_string_fn>.
  There can be multiple to string traits, but only one can omit
  `POOL_TO_STRING_NAME`. This container is only iterable in the first slab, so
  this is not very useful except for debugging.
@@ -354,19 +354,19 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 
 
 #ifdef POOL_TO_STRING_NAME /* <!-- name */
-#define SZ_(n) POOL_CAT(P_(pool), POOL_CAT(POOL_TO_STRING_NAME, n))
+#define STR_(n) POOL_CAT(P_(pool), POOL_CAT(POOL_TO_STRING_NAME, n))
 #else /* name --><!-- !name */
-#define SZ_(n) POOL_CAT(P_(pool), n)
+#define STR_(n) POOL_CAT(P_(pool), n)
 #endif /* !name --> */
 #define TO_STRING POOL_TO_STRING
 #include "to_string.h" /** \include */
 #ifdef POOL_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef POOL_TEST
-static PSZ_(to_string_fn) PP_(to_string) = PSZ_(to_string);
+static PSTR_(to_string_fn) PP_(to_string) = PSTR_(to_string);
 static const char *(*PP_(pool_to_string))(const struct P_(pool) *)
-	= &SZ_(to_string);
+	= &STR_(to_string);
 #endif /* expect --> */
-#undef SZ_
+#undef STR_
 #undef POOL_TO_STRING
 #ifdef POOL_TO_STRING_NAME
 #undef POOL_TO_STRING_NAME

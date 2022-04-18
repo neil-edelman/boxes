@@ -32,9 +32,9 @@
  trait.
 
  @param[HEAP_TO_STRING_NAME, HEAP_TO_STRING]
- To string trait contained in <to_string.h>; an optional unique `<SZ>`
+ To string trait contained in <to_string.h>; an optional unique `<STR>`
  that satisfies `C` naming conventions when mangled and function implementing
- <typedef:<PSZ>to_string_fn>.
+ <typedef:<PSTR>to_string_fn>.
 
  @depend [array](https://github.com/neil-edelman/array)
  @std C89
@@ -368,9 +368,9 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 
 
 #ifdef HEAP_TO_STRING_NAME /* <!-- name */
-#define SZ_(n) HEAP_CAT(H_(heap), HEAP_CAT(HEAP_TO_STRING_NAME, n))
+#define STR_(n) HEAP_CAT(H_(heap), HEAP_CAT(HEAP_TO_STRING_NAME, n))
 #else /* name --><!-- !name */
-#define SZ_(n) HEAP_CAT(H_(heap), n)
+#define STR_(n) HEAP_CAT(H_(heap), n)
 #endif /* !name --> */
 #ifdef HEAP_VALUE /* <!-- value */
 /* Check that `HEAP_TO_STRING` is a function implementing this prototype. */
@@ -386,11 +386,11 @@ static void PH_(thunk_to_string)(const PH_(node) *const node,
 #include "to_string.h" /** \include */
 #ifdef HEAP_TEST /* <!-- expect: greedy satisfy forward-declared. */
 #undef HEAP_TEST
-static PSZ_(to_string_fn) PH_(to_string) = PSZ_(to_string);
+static PSTR_(to_string_fn) PH_(to_string) = PSTR_(to_string);
 static const char *(*PH_(heap_to_string))(const struct H_(heap) *)
-	= &SZ_(to_string);
+	= &STR_(to_string);
 #endif /* expect --> */
-#undef SZ_
+#undef STR_
 #undef HEAP_TO_STRING
 #ifdef HEAP_TO_STRING_NAME
 #undef HEAP_TO_STRING_NAME
