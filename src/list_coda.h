@@ -64,7 +64,7 @@ static const PLC_(compare_fn) PLC_(compare) = (LIST_COMPARE);
  @implements <typedef:<PLC>compare_fn> (one can `qsort` an array of lists, as
  long as one calls <fn:<L>list_self_correct> on it's elements)
  @order \Theta(min(|`alist`|, |`blist`|)) @allow */
-static int LC_(compare)(const struct L_(list) *const alist,
+static int LC_(compare_deprecated)(const struct L_(list) *const alist,
 	const struct L_(list) *const blist) {
 	struct L_(listlink) *a, *b;
 	int diff;

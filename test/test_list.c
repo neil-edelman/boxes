@@ -321,10 +321,9 @@ static void pandas_tests(void) {
 	name_list_clear(&names), where_list_clear(&wheres), fero_list_clear(&feros);
 	for(i = 0; i < 60; i++)
 		panda_from_pool_combined(&pandas, &names, &wheres, &feros);
-	assert(0);
-	/*name_list_sort(&names);
+	name_list_sort(&names);
 	where_list_sort(&wheres);
-	fero_list_sort(&feros);*/
+	fero_list_sort(&feros);
 	panda_graph(&names, &wheres, &feros);
 	panda_pool_(&pandas);
 }
