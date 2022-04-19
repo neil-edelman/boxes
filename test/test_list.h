@@ -158,10 +158,8 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	const size_t test_size = 10;
 	size_t i;
 	assert(parent_new && parent);
+	L_(list_clear)(&l1), L_(list_clear)(&l2);
 	printf("Basic tests of <" QUOTE(LIST_NAME) ">list:\n");
-	/* Clear */
-	L_(list_clear)(&l1);
-	L_(list_clear)(&l2);
 	PL_(count)(&l1, 0);
 	/* Test positions null. */
 	link = L_(list_head)(&l1), assert(!link);
@@ -272,17 +270,16 @@ static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
 		struct L_(list) eg1, eg2;
 		struct L_(listlink) *link;
 		char z[12];
+		L_(list_clear)(&eg1), L_(list_clear)(&eg2);
 		if(!(link = parent_new(parent))) { assert(0); return; }
 		PL_(filler)(link);
 		PL_(to_string)(link, &z);
 		printf("link: %s.\n", z);
-		L_(list_clear)(&eg1);
 		printf("empty eg1: %s, as_head %p, as_tail %p.\n", PL_(list_to_string)(&eg1), (void *)&eg1.u.as_head.head,
 			(void *)&eg1.u.as_tail.tail);
 		L_(list_self_correct)(&eg1);
 		printf("empty eg1: %s, as_head %p, as_tail %p.\n", PL_(list_to_string)(&eg1), (void *)&eg1.u.as_head.head,
 			(void *)&eg1.u.as_tail.tail);
-		L_(list_clear)(&eg2);
 		printf("empty eg2: %s, as_head %p, as_tail %p.\n", PL_(list_to_string)(&eg2), (void *)&eg2.u.as_head.head,
 			(void *)&eg2.u.as_tail.tail);
 		L_(list_push)(&eg1, link);
@@ -367,8 +364,8 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 	struct L_(list) la, lb, result;
 	struct L_(listlink) *link, *a = 0, *b = 0, *b_alt = 0, *c = 0, *d = 0;
 	int cmp;
-	/* Test nulls, (Not comprehensive.) */
 	L_(list_clear)(&la);
+	/* Test nulls, (Not comprehensive.) */
 	cmp = L_(list_compare)(0, 0), assert(cmp == 0);
 	cmp = L_(list_compare)(&la, 0), assert(cmp > 0);
 	cmp = L_(list_compare)(0, &la), assert(cmp < 0);
@@ -385,9 +382,9 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 		const size_t no_try = 5000;
 		struct L_(list) x, y;
 		size_t i;
+		L_(list_clear)(&x), L_(list_clear)(&y);
 		/* By the PHP, this should be more than enough to get at least the
 		 small-entropy ones, (_ie_ `Letter`.) */
-		L_(list_clear)(&x), L_(list_clear)(&y);
 		for(i = 0; i < no_try; i++) {
 			if(!(link = parent_new(parent))) { assert(0); return; }
 			PL_(filler)(link);

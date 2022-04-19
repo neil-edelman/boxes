@@ -96,12 +96,10 @@
  ![States.](../doc/node-states.png) */
 struct L_(listlink) { struct L_(listlink) *next, *prev; };
 
-/** Serves as head and tail for linked-list of <tag:<L>listlink>. Use
- <fn:<L>list_clear> to initialize the list. Because this list is closed; that
- is, given a valid pointer to an element, one can determine all others, null
- values are not allowed and it is _not_ the same as `{0}`. The contents of this
- structure should be treated as read-only while initialized, with the exception
- of <fn:<L>list_self_correct>.
+/** Serves as head and tail for linked-list of <tag:<L>listlink>. One must use
+ <fn:<L>list_clear> to initialize the list -- because this list is closed; that
+ is, given a valid pointer to an element, one can determine all others, a
+ null-initialized list is in an invalid state.
 
  ![States.](../doc/states.png) */
 struct L_(list);
@@ -118,13 +116,19 @@ struct L_(list) {
 static int PL_(is_content)(const struct L_(listlink) *const x) { return !!x; }
 /* Since this is a permutation, the iteration is defined by none other then
  itself. @implements `forward` */
-struct PL_(forward) { const struct L_(listlink) *x; };
+struct PL_(forward) { const struct L_(listlink) *link; };
 /** @return Before `a`. @implements `forward_begin` */
-static struct PL_(forward) PL_(forward_begin)(const struct L_(list) *const l)
-	{ struct PL_(forward) it; it.x = l ? &l->u.as_head.head : 0; return it; }
+static struct PL_(forward) PL_(forward_begin)(const struct L_(list) *const l) {
+	struct PL_(forward) it;
+	it.link = l && (assert(l->u.flat.next && !l->u.flat.zero && l->u.flat.prev),
+		l->u.flat.next != l->u.flat.prev) ? &l->u.as_head.head : 0;
+	return it;
+}
 /** Move to next `it`. @return Element or null. @implements `forward_next` */
 static const struct L_(listlink) *PL_(forward_next)(struct PL_(forward) *const
-	it) { return assert(it && it->x), it->x->next ? it->x = it->x->next : 0; }
+	it) { assert(it && it->link);
+	if(!it->link->next) return 0; /* Past the end. */
+	return it->link = it->link->next; }
 
 #if 0
 /** Loads `list` into `it`. @implements begin */
@@ -289,8 +293,8 @@ static struct L_(listlink) *L_(list_pop)(struct L_(list) *const list) {
 /** Moves the elements `from` onto `to` at the end.
  @param[to] If null, then it removes elements from `from`.
  @order \Theta(1) @allow */
-static void L_(list_to)(struct L_(list) *const from,
-	struct L_(list) *const to) {
+static void L_(list_to)(struct L_(list) *restrict const from,
+	struct L_(list) *restrict const to) {
 	assert(from && from != to);
 	if(!to) { PL_(clear)(from); return; }
 	PL_(move)(from, &to->u.as_tail.tail);
