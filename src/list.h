@@ -120,15 +120,15 @@ struct PL_(forward) { const struct L_(listlink) *link; };
 /** @return Before `a`. @implements `forward_begin` */
 static struct PL_(forward) PL_(forward_begin)(const struct L_(list) *const l) {
 	struct PL_(forward) it;
-	it.link = l && (assert(l->u.flat.next && !l->u.flat.zero && l->u.flat.prev),
-		l->u.flat.next != l->u.flat.prev) ? &l->u.as_head.head : 0;
+	it.link = l ? &l->u.as_head.head : 0;
 	return it;
 }
 /** Move to next `it`. @return Element or null. @implements `forward_next` */
 static const struct L_(listlink) *PL_(forward_next)(struct PL_(forward) *const
-	it) { assert(it && it->link);
-	if(!it->link->next) return 0; /* Past the end. */
-	return it->link = it->link->next; }
+	it) { assert(it);
+	if(!it->link || !it->link->next) return 0;
+	it->link = it->link->next;
+	return it->link->next ? it->link : 0; }
 
 #if 0
 /** Loads `list` into `it`. @implements begin */
