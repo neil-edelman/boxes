@@ -203,22 +203,6 @@ static PA_(type) *PA_(at)(const struct A_(array) *a, const size_t idx)
 static void PA_(tell_size)(struct A_(array) *a, const size_t size)
 	{ assert(a); a->size = size; }
 
-#define BOX_RANGE struct PA_(range)
-struct PA_(range) { struct A_(array) *a; size_t low, high; };
-/* @implements `range` */
-static struct PA_(range) PA_(range)(struct A_(array) *const a,
-	const PA_(type) *const low, const PA_(type) *const high) {
-	struct PA_(range) r;
-	assert(a && low <= high && high <= a->data + a->size);
-	r.a = a, r.low = (size_t)(low - a->data), r.high = (size_t)(high - a->data);
-	return r;
-}
-/* @implements `move` */
-static void PA_(move)(struct A_(array) *const dst,
-	struct PA_(range) *const src) {
-	assert(0);
-}
-
 /* Box override information. */
 #define BOX_ PA_
 #define BOX struct A_(array)
@@ -507,7 +491,6 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #undef BOX_ITERATOR
 #undef BOX_ACCESS
 #undef BOX_CONTIGUOUS
-#undef BOX_MOVE
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT
 #undef ARRAY_COMPARE_TRAIT

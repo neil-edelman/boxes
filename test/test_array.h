@@ -532,6 +532,7 @@ static int PCMP_(fill_unique)(PA_(type) *const fill,
 	assert(0); return 0;
 }
 
+#if 0
 static int PCMP_(unique_array)(PA_(type) *const fill, const size_t size) {
 	const size_t no_try = 5000;
 	size_t attempt, i = 0;
@@ -554,6 +555,7 @@ static int PCMP_(unique_array)(PA_(type) *const fill, const size_t size) {
 	return printf("unique_array: got duplicates in %lu tries.\n",
 		(unsigned long)attempt), 1;
 }
+#endif
 
 static void PCMP_(test_compactify)(void) {
 	struct A_(array) a = A_(array)();
@@ -718,67 +720,6 @@ static void PCMP_(test_bounds)(void) {
 #endif /* compare --> */
 }
 
-static void PCMP_(test_binary)(void) {
-	PA_(type) unique[4];
-	struct A_(array) a = A_(array)(), b = A_(array)(), r = A_(array)();
-	int cmp;
-	printf("\ntest binary:\n");
-	if(!PCMP_(unique_array)(unique, sizeof unique / sizeof *unique))
-		return;
-	CMP_(subtraction_to)(0, 0, 0);
-	CMP_(subtraction_to)(0, 0, &r), assert(!r.size);
-	#if 0
-	L_(list_union_to)(0, 0, 0);
-	L_(list_union_to)(0, 0, &la);
-	L_(list_intersection_to)(0, 0, 0);
-	L_(list_intersection_to)(0, 0, &la);
-	L_(list_xor_to)(0, 0, 0);
-	L_(list_xor_to)(0, 0, &la);
-	PL_(reset_b)(&la, &lb, &result, a, b, b_alt, c, d);
-#endif
-	A_(array_)(&a), A_(array_)(&b), A_(array_)(&r);
-	if(!A_(array_append)(&a, 3) || !A_(array_append)(&b, 2)) assert(0);
-	memcpy(a.data + 0, unique + 0, sizeof *unique);
-	memcpy(a.data + 1, unique + 1, sizeof *unique);
-	memcpy(a.data + 2, unique + 3, sizeof *unique);
-	memcpy(b.data + 0, unique + 1, sizeof *unique);
-	memcpy(b.data + 1, unique + 2, sizeof *unique);
-	printf("a = (A,B,D) = %s, b = (B,C) = %s, r = %s.\n",
-		PA_(array_to_string)(&a), PA_(array_to_string)(&b),
-		PA_(array_to_string)(&r));
-	CMP_(subtraction_to)(&a, &b, &r);
-	printf("a - b = %s.\n", PA_(array_to_string)(&r));
-	/* this is not really defined */
-#if 0
-	PL_(exact)(&la, b, 0, 0, 0);
-	PL_(exact)(&lb, b_alt, c, 0, 0);
-	PL_(exact)(&result, a, d, 0, 0);
-#endif
-
-	CMP_(union_to)(&a, &b, &r);
-	printf("a \\cup b = %s.\n", PA_(array_to_string)(&r));
-#if 0
-	PL_(exact)(&la, 0, 0, 0, 0);
-	PL_(exact)(&lb, b_alt, 0, 0, 0);
-	PL_(exact)(&result, a, b, c, d);
-
-	PL_(reset_b)(&la, &lb, &result, a, b, b_alt, c, d);
-	L_(list_intersection_to)(&la, &lb, &result);
-	printf("a \\cap b = %s.\n", PL_(list_to_string)(&result));
-	PL_(exact)(&la, a, d, 0, 0);
-	PL_(exact)(&lb, b_alt, c, 0, 0);
-	PL_(exact)(&result, b, 0, 0, 0);
-
-	PL_(reset_b)(&la, &lb, &result, a, b, b_alt, c, d);
-	L_(list_xor_to)(&la, &lb, &result);
-	printf("a \\xor b = %s.\n", PL_(list_to_string)(&result));
-	PL_(exact)(&la, b, 0, 0, 0);
-	PL_(exact)(&lb, b_alt, 0, 0, 0);
-	PL_(exact)(&result, a, c, d, 0);
-#endif
-}
-
-
 /** `ARRAY_TEST`, `ARRAY_COMPARE` -> `ARRAY_TO_STRING`, !`NDEBUG`: will be
  tested on stdout. @allow */
 static void CMP_(compare_test)(void) {
@@ -800,7 +741,6 @@ static void CMP_(compare_test)(void) {
 	PCMP_(test_bounds)();
 	PCMP_(test_compactify)();
 	PCMP_(test_compare)();
-	PCMP_(test_binary)();
 	assert(errno == 0);
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array compare.\n\n");
 }
