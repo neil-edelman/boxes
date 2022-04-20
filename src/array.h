@@ -88,10 +88,6 @@
 #define ARRAY_BASE
 
 
-/* Box override information. */
-#define BOX_ PA_
-#define BOX struct A_(array)
-
 #ifndef ARRAY_MIN_CAPACITY /* <!-- !min; */
 #define ARRAY_MIN_CAPACITY 3 /* > 1 */
 #endif /* !min --> */
@@ -207,6 +203,26 @@ static PA_(type) *PA_(at)(const struct A_(array) *a, const size_t idx)
 static void PA_(tell_size)(struct A_(array) *a, const size_t size)
 	{ assert(a); a->size = size; }
 
+#define BOX_RANGE struct PA_(range)
+struct PA_(range) { struct A_(array) *a; size_t low, high; };
+/* @implements `range` */
+static struct PA_(range) PA_(range)(struct A_(array) *const a,
+	const PA_(type) *const low, const PA_(type) *const high) {
+	struct PA_(range) r;
+	assert(a && low <= high && high <= a->data + a->size);
+	r.a = a, r.low = (size_t)(low - a->data), r.high = (size_t)(high - a->data);
+	return r;
+}
+/* @implements `move` */
+static void PA_(move)(struct A_(array) *const dst,
+	struct PA_(range) *const src) {
+	assert(0);
+}
+
+/* Box override information. */
+#define BOX_ PA_
+#define BOX struct A_(array)
+
 /** Cursor; may become invalid after a topological change to any items
  previous. */
 struct A_(array_iterator);
@@ -245,7 +261,7 @@ static PA_(type) *A_(array_previous)(struct A_(array_iterator) *const it)
 static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
 	size_t c0;
 	PA_(type) *data;
-	const size_t max_size = (size_t)-1 / sizeof *a->data;
+	const size_t max_size = (size_t)~0 / sizeof *a->data;
 	assert(a);
 	if(a->data) {
 		assert(a->size <= a->capacity);
@@ -277,7 +293,7 @@ static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
  indicates an error. @throws[realloc] @allow */
 static PA_(type) *A_(array_buffer)(struct A_(array) *const a, const size_t n) {
 	assert(a);
-	if(a->size > (size_t)-1 - n) { errno = ERANGE; return 0; }
+	if(a->size > (size_t)~0 - n) { errno = ERANGE; return 0; }
 	return A_(array_reserve)(a, a->size + n) && a->data ? a->data + a->size : 0;
 }
 
@@ -298,8 +314,8 @@ static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n) {
  elements. @throws[realloc, ERANGE] @allow */
 static PA_(type) *A_(array_insert)(struct A_(array) *const a,
 	const size_t n, const size_t at) {
-	/* Investigate `n` is better than `element`; all the other one's are
-	 element. But also, when would I ever use this? */
+	/* Investigate `n` is better than `element`; all the other are element. But
+	 also, when would I ever use this? */
 	const size_t old_size = a->size;
 	PA_(type) *const b = PA_(append)(a, n);
 	assert(a && at <= old_size);
@@ -368,7 +384,7 @@ static PA_(type) *A_(array_pop)(struct A_(array) *const a)
  pointer will be returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */
 static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n)
-	{ return PA_(append)(a, n); }
+	{ return assert(a), PA_(append)(a, n); }
 
 /** Indices [`i0`, `i1`) of `a` will be replaced with a copy of `b`.
  @param[b] Can be null, which acts as empty, but cannot overlap with `a`.
@@ -491,6 +507,7 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #undef BOX_ITERATOR
 #undef BOX_ACCESS
 #undef BOX_CONTIGUOUS
+#undef BOX_MOVE
 #endif /* !trait --> */
 #undef ARRAY_TO_STRING_TRAIT
 #undef ARRAY_COMPARE_TRAIT
