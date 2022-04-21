@@ -140,13 +140,13 @@ static struct PL_(iterator) PL_(begin)(struct L_(list) *const l)
 static struct PL_(iterator) PL_(end)(struct L_(list) *const l)
 	{ struct PL_(iterator) it; it.link = l ? &l->u.as_tail.tail : 0; return it;}
 /** Advances `it`. @implements `next` */
-static const struct L_(listlink) *PL_(next)(struct PL_(iterator) *const it) {
+static struct L_(listlink) *PL_(next)(struct PL_(iterator) *const it) {
 	struct L_(listlink) *n; assert(it);
 	if(!it->link || !(n = it->link->next)) return 0;
 	return (it->link = n)->next ? n : 0;
 }
 /** Reverses `it`. @implements `previous` */
-static const struct L_(listlink) *PL_(previous)(struct PL_(iterator) *const it){
+static struct L_(listlink) *PL_(previous)(struct PL_(iterator) *const it){
 	struct L_(listlink) *n; assert(it);
 	if(!it->link || !(n = it->link->prev)) return 0;
 	return (it->link = n)->prev ? n : 0;
@@ -358,7 +358,7 @@ static void L_(list_for_each)(struct L_(list) *const list,
  @return The first `predicate` that returned true, or, if the statement is
  false on all, null.
  @order \O(|`list`|) \times \O(`predicate`) @allow */
-static struct L_(listlink) *L_(list_any)(const struct L_(list) *const list,
+static struct L_(listlink) *L_(list_anyy)(const struct L_(list) *const list,
 	const PL_(predicate_fn) predicate) {
 	struct L_(listlink) *link, *next_link;
 	assert(list && predicate);
@@ -382,13 +382,13 @@ static void L_(list_self_correct)(struct L_(list) *const list) {
 	}
 }
 
-#if 0
+/*#if 0*/
 #ifdef HAVE_ITERATE_H /* <!-- iterate */
 #define ITR_(n) LIST_CAT(L_(list), n)
 #include "iterate.h" /** \include */
 #undef ITR_
 #endif /* iterate --> */
-#endif
+/*#endif*/
 
 #ifdef LIST_TEST /* <!-- test */
 /* Forward-declare. */
@@ -405,7 +405,7 @@ static void PL_(unused_base)(void) {
 	L_(list_unshift)(0, 0); L_(list_push)(0, 0); L_(list_remove)(0);
 	L_(list_shift)(0); L_(list_pop)(0); L_(list_to)(0, 0);
 	L_(list_to_before)(0, 0); L_(list_to_if)(0, 0, 0); L_(list_for_each)(0, 0);
-	L_(list_any)(0, 0); L_(list_self_correct)(0);
+	L_(list_anyy)(0, 0); L_(list_self_correct)(0);
 	PL_(unused_base_coda)();
 }
 static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }

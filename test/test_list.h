@@ -232,8 +232,8 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	PL_(count)(&l2, test_size);
 	assert(L_(list_head)(&l2) == link_first);
 	/* Test any. */
-	link = L_(list_any)(&l1, &PL_(true)), assert(!link);
-	link = L_(list_any)(&l2, &PL_(true)), assert(link == link_first);
+	link = L_(list_anyy)(&l1, &PL_(true)), assert(!link);
+	link = L_(list_anyy)(&l2, &PL_(true)), assert(link == link_first);
 	/* Test add before/after. */
 	if(!(link = parent_new(parent))) { assert(0); return; }
 	PL_(filler)(link);
