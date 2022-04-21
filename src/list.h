@@ -84,10 +84,6 @@
 #define LIST_BASE
 
 
-/* Box override information. */
-#define BOX_ PL_
-#define BOX struct L_(list)
-
 /** Storage of this structure is the responsibility of the caller, who must
  provide a stable pointer while in a list. Generally, one encloses this in a
  host `struct` or `union`. The contents of this structure should be treated as
@@ -96,10 +92,7 @@
  ![States.](../doc/node-states.png) */
 struct L_(listlink) { struct L_(listlink) *next, *prev; };
 
-/** Serves as head and tail for linked-list of <tag:<L>listlink>. One must use
- <fn:<L>list_clear> to initialize the list -- because this list is closed; that
- is, given a valid pointer to an element, one can determine all others, a
- null-initialized list is in an invalid state.
+/** Serves as head and tail sentinel for a linked-list of <tag:<L>listlink>.
 
  ![States.](../doc/states.png) */
 struct L_(list);
@@ -110,14 +103,20 @@ struct L_(list) {
 		struct { struct L_(listlink) *next, *zero, *prev; } flat;
 	} u;
 };
+/* The simplicity of a closed list with zero elements, though mathematically
+ elegant, is a pain to understand and initialize, and always causes errors in
+ practice. So an empty list is a special case for which we must always
+ (unnecessarily) check. */
+
 
 #define BOX_CONTENT struct L_(listlink) *
 /** Is `x` not null? @implements `is_content` */
-static int PL_(is_content)(const struct L_(listlink) *const x) { return !!x; }
+static int PL_(is_content)(const struct L_(listlink) *const x)
+	{ return x && x->next && x->prev; }
 /* Since this is a permutation, the iteration is defined by none other then
  itself. @implements `forward` */
 struct PL_(forward) { const struct L_(listlink) *link; };
-/** @return Before `a`. @implements `forward_begin` */
+/** @return Before `l`. @implements `forward_begin` */
 static struct PL_(forward) PL_(forward_begin)(const struct L_(list) *const l) {
 	struct PL_(forward) it;
 	it.link = l ? &l->u.as_head.head : 0;
@@ -125,26 +124,47 @@ static struct PL_(forward) PL_(forward_begin)(const struct L_(list) *const l) {
 }
 /** Move to next `it`. @return Element or null. @implements `forward_next` */
 static const struct L_(listlink) *PL_(forward_next)(struct PL_(forward) *const
-	it) { assert(it);
-	if(!it->link || !it->link->next) return 0;
-	it->link = it->link->next;
-	return it->link->next ? it->link : 0; }
-
-#if 0
-/** Loads `list` into `it`. @implements begin */
-static void PL_(begin)(struct PL_(iterator) *const it,
-	const struct L_(list) *const list)
-	{ assert(it && list), it->link = L_(list_head)(list); }
-/** Advances `it`. @implements next */
-static const struct L_(listlink) *PL_(next)(struct PL_(iterator) *const it) {
-	struct L_(listlink) *here = it->link;
-	assert(it);
-	if(!here) return 0;
-	it->link = L_(list_next)(it->link);
-	return here;
+	it) {
+	struct L_(listlink) *n; assert(it);
+	if(!it->link || !(n = it->link->next)) return 0;
+	return (it->link = n)->next ? n : 0;
 }
-#endif
 
+#define BOX_ITERATOR
+/* @implements `iterator` */
+struct PL_(iterator) { struct L_(listlink) *link; };
+/** @return Before `l`. @implements `begin` */
+static struct PL_(iterator) PL_(begin)(struct L_(list) *const l)
+	{ struct PL_(iterator) it; it.link = l ? &l->u.as_head.head : 0; return it;}
+/** @return Before `l`. @implements `begin` */
+static struct PL_(iterator) PL_(end)(struct L_(list) *const l)
+	{ struct PL_(iterator) it; it.link = l ? &l->u.as_tail.tail : 0; return it;}
+/** Advances `it`. @implements `next` */
+static const struct L_(listlink) *PL_(next)(struct PL_(iterator) *const it) {
+	struct L_(listlink) *n; assert(it);
+	if(!it->link || !(n = it->link->next)) return 0;
+	return (it->link = n)->next ? n : 0;
+}
+/** Reverses `it`. @implements `previous` */
+static const struct L_(listlink) *PL_(previous)(struct PL_(iterator) *const it){
+	struct L_(listlink) *n; assert(it);
+	if(!it->link || !(n = it->link->prev)) return 0;
+	return (it->link = n)->prev ? n : 0;
+}
+/** Removes the element last returned by `it`. (Untested.)
+ @return There was an element. @implements `remove` */
+static int PL_(remove)(struct PL_(iterator) *const it) {
+	assert(0 && it);
+	return 0;
+}
+
+/* Box override information. */
+#define BOX_ PL_
+#define BOX struct L_(list)
+
+
+
+/* <!--  get rid of? --> */
 
 /** Operates by side-effects on the node. */
 typedef void (*PL_(action_fn))(struct L_(listlink) *);
@@ -260,7 +280,7 @@ static void L_(list_unshift)(struct L_(list) *const list,
 	{ assert(list && add), PL_(add_after)(&list->u.as_head.head, add); }
 
 /** Remove `node`. @order \Theta(1) */
-static void PL_(remove)(struct L_(listlink) *const node) {
+static void PL_(remve)(struct L_(listlink) *const node) {
 	node->prev->next = node->next;
 	node->next->prev = node->prev;
 	node->prev = node->next = 0;
@@ -268,7 +288,7 @@ static void PL_(remove)(struct L_(listlink) *const node) {
 
 /** Remove `node`. @order \Theta(1) @allow */
 static void L_(list_remove)(struct L_(listlink) *const node)
-	{ assert(node && node->prev && node->next), PL_(remove)(node); }
+	{ assert(node && node->prev && node->next), PL_(remve)(node); }
 
 /** Removes the first element of `list` and returns it, if any.
  @order \Theta(1) @allow */
