@@ -41,7 +41,7 @@ static char *PL_(name)(const struct L_(listlink) *const l) {
  order, then this would be off. */
 static void PL_(subgraph)(const struct L_(list) *const list, FILE *const fp,
 	const char *const colour, const size_t offset, const int is_nodes) {
-	struct L_(listlink) *link;
+	const struct L_(listlink) *link;
 	char a[12];
 	assert(list && fp && colour);
 	PL_(colour) = colour;
@@ -70,7 +70,7 @@ static void PL_(subgraph)(const struct L_(list) *const list, FILE *const fp,
 			PL_(colour), PL_(name)(list->u.flat.prev), colour,
 			PL_(colour), PL_(name)(list->u.flat.next), colour);
 	}
-	for(link = L_(list_head)(list); link; link = L_(list_next)(link)) {
+	for(link = L_(list_head_c)(list); link; link = L_(list_next_c)(link)) {
 		if(is_nodes) {
 			PL_(to_string)(link, &a);
 			fprintf(fp, "\t%s [label=\"%s\"];\n", PL_(name)(link), a);
@@ -121,7 +121,8 @@ end:
 static void PL_(floyd)(const struct L_(listlink) *link, const size_t count) {
 	size_t fw = 0, b1 = 0, b2 = 0;
 	const struct L_(listlink) *hare = link, *turtle = hare;
-	assert(link && link->prev && link->next);
+	assert(link && (link->prev && link->next || !link->prev && !link->next));
+
 	while(hare->prev->prev) {
 		hare = hare->prev;
 		if(b1++ & 1) turtle = turtle->prev;
@@ -147,9 +148,13 @@ static void PL_(count)(const struct L_(list) *const list, const size_t count) {
 	const struct L_(listlink) *const head = &list->u.as_head.head,
 		*const tail = &list->u.as_tail.tail, *first;
 	assert(list && head && tail && !list->u.flat.zero);
-	if((first = head->next) == tail)
-		{ assert(tail->prev == head && !count); return; }
-	PL_(floyd)(first, count);
+	if(!(first = head->next)) {
+		assert(!tail->prev);
+		assert(!count);
+	} else {
+		assert(tail);
+		PL_(floyd)(first, count);
+	}
 }
 
 /** Returns `0,1,0,1,...` whatever `link`. */
@@ -212,6 +217,7 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	link = L_(list_head)(&l1), assert(link == link_first);
 	link = L_(list_tail)(&l1), assert(link == link_last);
 	printf("After removing and adding: l1 = %s.\n", PL_(list_to_string)(&l1));
+#ifdef HAVE_ITERATOR_H /* <!-- iterator */
 	/* Test movement. */
 	PL_(count)(&l1, test_size);
 	PL_(count)(&l2, 0);
@@ -245,6 +251,7 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	PL_(filler)(link);
 	L_(list_add_before)(L_(list_tail)(&l2), link);
 	PL_(count)(&l2, test_size + 2);
+#endif /* iterator --> */
 	L_(list_clear)(&l2);
 	PL_(count)(&l2, 0);
 }
@@ -364,17 +371,17 @@ static void PL_(reset_b)(struct L_(list) *const la, struct L_(list) *const lb,
 static void PL_(exact)(const struct L_(list) *const list,
 	const struct L_(listlink) *const a, const struct L_(listlink) *const b,
 	const struct L_(listlink) *const c, const struct L_(listlink) *const d) {
-	struct L_(listlink) *i;
+	const struct L_(listlink) *i;
 	assert(list);
-	i = L_(list_head)(list), assert(i == a);
+	i = L_(list_head_c)(list), assert(i == a);
 	if(!i) return;
-	i = L_(list_next)(i), assert(i == b);
+	i = L_(list_next_c)(i), assert(i == b);
 	if(!i) return;
-	i = L_(list_next)(i), assert(i == c);
+	i = L_(list_next_c)(i), assert(i == c);
 	if(!i) return;
-	i = L_(list_next)(i), assert(i == d);
+	i = L_(list_next_c)(i), assert(i == d);
 	if(!i) return;
-	i = L_(list_next)(i), assert(!i);
+	i = L_(list_next_c)(i), assert(!i);
 }
 
 /** Passed `parent_new` and `parent`, tests binary operations. */

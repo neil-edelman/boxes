@@ -996,11 +996,11 @@ static void animals_act(void) {
 	struct id_listlink *id;
 	for(id = id_list_head(&animals.list); id; id = id_list_next(id)) count++;
 	printf("There are %lu animals.\n", (unsigned long)count);
-	id_list_for_each(&animals.list, &id_act);
+	id_list_each(&animals.list, &id_act);
 }
 /** Clears all the `animals`. */
 static void animals_clear(void) {
-	id_list_for_each(&animals.list, &id_delete);
+	id_list_each(&animals.list, &id_delete);
 }
 
 static int animals_tests(void) {
