@@ -99,21 +99,6 @@ static void PL_(graph)(const struct L_(list) *const list, const char *const fn)
 	fclose(fp);
 }
 
-static void PL_(print)(const struct L_(list) *const list) {
-	const struct L_(listlink) *n;
-	char z[12];
-	printf("list %s:\n", orcify(list));
-	if(!list) goto end;
-	n = &list->u.as_head.head;
-	do {
-		if(n->next && n->prev) PL_(to_string)(n, &z);
-		else strcpy(z, "sentinel");
-		printf("%s: ^ %s v %s\n", z, orcify(n->prev), orcify(n->next));
-	} while(n = n->next);
-end:
-	printf(".\n");
-}
-
 /** Perform "Floyd's" tortoise-hare algorithm for cycle detection for the list
  on which `link` is a part and expect `count`. `list` must have at least one
  element, (it can't be the head of tail.)
@@ -298,16 +283,12 @@ static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
 		printf("link: %s.\n", z);
 		printf("empty eg1: %s, as_head %s, as_tail %s.\n", PL_(list_to_string)(&eg1), orcify(&eg1.u.as_head.head),
 			orcify(&eg1.u.as_tail.tail));
-		printf("eg1 before correct: "), PL_(print)(&eg1);
 		L_(list_self_correct)(&eg1);
-		printf("eg1 after correct: "), PL_(print)(&eg1);
 		printf("empty eg1: %s, as_head %s, as_tail %s.\n", PL_(list_to_string)(&eg1), orcify(&eg1.u.as_head.head),
 			orcify(&eg1.u.as_tail.tail));
 		printf("empty eg2: %s, as_head %s, as_tail %s.\n", PL_(list_to_string)(&eg2), orcify(&eg2.u.as_head.head),
 			orcify(&eg2.u.as_tail.tail));
-		printf("eg1 before push: "), PL_(print)(&eg1);
 		L_(list_push)(&eg1, link);
-		printf("eg1 after push: "), PL_(print)(&eg1);
 		printf("link in eg1: %s, next %s, prev %s, next.next %s.\n",
 			PL_(list_to_string)(&eg1), orcify(eg1.u.flat.next),
 			orcify(eg1.u.flat.prev), orcify(eg1.u.flat.next->next));
@@ -340,7 +321,6 @@ static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
 			cmp = PCMP_(compare)(link_a, link_b);
 			assert(cmp <= 0);
 		}
-		printf("list: %s, head %s\n", PL_(list_to_string)(list), orcify(&list->u.as_head.head));
 	}
 	/* Now sort the lists. */
 	printf("Sort array of sorted <" QUOTE(LIST_NAME) ">list by "
@@ -348,8 +328,7 @@ static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
 	qsort(lists, lists_size, sizeof *lists, &PCMP_(compar));
 	for(list = lists; list < lists_end; list++) {
 		L_(list_self_correct)(list); /* `qsort` moves the pointers. */
-		printf("list: %s, head %s.\n",
-			PL_(list_to_string)(list), orcify(&list->u.as_head.head));
+		printf("list: %s.\n", PL_(list_to_string)(list));
 		if(list == lists) continue;
 		cmp = L_(list_compare)(list - 1, list);
 		assert(cmp <= 0);
