@@ -121,8 +121,7 @@ end:
 static void PL_(floyd)(const struct L_(listlink) *link, const size_t count) {
 	size_t fw = 0, b1 = 0, b2 = 0;
 	const struct L_(listlink) *hare = link, *turtle = hare;
-	assert(link && (link->prev && link->next || !link->prev && !link->next));
-
+	assert(link && link->next && link->prev);
 	while(hare->prev->prev) {
 		hare = hare->prev;
 		if(b1++ & 1) turtle = turtle->prev;
@@ -148,11 +147,10 @@ static void PL_(count)(const struct L_(list) *const list, const size_t count) {
 	const struct L_(listlink) *const head = &list->u.as_head.head,
 		*const tail = &list->u.as_tail.tail, *first;
 	assert(list && head && tail && !list->u.flat.zero);
-	if(!(first = head->next)) {
-		assert(!tail->prev);
-		assert(!count);
+	first = head->next, assert(first);
+	if(first == tail) {
+		assert(tail->prev == head && !count);
 	} else {
-		assert(tail);
 		PL_(floyd)(first, count);
 	}
 }
@@ -205,6 +203,7 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	/* Test positions when contents. */
 	link = L_(list_head)(&l1), assert(link == link_first);
 	link = L_(list_tail)(&l1), assert(link == link_last);
+	printf("ha->\n");
 	link = L_(list_previous)(link), assert(link);
 	link = L_(list_next)(link), assert(link == link_last);
 	/* Test remove contents. */
@@ -341,14 +340,16 @@ static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
 			cmp = PCMP_(compare)(link_a, link_b);
 			assert(cmp <= 0);
 		}
+		printf("list: %s, head %s\n", PL_(list_to_string)(list), orcify(&list->u.as_head.head));
 	}
 	/* Now sort the lists. */
-	printf("Sorted array of sorted <" QUOTE(LIST_NAME) ">list by "
+	printf("Sort array of sorted <" QUOTE(LIST_NAME) ">list by "
 		QUOTE(LIST_COMPARE) ":\n");
 	qsort(lists, lists_size, sizeof *lists, &PCMP_(compar));
 	for(list = lists; list < lists_end; list++) {
 		L_(list_self_correct)(list); /* `qsort` moves the pointers. */
-		printf("list: %s.\n", PL_(list_to_string)(list));
+		printf("list: %s, head %s.\n",
+			PL_(list_to_string)(list), orcify(&list->u.as_head.head));
 		if(list == lists) continue;
 		cmp = L_(list_compare)(list - 1, list);
 		assert(cmp <= 0);

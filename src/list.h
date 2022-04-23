@@ -103,32 +103,6 @@ struct L_(list) {
 		struct { struct L_(listlink) *next, *zero, *prev; } flat;
 	} u;
 };
-/** Open `l` is empty is can be detected by null. */
-static int PL_(is_empty)(const struct L_(list) *const l)
-	{ return !l->u.as_head.head.next; }
-/** The simplicity of a closed `open` is way more simple and mathematically
- elegant, though it is a pain to understand and initialize, and always causes
- errors in practice. Convert when modifying the topology. */
-static void PL_(to_closed)(struct L_(list) *const open) {
-	if(PL_(is_empty)(open)) {
-		assert(!open->u.as_tail.tail.prev);
-		open->u.as_head.head.next = &open->u.as_tail.tail;
-		open->u.as_tail.tail.prev = &open->u.as_head.head;
-	} else {
-		assert(open->u.as_tail.tail.prev);
-	}
-}
-/** Will only convert a zero-element closed `list` to open again. */
-static void PL_(to_open)(struct L_(list) *const closed) {
-	if(!closed->u.as_head.head.next->next) {
-		assert(closed->u.as_head.head.next == &closed->u.as_tail.tail
-			&& closed->u.as_tail.tail.prev == &closed->u.as_head.head);
-		closed->u.as_head.head.next = 0;
-		closed->u.as_tail.tail.prev = 0;
-	} else {
-		assert(closed->u.as_tail.tail.prev->prev);
-	}
-}
 
 #define BOX_CONTENT struct L_(listlink) *
 /** Is `x` not null? @implements `is_content` */
@@ -187,7 +161,7 @@ static int PL_(remove)(struct PL_(iterator) *const it) {
 /** Cats all `from` (can be null) in front of `after`; `from` will be empty
  after. Careful that `after` is not in `from` because that will just erase the
  list. @order \Theta(1) */
-static void PL_(closed_move)(struct L_(list) *restrict const from,
+static void PL_(move)(struct L_(list) *restrict const from,
 	struct L_(listlink) *restrict const after) {
 	assert(after && after->next && after->prev);
 	if(!from || !from->u.flat.next) return; /* Already empty. */
@@ -199,8 +173,11 @@ static void PL_(closed_move)(struct L_(list) *restrict const from,
 }
 
 /** Clear `list`. */
-static void PL_(clear)(struct L_(list) *const list)
-	{ list->u.flat.next = list->u.flat.zero = list->u.flat.prev = 0; }
+static void PL_(clear)(struct L_(list) *const list) {
+	list->u.flat.next = &list->u.as_tail.tail;
+	list->u.flat.zero = 0;
+	list->u.flat.prev = &list->u.as_head.head;
+}
 /** Clears `list`. @order \Theta(1) @allow */
 static void L_(list_clear)(struct L_(list) *const list)
 	{ assert(list), PL_(clear)(list); }
@@ -227,6 +204,14 @@ static struct L_(listlink) *L_(list_tail)(struct L_(list) *const list) {
 	tail = list->u.flat.prev;
 	return tail && tail->prev ? tail : 0;
 }
+static const struct L_(listlink) *L_(list_previous_c)(const struct L_(listlink)
+	*const link) { const struct L_(listlink) *prev;
+	return link && (prev = link->prev) && prev->prev ? prev : 0;
+}
+static struct L_(listlink) *L_(list_previous)(struct L_(listlink) *const link) {
+	struct L_(listlink) *prev;
+	return link && (prev = link->prev) && prev->prev ? prev : 0;
+}
 static const struct L_(listlink) *L_(list_next_c)(const struct L_(listlink)
 	*const link) { const struct L_(listlink) *next;
 	return link && (next = link->next) && next->next ? next : 0;
@@ -235,22 +220,10 @@ static struct L_(listlink) *L_(list_next)(struct L_(listlink) *const link) {
 	struct L_(listlink) *next;
 	return link && (next = link->next) && next->next ? next : 0;
 }
-static const struct L_(listlink) *L_(list_previous_c)(const struct L_(listlink)
-	*const link) { const struct L_(listlink) *next;
-	return link && (next = link->next) && next->next ? next : 0;
-}
-static struct L_(listlink) *L_(list_previous)(struct L_(listlink) *const link) {
-	struct L_(listlink) *next;
-	return link && (next = link->next) && next->next ? next : 0;
-}
-
-/* \/ not null */
-
-
 
 /** `add` before `anchor` as a new node. @order \Theta(1) */
-static void PL_(closed_add_before)(struct L_(listlink) *const anchor,
-	struct L_(listlink) *const add) {
+static void PL_(add_before)(struct L_(listlink) *restrict const anchor,
+	struct L_(listlink) *restrict const add) {
 	add->prev = anchor->prev;
 	add->next = anchor;
 	anchor->prev->next = add;
@@ -293,7 +266,7 @@ static void L_(list_unshift)(struct L_(list) *const list,
 	{ assert(list && add), PL_(add_after)(&list->u.as_head.head, add); }
 
 /** Remove `node`. @order \Theta(1) */
-static void PL_(remve)(struct L_(listlink) *const node) {
+static void PL_(rm)(struct L_(listlink) *const node) {
 	node->prev->next = node->next;
 	node->next->prev = node->prev;
 	node->prev = node->next = 0;
@@ -301,7 +274,7 @@ static void PL_(remve)(struct L_(listlink) *const node) {
 
 /** Remove `node`. @order \Theta(1) @allow */
 static void L_(list_remove)(struct L_(listlink) *const node)
-	{ assert(node && node->prev && node->next), PL_(remve)(node); }
+	{ assert(node && node->prev && node->next), PL_(rm)(node); }
 
 /** Removes the first element of `list` and returns it, if any.
  @order \Theta(1) @allow */
@@ -330,8 +303,7 @@ static void L_(list_to)(struct L_(list) *restrict const from,
 	struct L_(list) *restrict const to) {
 	assert(from && from != to);
 	if(!to) { PL_(clear)(from); return; }
-	PL_(to_closed)(to);
-	PL_(closed_move)(from, &to->u.as_tail.tail);
+	PL_(move)(from, &to->u.as_tail.tail);
 }
 
 /** Moves the elements `from` immediately before `anchor`, which can not be in
@@ -346,16 +318,16 @@ static void L_(list_to_before)(struct L_(list) *const from,
  itself. (Can only have one copy of the list, this will invalidate all other
  copies.) @order \Theta(1) @allow */
 static void L_(list_self_correct)(struct L_(list) *const list) {
-	assert(list && !list->u.flat.zero
-		&& !(!list->u.flat.next ^ !list->u.flat.prev));
-	if(list->u.flat.next) { /* Non-empty. */
+	assert(list && !list->u.flat.zero);
+	if(!list->u.flat.next->next) { /* Empty. */
+		assert(!list->u.flat.prev->prev);
+		list->u.flat.next = &list->u.as_tail.tail;
+		list->u.flat.prev = &list->u.as_head.head;
+	} else { /* Non-empty. */
 		list->u.flat.prev->next = &list->u.as_tail.tail;
 		list->u.flat.next->prev = &list->u.as_head.head;
 	}
 }
-
-
-
 
 #if 0 /* <!-- superseded by iterate.h; make sure they are equivalent. */
 /** Performs `action` for each element in `list` in order.
@@ -412,11 +384,15 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *);
 static void PL_(unused_base_coda)(void);
 static void PL_(unused_base)(void) {
 	PL_(is_content)(0); PL_(forward_begin)(0); PL_(forward_next)(0);
-	/*L_(list_head)(0); L_(list_tail)(0); L_(list_previous)(0); L_(list_next)(0);*/
+	PL_(begin)(0); PL_(end)(0); PL_(previous)(0); PL_(next)(0); PL_(remove)(0);
+	L_(list_head_c)(0); L_(list_head)(0); L_(list_tail_c)(0); L_(list_tail)(0);
+	L_(list_previous_c)(0); L_(list_previous)(0);
+	L_(list_next_c)(0); L_(list_next)(0);
 	L_(list_clear)(0); L_(list_add_before)(0, 0); L_(list_add_after)(0, 0);
 	L_(list_unshift)(0, 0); L_(list_push)(0, 0); L_(list_remove)(0);
 	L_(list_shift)(0); L_(list_pop)(0); L_(list_to)(0, 0);
-	L_(list_to_before)(0, 0); /*L_(list_to_if)(0, 0, 0); L_(list_for_each)(0, 0);
+	L_(list_to_before)(0, 0); L_(list_self_correct)(0);
+	/*L_(list_to_if)(0, 0, 0); L_(list_for_each)(0, 0);
 	L_(list_anyy)(0, 0); */
 	PL_(unused_base_coda)();
 }
