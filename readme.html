@@ -189,10 +189,6 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<L>list_self_correct">&lt;L&gt;list_self_correct</a></td><td>list</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<L>list_for_each">&lt;L&gt;list_for_each</a></td><td>list, action</td></tr>
-
-<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#fn:<L>list_anyy">&lt;L&gt;list_anyy</a></td><td>list, predicate</td></tr>
-
 <tr><td align = right>static &lt;PITR&gt;element</td><td><a href = "#fn:<ITR>any">&lt;ITR&gt;any</a></td><td>box, predicate</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<ITR>each">&lt;ITR&gt;each</a></td><td>box, action</td></tr>
@@ -412,40 +408,6 @@
 <dl>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<L>list_for_each" name = "fn:<L>list_for_each">&lt;L&gt;list_for_each</a></h3>
-
-<p><code>static void <strong>&lt;L&gt;list_for_each</strong>(struct &lt;L&gt;list *const <em>list</em>, const &lt;PL&gt;action_fn <em>action</em>)</code></p>
-
-<p>Performs <code>action</code> for each element in <code>list</code> in order.</p>
-
-<dl>
-	<dt>Parameter: <em>action</em></dt>
-	<dd>It makes a double of the next node, so it can be to delete the element and even assign it's values null.</dd>
-	<dt>Order:</dt>
-	<dd>&#920;(|<code>list</code>|) &#215; O(<code>action</code>)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<L>list_anyy" name = "fn:<L>list_anyy">&lt;L&gt;list_anyy</a></h3>
-
-<p><code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_anyy</strong>(const struct &lt;L&gt;list *const <em>list</em>, const &lt;PL&gt;predicate_fn <em>predicate</em>)</code></p>
-
-<p>Iterates through <code>list</code> and calls <code>predicate</code> until it returns true.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>The first <code>predicate</code> that returned true, or, if the statement is false on all, null.</dd>
-	<dt>Order:</dt>
-	<dd>&#927;(|<code>list</code>|) &#215; &#927;(<code>predicate</code>)</dd>
 </dl>
 
 </div>

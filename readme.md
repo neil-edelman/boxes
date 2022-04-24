@@ -133,10 +133,6 @@ Serves as head and tail sentinel for a linked\-list of [&lt;L&gt;listlink](#user
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-1ce0c229">&lt;L&gt;list_self_correct</a></td><td>list</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-42fb011b">&lt;L&gt;list_for_each</a></td><td>list, action</td></tr>
-
-<tr><td align = right>static struct &lt;L&gt;listlink *</td><td><a href = "#user-content-fn-e57ccbb3">&lt;L&gt;list_anyy</a></td><td>list, predicate</td></tr>
-
 <tr><td align = right>static &lt;PITR&gt;element</td><td><a href = "#user-content-fn-73c52918">&lt;ITR&gt;any</a></td><td>box, predicate</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-96abfbdb">&lt;ITR&gt;each</a></td><td>box, action</td></tr>
@@ -321,34 +317,6 @@ Corrects `list` ends to compensate for memory relocation of the list head itself
 
  * Order:  
    &#920;\(1\)
-
-
-
-
-### <a id = "user-content-fn-42fb011b" name = "user-content-fn-42fb011b">&lt;L&gt;list_for_each</a> ###
-
-<code>static void <strong>&lt;L&gt;list_for_each</strong>(struct &lt;L&gt;list *const <em>list</em>, const &lt;PL&gt;action_fn <em>action</em>)</code>
-
-Performs `action` for each element in `list` in order\.
-
- * Parameter: _action_  
-   It makes a double of the next node, so it can be to delete the element and even assign it's values null\.
- * Order:  
-   &#920;\(|`list`|\) &#215; O\(`action`\)
-
-
-
-
-### <a id = "user-content-fn-e57ccbb3" name = "user-content-fn-e57ccbb3">&lt;L&gt;list_anyy</a> ###
-
-<code>static struct &lt;L&gt;listlink *<strong>&lt;L&gt;list_anyy</strong>(const struct &lt;L&gt;list *const <em>list</em>, const &lt;PL&gt;predicate_fn <em>predicate</em>)</code>
-
-Iterates through `list` and calls `predicate` until it returns true\.
-
- * Return:  
-   The first `predicate` that returned true, or, if the statement is false on all, null\.
- * Order:  
-   &#927;\(|`list`|\) &#215; &#927;\(`predicate`\)
 
 
 

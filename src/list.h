@@ -346,31 +346,6 @@ static void L_(list_self_correct)(struct L_(list) *const list) {
 	}
 }
 
-#if 0 /* <!-- superseded by iterate.h; make sure they are equivalent. */
-/** Performs `action` for each element in `list` in order.
- @param[action] It makes a double of the next node, so it can be to delete the
- element and even assign it's values null.
- @order \Theta(|`list`|) \times O(`action`) @allow */
-static void L_(list_for_each)(struct L_(list) *const list,
-	const PL_(action_fn) action) {
-	struct L_(listlink) *x, *next_x;
-	assert(list && action);
-	for(x = list->u.flat.next; next_x = x->next; x = next_x) action(x);
-}
-/** Iterates through `list` and calls `predicate` until it returns true.
- @return The first `predicate` that returned true, or, if the statement is
- false on all, null.
- @order \O(|`list`|) \times \O(`predicate`) @allow */
-static struct L_(listlink) *L_(list_anyy)(const struct L_(list) *const list,
-	const PL_(predicate_fn) predicate) {
-	struct L_(listlink) *link, *next_link;
-	assert(list && predicate);
-	for(link = list->u.flat.next; next_link = link->next; link = next_link)
-		if(predicate(link)) return link;
-	return 0;
-}
-#endif /* --> */
-
 #ifdef HAVE_ITERATE_H /* <!-- iterate */
 #define ITR_(n) LIST_CAT(L_(list), n)
 #include "iterate.h" /** \include */
