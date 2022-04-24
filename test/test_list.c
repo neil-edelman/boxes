@@ -1071,14 +1071,13 @@ int main(void) {
 		panda_pool_clear(&pandas);
 	fero_list_test(&panda_fero_from_pool, &pandas), panda_pool_clear(&pandas);
 	fero_list_compare_test(&panda_fero_from_pool, &pandas),
-		panda_pool_clear(&pandas);
+		panda_pool_(&pandas);
 	layer0_list_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
 	layer0_list_compare_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
 	layer1_list_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
 	layer1_list_compare_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
 	layer2_list_test(&l2_from_pool, &skips), skip_pool_clear(&skips);
-	layer2_list_compare_test(&l2_from_pool, &skips), skip_pool_clear(&skips);
-	skip_pool_(&skips);
+	layer2_list_compare_test(&l2_from_pool, &skips), skip_pool_(&skips);
 	pandas_tests();
 	skips_tests();
 	animals_tests();
