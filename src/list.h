@@ -163,24 +163,15 @@ static int PL_(remove)(struct PL_(iterator) *const it) {
  list. @order \Theta(1) */
 static void PL_(move)(struct L_(list) *restrict const from,
 	struct L_(listlink) *restrict const after) {
-	assert(after && after->next && after->prev);
-	if(!from || !from->u.flat.next) return; /* Already empty. */
+	assert(from && from->u.flat.next && !from->u.flat.zero && from->u.flat.prev
+		&& after && after->prev);
 	from->u.flat.next->prev = after->prev;
 	after->prev->next = from->u.as_head.head.next;
 	from->u.flat.prev->next = after;
 	after->prev = from->u.as_tail.tail.prev;
-	from->u.flat.next = from->u.flat.prev = 0;
+	from->u.flat.next = &from->u.as_tail.tail;
+	from->u.flat.prev = &from->u.as_head.head;
 }
-
-/** Clear `list`. */
-static void PL_(clear)(struct L_(list) *const list) {
-	list->u.flat.next = &list->u.as_tail.tail;
-	list->u.flat.zero = 0;
-	list->u.flat.prev = &list->u.as_head.head;
-}
-/** Clears `list`. @order \Theta(1) @allow */
-static void L_(list_clear)(struct L_(list) *const list)
-	{ assert(list), PL_(clear)(list); }
 
 /* For those who want to directly iterate. */
 
@@ -220,6 +211,16 @@ static struct L_(listlink) *L_(list_next)(struct L_(listlink) *const link) {
 	struct L_(listlink) *next;
 	return link && (next = link->next) && next->next ? next : 0;
 }
+
+/** Clear `list`. */
+static void PL_(clear)(struct L_(list) *const list) {
+	list->u.flat.next = &list->u.as_tail.tail;
+	list->u.flat.zero = 0;
+	list->u.flat.prev = &list->u.as_head.head;
+}
+/** Clears and initializes `list`. @order \Theta(1) @allow */
+static void L_(list_clear)(struct L_(list) *const list)
+	{ assert(list), PL_(clear)(list); }
 
 /** `add` before `anchor` as a new node. @order \Theta(1) */
 static void PL_(add_before)(struct L_(listlink) *restrict const anchor,
@@ -280,8 +281,8 @@ static void L_(list_remove)(struct L_(listlink) *const node)
  @order \Theta(1) @allow */
 static struct L_(listlink) *L_(list_shift)(struct L_(list) *const list) {
 	struct L_(listlink) *node;
-	assert(list);
-	if(!(node = list->u.flat.next) || !node->next) return 0;
+	assert(list && list->u.flat.next);
+	if(!(node = list->u.flat.next)->next) return 0;
 	L_(list_remove)(node);
 	return node;
 }
@@ -290,8 +291,8 @@ static struct L_(listlink) *L_(list_shift)(struct L_(list) *const list) {
  @order \Theta(1) @allow */
 static struct L_(listlink) *L_(list_pop)(struct L_(list) *const list) {
 	struct L_(listlink) *node;
-	assert(list);
-	if(!(node = list->u.flat.prev) || !node->prev) return 0;
+	assert(list && list->u.flat.prev);
+	if(!(node = list->u.flat.prev)->prev) return 0;
 	L_(list_remove)(node);
 	return node;
 }
@@ -302,14 +303,14 @@ static struct L_(listlink) *L_(list_pop)(struct L_(list) *const list) {
 static void L_(list_to)(struct L_(list) *restrict const from,
 	struct L_(list) *restrict const to) {
 	assert(from && from != to);
-	if(!to) { PL_(clear)(from); return; }
-	PL_(move)(from, &to->u.as_tail.tail);
+	if(!to) PL_(clear)(from);
+	else PL_(move)(from, &to->u.as_tail.tail);
 }
 
 /** Moves the elements `from` immediately before `anchor`, which can not be in
  the same list. @order \Theta(1) @allow */
-static void L_(list_to_before)(struct L_(list) *const from,
-	struct L_(listlink) *const anchor) {
+static void L_(list_to_before)(struct L_(list) *restrict const from,
+	struct L_(listlink) *restrict const anchor) {
 	assert(from && anchor);
 	PL_(move)(from, anchor);
 }
@@ -392,8 +393,9 @@ static void PL_(unused_base)(void) {
 	L_(list_unshift)(0, 0); L_(list_push)(0, 0); L_(list_remove)(0);
 	L_(list_shift)(0); L_(list_pop)(0); L_(list_to)(0, 0);
 	L_(list_to_before)(0, 0); L_(list_self_correct)(0);
-	/*L_(list_to_if)(0, 0, 0); L_(list_for_each)(0, 0);
-	L_(list_anyy)(0, 0); */
+#ifdef HAVE_ITERATE_H
+	L_(list_to_if)(0, 0, 0);
+#endif
 	PL_(unused_base_coda)();
 }
 static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
@@ -425,20 +427,6 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *)
 #else /* to string trait --><!-- compare trait */
 
 
-#if 0
-#ifdef LIST_COMPARE_NAME /* <!-- name */
-#define LC_(n) LIST_CAT(L_(list), LIST_CAT(LIST_COMPARE_NAME, n))
-#else /* name --><!-- !name */
-#define LC_(n) LIST_CAT(L_(list), n)
-#endif /* !name --> */
-#include "list_coda.h" /** \include */
-#ifdef LIST_TEST /* <!-- test: this detects and outputs compare test. */
-#include "../test/test_list.h"
-#endif /* test --> */
-#undef LC_
-#else
-/***************/
-
 #ifdef LIST_COMPARE_NAME
 #define CMP_(n) LIST_CAT(L_(list), LIST_CAT(LIST_COMPARE_NAME, n))
 #else
@@ -451,7 +439,6 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *)
 #endif
 #include "compare.h" /** \include */
 #ifdef LIST_COMPARE /* <!-- compare: override `qsort` -> natural merge sort. */
-#if 0
 /** Merges `from` into `to`, preferring elements from `to` go in the front.
  @order \O(|`from`| + |`to`|). @allow */
 static void CMP_(merge)(struct L_(list) *restrict const to,
@@ -489,7 +476,6 @@ from_left:
 	from->u.flat.next = &from->u.as_tail.tail;
 	from->u.flat.prev = &from->u.as_head.head;
 }
-#endif
 /** Merges the two top runs referenced by `head_ptr` in stack form. */
 static void PCMP_(merge_runs)(struct L_(listlink) **const head_ptr) {
 	struct L_(listlink) *head = *head_ptr, **x = &head, *b = head, *a = b->prev,
@@ -592,15 +578,16 @@ static void CMP_(sort)(struct L_(list) *const list) {
 	while(run.head->prev->prev) PCMP_(merge_runs)(&run.head);
 	PCMP_(merge_final)(list, run.head);
 }
+static void PL_(unused_extra_compare_coda)(void);
+static void PL_(unused_extra_compare)(void) {
+	CMP_(merge)(0, 0); CMP_(sort)(0); PL_(unused_extra_compare_coda)();
+}
+static void PL_(unused_extra_compare_coda)(void){ PL_(unused_extra_compare)(); }
 #endif /* compare --> */
 #ifdef LIST_TEST /* <!-- test: this detects and outputs compare test. */
 #include "../test/test_list.h"
 #endif /* test --> */
 #undef CMP_
-
-#endif
-
-
 #ifdef LIST_COMPARE_NAME
 #undef LIST_COMPARE_NAME
 #endif

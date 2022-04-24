@@ -188,7 +188,6 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	/* Test positions when contents. */
 	link = L_(list_head)(&l1), assert(link == link_first);
 	link = L_(list_tail)(&l1), assert(link == link_last);
-	printf("ha->\n");
 	link = L_(list_previous)(link), assert(link);
 	link = L_(list_next)(link), assert(link == link_last);
 	/* Test remove contents. */
@@ -201,7 +200,8 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	link = L_(list_head)(&l1), assert(link == link_first);
 	link = L_(list_tail)(&l1), assert(link == link_last);
 	printf("After removing and adding: l1 = %s.\n", PL_(list_to_string)(&l1));
-#ifdef HAVE_ITERATOR_H /* <!-- iterator */
+#ifdef HAVE_ITERATE_H /* <!-- iterator */
+	assert(l2.u.as_head.head.next);
 	/* Test movement. */
 	PL_(count)(&l1, test_size);
 	PL_(count)(&l2, 0);
@@ -211,8 +211,15 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	PL_(count)(&l1, test_size / 2);
 	PL_(count)(&l2, test_size - test_size / 2);
 	assert(L_(list_head)(&l1) == link_first);
+	assert(l2.u.as_head.head.next);
+	printf("l1 = %s; l2 = %s.\n",
+		PL_(list_to_string)(&l1), PL_(list_to_string)(&l2));
 	L_(list_to_before)(&l2, link_first->next);
+	printf("l1 = %s; l2 = %s.\n",
+		PL_(list_to_string)(&l1), PL_(list_to_string)(&l2));
+	assert(l2.u.as_head.head.next);
 	PL_(count)(&l1, test_size);
+	assert(l2.u.as_head.head.next);
 	PL_(count)(&l2, 0);
 	assert(L_(list_head)(&l1) == link_first);
 	printf("Back: l1 = %s; l2 = %s.\n",
@@ -221,9 +228,10 @@ static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
 	PL_(count)(&l1, 0);
 	PL_(count)(&l2, test_size);
 	assert(L_(list_head)(&l2) == link_first);
+	printf("***HERE***\n");
 	/* Test any. */
-	link = L_(list_anyy)(&l1, &PL_(true)), assert(!link);
-	link = L_(list_anyy)(&l2, &PL_(true)), assert(link == link_first);
+	link = L_(list_any)(&l1, &PL_(true)), assert(!link);
+	link = L_(list_any)(&l2, &PL_(true)), assert(link == link_first);
 	/* Test add before/after. */
 	if(!(link = parent_new(parent))) { assert(0); return; }
 	PL_(filler)(link);
