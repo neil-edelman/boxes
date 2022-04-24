@@ -140,18 +140,19 @@ static void PL_(count)(const struct L_(list) *const list, const size_t count) {
 	}
 }
 
+#ifdef HAVE_ITERATE_H /* <!-- */
 /** Returns `0,1,0,1,...` whatever `link`. */
 static int PL_(parity)(const struct L_(listlink) *const link) {
 	static int p;
 	(void)(link);
 	return !(p = !p);
 }
-
 /** Returns true whatever `link`. */
 static int PL_(true)(const struct L_(listlink) *const link) {
 	(void)(link);
 	return 1;
 }
+#endif /* --> */
 
 /** Passed `parent_new` and `parent`, tests basic functionality. */
 static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
@@ -383,14 +384,14 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 	cmp = L_(list_compare)(0, 0), assert(cmp == 0);
 	cmp = L_(list_compare)(&la, 0), assert(cmp == 0);
 	cmp = L_(list_compare)(0, &la), assert(cmp == 0);
-	/*L_(list_subtraction_to)(0, 0, 0);
+	L_(list_subtraction_to)(0, 0, 0);
 	L_(list_subtraction_to)(0, 0, &la);
 	L_(list_union_to)(0, 0, 0);
 	L_(list_union_to)(0, 0, &la);
 	L_(list_intersection_to)(0, 0, 0);
 	L_(list_intersection_to)(0, 0, &la);
 	L_(list_xor_to)(0, 0, 0);
-	L_(list_xor_to)(0, 0, &la);*/
+	L_(list_xor_to)(0, 0, &la);
 	assert(!L_(list_head)(&la));
 	{
 		const size_t no_try = 5000;
@@ -403,8 +404,8 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 			if(!(link = parent_new(parent))) { assert(0); return; }
 			PL_(filler)(link);
 			L_(list_push)(&x, link);
-			/*L_(list_sort)(&x);
-			L_(list_duplicates_to)(&x, &y);*/
+			L_(list_sort)(&x);
+			L_(list_duplicates_to)(&x, &y);
 			/* fixme: list_duplicates_to is suspect? it keeps giving wrong. */
 			printf("x = %s, y = %s\n", PL_(list_to_string)(&x),
 				PL_(list_to_string)(&y));
@@ -429,7 +430,6 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 			printf("Got duplicates in %lu tries.\n", (unsigned long)i);
 		}
 	}
-#if 0
 	PL_(reset_b)(&la, &lb, &result, a, b, b_alt, c, d);
 	printf("a = (A,B,D) = %s, b = (B,C) = %s, result = %s.\n",
 		PL_(list_to_string)(&la), PL_(list_to_string)(&lb),
@@ -460,7 +460,6 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 	PL_(exact)(&la, b, 0, 0, 0);
 	PL_(exact)(&lb, b_alt, 0, 0, 0);
 	PL_(exact)(&result, a, c, d, 0);
-#endif
 }
 
 /** The linked-list will be tested on stdout. `LIST_TEST` has to be set.
