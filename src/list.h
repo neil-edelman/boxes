@@ -22,8 +22,8 @@
 
  @param[LIST_COMPARE_NAME, LIST_COMPARE, LIST_IS_EQUAL]
  Compare trait contained in <src/list_coda.h>. An optional mangled name for
- uniqueness and a function implementing either <typedef:<PLC>compare_fn> or
- <typedef:<PLC>bipredicate_fn>.
+ uniqueness and a function implementing either <typedef:<PCMP>compare_fn> or
+ <typedef:<PCMP>bipredicate_fn>.
 
  @param[LIST_TO_STRING_NAME, LIST_TO_STRING]
  To string trait contained in <src/to_string.h>. An optional mangled name for
@@ -183,38 +183,46 @@ static void PL_(move)(struct L_(list) *restrict const from,
 
 /* For those who want to directly iterate. */
 
+/** @return The head of `list` or null. */
 static const struct L_(listlink) *L_(list_head_c)(const struct L_(list) *const
 	list) { const struct L_(listlink) *head; assert(list);
 	head = list->u.flat.next;
 	return head && head->next ? head : 0;
 }
+/** @return The head of `list` or null. */
 static struct L_(listlink) *L_(list_head)(struct L_(list) *const list) {
 	struct L_(listlink) *head; assert(list);
 	head = list->u.flat.next;
 	return head && head->next ? head : 0;
 }
+/** @return The tail of `list` or null. */
 static const struct L_(listlink) *L_(list_tail_c)(const struct L_(list) *const
 	list) { const struct L_(listlink) *tail; assert(list);
 	tail = list->u.flat.prev;
 	return tail && tail->prev ? tail : 0;
 }
+/** @return The tail of `list` or null. */
 static struct L_(listlink) *L_(list_tail)(struct L_(list) *const list) {
 	struct L_(listlink) *tail; assert(list);
 	tail = list->u.flat.prev;
 	return tail && tail->prev ? tail : 0;
 }
+/** @return The previous of `link` or null. */
 static const struct L_(listlink) *L_(list_previous_c)(const struct L_(listlink)
 	*const link) { const struct L_(listlink) *prev;
 	return link && (prev = link->prev) && prev->prev ? prev : 0;
 }
+/** @return The previous of `link` or null. */
 static struct L_(listlink) *L_(list_previous)(struct L_(listlink) *const link) {
 	struct L_(listlink) *prev;
 	return link && (prev = link->prev) && prev->prev ? prev : 0;
 }
+/** @return The next of `link` or null. */
 static const struct L_(listlink) *L_(list_next_c)(const struct L_(listlink)
 	*const link) { const struct L_(listlink) *next;
 	return link && (next = link->next) && next->next ? next : 0;
 }
+/** @return The next of `link` or null. */
 static struct L_(listlink) *L_(list_next)(struct L_(listlink) *const link) {
 	struct L_(listlink) *next;
 	return link && (next = link->next) && next->next ? next : 0;
@@ -586,7 +594,7 @@ static void CMP_(sort)(struct L_(list) *const list) {
 	while(run.head->prev->prev) PCMP_(merge_runs)(&run.head);
 	PCMP_(merge_final)(list, run.head);
 }
-/** `alist` `mask` `blist` -> `result`. Prefers `a` to `b` when equal. Either
+/** `alist` `op` `blist` -> `result`. Prefers `a` to `b` when equal. Either
  could be null. @order \O(|`a`| + |`b`|) */
 static void PCMP_(boolean)(struct L_(list) *restrict const alist,
 	struct L_(list) *restrict const blist,
@@ -683,7 +691,7 @@ static void CMP_(xor_to)(struct L_(list) *restrict const a,
 /** Moves all local-duplicates of `from` to the end of `to`.
 
  For example, if `from` is `(A, B, B, A)`, it would concatenate the second
- `(B)` to `to` and leave `(A, B, A)` in `from`. If one <fn:<LC>sort> `from`
+ `(B)` to `to` and leave `(A, B, A)` in `from`. If one <fn:<CMP>sort> `from`
  first, `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`.
  @order \O(|`from`|) @allow */
 static void CMP_(duplicates_to)(struct L_(list) *restrict const from,
