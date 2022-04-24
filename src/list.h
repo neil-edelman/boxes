@@ -71,6 +71,14 @@
 #define LIST_CAT(n, m) LIST_CAT_(n, m)
 #define L_(n) LIST_CAT(LIST_NAME, n)
 #define PL_(n) LIST_CAT(list, L_(n))
+enum list_operation { /* Dummy ensures closed. */
+	LIST_SUBTRACTION_AB = 1,
+	LIST_SUBTRACTION_BA = 2, LISTA,
+	LIST_INTERSECTION   = 4, LISTB, LISTC, LISTD,
+	LIST_DEFAULT_A      = 8, LISTE, LISTF, LISTG, LISTH, LISTI, LISTJ, LISTK,
+	LIST_DEFAULT_B      = 16, LISTL, LISTM, LISTN, LISTO, LISTP, LISTQ, LISTR,
+		LISTS, LISTT, LISTU, LISTV, LISTW, LISTX, LISTY, LISTZ
+};
 #endif /* idempotent --> */
 
 #if !defined(restrict) && (!defined(__STDC__) || !defined(__STDC_VERSION__) \
@@ -578,12 +586,131 @@ static void CMP_(sort)(struct L_(list) *const list) {
 	while(run.head->prev->prev) PCMP_(merge_runs)(&run.head);
 	PCMP_(merge_final)(list, run.head);
 }
+/** `alist` `mask` `blist` -> `result`. Prefers `a` to `b` when equal. Either
+ could be null. @order \O(|`a`| + |`b`|) */
+static void PCMP_(boolean)(struct L_(list) *restrict const alist,
+	struct L_(list) *restrict const blist,
+	struct L_(list) *restrict const result, const enum list_operation op) {
+	struct L_(listlink) *temp,
+		*a = alist ? alist->u.flat.next : 0,
+		*b = blist ? blist->u.flat.next : 0;
+	int comp;
+	/* This is inefficient in the sense that runs will be re-assigned the same
+	 pointers as before. Probably doesn't matter because why would you actually
+	 use this anyway? */
+	assert((!result || (result != alist && result != blist))
+		&& (!alist || (alist != blist)));
+	if(a && b) {
+		while(a->next && b->next) {
+			comp = PCMP_(compare)(a, b);
+			if(comp < 0) {
+				temp = a, a = a->next;
+				if(op & LIST_SUBTRACTION_AB) {
+					PL_(rm)(temp);
+					if(result) PL_(push)(result, temp);
+				}
+			} else if(comp > 0) {
+				temp = b, b = b->next;
+				if(op & LIST_SUBTRACTION_BA) {
+					PL_(rm)(temp);
+					if(result) PL_(push)(result, temp);
+				}
+			} else {
+				temp = a, a = a->next, b = b->next;
+				if(op & LIST_INTERSECTION) {
+					PL_(rm)(temp);
+					if(result) PL_(push)(result, temp);
+				}
+			}
+		}
+	}
+	if(a && op & LIST_DEFAULT_A) {
+		while((temp = a, a = a->next)) {
+			PL_(rm)(temp);
+			if(result) PL_(push)(result, temp);
+		}
+	}
+	if(b && op & LIST_DEFAULT_B) {
+		while((temp = b, b = b->next)) {
+			PL_(rm)(temp);
+			if(result) PL_(push)(result, temp);
+		}
+	}
+}
+/** Subtracts `a` from `b`, as sequential sorted individual elements, and moves
+ it to `result`. All elements are removed from `a`. All parameters must be
+ unique or can be null.
+
+ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
+ `(a:A, a:D)` would be moved to `result`.
+ @order \O(|`a`| + |`b`|) @allow */
+static void CMP_(subtraction_to)(struct L_(list) *restrict const a,
+	struct L_(list) *restrict const b, struct L_(list) *restrict const result)
+	{ PCMP_(boolean)(a, b, result, LIST_SUBTRACTION_AB | LIST_DEFAULT_A); }
+/** Moves the union of `a` and `b` as sequential sorted individual elements to
+ `result`. Equal elements are moved from `a`. All parameters must be unique or
+ can be null.
+
+ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
+ `(a:A, a:B, b:C, a:D)` would be moved to `result`.
+ @order \O(|`a`| + |`b`|) @allow */
+static void CMP_(union_to)(struct L_(list) *restrict const a,
+	struct L_(list) *restrict const b, struct L_(list) *restrict const result)
+	{ PCMP_(boolean)(a, b, result, LIST_SUBTRACTION_AB | LIST_SUBTRACTION_BA
+		| LIST_INTERSECTION | LIST_DEFAULT_A | LIST_DEFAULT_B); }
+/** Moves the intersection of `a` and `b` as sequential sorted individual
+ elements to `result`. Equal elements are moved from `a`. All parameters must
+ be unique or can be null.
+
+ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
+ `(a:B)` would be moved to `result`.
+ @order \O(|`a`| + |`b`|) @allow */
+static void CMP_(intersection_to)(struct L_(list) *restrict const a,
+	struct L_(list) *restrict const b, struct L_(list) *restrict const result)
+	{ PCMP_(boolean)(a, b, result, LIST_INTERSECTION); }
+/** Moves `a` exclusive-or `b` as sequential sorted individual elements to
+ `result`. Equal elements are moved from `a`. All parameters must be unique or
+ can be null.
+
+ For example, if `a` contains `(A, B, D)` and `b` contains `(B, C)` then
+ `(a:A, b:C, a:D)` would be moved to `result`.
+ @order O(|`a`| + |`b`|) @allow */
+static void CMP_(xor_to)(struct L_(list) *restrict const a,
+	struct L_(list) *restrict const b, struct L_(list) *restrict const result)
+	{ PCMP_(boolean)(a, b, result, LIST_SUBTRACTION_AB | LIST_SUBTRACTION_BA
+		| LIST_DEFAULT_A | LIST_DEFAULT_B); }
+#endif /* compare --> */
+/** Moves all local-duplicates of `from` to the end of `to`.
+
+ For example, if `from` is `(A, B, B, A)`, it would concatenate the second
+ `(B)` to `to` and leave `(A, B, A)` in `from`. If one <fn:<LC>sort> `from`
+ first, `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`.
+ @order \O(|`from`|) @allow */
+static void CMP_(duplicates_to)(struct L_(list) *restrict const from,
+	struct L_(list) *restrict const to) {
+	struct L_(listlink) *a = from->u.flat.next, *b, *temp;
+	assert(from);
+	if(!(b = a->next)) return;
+	while(b->next) {
+		if(!PCMP_(is_equal)(a, b)) {
+			a = b, b = b->next;
+		} else {
+			temp = b, b = b->next;
+			PL_(rm)(temp);
+			if(to) PL_(push)(to, temp);
+		}
+	}
+}
 static void PL_(unused_extra_compare_coda)(void);
 static void PL_(unused_extra_compare)(void) {
-	CMP_(merge)(0, 0); CMP_(sort)(0); PL_(unused_extra_compare_coda)();
+#ifdef LIST_COMPARE
+	CMP_(merge)(0, 0); CMP_(sort)(0); CMP_(subtraction_to)(0, 0, 0);
+	CMP_(union_to)(0, 0, 0); CMP_(intersection_to)(0, 0, 0);
+	CMP_(xor_to)(0, 0, 0);
+#endif
+	CMP_(duplicates_to)(0, 0); PL_(unused_extra_compare_coda)();
 }
 static void PL_(unused_extra_compare_coda)(void){ PL_(unused_extra_compare)(); }
-#endif /* compare --> */
 #ifdef LIST_TEST /* <!-- test: this detects and outputs compare test. */
 #include "../test/test_list.h"
 #endif /* test --> */
@@ -612,7 +739,7 @@ static void PL_(unused_extra_compare_coda)(void){ PL_(unused_extra_compare)(); }
 #undef BOX_
 #undef BOX
 #undef BOX_CONTENT
-/*#undef BOX_ITERATOR*/
+#undef BOX_ITERATOR
 #endif /* !trait --> */
 #undef LIST_TO_STRING_TRAIT
 #undef LIST_COMPARE_TRAIT
