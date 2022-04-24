@@ -8,7 +8,7 @@
 </tr><tr>
 	<td><a href="https://github.com/neil-edelman/array">array</a></td>
 	<td>contiguous dynamic array</td>
-	<td>to_string, iterate, compare</td>
+	<td>compare, iterate, to_string</td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/bmp">bmp</a></td>
@@ -23,7 +23,7 @@
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/list">list</a></td>
 	<td>doubly-linked component</td>
-	<td>list_coda, to_string</td>
+	<td>compare, iterate, to_string</td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/orcish">orcish</a></td>
@@ -38,7 +38,7 @@
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/table">table</a></td>
 	<td>set or map (associative array)</td>
-	<td>default, to_string</td>
+	<td>to_string</td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/trie">trie</a></td>
@@ -48,8 +48,8 @@
 </tr><tr>
 	<td>disjoint</td>
 	<td>upcoming</td>
-	<td>to_string?</td>
-	<td>array?</td>
+	<td>to_string</td>
+	<td>array</td>
 </tr></table>
 
 These `C89` data structure projects use compile-time polymorphism
