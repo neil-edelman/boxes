@@ -85,7 +85,6 @@
 
 
 #if ARRAY_TRAITS == 0 /* <!-- base code */
-#define ARRAY_BASE
 
 
 #ifndef ARRAY_MIN_CAPACITY /* <!-- !min; */
