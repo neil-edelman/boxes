@@ -3,8 +3,8 @@
 <table><tr>
 	<th>link</th>
 	<th>description</th>
-	<th>possible traits</th>
-	<th>required dependancies</th>
+	<th>possible traits, notes</th>
+	<th>dependancies</th>
 </tr><tr>
 	<td><a href="https://github.com/neil-edelman/array">array</a></td>
 	<td>contiguous dynamic array</td>
@@ -41,15 +41,20 @@
 	<td>iterate, to_string</td>
 	<td></td>
 </tr><tr>
+	<td><a href = "https://github.com/neil-edelman/tree">tree</a></td>
+	<td>B-tree</td>
+	<td>under active development</td>
+	<td></td>
+</tr><tr>
 	<td><a href = "https://github.com/neil-edelman/trie">trie</a></td>
 	<td>prefix tree</td>
-	<td>to_string</td>
+	<td>under active development</td>
 	<td></td>
 </tr><tr>
 	<td>disjoint</td>
-	<td>upcoming</td>
-	<td>to_string</td>
-	<td>array</td>
+	<td></td>
+	<td>would be nice</td>
+	<td></td>
 </tr></table>
 
 These `C89` data structure projects use compile-time polymorphism
