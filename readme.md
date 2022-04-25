@@ -57,7 +57,7 @@
 	<td></td>
 </tr></table>
 
-These `C89` data structure projects use compile-time polymorphism
+These `C89` data structure headers use compile-time polymorphism
 to generate lightweight and statically type-safe containers.  The
 documented parameters in each project are pre-processor macros.
 `boxes` is a simple automated dependancy and build system, ensuring
@@ -66,13 +66,13 @@ development.
 
 ## Details ##
 
-Errors are returned with `errno`. Assertions are used at runtime;
-to stop them, define `#define NDEBUG` before `assert.h`. The source
-files are `UTF-8` and may contain multi-byte literals. No effort
-has been made to synchronize for multi-threaded execution. One does
-not need to download `boxes` to use the individual projects: one
-can pick which ones are appropriate. The `sh`-script `autoclone`
-downloads them all.
+Throughout these headers, errors are returned with `errno`. Assertions
+are used at runtime; to stop them, define `#define NDEBUG` before
+`assert.h`. The source files are `UTF-8` and may contain multi-byte
+literals. No effort has been made to synchronize for multi-threaded
+execution. One does not need to download `boxes` to use the individual
+projects: one can pick which ones are appropriate. The `sh`-script
+`autoclone` downloads them all.
 
 ## Internal Interace ##
 
@@ -85,11 +85,11 @@ and private names for the trait labeled `X`. With these definitions,
 	<tr><td>typedef const BOX_CONTENT &lt;PX&gt;element_c</td></tr>
 </table>
 
-possible interfaces include,
+possible interfaces include, (not all used,)
 
 <table><tr>
 	<td>int &lt;BOX&gt;is_content(const &lt;PX&gt;element_c)</td>
-	<td>Must have some elements that are false; that is null.</td>
+	<td>Must have some an out-of-band element that is null.</td>
 	<td>BOX_CONTENT BOX_ITERATOR BOX_ACCESS</td>
 </tr><tr>
 	<td>struct &lt;BOX&gt;forward</td>
@@ -103,10 +103,6 @@ possible interfaces include,
 	<td>&lt;PX&gt;element_c &lt;BOX&gt;forward_next(&lt;BOX&gt;forward *)</td>
 	<td>Returns the element passed-though to get to the next, or null if there are no more.</td>
 	<td>BOX_CONTENT</td>
-</tr><tr>
-	<td>int &lt;BOX&gt;to_back(&lt;BOX&gt;iterator *, &lt;PX&gt;box *restrict)</td>
-	<td>Proposed: Either moves or copies the element under the iterator to another box.</td>
-	<td>BOX_ITERATOR</td>
 </tr><tr>
 	<td>struct &lt;BOX&gt;iterator</td>
 	<td>A bi-directional iterator that supports (at least symbolic) removal. It has a direction, and the state
