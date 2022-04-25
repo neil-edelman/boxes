@@ -575,7 +575,8 @@ static struct PN_(bucket) *PN_(forward_next)(struct PN_(forward) *const it) {
 	return 0;
 }
 
-#define BOX_ITERATOR
+/* #define BOX_ITERATOR -- I don't think so -- it doesn't satisfy the all the
+ requirements, (but _could_.) */
 /* More complex iterator that supports write. @implements `iterator` */
 struct PN_(iterator) { struct N_(table) *table; PN_(uint) cur; PN_(uint) prev;};
 /** Helper to skip the buckets of `it` that are not there.
@@ -863,6 +864,12 @@ static int N_(table_remove)(struct N_(table) *const table,
 	return 1;
 }
 
+#ifdef HAVE_ITERATE_H /* <!-- iterate */
+#define ITR_(n) ARRAY_CAT(N_(table), n)
+#include "iterate.h" /** \include */
+#undef ITR_
+#endif /* iterate --> */
+
 #ifdef TABLE_TEST /* <!-- test */
 /* Forward-declare. */
 static void (*PN_(to_string))(PN_(key_c), char (*)[12]);
@@ -991,7 +998,7 @@ static const char *(*PN_(table_to_string))(const struct N_(table) *)
 #undef BOX_
 #undef BOX
 #undef BOX_CONTENT
-#undef BOX_ITERATOR /* <- really, though? */
+/* #undef BOX_ITERATOR <- really, though? */
 /* box (multiple traits) --> */
 #endif /* !trait --> */
 #undef TABLE_DEFAULT_TRAIT

@@ -5,7 +5,7 @@ Stand\-alone header [src/table\.h](src/table.h); examples [test/test\_table\.c](
 ## Hash table ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;uint](#user-content-typedef-c13937ad), [&lt;PN&gt;key](#user-content-typedef-e7af8dc0), [&lt;PN&gt;key_c](#user-content-typedef-46bcab6a), [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292), [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded), [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb), [&lt;PN&gt;value](#user-content-typedef-218ce716), [&lt;PN&gt;entry](#user-content-typedef-a9017e7), [&lt;PN&gt;policy_fn](#user-content-typedef-1244a528), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;uint](#user-content-typedef-c13937ad), [&lt;PN&gt;key](#user-content-typedef-e7af8dc0), [&lt;PN&gt;key_c](#user-content-typedef-46bcab6a), [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292), [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded), [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb), [&lt;PN&gt;value](#user-content-typedef-218ce716), [&lt;PN&gt;entry](#user-content-typedef-a9017e7), [&lt;PN&gt;policy_fn](#user-content-typedef-1244a528), [&lt;PITR&gt;action_fn](#user-content-typedef-49d9168b), [&lt;PITR&gt;predicate_fn](#user-content-typedef-c5016dba), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [table_result](#user-content-tag-4f1ea759), [&lt;N&gt;table_entry](#user-content-tag-b491b196), [&lt;N&gt;table](#user-content-tag-8f317be5), [&lt;N&gt;table_iterator](#user-content-tag-f67540e4)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -33,6 +33,8 @@ Stand\-alone header [src/table\.h](src/table.h); examples [test/test\_table\.c](
    Default trait; a name that satisfies `C` naming conventions when mangled and a [&lt;PN&gt;value](#user-content-typedef-218ce716) used in [&lt;N&gt;table&lt;D&gt;get](#user-content-fn-92774ccb)\. There can be multiple defaults, but only one can omit `TABLE_DEFAULT_NAME`\.
  * Parameter: TABLE\_TO\_STRING\_NAME, TABLE\_TO\_STRING  
    To string trait contained in [to\_string\.h](to_string.h); `<STR>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\. There can be multiple to string traits, but only one can omit `TABLE_TO_STRING_NAME`\.
+ * Parameter: HAVE\_ITERATE\_H  
+   The `<ITR>` functions need this value\. This includes [src/iterate\.h](src/iterate.h), which take no parameters\. Some functions may only be available for some boxes\. This does not expire after box completion\.
  * Standard:  
    C89
 
@@ -108,6 +110,22 @@ If `TABLE_VALUE`, this is [&lt;N&gt;table_entry](#user-content-tag-b491b196); ot
 <code>typedef int(*<strong>&lt;PN&gt;policy_fn</strong>)(&lt;PN&gt;key original, &lt;PN&gt;key replace);</code>
 
 Returns true if the `replace` replaces the `original`\. \(Shouldn't it be entry?\)
+
+
+
+### <a id = "user-content-typedef-49d9168b" name = "user-content-typedef-49d9168b">&lt;PITR&gt;action_fn</a> ###
+
+<code>typedef void(*<strong>&lt;PITR&gt;action_fn</strong>)(&lt;PITR&gt;element);</code>
+
+[src/iterate\.h](src/iterate.h): Operates by side\-effects\.
+
+
+
+### <a id = "user-content-typedef-c5016dba" name = "user-content-typedef-c5016dba">&lt;PITR&gt;predicate_fn</a> ###
+
+<code>typedef int(*<strong>&lt;PITR&gt;predicate_fn</strong>)(const &lt;PITR&gt;element_c);</code>
+
+[src/iterate\.h](src/iterate.h): Returns a boolean given read\-only\.
 
 
 
@@ -198,6 +216,18 @@ Adding, deleting, successfully looking up entries, or any modification of the ta
 <tr><td align = right>static enum table_result</td><td><a href = "#user-content-fn-f9e3ef3">&lt;N&gt;table_compute</a></td><td>table, key, value</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-f3d5d82a">&lt;N&gt;table_remove</a></td><td>table, key</td></tr>
+
+<tr><td align = right>static &lt;PITR&gt;element</td><td><a href = "#user-content-fn-73c52918">&lt;ITR&gt;any</a></td><td>box, predicate</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-96abfbdb">&lt;ITR&gt;each</a></td><td>box, action</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-6e4cf157">&lt;ITR&gt;if_each</a></td><td>box, predicate, action</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-4b2c205b">&lt;ITR&gt;copy_if</a></td><td>dst, src, copy</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-d816173b">&lt;ITR&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-108e9df6">&lt;ITR&gt;trim</a></td><td>box, predicate</td></tr>
 
 <tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#user-content-fn-92774ccb">&lt;N&gt;table&lt;D&gt;get</a></td><td>table, key</td></tr>
 
@@ -436,6 +466,81 @@ Removes `key` from `table` \(which could be null\.\)
    Whether that `key` was in `table`\.
  * Order:  
    Average &#927;\(1\), \(hash distributes elements uniformly\); worst &#927;\(n\)\.
+
+
+
+
+### <a id = "user-content-fn-73c52918" name = "user-content-fn-73c52918">&lt;ITR&gt;any</a> ###
+
+<code>static &lt;PITR&gt;element <strong>&lt;ITR&gt;any</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code>
+
+[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `predicate` until it returns true\.
+
+ * Return:  
+   The first `predicate` that returned true, or, if the statement is false on all, null\.
+ * Order:  
+   &#927;\(`box.size`\) &#215; &#927;\(`predicate`\)
+
+
+
+
+### <a id = "user-content-fn-96abfbdb" name = "user-content-fn-96abfbdb">&lt;ITR&gt;each</a> ###
+
+<code>static void <strong>&lt;ITR&gt;each</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;action_fn <em>action</em>)</code>
+
+[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements\. The topology of the list must not change while in this function\.
+
+ * Order:  
+   &#927;\(|`box`|\) &#215; &#927;\(`action`\)
+
+
+
+
+### <a id = "user-content-fn-6e4cf157" name = "user-content-fn-6e4cf157">&lt;ITR&gt;if_each</a> ###
+
+<code>static void <strong>&lt;ITR&gt;if_each</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>, const &lt;PITR&gt;action_fn <em>action</em>)</code>
+
+[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list must not change while in this function\.
+
+ * Order:  
+   &#927;\(`box.size`\) &#215; \(&#927;\(`predicate`\) \+ &#927;\(`action`\)\)
+
+
+
+
+### <a id = "user-content-fn-4b2c205b" name = "user-content-fn-4b2c205b">&lt;ITR&gt;copy_if</a> ###
+
+<code>static int <strong>&lt;ITR&gt;copy_if</strong>(&lt;PITR&gt;box *restrict const <em>dst</em>, const &lt;PITR&gt;box *restrict const <em>src</em>, const &lt;PITR&gt;predicate_fn <em>copy</em>)</code>
+
+[src/iterate\.h](src/iterate.h), `BOX_CONTIGUOUS`: For all elements of `src`, calls `copy`, and if true, lazily copies the elements to `dst`\. `dst` and `src` can not be the same but `src` can be null, \(in which case, it does nothing\.\)
+
+ * Exceptional return: realloc  
+ * Order:  
+   &#927;\(|`src`|\) &#215; &#927;\(`copy`\)
+
+
+
+
+### <a id = "user-content-fn-d816173b" name = "user-content-fn-d816173b">&lt;ITR&gt;keep_if</a> ###
+
+<code>static void <strong>&lt;ITR&gt;keep_if</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>keep</em>, const &lt;PITR&gt;action_fn <em>destruct</em>)</code>
+
+[src/iterate\.h](src/iterate.h), `BOX_CONTIGUOUS`: For all elements of `box`, calls `keep`, and if false, lazy deletes that item\. Calls `destruct` if not\-null before deleting\.
+
+ * Order:  
+   &#927;\(|`box`|\) \(&#215; O\(`keep`\) \+ O\(`destruct`\)\)
+
+
+
+
+### <a id = "user-content-fn-108e9df6" name = "user-content-fn-108e9df6">&lt;ITR&gt;trim</a> ###
+
+<code>static void <strong>&lt;ITR&gt;trim</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code>
+
+[src/iterate\.h](src/iterate.h), `BOX_CONTIGUOUS`: Removes at either end of `box` the things that `predicate`, if it exists, returns true\.
+
+ * Order:  
+   &#927;\(`box.size`\) &#215; &#927;\(`predicate`\)
 
 
 
