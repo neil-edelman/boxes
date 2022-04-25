@@ -260,9 +260,9 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 	struct {
 		struct sample {
 			PN_(entry) entry;
-#ifdef TABLE_VALUE
+/*#ifdef TABLE_VALUE
 			PN_(value) temp_value;
-#endif
+#endif*/
 			int is_in;
 		} sample[1000];
 		size_t count;
@@ -280,9 +280,9 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 	for(i = 0; i < trial_size; i++) {
 		struct sample *s = trials.sample + i;
 		size_t j;
-#ifdef TABLE_VALUE
-		s->entry.value = &s->temp_value;
-#endif
+/*#ifdef TABLE_VALUE
+		s->entry.value = &s.temp_value;
+#endif*/
 		if(!fill(parent, &s->entry)) { assert(0); return; }
 		PN_(to_string)(PN_(entry_key)(s->entry), &z);
 		s->is_in = 0;
@@ -359,7 +359,7 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 		assert(is && PN_(eq_en)(s->entry, result));
 		value = N_(table_get_or)(&table, key, def);
 #ifdef TABLE_VALUE
-		array_value = s->entry.value;
+		array_value = &s->entry.value;
 #else
 		array_value = &s->entry;
 #endif

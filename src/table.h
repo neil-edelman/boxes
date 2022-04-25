@@ -162,9 +162,9 @@ static const PN_(is_equal_fn) PN_(equal) = (TABLE_IS_EQUAL);
 /** Defining `TABLE_VALUE` produces an associative map, otherwise it is the
  same as <typedef:<PN>key>. */
 typedef TABLE_VALUE PN_(value);
-/** Defining `TABLE_VALUE` creates this map from <typedef:<PN>key> to a pointer
- to <typedef:<PN>value>, as an interface with table. */
-struct N_(table_entry) { PN_(key) key; PN_(value) *value; };
+/** Defining `TABLE_VALUE` creates this map from <typedef:<PN>key> to
+ <typedef:<PN>value>, as an interface with table. */
+struct N_(table_entry) { PN_(key) key; PN_(value) value; };
 /** If `TABLE_VALUE`, this is <tag:<N>table_entry>; otherwise, it's the same as
  <typedef:<PN>key>. */
 typedef struct N_(table_entry) PN_(entry);
@@ -224,7 +224,7 @@ static PN_(entry) PN_(to_entry)(struct PN_(bucket) *const bucket) {
 	assert(bucket);
 #ifdef TABLE_VALUE /* entry { <PN>key key; <PN>value value; } */
 	e.key = PN_(bucket_key)(bucket);
-	e.value = &bucket->value;
+	e.value = bucket->value;
 #else /* entry <PN>key */
 	e = PN_(bucket_key)(bucket);
 #endif
@@ -496,7 +496,7 @@ static void PN_(replace_entry)(struct PN_(bucket) *const bucket,
 	const PN_(entry) entry, const PN_(uint) hash) {
 	PN_(replace_key)(bucket, PN_(entry_key)(entry), hash);
 #ifdef TABLE_VALUE
-	bucket->value = *entry.value;
+	bucket->value = entry.value;
 #endif
 }
 

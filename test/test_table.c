@@ -346,7 +346,7 @@ static void boat_club(void) {
 			"id\tbest\tpoints\n");
 		it = boat_table_begin(&boats);
 		while(boat_table_next(&it, &e))
-			printf("%d\t%d\t%d\n", e.key, e.value->best_time, e.value->points);
+			printf("%d\t%d\t%d\n", e.key, e.value.best_time, e.value.points);
 	}
 	{ success = 1; goto finally; }
 catch:
@@ -417,7 +417,7 @@ static int fill_star(void *const zero, struct star_table_entry *const star) {
 	size_t r = (size_t)rand() / (RAND_MAX / stars_size + 1);
 	(void)zero, assert(!zero);
 	star->key = star_names[r];
-	*star->value = star_distances[r];
+	star->value = star_distances[r];
 	return 1;
 }
 
@@ -751,9 +751,9 @@ static void nato(void) {
 	printf("NATO phonetic alphabet letter count histogram\n"
 		"length\tcount\twords\n");
 	for(it = nato_table_begin(&nato); nato_table_next(&it, &entry); ) {
-		struct nato_list *const head = entry.value->head, *w = head;
+		struct nato_list *const head = entry.value.head, *w = head;
 		printf("%lu\t%lu\t{", (unsigned long)entry.key,
-			(unsigned long)entry.value->occurrences);
+			(unsigned long)entry.value.occurrences);
 		do printf("%s%s", head == w ? "" : ",", w->alpha); while(w = w->next);
 		printf("}\n");
 	}
@@ -765,15 +765,15 @@ static void nato(void) {
 		success = nato_table_query(&nato, 3, &e);
 		assert(!success);
 		success = nato_table_query(&nato, 4, &e);
-		assert(success && e.value->occurrences == 8);
+		assert(success && e.value.occurrences == 8);
 		success = nato_table_query(&nato, 5, &e);
-		assert(success && e.value->occurrences == 8);
+		assert(success && e.value.occurrences == 8);
 		success = nato_table_query(&nato, 6, &e);
-		assert(success && e.value->occurrences == 6);
+		assert(success && e.value.occurrences == 6);
 		success = nato_table_query(&nato, 7, &e);
-		assert(success && e.value->occurrences == 3);
+		assert(success && e.value.occurrences == 3);
 		success = nato_table_query(&nato, 8, &e);
-		assert(success && e.value->occurrences == 1);
+		assert(success && e.value.occurrences == 1);
 	}
 	goto finally;
 catch:
@@ -792,8 +792,7 @@ static void stars(void) {
 	for(i = 0; i < sizeof s_array / sizeof *s_array; i++) {
 		struct star_table_entry e;
 		size_t s = s_array[i];
-		assert(0);
-		/*e.key = star_names[s], e.value = star_distances[s];*/
+		e.key = star_names[s], e.value = star_distances[s];
 		printf("%lu: %s -> %f\n", (unsigned long)s, e.key, e.value);
 		if(star_table_try(&stars, e) != TABLE_UNIQUE)
 			goto catch;
