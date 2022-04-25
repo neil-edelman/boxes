@@ -38,7 +38,7 @@
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/table">table</a></td>
 	<td>set or map (associative array)</td>
-	<td>to_string</td>
+	<td>iterate, to_string</td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/trie">trie</a></td>
