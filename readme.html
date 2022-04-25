@@ -70,7 +70,7 @@
 	<dt>Parameter: TABLE_DEFAULT_NAME, TABLE_DEFAULT</dt>
 	<dd>Default trait; a name that satisfies <code>C</code> naming conventions when mangled and a <a href = "#typedef:&lt;PN&gt;value">&lt;PN&gt;value</a> used in <a href = "#fn:&lt;N&gt;table&lt;D&gt;get">&lt;N&gt;table&lt;D&gt;get</a>. There can be multiple defaults, but only one can omit <code>TABLE_DEFAULT_NAME</code>.</dd>
 	<dt>Parameter: TABLE_TO_STRING_NAME, TABLE_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; <code>&lt;SZ&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>TABLE_TO_STRING_NAME</code>.</dd>
+	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; <code>&lt;STR&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>TABLE_TO_STRING_NAME</code>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 </dl>
@@ -113,7 +113,7 @@
 
 <p><code>typedef &lt;PN&gt;uint(*<strong>&lt;PN&gt;hash_fn</strong>)(&lt;PN&gt;key_c);</code></p>
 
-<p>A map from <a href = "#typedef:&lt;PN&gt;ckey">&lt;PN&gt;ckey</a> onto <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a> that, ideally, should be easy to compute while minimizing duplicate addresses. Must be consistent for each value while in the table. If <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> is a pointer, one is permitted to have null in the domain.</p>
+<p>A map from <a href = "#typedef:&lt;PN&gt;key_c">&lt;PN&gt;key_c</a> onto <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a> that, ideally, should be easy to compute while minimizing duplicate addresses. Must be consistent for each value while in the table. If <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> is a pointer, one is permitted to have null in the domain.</p>
 
 </div>
 
@@ -123,7 +123,7 @@
 
 <p><code>typedef &lt;PN&gt;key(*<strong>&lt;PN&gt;inverse_hash_fn</strong>)(&lt;PN&gt;uint);</code></p>
 
-<p>Defining <code>TABLE_INVERSE</code> says <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> forms a bijection between the range in <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> and the image in <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a>. The keys are not stored in the hash table, but they are generated from the hashes using this inverse-mapping.</p>
+<p>Defining <code>TABLE_INVERSE</code> says <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> forms a bijection between the range in <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> and the image in <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a>. Keys are not stored in the hash table, rather they are generated using this inverse-mapping.</p>
 
 </div>
 
@@ -133,7 +133,7 @@
 
 <p><code>typedef int(*<strong>&lt;PN&gt;is_equal_fn</strong>)(&lt;PN&gt;key_c a, &lt;PN&gt;key_c b);</code></p>
 
-<p>Equivalence relation between <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> that satisfies <code>&lt;PN&gt;is_equal_fn(a, b) -&gt; &lt;PN&gt;hash(a) == &lt;PN&gt;hash(b)</code>. Not used if <code>TABLE_INVERSE</code> because the comparison is done in hash space, in that case.</p>
+<p>Equivalence relation between <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> that satisfies <code>&lt;PN&gt;is_equal_fn(a, b) -&gt; &lt;PN&gt;hash(a) == &lt;PN&gt;hash(b)</code>. Can not be set if <code>TABLE_INVERSE</code>, because the comparison is done directly in hash space, in that case.</p>
 
 </div>
 
@@ -193,9 +193,9 @@
 
 <h3><a id = "tag:<N>table_entry" name = "tag:<N>table_entry">&lt;N&gt;table_entry</a></h3>
 
-<p><code>struct <strong>&lt;N&gt;table_entry</strong> { &lt;PN&gt;key key; &lt;PN&gt;value *value; };</code></p>
+<p><code>struct <strong>&lt;N&gt;table_entry</strong> { &lt;PN&gt;key key; &lt;PN&gt;value value; };</code></p>
 
-<p>Defining <code>TABLE_VALUE</code> creates this map from <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> to a pointer to <a href = "#typedef:&lt;PN&gt;value">&lt;PN&gt;value</a>, as an interface with table.</p>
+<p>Defining <code>TABLE_VALUE</code> creates this map from <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> to <a href = "#typedef:&lt;PN&gt;value">&lt;PN&gt;value</a>, as an interface with table.</p>
 
 </div>
 
@@ -285,11 +285,11 @@
 
 <p><code>static struct &lt;N&gt;table <strong>&lt;N&gt;table</strong>(void)</code></p>
 
-<p>This is the same as <code>{ 0 }</code> in <code>C99</code>, therefore static data is already initialized.</p>
+<p>Zeroed data (not all-bits-zero) is initialized.</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>An initial idle array that takes no extra memory.</dd>
+	<dd>An idle array.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
@@ -322,7 +322,7 @@
 
 <p><code>static int <strong>&lt;N&gt;table_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, &lt;PN&gt;entry *<em>entry</em>)</code></p>
 
-<p>Advances <code>it</code>.</p>
+<p>Advances <code>it</code>. The awkwardness of this function because <a href = "#typedef:&lt;PN&gt;entry">&lt;PN&gt;entry</a> is not necessarily nullifyable, so we are not guaranteed to have an out-of-band entry to indicate completion. (May be changed in the future.)</p>
 
 <dl>
 	<dt>Parameter: <em>entry</em></dt>

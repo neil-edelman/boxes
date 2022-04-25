@@ -32,7 +32,7 @@ Stand\-alone header [src/table\.h](src/table.h); examples [test/test\_table\.c](
  * Parameter: TABLE\_DEFAULT\_NAME, TABLE\_DEFAULT  
    Default trait; a name that satisfies `C` naming conventions when mangled and a [&lt;PN&gt;value](#user-content-typedef-218ce716) used in [&lt;N&gt;table&lt;D&gt;get](#user-content-fn-92774ccb)\. There can be multiple defaults, but only one can omit `TABLE_DEFAULT_NAME`\.
  * Parameter: TABLE\_TO\_STRING\_NAME, TABLE\_TO\_STRING  
-   To string trait contained in [to\_string\.h](to_string.h); `<SZ>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)\. There can be multiple to string traits, but only one can omit `TABLE_TO_STRING_NAME`\.
+   To string trait contained in [to\_string\.h](to_string.h); `<STR>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\. There can be multiple to string traits, but only one can omit `TABLE_TO_STRING_NAME`\.
  * Standard:  
    C89
 
@@ -67,7 +67,7 @@ Read\-only [&lt;PN&gt;key](#user-content-typedef-e7af8dc0)\. Makes the simplifyi
 
 <code>typedef &lt;PN&gt;uint(*<strong>&lt;PN&gt;hash_fn</strong>)(&lt;PN&gt;key_c);</code>
 
-A map from [&lt;PN&gt;ckey](#user-content-typedef-c325bde5) onto [&lt;PN&gt;uint](#user-content-typedef-c13937ad) that, ideally, should be easy to compute while minimizing duplicate addresses\. Must be consistent for each value while in the table\. If [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) is a pointer, one is permitted to have null in the domain\.
+A map from [&lt;PN&gt;key_c](#user-content-typedef-46bcab6a) onto [&lt;PN&gt;uint](#user-content-typedef-c13937ad) that, ideally, should be easy to compute while minimizing duplicate addresses\. Must be consistent for each value while in the table\. If [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) is a pointer, one is permitted to have null in the domain\.
 
 
 
@@ -75,7 +75,7 @@ A map from [&lt;PN&gt;ckey](#user-content-typedef-c325bde5) onto [&lt;PN&gt;uint
 
 <code>typedef &lt;PN&gt;key(*<strong>&lt;PN&gt;inverse_hash_fn</strong>)(&lt;PN&gt;uint);</code>
 
-Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) forms a bijection between the range in [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) and the image in [&lt;PN&gt;uint](#user-content-typedef-c13937ad)\. The keys are not stored in the hash table, but they are generated from the hashes using this inverse\-mapping\.
+Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) forms a bijection between the range in [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) and the image in [&lt;PN&gt;uint](#user-content-typedef-c13937ad)\. Keys are not stored in the hash table, rather they are generated using this inverse\-mapping\.
 
 
 
@@ -83,7 +83,7 @@ Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292
 
 <code>typedef int(*<strong>&lt;PN&gt;is_equal_fn</strong>)(&lt;PN&gt;key_c a, &lt;PN&gt;key_c b);</code>
 
-Equivalence relation between [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) that satisfies `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`\. Not used if `TABLE_INVERSE` because the comparison is done in hash space, in that case\.
+Equivalence relation between [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) that satisfies `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`\. Can not be set if `TABLE_INVERSE`, because the comparison is done directly in hash space, in that case\.
 
 
 
@@ -131,9 +131,9 @@ A result of modifying the table, of which `TABLE_ERROR` is false\. ![A diagram o
 
 ### <a id = "user-content-tag-b491b196" name = "user-content-tag-b491b196">&lt;N&gt;table_entry</a> ###
 
-<code>struct <strong>&lt;N&gt;table_entry</strong> { &lt;PN&gt;key key; &lt;PN&gt;value *value; };</code>
+<code>struct <strong>&lt;N&gt;table_entry</strong> { &lt;PN&gt;key key; &lt;PN&gt;value value; };</code>
 
-Defining `TABLE_VALUE` creates this map from [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) to a pointer to [&lt;PN&gt;value](#user-content-typedef-218ce716), as an interface with table\.
+Defining `TABLE_VALUE` creates this map from [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) to [&lt;PN&gt;value](#user-content-typedef-218ce716), as an interface with table\.
 
 
 
@@ -213,10 +213,10 @@ Adding, deleting, successfully looking up entries, or any modification of the ta
 
 <code>static struct &lt;N&gt;table <strong>&lt;N&gt;table</strong>(void)</code>
 
-This is the same as `{ 0 }` in `C99`, therefore static data is already initialized\.
+Zeroed data \(not all\-bits\-zero\) is initialized\.
 
  * Return:  
-   An initial idle array that takes no extra memory\.
+   An idle array\.
  * Order:  
    &#920;\(1\)
 
@@ -243,7 +243,7 @@ Loads `table` \(can be null\) into `it`\.
 
 <code>static int <strong>&lt;N&gt;table_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, &lt;PN&gt;entry *<em>entry</em>)</code>
 
-Advances `it`\.
+Advances `it`\. The awkwardness of this function because [&lt;PN&gt;entry](#user-content-typedef-a9017e7) is not necessarily nullifyable, so we are not guaranteed to have an out\-of\-band entry to indicate completion\. \(May be changed in the future\.\)
 
  * Parameter: _entry_  
    If non\-null, the entry is filled with the next element only if it has a next\.

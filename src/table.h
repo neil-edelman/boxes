@@ -130,7 +130,7 @@ typedef TABLE_KEY PN_(key);
  not `const`-qualified. */
 typedef const TABLE_KEY PN_(key_c);
 
-/** A map from <typedef:<PN>ckey> onto <typedef:<PN>uint> that, ideally,
+/** A map from <typedef:<PN>key_c> onto <typedef:<PN>uint> that, ideally,
  should be easy to compute while minimizing duplicate addresses. Must be
  consistent for each value while in the table. If <typedef:<PN>key> is a
  pointer, one is permitted to have null in the domain. */
@@ -255,8 +255,8 @@ static PN_(uint) PN_(capacity)(const struct N_(table) *const table)
 
 /** @return Indexes the first closed bucket in the set of buckets with the same
  address from non-idle `table` given the `hash`. If the bucket is empty, it
- will have `next = TABLE_NULL` or it's own <fn:<PN>to_bucket> not equal to the
- index. */
+ will have `next = TABLE_NULL` or it's own <fn:<PN>to_bucket_no> not equal to
+ the index. */
 static PN_(uint) PN_(to_bucket_no)(const struct N_(table) *const table,
 	const PN_(uint) hash) { return hash & (PN_(capacity)(table) - 1); }
 
@@ -667,7 +667,9 @@ static void N_(table_)(struct N_(table) *const table)
 static struct N_(table_iterator) N_(table_begin)(struct N_(table) *const
 	table) { struct N_(table_iterator) it; it._ = PN_(begin)(table);
 	return it; }
-/** Advances `it`.
+/** Advances `it`. The awkwardness of this function because <typedef:<PN>entry>
+ is not necessarily nullifyable, so we are not guaranteed to have an
+ out-of-band entry to indicate completion. (May be changed in the future.)
  @param[entry] If non-null, the entry is filled with the next element only if
  it has a next. @return Whether it had a next element. @allow */
 static int N_(table_next)(struct N_(table_iterator) *const it,
@@ -872,14 +874,17 @@ static void PN_(unused_base_coda)(void);
 static void PN_(unused_base)(void) {
 	PN_(entry) e; PN_(key) k; PN_(value) v;
 	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
-	N_(table)(); N_(table_)(0); N_(table_buffer)(0, 0); N_(table_clear)(0);
-	N_(table_is)(0, k); N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v);
-	N_(table_try)(0, e); N_(table_replace)(0, e, 0); N_(table_update)(0,e,0,0);
+	PN_(is_content)(0); PN_(forward_begin)(0); PN_(forward_next)(0);
+	N_(table)(); N_(table_)(0); N_(table_begin)(0); N_(table_next)(0, 0);
+	N_(table_buffer)(0, 0); N_(table_clear)(0); N_(table_is)(0, k);
+	N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v); N_(table_try)(0, e);
+	N_(table_replace)(0, e, 0); N_(table_update)(0,e,0,0);
 	N_(table_remove)(0, k); N_(table_begin)(0); N_(table_next)(0, 0);
-	N_(table_has_next)(0); N_(table_iterator_remove)(0);PN_(unused_base_coda)();
+	N_(table_has_next)(0); N_(table_iterator_remove)(0);
 #ifdef TABLE_VALUE
 	N_(table_compute)(0, k, 0); N_(table_next_key)(0); N_(table_next_value)(0);
 #endif
+	PN_(unused_base_coda)();
 }
 static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 
