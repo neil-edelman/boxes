@@ -32,7 +32,7 @@
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/pool">pool</a></td>
-	<td>stable pool</td>
+	<td>stable memory pool</td>
 	<td>to_string</td>
 	<td>array, heap</td>
 </tr><tr>
