@@ -244,7 +244,7 @@ static int vec4_from_void(void *const vec4s, struct vec4 **const v)
 
 /** Too lazy to do separate tests. */
 static void test_default(void) {
-	struct int_table t = TABLE_IDLE;
+	struct int_table t = int_table();
 	int one, two, def;
 	printf("Testing get defaults.\n");
 	int_table_try(&t, 1);
@@ -272,7 +272,7 @@ static void test_default(void) {
 
 /** Test iteration removal. */
 static void test_it(void) {
-	struct int_table t = TABLE_IDLE;
+	struct int_table t = int_table();
 	struct int_table_iterator it;
 	const int ko = 1000, ko2 = ko * 2;
 	int n, i;
@@ -281,7 +281,7 @@ static void test_it(void) {
 	table_int_graph(&t, "graph/it0.gv");
 	assert(t.size == ko2);
 	printf("Remove: ");
-	for(int_table_begin(&it, &t); int_table_has_next(&it); ) {
+	for(it = int_table_begin(&t); int_table_has_next(&it); ) {
 		int_table_next(&it, &i);
 		if(i & 1) continue; /* Odd ones left. */
 		int_table_iterator_remove(&it);
@@ -290,7 +290,7 @@ static void test_it(void) {
 	printf("done.\n");
 	table_int_graph(&t, "graph/it1.gv");
 	assert(t.size == ko);
-	for(int_table_begin(&it, &t); int_table_has_next(&it); )
+	for(it = int_table_begin(&t); int_table_has_next(&it); )
 		int_table_next(&it, &i), assert(i & 1);
 	goto finally;
 catch:
@@ -312,7 +312,7 @@ struct boat_record { int best_time, points; };
 #include "../src/table.h"
 /** <https://stackoverflow.com/q/59091226/2472827>. */
 static void boat_club(void) {
-	struct boat_table boats = TABLE_IDLE;
+	struct boat_table boats = boat_table();
 	size_t i;
 	int success = 0;
 	printf("Boat club races:\n");
@@ -344,9 +344,9 @@ static void boat_club(void) {
 		struct boat_table_iterator it;
 		printf("Final score:\n"
 			"id\tbest\tpoints\n");
-		boat_table_begin(&it, &boats);
+		it = boat_table_begin(&boats);
 		while(boat_table_next(&it, &e))
-			printf("%d\t%d\t%d\n", e.key, e.value.best_time, e.value.points);
+			printf("%d\t%d\t%d\n", e.key, e.value->best_time, e.value->points);
 	}
 	{ success = 1; goto finally; }
 catch:
@@ -417,7 +417,7 @@ static int fill_star(void *const zero, struct star_table_entry *const star) {
 	size_t r = (size_t)rand() / (RAND_MAX / stars_size + 1);
 	(void)zero, assert(!zero);
 	star->key = star_names[r];
-	star->value = star_distances[r];
+	*star->value = star_distances[r];
 	return 1;
 }
 
@@ -505,10 +505,10 @@ finally:
 #include "lex.h"
 /** Manual test. */
 static void linked_dict(void) {
-	struct char_array english = ARRAY_IDLE;
+	struct char_array english = char_array();
 	const char *const inglesi_fn = "test/Tutte_le_parole_inglesi.txt";
-	struct dict_table words = TABLE_IDLE;
-	struct dict_pool backing = POOL_IDLE;
+	struct dict_table words = dict_table();
+	struct dict_pool backing = dict_pool();
 	struct dict_list order;
 	struct lex_state state = { 0, 0, 0 }; /* Defined in <lex.h>. */
 	printf("Testing linked-dictionary.\n");
@@ -658,10 +658,10 @@ static void fill_letter(struct letter *const letter) {
 #include "pool.h"
 /** Example of a set with a pointer key. */
 static void year_of(void) {
-	struct year_table year = TABLE_IDLE;
-	struct colour_pool colour_pool = POOL_IDLE;
-	struct snake_pool snake_pool = POOL_IDLE;
-	struct letter_pool letter_pool = POOL_IDLE;
+	struct year_table year = year_table();
+	struct colour_pool colourpool = colour_pool();
+	struct snake_pool snakepool = snake_pool();
+	struct letter_pool letterpool = letter_pool();
 	size_t i;
 	printf("Testing table pointer set key.\n");
 	for(i = 0; i < 500; i++) {
@@ -669,13 +669,13 @@ static void year_of(void) {
 		int *eject;
 		switch(rand() / (RAND_MAX / 3 + 1)) {
 		case 0: { struct colour *c;
-			if(!(c = colour_pool_new(&colour_pool))) goto catch;
+			if(!(c = colour_pool_new(&colourpool))) goto catch;
 			fill_colour(c), y = &c->year; } break;
 		case 1: { struct snake *s;
-			if(!(s = snake_pool_new(&snake_pool))) goto catch;
+			if(!(s = snake_pool_new(&snakepool))) goto catch;
 			fill_snake(s), y = &s->year; } break;
 		case 2: { struct letter *a;
-			if(!(a = letter_pool_new(&letter_pool))) goto catch;
+			if(!(a = letter_pool_new(&letterpool))) goto catch;
 			fill_letter(a), y = &a->year; } break;
 		}
 		switch(year_table_replace(&year, &y->year, &eject)) {
@@ -696,9 +696,9 @@ catch:
 	perror("year"), assert(0);
 finally:
 	year_table_(&year);
-	colour_pool_(&colour_pool); /* This is where it's deleted. */
-	snake_pool_(&snake_pool);
-	letter_pool_(&letter_pool);
+	colour_pool_(&colourpool); /* This is where it's deleted. */
+	snake_pool_(&snakepool);
+	letter_pool_(&letterpool);
 	printf("\n");
 }
 
@@ -729,7 +729,7 @@ static void nato(void) {
 		"Mike", "November", "Oscar", "Papa", "Québec", "Romeo", "Sierra",
 		"Tango", "Uniform", "Victor", "Whisky", "X-ray", "Yankee", "Zulu" };
 	struct nato_list list[sizeof alphabet / sizeof *alphabet];
-	struct nato_table nato = TABLE_IDLE;
+	struct nato_table nato = nato_table();
 	struct nato_table_iterator it;
 	struct nato_table_entry entry;
 	size_t i;
@@ -750,10 +750,10 @@ static void nato(void) {
 	}
 	printf("NATO phonetic alphabet letter count histogram\n"
 		"length\tcount\twords\n");
-	for(nato_table_begin(&it, &nato); nato_table_next(&it, &entry); ) {
-		struct nato_list *const head = entry.value.head, *w = head;
+	for(it = nato_table_begin(&nato); nato_table_next(&it, &entry); ) {
+		struct nato_list *const head = entry.value->head, *w = head;
 		printf("%lu\t%lu\t{", (unsigned long)entry.key,
-			(unsigned long)entry.value.occurrences);
+			(unsigned long)entry.value->occurrences);
 		do printf("%s%s", head == w ? "" : ",", w->alpha); while(w = w->next);
 		printf("}\n");
 	}
@@ -765,15 +765,15 @@ static void nato(void) {
 		success = nato_table_query(&nato, 3, &e);
 		assert(!success);
 		success = nato_table_query(&nato, 4, &e);
-		assert(success && e.value.occurrences == 8);
+		assert(success && e.value->occurrences == 8);
 		success = nato_table_query(&nato, 5, &e);
-		assert(success && e.value.occurrences == 8);
+		assert(success && e.value->occurrences == 8);
 		success = nato_table_query(&nato, 6, &e);
-		assert(success && e.value.occurrences == 6);
+		assert(success && e.value->occurrences == 6);
 		success = nato_table_query(&nato, 7, &e);
-		assert(success && e.value.occurrences == 3);
+		assert(success && e.value->occurrences == 3);
 		success = nato_table_query(&nato, 8, &e);
-		assert(success && e.value.occurrences == 1);
+		assert(success && e.value->occurrences == 1);
 	}
 	goto finally;
 catch:
@@ -786,13 +786,14 @@ finally:
 
 /** Contrived example for paper. */
 static void stars(void) {
-	struct star_table stars = TABLE_IDLE;
+	struct star_table stars = star_table();
 	const size_t s_array[] = { 0, 1, 8, 9, 11, 16, 17, 20, 22, 25, 49 };
 	size_t i;
 	for(i = 0; i < sizeof s_array / sizeof *s_array; i++) {
 		struct star_table_entry e;
 		size_t s = s_array[i];
-		e.key = star_names[s], e.value = star_distances[s];
+		assert(0);
+		/*e.key = star_names[s], e.value = star_distances[s];*/
 		printf("%lu: %s -> %f\n", (unsigned long)s, e.key, e.value);
 		if(star_table_try(&stars, e) != TABLE_UNIQUE)
 			goto catch;
@@ -809,8 +810,8 @@ finally:
 
 
 int main(void) {
-	struct str16_pool strings = POOL_IDLE;
-	struct vec4_pool vec4s = POOL_IDLE;
+	struct str16_pool strings = str16_pool();
+	struct vec4_pool vec4s = vec4_pool();
 	zodiac_table_test(&fill_zodiac, 0); /* Don't require any space. */
 	string_table_test(&str16_from_void, &strings), str16_pool_(&strings);
 	uint_table_test(&uint_from_void, 0);

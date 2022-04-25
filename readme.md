@@ -5,7 +5,7 @@ Stand\-alone header [src/table\.h](src/table.h); examples [test/test\_table\.c](
 ## Hash table ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;uint](#user-content-typedef-c13937ad), [&lt;PN&gt;key](#user-content-typedef-e7af8dc0), [&lt;PN&gt;ckey](#user-content-typedef-c325bde5), [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292), [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded), [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb), [&lt;PN&gt;value](#user-content-typedef-218ce716), [&lt;PN&gt;entry](#user-content-typedef-a9017e7), [&lt;PN&gt;policy_fn](#user-content-typedef-1244a528), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;uint](#user-content-typedef-c13937ad), [&lt;PN&gt;key](#user-content-typedef-e7af8dc0), [&lt;PN&gt;key_c](#user-content-typedef-46bcab6a), [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292), [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded), [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb), [&lt;PN&gt;value](#user-content-typedef-218ce716), [&lt;PN&gt;entry](#user-content-typedef-a9017e7), [&lt;PN&gt;policy_fn](#user-content-typedef-1244a528), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [table_result](#user-content-tag-4f1ea759), [&lt;N&gt;table_entry](#user-content-tag-b491b196), [&lt;N&gt;table](#user-content-tag-8f317be5), [&lt;N&gt;table_iterator](#user-content-tag-f67540e4)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -55,9 +55,9 @@ Valid tag type defined by `TABLE_KEY` used for keys\. If `TABLE_INVERSE` is not 
 
 
 
-### <a id = "user-content-typedef-c325bde5" name = "user-content-typedef-c325bde5">&lt;PN&gt;ckey</a> ###
+### <a id = "user-content-typedef-46bcab6a" name = "user-content-typedef-46bcab6a">&lt;PN&gt;key_c</a> ###
 
-<code>typedef const TABLE_KEY <strong>&lt;PN&gt;ckey</strong>;</code>
+<code>typedef const TABLE_KEY <strong>&lt;PN&gt;key_c</strong>;</code>
 
 Read\-only [&lt;PN&gt;key](#user-content-typedef-e7af8dc0)\. Makes the simplifying assumption that this is not `const`\-qualified\.
 
@@ -65,7 +65,7 @@ Read\-only [&lt;PN&gt;key](#user-content-typedef-e7af8dc0)\. Makes the simplifyi
 
 ### <a id = "user-content-typedef-5e79a292" name = "user-content-typedef-5e79a292">&lt;PN&gt;hash_fn</a> ###
 
-<code>typedef &lt;PN&gt;uint(*<strong>&lt;PN&gt;hash_fn</strong>)(&lt;PN&gt;ckey);</code>
+<code>typedef &lt;PN&gt;uint(*<strong>&lt;PN&gt;hash_fn</strong>)(&lt;PN&gt;key_c);</code>
 
 A map from [&lt;PN&gt;ckey](#user-content-typedef-c325bde5) onto [&lt;PN&gt;uint](#user-content-typedef-c13937ad) that, ideally, should be easy to compute while minimizing duplicate addresses\. Must be consistent for each value while in the table\. If [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) is a pointer, one is permitted to have null in the domain\.
 
@@ -81,7 +81,7 @@ Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292
 
 ### <a id = "user-content-typedef-52314bb" name = "user-content-typedef-52314bb">&lt;PN&gt;is_equal_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PN&gt;is_equal_fn</strong>)(&lt;PN&gt;ckey a, &lt;PN&gt;ckey b);</code>
+<code>typedef int(*<strong>&lt;PN&gt;is_equal_fn</strong>)(&lt;PN&gt;key_c a, &lt;PN&gt;key_c b);</code>
 
 Equivalence relation between [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) that satisfies `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`\. Not used if `TABLE_INVERSE` because the comparison is done in hash space, in that case\.
 
@@ -107,15 +107,15 @@ If `TABLE_VALUE`, this is [&lt;N&gt;table_entry](#user-content-tag-b491b196); ot
 
 <code>typedef int(*<strong>&lt;PN&gt;policy_fn</strong>)(&lt;PN&gt;key original, &lt;PN&gt;key replace);</code>
 
-Returns true if the `replace` replaces the `original`\.
+Returns true if the `replace` replaces the `original`\. \(Shouldn't it be entry?\)
 
 
 
-### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
+### <a id = "user-content-typedef-8a8349ca" name = "user-content-typedef-8a8349ca">&lt;PSTR&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(&lt;PSTR&gt;element_c, char(*)[12]);</code>
 
-[to\_string\.h](to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\. `<PSZ>type` is contracted to be an internal iteration type of the box\.
+[src/to\_string\.h](src/to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\.
 
 
 
@@ -131,9 +131,9 @@ A result of modifying the table, of which `TABLE_ERROR` is false\. ![A diagram o
 
 ### <a id = "user-content-tag-b491b196" name = "user-content-tag-b491b196">&lt;N&gt;table_entry</a> ###
 
-<code>struct <strong>&lt;N&gt;table_entry</strong> { &lt;PN&gt;key key; &lt;PN&gt;value value; };</code>
+<code>struct <strong>&lt;N&gt;table_entry</strong> { &lt;PN&gt;key key; &lt;PN&gt;value *value; };</code>
 
-Defining `TABLE_VALUE` creates this map from [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) to [&lt;PN&gt;value](#user-content-typedef-218ce716) as an interface with table\.
+Defining `TABLE_VALUE` creates this map from [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) to a pointer to [&lt;PN&gt;value](#user-content-typedef-218ce716), as an interface with table\.
 
 
 
@@ -163,9 +163,21 @@ Adding, deleting, successfully looking up entries, or any modification of the ta
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-8f317be5">&lt;N&gt;table</a></td><td>table</td></tr>
+<tr><td align = right>static struct &lt;N&gt;table</td><td><a href = "#user-content-fn-8f317be5">&lt;N&gt;table</a></td><td></td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-24e5c5ce">&lt;N&gt;table_</a></td><td>table</td></tr>
+
+<tr><td align = right>static struct &lt;N&gt;table_iterator</td><td><a href = "#user-content-fn-89645eb3">&lt;N&gt;table_begin</a></td><td>table</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-f5d778c3">&lt;N&gt;table_next</a></td><td>it, entry</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-cbb7429a">&lt;N&gt;table_has_next</a></td><td>it</td></tr>
+
+<tr><td align = right>static &lt;PN&gt;key</td><td><a href = "#user-content-fn-69407e33">&lt;N&gt;table_next_key</a></td><td>it</td></tr>
+
+<tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#user-content-fn-df072cd">&lt;N&gt;table_next_value</a></td><td>it</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-c384e71">&lt;N&gt;table_iterator_remove</a></td><td>it</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-4afceb58">&lt;N&gt;table_buffer</a></td><td>table, n</td></tr>
 
@@ -187,21 +199,9 @@ Adding, deleting, successfully looking up entries, or any modification of the ta
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-f3d5d82a">&lt;N&gt;table_remove</a></td><td>table, key</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-89645eb3">&lt;N&gt;table_begin</a></td><td>it, table</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-f5d778c3">&lt;N&gt;table_next</a></td><td>it, entry</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-cbb7429a">&lt;N&gt;table_has_next</a></td><td>it</td></tr>
-
-<tr><td align = right>static &lt;PN&gt;key</td><td><a href = "#user-content-fn-69407e33">&lt;N&gt;table_next_key</a></td><td>it</td></tr>
-
-<tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#user-content-fn-df072cd">&lt;N&gt;table_next_value</a></td><td>it</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-c384e71">&lt;N&gt;table_iterator_remove</a></td><td>it</td></tr>
-
 <tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#user-content-fn-92774ccb">&lt;N&gt;table&lt;D&gt;get</a></td><td>table, key</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -211,10 +211,12 @@ Adding, deleting, successfully looking up entries, or any modification of the ta
 
 ### <a id = "user-content-fn-8f317be5" name = "user-content-fn-8f317be5">&lt;N&gt;table</a> ###
 
-<code>static void <strong>&lt;N&gt;table</strong>(struct &lt;N&gt;table *const <em>table</em>)</code>
+<code>static struct &lt;N&gt;table <strong>&lt;N&gt;table</strong>(void)</code>
 
-Initialises `table` to idle\.
+This is the same as `{ 0 }` in `C99`, therefore static data is already initialized\.
 
+ * Return:  
+   An initial idle array that takes no extra memory\.
  * Order:  
    &#920;\(1\)
 
@@ -225,7 +227,79 @@ Initialises `table` to idle\.
 
 <code>static void <strong>&lt;N&gt;table_</strong>(struct &lt;N&gt;table *const <em>table</em>)</code>
 
-Destroys `table` and returns it to idle\.
+If `table` is not null, destroys and returns it to idle\.
+
+
+
+### <a id = "user-content-fn-89645eb3" name = "user-content-fn-89645eb3">&lt;N&gt;table_begin</a> ###
+
+<code>static struct &lt;N&gt;table_iterator <strong>&lt;N&gt;table_begin</strong>(struct &lt;N&gt;table *const <em>table</em>)</code>
+
+Loads `table` \(can be null\) into `it`\.
+
+
+
+### <a id = "user-content-fn-f5d778c3" name = "user-content-fn-f5d778c3">&lt;N&gt;table_next</a> ###
+
+<code>static int <strong>&lt;N&gt;table_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, &lt;PN&gt;entry *<em>entry</em>)</code>
+
+Advances `it`\.
+
+ * Parameter: _entry_  
+   If non\-null, the entry is filled with the next element only if it has a next\.
+ * Return:  
+   Whether it had a next element\.
+
+
+
+
+### <a id = "user-content-fn-cbb7429a" name = "user-content-fn-cbb7429a">&lt;N&gt;table_has_next</a> ###
+
+<code>static int <strong>&lt;N&gt;table_has_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
+
+Especially for tables that can have zero as a valid value, this is used to differentiate between zero and null\.
+
+ * Return:  
+   Whether the table specified to `it` in [&lt;N&gt;table_begin](#user-content-fn-89645eb3) has a next element\.
+ * Order:  
+   Amortized on the capacity, &#927;\(1\)\.
+
+
+
+
+### <a id = "user-content-fn-69407e33" name = "user-content-fn-69407e33">&lt;N&gt;table_next_key</a> ###
+
+<code>static &lt;PN&gt;key <strong>&lt;N&gt;table_next_key</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
+
+Defined if `TABLE_VALUE`\. Advances `it` only when [&lt;N&gt;table_has_next](#user-content-fn-cbb7429a)\.
+
+ * Return:  
+   The next key\.
+
+
+
+
+### <a id = "user-content-fn-df072cd" name = "user-content-fn-df072cd">&lt;N&gt;table_next_value</a> ###
+
+<code>static &lt;PN&gt;value <strong>&lt;N&gt;table_next_value</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
+
+Defined if `TABLE_VALUE`\. Advances `it` only when [&lt;N&gt;table_has_next](#user-content-fn-cbb7429a)\.
+
+ * Return:  
+   The next value\.
+
+
+
+
+### <a id = "user-content-fn-c384e71" name = "user-content-fn-c384e71">&lt;N&gt;table_iterator_remove</a> ###
+
+<code>static int <strong>&lt;N&gt;table_iterator_remove</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
+
+Removes the entry at `it`\. Whereas [&lt;N&gt;table_remove](#user-content-fn-f3d5d82a) invalidates the iterator, this corrects for a signal `it`\.
+
+ * Return:  
+   Success, or there was no entry at the iterator's position, \(anymore\.\)
+
 
 
 
@@ -268,7 +342,7 @@ Clears and removes all buckets from `table`\. The capacity and memory of the `ta
 
 ### <a id = "user-content-fn-72aa7b72" name = "user-content-fn-72aa7b72">&lt;N&gt;table_query</a> ###
 
-<code>static int <strong>&lt;N&gt;table_query</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>, &lt;PN&gt;entry *const <em>result</em>)</code>
+<code>static int <strong>&lt;N&gt;table_query</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>, &lt;PN&gt;entry *<em>result</em>)</code>
 
  * Parameter: _result_  
    If null, behaves like [&lt;N&gt;table_is](#user-content-fn-a8bd2b22), otherwise, a [&lt;PN&gt;entry](#user-content-typedef-a9017e7) which gets filled on true\.
@@ -366,78 +440,6 @@ Removes `key` from `table` \(which could be null\.\)
 
 
 
-### <a id = "user-content-fn-89645eb3" name = "user-content-fn-89645eb3">&lt;N&gt;table_begin</a> ###
-
-<code>static void <strong>&lt;N&gt;table_begin</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, struct &lt;N&gt;table *const <em>table</em>)</code>
-
-Loads `table` \(can be null\) into `it`\.
-
-
-
-### <a id = "user-content-fn-f5d778c3" name = "user-content-fn-f5d778c3">&lt;N&gt;table_next</a> ###
-
-<code>static int <strong>&lt;N&gt;table_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, &lt;PN&gt;entry *<em>entry</em>)</code>
-
-Advances `it`\.
-
- * Parameter: _entry_  
-   If non\-null, the entry is filled with the next element only if it has a next\.
- * Return:  
-   Whether it had a next element\.
-
-
-
-
-### <a id = "user-content-fn-cbb7429a" name = "user-content-fn-cbb7429a">&lt;N&gt;table_has_next</a> ###
-
-<code>static int <strong>&lt;N&gt;table_has_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
-
-Especially for tables that can have zero as a valid value, this is used to differentiate between zero and null\.
-
- * Return:  
-   Whether the table specified to `it` in [&lt;N&gt;table_begin](#user-content-fn-89645eb3) has a next element\.
- * Order:  
-   Amortized on the capacity, &#927;\(1\)\.
-
-
-
-
-### <a id = "user-content-fn-69407e33" name = "user-content-fn-69407e33">&lt;N&gt;table_next_key</a> ###
-
-<code>static &lt;PN&gt;key <strong>&lt;N&gt;table_next_key</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
-
-Defined if `TABLE_VALUE`\. Advances `it` only when [&lt;N&gt;table_has_next](#user-content-fn-cbb7429a)\.
-
- * Return:  
-   The next key\.
-
-
-
-
-### <a id = "user-content-fn-df072cd" name = "user-content-fn-df072cd">&lt;N&gt;table_next_value</a> ###
-
-<code>static &lt;PN&gt;value <strong>&lt;N&gt;table_next_value</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
-
-Defined if `TABLE_VALUE`\. Advances `it` only when [&lt;N&gt;table_has_next](#user-content-fn-cbb7429a)\.
-
- * Return:  
-   The next value\.
-
-
-
-
-### <a id = "user-content-fn-c384e71" name = "user-content-fn-c384e71">&lt;N&gt;table_iterator_remove</a> ###
-
-<code>static int <strong>&lt;N&gt;table_iterator_remove</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
-
-Removes the entry at `it`\. Whereas [&lt;N&gt;table_remove](#user-content-fn-f3d5d82a) invalidates the iterator, this corrects for a signal `it`\.
-
- * Return:  
-   Success, or there was no entry at the iterator's position, \(anymore\.\)
-
-
-
-
 ### <a id = "user-content-fn-92774ccb" name = "user-content-fn-92774ccb">&lt;N&gt;table&lt;D&gt;get</a> ###
 
 <code>static &lt;PN&gt;value <strong>&lt;N&gt;table&lt;D&gt;get</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code>
@@ -452,11 +454,11 @@ This is functionally identical to [&lt;N&gt;table_get_or](#user-content-fn-638dc
 
 
 
-### <a id = "user-content-fn-b11709d3" name = "user-content-fn-b11709d3">&lt;SZ&gt;to_string</a> ###
+### <a id = "user-content-fn-751c6337" name = "user-content-fn-751c6337">&lt;STR&gt;to_string</a> ###
 
-<code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
+<code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<PSZ>box` is contracted to be the box itself\. `<SZ>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<STR>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
 
  * Return:  
    Address of the static buffer\.

@@ -39,7 +39,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PN>uint">&lt;PN&gt;uint</a>, <a href = "#typedef:<PN>key">&lt;PN&gt;key</a>, <a href = "#typedef:<PN>ckey">&lt;PN&gt;ckey</a>, <a href = "#typedef:<PN>hash_fn">&lt;PN&gt;hash_fn</a>, <a href = "#typedef:<PN>inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a>, <a href = "#typedef:<PN>is_equal_fn">&lt;PN&gt;is_equal_fn</a>, <a href = "#typedef:<PN>value">&lt;PN&gt;value</a>, <a href = "#typedef:<PN>entry">&lt;PN&gt;entry</a>, <a href = "#typedef:<PN>policy_fn">&lt;PN&gt;policy_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PN>uint">&lt;PN&gt;uint</a>, <a href = "#typedef:<PN>key">&lt;PN&gt;key</a>, <a href = "#typedef:<PN>key_c">&lt;PN&gt;key_c</a>, <a href = "#typedef:<PN>hash_fn">&lt;PN&gt;hash_fn</a>, <a href = "#typedef:<PN>inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a>, <a href = "#typedef:<PN>is_equal_fn">&lt;PN&gt;is_equal_fn</a>, <a href = "#typedef:<PN>value">&lt;PN&gt;value</a>, <a href = "#typedef:<PN>entry">&lt;PN&gt;entry</a>, <a href = "#typedef:<PN>policy_fn">&lt;PN&gt;policy_fn</a>, <a href = "#typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:table_result">table_result</a>, <a href = "#tag:<N>table_entry">&lt;N&gt;table_entry</a>, <a href = "#tag:<N>table">&lt;N&gt;table</a>, <a href = "#tag:<N>table_iterator">&lt;N&gt;table_iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -99,9 +99,9 @@
 
 <div>
 
-<h3><a id = "typedef:<PN>ckey" name = "typedef:<PN>ckey">&lt;PN&gt;ckey</a></h3>
+<h3><a id = "typedef:<PN>key_c" name = "typedef:<PN>key_c">&lt;PN&gt;key_c</a></h3>
 
-<p><code>typedef const TABLE_KEY <strong>&lt;PN&gt;ckey</strong>;</code></p>
+<p><code>typedef const TABLE_KEY <strong>&lt;PN&gt;key_c</strong>;</code></p>
 
 <p>Read-only <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a>. Makes the simplifying assumption that this is not <code>const</code>-qualified.</p>
 
@@ -111,7 +111,7 @@
 
 <h3><a id = "typedef:<PN>hash_fn" name = "typedef:<PN>hash_fn">&lt;PN&gt;hash_fn</a></h3>
 
-<p><code>typedef &lt;PN&gt;uint(*<strong>&lt;PN&gt;hash_fn</strong>)(&lt;PN&gt;ckey);</code></p>
+<p><code>typedef &lt;PN&gt;uint(*<strong>&lt;PN&gt;hash_fn</strong>)(&lt;PN&gt;key_c);</code></p>
 
 <p>A map from <a href = "#typedef:&lt;PN&gt;ckey">&lt;PN&gt;ckey</a> onto <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a> that, ideally, should be easy to compute while minimizing duplicate addresses. Must be consistent for each value while in the table. If <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> is a pointer, one is permitted to have null in the domain.</p>
 
@@ -131,7 +131,7 @@
 
 <h3><a id = "typedef:<PN>is_equal_fn" name = "typedef:<PN>is_equal_fn">&lt;PN&gt;is_equal_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PN&gt;is_equal_fn</strong>)(&lt;PN&gt;ckey a, &lt;PN&gt;ckey b);</code></p>
+<p><code>typedef int(*<strong>&lt;PN&gt;is_equal_fn</strong>)(&lt;PN&gt;key_c a, &lt;PN&gt;key_c b);</code></p>
 
 <p>Equivalence relation between <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> that satisfies <code>&lt;PN&gt;is_equal_fn(a, b) -&gt; &lt;PN&gt;hash(a) == &lt;PN&gt;hash(b)</code>. Not used if <code>TABLE_INVERSE</code> because the comparison is done in hash space, in that case.</p>
 
@@ -163,17 +163,17 @@
 
 <p><code>typedef int(*<strong>&lt;PN&gt;policy_fn</strong>)(&lt;PN&gt;key original, &lt;PN&gt;key replace);</code></p>
 
-<p>Returns true if the <code>replace</code> replaces the <code>original</code>.</p>
+<p>Returns true if the <code>replace</code> replaces the <code>original</code>. (Shouldn't it be entry?)</p>
 
 </div>
 
 <div>
 
-<h3><a id = "typedef:<PSZ>to_string_fn" name = "typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></h3>
+<h3><a id = "typedef:<PSTR>to_string_fn" name = "typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(&lt;PSTR&gt;element_c, char(*)[12]);</code></p>
 
-<p><a href = "to_string.h">to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string. <code>&lt;PSZ&gt;type</code> is contracted to be an internal iteration type of the box.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string.</p>
 
 </div>
 
@@ -193,9 +193,9 @@
 
 <h3><a id = "tag:<N>table_entry" name = "tag:<N>table_entry">&lt;N&gt;table_entry</a></h3>
 
-<p><code>struct <strong>&lt;N&gt;table_entry</strong> { &lt;PN&gt;key key; &lt;PN&gt;value value; };</code></p>
+<p><code>struct <strong>&lt;N&gt;table_entry</strong> { &lt;PN&gt;key key; &lt;PN&gt;value *value; };</code></p>
 
-<p>Defining <code>TABLE_VALUE</code> creates this map from <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> to <a href = "#typedef:&lt;PN&gt;value">&lt;PN&gt;value</a> as an interface with table.</p>
+<p>Defining <code>TABLE_VALUE</code> creates this map from <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> to a pointer to <a href = "#typedef:&lt;PN&gt;value">&lt;PN&gt;value</a>, as an interface with table.</p>
 
 </div>
 
@@ -231,9 +231,21 @@
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<N>table">&lt;N&gt;table</a></td><td>table</td></tr>
+<tr><td align = right>static struct &lt;N&gt;table</td><td><a href = "#fn:<N>table">&lt;N&gt;table</a></td><td></td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<N>table_">&lt;N&gt;table_</a></td><td>table</td></tr>
+
+<tr><td align = right>static struct &lt;N&gt;table_iterator</td><td><a href = "#fn:<N>table_begin">&lt;N&gt;table_begin</a></td><td>table</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<N>table_next">&lt;N&gt;table_next</a></td><td>it, entry</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<N>table_has_next">&lt;N&gt;table_has_next</a></td><td>it</td></tr>
+
+<tr><td align = right>static &lt;PN&gt;key</td><td><a href = "#fn:<N>table_next_key">&lt;N&gt;table_next_key</a></td><td>it</td></tr>
+
+<tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#fn:<N>table_next_value">&lt;N&gt;table_next_value</a></td><td>it</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<N>table_iterator_remove">&lt;N&gt;table_iterator_remove</a></td><td>it</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<N>table_buffer">&lt;N&gt;table_buffer</a></td><td>table, n</td></tr>
 
@@ -255,21 +267,9 @@
 
 <tr><td align = right>static int</td><td><a href = "#fn:<N>table_remove">&lt;N&gt;table_remove</a></td><td>table, key</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#fn:<N>table_begin">&lt;N&gt;table_begin</a></td><td>it, table</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#fn:<N>table_next">&lt;N&gt;table_next</a></td><td>it, entry</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#fn:<N>table_has_next">&lt;N&gt;table_has_next</a></td><td>it</td></tr>
-
-<tr><td align = right>static &lt;PN&gt;key</td><td><a href = "#fn:<N>table_next_key">&lt;N&gt;table_next_key</a></td><td>it</td></tr>
-
-<tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#fn:<N>table_next_value">&lt;N&gt;table_next_value</a></td><td>it</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#fn:<N>table_iterator_remove">&lt;N&gt;table_iterator_remove</a></td><td>it</td></tr>
-
 <tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#fn:<N>table<D>get">&lt;N&gt;table&lt;D&gt;get</a></td><td>table, key</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<STR>to_string">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -283,11 +283,13 @@
 
 <h3><a id = "fn:<N>table" name = "fn:<N>table">&lt;N&gt;table</a></h3>
 
-<p><code>static void <strong>&lt;N&gt;table</strong>(struct &lt;N&gt;table *const <em>table</em>)</code></p>
+<p><code>static struct &lt;N&gt;table <strong>&lt;N&gt;table</strong>(void)</code></p>
 
-<p>Initialises <code>table</code> to idle.</p>
+<p>This is the same as <code>{ 0 }</code> in <code>C99</code>, therefore static data is already initialized.</p>
 
 <dl>
+	<dt>Return:</dt>
+	<dd>An initial idle array that takes no extra memory.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
@@ -300,7 +302,96 @@
 
 <p><code>static void <strong>&lt;N&gt;table_</strong>(struct &lt;N&gt;table *const <em>table</em>)</code></p>
 
-<p>Destroys <code>table</code> and returns it to idle.</p>
+<p>If <code>table</code> is not null, destroys and returns it to idle.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>table_begin" name = "fn:<N>table_begin">&lt;N&gt;table_begin</a></h3>
+
+<p><code>static struct &lt;N&gt;table_iterator <strong>&lt;N&gt;table_begin</strong>(struct &lt;N&gt;table *const <em>table</em>)</code></p>
+
+<p>Loads <code>table</code> (can be null) into <code>it</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>table_next" name = "fn:<N>table_next">&lt;N&gt;table_next</a></h3>
+
+<p><code>static int <strong>&lt;N&gt;table_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, &lt;PN&gt;entry *<em>entry</em>)</code></p>
+
+<p>Advances <code>it</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>entry</em></dt>
+	<dd>If non-null, the entry is filled with the next element only if it has a next.</dd>
+	<dt>Return:</dt>
+	<dd>Whether it had a next element.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>table_has_next" name = "fn:<N>table_has_next">&lt;N&gt;table_has_next</a></h3>
+
+<p><code>static int <strong>&lt;N&gt;table_has_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
+
+<p>Especially for tables that can have zero as a valid value, this is used to differentiate between zero and null.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Whether the table specified to <code>it</code> in <a href = "#fn:&lt;N&gt;table_begin">&lt;N&gt;table_begin</a> has a next element.</dd>
+	<dt>Order:</dt>
+	<dd>Amortized on the capacity, &#927;(1).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>table_next_key" name = "fn:<N>table_next_key">&lt;N&gt;table_next_key</a></h3>
+
+<p><code>static &lt;PN&gt;key <strong>&lt;N&gt;table_next_key</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
+
+<p>Defined if <code>TABLE_VALUE</code>. Advances <code>it</code> only when <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The next key.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>table_next_value" name = "fn:<N>table_next_value">&lt;N&gt;table_next_value</a></h3>
+
+<p><code>static &lt;PN&gt;value <strong>&lt;N&gt;table_next_value</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
+
+<p>Defined if <code>TABLE_VALUE</code>. Advances <code>it</code> only when <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The next value.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>table_iterator_remove" name = "fn:<N>table_iterator_remove">&lt;N&gt;table_iterator_remove</a></h3>
+
+<p><code>static int <strong>&lt;N&gt;table_iterator_remove</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
+
+<p>Removes the entry at <code>it</code>. Whereas <a href = "#fn:&lt;N&gt;table_remove">&lt;N&gt;table_remove</a> invalidates the iterator, this corrects for a signal <code>it</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success, or there was no entry at the iterator's position, (anymore.)</dd>
+</dl>
 
 </div>
 
@@ -354,7 +445,7 @@
 
 <h3><a id = "fn:<N>table_query" name = "fn:<N>table_query">&lt;N&gt;table_query</a></h3>
 
-<p><code>static int <strong>&lt;N&gt;table_query</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>, &lt;PN&gt;entry *const <em>result</em>)</code></p>
+<p><code>static int <strong>&lt;N&gt;table_query</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>, &lt;PN&gt;entry *<em>result</em>)</code></p>
 
 <dl>
 	<dt>Parameter: <em>result</em></dt>
@@ -473,95 +564,6 @@
 
 <div>
 
-<h3><a id = "fn:<N>table_begin" name = "fn:<N>table_begin">&lt;N&gt;table_begin</a></h3>
-
-<p><code>static void <strong>&lt;N&gt;table_begin</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, struct &lt;N&gt;table *const <em>table</em>)</code></p>
-
-<p>Loads <code>table</code> (can be null) into <code>it</code>.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<N>table_next" name = "fn:<N>table_next">&lt;N&gt;table_next</a></h3>
-
-<p><code>static int <strong>&lt;N&gt;table_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, &lt;PN&gt;entry *<em>entry</em>)</code></p>
-
-<p>Advances <code>it</code>.</p>
-
-<dl>
-	<dt>Parameter: <em>entry</em></dt>
-	<dd>If non-null, the entry is filled with the next element only if it has a next.</dd>
-	<dt>Return:</dt>
-	<dd>Whether it had a next element.</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<N>table_has_next" name = "fn:<N>table_has_next">&lt;N&gt;table_has_next</a></h3>
-
-<p><code>static int <strong>&lt;N&gt;table_has_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
-
-<p>Especially for tables that can have zero as a valid value, this is used to differentiate between zero and null.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>Whether the table specified to <code>it</code> in <a href = "#fn:&lt;N&gt;table_begin">&lt;N&gt;table_begin</a> has a next element.</dd>
-	<dt>Order:</dt>
-	<dd>Amortized on the capacity, &#927;(1).</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<N>table_next_key" name = "fn:<N>table_next_key">&lt;N&gt;table_next_key</a></h3>
-
-<p><code>static &lt;PN&gt;key <strong>&lt;N&gt;table_next_key</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
-
-<p>Defined if <code>TABLE_VALUE</code>. Advances <code>it</code> only when <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a>.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>The next key.</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<N>table_next_value" name = "fn:<N>table_next_value">&lt;N&gt;table_next_value</a></h3>
-
-<p><code>static &lt;PN&gt;value <strong>&lt;N&gt;table_next_value</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
-
-<p>Defined if <code>TABLE_VALUE</code>. Advances <code>it</code> only when <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a>.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>The next value.</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<N>table_iterator_remove" name = "fn:<N>table_iterator_remove">&lt;N&gt;table_iterator_remove</a></h3>
-
-<p><code>static int <strong>&lt;N&gt;table_iterator_remove</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
-
-<p>Removes the entry at <code>it</code>. Whereas <a href = "#fn:&lt;N&gt;table_remove">&lt;N&gt;table_remove</a> invalidates the iterator, this corrects for a signal <code>it</code>.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>Success, or there was no entry at the iterator's position, (anymore.)</dd>
-</dl>
-
-</div>
-
-<div>
-
 <h3><a id = "fn:<N>table<D>get" name = "fn:<N>table<D>get">&lt;N&gt;table&lt;D&gt;get</a></h3>
 
 <p><code>static &lt;PN&gt;value <strong>&lt;N&gt;table&lt;D&gt;get</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code></p>
@@ -579,11 +581,11 @@
 
 <div>
 
-<h3><a id = "fn:<SZ>to_string" name = "fn:<SZ>to_string">&lt;SZ&gt;to_string</a></h3>
+<h3><a id = "fn:<STR>to_string" name = "fn:<STR>to_string">&lt;STR&gt;to_string</a></h3>
 
-<p><code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code></p>
+<p><code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;PSZ&gt;box</code> is contracted to be the box itself. <code>&lt;SZ&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;STR&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
