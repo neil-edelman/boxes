@@ -39,7 +39,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PB>type">&lt;PB&gt;type</a>, <a href = "#typedef:<PB>value">&lt;PB&gt;value</a>, <a href = "#typedef:<PB>compare_fn">&lt;PB&gt;compare_fn</a>, <a href = "#typedef:<PB>entry">&lt;PB&gt;entry</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PB>type">&lt;PB&gt;type</a>, <a href = "#typedef:<PB>value">&lt;PB&gt;value</a>, <a href = "#typedef:<PB>compare_fn">&lt;PB&gt;compare_fn</a>, <a href = "#typedef:<PB>entry">&lt;PB&gt;entry</a>, <a href = "#typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<B>tree_entry">&lt;B&gt;tree_entry</a>, <a href = "#tag:<B>tree">&lt;B&gt;tree</a>, <a href = "#tag:<B>tree_iterator">&lt;B&gt;tree_iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -50,15 +50,15 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p>A <a href = "#tag:&lt;B&gt;tree">&lt;B&gt;tree</a> is an ordered collection of read-only <a href = "#typedef:&lt;PB&gt;type">&lt;PB&gt;type</a>, and an optional <a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a> to go with them. One can make this a map or set, but in general, it can have identical keys, (a multi-map). Internally, this is a B-tree, described in <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large">Bayer, McCreight, 1972 Large</a>.</p>
+<p>A <a href = "#tag:&lt;B&gt;tree">&lt;B&gt;tree</a> is an ordered collection of read-only <a href = "#typedef:&lt;PB&gt;key">&lt;PB&gt;key</a>, and an optional <a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a> to go with them. This can be a map or set, but in general, it can have identical keys, (a multi-map). Internally, this is a B-tree, described in <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large">Bayer, McCreight, 1972 Large</a>.</p>
 
 <dl>
-	<dt>Parameter: TREE_NAME, TREE_TYPE</dt>
+	<dt>Parameter: TREE_NAME, TREE_KEY</dt>
 	<dd><code>&lt;B&gt;</code> that satisfies <code>C</code> naming conventions when mangled, required, and an integral type, <a href = "#typedef:&lt;PB&gt;type">&lt;PB&gt;type</a>, whose default is <code>unsigned int</code>. <code>&lt;PB&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: TREE_VALUE</dt>
 	<dd><code>TRIE_VALUE</code> is an optional payload to go with the type, <a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a>.</dd>
 	<dt>Parameter: TREE_COMPARE</dt>
-	<dd>A function satisfying <a href = "#typedef:&lt;PB&gt;compare_fn">&lt;PB&gt;compare_fn</a>. Defaults to ascending order. Required if <code>TREE_TYPE</code> is changed to an incomparable type.</dd>
+	<dd>A function satisfying <a href = "#typedef:&lt;PB&gt;compare_fn">&lt;PB&gt;compare_fn</a>. Defaults to ascending order. Required if <code>TREE_KEY</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: TREE_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
 	<dt>Parameter: TREE_TO_STRING_NAME, TREE_TO_STRING</dt>
@@ -75,7 +75,7 @@
 
 <h3><a id = "typedef:<PB>type" name = "typedef:<PB>type">&lt;PB&gt;type</a></h3>
 
-<p><code>typedef TREE_TYPE <strong>&lt;PB&gt;type</strong>;</code></p>
+<p><code>typedef TREE_KEY <strong>&lt;PB&gt;type</strong>;</code></p>
 
 <p>A comparable type, defaults to <code>unsigned</code>.</p>
 
@@ -97,7 +97,7 @@
 
 <p><code>typedef int(*<strong>&lt;PB&gt;compare_fn</strong>)(const &lt;PB&gt;type a, const &lt;PB&gt;type b);</code></p>
 
-<p>Returns a positive result if <code>a</code> is out-of-order with respect to <code>b</code>, inducing a total order. This is compatible, but less strict then the comparators from <code>bsearch</code> and <code>qsort</code>; it only needs to divide entries into two instead of three categories.</p>
+<p>Returns a positive result if <code>a</code> is out-of-order with respect to <code>b</code>, inducing a strict weak order. This is compatible, but less strict then the comparators from <code>bsearch</code> and <code>qsort</code>; it only needs to divide entries into two instead of three categories.</p>
 
 </div>
 
@@ -113,11 +113,11 @@
 
 <div>
 
-<h3><a id = "typedef:<PSZ>to_string_fn" name = "typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></h3>
+<h3><a id = "typedef:<PSTR>to_string_fn" name = "typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;enum, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(&lt;PSTR&gt;element_c, char(*)[12]);</code></p>
 
-<p><a href = "to_string.h">to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string. <code>&lt;PSZ&gt;type</code> is contracted to be an internal iteration type of the box.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string.</p>
 
 </div>
 
@@ -149,7 +149,7 @@
 
 <h3><a id = "tag:<B>tree_iterator" name = "tag:<B>tree_iterator">&lt;B&gt;tree_iterator</a></h3>
 
-<p><code>struct <strong>&lt;B&gt;tree_iterator</strong> { struct &lt;PB&gt;iterator it; };</code></p>
+<p><code>struct <strong>&lt;B&gt;tree_iterator</strong> { struct &lt;PB&gt;iterator priv; };</code></p>
 
 <p>Stores an iteration in a tree. Generally, changes in the topology of the tree invalidate it.</p>
 
@@ -167,19 +167,21 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<B>tree_">&lt;B&gt;tree_</a></td><td>tree</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#fn:<B>tree_next">&lt;B&gt;tree_next</a></td><td>it</td></tr>
+<tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#fn:<B>tree_begin">&lt;B&gt;tree_begin</a></td><td>tree</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<B>tree_next">&lt;B&gt;tree_next</a></td><td>it, next</td></tr>
 
 <tr><td align = right>static size_t</td><td><a href = "#fn:<B>trie_size">&lt;B&gt;trie_size</a></td><td>it</td></tr>
 
 <tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#fn:<B>tree_lower">&lt;B&gt;tree_lower</a></td><td>tree, x</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#fn:<B>tree_get">&lt;B&gt;tree_get</a></td><td>tree, x</td></tr>
+<tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#fn:<B>tree_get">&lt;B&gt;tree_get</a></td><td>tree, x</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<B>trie_put">&lt;B&gt;trie_put</a></td><td>trie, x, /*const fixme*/eject</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<B>trie_policy">&lt;B&gt;trie_policy</a></td><td>trie, x, eject, replace</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<STR>to_string">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -216,15 +218,28 @@
 
 <div>
 
-<h3><a id = "fn:<B>tree_next" name = "fn:<B>tree_next">&lt;B&gt;tree_next</a></h3>
+<h3><a id = "fn:<B>tree_begin" name = "fn:<B>tree_begin">&lt;B&gt;tree_begin</a></h3>
 
-<p><code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_next</strong>(struct &lt;B&gt;tree_iterator *const <em>it</em>)</code></p>
-
-<p>Advances <code>it</code>.</p>
+<p><code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_begin</strong>(const struct &lt;B&gt;tree *const <em>tree</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>If the iteration is finished, null, otherwise, if <code>TREE_VALUE</code>, a static <a href = "#typedef:&lt;B&gt;tree_entry">&lt;B&gt;tree_entry</a> of a copy of the key and pointer to the value, otherwise, a pointer to key.</dd>
+	<dd>An iterator to the first element of <code>tree</code>. Can be null.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_next" name = "fn:<B>tree_next">&lt;B&gt;tree_next</a></h3>
+
+<p><code>static int <strong>&lt;B&gt;tree_next</strong>(struct &lt;B&gt;tree_iterator *const <em>it</em>, &lt;PB&gt;entry *const <em>next</em>)</code></p>
+
+<p>Advances <code>it</code> to the next element.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>A pointer to the current element or null.</dd>
 </dl>
 
 </div>
@@ -265,11 +280,11 @@
 
 <h3><a id = "fn:<B>tree_get" name = "fn:<B>tree_get">&lt;B&gt;tree_get</a></h3>
 
-<p><code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;type <em>x</em>)</code></p>
+<p><code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;type <em>x</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Lowest match for <code>x</code> in <code>tree</code> or null no such item exists.</dd>
+	<dd>Lowest value match for <code>x</code> in <code>tree</code> or null no such item exists.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(\log |<code>tree</code>|)</dd>
 </dl>
@@ -318,11 +333,11 @@
 
 <div>
 
-<h3><a id = "fn:<SZ>to_string" name = "fn:<SZ>to_string">&lt;SZ&gt;to_string</a></h3>
+<h3><a id = "fn:<STR>to_string" name = "fn:<STR>to_string">&lt;STR&gt;to_string</a></h3>
 
-<p><code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code></p>
+<p><code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;PSZ&gt;box</code> is contracted to be the box itself. <code>&lt;SZ&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;STR&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
 
 <dl>
 	<dt>Return:</dt>

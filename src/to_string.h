@@ -3,13 +3,18 @@
 
  @subtitle To string trait
 
- A trait relying on the iterate interface (`iterator`, `begin`, `next`.)
+ Interface (defined by `BOX_`, `BOX`, and `BOX_OUTPUT`):
 
- @param[SZ_]
+ \* `int <BOX>is_element(<PSTR>element_c)`;
+ \* `struct <BOX>forward`;
+ \* `struct <BOX>forward <BOX>forward_begin(const <PSTR>box *)`;
+ \* `<PSTR>element_c <BOX>forward_next(struct <BOX>iterator *)`.
+
+ @param[STR_(n)]
  A one-argument macro producing a name that is responsible for the name of the
  to string function. Should be something like
- `SZ_(to_string) -> widget_foo_to_string`. The caller is responsible for
- undefining `SZ_`.
+ `STR_(to_string) -> widget_foo_to_string`. The caller is responsible for
+ undefining `STR_`.
 
  @param[TO_STRING]
  Function implementing <typedef:<PZ>to_string_fn>.
@@ -27,9 +32,9 @@
 
  @std C89 */
 
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_ENUM) \
-	|| !defined(SZ_) || !defined(TO_STRING)
-#error Unexpected preprocessor symbols. Check that one including it as a trait.
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
+	|| !defined(STR_) || !defined(TO_STRING)
+#error Unexpected preprocessor symbols.
 #endif
 
 #if defined(TO_STRING_H) \
@@ -44,13 +49,13 @@
 #ifndef TO_STRING_H /* <!-- idempotent */
 #define TO_STRING_H
 #include <string.h>
-#if defined(TO_STRING_CAT_) || defined(TO_STRING_CAT) || defined(PSZ_)
+#if defined(TO_STRING_CAT_) || defined(TO_STRING_CAT) || defined(PSTR_)
 #error Unexpected defines.
 #endif
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #define TO_STRING_CAT_(n, m) n ## _ ## m
 #define TO_STRING_CAT(n, m) TO_STRING_CAT_(n, m)
-#define PSZ_(n) TO_STRING_CAT(to_string, SZ_(n))
+#define PSTR_(n) TO_STRING_CAT(to_string, STR_(n))
 #if defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN) /* <!-- ntern */
 extern char to_string_buffers[4][256];
 extern const unsigned to_string_buffers_no;
@@ -78,52 +83,46 @@ static unsigned to_string_buffer_i;
 #define TO_STRING_RIGHT ')'
 #endif
 
-/* An alias to the box. */
-typedef BOX PSZ_(box);
+typedef BOX PSTR_(box);
+typedef const BOX_CONTENT PSTR_(element_c);
 
-/* An alias to the a type individual type contained in the box. */
-typedef BOX_ENUM PSZ_(enum);
-typedef const BOX_ENUM PSZ_(enum_c);
-
-/** <to_string.h>: responsible for turning the argument into a 12-`char`
- null-terminated output string. `<PSZ>type` is contracted to be an internal
- iteration type of the box. */
-typedef void (*PSZ_(to_string_fn))(PSZ_(enum_c), char (*)[12]);
+/** <src/to_string.h>: responsible for turning the argument into a 12-`char`
+ null-terminated output string. */
+typedef void (*PSTR_(to_string_fn))(PSTR_(element_c), char (*)[12]);
 /* Check that `TO_STRING` is a function implementing
- <typedef:<PSZ>to_string>. */
-static const PSZ_(to_string_fn) PSZ_(to_string) = (TO_STRING);
+ <typedef:<PSTR>to_string>. */
+static const PSTR_(to_string_fn) PSTR_(to_string) = (TO_STRING);
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
- 256 bytes, with limitations of only printing 4 things at a time. `<PSZ>box` is
- contracted to be the box itself. `<SZ>` is loosely contracted to be a name
- `<X>box[<X_TO_STRING_NAME>]`.
+ 256 bytes, with limitations of only printing 4 things at a time. `<STR>` is
+ loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`.
  @return Address of the static buffer. @order \Theta(1) @allow */
-static const char *SZ_(to_string)(const PSZ_(box) *const box) {
+static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	const char comma = ',', space = ' ', *const ellipsis = "…",
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;
-	const size_t ellipsis_len = strlen(ellipsis);
+	const size_t ellipsis_len = sizeof ellipsis - 1;
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
-	size_t advance, size;
-	struct BOX_(iterator) it;
-	PSZ_(enum) x;
+	size_t advance;
+	PSTR_(element_c) x;
+	struct BOX_(forward) it;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
 	assert(box && !(to_string_buffers_no & (to_string_buffers_no - 1))
 		&& to_string_buffer_size >= 1 + 11 + 1 + ellipsis_len + 1 + 1);
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
-	/* Begin iteration. */
-	it = BOX_(begin)(box);
+	it = BOX_(forward_begin)(box);
 	*b++ = left;
-	while(x = BOX_(next)(&it)) {
-		PSZ_(to_string)(x, (char (*)[12])b);
+	while(BOX_(is_content)(x = BOX_(forward_next)(&it))) {
+		PSTR_(to_string)(x, (char (*)[12])b);
 		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
-		if((size = (size_t)(b - buffer))
+		if((size_t)(b - buffer)
 			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1)
-			{ if(BOX_(next)(&it)) goto ellipsis; else break; }
+			if(BOX_(is_content)(BOX_(forward_next)(&it))) goto ellipsis;
+			else break;
 	}
 	if(is_sep) b -= 2;
 	*b++ = right;
@@ -138,10 +137,10 @@ terminate:
 	return buffer;
 }
 
-static void PSZ_(unused_to_string_coda)(void);
-static void PSZ_(unused_to_string)(void)
-	{ SZ_(to_string)(0); PSZ_(unused_to_string_coda)(); }
-static void PSZ_(unused_to_string_coda)(void) { PSZ_(unused_to_string)(); }
+static void PSTR_(unused_to_string_coda)(void);
+static void PSTR_(unused_to_string)(void)
+	{ STR_(to_string)(0); PSTR_(unused_to_string_coda)(); }
+static void PSTR_(unused_to_string_coda)(void) { PSTR_(unused_to_string)(); }
 
 #undef TO_STRING
 #ifdef TO_STRING_NAME

@@ -21,7 +21,7 @@ static unsigned PB_(no);
 
 /** Recursively draws `outer` in `fp` with the actual `height`. */
 static void PB_(subgraph)(const struct B_(tree) sub, FILE *fp) {
-	const struct PB_(inner) *inner;
+	const struct PB_(branch) *inner;
 	unsigned i;
 	assert(sub.node && fp);
 	/* It still has a margin, augh. */
@@ -36,7 +36,7 @@ static void PB_(subgraph)(const struct B_(tree) sub, FILE *fp) {
 		PB_(entry) e = PB_(to_entry)(sub.node, i);
 		PB_(to_string)(e, &z);
 		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
-			"  port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
+			" port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
 	}
 	fprintf(fp, "</table>>];\n");
 	if(!sub.height) return;
@@ -78,7 +78,7 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 
 static void PB_(print_r)(const struct B_(tree) tree) {
 	struct B_(tree) sub = { 0, 0 };
-	const struct PB_(inner) *inner = 0;
+	const struct PB_(branch) *inner = 0;
 	unsigned i;
 	assert(tree.node);
 	printf("\\");
@@ -154,7 +154,7 @@ static void PB_(test)(void) {
 	PB_(value) copy_values[sizeof n / sizeof *n];
 #endif
 	const size_t n_size = sizeof n / sizeof *n;
-	PB_(entry) entry;
+	PB_(value) *value;
 	size_t i;
 
 	errno = 0;
@@ -178,14 +178,13 @@ static void PB_(test)(void) {
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
 	it = B_(tree_lower)(0, PB_(to_x)(n + 0)), assert(!it.priv.tree);
-	entry = B_(tree_get)(0, PB_(to_x)(n + 0)), assert(!entry);
+	value = B_(tree_get)(0, PB_(to_x)(n + 0)), assert(!value);
 	it = B_(tree_lower)(&tree, PB_(to_x)(n + 0)), assert(!it.priv.tree);
-	entry = B_(tree_get)(&tree, PB_(to_x)(n + 0)), assert(!entry);
+	value = B_(tree_get)(&tree, PB_(to_x)(n + 0)), assert(!value);
 
 	/* Test. */
 	for(i = 0; i < n_size; i++) {
 		PB_(entry) *const e = n + i;
-		PB_(value) *value;
 		char fn[64];
 		PB_(to_string)(*e, &z);
 		printf("Adding %s.\n", z);

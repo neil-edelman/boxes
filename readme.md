@@ -5,7 +5,7 @@ Stand\-alone header [src/tree\.h](src/tree.h); examples [test/test\_tree\.c](tes
 ## Ordered tree ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PB&gt;type](#user-content-typedef-30fc6ebd), [&lt;PB&gt;value](#user-content-typedef-1740653a), [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31), [&lt;PB&gt;entry](#user-content-typedef-8e330c63), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PB&gt;type](#user-content-typedef-30fc6ebd), [&lt;PB&gt;value](#user-content-typedef-1740653a), [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31), [&lt;PB&gt;entry](#user-content-typedef-8e330c63), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;B&gt;tree_entry](#user-content-tag-9e3caf18), [&lt;B&gt;tree](#user-content-tag-a36433e3), [&lt;B&gt;tree_iterator](#user-content-tag-18b8c30e)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -13,14 +13,14 @@ Stand\-alone header [src/tree\.h](src/tree.h); examples [test/test\_tree\.c](tes
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-A [&lt;B&gt;tree](#user-content-tag-a36433e3) is an ordered collection of read\-only [&lt;PB&gt;type](#user-content-typedef-30fc6ebd), and an optional [&lt;PB&gt;value](#user-content-typedef-1740653a) to go with them\. One can make this a map or set, but in general, it can have identical keys, \(a multi\-map\)\. Internally, this is a B\-tree, described in [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large)\.
+A [&lt;B&gt;tree](#user-content-tag-a36433e3) is an ordered collection of read\-only [&lt;PB&gt;key](#user-content-typedef-9d1494bc), and an optional [&lt;PB&gt;value](#user-content-typedef-1740653a) to go with them\. This can be a map or set, but in general, it can have identical keys, \(a multi\-map\)\. Internally, this is a B\-tree, described in [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large)\.
 
- * Parameter: TREE\_NAME, TREE\_TYPE  
+ * Parameter: TREE\_NAME, TREE\_KEY  
    `<B>` that satisfies `C` naming conventions when mangled, required, and an integral type, [&lt;PB&gt;type](#user-content-typedef-30fc6ebd), whose default is `unsigned int`\. `<PB>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: TREE\_VALUE  
    `TRIE_VALUE` is an optional payload to go with the type, [&lt;PB&gt;value](#user-content-typedef-1740653a)\.
  * Parameter: TREE\_COMPARE  
-   A function satisfying [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31)\. Defaults to ascending order\. Required if `TREE_TYPE` is changed to an incomparable type\.
+   A function satisfying [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31)\. Defaults to ascending order\. Required if `TREE_KEY` is changed to an incomparable type\.
  * Parameter: TREE\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
  * Parameter: TREE\_TO\_STRING\_NAME, TREE\_TO\_STRING  
@@ -35,7 +35,7 @@ A [&lt;B&gt;tree](#user-content-tag-a36433e3) is an ordered collection of read\-
 
 ### <a id = "user-content-typedef-30fc6ebd" name = "user-content-typedef-30fc6ebd">&lt;PB&gt;type</a> ###
 
-<code>typedef TREE_TYPE <strong>&lt;PB&gt;type</strong>;</code>
+<code>typedef TREE_KEY <strong>&lt;PB&gt;type</strong>;</code>
 
 A comparable type, defaults to `unsigned`\.
 
@@ -53,7 +53,7 @@ On `TREE_VALUE`, otherwise just a set of integers\.
 
 <code>typedef int(*<strong>&lt;PB&gt;compare_fn</strong>)(const &lt;PB&gt;type a, const &lt;PB&gt;type b);</code>
 
-Returns a positive result if `a` is out\-of\-order with respect to `b`, inducing a total order\. This is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\.
+Returns a positive result if `a` is out\-of\-order with respect to `b`, inducing a strict weak order\. This is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\.
 
 
 
@@ -65,11 +65,11 @@ On `TREE_VALUE`, otherwise it's just an alias for [&lt;PB&gt;type](#user-content
 
 
 
-### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
+### <a id = "user-content-typedef-8a8349ca" name = "user-content-typedef-8a8349ca">&lt;PSTR&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;enum, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(&lt;PSTR&gt;element_c, char(*)[12]);</code>
 
-[to\_string\.h](to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\. `<PSZ>type` is contracted to be an internal iteration type of the box\.
+[src/to\_string\.h](src/to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\.
 
 
 
@@ -95,7 +95,7 @@ To initialize it to an idle state, see [&lt;U&gt;tree](#user-content-fn-55cb0b0c
 
 ### <a id = "user-content-tag-18b8c30e" name = "user-content-tag-18b8c30e">&lt;B&gt;tree_iterator</a> ###
 
-<code>struct <strong>&lt;B&gt;tree_iterator</strong> { struct &lt;PB&gt;iterator it; };</code>
+<code>struct <strong>&lt;B&gt;tree_iterator</strong> { struct &lt;PB&gt;iterator priv; };</code>
 
 Stores an iteration in a tree\. Generally, changes in the topology of the tree invalidate it\.
 
@@ -111,19 +111,21 @@ Stores an iteration in a tree\. Generally, changes in the topology of the tree i
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-f2bd70f4">&lt;B&gt;tree_</a></td><td>tree</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#user-content-fn-6828a06d">&lt;B&gt;tree_next</a></td><td>it</td></tr>
+<tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#user-content-fn-903f4e29">&lt;B&gt;tree_begin</a></td><td>tree</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-6828a06d">&lt;B&gt;tree_next</a></td><td>it, next</td></tr>
 
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-c0bc2f01">&lt;B&gt;trie_size</a></td><td>it</td></tr>
 
 <tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#user-content-fn-78d7d6e1">&lt;B&gt;tree_lower</a></td><td>tree, x</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#user-content-fn-2e61c7b0">&lt;B&gt;tree_get</a></td><td>tree, x</td></tr>
+<tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#user-content-fn-2e61c7b0">&lt;B&gt;tree_get</a></td><td>tree, x</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-523ce581">&lt;B&gt;trie_put</a></td><td>trie, x, /*const fixme*/eject</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-dd88b41a">&lt;B&gt;trie_policy</a></td><td>trie, x, eject, replace</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -151,14 +153,24 @@ Returns an initialized `tree` to idle, `tree` can be null\.
 
 
 
-### <a id = "user-content-fn-6828a06d" name = "user-content-fn-6828a06d">&lt;B&gt;tree_next</a> ###
+### <a id = "user-content-fn-903f4e29" name = "user-content-fn-903f4e29">&lt;B&gt;tree_begin</a> ###
 
-<code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_next</strong>(struct &lt;B&gt;tree_iterator *const <em>it</em>)</code>
-
-Advances `it`\.
+<code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_begin</strong>(const struct &lt;B&gt;tree *const <em>tree</em>)</code>
 
  * Return:  
-   If the iteration is finished, null, otherwise, if `TREE_VALUE`, a static [&lt;B&gt;tree_entry](#user-content-typedef-9e3caf18) of a copy of the key and pointer to the value, otherwise, a pointer to key\.
+   An iterator to the first element of `tree`\. Can be null\.
+
+
+
+
+### <a id = "user-content-fn-6828a06d" name = "user-content-fn-6828a06d">&lt;B&gt;tree_next</a> ###
+
+<code>static int <strong>&lt;B&gt;tree_next</strong>(struct &lt;B&gt;tree_iterator *const <em>it</em>, &lt;PB&gt;entry *const <em>next</em>)</code>
+
+Advances `it` to the next element\.
+
+ * Return:  
+   A pointer to the current element or null\.
 
 
 
@@ -191,10 +203,10 @@ Counts the of the items in initialized `it`\.
 
 ### <a id = "user-content-fn-2e61c7b0" name = "user-content-fn-2e61c7b0">&lt;B&gt;tree_get</a> ###
 
-<code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;type <em>x</em>)</code>
+<code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;type <em>x</em>)</code>
 
  * Return:  
-   Lowest match for `x` in `tree` or null no such item exists\.
+   Lowest value match for `x` in `tree` or null no such item exists\.
  * Order:  
    &#927;\(\\log |`tree`|\)
 
@@ -235,11 +247,11 @@ Adds a pointer to `x` to `trie` only if the entry is absent or if calling `repla
 
 
 
-### <a id = "user-content-fn-b11709d3" name = "user-content-fn-b11709d3">&lt;SZ&gt;to_string</a> ###
+### <a id = "user-content-fn-751c6337" name = "user-content-fn-751c6337">&lt;STR&gt;to_string</a> ###
 
-<code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
+<code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<PSZ>box` is contracted to be the box itself\. `<SZ>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<STR>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
 
  * Return:  
    Address of the static buffer\.

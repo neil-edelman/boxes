@@ -26,11 +26,10 @@ static void unsigned_to_string(const unsigned x, char (*const z)[12])
 #include "../src/tree.h"
 
 
-#if 0
 /* Unsigned numbers and values. Prototype a value. */
 struct pair_tree_entry;
 static void pair_filler(struct pair_tree_entry *);
-static void pair_to_string(const struct pair_tree_entry *, char (*)[12]);
+static void pair_to_string(const struct pair_tree_entry, char (*)[12]);
 #define TREE_NAME pair
 #define TREE_VALUE unsigned
 #define TREE_TEST &pair_filler
@@ -45,8 +44,8 @@ static void pair_filler(struct pair_tree_entry *x) {
 	/*printf("generated %u->%u\n", x->x, *x->value);*/
 }
 /** @implements <typedef:<PSZ>to_string_fn> */
-static void pair_to_string(const struct pair_tree_entry *x, char (*const z)[12])
-	{ sprintf(*z, "%u→%u", x->x, *x->value); } /* 3 + 3 + 5 */
+static void pair_to_string(const struct pair_tree_entry x, char (*const z)[12])
+	{ sprintf(*z, "%u→%u", x.x, *x.value); } /* 3 + 3 + 5 */
 
 
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
@@ -71,8 +70,8 @@ static void pair_to_string(const struct pair_tree_entry *x, char (*const z)[12])
 	X(Muhlifain, 130), X(Aspidiske, 690), X(Suhail, 570), X(Alphecca, 75), \
 	X(Mintaka, 900), X(Sadr, 1500), X(Eltanin, 150), X(Schedar, 230), \
 	X(Naos, 1080), X(Almach, 350), X(Caph, 54), X(Izar, 202), \
-	X(2.30 (2.29–2.34var), 550), X(2.30 (2.29–2.31var), 380), \
-	X(Dschubba, 400), X(Larawag, 65), X(2.35 (2.30–2.41var), 310), \
+	X(2.30 2.29-2.34var, 550), X(2.30 2.29-2.31var, 380), \
+	X(Dschubba, 400), X(Larawag, 65), X(2.35 2.30-2.41var, 310), \
 	X(Merak, 79), X(Ankaa, 77), X(Girtab, 460), X(Enif, 670), X(Scheat, 200), \
 	X(Sabik, 88), X(Phecda, 84), X(Aludra, 2000), X(Markeb, 540), \
 	X(Navi, 610), X(Markab, 140), X(Aljanah, 72), X(Acrab, 404)
@@ -85,7 +84,7 @@ static double star_distances[] = { STARS };
 static size_t star_size = sizeof star_names / sizeof *star_names;
 struct star_tree_entry;
 static void star_filler(struct star_tree_entry *);
-static void star_to_string(const struct star_tree_entry *, char (*)[12]);
+static void star_to_string(const struct star_tree_entry, char (*)[12]);
 #define TREE_NAME star
 #define TREE_KEY double
 #define TREE_VALUE const char *
@@ -100,16 +99,15 @@ static void star_filler(struct star_tree_entry *x) {
 	x->x = star_distances[i], *x->value = star_names[i];
 }
 /** @implements <typedef:<PSZ>to_string_fn> */
-static void star_to_string(const struct star_tree_entry *x, char (*const z)[12])
-	{ sprintf(*z, "%.11s", *x->value); }
-#endif
+static void star_to_string(const struct star_tree_entry x, char (*const z)[12])
+	{ sprintf(*z, "%.11s", *x.value); }
 
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	unsigned_tree_test();
-	/*pair_tree_test();
-	star_tree_test();*/
+	pair_tree_test();
+	star_tree_test();
 	return EXIT_SUCCESS;
 }
