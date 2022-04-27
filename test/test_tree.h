@@ -8,8 +8,21 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
+
+#ifdef TREE_VALUE
+/** This makes the key-value in the same place; will have to copy. */
+typedef struct B_(entry_test) {
+	PB_(type) x;
+	PB_(value) value;
+} PB_(entry_test);
+static PB_(type) PB_(test_to_x)(struct B_(entry_test) *const t) { return t->x; }
+#else
+typedef PB_(type) PB_(entry_test);
+static PB_(type) PB_(test_to_x)(PB_(type) *const x) { return *x; }
+#endif
+
 /** Works by side-effects. Only defined if `TREE_TEST`. */
-typedef void (*PB_(action_fn))(PB_(entry) *);
+typedef void (*PB_(action_fn))(PB_(entry_test) *);
 
 /** `TREE_TEST` must be a function that implements <typedef:<PT>action_fn>.
  The value pointer is valid, if it exists, and should be filled; this will copy
@@ -21,19 +34,19 @@ static unsigned PB_(no);
 
 /** Recursively draws `outer` in `fp` with the actual `height`. */
 static void PB_(subgraph)(const struct B_(tree) sub, FILE *fp) {
-	const struct PB_(branch) *inner;
+	const struct PB_(branch) *branch;
 	unsigned i;
-	assert(sub.node && fp);
+	assert(sub.root && fp);
 	/* It still has a margin, augh. */
 	fprintf(fp, "\ttrunk%p [label = <\n"
 		"<table border=\"1\" cellspacing=\"0\" bgcolor=\"Grey95\">\n"
 		"\t<tr><td border=\"0\" port=\"0\">"
 		"<font color=\"Gray75\">%s</font></td></tr>\n",
-		(const void *)sub.node, orcify(sub.node));
-	for(i = 0; i < sub.node->size; i++) {
+		(const void *)sub.root, orcify(sub.root));
+	for(i = 0; i < sub.root->size; i++) {
 		const char *const bgc = i & 1 ? "" : " bgcolor=\"Gray90\"";
 		char z[12];
-		PB_(entry) e = PB_(to_entry)(sub.node, i);
+		PB_(entry) e = PB_(to_entry)(sub.root, i);
 		PB_(to_string)(e, &z);
 		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
 			" port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
@@ -41,14 +54,14 @@ static void PB_(subgraph)(const struct B_(tree) sub, FILE *fp) {
 	fprintf(fp, "</table>>];\n");
 	if(!sub.height) return;
 	/* Draw the lines between trees. */
-	inner = PB_(inner_c)(sub.node);
-	for(i = 0; i <= sub.node->size; i++)
+	branch = PB_(branch_c)(sub.root);
+	for(i = 0; i <= sub.root->size; i++)
 		fprintf(fp, "\ttrunk%p:%u:se -> trunk%p;\n",
-		(const void *)sub.node, i, (const void *)inner->link[i]);
+		(const void *)sub.root, i, (const void *)branch->link[i]);
 	/* Recurse. */
-	for(i = 0; i <= sub.node->size; i++) {
+	for(i = 0; i <= sub.root->size; i++) {
 		struct B_(tree) subsub;
-		subsub.node = inner->link[i], subsub.height = sub.height - 1;
+		subsub.root = branch->link[i], subsub.height = sub.height - 1;
 		PB_(subgraph)(subsub, fp);
 	}
 }
@@ -66,7 +79,7 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 		"\tnode [shape=none, fontname=\"Bitstream Vera Sans\"];\n"
 		"\tedge [fontname=\"Bitstream Vera Sans\", style=dashed];\n"
 		"\n");
-	if(!tree->node)
+	if(!tree->root)
 		fprintf(fp, "\tidle [shape=plaintext];\n");
 	else if(tree->height == UINT_MAX)
 		fprintf(fp, "\tempty [shape=plaintext];\n");
@@ -80,18 +93,18 @@ static void PB_(print_r)(const struct B_(tree) tree) {
 	struct B_(tree) sub = { 0, 0 };
 	const struct PB_(branch) *inner = 0;
 	unsigned i;
-	assert(tree.node);
+	assert(tree.root);
 	printf("\\");
 	if(tree.height) {
-		inner = PB_(inner_c)(tree.node);
+		inner = PB_(branch_c)(tree.root);
 		sub.height = tree.height - 1;
 	}
 	for(i = 0; ; i++) {
 		char z[12];
 		PB_(entry) e;
-		if(tree.height) sub.node = inner->link[i], PB_(print_r)(sub);
-		if(i == tree.node->size) break;
-		e = PB_(to_entry)(tree.node, i);
+		if(tree.height) sub.root = inner->link[i], PB_(print_r)(sub);
+		if(i == tree.root->size) break;
+		e = PB_(to_entry)(tree.root, i);
 		PB_(to_string)(e, &z);
 		printf("%s%s", i ? ", " : "", z);
 	}
@@ -101,7 +114,7 @@ static void PB_(print)(const struct B_(tree) *const tree) {
 	printf("Inorder: ");
 	if(!tree) {
 		printf("null");
-	} else if(!tree->node) {
+	} else if(!tree->root) {
 		assert(!tree->height);
 		printf("idle");
 	} else if(tree->height == UINT_MAX) {
@@ -115,44 +128,40 @@ static void PB_(print)(const struct B_(tree) *const tree) {
 /** Makes sure the `trie` is in a valid state. */
 static void PB_(valid)(const struct B_(tree) *const tree) {
 	if(!tree) return; /* Null. */
-	if(!tree->node) { assert(!tree->height); return; } /* Idle. */
-	if(tree->height == UINT_MAX) { assert(tree->node); return; } /* Empty. */
-	assert(tree->node);
+	if(!tree->root) { assert(!tree->height); return; } /* Idle. */
+	if(tree->height == UINT_MAX) { assert(tree->root); return; } /* Empty. */
+	assert(tree->root);
 	/*...*/
 }
 
 /** Ca'n't use `qsort` with `size` because we don't have a comparison;
  <data:<PB>compare> only has to separate it into two, not three. (One can use
  `qsort` compare in this compare, but generally not the other way around.) */
-static void PB_(sort)(PB_(entry) *a, const size_t size) {
-	PB_(entry) temp;
+static void PB_(sort)(PB_(entry_test) *a, const size_t size) {
+	PB_(entry_test) temp;
 	size_t i;
 	for(i = 1; i < size; i++) {
 		size_t j;
 		for(j = i; j; j--) {
-			char n[12], m[12];
+			/*char n[12], m[12];
 			PB_(to_string)(a[j - 1], &n);
 			PB_(to_string)(a[i], &m);
-			/*printf("cmp %s and %s\n", n, m);*/
-			if(!(PB_(compare)(PB_(to_x)(a + j - 1),
-			PB_(to_x)(a + i)) > 0)) break;
+			printf("cmp %s and %s\n", n, m);*/
+			if(!(PB_(compare)(PB_(test_to_x)(a + j - 1),
+				PB_(test_to_x)(a + i)) > 0)) break;
 		}
 		if(j == i) continue;
-		temp = a[i]; /*memcpy(&temp, a + i, sizeof *a);*/
+		temp = a[i];
 		memmove(a + j + 1, a + j, sizeof *a * (i - j));
-		a[j] = temp; /*memcpy(a + j, &temp, sizeof *a);*/
+		a[j] = temp;
 	}
 }
 
 static void PB_(test)(void) {
-	char z[12];
+	//char z[12];
 	struct B_(tree) tree = B_(tree)();
 	struct B_(tree_iterator) it;
-	PB_(entry) n[20];
-#ifdef TREE_VALUE
-	/* Values go here for when they are needed, then they are copied. */
-	PB_(value) copy_values[sizeof n / sizeof *n];
-#endif
+	PB_(entry_test) n[20];
 	const size_t n_size = sizeof n / sizeof *n;
 	PB_(value) *value;
 	size_t i;
@@ -161,12 +170,7 @@ static void PB_(test)(void) {
 
 	/* Fill. */
 	printf("fill\n");
-	for(i = 0; i < n_size; i++) {
-#ifdef TREE_VALUE
-		n[i].value = copy_values + i; /* Must have value a valid pointer. */
-#endif
-		PB_(filler)(n + i);
-	}
+	for(i = 0; i < n_size; i++) PB_(filler)(n + i);
 	printf("sort\n");
 	PB_(sort)(n, n_size);
 	/*for(i = 0; i < n_size; i++)
@@ -177,22 +181,23 @@ static void PB_(test)(void) {
 	PB_(valid)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
-	it = B_(tree_lower)(0, PB_(to_x)(n + 0)), assert(!it.priv.tree);
-	value = B_(tree_get)(0, PB_(to_x)(n + 0)), assert(!value);
-	it = B_(tree_lower)(&tree, PB_(to_x)(n + 0)), assert(!it.priv.tree);
-	value = B_(tree_get)(&tree, PB_(to_x)(n + 0)), assert(!value);
+	it = B_(tree_lower)(0, PB_(test_to_x)(n + 0)), assert(!it._.tree);
+	value = B_(tree_get)(0, PB_(test_to_x)(n + 0)), assert(!value);
+	it = B_(tree_lower)(&tree, PB_(test_to_x)(n + 0)), assert(!it._.tree);
+	value = B_(tree_get)(&tree, PB_(test_to_x)(n + 0)), assert(!value);
 
 	/* Test. */
 	for(i = 0; i < n_size; i++) {
-		PB_(entry) *const e = n + i;
+		PB_(entry_test) *const e = n + i;
 		char fn[64];
-		PB_(to_string)(*e, &z);
-		printf("Adding %s.\n", z);
-		value = B_(tree_bulk_add)(&tree, PB_(to_x)(e));
+		/*PB_(to_string)(*e, &z);
+		printf("Adding %s.\n", z);*/
+		value = B_(tree_bulk_add)(&tree, PB_(test_to_x)(e));
 		assert(value);
 #ifdef TREE_VALUE
 		*value = *e->value;
 #endif
+		//PB_(to_string)(PB_(to_entry)(??));
 		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u.gv", ++PB_(no));
 		PB_(graph)(&tree, fn);
 	}
@@ -200,7 +205,7 @@ static void PB_(test)(void) {
 	it = B_(tree_begin)(&tree), i = 0;
 	//while(entry = B_(tree_next)(it)) i++;
 
-	B_(tree_)(&tree), assert(!tree.node), PB_(valid)(&tree);
+	B_(tree_)(&tree), assert(!tree.root), PB_(valid)(&tree);
 	assert(!errno);
 }
 
