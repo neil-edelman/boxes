@@ -314,7 +314,9 @@ static PB_(entry) PB_(next)(struct PB_(iterator) *const it) {
 
 /** @param[tree] Can be null. @return Finds the smallest entry in `tree` that
  is not less than `no`. If `no` is higher than any of `tree`, it will be placed
- just passed the end. @order \O(\log |`tree`|) */
+ just passed the end. @order \O(\log |`tree`|)
+ @fixme Test with all the same value on multiple levels; I suspect it will
+ return the closest lower in the node, not the global lower bound. */
 static struct PB_(iterator) PB_(lower)(struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct B_(tree) t;
