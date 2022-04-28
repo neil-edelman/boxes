@@ -12,13 +12,13 @@
 #ifdef TREE_VALUE
 /** This makes the key-value in the same place; will have to copy. */
 typedef struct B_(entry_test) {
-	PB_(type) x;
+	PB_(key) x;
 	PB_(value) value;
 } PB_(entry_test);
-static PB_(type) PB_(test_to_x)(struct B_(entry_test) *const t) { return t->x; }
+static PB_(key) PB_(test_to_x)(struct B_(entry_test) *const t) { return t->x; }
 #else
-typedef PB_(type) PB_(entry_test);
-static PB_(type) PB_(test_to_x)(PB_(type) *const x) { return *x; }
+typedef PB_(key) PB_(entry_test);
+static PB_(key) PB_(test_to_x)(PB_(key) *const x) { return *x; }
 #endif
 
 /** Works by side-effects. Only defined if `TREE_TEST`. */

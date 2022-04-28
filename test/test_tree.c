@@ -6,9 +6,11 @@
 #include <errno.h>  /* errno */
 #include <time.h>   /* clock time */
 
+#if 0
 /* Unsigned numbers: this is the minimum tree, but not useful to test. */
 #define TREE_NAME foo
 #include "../src/tree.h"
+#endif
 
 
 /* Unsigned numbers: testing framework. */

@@ -13,7 +13,7 @@
 
  @param[TREE_NAME, TREE_KEY]
  `<B>` that satisfies `C` naming conventions when mangled, required, and an
- integral type, <typedef:<PB>type>, whose default is `unsigned int`. `<PB>` is
+ integral type, <typedef:<PB>key>, whose default is `unsigned int`. `<PB>` is
  private, whose names are prefixed in a manner to avoid collisions.
 
  @param[TREE_VALUE]
@@ -81,11 +81,15 @@
 #ifndef TREE_KEY
 #define TREE_KEY unsigned
 #endif
-/** A comparable type, defaults to `unsigned`. */
-typedef TREE_KEY PB_(type);
+/** A comparable type, defaults to `unsigned`. Note that `key` is used loosely;
+ there can be multiple keys with the same value stored in the same
+ <tag:<B>tree>, if one chooses. */
+typedef TREE_KEY PB_(key);
+/** Read-only <typedef:<PB>key>. */
+typedef const TREE_KEY PB_(key_c);
 
 #ifdef TREE_VALUE
-/** On `TREE_VALUE`, otherwise just a set of integers. */
+/** On `TREE_VALUE`, otherwise just a (multi)-set of <typedef:<PB>key>. */
 typedef TREE_VALUE PB_(value);
 #endif
 
@@ -93,12 +97,12 @@ typedef TREE_VALUE PB_(value);
  inducing a strict weak order. This is compatible, but less strict then the
  comparators from `bsearch` and `qsort`; it only needs to divide entries
  into two instead of three categories. */
-typedef int (*PB_(compare_fn))(const PB_(type) a, const PB_(type) b);
+typedef int (*PB_(compare_fn))(PB_(key_c) a, PB_(key_c) b);
 
 #ifndef TREE_COMPARE /* <!-- !cmp */
 /** The default `TREE_COMPARE` on `a` and `b` is integer comparison that
  results in ascending order. @implements <typedef:<PH>compare_fn> */
-static int PB_(default_compare)(const PB_(type) a, const PB_(type) b)
+static int PB_(default_compare)(PB_(key_c) a, PB_(key_c) b)
 	{ return a > b; }
 #define TREE_COMPARE &PB_(default_compare)
 #endif /* !cmp --> */
@@ -107,16 +111,15 @@ static int PB_(default_compare)(const PB_(type) a, const PB_(type) b)
  <typedef:<PB>compare_fn>, if defined. */
 static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
 
-/* B-tree leaf of `TREE_ORDER`. The order definition is as <Knuth, 1998 Art 3>,
- that is, the maximum branching factor, `TREE_MAX + 1`. However, Knuth's leaves
- are imaginary in this data structure; we use the original
- <Bayer, McCreight, 1972 Large> terminology, that the leaves are the
- height-zero nodes. */
+/* B-tree leaf of `TREE_ORDER`, (`TREE_MAX + 1`); the order is the maximum
+ branching factor, as <Knuth, 1998 Art 3>. However, Knuth's leaves are
+ imaginary in this data structure, so we use the original terminology from
+ <Bayer, McCreight, 1972 Large>: leaves are height-zero nodes. */
 struct PB_(leaf) {
 	unsigned char size; /* `[0, TREE_MAX]`. */
-	PB_(type) x[TREE_MAX]; /* Cache-friendly. */
+	PB_(key) x[TREE_MAX]; /* Cache-friendly lookup; all but one value. */
 #ifdef TREE_VALUE
-	PB_(value) value[TREE_MAX]; /* Don't care about the value except the end. */
+	PB_(value) value[TREE_MAX];
 #endif
 };
 /* B-tree branch is a <tag:<PB>leaf> and links to `size + 1` nodes. */
@@ -127,35 +130,48 @@ static struct PB_(branch) *PB_(branch)(struct PB_(leaf) *const as_leaf)
 	((char *)as_leaf - offsetof(struct PB_(branch), base)); }
 /** @return Upcasts `as_leaf` to a branch. */
 static const struct PB_(branch) *PB_(branch_c)(const struct PB_(leaf) *
-	const outer) { return (const struct PB_(branch) *)(const void *)
-	((const char *)outer - offsetof(struct PB_(branch), base)); }
+	const as_leaf) { return (const struct PB_(branch) *)(const void *)
+	((const char *)as_leaf - offsetof(struct PB_(branch), base)); }
 
 #ifdef TREE_VALUE /* <!-- value */
-/** On `TREE_VALUE`, creates a map from <typedef:<PB>type> to
+/** On `TREE_VALUE`, creates a map from pointer-to-<typedef:<PB>key> to
  pointer-to-<typedef:<PB>value>. The reason `x` is a pointer is because it has
  to be nullifiable. The reason `value` is a pointer is because the type
  is stored as one contiguous array in the node for caching, it is not connected
  to the value. */
-struct B_(tree_entry) { PB_(type) *x; PB_(value) *value; };
-/** On `TREE_VALUE`, otherwise it's just an alias for <typedef:<PB>type>. */
+struct B_(tree_entry) { PB_(key) *x; PB_(value) *value; };
+/** On `TREE_VALUE`, otherwise it's just an alias for
+ pointer-to-<typedef:<PB>key>. */
 typedef struct B_(tree_entry) PB_(entry);
-static PB_(entry) PB_(null_entry)(void) { PB_(entry) e = { 0, 0 }; return e; }
+static const PB_(entry) PB_(null_entry_c)(void)
+	{ const PB_(entry) e = { 0, 0 }; return e; }
+static PB_(entry) PB_(null_entry)(void)
+	{ const PB_(entry) e = { 0, 0 }; return e; }
+static PB_(entry_c) PB_(to_entry_c)(const struct PB_(leaf) *const leaf,
+	const unsigned i) {
+	PB_(entry) e;
+	e.x = leaf->x + i, e.value = leaf->value + i;
+	return e;
+}
 static PB_(entry) PB_(to_entry)(struct PB_(leaf) *const leaf,
 	const unsigned i) {
 	PB_(entry) e;
 	e.x = leaf->x + i, e.value = leaf->value + i;
 	return e;
 }
-static PB_(type) PB_(to_x)(const PB_(entry) entry) { return *entry.x; }
+static PB_(key) PB_(to_x)(const PB_(entry) entry) { return *entry.x; }
 static PB_(value) *PB_(to_value)(PB_(entry) entry) { return entry.value; }
 #else /* value --><!-- !value */
-typedef PB_(type) PB_(value);
-typedef PB_(type) *PB_(entry);
+typedef PB_(key) PB_(value);
+typedef PB_(key) *PB_(entry);
+typedef PB_(key_c) *PB_(entry_c);
 static PB_(entry) PB_(null_entry)(void) { return 0; }
+static PB_(entry_c) PB_(to_entry_c)(const struct PB_(leaf) *const leaf,
+	const unsigned i) { return leaf->x + i; }
 static PB_(entry) PB_(to_entry)(struct PB_(leaf) *const leaf,
 	const unsigned i) { return leaf->x + i; }
-static PB_(type) PB_(to_x)(const PB_(type) *const x) { return *x; }
-static PB_(value) *PB_(to_value)(PB_(type) *const x) { return x; }
+static PB_(key) PB_(to_x)(const PB_(key) *const x) { return *x; }
+static PB_(value) *PB_(to_value)(PB_(key) *const x) { return x; }
 #endif /* !entry --> */
 
 /** To initialize it to an idle state, see <fn:<U>tree>, `TRIE_IDLE`, `{0}`
@@ -166,27 +182,30 @@ struct B_(tree);
 struct B_(tree) { struct PB_(leaf) *root; unsigned height; };
 /* Top level tree: `node` is root, flag UINT_MAX: empty but non-idle. */
 
-#define BOX_CONTENT PB_(entry)
-/** Is `x` not null? @implements `is_content` */
-static int PB_(is_content)(const PB_(entry) x) {
 #ifdef TREE_VALUE
-	return !!x.x;
+#define BOX_CONTENT PB_(entry)
 #else
-	return !!x;
+#define BOX_CONTENT PB_(key) *
+#endif
+/** Is `x` not null? @implements `is_content` */
+static int PB_(is_content)(const PB_(entry_c) e) {
+#ifdef TREE_VALUE
+	return !!e.x;
+#else
+	return !!e;
 #endif
 }
 /* @implements `forward` */
 struct PB_(forward) {
 	const struct B_(tree) *tree;
-	/* I think this should be const, but doubling this file is a pain. */
-	struct PB_(leaf) *cur;
+	const struct PB_(leaf) *cur;
 	unsigned height, idx;
 };
 /** @return Whether it is addressing a valid item. */
 static int PB_(forward_pin)(struct PB_(forward) *const it) {
 	unsigned a0;
 	struct B_(tree) t, next;
-	PB_(type) x;
+	PB_(key) x;
 	assert(it);
 	if(!it->tree || it->tree->height == UINT_MAX) return 0;
 	/* Off the left: !it->cur. */
@@ -226,10 +245,10 @@ static struct PB_(forward) PB_(forward_begin)(const struct B_(tree) *const
 }
 /** Advances `it` to the next element. @return A pointer to the current
  element or null. @implements `forward_next` */
-static PB_(entry) PB_(forward_next)(struct PB_(forward) *const it) {
+static PB_(entry_c) PB_(forward_next)(struct PB_(forward) *const it) {
 	printf("_next_\n");
 	return assert(it), PB_(forward_pin)(it)
-		? PB_(to_entry)(it->cur, it->idx++) : PB_(null_entry)();
+		? PB_(to_entry_c)(it->cur, it->idx++) : PB_(null_entry)();
 }
 
 /*#define BOX_ITERATOR <- doesn't define remove yet? */
@@ -242,7 +261,7 @@ struct PB_(iterator) {
 static int PB_(pin)(struct PB_(iterator) *const it) {
 	unsigned a0;
 	struct B_(tree) t, next;
-	PB_(type) x;
+	PB_(key) x;
 	assert(it);
 	if(!it->tree || it->tree->height == UINT_MAX) return 0;
 	/* Off the left: !it->cur. */
@@ -283,6 +302,12 @@ static struct PB_(iterator) PB_(begin)(struct B_(tree) *const tree) {
  element or null. @implements `next` */
 static PB_(entry) PB_(next)(struct PB_(iterator) *const it) {
 	printf("_next_\n");
+	assert(it);
+	if(PB_(pin)(it)) {
+		return PB_(to_entry)(it->cur, it->idx++);
+	} else {
+		return PB_(null_entry)();
+	}
 	return assert(it), PB_(pin)(it)
 		? PB_(to_entry)(it->cur, it->idx++) : PB_(null_entry)();
 }
@@ -291,14 +316,14 @@ static PB_(entry) PB_(next)(struct PB_(iterator) *const it) {
  is not less than `no`. If `no` is higher than any of `tree`, it will be placed
  just passed the end. @order \O(\log |`tree`|) */
 static struct PB_(iterator) PB_(lower)(struct B_(tree) *const tree,
-	const PB_(type) x) {
+	const PB_(key) x) {
 	struct B_(tree) t;
 	struct PB_(iterator) it;
 	unsigned a0;
 	it.tree = 0;
 	if(!tree || !tree->root || tree->height == UINT_MAX) return it;
 	for(t = *tree; ; t.root = PB_(branch_c)(t.root)->link[a0], t.height--) {
-		unsigned a1 = t.root->size; PB_(type) m; a0 = 0;
+		unsigned a1 = t.root->size; PB_(key) m; a0 = 0;
 		if(!a1) continue;
 		do {
 			const unsigned mi = (a0 + a1) / 2;
@@ -375,13 +400,13 @@ static size_t B_(trie_size)(const struct B_(trie_iterator) *const it)
  is not less than `x`. If `x` is higher than any of `tree`, it will be placed
  just passed the end. @order \O(\log |`tree`|) @allow */
 static struct B_(tree_iterator) B_(tree_lower)(struct B_(tree) *const tree,
-	const PB_(type) x)
+	const PB_(key) x)
 	{ struct B_(tree_iterator) it; it._ = PB_(lower)(tree, x); return it; }
 
 /** @return Lowest value match for `x` in `tree` or null no such item exists.
  @order \O(\log |`tree`|) @allow */
 static PB_(value) *B_(tree_get)(struct B_(tree) *const tree,
-	const PB_(type) x) {
+	const PB_(key) x) {
 	struct PB_(iterator) it = PB_(lower)(tree, x);
 	PB_(entry) e;
 	return PB_(is_content)(e = PB_(next)(&it)) ? PB_(to_value)(e) : 0;
@@ -397,7 +422,7 @@ static void PB_(print)(const struct B_(tree) *const tree)
 /** `x` must be not less than the largest key in `tree`.
  @throws[EDOM] `x` is smaller than the largest key in `tree`.
  @throws[malloc] */
-static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
+static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 	/* `node` is outer and `head` is inner up to the point where they merge. */
 	struct PB_(leaf) *node = 0, *head = 0;
 	printf("bulk():\n");
@@ -415,7 +440,7 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(type) x) {
 		printf("Empty tree, %s.\n", orcify(node));
 	} else {
 		struct B_(tree) space = { 0, 0 }; /* Furthest node with space. */
-		PB_(type) *last = 0; /* Key of the last for comparing with arg. */
+		PB_(key) *last = 0; /* Key of the last for comparing with arg. */
 		unsigned new_nodes, n; /* Count new nodes. */
 		struct PB_(leaf) *tail = 0; /* New nodes. */
 		struct PB_(branch) *pretail = 0;
@@ -529,7 +554,7 @@ static int B_(trie_remove)(struct B_(trie) *const trie,
 
 #ifdef TREE_TEST /* <!-- test */
 /* Forward-declare. */
-static void (*PB_(to_string))(const PB_(entry), char (*)[12]);
+static void (*PB_(to_string))(PB_(entry_c), char (*)[12]);
 static const char *(*PB_(tree_to_string))(const struct B_(tree) *);
 #include "../test/test_tree.h"
 #endif /* test --> */
