@@ -28,8 +28,6 @@ static void unsigned_to_string(const unsigned *x, char (*const z)[12])
 #include "../src/tree.h"
 
 
-#if 0
-
 /* Unsigned numbers and values. Prototype a value. */
 struct pair_tree_entry;
 static void pair_filler(struct pair_tree_entry *);
@@ -51,6 +49,8 @@ static void pair_filler(struct pair_tree_entry *x) {
 static void pair_to_string(const struct pair_tree_entry x, char (*const z)[12])
 	{ sprintf(*z, "%u→%u", *x.x, *x.value); } /* 3 + 3 + 5 */
 
+
+#if 0
 
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
  Sol. We define a tree of ascending distances. */
