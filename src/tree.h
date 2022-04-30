@@ -186,11 +186,13 @@ struct B_(tree);
 struct B_(tree) { struct PB_(leaf) *root; unsigned height; };
 /* Top level tree: `node` is root, flag UINT_MAX: empty but non-idle. */
 
-#ifdef TREE_VALUE
-#define BOX_CONTENT PB_(entry)
-#else
+/* It was very difficult to have the key-value entry pair as the contents,
+ everywhere I was blocked, because they are not contiguous. One would think
+ it's easy to pass around a pair, but we have to make another pair for `const`,
+ and then there are two different `struct`, so `is_content` doesn't work. I
+ don't think that's fixable without totally duplicating all code in all the
+ boxes. It's easier to ignore the value, but less useful. */
 #define BOX_CONTENT PB_(key) *
-#endif
 /** Is `x` not null? @implements `is_content` */
 static int PB_(is_content)(const PB_(entry_c) e) {
 #ifdef TREE_VALUE
