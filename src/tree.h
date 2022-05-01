@@ -85,12 +85,12 @@
  there can be multiple keys with the same value stored in the same
  <tag:<B>tree>, if one chooses. */
 typedef TREE_KEY PB_(key);
-/** Read-only <typedef:<PB>key>. */
 typedef const TREE_KEY PB_(key_c);
 
 #ifdef TREE_VALUE
 /** On `TREE_VALUE`, otherwise just a (multi)-set of <typedef:<PB>key>. */
 typedef TREE_VALUE PB_(value);
+typedef const TREE_VALUE PB_(value_c);
 #endif
 
 /** Returns a positive result if `a` is out-of-order with respect to `b`,
@@ -132,38 +132,49 @@ static struct PB_(branch) *PB_(branch)(struct PB_(leaf) *const as_leaf)
 static const struct PB_(branch) *PB_(branch_c)(const struct PB_(leaf) *
 	const as_leaf) { return (const struct PB_(branch) *)(const void *)
 	((const char *)as_leaf - offsetof(struct PB_(branch), base)); }
+/* /\ is this needed? */
 
 #ifdef TREE_VALUE /* <!-- value */
+
 /** On `TREE_VALUE`, creates a map from pointer-to-<typedef:<PB>key> to
- pointer-to-<typedef:<PB>value>. The reason `x` is a pointer is because it has
- to be nullifiable. The reason `value` is a pointer is because the type
- is stored as one contiguous array in the node for caching, it is not connected
- to the value. */
+ pointer-to-<typedef:<PB>value>. The reason these are pointers is because it
+ is not connected in memory. */
 struct B_(tree_entry) { PB_(key) *x; PB_(value) *value; };
+struct B_(tree_entry_c) { PB_(key_c) *x; PB_(value_c) *value; };
 /** On `TREE_VALUE`, otherwise it's just an alias for
  pointer-to-<typedef:<PB>key>. */
 typedef struct B_(tree_entry) PB_(entry);
+typedef struct B_(tree_entry_c) PB_(entry_c);
 static PB_(entry) PB_(null_entry)(void)
 	{ const PB_(entry) e = { 0, 0 }; return e; }
+static PB_(entry_c) PB_(null_entry_c)(void)
+	{ const PB_(entry_c) e = { 0, 0 }; return e; }
 static PB_(entry) PB_(to_entry)(struct PB_(leaf) *const leaf,
-	const unsigned i) {
-	PB_(entry) e;
-	e.x = leaf->x + i, e.value = leaf->value + i;
-	return e;
-}
+	const unsigned i) { PB_(entry) e;
+	e.x = leaf->x + i, e.value = leaf->value + i; return e; }
+static PB_(entry_c) PB_(to_entry_c)(const struct PB_(leaf) *const leaf,
+	const unsigned i) { PB_(entry_c) e;
+	e.x = leaf->x + i, e.value = leaf->value + i; return e; }
 static PB_(key) PB_(to_x)(const PB_(entry) entry) { return *entry.x; }
 static PB_(value) *PB_(to_value)(PB_(entry) entry) { return entry.value; }
+
 #else /* value --><!-- !value */
+
 typedef PB_(key) PB_(value);
 typedef PB_(key) *PB_(entry);
+typedef PB_(key_c) *PB_(entry_c);
+static PB_(entry_c) PB_(null_entry_c)(void) { return 0; }
 static PB_(entry) PB_(null_entry)(void) { return 0; }
 static PB_(entry) PB_(to_entry)(struct PB_(leaf) *const leaf,
 	const unsigned i) { return leaf->x + i; }
+static PB_(entry_c) PB_(to_entry_c)(const struct PB_(leaf) *const leaf,
+	const unsigned i) { return leaf->x + i; }
 static PB_(key) PB_(to_x)(const PB_(key) *const x) { return *x; }
 static PB_(value) *PB_(to_value)(PB_(key) *const x) { return x; }
+
 #endif /* !entry --> */
 
-/** To initialize it to an idle state, see <fn:<U>tree>, `TRIE_IDLE`, `{0}`
+/** To initialize it to an idle state, see <fn:<B>tree>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`.
 
  ![States.](../doc/states.png) */
@@ -171,15 +182,15 @@ struct B_(tree);
 struct B_(tree) { struct PB_(leaf) *root; unsigned height; };
 /* Top level tree: `node` is root, flag UINT_MAX: empty but non-idle. */
 
-/* It was very difficult to have the key-value entry pair as the contents,
- everywhere I was blocked, because they are not contiguous. One would think
- it's easy to pass around a pair, but we have to make another pair for `const`,
- and then there are two different `struct`, so `is_content` doesn't work. I
- don't think that's fixable without totally duplicating all code in all the
- boxes. It's easier to ignore the value, but less useful. */
-#define BOX_CONTENT PB_(key) *
-/** Is `x` not null? @implements `is_content` */
-static int PB_(is_content)(const PB_(key_c) k) { return !!k; }
+#define BOX_CONTENT PB_(entry_c)
+/** Is `e` not null? @implements `is_element_c` */
+static int PB_(is_element_c)(PB_(entry_c) e) {
+#ifdef TREE_VALUE
+	return !!e.x;
+#else
+	return !!e;
+#endif
+}
 /* @implements `forward` */
 struct PB_(forward) {
 	const struct B_(tree) *tree;
@@ -230,12 +241,22 @@ static struct PB_(forward) PB_(forward_begin)(const struct B_(tree) *const
 }
 /** Advances `it` to the next element. @return A pointer to the current
  element or null. @implements `forward_next` */
-static PB_(key_c) *PB_(forward_next)(struct PB_(forward) *const it) {
+static PB_(entry_c) PB_(forward_next)(struct PB_(forward) *const it) {
 	printf("_next_\n");
-	return assert(it), PB_(forward_pin)(it) ? it->cur->x + it->idx++ : 0;
+	assert(it);
+	return PB_(forward_pin)(it)
+		? PB_(to_entry_c)(it->cur, it->idx++) : PB_(null_entry_c)();
 }
 
-/*#define BOX_ITERATOR <- doesn't define remove yet? */
+#define BOX_ITERATOR PB_(entry)
+/** Is `x` not null? @implements `is_content` */
+static int PB_(is_element)(const PB_(entry) e) {
+#ifdef TREE_VALUE
+	return !!e.x;
+#else
+	return !!e;
+#endif
+}
 struct PB_(iterator) {
 	struct B_(tree) *tree;
 	struct PB_(leaf) *cur;
@@ -284,10 +305,10 @@ static struct PB_(iterator) PB_(begin)(struct B_(tree) *const tree) {
 }
 /** Advances `it` to the next element. @return A pointer to the current
  element or null. @implements `next` */
-static PB_(key) *PB_(next)(struct PB_(iterator) *const it) {
+static PB_(entry) PB_(next)(struct PB_(iterator) *const it) {
 	printf("_next_\n");
-	assert(it);
-	return assert(it), PB_(pin)(it) ? it->cur->x + it->idx++ : 0;
+	return assert(it), PB_(pin)(it)
+		? PB_(to_entry)(it->cur, it->idx++) : PB_(null_entry)();
 }
 
 /** @param[tree] Can be null. @return Finds the smallest entry in `tree` that
@@ -388,9 +409,8 @@ static struct B_(tree_iterator) B_(tree_lower)(struct B_(tree) *const tree,
 static PB_(value) *B_(tree_get)(struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct PB_(iterator) it = PB_(lower)(tree, x);
-	PB_(entry) e;
-	assert(0);
-	return 0;//PB_(is_content)(e = PB_(next)(&it)) ? PB_(to_value)(e) : 0;
+	PB_(entry) e = PB_(next)(&it);
+	return PB_(is_element)(e) ? PB_(to_value)(e) : 0;
 }
 
 #include "../test/orcish.h"
@@ -535,7 +555,7 @@ static int B_(trie_remove)(struct B_(trie) *const trie,
 
 #ifdef TREE_TEST /* <!-- test */
 /* Forward-declare. */
-static void (*PB_(to_string))(PB_(key_c), char (*)[12]);
+static void (*PB_(to_string))(PB_(entry_c), char (*)[12]);
 static const char *(*PB_(tree_to_string))(const struct B_(tree) *);
 #include "../test/test_tree.h"
 #endif /* test --> */
@@ -598,6 +618,7 @@ static const char *(*PB_(tree_to_string))(const struct B_(tree) *)
 #undef BOX_
 #undef BOX
 #undef BOX_CONTENT
+#undef BOX_ITERATOR
 #endif /* !trait --> */
 #undef TREE_TO_STRING_TRAIT
 #undef TREE_TRAITS

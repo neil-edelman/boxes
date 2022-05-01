@@ -11,11 +11,11 @@
 
 #ifdef TREE_VALUE
 /** This makes the key-value in the same place; will have to copy. */
-typedef struct B_(entry_test) {
+typedef struct B_(tree_test) {
 	PB_(key) x;
 	PB_(value) value;
 } PB_(entry_test);
-static PB_(key) PB_(test_to_x)(struct B_(entry_test) *const t) { return t->x; }
+static PB_(key) PB_(test_to_x)(struct B_(tree_test) *const t) { return t->x; }
 #else
 typedef PB_(key) PB_(entry_test);
 static PB_(key) PB_(test_to_x)(PB_(key) *const x) { return *x; }
@@ -46,7 +46,7 @@ static void PB_(subgraph)(const struct B_(tree) sub, FILE *fp) {
 	for(i = 0; i < sub.root->size; i++) {
 		const char *const bgc = i & 1 ? "" : " bgcolor=\"Gray90\"";
 		char z[12];
-		PB_(entry) e = PB_(to_entry)(sub.root, i);
+		PB_(entry_c) e = PB_(to_entry_c)(sub.root, i);
 		PB_(to_string)(e, &z);
 		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
 			" port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
@@ -101,10 +101,10 @@ static void PB_(print_r)(const struct B_(tree) tree) {
 	}
 	for(i = 0; ; i++) {
 		char z[12];
-		PB_(entry) e;
+		PB_(entry_c) e;
 		if(tree.height) sub.root = inner->link[i], PB_(print_r)(sub);
 		if(i == tree.root->size) break;
-		e = PB_(to_entry)(tree.root, i);
+		e = PB_(to_entry_c)(tree.root, i);
 		PB_(to_string)(e, &z);
 		printf("%s%s", i ? ", " : "", z);
 	}
@@ -195,7 +195,7 @@ static void PB_(test)(void) {
 		value = B_(tree_bulk_add)(&tree, PB_(test_to_x)(e));
 		assert(value);
 #ifdef TREE_VALUE
-		*value = *e->value;
+		*value = e->value;
 #endif
 		//PB_(to_string)(PB_(to_entry)(??));
 		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u.gv", ++PB_(no));

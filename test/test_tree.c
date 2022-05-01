@@ -6,11 +6,9 @@
 #include <errno.h>  /* errno */
 #include <time.h>   /* clock time */
 
-#if 0
 /* Unsigned numbers: this is the minimum tree, but not useful to test. */
 #define TREE_NAME foo
 #include "../src/tree.h"
-#endif
 
 
 /* Unsigned numbers: testing framework. */
@@ -29,8 +27,9 @@ static void unsigned_to_string(const unsigned *x, char (*const z)[12])
 
 
 /* Unsigned numbers and values. Prototype a value. */
+struct pair_tree_test;
+static void pair_filler(struct pair_tree_test *);
 struct pair_tree_entry;
-static void pair_filler(struct pair_tree_entry *);
 static void pair_to_string(const struct pair_tree_entry, char (*)[12]);
 #define TREE_NAME pair
 #define TREE_VALUE unsigned
@@ -40,15 +39,14 @@ static void pair_to_string(const struct pair_tree_entry, char (*)[12]);
 #define TREE_TO_STRING &pair_to_string
 #include "../src/tree.h"
 /** @implements <typedef:<PB>action_fn> */
-static void pair_filler(struct pair_tree_entry *x) {
-	unsigned_filler(x->x);
-	*x->value = (unsigned)rand() / (RAND_MAX / 100000 + 1);
-	printf("generated %u->%u\n", *x->x, *x->value);
+static void pair_filler(struct pair_tree_test *x) {
+	unsigned_filler(&x->x);
+	unsigned_filler(&x->value), x->value += 100000;
+	printf("generated %u->%u\n", x->x, x->value);
 }
 /** @implements <typedef:<PSZ>to_string_fn> */
 static void pair_to_string(const struct pair_tree_entry x, char (*const z)[12])
 	{ sprintf(*z, "%u→%u", *x.x, *x.value); } /* 3 + 3 + 5 */
-
 
 #if 0
 
