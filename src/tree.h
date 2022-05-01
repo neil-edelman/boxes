@@ -155,7 +155,7 @@ static PB_(entry) PB_(to_entry)(struct PB_(leaf) *const leaf,
 static PB_(entry_c) PB_(to_entry_c)(const struct PB_(leaf) *const leaf,
 	const unsigned i) { PB_(entry_c) e;
 	e.x = leaf->x + i, e.value = leaf->value + i; return e; }
-static PB_(key) PB_(to_x)(const PB_(entry) entry) { return *entry.x; }
+/*static PB_(key) PB_(to_x)(const PB_(entry) entry) { return *entry.x; }*/
 static PB_(value) *PB_(to_value)(PB_(entry) entry) { return entry.value; }
 
 #else /* value --><!-- !value */
@@ -169,7 +169,7 @@ static PB_(entry) PB_(to_entry)(struct PB_(leaf) *const leaf,
 	const unsigned i) { return leaf->x + i; }
 static PB_(entry_c) PB_(to_entry_c)(const struct PB_(leaf) *const leaf,
 	const unsigned i) { return leaf->x + i; }
-static PB_(key) PB_(to_x)(const PB_(key) *const x) { return *x; }
+/*static PB_(key) PB_(to_x)(const PB_(key) *const x) { return *x; }*/
 static PB_(value) *PB_(to_value)(PB_(key) *const x) { return x; }
 
 #endif /* !entry --> */
@@ -562,8 +562,8 @@ static const char *(*PB_(tree_to_string))(const struct B_(tree) *);
 
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
-	PB_(forward_begin)(0); PB_(forward_next)(0);
-	B_(tree)(); B_(tree_)(0); B_(tree_begin)(0); //B_(tree_next)(0);
+	PB_(is_element_c); PB_(forward_begin)(0); PB_(forward_next)(0);
+	B_(tree)(); B_(tree_)(0); B_(tree_begin)(0); /*B_(tree_next)(0);*/
 	B_(tree_lower)(0, 0);
 	B_(tree_get)(0, 0);
 	B_(tree_bulk_add)(0, 0);

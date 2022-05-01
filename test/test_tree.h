@@ -142,14 +142,8 @@ static void PB_(sort)(PB_(entry_test) *a, const size_t size) {
 	size_t i;
 	for(i = 1; i < size; i++) {
 		size_t j;
-		for(j = i; j; j--) {
-			/*char n[12], m[12];
-			PB_(to_string)(a[j - 1], &n);
-			PB_(to_string)(a[i], &m);
-			printf("cmp %s and %s\n", n, m);*/
-			if(!(PB_(compare)(PB_(test_to_x)(a + j - 1),
-				PB_(test_to_x)(a + i)) > 0)) break;
-		}
+		for(j = i; j && PB_(compare)(PB_(test_to_x)(a + j - 1),
+			PB_(test_to_x)(a + i)) > 0; j--);
 		if(j == i) continue;
 		temp = a[i];
 		memmove(a + j + 1, a + j, sizeof *a * (i - j));
@@ -158,7 +152,7 @@ static void PB_(sort)(PB_(entry_test) *a, const size_t size) {
 }
 
 static void PB_(test)(void) {
-	//char z[12];
+	/*char z[12];*/
 	struct B_(tree) tree = B_(tree)();
 	struct B_(tree_iterator) it;
 	PB_(entry_test) n[20];
@@ -197,13 +191,14 @@ static void PB_(test)(void) {
 #ifdef TREE_VALUE
 		*value = e->value;
 #endif
-		//PB_(to_string)(PB_(to_entry)(??));
+		/*PB_(to_string)(PB_(to_entry)(??));*/
 		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u.gv", ++PB_(no));
 		PB_(graph)(&tree, fn);
 	}
 	/* Iteration. */
 	it = B_(tree_begin)(&tree), i = 0;
-	//while(entry = B_(tree_next)(it)) i++;
+	/*while(entry = B_(tree_next)(it)) i++;
+	... */
 
 	B_(tree_)(&tree), assert(!tree.root), PB_(valid)(&tree);
 	assert(!errno);
