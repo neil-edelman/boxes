@@ -41,14 +41,14 @@ static void pair_to_string(const struct pair_tree_entry_c, char (*)[12]);
 /** @implements <typedef:<PB>action_fn> */
 static void pair_filler(struct pair_tree_test *x) {
 	unsigned_filler(&x->x);
-	unsigned_filler(&x->value), x->value += 100000;
+	unsigned_filler(&x->value), x->value += 10000;
 	printf("generated %u->%u\n", x->x, x->value);
 }
 /** @implements <typedef:<PSZ>to_string_fn> */
 static void pair_to_string(const struct pair_tree_entry_c x,
 	char (*const z)[12]) { sprintf(*z, "%u→%u", *x.x, *x.value); } /* 3+3+5 */
 
-
+#if 0
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
  Sol. We define a tree of ascending distances. */
 #define STARS \
@@ -87,9 +87,10 @@ struct star_tree_test;
 static void star_filler(struct star_tree_test *);
 struct star_tree_entry;
 static void star_to_string(const struct star_tree_entry, char (*)[12]);
+typedef const char *conststr;
 #define TREE_NAME star
 #define TREE_KEY double
-#define TREE_VALUE const char *
+#define TREE_VALUE conststr
 #define TREE_TEST &star_filler
 #define TREE_EXPECT_TRAIT
 #include "../src/tree.h"
@@ -103,13 +104,13 @@ static void star_filler(struct star_tree_test *x) {
 /** @implements <typedef:<PSZ>to_string_fn> */
 static void star_to_string(const struct star_tree_entry x, char (*const z)[12])
 	{ sprintf(*z, "%.11s", *x.value); }
-
+#endif
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	unsigned_tree_test();
 	pair_tree_test();
-	star_tree_test();
+	//star_tree_test();
 	return EXIT_SUCCESS;
 }

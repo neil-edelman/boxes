@@ -33,36 +33,36 @@ static const PB_(action_fn) PB_(filler) = (TREE_TEST);
 static unsigned PB_(no);
 
 /** Recursively draws `outer` in `fp` with the actual `height`. */
-static void PB_(subgraph)(const struct B_(tree) sub, FILE *fp) {
+static void PB_(subgraph)(const struct B_(tree) *const sub, FILE *fp) {
 	const struct PB_(branch) *branch;
 	unsigned i;
-	assert(sub.root && fp);
+	assert(sub->root && fp);
 	/* It still has a margin, augh. */
 	fprintf(fp, "\ttrunk%p [label = <\n"
 		"<table border=\"1\" cellspacing=\"0\" bgcolor=\"Grey95\">\n"
 		"\t<tr><td border=\"0\" port=\"0\">"
 		"<font color=\"Gray75\">%s</font></td></tr>\n",
-		(const void *)sub.root, orcify(sub.root));
-	for(i = 0; i < sub.root->size; i++) {
+		(const void *)sub->root, orcify(sub->root));
+	for(i = 0; i < sub->root->size; i++) {
 		const char *const bgc = i & 1 ? "" : " bgcolor=\"Gray90\"";
 		char z[12];
-		PB_(entry_c) e = PB_(to_entry_c)(sub.root, i);
+		PB_(entry_c) e = PB_(to_entry_c)(sub->root, i);
 		PB_(to_string)(e, &z);
 		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
 			" port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
 	}
 	fprintf(fp, "</table>>];\n");
-	if(!sub.height) return;
+	if(!sub->height) return;
 	/* Draw the lines between trees. */
-	branch = PB_(branch_c)(sub.root);
-	for(i = 0; i <= sub.root->size; i++)
+	branch = PB_(branch_c)(sub->root);
+	for(i = 0; i <= sub->root->size; i++)
 		fprintf(fp, "\ttrunk%p:%u:se -> trunk%p;\n",
-		(const void *)sub.root, i, (const void *)branch->link[i]);
+		(const void *)sub->root, i, (const void *)branch->link[i]);
 	/* Recurse. */
-	for(i = 0; i <= sub.root->size; i++) {
+	for(i = 0; i <= sub->root->size; i++) {
 		struct B_(tree) subsub;
-		subsub.root = branch->link[i], subsub.height = sub.height - 1;
-		PB_(subgraph)(subsub, fp);
+		subsub.root = branch->link[i], subsub.height = sub->height - 1;
+		PB_(subgraph)(&subsub, fp);
 	}
 }
 
@@ -83,7 +83,7 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 		fprintf(fp, "\tidle [shape=plaintext];\n");
 	else if(tree->height == UINT_MAX)
 		fprintf(fp, "\tempty [shape=plaintext];\n");
-	else PB_(subgraph)(*tree, fp);
+	else PB_(subgraph)(tree, fp);
 	fprintf(fp, "\tnode [color=\"Red\"];\n"
 		"}\n");
 	fclose(fp);
