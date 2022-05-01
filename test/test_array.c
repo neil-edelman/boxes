@@ -17,7 +17,7 @@
 
 /* Struct array. */
 struct str4 { char value[4]; };
-static void str4_to_string(const struct str4 *s, char (*const a)[12])
+static void str4_to_string(const struct str4 *const s, char (*const a)[12])
 	{ sprintf(*a, "%.11s", s->value); }
 static void str4_filler(struct str4 *const s)
 	{ orcish(s->value, sizeof s->value); }

@@ -3,7 +3,7 @@
 
  @subtitle Compare trait
 
- Interface minimum: `BOX_`, `BOX`, `BOX_CONTENT`.
+ Interface defined by `BOX_`, `BOX`, and `BOX_CONTENT`.
 
  @param[CMP_(n)]
  A one-argument macro producing a name that is responsible for the name of the
@@ -18,7 +18,8 @@
 
 /* `BOX_CONTENT`: is_content, forward, forward_begin, forward_next. */
 #if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
-	|| !defined(CMP_) || !(defined(COMPARE_IS_EQUAL) ^ defined(COMPARE))
+	|| !defined(CMP_) || !(defined(COMPARE_IS_EQUAL) ^ defined(COMPARE)) \
+	|| defined(BOX_CONTIGUOUS) && !defined(BOX_ITERATOR)
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -36,8 +37,10 @@
 #endif /* idempotent --> */
 
 typedef BOX PCMP_(box);
-typedef BOX_CONTENT PCMP_(element);
-typedef const BOX_CONTENT PCMP_(element_c);
+typedef BOX_CONTENT PCMP_(element_c);
+#ifdef BOX_ITERATOR
+typedef BOX_ITERATOR PCMP_(element);
+#endif
 
 /** <src/compare.h>: Returns a boolean given two read-only elements. */
 typedef int (*PCMP_(bipredicate_fn))(const PCMP_(element_c),
@@ -47,9 +50,12 @@ typedef int (*PCMP_(bipredicate_fn))(const PCMP_(element_c),
  `a > b`, respectively. */
 typedef int (*PCMP_(compare_fn))(const PCMP_(element_c) restrict a,
 	const PCMP_(element_c) restrict b);
-/** <src/compare.h>: Returns a boolean given two modifiable arguments. */
+#ifdef BOX_ITERATOR
+/** <src/compare.h>, `BOX_ITERATOR`: Returns a boolean given two modifiable
+ arguments. */
 typedef int (*PCMP_(biaction_fn))(PCMP_(element) restrict,
 	PCMP_(element) restrict);
+#endif
 
 #ifdef COMPARE /* <!-- compare: <typedef:<PCMP>compare_fn>. */
 
@@ -69,8 +75,8 @@ static int CMP_(compare)(const PCMP_(box) *restrict const a,
 		const PCMP_(element_c) x = BOX_(forward_next)(&ia),
 			y = BOX_(forward_next)(&ib);
 		int diff;
-		if(!BOX_(is_content)(x)) return BOX_(is_content)(y) ? -1 : 0;
-		else if(!BOX_(is_content)(y)) return 1;
+		if(!BOX_(is_element)(x)) return BOX_(is_element)(y) ? -1 : 0;
+		else if(!BOX_(is_element)(y)) return 1;
 		if(diff = PCMP_(compare)(x, y)) return diff;
 	}
 }
@@ -133,7 +139,7 @@ static void CMP_(sort)(PCMP_(box) *const box) {
 	PCMP_(element) first;
 	if(!size) return;
 	first = BOX_(at)(box, 0);
-	if(!BOX_(is_content)(first)) return; /* That was weird. */
+	if(!BOX_(is_element)(first)) return; /* That was weird. */
 	qsort(first, size, sizeof *first, &PCMP_(vcompar));
 }
 
@@ -148,7 +154,7 @@ static void CMP_(reverse)(PCMP_(box) *const box) {
 	PCMP_(element) first;
 	if(!size) return;
 	first = BOX_(at)(box, 0);
-	if(!BOX_(is_content)(first)) return; /* That was weird. */
+	if(!BOX_(is_element)(first)) return; /* That was weird. */
 	qsort(first, size, sizeof *first, &PCMP_(vrevers));
 }
 
@@ -179,8 +185,8 @@ static int CMP_(is_equal)(const PCMP_(box) *restrict const a,
 	for( ; ; ) {
 		const PCMP_(element_c) x = BOX_(forward_next)(&ia),
 			y = BOX_(forward_next)(&ib);
-		if(!BOX_(is_content)(x)) return !BOX_(is_content)(y);
-		else if(!BOX_(is_content)(y)) return 0;
+		if(!BOX_(is_element)(x)) return !BOX_(is_element)(y);
+		else if(!BOX_(is_element)(y)) return 0;
 		if(!PCMP_(is_equal)(x, y)) return 0;
 	}
 	return 1;
