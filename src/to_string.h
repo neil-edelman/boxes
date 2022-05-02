@@ -3,12 +3,7 @@
 
  @subtitle To string trait
 
- Interface (defined by `BOX_`, `BOX`, and `BOX_CONTENT`):
-
- \* `int <BOX>is_element_c(<PSTR>element_c)`;
- \* `struct <BOX>forward`;
- \* `struct <BOX>forward <BOX>forward_begin(const <PSTR>box *)`;
- \* `<PSTR>element_c <BOX>forward_next(struct <BOX>forward *)`.
+ Interface defined by `BOX_`, `BOX`, and `BOX_CONTENT`.
 
  @param[STR_(n)]
  A one-argument macro producing a name that is responsible for the name of the
