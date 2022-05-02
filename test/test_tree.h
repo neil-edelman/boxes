@@ -57,11 +57,11 @@ static void PB_(subgraph)(const struct B_(tree) *const sub, FILE *fp) {
 	branch = PB_(branch_c)(sub->root);
 	for(i = 0; i <= sub->root->size; i++)
 		fprintf(fp, "\ttrunk%p:%u:se -> trunk%p;\n",
-		(const void *)sub->root, i, (const void *)branch->link[i]);
+		(const void *)sub->root, i, (const void *)branch->child[i]);
 	/* Recurse. */
 	for(i = 0; i <= sub->root->size; i++) {
 		struct B_(tree) subsub;
-		subsub.root = branch->link[i], subsub.height = sub->height - 1;
+		subsub.root = branch->child[i], subsub.height = sub->height - 1;
 		PB_(subgraph)(&subsub, fp);
 	}
 }
@@ -102,7 +102,7 @@ static void PB_(print_r)(const struct B_(tree) tree) {
 	for(i = 0; ; i++) {
 		char z[12];
 		PB_(entry_c) e;
-		if(tree.height) sub.root = inner->link[i], PB_(print_r)(sub);
+		if(tree.height) sub.root = inner->child[i], PB_(print_r)(sub);
 		if(i == tree.root->size) break;
 		e = PB_(to_entry_c)(tree.root, i);
 		PB_(to_string)(e, &z);

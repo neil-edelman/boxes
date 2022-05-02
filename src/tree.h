@@ -114,7 +114,18 @@ static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
 /* B-tree leaf of `TREE_ORDER`, (`TREE_MAX + 1`); the order is the maximum
  branching factor, as <Knuth, 1998 Art 3>. However, Knuth's leaves are
  imaginary in this data structure, so we use the original terminology from
- <Bayer, McCreight, 1972 Large>: leaves are height-zero nodes. */
+ <Bayer, McCreight, 1972 Large>: leaves are height-zero nodes.
+ * Every branch has at most `TREE_ORDER` children, which is at minimum three.
+ * Every non-root branch has at least `\lower[TREE_ORDER/2]`, or
+   `\upper[TREE_MAX/2]` children, (except while bulk loading.)
+ * Every branch has at least two children, (except while bulk loading, when
+   it has no keys, it could have one.)
+ * All leaves are at the maximum depth, the zero-based height of the tree; they
+   do'n't carry links to other nodes.
+ * Every branch with `k` children contains `k - 1` keys, (this is a consequence
+   of the fact that they are implicitly storing a complete binary sub-tree.)
+ * There are two empty B-trees to facilitate allocation hysteresis between
+   0 -- 1: idle `{ 0, 0 }`, and `{ garbage leaf, UINT_MAX }`. */
 struct PB_(leaf) {
 	unsigned char size; /* `[0, TREE_MAX]`. */
 	PB_(key) x[TREE_MAX]; /* Cache-friendly lookup; all but one value. */
@@ -123,7 +134,7 @@ struct PB_(leaf) {
 #endif
 };
 /* B-tree branch is a <tag:<PB>leaf> and links to `size + 1` nodes. */
-struct PB_(branch) { struct PB_(leaf) base, *link[TREE_ORDER]; };
+struct PB_(branch) { struct PB_(leaf) base, *child[TREE_ORDER]; };
 /** @return Upcasts `as_leaf` to a branch. */
 static struct PB_(branch) *PB_(branch)(struct PB_(leaf) *const as_leaf)
 	{ return (struct PB_(branch) *)(void *)
@@ -132,7 +143,6 @@ static struct PB_(branch) *PB_(branch)(struct PB_(leaf) *const as_leaf)
 static const struct PB_(branch) *PB_(branch_c)(const struct PB_(leaf) *
 	const as_leaf) { return (const struct PB_(branch) *)(const void *)
 	((const char *)as_leaf - offsetof(struct PB_(branch), base)); }
-/* /\ is this needed? */
 
 #ifdef TREE_VALUE /* <!-- value */
 
@@ -180,7 +190,6 @@ static PB_(value) *PB_(to_value)(PB_(key) *const x) { return x; }
  ![States.](../doc/states.png) */
 struct B_(tree);
 struct B_(tree) { struct PB_(leaf) *root; unsigned height; };
-/* Top level tree: `node` is root, flag UINT_MAX: empty but non-idle. */
 
 #define BOX_CONTENT PB_(entry_c)
 /** Is `e` not null? @implements `is_element_c` */
@@ -209,14 +218,14 @@ static int PB_(forward_pin)(struct PB_(forward) *const it) {
 		it->cur = it->tree->root, assert(it->cur),
 			it->height = it->tree->height, it->idx = 0;
 		while(it->height) it->height--,
-			it->cur = PB_(branch_c)(it->cur)->link[0], assert(it->cur);
+			it->cur = PB_(branch_c)(it->cur)->child[0], assert(it->cur);
 	}
 	if(it->idx < it->cur->size) return 1; /* Likely. */
 	if(!it->cur->size) return 0; /* The empty nodes are always at the end. */
 	/* Go down the tree again and note the next. */
 	next.root = 0, x = it->cur->x[it->cur->size - 1];
 	for(t = *it->tree; t.height;
-		t.root = PB_(branch_c)(t.root)->link[a0], t.height--) {
+		t.root = PB_(branch_c)(t.root)->child[a0], t.height--) {
 		int cmp; unsigned a1 = t.root->size; a0 = 0;
 		while(a0 < a1) {
 			const unsigned m = (a0 + a1) / 2;
@@ -224,7 +233,7 @@ static int PB_(forward_pin)(struct PB_(forward) *const it) {
 			if(cmp > 0) a0 = m + 1; else a1 = m;
 		}
 		if(a0 + 1 < t.root->size)
-			next.root = PB_(branch_c)(t.root)->link[a0 + 1],
+			next.root = PB_(branch_c)(t.root)->child[a0 + 1],
 			next.height = t.height - 1;
 	}
 	/* Off the right: it->idx >= it->cur->size && !next.node */
@@ -241,15 +250,12 @@ static struct PB_(forward) PB_(forward_begin)(const struct B_(tree) *const
 }
 /** Advances `it` to the next element. @return A pointer to the current
  element or null. @implements `forward_next` */
-static PB_(entry_c) PB_(forward_next)(struct PB_(forward) *const it) {
-	printf("_next_\n");
-	assert(it);
-	return PB_(forward_pin)(it)
-		? PB_(to_entry_c)(it->cur, it->idx++) : PB_(null_entry_c)();
-}
+static PB_(entry_c) PB_(forward_next)(struct PB_(forward) *const it)
+	{ return assert(it), PB_(forward_pin)(it)
+		? PB_(to_entry_c)(it->cur, it->idx++) : PB_(null_entry_c)(); }
 
 #define BOX_ITERATOR PB_(entry)
-/** Is `x` not null? @implements `is_content` */
+/** Is `x` not null? @implements `is_element` */
 static int PB_(is_element)(const PB_(entry) e) {
 #ifdef TREE_VALUE
 	return !!e.x;
@@ -274,14 +280,14 @@ static int PB_(pin)(struct PB_(iterator) *const it) {
 		it->cur = it->tree->root, assert(it->cur),
 			it->height = it->tree->height, it->idx = 0;
 		while(it->height) it->height--,
-			it->cur = PB_(branch_c)(it->cur)->link[0], assert(it->cur);
+			it->cur = PB_(branch_c)(it->cur)->child[0], assert(it->cur);
 	}
 	if(it->idx < it->cur->size) return 1; /* Likely. */
 	if(!it->cur->size) return 0; /* The empty nodes are always at the end. */
 	/* Go down the tree again and note the next. */
 	next.root = 0, x = it->cur->x[it->cur->size - 1];
 	for(t = *it->tree; t.height;
-		t.root = PB_(branch_c)(t.root)->link[a0], t.height--) {
+		t.root = PB_(branch_c)(t.root)->child[a0], t.height--) {
 		int cmp; unsigned a1 = t.root->size; a0 = 0;
 		while(a0 < a1) {
 			const unsigned m = (a0 + a1) / 2;
@@ -289,7 +295,7 @@ static int PB_(pin)(struct PB_(iterator) *const it) {
 			if(cmp > 0) a0 = m + 1; else a1 = m;
 		}
 		if(a0 + 1 < t.root->size)
-			next.root = PB_(branch_c)(t.root)->link[a0 + 1],
+			next.root = PB_(branch_c)(t.root)->child[a0 + 1],
 			next.height = t.height - 1;
 	}
 	/* Off the right: it->idx >= it->cur->size && !next.node */
@@ -305,11 +311,9 @@ static struct PB_(iterator) PB_(begin)(struct B_(tree) *const tree) {
 }
 /** Advances `it` to the next element. @return A pointer to the current
  element or null. @implements `next` */
-static PB_(entry) PB_(next)(struct PB_(iterator) *const it) {
-	printf("_next_\n");
-	return assert(it), PB_(pin)(it)
-		? PB_(to_entry)(it->cur, it->idx++) : PB_(null_entry)();
-}
+static PB_(entry) PB_(next)(struct PB_(iterator) *const it)
+	{ return assert(it), PB_(pin)(it)
+		? PB_(to_entry)(it->cur, it->idx++) : PB_(null_entry)(); }
 
 /** @param[tree] Can be null. @return Finds the smallest entry in `tree` that
  is not less than `no`. If `no` is higher than any of `tree`, it will be placed
@@ -323,7 +327,7 @@ static struct PB_(iterator) PB_(lower)(struct B_(tree) *const tree,
 	unsigned a0;
 	it.tree = 0;
 	if(!tree || !tree->root || tree->height == UINT_MAX) return it;
-	for(t = *tree; ; t.root = PB_(branch_c)(t.root)->link[a0], t.height--) {
+	for(t = *tree; ; t.root = PB_(branch_c)(t.root)->child[a0], t.height--) {
 		unsigned a1 = t.root->size; PB_(key) m; a0 = 0;
 		if(!a1) continue;
 		do {
@@ -349,7 +353,7 @@ static void PB_(clear_r)(struct B_(tree) tree) {
 		unsigned i;
 		sub.height = tree.height - 1;
 		for(i = 0; i <= tree.root->size; i++)
-		sub.root = PB_(branch)(tree.root)->link[i], PB_(clear_r)(sub);
+		sub.root = PB_(branch)(tree.root)->child[i], PB_(clear_r)(sub);
 		free(tree.root);
 	}
 }
@@ -388,8 +392,8 @@ static struct B_(tree_iterator) B_(tree_begin)(struct B_(tree) *const tree)
 	{ struct B_(tree_iterator) it; it._ = PB_(begin)(tree); return it; }
 /** Advances `it` to the next element. @return A pointer to the current
  element or null. @allow */
-/*static PB_(entry) B_(tree_next)(struct B_(tree_iterator) *const it)
-	{ return PB_(next)(&it->_); }*/
+static PB_(entry) B_(tree_next)(struct B_(tree_iterator) *const it)
+	{ return PB_(next)(&it->_); }
 
 #if 0
 /** Counts the of the items in initialized `it`. @order \O(|`it`|) @allow */
@@ -450,8 +454,8 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 		{ /* Figure out where `space` and `last` are in `log size`. */
 			struct B_(tree) expl;
 
-			for(expl = *tree; ; expl.root
-				= PB_(branch)(expl.root)->link[expl.root->size], expl.height--) {
+			for(expl = *tree; ; expl.root = PB_(branch)(expl.root)
+				->child[expl.root->size], expl.height--) {
 				printf("dowhile expl %s:%u with %u size\n",
 					orcify(expl.root), expl.height, expl.root->size);
 				if(expl.root->size < TREE_MAX) space = expl;
@@ -481,28 +485,28 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 				if(!(inner = malloc(sizeof *inner))) goto catch;
 				inner->base.size = 0;
 				printf("new inner: %s.\n", orcify(inner));
-				if(!head) inner->link[0] = 0, pretail = inner; /* First loop. */
-				else inner->link[0] = head; /* Not first loop. */
+				if(!head) inner->child[0] = 0, pretail = inner; /* First loop. */
+				else inner->child[0] = head; /* Not first loop. */
 				head = &inner->base;
 			}
 		}
 
 		/* Post-error; modify the original as needed. */
-		if(pretail) pretail->link[0] = tail;
+		if(pretail) pretail->child[0] = tail;
 		else head = node;
 		if(!space.root) { /* Add tree to head. */
 			struct PB_(branch) *const inner = PB_(branch)(head);
 			printf("adding the existing root, %s to %s\n",
 				orcify(tree->root), orcify(head));
 			assert(new_nodes > 1);
-			inner->link[1] = inner->link[0], inner->link[0] = tree->root;
+			inner->child[1] = inner->child[0], inner->child[0] = tree->root;
 			node = tree->root = head, tree->height++;
 		} else if(space.height) { /* Add head to tree. */
 			struct PB_(branch) *const inner = PB_(branch)(node = space.root);
 			printf("adding the linked list, %s to %s at %u\n",
 				orcify(head), orcify(inner), inner->base.size + 1);
 			assert(new_nodes);
-			inner->link[inner->base.size + 1] = head;
+			inner->child[inner->base.size + 1] = head;
 		}
 	}
 	assert(node && node->size < TREE_MAX);
@@ -517,7 +521,7 @@ catch:
 	printf("!!! freeing %s\n", orcify(node));
 	free(node);
 	if(head) for( ; ; ) {
-		struct PB_(leaf) *const next = PB_(branch)(head)->link[0];
+		struct PB_(leaf) *const next = PB_(branch)(head)->child[0];
 		printf("!!! freeing %s\n", orcify(head));
 		free(head);
 		if(!next) break;
@@ -563,7 +567,7 @@ static const char *(*PB_(tree_to_string))(const struct B_(tree) *);
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
 	PB_(is_element_c); PB_(forward_begin)(0); PB_(forward_next)(0);
-	B_(tree)(); B_(tree_)(0); B_(tree_begin)(0); /*B_(tree_next)(0);*/
+	B_(tree)(); B_(tree_)(0); B_(tree_begin)(0); B_(tree_next)(0);
 	B_(tree_lower)(0, 0);
 	B_(tree_get)(0, 0);
 	B_(tree_bulk_add)(0, 0);
