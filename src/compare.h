@@ -75,8 +75,8 @@ static int CMP_(compare)(const PCMP_(box) *restrict const a,
 		const PCMP_(element_c) x = BOX_(forward_next)(&ia),
 			y = BOX_(forward_next)(&ib);
 		int diff;
-		if(!BOX_(is_element)(x)) return BOX_(is_element)(y) ? -1 : 0;
-		else if(!BOX_(is_element)(y)) return 1;
+		if(!BOX_(is_element_c)(x)) return BOX_(is_element_c)(y) ? -1 : 0;
+		else if(!BOX_(is_element_c)(y)) return 1;
 		if(diff = PCMP_(compare)(x, y)) return diff;
 	}
 }
@@ -185,8 +185,8 @@ static int CMP_(is_equal)(const PCMP_(box) *restrict const a,
 	for( ; ; ) {
 		const PCMP_(element_c) x = BOX_(forward_next)(&ia),
 			y = BOX_(forward_next)(&ib);
-		if(!BOX_(is_element)(x)) return !BOX_(is_element)(y);
-		else if(!BOX_(is_element)(y)) return 0;
+		if(!BOX_(is_element_c)(x)) return !BOX_(is_element_c)(y);
+		else if(!BOX_(is_element_c)(y)) return 0;
 		if(!PCMP_(is_equal)(x, y)) return 0;
 	}
 	return 1;
