@@ -111,9 +111,9 @@ struct L_(list) {
 	} u;
 };
 
-#define BOX_CONTENT struct L_(listlink) *
+#define BOX_CONTENT const struct L_(listlink) *
 /** Is `x` not null? @implements `is_content` */
-static int PL_(is_content)(const struct L_(listlink) *const x)
+static int PL_(is_element_c)(const struct L_(listlink) *const x)
 	{ return assert(x ? x->next && x->prev : 1), !!x; }
 /* Since this is a permutation, the iteration is defined by none other then
  itself. @implements `forward` */
@@ -127,7 +127,10 @@ static const struct L_(listlink) *PL_(forward_next)(struct PL_(forward) *const
 	if(!it->link || !(n = it->link->next)) return 0;
 	return (it->link = n)->next ? n : 0; }
 
-#define BOX_ITERATOR
+#define BOX_ITERATOR struct L_(listlink) *
+/** Is `x` not null? @implements `is_content` */
+static int PL_(is_element)(struct L_(listlink) *const x)
+	{ return assert(x ? x->next && x->prev : 1), !!x; }
 /* @implements `iterator` */
 struct PL_(iterator) { struct L_(listlink) *link; int dir; };
 /** @return Before `l`. @implements `begin` */
@@ -374,8 +377,9 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *);
 
 static void PL_(unused_base_coda)(void);
 static void PL_(unused_base)(void) {
-	PL_(is_content)(0); PL_(forward_begin)(0); PL_(forward_next)(0);
-	PL_(begin)(0); PL_(end)(0); PL_(previous)(0); PL_(next)(0); PL_(remove)(0);
+	PL_(is_element_c)(0); PL_(forward_begin)(0); PL_(forward_next)(0);
+	PL_(is_element)(0); PL_(begin)(0); PL_(end)(0); PL_(previous)(0);
+	PL_(next)(0); PL_(remove)(0);
 	L_(list_head_c)(0); L_(list_head)(0); L_(list_tail_c)(0); L_(list_tail)(0);
 	L_(list_previous_c)(0); L_(list_previous)(0);
 	L_(list_next_c)(0); L_(list_next)(0);

@@ -5,7 +5,7 @@ Stand\-alone header [src/table\.h](src/table.h); examples [test/test\_table\.c](
 ## Hash table ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;uint](#user-content-typedef-c13937ad), [&lt;PN&gt;key](#user-content-typedef-e7af8dc0), [&lt;PN&gt;key_c](#user-content-typedef-46bcab6a), [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292), [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded), [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb), [&lt;PN&gt;value](#user-content-typedef-218ce716), [&lt;PN&gt;entry](#user-content-typedef-a9017e7), [&lt;PN&gt;policy_fn](#user-content-typedef-1244a528), [&lt;PITR&gt;action_fn](#user-content-typedef-49d9168b), [&lt;PITR&gt;predicate_fn](#user-content-typedef-c5016dba), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;uint](#user-content-typedef-c13937ad), [&lt;PN&gt;key](#user-content-typedef-e7af8dc0), [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292), [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded), [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb), [&lt;PN&gt;value](#user-content-typedef-218ce716), [&lt;PN&gt;entry](#user-content-typedef-a9017e7), [&lt;PN&gt;policy_fn](#user-content-typedef-1244a528), [&lt;PITR&gt;action_fn](#user-content-typedef-49d9168b), [&lt;PITR&gt;predicate_fn](#user-content-typedef-c5016dba), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [table_result](#user-content-tag-4f1ea759), [&lt;N&gt;table_entry](#user-content-tag-b491b196), [&lt;N&gt;table](#user-content-tag-8f317be5), [&lt;N&gt;table_iterator](#user-content-tag-f67540e4)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -54,14 +54,6 @@ Stand\-alone header [src/table\.h](src/table.h); examples [test/test\_table\.c](
 <code>typedef TABLE_KEY <strong>&lt;PN&gt;key</strong>;</code>
 
 Valid tag type defined by `TABLE_KEY` used for keys\. If `TABLE_INVERSE` is not defined, a copy of this value will be stored in the internal buckets\.
-
-
-
-### <a id = "user-content-typedef-46bcab6a" name = "user-content-typedef-46bcab6a">&lt;PN&gt;key_c</a> ###
-
-<code>typedef const TABLE_KEY <strong>&lt;PN&gt;key_c</strong>;</code>
-
-Read\-only [&lt;PN&gt;key](#user-content-typedef-e7af8dc0)\. Makes the simplifying assumption that this is not `const`\-qualified\.
 
 
 

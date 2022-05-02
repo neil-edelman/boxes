@@ -3,7 +3,7 @@
 
  @subtitle Iterate trait
 
- Interface minimum: `BOX_`, `BOX`, `BOX_CONTENT`.
+ Interface defined by `BOX_`, `BOX`, `BOX_CONTENT`, and `BOX_ITERATOR`.
 
  @param[ITR_]
  A one-argument macro producing a name that is responsible for the name of the
@@ -38,8 +38,8 @@
 #endif /* idempotent --> */
 
 typedef BOX PITR_(box);
-typedef BOX_CONTENT PITR_(element);
-typedef const BOX_CONTENT PITR_(element_c);
+typedef BOX_CONTENT PITR_(element_c);
+typedef BOX_ITERATOR PITR_(element);
 
 /** <src/iterate.h>: Operates by side-effects. */
 typedef void (*PITR_(action_fn))(PITR_(element));

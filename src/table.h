@@ -126,8 +126,6 @@ typedef TABLE_UINT PN_(uint);
 /** Valid tag type defined by `TABLE_KEY` used for keys. If `TABLE_INVERSE` is
  not defined, a copy of this value will be stored in the internal buckets. */
 typedef TABLE_KEY PN_(key);
-/** Read-only <typedef:<PN>key>. Makes the simplifying assumption that this is
- not `const`-qualified. */
 typedef const TABLE_KEY PN_(key_c);
 
 /** A map from <typedef:<PN>key_c> onto <typedef:<PN>uint> that, ideally,
@@ -543,9 +541,9 @@ static enum table_result PN_(put)(struct N_(table) *const table,
 	return result;
 }
 
-#define BOX_CONTENT struct PN_(bucket) *
+#define BOX_CONTENT const struct PN_(bucket) *
 /** Is `x` not null? @implements `is_content` */
-static int PN_(is_content)(const struct PN_(bucket) *const x) { return !!x; }
+static int PN_(is_element_c)(const struct PN_(bucket) *const x) { return !!x; }
 /* Enumerate the contents, (in no particular order, usually, but
  deterministic up to topology changes.) @implements `forward` */
 struct PN_(forward) { const struct N_(table) *table; PN_(uint) cur; };
@@ -567,16 +565,15 @@ static struct PN_(forward) PN_(forward_begin)(const struct N_(table) *const
 	table) { struct PN_(forward) it; it.table = table, it.cur = 0; return it; }
 /** Advances `it` to the next element. @return Pointer to the current element
  or null. @implements `forward_next` */
-static struct PN_(bucket) *PN_(forward_next)(struct PN_(forward) *const it) {
-	assert(it);
+static const struct PN_(bucket) *PN_(forward_next)(struct PN_(forward) *const
+	it) { assert(it);
 	if(!it->table || !it->table->buckets) return 0;
 	if(PN_(forward_skip)(it)) return it->table->buckets + it->cur++;
 	it->table = 0, it->cur = 0;
 	return 0;
 }
 
-/* #define BOX_ITERATOR -- I don't think so -- it doesn't satisfy the all the
- requirements, (but _could_.) */
+#define BOX_ITERATOR struct PN_(bucket) *
 /* More complex iterator that supports write. @implements `iterator` */
 struct PN_(iterator) { struct N_(table) *table; PN_(uint) cur; PN_(uint) prev;};
 /** Helper to skip the buckets of `it` that are not there.
@@ -881,7 +878,7 @@ static void PN_(unused_base_coda)(void);
 static void PN_(unused_base)(void) {
 	PN_(entry) e; PN_(key) k; PN_(value) v;
 	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
-	PN_(is_content)(0); PN_(forward_begin)(0); PN_(forward_next)(0);
+	PN_(is_element_c)(0); PN_(forward_begin)(0); PN_(forward_next)(0);
 	N_(table)(); N_(table_)(0); N_(table_begin)(0); N_(table_next)(0, 0);
 	N_(table_buffer)(0, 0); N_(table_clear)(0); N_(table_is)(0, k);
 	N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v); N_(table_try)(0, e);
@@ -998,8 +995,7 @@ static const char *(*PN_(table_to_string))(const struct N_(table) *)
 #undef BOX_
 #undef BOX
 #undef BOX_CONTENT
-/* #undef BOX_ITERATOR <- really, though? */
-/* box (multiple traits) --> */
+#undef BOX_ITERATOR
 #endif /* !trait --> */
 #undef TABLE_DEFAULT_TRAIT
 #undef TABLE_TO_STRING_TRAIT

@@ -89,6 +89,7 @@ static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
 
 /** A valid tag type set by `POOL_TYPE`. */
 typedef POOL_TYPE PP_(type);
+typedef const POOL_TYPE PP_(type_c);
 
 /* Goes into a slab-sorted array. */
 struct PP_(slot) { size_t size; PP_(type) *slab; };
@@ -107,12 +108,9 @@ struct P_(pool) {
 	size_t capacity0; /* Capacity of slab-zero. */
 };
 
-/* Box override information. */
-#define BOX_ PP_
-#define BOX struct P_(pool)
-#define BOX_CONTENT PP_(type) *
+#define BOX_CONTENT PP_(type_c) *
 /** Is `x` not null? @implements `is_content` */
-static int PP_(is_content)(const PP_(type) *const x) { return !!x; }
+static int PP_(is_element_c)(PP_(type_c) *const x) { return !!x; }
 /* It is very useful in debugging, is required for `BOX_CONTENT`. Only iterates
  on `slot0` and ignores the free-heap. We don't have enough information to do
  otherwise, since (presumably) the memory address is in local variables and
@@ -123,9 +121,13 @@ static struct PP_(forward) PP_(forward_begin)(const struct P_(pool) *const p)
 	{ struct PP_(forward) it; it.slot0 = p && p->slots.size
 	? p->slots.data + 0 : 0, it.i = 0; return it; }
 /** Move to next `it`. @return Element or null. @implements `forward_next` */
-static const PP_(type) *PP_(forward_next)(struct PP_(forward) *const it)
+static PP_(type_c) *PP_(forward_next)(struct PP_(forward) *const it)
 	{ return assert(it), it->slot0 && it->i < it->slot0->size
 	? it->slot0->slab + it->i++ : 0; }
+
+/* Box override information. */
+#define BOX_ PP_
+#define BOX struct P_(pool)
 
 /** @return Index of slot that is higher than `x` in `slots`, but treating zero
  as special. @order \O(\log `slots`) */
@@ -323,7 +325,7 @@ static const char *(*PP_(pool_to_string))(const struct P_(pool) *);
 
 static void PP_(unused_base_coda)(void);
 static void PP_(unused_base)(void) {
-	PP_(is_content)(0); PP_(forward_begin)(0); PP_(forward_next)(0);
+	PP_(is_element_c)(0); PP_(forward_begin)(0); PP_(forward_next)(0);
 	P_(pool)(); P_(pool_)(0); P_(pool_buffer)(0, 0); P_(pool_new)(0);
 	P_(pool_remove)(0, 0); P_(pool_clear)(0); PP_(unused_base_coda)();
 }
