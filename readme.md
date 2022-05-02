@@ -79,7 +79,7 @@ In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Th
 
 <code>typedef int(*<strong>&lt;PCMP&gt;biaction_fn</strong>)(&lt;PCMP&gt;element restrict, &lt;PCMP&gt;element restrict);</code>
 
-[src/compare\.h](src/compare.h): Returns a boolean given two modifiable arguments\.
+[src/compare\.h](src/compare.h), `BOX_ITERATOR`: Returns a boolean given two modifiable arguments\.
 
 
 
