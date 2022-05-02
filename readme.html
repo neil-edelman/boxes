@@ -89,7 +89,7 @@
 
 <h3><a id = "typedef:<PH>compare_fn" name = "typedef:<PH>compare_fn">&lt;PH&gt;compare_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PH&gt;compare_fn</strong>)(const &lt;PH&gt;priority a, const &lt;PH&gt;priority b);</code></p>
+<p><code>typedef int(*<strong>&lt;PH&gt;compare_fn</strong>)(&lt;PH&gt;priority_c a, &lt;PH&gt;priority_c b);</code></p>
 
 <p>Returns a positive result if <code>a</code> is out-of-order with respect to <code>b</code>, inducing a strict total order. This is compatible, but less strict then the comparators from <code>bsearch</code> and <code>qsort</code>; it only needs to divide entries into two instead of three categories.</p>
 

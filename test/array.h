@@ -85,7 +85,6 @@
 
 
 #if ARRAY_TRAITS == 0 /* <!-- base code */
-#define ARRAY_BASE
 
 
 #ifndef ARRAY_MIN_CAPACITY /* <!-- !min; */
@@ -94,6 +93,7 @@
 
 /** A valid tag type set by `ARRAY_TYPE`. */
 typedef ARRAY_TYPE PA_(type);
+typedef const ARRAY_TYPE PA_(type_c);
 
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`. The fields should be
@@ -104,9 +104,9 @@ typedef ARRAY_TYPE PA_(type);
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
-#define BOX_CONTENT PA_(type) *
-/** Is `x` not null? @implements `is_content` */
-static int PA_(is_content)(const PA_(type) *const x) { return !!x; }
+#define BOX_CONTENT PA_(type_c) *
+/** Is `x` not null? @implements `is_element_c` */
+static int PA_(is_element_c)(PA_(type_c) *const x) { return !!x; }
 /* Enumerate the contents (`input_or_output_const_iterator`.)
  @implements `forward` */
 struct PA_(forward) { const struct A_(array) *a; size_t next; };
@@ -114,11 +114,13 @@ struct PA_(forward) { const struct A_(array) *a; size_t next; };
 static struct PA_(forward) PA_(forward_begin)(const struct A_(array) *const a) {
 	struct PA_(forward) it; it.a = a, it.next = 0; return it; }
 /** Move to next `it`. @return Element or null. @implements `forward_next` */
-static const PA_(type) *PA_(forward_next)(struct PA_(forward) *const it)
+static PA_(type_c) *PA_(forward_next)(struct PA_(forward) *const it)
 	{ return assert(it), it->a && it->next < it->a->size
 	? it->a->data + it->next++ : 0; }
 
-#define BOX_ITERATOR
+#define BOX_ITERATOR PA_(type) *
+/** Is `x` not null? @implements `is_element` */
+static int PA_(is_element)(const PA_(type) *const x) { return !!x; }
 /* More complex iterator that supports bi-directional movement and write. The
  cursor is half way between elements, `cur = cursor - 0.5`, pointing left
  (`dir` false) or right (`dir` true). @implements `iterator` */
@@ -408,8 +410,9 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *);
 
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
-	PA_(is_content)(0); PA_(forward_begin)(0); PA_(forward_next)(0);
-	PA_(remove)(0); PA_(size)(0); PA_(at)(0, 0); PA_(tell_size)(0, 0);
+	PA_(is_element_c)(0); PA_(forward_begin)(0); PA_(forward_next)(0);
+	PA_(is_element)(0); PA_(remove)(0); PA_(size)(0); PA_(at)(0, 0);
+	PA_(tell_size)(0, 0);
 	A_(array)(); A_(array_)(0);
 	A_(array_begin)(0); A_(array_end)(0); A_(array_index)(0, 0);
 	A_(array_previous)(0); A_(array_next)(0); A_(array_previous)(0);

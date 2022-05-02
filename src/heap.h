@@ -90,16 +90,17 @@
 /** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
  `unsigned int` if not set by `HEAP_TYPE`. */
 typedef HEAP_TYPE PH_(priority);
+typedef const HEAP_TYPE PH_(priority_c);
 
 /** Returns a positive result if `a` is out-of-order with respect to `b`,
  inducing a strict total order. This is compatible, but less strict then the
  comparators from `bsearch` and `qsort`; it only needs to divide entries into
  two instead of three categories. */
-typedef int (*PH_(compare_fn))(const PH_(priority) a, const PH_(priority) b);
+typedef int (*PH_(compare_fn))(PH_(priority_c) a, PH_(priority_c) b);
 #ifndef HEAP_COMPARE /* <!-- !cmp */
 /** The default `HEAP_COMPARE` on `a` and `b` is `a > b`, which makes a
  minimum-hash. @implements <typedef:<PH>compare_fn> */
-static int PH_(default_compare)(const PH_(priority) a, const PH_(priority) b)
+static int PH_(default_compare)(PH_(priority_c) a, PH_(priority_c) b)
 	{ return a > b; }
 #define HEAP_COMPARE &PH_(default_compare)
 #endif /* !cmp --> */
@@ -115,9 +116,11 @@ struct H_(heapnode) { PH_(priority) priority; PH_(value) value; };
 /** If `HEAP_VALUE` is set, (priority, value) set by <tag:<H>heapnode>,
  otherwise it's a (priority) set directly by <typedef:<PH>priority>. */
 typedef struct H_(heapnode) PH_(node);
+typedef const struct H_(heapnode) PH_(node_c);
 #else /* value --><!-- !value */
 typedef PH_(priority) PH_(value);
 typedef PH_(priority) PH_(node);
+typedef PH_(priority_c) PH_(node_c);
 #endif /* !value --> */
 
 /* This relies on <src/array.h> which must be in the same directory. */
@@ -136,17 +139,17 @@ typedef PH_(priority) PH_(node);
  ![States.](../doc/states.png) */
 struct H_(heap) { struct PH_(node_array) _; };
 
-#define BOX_CONTENT PH_(node) *
+#define BOX_CONTENT PH_(node_c) *
 #define PAH_(n) HEAP_CAT(HEAP_CAT(array, PH_(node)), n)
-/** Is `x` not null? @implements `is_content` */
-static int PH_(is_content)(const PH_(node) *const x) { return !!x; }
+/** Is `x` not null? @implements `is_element_c` */
+static int PH_(is_element_c)(PH_(node_c) *const x) { return !!x; }
 /* @implements `forward` */
 struct PH_(forward) { struct PAH_(forward) _; };
 /** @return Before `h`. @implements `forward_begin` */
 static struct PH_(forward) PH_(forward_begin)(const struct H_(heap) *const h) {
 	struct PH_(forward) it; it._ = PAH_(forward_begin)(&h->_); return it; }
 /** @return The next `it` or null. @implements `forward_next` */
-static const PH_(node) *PH_(forward_next)(struct PH_(forward) *const it)
+static PH_(node_c) *PH_(forward_next)(struct PH_(forward) *const it)
 	{ return PAH_(forward_next)(&it->_); }
 #undef PAH_
 
@@ -353,7 +356,7 @@ static const char *(*PH_(heap_to_string))(const struct H_(heap) *);
 static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
 	PH_(node) unused; memset(&unused, 0, sizeof unused);
-	PH_(is_content)(0); PH_(forward_begin)(0); PH_(forward_next)(0);
+	PH_(is_element_c)(0); PH_(forward_begin)(0); PH_(forward_next)(0);
 	H_(heap)(); H_(heap_)(0); H_(heap_clear)(0); H_(heap_size)(0);
 	H_(heap_add)(0, unused); H_(heap_peek)(0); H_(heap_pop)(0);
 	H_(heap_buffer)(0, 0); H_(heap_append)(0, 0); H_(heap_affix)(0, 0);
