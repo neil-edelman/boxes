@@ -105,10 +105,11 @@ static void star_filler(struct star_tree_test *x) {
 static void star_to_string(const struct star_tree_entry_c x,
 	char (*const z)[12]) { sprintf(*z, "%.11s", *x.value); }
 
+
 /* §6.7.2.1/P11 implementation defined; hopefully it will work. This is so
  convenient, but completely unspecified; the other option is to manually
  mask-off the bits for every value, which is painful. */
-#include <stdint.h>
+#include <stdint.h> /* C99 */
 union date32 {
 	uint32_t u32;
 	struct { unsigned day : 5, month : 4, year : 23; };

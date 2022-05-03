@@ -452,7 +452,6 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 
 		{ /* Figure out where `space` and `last` are in `log size`. */
 			struct B_(tree) expl;
-
 			for(expl = *tree; ; expl.root = PB_(branch)(expl.root)
 				->child[expl.root->size], expl.height--) {
 				printf("dowhile expl %s:%u with %u size\n",
@@ -470,7 +469,7 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 		/* Verify that the argument is not smaller than the largest in tree. */
 		if(PB_(compare)(*last, x) > 0) { errno = EDOM; goto catch; }
 
-		/* One outer, and the rest inner. */
+		/* One leaf, and the rest branches. */
 		new_nodes = n = space.root ? space.height : tree->height + 2;
 		printf("new_nodes: %u, tree height %u\n", new_nodes, tree->height);
 		if(!n) {
@@ -480,13 +479,13 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 			tail->size = 0;
 			printf("new tail: %s.\n", orcify(tail));
 			while(--n) {
-				struct PB_(branch) *inner;
-				if(!(inner = malloc(sizeof *inner))) goto catch;
-				inner->base.size = 0;
-				printf("new inner: %s.\n", orcify(inner));
-				if(!head) inner->child[0] = 0, pretail = inner; /* First loop. */
-				else inner->child[0] = head; /* Not first loop. */
-				head = &inner->base;
+				struct PB_(branch) *b;
+				if(!(b = malloc(sizeof *b))) goto catch;
+				b->base.size = 0;
+				printf("new branch: %s.\n", orcify(b));
+				if(!head) b->child[0] = 0, pretail = b; /* First loop. */
+				else b->child[0] = head; /* Not first loop. */
+				head = &b->base;
 			}
 		}
 
@@ -510,7 +509,6 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 	}
 	assert(node && node->size < TREE_MAX);
 	node->x[node->size] = x;
-	/*PB_(print)(tree); uninitialized */
 #ifdef TREE_VALUE
 	return node->value + node->size++;
 #else
