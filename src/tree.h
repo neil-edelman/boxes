@@ -428,7 +428,6 @@ static void PB_(print)(const struct B_(tree) *const tree)
  @throws[EDOM] `x` is smaller than the largest key in `tree`.
  @throws[malloc] */
 static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
-	/* `node` is outer and `head` is inner up to the point where they merge. */
 	struct PB_(leaf) *node = 0, *head = 0;
 	printf("bulk():\n");
 	if(!tree) return 0;
@@ -566,11 +565,13 @@ static const char *(*PB_(tree_to_string))(const struct B_(tree) *);
 
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
+	PB_(key) k;
+	memset(&k, 0, sizeof k);
 	PB_(is_element_c); PB_(forward_begin)(0); PB_(forward_next)(0);
 	B_(tree)(); B_(tree_)(0); B_(tree_begin)(0); B_(tree_next)(0);
-	B_(tree_lower)(0, 0);
-	B_(tree_get)(0, 0);
-	B_(tree_bulk_add)(0, 0);
+	B_(tree_lower)(0, k);
+	B_(tree_get)(0, k);
+	B_(tree_bulk_add)(0, k);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }

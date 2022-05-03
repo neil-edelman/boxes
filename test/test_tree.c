@@ -105,6 +105,44 @@ static void star_filler(struct star_tree_test *x) {
 static void star_to_string(const struct star_tree_entry_c x,
 	char (*const z)[12]) { sprintf(*z, "%.11s", *x.value); }
 
+/* §6.7.2.1/P11 implementation defined; hopefully it will work. This is so
+ convenient, but completely unspecified; the other option is to manually
+ mask-off the bits for every value, which is painful. */
+#include <stdint.h>
+union date32 {
+	uint32_t u32;
+	struct { unsigned day : 5, month : 4, year : 23; };
+};
+static int entry_compare(const union date32 a, const union date32 b)
+	{ return a.u32 > b.u32; }
+struct entry_tree_test;
+static void entry_filler(struct entry_tree_test *);
+struct entry_tree_entry_c;
+static void entry_to_string(struct entry_tree_entry_c, char (*)[12]);
+#define TREE_NAME entry
+#define TREE_KEY union date32
+#define TREE_COMPARE &entry_compare
+#define TREE_VALUE int
+#define TREE_TEST &entry_filler
+#define TREE_EXPECT_TRAIT
+#include "../src/tree.h"
+#define TREE_TO_STRING &entry_to_string
+#include "../src/tree.h"
+static void entry_filler(struct entry_tree_test *test) {
+	test->x.u32 = (uint32_t)rand();
+	test->x.year %= 10000;
+	test->x.month = test->x.month % 12 + 1;
+	test->x.day = test->x.day % 31 + 1;
+	test->value = 42;
+}
+static void entry_to_string(const struct entry_tree_entry_c entry,
+	char (*const z)[12]) {
+	assert(entry.x->year < 10000 && entry.x->month && entry.x->month <= 31
+		&& entry.x->day && entry.x->day <= 31);
+	sprintf(*z, "%4u-%2.2u-%2.2u",
+		entry.x->year, entry.x->month, entry.x->day);
+}
+
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
@@ -112,5 +150,6 @@ int main(void) {
 	unsigned_tree_test();
 	pair_tree_test();
 	star_tree_test();
+	entry_tree_test();
 	return EXIT_SUCCESS;
 }

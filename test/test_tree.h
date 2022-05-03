@@ -163,12 +163,8 @@ static void PB_(test)(void) {
 	errno = 0;
 
 	/* Fill. */
-	printf("fill\n");
 	for(i = 0; i < n_size; i++) PB_(filler)(n + i);
-	printf("sort\n");
 	PB_(sort)(n, n_size);
-	/*for(i = 0; i < n_size; i++)
-		PB_(to_string)(n + i, &z), printf("%s\n", z);*/
 
 	/* Idle. */
 	PB_(valid)(0);
