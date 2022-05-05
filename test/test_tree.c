@@ -108,11 +108,11 @@ static void star_to_string(const struct star_tree_entry_c x,
 
 /* §6.7.2.1/P11 implementation defined; hopefully it will work. This is so
  convenient, but completely unspecified; the other option is to manually
- mask-off the bits for every value, which is painful. */
+ mask-off the bits for every value, and use a union name, which is painful. */
 #include <stdint.h> /* C99 */
 union date32 {
 	uint32_t u32;
-	struct { unsigned day : 5, month : 4, year : 23; };
+	struct { unsigned day : 5, month : 4, year : 23; }; /* C11 */
 };
 static int entry_compare(const union date32 a, const union date32 b)
 	{ return a.u32 > b.u32; }

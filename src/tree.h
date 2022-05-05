@@ -8,8 +8,7 @@
 
  A <tag:<B>tree> is an ordered collection of read-only <typedef:<PB>key>, and
  an optional <typedef:<PB>value> to go with them. This can be a map or set, but
- in general, it can have identical keys, (a multi-map). Internally, this is a
- B-tree, described in <Bayer, McCreight, 1972 Large>.
+ in general, it can have identical keys, (a multi-map).
 
  @param[TREE_NAME, TREE_KEY]
  `<B>` that satisfies `C` naming conventions when mangled, required, and an
@@ -32,6 +31,8 @@
  that satisfies `C` naming conventions when mangled and function implementing
  <typedef:<PSZ>to_string_fn>.
 
+ @fixme Either TREE_KEY or TREE_UNIQUE_KEY.
+
  @std C89 */
 
 #ifndef TREE_NAME
@@ -52,7 +53,7 @@
 
 #ifndef TREE_H /* <!-- idempotent */
 #define TREE_H
-#include <stddef.h> /* fixme: Wtf? stdlib and string should include it. */
+#include <stddef.h> /* fixme: stdlib, string should do it; what is going on? */
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -67,11 +68,14 @@
 #define TREE_CAT(n, m) TREE_CAT_(n, m)
 #define B_(n) TREE_CAT(TREE_NAME, n)
 #define PB_(n) TREE_CAT(tree, B_(n))
-#define TREE_MAX 2
-#if TREE_MAX < 2 || TREE_MAX > UCHAR_MAX
+/* Leaf: `TREE_MAX type`; branch: `TREE_MAX type + TREE_ORDER pointer`. */
+#define TREE_MAX 3
+/* `TREE_MAX` 2 is the theoretical minimum, but this does pre-emptive
+ splitting/merging, so must have a middle element to promote. */
+#if TREE_MAX < 3 || TREE_MAX > UCHAR_MAX
 #error TREE_MAX parameter range `[2, UCHAR_MAX]`.
 #endif
-#define TREE_ORDER (TREE_MAX + 1) /* Maximum branching factor. */
+#define TREE_ORDER (TREE_MAX + 1) /* Maximum branching factor (degree). */
 #endif /* idempotent --> */
 
 
@@ -111,21 +115,25 @@ static int PB_(default_compare)(PB_(key_c) a, PB_(key_c) b)
  <typedef:<PB>compare_fn>, if defined. */
 static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
 
-/* B-tree leaf of `TREE_ORDER`, (`TREE_MAX + 1`); the order is the maximum
- branching factor, as <Knuth, 1998 Art 3>. However, Knuth's leaves are
- imaginary in this data structure, so we use the original terminology from
- <Bayer, McCreight, 1972 Large>: leaves are height-zero nodes.
- * Every branch has at most `TREE_ORDER` children, which is at minimum three.
- * Every non-root branch has at least `\lower[TREE_ORDER/2]`, or
-   `\upper[TREE_MAX/2]` children, (except while bulk loading.)
- * Every branch has at least two children, (except while bulk loading, when
-   it has no keys, it could have one.)
- * All leaves are at the maximum depth, the zero-based height of the tree; they
-   do'n't carry links to other nodes.
- * Every branch with `k` children contains `k - 1` keys, (this is a consequence
-   of the fact that they are implicitly storing a complete binary sub-tree.)
+/* B-tree node, as <Bayer, McCreight, 1972, Large>. These rules are more lazy
+ than the original so as to not exhibit worst-case behaviour in small trees, as
+ <Johnson, Shasha, 1990, Free-at-Empty>, but lookup is potentially slower after
+ deleting; this is a design decision that nodes are not cached. In the
+ terminology of <Knuth, 1998 Art 3>,
+ * Every branch has at most `TREE_ORDER == TREE_MAX + 1` children, which is at
+   minimum three, (four with pre-emptive split.)
+ * Every non-root and non-bulk-loaded node has at least `⎣(TREE_ORDER-1)/3⎦`
+   keys.
+ * Every branch has at least one child, `k`, and contains `k - 1` keys, (this
+   is a consequence of the fact that they are implicitly storing a complete
+   binary sub-tree.)
+ * All leaves are at the maximum depth and height zero; they do'n't carry links
+   to other nodes. (The height is one less then the original paper, as
+   <Knuth, 1998 Art 3>, for computational simplicity: zero is
+   `!root | height == UINT_MAX`.)
  * There are two empty B-trees to facilitate allocation hysteresis between
-   0 -- 1: idle `{ 0, 0 }`, and `{ garbage leaf, UINT_MAX }`. */
+   0 -- 1: idle `{ 0, 0 }`, and `{ garbage leaf, UINT_MAX }`.
+ * Bulk-loading always is on the right side. */
 struct PB_(leaf) {
 	unsigned char size; /* `[0, TREE_MAX]`. */
 	PB_(key) x[TREE_MAX]; /* Cache-friendly lookup; all but one value. */
@@ -185,7 +193,8 @@ static PB_(value) *PB_(to_value)(PB_(key) *const x) { return x; }
 #endif /* !entry --> */
 
 /** To initialize it to an idle state, see <fn:<B>tree>, `TRIE_IDLE`, `{0}`
- (`C99`), or being `static`.
+ (`C99`), or being `static`. This is a B-tree, as
+ <Bayer, McCreight, 1972 Large>.
 
  ![States.](../doc/states.png) */
 struct B_(tree);
@@ -313,7 +322,7 @@ static struct PB_(iterator) PB_(begin)(struct B_(tree) *const tree) {
  element or null. @implements `next` */
 static PB_(entry) PB_(next)(struct PB_(iterator) *const it)
 	{ return assert(it), PB_(pin)(it)
-		? PB_(to_entry)(it->cur, it->idx++) : PB_(null_entry)(); }
+	? PB_(to_entry)(it->cur, it->idx++) : PB_(null_entry)(); }
 
 /** @param[tree] Can be null. @return Finds the smallest entry in `tree` that
  is not less than `no`. If `no` is higher than any of `tree`, it will be placed
@@ -342,19 +351,20 @@ static struct PB_(iterator) PB_(lower)(struct B_(tree) *const tree,
 	return it;
 }
 
-/** Frees a non-empty `tree` and it's children recursively. */
-static void PB_(clear_r)(struct B_(tree) tree) {
-	/* FIXME: This doesn't want to clear one. */
+/** Clears non-empty `tree` and it's children recursively, but doesn't put it
+ to idle or clear pointers. If `one` is valid, tries to keep one leaf. */
+static void PB_(clear_r)(struct B_(tree) tree, struct PB_(leaf) **const one) {
 	assert(tree.root);
 	if(!tree.height) {
-		free(PB_(branch)(tree.root));
+		if(one && !*one) *one = tree.root;
+		else free(tree.root);
 	} else {
 		struct B_(tree) sub;
 		unsigned i;
 		sub.height = tree.height - 1;
 		for(i = 0; i <= tree.root->size; i++)
-		sub.root = PB_(branch)(tree.root)->child[i], PB_(clear_r)(sub);
-		free(tree.root);
+			sub.root = PB_(branch)(tree.root)->child[i], PB_(clear_r)(sub, one);
+		free(PB_(branch)(tree.root));
 	}
 }
 
@@ -374,12 +384,8 @@ static void B_(tree_)(struct B_(tree) *const tree) {
 	} else if(tree->height == UINT_MAX) { /* Empty. */
 		assert(tree->root); free(tree->root);
 	} else {
-		struct B_(tree) t = *tree;
-		PB_(clear_r)(t);
+		PB_(clear_r)(*tree, 0);
 	}
-	/* fixme: Have another param of <fn:<PB>clear_r> like trie, doesn't delete
-	 one. */
-	/*struct PB_(outer_tree) *clear_all = (struct PB_(outer_tree) *)1;*/
 	*tree = B_(tree)();
 }
 
