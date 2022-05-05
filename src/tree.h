@@ -71,9 +71,12 @@
 /* Leaf: `TREE_MAX type`; branch: `TREE_MAX type + TREE_ORDER pointer`. */
 #define TREE_MAX 3
 /* `TREE_MAX` 2 is the theoretical minimum, but this does pre-emptive
- splitting/merging, so must have a middle element to promote. */
+ splitting/merging. That means it must have a middle element to promote
+ _before_ insertion; it's independent of the value. This means that odd orders,
+ (even `TREE_MAX`,) instead of balance 0, it's either 0 or 2, and would not
+ work. Even order it's always 1-unbalanced. */
 #if TREE_MAX < 3 || TREE_MAX > UCHAR_MAX
-#error TREE_MAX parameter range `[2, UCHAR_MAX]`.
+#error TREE_MAX parameter range `[3, UCHAR_MAX]`.
 #endif
 #define TREE_ORDER (TREE_MAX + 1) /* Maximum branching factor (degree). */
 #endif /* idempotent --> */
@@ -344,6 +347,11 @@ static struct PB_(iterator) PB_(lower)(struct B_(tree) *const tree,
 			m = t.root->x[mi];
 			if(PB_(compare)(x, m) > 0) a0 = mi + 1; else a1 = mi;
 		} while(a0 < a1);
+#ifdef TREE_UNIQUE_KEY
+#else
+		/* Must check left for lower keys. */
+#endif
+		/* fixme */
 		/* [!(x > m) -> x <= m] && [m <= x] -> [x == m]? */
 		if(!t.height || PB_(compare)(m, x) <= 0) break;
 	}
