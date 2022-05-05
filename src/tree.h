@@ -70,11 +70,11 @@
 #define PB_(n) TREE_CAT(tree, B_(n))
 /* Leaf: `TREE_MAX type`; branch: `TREE_MAX type + TREE_ORDER pointer`. */
 #define TREE_MAX 3
-/* `TREE_MAX` 2 is the theoretical minimum, but this does pre-emptive
- splitting/merging. That means it must have a middle element to promote
- _before_ insertion; it's independent of the value. This means that odd orders,
- (even `TREE_MAX`,) instead of balance 0, it's either 0 or 2, and would not
- work. Even order it's always 1-unbalanced. */
+/* 2 is the theoretical minimum, but this does pre-emptive splitting/merging.
+ That means it must have a middle element to promote _before_ insertion; it's
+ independent of the value added. This means that odd orders, (even `TREE_MAX`,)
+ instead of balance 0, it's either 0 or 2, and would not work. Even order it's
+ always 1-unbalanced. */
 #if TREE_MAX < 3 || TREE_MAX > UCHAR_MAX
 #error TREE_MAX parameter range `[3, UCHAR_MAX]`.
 #endif
@@ -124,18 +124,17 @@ static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
  deleting; this is a design decision that nodes are not cached. In the
  terminology of <Knuth, 1998 Art 3>,
  * Every branch has at most `TREE_ORDER == TREE_MAX + 1` children, which is at
-   minimum three, (four with pre-emptive split.)
- * Every non-root and non-bulk-loaded node has at least `⎣(TREE_ORDER-1)/3⎦`
-   keys.
+   minimum three, (four with pre-emptive operations.)
+ * Every non-root and non-bulk-loaded node has at least `⎣TREE_MAX/3⎦` keys.
  * Every branch has at least one child, `k`, and contains `k - 1` keys, (this
    is a consequence of the fact that they are implicitly storing a complete
    binary sub-tree.)
  * All leaves are at the maximum depth and height zero; they do'n't carry links
    to other nodes. (The height is one less then the original paper, as
-   <Knuth, 1998 Art 3>, for computational simplicity: zero is
-   `!root | height == UINT_MAX`.)
+   <Knuth, 1998 Art 3>, for computational simplicity.)
  * There are two empty B-trees to facilitate allocation hysteresis between
-   0 -- 1: idle `{ 0, 0 }`, and `{ garbage leaf, UINT_MAX }`.
+   0 -- 1: idle `{ 0, 0 }`, and `{ garbage leaf, UINT_MAX }`, one could test,
+   `!root | height == UINT_MAX`.
  * Bulk-loading always is on the right side. */
 struct PB_(leaf) {
 	unsigned char size; /* `[0, TREE_MAX]`. */
