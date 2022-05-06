@@ -356,6 +356,9 @@ static struct PB_(iterator) PB_(lower)(struct B_(tree) *const tree,
 			m = t.root->x[mi];
 			if(PB_(compare)(x, m) > 0) a0 = mi + 1; else a1 = mi;
 		} while(a0 < a1);
+		/*{
+			const int is_leaf = !t.height, is_equal = PB_(compare)(m, x) <= 0;
+		}*/
 #ifdef TREE_UNIQUE_KEY
 #else
 		/* fixme: Must check left for lower keys. */

@@ -145,6 +145,27 @@ static void entry_to_string(const struct entry_tree_entry_c entry,
 }
 
 
+static void manual_unsigned(void) {
+	struct unsigned_tree us = unsigned_tree();
+	size_t i;
+	unsigned *x;
+	struct unsigned_tree_iterator ti;
+	for(i = 0; i < 20; i++) if(!unsigned_tree_bulk_add(&us, 1)) goto catch;
+	tree_unsigned_graph(&us, "graph/manual.gv");
+	x = unsigned_tree_get(&us, 1), assert(x);
+	printf("x = %u\n", *x);
+	ti._ = tree_unsigned_lower(&us, 1);
+	printf("%s:%u\n", orcify(ti._.cur), ti._.idx);
+	unsigned_tree_bulk_finalize(&us);
+	tree_unsigned_graph(&us, "graph/manual-finalize.gv");
+	goto finally;
+catch:
+	perror("manual_unsigned");
+	assert(0);
+finally:
+	unsigned_tree_(&us);
+}
+
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
@@ -152,5 +173,6 @@ int main(void) {
 	pair_tree_test();
 	star_tree_test();
 	entry_tree_test();
+	manual_unsigned();
 	return EXIT_SUCCESS;
 }
