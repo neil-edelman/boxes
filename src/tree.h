@@ -76,9 +76,17 @@
  That means it must have a middle element to promote _before_ insertion; it's
  independent of the value added. This means that odd orders, (even `TREE_MAX`,)
  instead of balance 0, it's either 0 or 2, and would not work. Even order it's
- always 1-unbalanced. */
+ always 1-unbalanced, (which is better; I don't feel like doing virtual
+ functions for each case.) */
 #if TREE_MAX < 3 || TREE_MAX > UCHAR_MAX
 #error TREE_MAX parameter range `[3, UCHAR_MAX]`.
+#endif
+/* Usually this is `⌊TREE_MAX/2⌋`, the maximum, corresponding to
+ `⌈TREE_ORDER/2⌉` children. This provides hysteresis at small occupancies, in
+ the spirit of <Johnson, Shasha, 1990, Free-at-Empty>. */
+#define TREE_MIN (TREE_MAX / 3)
+#if TREE_MIN == 0 || TREE_MIN > TREE_MAX / 2
+#error TREE_MIN parameter range `[1, \floor(TREE_MAX / 2)]`.
 #endif
 #define TREE_ORDER (TREE_MAX + 1) /* Maximum branching factor (degree). */
 #endif /* idempotent --> */
@@ -342,7 +350,7 @@ static struct PB_(iterator) PB_(lower)(struct B_(tree) *const tree,
 	if(!tree || !tree->root || tree->height == UINT_MAX) return it;
 	for(t = *tree; ; t.root = PB_(branch_c)(t.root)->child[a0], t.height--) {
 		unsigned a1 = t.root->size; PB_(key) m; a0 = 0;
-		if(!a1) continue;
+		if(!a1) continue; /* Only a link to deeper; bulk-add might do this. */
 		do {
 			const unsigned mi = (a0 + a1) / 2;
 			m = t.root->x[mi];
@@ -350,10 +358,9 @@ static struct PB_(iterator) PB_(lower)(struct B_(tree) *const tree,
 		} while(a0 < a1);
 #ifdef TREE_UNIQUE_KEY
 #else
-		/* Must check left for lower keys. */
+		/* fixme: Must check left for lower keys. */
 #endif
-		/* fixme */
-		/* [!(x > m) -> x <= m] && [m <= x] -> [x == m]? */
+		/* Total order: [!(x > m) -> x <= m] && [m <= x] -> [x == m]. */
 		if(!t.height || PB_(compare)(m, x) <= 0) break;
 	}
 	it.tree = tree, it.cur = t.root, it.height = t.height, it.idx = a0;
@@ -543,6 +550,26 @@ catch:
 	return 0;
 }
 
+static void B_(tree_bulk_finalize)(struct B_(tree) *const tree) {
+	struct B_(tree) expl;
+	struct PB_(leaf) *right;
+	if(!tree || !tree->root || tree->height == UINT_MAX) return; /* Empty. */
+	for(expl = *tree; expl.height; expl.root = right, expl.height--) {
+		struct PB_(branch) *bexpl = PB_(branch)(expl.root);
+		struct PB_(leaf) *sibling
+			= (assert(bexpl->base.size), bexpl->child[expl.root->size - 1]);
+		right = bexpl->child[expl.root->size];
+		/* Either the right has met the properties of a B-tree node or the left
+		 sibling is full from bulk-loading. */
+		printf("final %s:%u with %u size\n",
+			orcify(expl.root), expl.height, expl.root->size);
+	}
+}
+
+static PB_(value) *B_(tree_add)(struct B_(tree) *const tree, PB_(key) x) {
+	return 0;
+}
+
 #if 0
 /** Updates or adds a pointer to `x` into `trie`.
  @param[eject] If not null, on success it will hold the overwritten value or
@@ -584,7 +611,7 @@ static void PB_(unused_base)(void) {
 	B_(tree)(); B_(tree_)(0); B_(tree_begin)(0); B_(tree_next)(0);
 	B_(tree_lower)(0, k);
 	B_(tree_get)(0, k);
-	B_(tree_bulk_add)(0, k);
+	B_(tree_bulk_add)(0, k); B_(tree_bulk_finalize)(0); B_(tree_add)(0, k);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }

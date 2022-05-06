@@ -191,6 +191,7 @@ static void PB_(test)(void) {
 		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u.gv", ++PB_(no));
 		PB_(graph)(&tree, fn);
 	}
+	B_(tree_bulk_finalize)(&tree);
 	/* Iteration. */
 	it = B_(tree_begin)(&tree), i = 0;
 	/*while(entry = B_(tree_next)(it)) i++;
