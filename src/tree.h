@@ -32,6 +32,8 @@
  <typedef:<PSZ>to_string_fn>.
 
  @fixme Either TREE_KEY or TREE_UNIQUE_KEY.
+ @fixme It would be probably easy to turn this into an order statistic tree,
+ (but annoying.)
 
  @std C89 */
 
