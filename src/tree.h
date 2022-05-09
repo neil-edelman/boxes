@@ -226,7 +226,8 @@ struct PB_(forward) {
 	const struct B_(tree) *tree;
 	struct { const struct PB_(leaf) *sub; unsigned height, idx; } pos;
 };
-/** @return Whether it is addressing a valid item. */
+/** Start the iteration or, if off the end of a node, go to the next node.
+ @return Whether it is addressing a valid item. */
 static int PB_(forward_pin)(struct PB_(forward) *const it) {
 	unsigned a0;
 	struct B_(tree) t, next;
