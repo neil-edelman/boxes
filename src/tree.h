@@ -344,17 +344,17 @@ static struct PB_(iterator) PB_(lower_r)(struct B_(tree) *const tree,
 	struct B_(tree) t;
 	struct PB_(iterator) it;
 	unsigned a0;
-	printf("**entered lower_r** {\n");
+	/*printf("**entered lower_r** {\n");*/
 	for(t = *tree; ; t.root = PB_(branch_c)(t.root)->child[a0], t.height--) {
 		unsigned a1 = t.root->size;
-		printf("lower_r: node %s height %u.\n", orcify(t.root), t.height);
+		/*printf("lower_r: node %s height %u.\n", orcify(t.root), t.height);*/
 		if(!(a0 = 0, a1)) continue; /* No nodes; bulk-add? */
 		do {
 			const unsigned m = a0 + (a1 - a0) / 2; /* +1 un-needed op? */
 			if(PB_(compare)(x, t.root->x[m]) > 0) a0 = m + 1; else a1 = m;
 		} while(a0 < a1);
-		if(!t.height) { printf("lower_r: leaf\n"); break; } /* Leaf node. */
-		if(a0 == t.root->size) { printf("lower_r: off\n"); continue; } /* Off the end of the node. */
+		if(!t.height) { /*printf("lower_r: leaf\n");*/ break; } /* Leaf node. */
+		if(a0 == t.root->size) { /*printf("lower_r: off\n");*/ continue; } /* Off the end of the node. */
 		if(PB_(compare)(t.root->x[a0], x) <= 0) { /* Total order: equals. */
 #ifdef TREE_UNIQUE_KEY
 #error TREE_UNIQUE_KEY doesn't exist yet.
@@ -371,7 +371,7 @@ static struct PB_(iterator) PB_(lower_r)(struct B_(tree) *const tree,
 		}
 	}
 	it.tree = tree, it.cur = t.root, it.height = t.height, it.idx = a0;
-	printf("**%s:%u** }\n", orcify(it.cur), it.idx);
+	/*printf("**%s:%u** }\n", orcify(it.cur), it.idx);*/
 	return it;
 }
 

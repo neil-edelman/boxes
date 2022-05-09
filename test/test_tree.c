@@ -185,10 +185,10 @@ finally:
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	/*unsigned_tree_test();
+	unsigned_tree_test();
 	pair_tree_test();
 	star_tree_test();
-	entry_tree_test();*/
+	entry_tree_test();
 	manual_unsigned();
 	return EXIT_SUCCESS;
 }
