@@ -146,33 +146,49 @@ static void entry_to_string(const struct entry_tree_entry_c entry,
 
 
 static void manual_unsigned(void) {
-	struct unsigned_tree us = unsigned_tree();
+	struct unsigned_tree equal = unsigned_tree(), step = unsigned_tree();
 	size_t i;
 	unsigned *x;
 	struct unsigned_tree_iterator ti;
-	for(i = 0; i < 20; i++) if(!unsigned_tree_bulk_add(&us, 1)) goto catch;
-	tree_unsigned_graph(&us, "graph/manual.gv");
-	x = unsigned_tree_get(&us, 1), assert(x);
-	printf("x = %u\n", *x);
-	ti._ = tree_unsigned_lower(&us, 1);
-	printf("%s:%u\n", orcify(ti._.cur), ti._.idx);
-	unsigned_tree_bulk_finalize(&us);
-	tree_unsigned_graph(&us, "graph/manual-finalize.gv");
+
+	for(i = 0; i < 5; i++) if(!unsigned_tree_bulk_add(&equal, 0)) goto catch;
+	for(i = 0; i < 15; i++) if(!unsigned_tree_bulk_add(&equal, 1)) goto catch;
+	tree_unsigned_graph(&equal, "graph/manual-equal.gv");
+	x = unsigned_tree_get(&equal, 1), assert(x);
+	printf("equal: x = %u\n", *x);
+	ti._ = tree_unsigned_lower(&equal, 1);
+	printf("equal: %s:%u\n", orcify(ti._.cur), ti._.idx);
+
+	if(!unsigned_tree_bulk_add(&step, 100)
+		|| !unsigned_tree_bulk_add(&step, 200)
+		|| !unsigned_tree_bulk_add(&step, 300)) goto catch;
+	tree_unsigned_graph(&step, "graph/manual-step.gv");
+	ti._ = tree_unsigned_lower(&step, 50);
+	printf("step: 50: %s:%u\n", orcify(ti._.cur), ti._.idx);
+	ti._ = tree_unsigned_lower(&step, 150);
+	printf("step: 150: %s:%u\n", orcify(ti._.cur), ti._.idx);
+	ti._ = tree_unsigned_lower(&step, 250);
+	printf("step: 250: %s:%u\n", orcify(ti._.cur), ti._.idx);
+	ti._ = tree_unsigned_lower(&step, 350);
+	printf("step: 350: %s:%u\n", orcify(ti._.cur), ti._.idx);
+	unsigned_tree_bulk_finalize(&equal);
+	tree_unsigned_graph(&equal, "graph/manual-finalize.gv");
 	goto finally;
 catch:
 	perror("manual_unsigned");
 	assert(0);
 finally:
-	unsigned_tree_(&us);
+	unsigned_tree_(&equal);
+	unsigned_tree_(&step);
 }
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	unsigned_tree_test();
+	/*unsigned_tree_test();
 	pair_tree_test();
 	star_tree_test();
-	entry_tree_test();
+	entry_tree_test();*/
 	manual_unsigned();
 	return EXIT_SUCCESS;
 }

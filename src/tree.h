@@ -336,13 +336,55 @@ static PB_(entry) PB_(next)(struct PB_(iterator) *const it)
 	{ return assert(it), PB_(pin)(it)
 	? PB_(to_entry)(it->cur, it->idx++) : PB_(null_entry)(); }
 
-/** @param[tree] Can be null. @return Finds the smallest entry in `tree` that
- is not less than `no`. If `no` is higher than any of `tree`, it will be placed
- just passed the end. @order \O(\log |`tree`|)
+#include "../test/orcish.h"
+
+/** Assume `tree` and `x` are checked for non-empty validity. */
+static struct PB_(iterator) PB_(lower_r)(struct B_(tree) *const tree,
+	const PB_(key) x) {
+	struct B_(tree) t;
+	struct PB_(iterator) it;
+	unsigned a0;
+	printf("**entered lower_r** {\n");
+	for(t = *tree; ; t.root = PB_(branch_c)(t.root)->child[a0], t.height--) {
+		unsigned a1 = t.root->size;
+		printf("lower_r: node %s height %u.\n", orcify(t.root), t.height);
+		if(!(a0 = 0, a1)) continue; /* No nodes; bulk-add? */
+		do {
+			const unsigned m = a0 + (a1 - a0) / 2; /* +1 un-needed op? */
+			if(PB_(compare)(x, t.root->x[m]) > 0) a0 = m + 1; else a1 = m;
+		} while(a0 < a1);
+		if(!t.height) { printf("lower_r: leaf\n"); break; } /* Leaf node. */
+		if(a0 == t.root->size) { printf("lower_r: off\n"); continue; } /* Off the end of the node. */
+		if(PB_(compare)(t.root->x[a0], x) <= 0) { /* Total order: equals. */
+#ifdef TREE_UNIQUE_KEY
+#error TREE_UNIQUE_KEY doesn't exist yet.
+#else
+			/* Search for lower index values. */
+			struct PB_(iterator) res;
+			struct B_(tree) sub;
+			sub.root = PB_(branch_c)(t.root)->child[a0];
+			sub.height = t.height - 1;
+			if((res = PB_(lower_r)(&sub, x)).idx < res.cur->size)
+				t.root = res.cur, t.height = res.height, a0 = res.idx;
+#endif
+			break;
+		}
+	}
+	it.tree = tree, it.cur = t.root, it.height = t.height, it.idx = a0;
+	printf("**%s:%u** }\n", orcify(it.cur), it.idx);
+	return it;
+}
+
+/** @param[tree] Can be null. @return Lower bound of `x` in `tree`.
+ @order \O(\log |`tree`|)
  @fixme Test with all the same value on multiple levels; I suspect it will
  return the closest lower in the node, not the global lower bound. */
 static struct PB_(iterator) PB_(lower)(struct B_(tree) *const tree,
 	const PB_(key) x) {
+	if(!tree || !tree->root || tree->height == UINT_MAX)
+		{ struct PB_(iterator) it; it.tree = 0; return it; }
+	return PB_(lower_r)(tree, x);
+#if 0
 	struct B_(tree) t;
 	struct PB_(iterator) it;
 	unsigned a0;
@@ -352,22 +394,27 @@ static struct PB_(iterator) PB_(lower)(struct B_(tree) *const tree,
 		unsigned a1 = t.root->size; PB_(key) m; a0 = 0;
 		if(!a1) continue; /* Only a link to deeper; bulk-add might do this. */
 		do {
-			const unsigned mi = (a0 + a1) / 2;
+			const unsigned mi = a0 + (a1 - a0) / 2; /* +1 unneeded? */
 			m = t.root->x[mi];
 			if(PB_(compare)(x, m) > 0) a0 = mi + 1; else a1 = mi;
 		} while(a0 < a1);
-		/*{
-			const int is_leaf = !t.height, is_equal = PB_(compare)(m, x) <= 0;
-		}*/
-#ifdef TREE_UNIQUE_KEY
-#else
-		/* fixme: Must check left for lower keys. */
-#endif
+		if(!t.height) break;
 		/* Total order: [!(x > m) -> x <= m] && [m <= x] -> [x == m]. */
-		if(!t.height || PB_(compare)(m, x) <= 0) break;
+		if(PB_(compare)(m, x) <= 0) {
+#ifdef TREE_UNIQUE_KEY
+#error TREE_UNIQUE_KEY doesn't exist yet.
+			break;
+#else
+			/* Check left child for lower keys. */
+			PB_(lower_r)(tree, x);
+			printf("lower: shorted height %u.\n", t.height);
+			break;
+#endif
+		}
 	}
 	it.tree = tree, it.cur = t.root, it.height = t.height, it.idx = a0;
 	return it;
+#endif
 }
 
 /** Clears non-empty `tree` and it's children recursively, but doesn't put it
@@ -454,19 +501,19 @@ static void PB_(print)(const struct B_(tree) *const tree)
  @throws[malloc] */
 static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 	struct PB_(leaf) *node = 0, *head = 0;
-	printf("bulk():\n");
+	/*printf("bulk():\n");*/
 	if(!tree) return 0;
 	if(!tree->root) { /* Idle tree. */
 		assert(!tree->height);
 		if(!(node = malloc(sizeof *node))) goto catch;
 		node->size = 0;
 		tree->root = node;
-		printf("Idle tree: new %s.\n", orcify(node));
+		/*printf("Idle tree: new %s.\n", orcify(node));*/
 	} else if(tree->height == UINT_MAX) { /* Empty tree. */
 		tree->height = 0;
 		node = tree->root;
 		node->size = 0;
-		printf("Empty tree, %s.\n", orcify(node));
+		/*printf("Empty tree, %s.\n", orcify(node));*/
 	} else {
 		struct B_(tree) space = { 0, 0 }; /* Furthest node with space. */
 		PB_(key) *last = 0; /* Key of the last for comparing with arg. */
@@ -479,16 +526,16 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 			struct B_(tree) expl;
 			for(expl = *tree; ; expl.root = PB_(branch)(expl.root)
 				->child[expl.root->size], expl.height--) {
-				printf("dowhile expl %s:%u with %u size\n",
-					orcify(expl.root), expl.height, expl.root->size);
+				/*printf("dowhile expl %s:%u with %u size\n",
+					orcify(expl.root), expl.height, expl.root->size);*/
 				if(expl.root->size < TREE_MAX) space = expl;
 				if(expl.root->size) last = expl.root->x + expl.root->size - 1;
 				if(!expl.height) break;
 			}
 			assert(last); /* Else it would be empty and we would not be here. */
-			printf("dowhile expl finished %s:%u, last: %u, space %s:%u\n",
-				orcify(expl.root), expl.height, 0/**last*/,
-				orcify(space.root), space.height);
+			/*printf("dowhile expl finished %s:%u, space %s:%u\n",
+				orcify(expl.root), expl.height,
+				orcify(space.root), space.height);*/
 		}
 
 		/* Verify that the argument is not smaller than the largest in tree. */
@@ -496,18 +543,18 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 
 		/* One leaf, and the rest branches. */
 		new_nodes = n = space.root ? space.height : tree->height + 2;
-		printf("new_nodes: %u, tree height %u\n", new_nodes, tree->height);
+		/*printf("new_nodes: %u, tree height %u\n", new_nodes, tree->height);*/
 		if(!n) {
 			node = space.root;
 		} else {
 			if(!(node = tail = malloc(sizeof *tail))) goto catch;
 			tail->size = 0;
-			printf("new tail: %s.\n", orcify(tail));
+			/*printf("new tail: %s.\n", orcify(tail));*/
 			while(--n) {
 				struct PB_(branch) *b;
 				if(!(b = malloc(sizeof *b))) goto catch;
 				b->base.size = 0;
-				printf("new branch: %s.\n", orcify(b));
+				/*printf("new branch: %s.\n", orcify(b));*/
 				if(!head) b->child[0] = 0, pretail = b; /* First loop. */
 				else b->child[0] = head; /* Not first loop. */
 				head = &b->base;
@@ -519,15 +566,15 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 		else head = node;
 		if(!space.root) { /* Add tree to head. */
 			struct PB_(branch) *const inner = PB_(branch)(head);
-			printf("adding the existing root, %s to %s\n",
-				orcify(tree->root), orcify(head));
+			/*printf("adding the existing root, %s to %s\n",
+				orcify(tree->root), orcify(head));*/
 			assert(new_nodes > 1);
 			inner->child[1] = inner->child[0], inner->child[0] = tree->root;
 			node = tree->root = head, tree->height++;
 		} else if(space.height) { /* Add head to tree. */
 			struct PB_(branch) *const inner = PB_(branch)(node = space.root);
-			printf("adding the linked list, %s to %s at %u\n",
-				orcify(head), orcify(inner), inner->base.size + 1);
+			/*printf("adding the linked list, %s to %s at %u\n",
+				orcify(head), orcify(inner), inner->base.size + 1);*/
 			assert(new_nodes);
 			inner->child[inner->base.size + 1] = head;
 		}
@@ -540,11 +587,11 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 	return node->x + node->size++;
 #endif
 catch:
-	printf("!!! freeing %s\n", orcify(node));
+	/*printf("!!! freeing %s\n", orcify(node));*/
 	free(node);
 	if(head) for( ; ; ) {
 		struct PB_(leaf) *const next = PB_(branch)(head)->child[0];
-		printf("!!! freeing %s\n", orcify(head));
+		/*printf("!!! freeing %s\n", orcify(head));*/
 		free(head);
 		if(!next) break;
 		head = next;
