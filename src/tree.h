@@ -221,11 +221,10 @@ static int PB_(is_element_c)(PB_(entry_c) e) {
 	return !!e;
 #endif
 }
-/* @implements `forward` */
+/* A constant iterator. @implements `forward` */
 struct PB_(forward) {
 	const struct B_(tree) *tree;
-	struct PB_(position_c) { const struct PB_(leaf) *sub;
-		unsigned height, idx; } pos;
+	struct { const struct PB_(leaf) *sub; unsigned height, idx; } pos;
 };
 /** @return Whether it is addressing a valid item. */
 static int PB_(forward_pin)(struct PB_(forward) *const it) {
@@ -284,9 +283,11 @@ static int PB_(is_element)(const PB_(entry) e) {
 	return !!e;
 #endif
 }
+/* A certain position and the top level tree for backtracking.
+ @implements `iterator` */
 struct PB_(iterator) {
 	struct B_(tree) *tree;
-	struct PB_(position) { struct PB_(leaf) *sub; unsigned height, idx; } pos;
+	struct PB_(bundle) { struct PB_(leaf) *sub; unsigned height, idx; } pos;
 };
 /** @return Whether it is addressing a valid item. */
 static int PB_(pin)(struct PB_(iterator) *const it) {
@@ -338,9 +339,9 @@ static PB_(entry) PB_(next)(struct PB_(iterator) *const it)
 #include "../test/orcish.h"
 
 /** Assume `tree` and `x` are checked for non-empty validity. */
-static struct PB_(position) PB_(lower_r)(struct B_(tree) *const tree,
+static struct PB_(bundle) PB_(lower_r)(struct B_(tree) *const tree,
 	const PB_(key) x) {
-	struct PB_(position) lo;
+	struct PB_(bundle) lo;
 	/*printf("**entered lower_r** {\n");*/
 	for(lo.sub = tree->root, lo.height = tree->height; ;
 		lo.sub = PB_(branch_c)(lo.sub)->child[lo.idx], lo.height--) {
@@ -359,18 +360,16 @@ static struct PB_(position) PB_(lower_r)(struct B_(tree) *const tree,
 #ifdef TREE_UNIQUE_KEY
 #error TREE_UNIQUE_KEY doesn't exist yet.
 #else
-			/* Search for lower index values. */
-			struct PB_(position) res;
+			/* Lower indices with the same value in the left child? */
+			struct PB_(bundle) res;
 			struct B_(tree) sub;
 			sub.root = PB_(branch_c)(lo.sub)->child[lo.idx];
 			sub.height = lo.height - 1;
 			if((res = PB_(lower_r)(&sub, x)).idx < res.sub->size) lo = res;
-				/*t.root = res.p.sub, t.height = res.height, a0 = res.idx;*/
 #endif
 			break;
 		}
 	}
-	/*pos.sub = t.root, it.height = t.height, it.p.idx = a0;*/
 	/*printf("**%s:%u** }\n", orcify(it.p.sub), it.p.idx);*/
 	return lo;
 }
