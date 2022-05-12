@@ -187,11 +187,18 @@ static void PB_(test)(void) {
 #ifdef TREE_VALUE
 		*value = e->value;
 #endif
-		/*PB_(to_string)(PB_(to_entry)(??));*/
 		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u.gv", ++PB_(no));
 		PB_(graph)(&tree, fn);
 	}
 	B_(tree_bulk_finalize)(&tree);
+	printf("Finalize again.\n");
+	B_(tree_bulk_finalize)(&tree); /* This should be idempotent. */
+	{
+		char fn[64];
+		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u-finalized.gv", ++PB_(no));
+		PB_(graph)(&tree, fn);
+	}
+
 	/* Iteration. */
 	it = B_(tree_begin)(&tree), i = 0;
 	/*while(entry = B_(tree_next)(it)) i++;

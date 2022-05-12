@@ -239,7 +239,8 @@ static int PB_(forward_pin)(struct PB_(forward) *const it) {
 		it->pos.sub = it->tree->root, assert(it->pos.sub),
 			it->pos.height = it->tree->height, it->pos.idx = 0;
 		while(it->pos.height) it->pos.height--,
-			it->pos.sub = PB_(branch_c)(it->pos.sub)->child[0], assert(it->pos.sub);
+			it->pos.sub = PB_(branch_c)(it->pos.sub)->child[0],
+			assert(it->pos.sub);
 	}
 	if(it->pos.idx < it->pos.sub->size) return 1; /* Likely. */
 	if(!it->pos.sub->size) return 0; /* The empty nodes are always at the end. */
@@ -302,7 +303,8 @@ static int PB_(pin)(struct PB_(iterator) *const it) {
 		it->pos.sub = it->tree->root, assert(it->pos.sub),
 			it->pos.height = it->tree->height, it->pos.idx = 0;
 		while(it->pos.height) it->pos.height--,
-			it->pos.sub = PB_(branch_c)(it->pos.sub)->child[0], assert(it->pos.sub);
+			it->pos.sub = PB_(branch_c)(it->pos.sub)->child[0],
+			assert(it->pos.sub);
 	}
 	if(it->pos.idx < it->pos.sub->size) return 1; /* Likely. */
 	if(!it->pos.sub->size) return 0; /* Empty nodes are always at the end. */
@@ -376,9 +378,7 @@ static struct PB_(bundle) PB_(lower_r)(struct B_(tree) *const tree,
 }
 
 /** @param[tree] Can be null. @return Lower bound of `x` in `tree`.
- @order \O(\log |`tree`|)
- @fixme Test with all the same value on multiple levels; I suspect it will
- return the closest lower in the node, not the global lower bound. */
+ @order \O(\log |`tree`|) */
 static struct PB_(iterator) PB_(lower)(struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct PB_(iterator) it;
@@ -443,8 +443,8 @@ static size_t B_(trie_size)(const struct B_(trie_iterator) *const it)
 #endif
 
 /** @param[tree] Can be null. @return Finds the smallest entry in `tree` that
- is not less than `x`. If `x` is higher than any of `tree`, it will be placed
- just passed the end. @order \O(\log |`tree`|) @allow */
+ is at the lower bound of `x`. If `x` is higher than any of `tree`, it will be
+ placed just passed the end. @order \O(\log |`tree`|) @allow */
 static struct B_(tree_iterator) B_(tree_lower)(struct B_(tree) *const tree,
 	const PB_(key) x)
 	{ struct B_(tree_iterator) it; it._ = PB_(lower)(tree, x); return it; }
@@ -570,18 +570,54 @@ catch:
 }
 
 static void B_(tree_bulk_finalize)(struct B_(tree) *const tree) {
-	struct B_(tree) expl;
+	struct B_(tree) p;
 	struct PB_(leaf) *right;
+	printf("tree_bulk_finalize(%s) number of nodes [%u, %u]\n",
+		orcify(tree), TREE_MIN, TREE_MAX);
 	if(!tree || !tree->root || tree->height == UINT_MAX) return; /* Empty. */
-	for(expl = *tree; expl.height; expl.root = right, expl.height--) {
-		struct PB_(branch) *bexpl = PB_(branch)(expl.root);
-		struct PB_(leaf) *sibling
-			= (assert(bexpl->base.size), bexpl->child[expl.root->size - 1]);
-		right = bexpl->child[expl.root->size];
+	for(p = *tree; p.height; p.root = right, p.height--) {
+		unsigned distribute, right_want, take_sibling;
+		struct PB_(branch) *parent = PB_(branch)(p.root);
+		struct PB_(leaf) *sibling = (assert(parent->base.size),
+			parent->child[parent->base.size - 1]);
+		right = parent->child[parent->base.size];
+		printf("initial parent node %s:%u with %u size, children %s and %s.\n",
+			orcify(p.root), p.height, p.root->size,
+			orcify(sibling), orcify(right));
+		if(right->size >= TREE_MIN) { printf("cool\n"); continue; }
+		distribute = sibling->size + right->size;
+		right_want = distribute / 2;
+		take_sibling = right_want - right->size - 1;
 		/* Either the right has met the properties of a B-tree node or the left
 		 sibling is full from bulk-loading. */
-		printf("final %s:%u with %u size\n",
-			orcify(expl.root), expl.height, expl.root->size);
+		assert(sibling->size == TREE_MAX
+			&& distribute >= 2 * TREE_MIN && right_want >= TREE_MIN);
+		/* Move one node from the parent. */
+		memcpy(right->x + right->size, parent->base.x + parent->base.size - 1,
+			sizeof *right->x);
+#ifdef TREE_VALUE
+		memcpy(right->value + right->size,
+			parent->base.value + parent->base.size - 1, sizeof *right->value);
+#endif
+		right->size++;
+		/* Move the others from the sibling. */
+		memcpy(right->x + right->size, sibling->x + take_sibling,
+			sizeof *right->x * take_sibling);
+#ifdef TREE_VALUE
+		memcpy(right->value + right->size, sibling->value + take_sibling,
+			sizeof *right->value * take_sibling);
+#endif
+		right->size += take_sibling, assert(right->size == right_want);
+		sibling->size -= take_sibling;
+		/* The parent is now the sibling's key. */
+		memcpy(parent->base.x + parent->base.size - 1,
+			sibling->x + sibling->size - 1, sizeof *right->x);
+#ifdef TREE_VALUE
+		memcpy(parent->base.value + parent->base.size - 1,
+			sibling->value + sibling->size - 1, sizeof *right->value);
+#endif
+		sibling->size--;
+		printf("redistributed\n");
 	}
 }
 
