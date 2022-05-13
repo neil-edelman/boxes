@@ -190,9 +190,9 @@ static void PB_(test)(void) {
 		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u.gv", ++PB_(no));
 		PB_(graph)(&tree, fn);
 	}
-	B_(tree_bulk_finalize)(&tree);
+	B_(tree_bulk_finish)(&tree);
 	printf("Finalize again.\n");
-	B_(tree_bulk_finalize)(&tree); /* This should be idempotent. */
+	B_(tree_bulk_finish)(&tree); /* This should be idempotent. */
 	{
 		char fn[64];
 		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u-finalized.gv", ++PB_(no));
