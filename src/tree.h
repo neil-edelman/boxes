@@ -275,7 +275,7 @@ static struct PB_(forward) PB_(forward_begin)(const struct B_(tree) *const
  element or null. @implements `forward_next` */
 static PB_(entry_c) PB_(forward_next)(struct PB_(forward) *const it)
 	{ return assert(it), PB_(forward_pin)(it)
-		? PB_(to_entry_c)(it->end.leaf, it->end.idx++) : PB_(null_entry_c)(); }
+	? PB_(to_entry_c)(it->end.leaf, it->end.idx++) : PB_(null_entry_c)(); }
 
 #define BOX_ITERATOR PB_(entry)
 /** Is `x` not null? @implements `is_element` */
@@ -344,23 +344,22 @@ static PB_(entry) PB_(next)(struct PB_(iterator) *const it)
 
 /** Assume `tree` and `x` are checked for non-empty validity. */
 static struct PB_(end) PB_(lower_r)(struct B_(tree) *const tree,
-	const PB_(key) x) {
+	const PB_(key) x, struct PB_(leaf) **const unfull) {
 	struct PB_(end) lo;
-	/*printf("**entered lower_r** {\n");*/
 	for(lo.leaf = tree->root, lo.height = tree->height; ;
 		lo.leaf = PB_(branch_c)(lo.leaf)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.leaf->size;
-		/*printf("lower_r: node %s height %u.\n", orcify(t.root), t.height);*/
 		lo.idx = 0;
+		if(unfull && hi < TREE_MAX) *unfull = lo.leaf;
 		if(!hi) continue; /* No nodes; bulk-add? */
 		do {
 			const unsigned mid = lo.idx + (hi - lo.idx) / 2; /* Un-needed op? */
 			if(PB_(compare)(x, lo.leaf->x[mid]) > 0) lo.idx = mid + 1;
 			else hi = mid;
 		} while(lo.idx < hi);
-		if(!lo.height) { /*printf("lower_r: leaf\n");*/ break; } /* Leaf node. */
-		if(lo.idx == lo.leaf->size) { /*printf("lower_r: off\n");*/ continue; } /* Off the end. */
-		if(PB_(compare)(lo.leaf->x[lo.idx], x) <= 0) { /* Total order: equals. */
+		if(!lo.height) break; /* Leaf node. */
+		if(lo.idx == lo.leaf->size) continue; /* Off the end. */
+		if(PB_(compare)(lo.leaf->x[lo.idx], x) <= 0) { /* Total order equals. */
 #ifdef TREE_UNIQUE_KEY
 #error TREE_UNIQUE_KEY doesn't exist yet.
 #else
@@ -369,12 +368,12 @@ static struct PB_(end) PB_(lower_r)(struct B_(tree) *const tree,
 			struct B_(tree) sub;
 			sub.root = PB_(branch_c)(lo.leaf)->child[lo.idx];
 			sub.height = lo.height - 1;
-			if((res = PB_(lower_r)(&sub, x)).idx < res.leaf->size) lo = res;
+			if((res = PB_(lower_r)(&sub, x, unfull)).idx < res.leaf->size)
+				lo = res;
 #endif
 			break;
 		}
 	}
-	/*printf("**%s:%u** }\n", orcify(it.p.sub), it.p.idx);*/
 	return lo;
 }
 
@@ -384,7 +383,7 @@ static struct PB_(iterator) PB_(lower)(struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct PB_(iterator) it;
 	if(!tree || !tree->root || tree->height == UINT_MAX) return it.tree = 0, it;
-	return it.tree = tree, it.end = PB_(lower_r)(tree, x), it;
+	return it.tree = tree, it.end = PB_(lower_r)(tree, x, 0), it;
 }
 
 /** Clears non-empty `tree` and it's children recursively, but doesn't put it
@@ -625,9 +624,21 @@ static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 
 
 
+
+
+
 static PB_(value) *B_(tree_add)(struct B_(tree) *const tree, PB_(key) x) {
+	struct PB_(end) end;
+	struct PB_(leaf) *unfull;
+	if(!tree || !tree->root || tree->height == UINT_MAX) return 0;
+	end = PB_(lower_r)(tree, x, &unfull);
 	return 0;
 }
+
+
+
+
+
 
 #if 0
 /** Updates or adds a pointer to `x` into `trie`.
