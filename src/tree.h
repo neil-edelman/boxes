@@ -7,16 +7,17 @@
  @subtitle Ordered tree
 
  A <tag:<B>tree> is an ordered collection of read-only <typedef:<PB>key>, and
- an optional <typedef:<PB>value> to go with them. This can be a map or set, but
- in general, it can have identical keys, (a multi-map).
+ an optional <typedef:<PB>value> to go with them.
 
- @param[TREE_NAME, TREE_KEY]
- `<B>` that satisfies `C` naming conventions when mangled, required, and an
- integral type, <typedef:<PB>key>, whose default is `unsigned int`. `<PB>` is
- private, whose names are prefixed in a manner to avoid collisions.
+ @param[TREE_NAME, TREE_KEY, TREE_UNIQUE_KEY] TREE_MULTIKEY?
+ `<B>` that satisfies `C` naming conventions when mangled, required, and one of
+ `TREE_KEY` or `TREE_UNIQUE_KEY`, a comparable type, <typedef:<PB>key>. Thus
+ this can be a multi-set/map or set, respectively. `<PB>` is private, whose names
+ are prefixed in a manner to avoid collisions.
 
  @param[TREE_VALUE]
  `TRIE_VALUE` is an optional payload to go with the type, <typedef:<PB>value>.
+ The makes it a map instead of a set.
 
  @param[TREE_COMPARE]
  A function satisfying <typedef:<PB>compare_fn>. Defaults to ascending order.
@@ -38,8 +39,8 @@
 
  @std C89 */
 
-#ifndef TREE_NAME
-#error Name TREE_NAME undefined.
+#if !defined(TREE_NAME) || defined(TREE_KEY) && defined(TREE_UNIQUE_KEY)
+#error Name TREE_NAME undefined or TREE_KEY and TREE_UNIQUE_KEY both defined.
 #endif
 #if defined(TREE_TO_STRING_NAME) || defined(TREE_TO_STRING)
 #define TREE_TO_STRING_TRAIT 1
@@ -83,8 +84,9 @@
 #error TREE_MAX parameter range `[3, UCHAR_MAX]`.
 #endif
 /* Usually this is `⌊TREE_MAX/2⌋`, the maximum, corresponding to
- `⌈TREE_ORDER/2⌉` children. This provides hysteresis at small occupancies, in
- the spirit of <Johnson, Shasha, 1990, Free-at-Empty>. */
+ `⌈TREE_ORDER/2⌉` children. Any smaller value provides hysteresis in the spirit
+ of <Johnson, Shasha, 1990, Free-at-Empty>, and is less-eager than the original.
+ We don't get worse-case at small occupancies, but worse worse-case at large. */
 #define TREE_MIN (TREE_MAX / 3)
 #if TREE_MIN == 0 || TREE_MIN > TREE_MAX / 2
 #error TREE_MIN parameter range `[1, \floor(TREE_MAX / 2)]`.
@@ -99,9 +101,9 @@
 #ifndef TREE_KEY
 #define TREE_KEY unsigned
 #endif
-/** A comparable type, defaults to `unsigned`. Note that `key` is used loosely;
- there can be multiple keys with the same value stored in the same
- <tag:<B>tree>, if one chooses. */
+/* fixme ...TREE_UNIQUE_KEY */
+
+/** A comparable type, defaults to multi-valued `unsigned`. */
 typedef TREE_KEY PB_(key);
 typedef const TREE_KEY PB_(key_c);
 
@@ -136,7 +138,8 @@ static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
  terminology of <Knuth, 1998 Art 3>,
  * Every branch has at most `TREE_ORDER == TREE_MAX + 1` children, which is at
    minimum three, (four with pre-emptive operations.)
- * Every non-root and non-bulk-loaded node has at least `⎣TREE_MAX/3⎦` keys.
+ * Every non-root and non-bulk-loaded node has at least
+   `TREE_MIN = ⎣TREE_MAX/3⎦` keys.
  * Every branch has at least one child, `k`, and contains `k - 1` keys, (this
    is a consequence of the fact that they are implicitly storing a complete
    binary sub-tree.)
@@ -145,7 +148,7 @@ static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
    <Knuth, 1998 Art 3>, for computational simplicity.)
  * There are two empty B-trees to facilitate allocation hysteresis between
    0 -- 1: idle `{ 0, 0 }`, and `{ garbage leaf, UINT_MAX }`, one could test,
-   `!root | height == UINT_MAX`.
+   `!root || height == UINT_MAX`.
  * Bulk-loading always is on the right side. */
 struct PB_(leaf) {
 	unsigned char size; /* `[0, TREE_MAX]`. */
@@ -312,6 +315,7 @@ static int PB_(pin)(struct PB_(iterator) *const it) {
 		int cmp; unsigned a1 = t.root->size; a0 = 0;
 		while(a0 < a1) {
 			const unsigned m = (a0 + a1) / 2;
+			/* @fixme Iterator doesn't work with two-levels of equal keys. */
 			cmp = PB_(compare)(x, t.root->x[m]);
 			if(cmp > 0) a0 = m + 1; else a1 = m;
 		}
@@ -354,9 +358,7 @@ static struct PB_(end) PB_(lower_r)(struct B_(tree) *const tree,
 		if(!lo.height) break; /* Leaf node. */
 		if(lo.idx == lo.node->size) continue; /* Off the end. */
 		if(PB_(compare)(lo.node->x[lo.idx], x) <= 0) { /* Total order equals. */
-#ifdef TREE_UNIQUE_KEY
-#error TREE_UNIQUE_KEY doesn't exist yet.
-#else
+#ifndef TREE_UNIQUE_KEY
 			/* Lower indices with the same value in the left child? */
 			struct PB_(end) res;
 			struct B_(tree) sub;

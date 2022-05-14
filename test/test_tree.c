@@ -190,6 +190,8 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	unsigned_tree_test();
 	pair_tree_test();
+	/* 649516 fails with two levels of equal keys at the end, (of course; it's
+	 lower!) */
 	star_tree_test();
 	entry_tree_test();
 	manual_unsigned();
