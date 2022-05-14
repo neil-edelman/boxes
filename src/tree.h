@@ -514,7 +514,7 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 		if(PB_(compare)(*last, x) > 0) { errno = EDOM; goto catch; }
 #ifndef TREE_MULTI
 		/* Can't be the same value as another. */
-		assert(0);
+		//assert(0);
 #endif
 
 		/* One leaf, and the rest branches. */

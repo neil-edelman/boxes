@@ -140,8 +140,8 @@ static void entry_to_string(const struct entry_tree_entry_c entry,
 	char (*const z)[12]) {
 	assert(entry.x->year < 10000 && entry.x->month && entry.x->month <= 31
 		&& entry.x->day && entry.x->day <= 31);
-	sprintf(*z, "%4u-%2.2u-%2.2u",
-		entry.x->year, entry.x->month, entry.x->day);
+	sprintf(*z, "%u-%2.2u-%2.2u",
+		entry.x->year % 10000, entry.x->month, entry.x->day);
 }
 
 
