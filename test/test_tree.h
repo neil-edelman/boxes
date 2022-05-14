@@ -33,20 +33,20 @@ static const PB_(action_fn) PB_(filler) = (TREE_TEST);
 static unsigned PB_(no);
 
 /** Recursively draws `outer` in `fp` with the actual `height`. */
-static void PB_(subgraph)(const struct B_(tree) *const sub, FILE *fp) {
+static void PB_(subgraph)(const struct PB_(sub) *const sub, FILE *fp) {
 	const struct PB_(branch) *branch;
 	unsigned i;
-	assert(sub->root && fp);
+	assert(sub->node && fp);
 	/* It still has a margin, augh. */
 	fprintf(fp, "\ttrunk%p [label = <\n"
 		"<table border=\"1\" cellspacing=\"0\" bgcolor=\"Grey95\">\n"
 		"\t<tr><td border=\"0\" port=\"0\">"
 		"<font color=\"Gray75\">%s</font></td></tr>\n",
-		(const void *)sub->root, orcify(sub->root));
-	for(i = 0; i < sub->root->size; i++) {
+		(const void *)sub->node, orcify(sub->node));
+	for(i = 0; i < sub->node->size; i++) {
 		const char *const bgc = i & 1 ? "" : " bgcolor=\"Gray90\"";
 		char z[12];
-		PB_(entry_c) e = PB_(to_entry_c)(sub->root, i);
+		PB_(entry_c) e = PB_(to_entry_c)(sub->node, i);
 		PB_(to_string)(e, &z);
 		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
 			" port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
@@ -54,15 +54,15 @@ static void PB_(subgraph)(const struct B_(tree) *const sub, FILE *fp) {
 	fprintf(fp, "</table>>];\n");
 	if(!sub->height) return;
 	/* Draw the lines between trees. */
-	branch = PB_(branch_c)(sub->root);
-	for(i = 0; i <= sub->root->size; i++)
+	branch = PB_(branch_c)(sub->node);
+	for(i = 0; i <= branch->base.size; i++)
 		fprintf(fp, "\ttrunk%p:%u:se -> trunk%p;\n",
-		(const void *)sub->root, i, (const void *)branch->child[i]);
+		(const void *)sub->node, i, (const void *)branch->child[i]);
 	/* Recurse. */
-	for(i = 0; i <= sub->root->size; i++) {
-		struct B_(tree) subsub;
-		subsub.root = branch->child[i], subsub.height = sub->height - 1;
-		PB_(subgraph)(&subsub, fp);
+	for(i = 0; i <= branch->base.size; i++) {
+		struct PB_(sub) child;
+		child.node = branch->child[i], child.height = sub->height - 1;
+		PB_(subgraph)(&child, fp);
 	}
 }
 
@@ -79,32 +79,32 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 		"\tnode [shape=none, fontname=\"Bitstream Vera Sans\"];\n"
 		"\tedge [fontname=\"Bitstream Vera Sans\", style=dashed];\n"
 		"\n");
-	if(!tree->root)
+	if(!tree->root.node)
 		fprintf(fp, "\tidle [shape=plaintext];\n");
-	else if(tree->height == UINT_MAX)
+	else if(tree->root.height == UINT_MAX)
 		fprintf(fp, "\tempty [shape=plaintext];\n");
-	else PB_(subgraph)(tree, fp);
+	else PB_(subgraph)(&tree->root, fp);
 	fprintf(fp, "\tnode [color=\"Red\"];\n"
 		"}\n");
 	fclose(fp);
 }
 
-static void PB_(print_r)(const struct B_(tree) tree) {
-	struct B_(tree) sub = { 0, 0 };
-	const struct PB_(branch) *inner = 0;
+static void PB_(print_r)(const struct PB_(sub) sub) {
+	struct PB_(sub) child = { 0, 0 };
+	const struct PB_(branch) *branch = 0;
 	unsigned i;
-	assert(tree.root);
+	assert(sub.node);
 	printf("\\");
-	if(tree.height) {
-		inner = PB_(branch_c)(tree.root);
-		sub.height = tree.height - 1;
+	if(sub.height) {
+		branch = PB_(branch_c)(sub.node);
+		child.height = sub.height - 1;
 	}
 	for(i = 0; ; i++) {
 		char z[12];
 		PB_(entry_c) e;
-		if(tree.height) sub.root = inner->child[i], PB_(print_r)(sub);
-		if(i == tree.root->size) break;
-		e = PB_(to_entry_c)(tree.root, i);
+		if(sub.height) child.node = branch->child[i], PB_(print_r)(child);
+		if(i == sub.node->size) break;
+		e = PB_(to_entry_c)(sub.node, i);
 		PB_(to_string)(e, &z);
 		printf("%s%s", i ? ", " : "", z);
 	}
@@ -114,13 +114,13 @@ static void PB_(print)(const struct B_(tree) *const tree) {
 	printf("Inorder: ");
 	if(!tree) {
 		printf("null");
-	} else if(!tree->root) {
-		assert(!tree->height);
+	} else if(!tree->root.node) {
+		assert(!tree->root.height);
 		printf("idle");
-	} else if(tree->height == UINT_MAX) {
+	} else if(tree->root.height == UINT_MAX) {
 		printf("empty");
 	} else {
-		PB_(print_r)(*tree);
+		PB_(print_r)(tree->root);
 	}
 	printf("\n");
 }
@@ -128,9 +128,11 @@ static void PB_(print)(const struct B_(tree) *const tree) {
 /** Makes sure the `trie` is in a valid state. */
 static void PB_(valid)(const struct B_(tree) *const tree) {
 	if(!tree) return; /* Null. */
-	if(!tree->root) { assert(!tree->height); return; } /* Idle. */
-	if(tree->height == UINT_MAX) { assert(tree->root); return; } /* Empty. */
-	assert(tree->root);
+	if(!tree->root.node)
+		{ assert(!tree->root.height); return; } /* Idle. */
+	if(tree->root.height == UINT_MAX)
+		{ assert(tree->root.node); return; } /* Empty. */
+	assert(tree->root.node);
 	/*...*/
 }
 
@@ -189,9 +191,9 @@ static void PB_(test)(void) {
 	PB_(valid)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
-	it = B_(tree_lower)(0, PB_(test_to_x)(n + 0)), assert(!it._.tree);
+	it = B_(tree_lower)(0, PB_(test_to_x)(n + 0)), assert(!it._.root);
 	value = B_(tree_get)(0, PB_(test_to_x)(n + 0)), assert(!value);
-	it = B_(tree_lower)(&tree, PB_(test_to_x)(n + 0)), assert(!it._.tree);
+	it = B_(tree_lower)(&tree, PB_(test_to_x)(n + 0)), assert(!it._.root);
 	value = B_(tree_get)(&tree, PB_(test_to_x)(n + 0)), assert(!value);
 
 	/* Test. */
@@ -223,7 +225,7 @@ static void PB_(test)(void) {
 	}
 	assert(i == n_size);
 
-	B_(tree_)(&tree), assert(!tree.root), PB_(valid)(&tree);
+	B_(tree_)(&tree), assert(!tree.root.node), PB_(valid)(&tree);
 	assert(!errno);
 }
 

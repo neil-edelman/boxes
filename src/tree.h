@@ -22,6 +22,10 @@
  A function satisfying <typedef:<PB>compare_fn>. Defaults to ascending order.
  Required if `TREE_KEY` is changed to an incomparable type.
 
+ @param[TREE_MULTI]
+ Attaches a pointer to the parent to the nodes to create a multi-set or
+ multi-map.
+
  @param[TREE_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
  trait.
@@ -31,7 +35,6 @@
  that satisfies `C` naming conventions when mangled and function implementing
  <typedef:<PSZ>to_string_fn>.
 
- @fixme Either TREE_KEY or TREE_UNIQUE_KEY.
  @fixme It would be probably easy to turn this into an order statistic tree,
  (but annoying.)
  @fixme TREE_MULTIKEY
@@ -53,6 +56,9 @@
 #endif
 #if defined(TREE_TO_STRING_NAME) && !defined(TREE_TO_STRING)
 #error TREE_TO_STRING_NAME requires TREE_TO_STRING.
+#endif
+#ifdef TREE_MULTI
+#error Not done yet.
 #endif
 
 #ifndef TREE_H /* <!-- idempotent */
@@ -101,9 +107,8 @@
 #ifndef TREE_KEY
 #define TREE_KEY unsigned
 #endif
-/* fixme ...TREE_MULTIKEY */
 
-/** A comparable type, defaults to multi-valued `unsigned`. */
+/** A comparable type, defaults to `unsigned`. */
 typedef TREE_KEY PB_(key);
 typedef const TREE_KEY PB_(key_c);
 
@@ -208,13 +213,19 @@ static PB_(value) *PB_(to_value)(PB_(key) *const x) { return x; }
 
 #endif /* !entry --> */
 
+/* Subtree is a node with a height. */
+struct PB_(sub) { struct PB_(leaf) *node; unsigned height; };
+/* Address specific key; easier to <tag:<PB>sub>, takes more space. */
+struct PB_(end) { struct PB_(leaf) *node; unsigned height, idx; };
+struct PB_(end_c) { const struct PB_(leaf) *node; unsigned height, idx; };
+
 /** To initialize it to an idle state, see <fn:<B>tree>, `TRIE_IDLE`, `{0}`
  (`C99`), or being `static`. This is a B-tree, as
  <Bayer, McCreight, 1972 Large>.
 
  ![States.](../doc/states.png) */
 struct B_(tree);
-struct B_(tree) { struct PB_(leaf) *root; unsigned height; };
+struct B_(tree) { struct PB_(sub) root; };
 
 #define BOX_CONTENT PB_(entry_c)
 /** Is `e` not null? @implements `is_element_c` */
@@ -226,23 +237,19 @@ static int PB_(is_element_c)(PB_(entry_c) e) {
 #endif
 }
 /* A constant iterator. @implements `forward` */
-struct PB_(forward) {
-	const struct B_(tree) *tree;
-	struct PB_(forward_end) { const struct PB_(leaf) *node;
-		unsigned height, idx; } end;
-};
+struct PB_(forward) { const struct PB_(sub) *root; struct PB_(end_c) end; };
 /** Start the iteration or, if off the end of a node, go to the next node.
  @return Whether it is addressing a valid item. */
 static int PB_(forward_pin)(struct PB_(forward) *const it) {
+	struct PB_(sub) s;
+	struct PB_(end_c) next;
 	unsigned a0;
-	struct B_(tree) t;
-	struct PB_(forward_end) next;
 	PB_(key) x;
 	assert(it);
-	if(!it->tree || it->tree->height == UINT_MAX) return 0;
+	if(!it->root || it->root->height == UINT_MAX) return 0;
 	/* Special case: off the left. */
-	if(!it->end.node) it->end.node = it->tree->root, assert(it->end.node),
-		it->end.height = it->tree->height, it->end.idx = 0;
+	if(!it->end.node) it->end.node = it->root->node, assert(it->end.node),
+		it->end.height = it->root->height, it->end.idx = 0;
 	/* Descend the tree. */
 	while(it->end.height) it->end.height--,
 		it->end.node = PB_(branch_c)(it->end.node)->child[it->end.idx],
@@ -251,15 +258,15 @@ static int PB_(forward_pin)(struct PB_(forward) *const it) {
 	if(!it->end.node->size) return 0; /* Empty nodes are always at the end. */
 	/* Go down the tree again and note the next. */
 	next.node = 0, x = it->end.node->x[it->end.node->size - 1];
-	for(t = *it->tree; t.height;
-		t.root = PB_(branch_c)(t.root)->child[a0], t.height--) {
-		unsigned a1 = t.root->size; a0 = 0;
+	for(s = *it->root; s.height;
+		s.node = PB_(branch_c)(s.node)->child[a0], s.height--) {
+		unsigned a1 = s.node->size; a0 = 0;
 		while(a0 < a1) {
 			const unsigned m = (a0 + a1) / 2;
-			if(PB_(compare)(x, t.root->x[m]) > 0) a0 = m + 1; else a1 = m;
+			if(PB_(compare)(x, s.node->x[m]) > 0) a0 = m + 1; else a1 = m;
 		}
-		if(a0 < t.root->size)
-			next.node = t.root, next.height = t.height, next.idx = a0;
+		if(a0 < s.node->size)
+			next.node = s.node, next.height = s.height, next.idx = a0;
 	}
 	if(!next.node) return 0; /* Off the right. */
 	it->end = next;
@@ -269,7 +276,8 @@ static int PB_(forward_pin)(struct PB_(forward) *const it) {
 static struct PB_(forward) PB_(forward_begin)(const struct B_(tree) *const
 	tree) {
 	struct PB_(forward) it;
-	it.tree = tree, it.end.node = 0, it.end.height = 0, it.end.idx = 0;
+	it.root = tree ? &tree->root : 0, it.end.node = 0,
+		it.end.height = 0, it.end.idx = 0;
 	return it;
 }
 /** Advances `it` to the next element. @return A pointer to the current
@@ -289,37 +297,34 @@ static int PB_(is_element)(const PB_(entry) e) {
 }
 /* A certain position and the top level tree for backtracking.
  @implements `iterator` */
-struct PB_(iterator) {
-	struct B_(tree) *tree;
-	struct PB_(end) { struct PB_(leaf) *node; unsigned height, idx; } end;
-};
+struct PB_(iterator) { struct PB_(sub) *root; struct PB_(end) end; };
 /** @return Whether it is addressing a valid item. */
 static int PB_(pin)(struct PB_(iterator) *const it) {
-	unsigned a0;
-	struct B_(tree) t;
+	struct PB_(sub) s;
 	struct PB_(end) next;
+	unsigned a0;
 	PB_(key) x;
 	assert(it);
-	if(!it->tree || it->tree->height == UINT_MAX) return 0;
-	if(!it->end.node) it->end.node = it->tree->root,
-		it->end.height = it->tree->height, it->end.idx = 0;
+	if(!it->root || it->root->height == UINT_MAX) return 0;
+	if(!it->end.node) it->end.node = it->root->node,
+		it->end.height = it->root->height, it->end.idx = 0;
 	while(it->end.height) it->end.height--,
 		it->end.node = PB_(branch_c)(it->end.node)->child[it->end.idx],
 		it->end.idx = 0;
 	if(it->end.idx < it->end.node->size) return 1; /* Likely. */
 	if(!it->end.node->size) return 0; /* Empty nodes are always at the end. */
 	next.node = 0, x = it->end.node->x[it->end.node->size - 1];
-	for(t = *it->tree; t.height;
-		t.root = PB_(branch_c)(t.root)->child[a0], t.height--) {
-		unsigned a1 = t.root->size; a0 = 0;
+	for(s = *it->root; s.height;
+		s.node = PB_(branch_c)(s.node)->child[a0], s.height--) {
+		unsigned a1 = s.node->size; a0 = 0;
 		while(a0 < a1) {
 			const unsigned m = (a0 + a1) / 2;
 			/* @fixme Iterator doesn't work with two-levels of equal keys.
 			 Must cache the value of the parent. */
-			if(PB_(compare)(x, t.root->x[m]) > 0) a0 = m + 1; else a1 = m;
+			if(PB_(compare)(x, s.node->x[m]) > 0) a0 = m + 1; else a1 = m;
 		}
-		if(a0 < t.root->size)
-			next.node = t.root, next.height = t.height, next.idx = a0;
+		if(a0 < s.node->size)
+			next.node = s.node, next.height = s.height, next.idx = a0;
 	}
 	if(!next.node) return 0; /* Off the right. */
 	it->end = next;
@@ -328,7 +333,8 @@ static int PB_(pin)(struct PB_(iterator) *const it) {
 /** @return Before `tree`. @implements `forward_begin` */
 static struct PB_(iterator) PB_(begin)(struct B_(tree) *const tree) {
 	struct PB_(iterator) it;
-	it.tree = tree, it.end.node = 0, it.end.height = 0, it.end.idx = 0;
+	it.root = tree ? &tree->root : 0, it.end.node = 0,
+		it.end.height = 0, it.end.idx = 0;
 	return it;
 }
 /** Advances `it` to the next element. @return A pointer to the current
@@ -340,10 +346,10 @@ static PB_(entry) PB_(next)(struct PB_(iterator) *const it)
 #include "../test/orcish.h"
 
 /** Assume `tree` and `x` are checked for non-empty validity. */
-static struct PB_(end) PB_(lower_r)(struct B_(tree) *const tree,
+static struct PB_(end) PB_(lower_r)(struct PB_(sub) *const tree,
 	const PB_(key) x, struct PB_(end) *const unfull) {
 	struct PB_(end) lo;
-	for(lo.node = tree->root, lo.height = tree->height; ;
+	for(lo.node = tree->node, lo.height = tree->height; ;
 		lo.node = PB_(branch_c)(lo.node)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.node->size;
 		lo.idx = 0;
@@ -356,7 +362,7 @@ static struct PB_(end) PB_(lower_r)(struct B_(tree) *const tree,
 		if(!lo.height) break; /* Leaf node. */
 		if(lo.idx == lo.node->size) continue; /* Off the end. */
 		if(PB_(compare)(lo.node->x[lo.idx], x) <= 0) { /* Total order equals. */
-#ifndef TREE_UNIQUE_KEY
+#ifdef TREE_MULTI
 			/* Lower indices with the same value in the left child? */
 			struct PB_(end) res;
 			struct B_(tree) sub;
@@ -376,24 +382,26 @@ static struct PB_(end) PB_(lower_r)(struct B_(tree) *const tree,
 static struct PB_(iterator) PB_(lower)(struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct PB_(iterator) it;
-	if(!tree || !tree->root || tree->height == UINT_MAX) return it.tree = 0, it;
-	return it.tree = tree, it.end = PB_(lower_r)(tree, x, 0), it;
+	if(!tree || !tree->root.node || tree->root.height == UINT_MAX)
+		return it.root = 0, it;
+	return it.root = &tree->root, it.end = PB_(lower_r)(it.root, x, 0), it;
 }
 
 /** Clears non-empty `tree` and it's children recursively, but doesn't put it
  to idle or clear pointers. If `one` is valid, tries to keep one leaf. */
-static void PB_(clear_r)(struct B_(tree) tree, struct PB_(leaf) **const one) {
-	assert(tree.root);
-	if(!tree.height) {
-		if(one && !*one) *one = tree.root;
-		else free(tree.root);
+static void PB_(clear_r)(struct PB_(sub) sub, struct PB_(leaf) **const one) {
+	assert(sub.node);
+	if(!sub.height) {
+		if(one && !*one) *one = sub.node;
+		else free(sub.node);
 	} else {
-		struct B_(tree) sub;
+		struct PB_(sub) child;
 		unsigned i;
-		sub.height = tree.height - 1;
-		for(i = 0; i <= tree.root->size; i++)
-			sub.root = PB_(branch)(tree.root)->child[i], PB_(clear_r)(sub, one);
-		free(PB_(branch)(tree.root));
+		child.height = sub.height - 1;
+		for(i = 0; i <= sub.node->size; i++)
+			child.node = PB_(branch)(sub.node)->child[i],
+			PB_(clear_r)(child, one);
+		free(PB_(branch)(sub.node));
 	}
 }
 
@@ -403,17 +411,18 @@ static void PB_(clear_r)(struct B_(tree) tree, struct PB_(leaf) **const one) {
 
 /** Initializes `tree` to idle. @order \Theta(1) @allow */
 static struct B_(tree) B_(tree)(void)
-	{ struct B_(tree) tree; tree.root = 0; tree.height = 0; return tree; }
+	{ struct B_(tree) tree; tree.root.node = 0; tree.root.height = 0;
+	return tree; }
 
 /** Returns an initialized `tree` to idle, `tree` can be null. @allow */
 static void B_(tree_)(struct B_(tree) *const tree) {
 	if(!tree) return; /* Null. */
-	if(!tree->root) { /* Idle. */
-		assert(!tree->height);
-	} else if(tree->height == UINT_MAX) { /* Empty. */
-		assert(tree->root); free(tree->root);
+	if(!tree->root.node) { /* Idle. */
+		assert(!tree->root.height);
+	} else if(tree->root.height == UINT_MAX) { /* Empty. */
+		assert(tree->root.node); free(tree->root.node);
 	} else {
-		PB_(clear_r)(*tree, 0);
+		PB_(clear_r)(tree->root, 0);
 	}
 	*tree = B_(tree)();
 }
@@ -466,36 +475,36 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 	struct PB_(leaf) *node = 0, *head = 0;
 	/*printf("bulk():\n");*/
 	if(!tree) return 0;
-	if(!tree->root) { /* Idle tree. */
-		assert(!tree->height);
+	if(!tree->root.node) { /* Idle tree. */
+		assert(!tree->root.height);
 		if(!(node = malloc(sizeof *node))) goto catch;
 		node->size = 0;
-		tree->root = node;
+		tree->root.node = node;
 		/*printf("Idle tree: new %s.\n", orcify(node));*/
-	} else if(tree->height == UINT_MAX) { /* Empty tree. */
-		tree->height = 0;
-		node = tree->root;
-		node->size = 0;
+	} else if(tree->root.height == UINT_MAX) { /* Empty tree. */
+		tree->root.height = 0;
+		tree->root.node->size = 0;
 		/*printf("Empty tree, %s.\n", orcify(node));*/
 	} else {
-		struct B_(tree) space = { 0, 0 }; /* Furthest node with space. */
-		PB_(key) *last = 0; /* Key of the last for comparing with arg. */
+		/* Furthest node with space and the last value. */
+		struct PB_(sub) space = { 0, 0 };
+		PB_(key) *last = 0;
 		unsigned new_nodes, n; /* Count new nodes. */
 		struct PB_(leaf) *tail = 0; /* New nodes. */
 		struct PB_(branch) *pretail = 0;
 		PB_(print)(tree);
 
 		{ /* Figure out where `space` and `last` are in `log size`. */
-			struct B_(tree) expl;
-			for(expl = *tree; ; expl.root = PB_(branch)(expl.root)
-				->child[expl.root->size], expl.height--) {
+			struct PB_(sub) expl;
+			for(expl = tree->root; ; expl.node = PB_(branch)(expl.node)
+				->child[expl.node->size], expl.height--) {
 				/*printf("dowhile expl %s:%u with %u size\n",
 					orcify(expl.root), expl.height, expl.root->size);*/
-				if(expl.root->size < TREE_MAX) space = expl;
-				if(expl.root->size) last = expl.root->x + expl.root->size - 1;
+				if(expl.node->size < TREE_MAX) space = expl;
+				if(expl.node->size) last = expl.node->x + expl.node->size - 1;
 				if(!expl.height) break;
 			}
-			assert(last); /* Else it would be empty and we would not be here. */
+			assert(last); /* Else it would be empty. */
 			/*printf("dowhile expl finished %s:%u, space %s:%u\n",
 				orcify(expl.root), expl.height,
 				orcify(space.root), space.height);*/
@@ -503,12 +512,16 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 
 		/* Verify that the argument is not smaller than the largest in tree. */
 		if(PB_(compare)(*last, x) > 0) { errno = EDOM; goto catch; }
+#ifndef TREE_MULTI
+		/* Can't be the same value as another. */
+		assert(0);
+#endif
 
 		/* One leaf, and the rest branches. */
-		new_nodes = n = space.root ? space.height : tree->height + 2;
+		new_nodes = n = space.node ? space.height : tree->root.height + 2;
 		/*printf("new_nodes: %u, tree height %u\n", new_nodes, tree->height);*/
 		if(!n) {
-			node = space.root;
+			node = space.node;
 		} else {
 			if(!(node = tail = malloc(sizeof *tail))) goto catch;
 			tail->size = 0;
@@ -527,15 +540,16 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 		/* Post-error; modify the original as needed. */
 		if(pretail) pretail->child[0] = tail;
 		else head = node;
-		if(!space.root) { /* Add tree to head. */
+		if(!space.node) { /* Add tree to head. */
 			struct PB_(branch) *const inner = PB_(branch)(head);
 			/*printf("adding the existing root, %s to %s\n",
 				orcify(tree->root), orcify(head));*/
 			assert(new_nodes > 1);
-			inner->child[1] = inner->child[0], inner->child[0] = tree->root;
-			node = tree->root = head, tree->height++;
+			inner->child[1] = inner->child[0];
+			inner->child[0] = tree->root.node;
+			node = tree->root.node = head, tree->root.height++;
 		} else if(space.height) { /* Add head to tree. */
-			struct PB_(branch) *const inner = PB_(branch)(node = space.root);
+			struct PB_(branch) *const inner = PB_(branch)(node = space.node);
 			/*printf("adding the linked list, %s to %s at %u\n",
 				orcify(head), orcify(inner), inner->base.size + 1);*/
 			assert(new_nodes);
@@ -564,19 +578,19 @@ catch:
 }
 
 static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
-	struct B_(tree) p;
+	struct PB_(sub) s;
 	struct PB_(leaf) *right;
 	printf("tree_bulk_finalize(%s) number of nodes [%u, %u]\n",
 		orcify(tree), TREE_MIN, TREE_MAX);
-	if(!tree || !tree->root || tree->height == UINT_MAX) return; /* Empty. */
-	for(p = *tree; p.height; p.root = right, p.height--) {
+	if(!tree || !tree->root.node || tree->root.height == UINT_MAX) return;
+	for(s = tree->root; s.height; s.node = right, s.height--) {
 		unsigned distribute, right_want, take_sibling;
-		struct PB_(branch) *parent = PB_(branch)(p.root);
+		struct PB_(branch) *parent = PB_(branch)(s.node);
 		struct PB_(leaf) *sibling = (assert(parent->base.size),
 			parent->child[parent->base.size - 1]);
 		right = parent->child[parent->base.size];
 		printf("initial parent node %s:%u with %u size, children %s and %s.\n",
-			orcify(p.root), p.height, p.root->size,
+			orcify(s.node), s.height, s.node->size,
 			orcify(sibling), orcify(right));
 		if(right->size >= TREE_MIN) { printf("cool\n"); continue; }
 		distribute = sibling->size + right->size;
@@ -624,16 +638,15 @@ static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 static PB_(value) *B_(tree_add)(struct B_(tree) *const tree, PB_(key) x) {
 	struct PB_(leaf) *node = 0, *head = 0;
 	if(!tree) return 0;
-	if(!tree->root) { /* Idle tree. */
-		assert(!tree->height);
+	if(!tree->root.node) { /* Idle tree. */
+		assert(!tree->root.height);
 		if(!(node = malloc(sizeof *node))) goto catch;
 		node->size = 0;
-		tree->root = node;
+		tree->root.node = node;
 		/*printf("Idle tree: new %s.\n", orcify(node));*/
-	} else if(tree->height == UINT_MAX) { /* Empty tree. */
-		tree->height = 0;
-		node = tree->root;
-		node->size = 0;
+	} else if(tree->root.height == UINT_MAX) { /* Empty tree. */
+		tree->root.height = 0;
+		tree->root.node->size = 0;
 		/*printf("Empty tree, %s.\n", orcify(node));*/
 	} else {
 #if 0
