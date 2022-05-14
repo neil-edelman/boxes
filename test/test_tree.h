@@ -151,14 +151,32 @@ static void PB_(sort)(PB_(entry_test) *a, const size_t size) {
 	}
 }
 
+static int PB_(contents)(const PB_(entry) *const e) {
+#ifdef TREE_VALUE
+	return !!e->x;
+#else
+	return !!*e;
+#endif
+}
+
+static PB_(entry_c) PB_(to_const)(const PB_(entry) e) {
+#ifdef TREE_VALUE
+	PB_(entry_c) c = { e.x, e.value };
+	return c;
+#else
+	return e;
+#endif
+}
+
 static void PB_(test)(void) {
-	/*char z[12];*/
 	struct B_(tree) tree = B_(tree)();
 	struct B_(tree_iterator) it;
 	PB_(entry_test) n[20];
 	const size_t n_size = sizeof n / sizeof *n;
+	PB_(entry) entry;
 	PB_(value) *value;
 	size_t i;
+	char fn[64];
 
 	errno = 0;
 
@@ -179,9 +197,6 @@ static void PB_(test)(void) {
 	/* Test. */
 	for(i = 0; i < n_size; i++) {
 		PB_(entry_test) *const e = n + i;
-		char fn[64];
-		/*PB_(to_string)(*e, &z);
-		printf("Adding %s.\n", z);*/
 		value = B_(tree_bulk_add)(&tree, PB_(test_to_x)(e));
 		assert(value);
 #ifdef TREE_VALUE
@@ -193,16 +208,19 @@ static void PB_(test)(void) {
 	B_(tree_bulk_finish)(&tree);
 	printf("Finalize again.\n");
 	B_(tree_bulk_finish)(&tree); /* This should be idempotent. */
-	{
-		char fn[64];
-		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u-finalized.gv", ++PB_(no));
-		PB_(graph)(&tree, fn);
-	}
+	sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u-finalized.gv", ++PB_(no));
+	PB_(graph)(&tree, fn);
 
+	//printf("Tree: %s.\n", PB_(tree_to_string)(&tree));
 	/* Iteration. */
 	it = B_(tree_begin)(&tree), i = 0;
-	/*while(entry = B_(tree_next)(it)) i++;
-	... */
+	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
+		char z[12];
+		i++;
+		PB_(to_string)(PB_(to_const)(entry), &z);
+		printf("<%s>\n", z);
+	}
+	assert(i == n_size);
 
 	B_(tree_)(&tree), assert(!tree.root), PB_(valid)(&tree);
 	assert(!errno);

@@ -159,7 +159,7 @@ static void manual_unsigned(void) {
 	x = unsigned_tree_get(&equal, 1), assert(x);
 	printf("equal: x = %u\n", *x);
 	ti._ = tree_unsigned_lower(&equal, 1);
-	printf("equal: %s:%u\n", orcify(ti._.end.leaf), ti._.end.idx);
+	printf("equal: %s:%u\n", orcify(ti._.end.node), ti._.end.idx);
 
 	if(!unsigned_tree_bulk_add(&step, 100)
 		|| !unsigned_tree_bulk_add(&step, 200)
@@ -168,13 +168,13 @@ static void manual_unsigned(void) {
 	unsigned_tree_bulk_finish(&step);
 	tree_unsigned_graph(&step, "graph/manual-step-finalize.gv");
 	ti._ = tree_unsigned_lower(&step, 50);
-	printf("step: 50: %s:%u\n", orcify(ti._.end.leaf), ti._.end.idx);
+	printf("step: 50: %s:%u\n", orcify(ti._.end.node), ti._.end.idx);
 	ti._ = tree_unsigned_lower(&step, 150);
-	printf("step: 150: %s:%u\n", orcify(ti._.end.leaf), ti._.end.idx);
+	printf("step: 150: %s:%u\n", orcify(ti._.end.node), ti._.end.idx);
 	ti._ = tree_unsigned_lower(&step, 250);
-	printf("step: 250: %s:%u\n", orcify(ti._.end.leaf), ti._.end.idx);
+	printf("step: 250: %s:%u\n", orcify(ti._.end.node), ti._.end.idx);
 	ti._ = tree_unsigned_lower(&step, 350);
-	printf("step: 350: %s:%u\n", orcify(ti._.end.leaf), ti._.end.idx);
+	printf("step: 350: %s:%u\n", orcify(ti._.end.node), ti._.end.idx);
 	goto finally;
 catch:
 	perror("manual_unsigned");
