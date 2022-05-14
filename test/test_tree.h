@@ -219,6 +219,7 @@ static void PB_(test)(void) {
 		i++;
 		PB_(to_string)(PB_(to_const)(entry), &z);
 		printf("<%s>\n", z);
+		if(i > 100) assert(0);
 	}
 	assert(i == n_size);
 
