@@ -9,11 +9,10 @@
  A <tag:<B>tree> is an ordered collection of read-only <typedef:<PB>key>, and
  an optional <typedef:<PB>value> to go with them.
 
- @param[TREE_NAME, TREE_KEY, TREE_UNIQUE_KEY] TREE_MULTIKEY?
- `<B>` that satisfies `C` naming conventions when mangled, required, and one of
- `TREE_KEY` or `TREE_UNIQUE_KEY`, a comparable type, <typedef:<PB>key>. Thus
- this can be a multi-set/map or set, respectively. `<PB>` is private, whose names
- are prefixed in a manner to avoid collisions.
+ @param[TREE_NAME, TREE_KEY]
+ `<B>` that satisfies `C` naming conventions when mangled, required, and a
+ comparable type, <typedef:<PB>key>, whose default is `unsigned int`. `<PB>` is
+ private, whose names are prefixed in a manner to avoid collisions.
 
  @param[TREE_VALUE]
  `TRIE_VALUE` is an optional payload to go with the type, <typedef:<PB>value>.
@@ -35,6 +34,7 @@
  @fixme Either TREE_KEY or TREE_UNIQUE_KEY.
  @fixme It would be probably easy to turn this into an order statistic tree,
  (but annoying.)
+ @fixme TREE_MULTIKEY
  @fixme merge, difference
 
  @std C89 */
@@ -101,14 +101,14 @@
 #ifndef TREE_KEY
 #define TREE_KEY unsigned
 #endif
-/* fixme ...TREE_UNIQUE_KEY */
+/* fixme ...TREE_MULTIKEY */
 
 /** A comparable type, defaults to multi-valued `unsigned`. */
 typedef TREE_KEY PB_(key);
 typedef const TREE_KEY PB_(key_c);
 
 #ifdef TREE_VALUE
-/** On `TREE_VALUE`, otherwise just a (multi)-set of <typedef:<PB>key>. */
+/** On `TREE_VALUE`, otherwise just a set of <typedef:<PB>key>. */
 typedef TREE_VALUE PB_(value);
 typedef const TREE_VALUE PB_(value_c);
 #endif
@@ -152,7 +152,7 @@ static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
  * Bulk-loading always is on the right side. */
 struct PB_(leaf) {
 	unsigned char size; /* `[0, TREE_MAX]`. */
-	PB_(key) x[TREE_MAX]; /* Cache-friendly lookup; all but one value. */
+	PB_(key) x[TREE_MAX]; /* Cache-friendly lookup. */
 #ifdef TREE_VALUE
 	PB_(value) value[TREE_MAX];
 #endif
@@ -253,11 +253,10 @@ static int PB_(forward_pin)(struct PB_(forward) *const it) {
 	next.node = 0, x = it->end.node->x[it->end.node->size - 1];
 	for(t = *it->tree; t.height;
 		t.root = PB_(branch_c)(t.root)->child[a0], t.height--) {
-		int cmp; unsigned a1 = t.root->size; a0 = 0;
+		unsigned a1 = t.root->size; a0 = 0;
 		while(a0 < a1) {
 			const unsigned m = (a0 + a1) / 2;
-			cmp = PB_(compare)(x, t.root->x[m]);
-			if(cmp > 0) a0 = m + 1; else a1 = m;
+			if(PB_(compare)(x, t.root->x[m]) > 0) a0 = m + 1; else a1 = m;
 		}
 		if(a0 < t.root->size)
 			next.node = t.root, next.height = t.height, next.idx = a0;
@@ -312,12 +311,12 @@ static int PB_(pin)(struct PB_(iterator) *const it) {
 	next.node = 0, x = it->end.node->x[it->end.node->size - 1];
 	for(t = *it->tree; t.height;
 		t.root = PB_(branch_c)(t.root)->child[a0], t.height--) {
-		int cmp; unsigned a1 = t.root->size; a0 = 0;
+		unsigned a1 = t.root->size; a0 = 0;
 		while(a0 < a1) {
 			const unsigned m = (a0 + a1) / 2;
-			/* @fixme Iterator doesn't work with two-levels of equal keys. */
-			cmp = PB_(compare)(x, t.root->x[m]);
-			if(cmp > 0) a0 = m + 1; else a1 = m;
+			/* @fixme Iterator doesn't work with two-levels of equal keys.
+			 Must cache the value of the parent. */
+			if(PB_(compare)(x, t.root->x[m]) > 0) a0 = m + 1; else a1 = m;
 		}
 		if(a0 < t.root->size)
 			next.node = t.root, next.height = t.height, next.idx = a0;
@@ -351,9 +350,8 @@ static struct PB_(end) PB_(lower_r)(struct B_(tree) *const tree,
 		if(unfull && hi < TREE_MAX) *unfull = lo;
 		if(!hi) continue; /* No nodes; bulk-add? */
 		do {
-			const unsigned mid = lo.idx + (hi - lo.idx) / 2; /* Un-needed op? */
-			if(PB_(compare)(x, lo.node->x[mid]) > 0) lo.idx = mid + 1;
-			else hi = mid;
+			const unsigned m = (lo.idx + hi) / 2;
+			if(PB_(compare)(x, lo.node->x[m]) > 0) lo.idx = m + 1; else hi = m;
 		} while(lo.idx < hi);
 		if(!lo.height) break; /* Leaf node. */
 		if(lo.idx == lo.node->size) continue; /* Off the end. */
