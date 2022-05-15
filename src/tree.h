@@ -6,8 +6,7 @@
 
  @subtitle Ordered tree
 
- A <tag:<B>tree> is an ordered collection of read-only <typedef:<PB>key>, and
- an optional <typedef:<PB>value> to go with them.
+ A <tag:<B>tree> is an ordered set of <typedef:<PB>key>.
 
  @param[TREE_NAME, TREE_KEY]
  `<B>` that satisfies `C` naming conventions when mangled, required, and a
@@ -16,15 +15,11 @@
 
  @param[TREE_VALUE]
  `TRIE_VALUE` is an optional payload to go with the type, <typedef:<PB>value>.
- The makes it a map instead of a set.
+ The makes it a map of <tag:<B>tree_entry> instead of a set.
 
  @param[TREE_COMPARE]
  A function satisfying <typedef:<PB>compare_fn>. Defaults to ascending order.
  Required if `TREE_KEY` is changed to an incomparable type.
-
- @param[TREE_MULTIPLE_KEY]
- Attaches a pointer to the parent to the nodes to create a multi-set or
- multi-map.
 
  @param[TREE_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
@@ -35,15 +30,12 @@
  that satisfies `C` naming conventions when mangled and function implementing
  <typedef:<PSZ>to_string_fn>.
 
- @fixme It would be probably easy to turn this into an order statistic tree,
- (but annoying.)
- @fixme TREE_MULTIPLE_KEYKEY
  @fixme merge, difference
 
  @std C89 */
 
-#if !defined(TREE_NAME) || defined(TREE_KEY) && defined(TREE_UNIQUE_KEY)
-#error Name TREE_NAME undefined or TREE_KEY and TREE_UNIQUE_KEY both defined.
+#if !defined(TREE_NAME)
+#error Name TREE_NAME undefined.
 #endif
 #if defined(TREE_TO_STRING_NAME) || defined(TREE_TO_STRING)
 #define TREE_TO_STRING_TRAIT 1
@@ -95,7 +87,7 @@
 #if TREE_MIN == 0 || TREE_MIN > TREE_MAX / 2
 #error TREE_MIN parameter range `[1, \floor(TREE_MAX / 2)]`.
 #endif
-#define TREE_ORDER (TREE_MAX + 1) /* Maximum branching factor (degree). */
+#define TREE_ORDER (TREE_MAX + 1) /* Maximum degree, (branching factor.) */
 #endif /* idempotent --> */
 
 
@@ -134,7 +126,6 @@ static int PB_(default_compare)(PB_(key_c) a, PB_(key_c) b)
  <typedef:<PB>compare_fn>, if defined. */
 static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
 
-struct PB_(branch);
 /* B-tree node, as <Bayer, McCreight, 1972, Large>. These rules are more lazy
  than the original so as to not exhibit worst-case behaviour in small trees, as
  <Johnson, Shasha, 1990, Free-at-Empty>, but lookup is potentially slower after
@@ -159,9 +150,6 @@ struct PB_(leaf) {
 	PB_(key) x[TREE_MAX]; /* Cache-friendly lookup. */
 #ifdef TREE_VALUE
 	PB_(value) value[TREE_MAX];
-#endif
-#ifdef TREE_MULTIPLE_KEY
-	struct PB_(branch) *parent;
 #endif
 };
 /* B-tree branch is a <tag:<PB>leaf> and links to `size + 1` nodes. */
@@ -321,8 +309,6 @@ static int PB_(pin)(struct PB_(iterator) *const it) {
 		unsigned a1 = s.node->size; a0 = 0;
 		while(a0 < a1) {
 			const unsigned m = (a0 + a1) / 2;
-			/* @fixme Iterator doesn't work with two-levels of equal keys.
-			 Must cache the value of the parent. */
 			if(PB_(compare)(x, s.node->x[m]) > 0) a0 = m + 1; else a1 = m;
 		}
 		if(a0 < s.node->size)
@@ -363,18 +349,7 @@ static struct PB_(pos) PB_(lower_r)(struct PB_(sub) *const tree,
 		} while(lo.idx < hi);
 		if(!lo.height) break; /* Leaf node. */
 		if(lo.idx == lo.node->size) continue; /* Off the end. */
-		if(PB_(compare)(lo.node->x[lo.idx], x) <= 0) { /* Total order equals. */
-#ifdef TREE_MULTIPLE_KEY
-			/* Lower indices with the same value in the left child? */
-			struct PB_(pos) res;
-			struct PB_(sub) child;
-			child.node = PB_(branch_c)(lo.node)->child[lo.idx];
-			child.height = lo.height - 1;
-			if((res = PB_(lower_r)(&child, x, unfull)).idx < res.node->size)
-				lo = res;
-#endif
-			break;
-		}
+		if(PB_(compare)(lo.node->x[lo.idx], x) <= 0) break; /* Total order. */
 	}
 	return lo;
 }
@@ -470,9 +445,8 @@ static void PB_(print)(const struct B_(tree) *const tree)
 	{ (void)tree, printf("not printable\n"); }
 #endif
 
-/** `x` must be not less than the largest key in `tree`.
- @throws[EDOM] `x` is smaller (or equal to, not specifying `TREE_MULTIPLE_KEY`) than
- the largest key in `tree`.
+/** `x` must be higher than the largest key in `tree`.
+ @throws[EDOM] `x` is not higher than any key in `tree`.
  @throws[malloc] */
 static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 	struct PB_(leaf) *node = 0, *head = 0;
@@ -482,9 +456,6 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 		assert(!tree->root.height);
 		if(!(node = malloc(sizeof *node))) goto catch;
 		node->size = 0;
-#ifdef TREE_MULTIPLE_KEY
-		node->parent = 0;
-#endif
 		tree->root.node = node;
 		/*printf("Idle tree: new %s.\n", orcify(node));*/
 	} else if(tree->root.height == UINT_MAX) { /* Empty tree. */
@@ -518,11 +489,8 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 		{
 			const PB_(key) l = last->x[last->size - 1];
 			/* Verify that the argument is not smaller than the largest. */
-			if(PB_(compare)(l, x) > 0) { errno = EDOM; goto catch; }
-#ifndef TREE_MULTIPLE_KEY /* <!-- unique */
-			/* Can't be the same value as another. */
-			if(PB_(compare)(x, l) <= 0) { errno = EDOM; goto catch; }
-#endif /* unique --> */
+			if(PB_(compare)(l, x) > 0 || PB_(compare)(x, l) <= 0)
+				{ errno = EDOM; goto catch; }
 		}
 
 		/* One leaf, and the rest branches. */
@@ -531,30 +499,18 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 		if(!n) {
 			node = space.node;
 		} else {
-#ifdef TREE_MULTIPLE_KEY
-			struct PB_(branch) **p_ref;
-#endif
 			if(!(node = tail = malloc(sizeof *tail))) goto catch;
 			tail->size = 0;
-#ifdef TREE_MULTIPLE_KEY
-			p_ref = &tail->parent;
-#endif
 			/*printf("new tail: %s.\n", orcify(tail));*/
 			while(--n) {
 				struct PB_(branch) *b;
 				if(!(b = malloc(sizeof *b))) goto catch;
 				b->base.size = 0;
-#ifdef TREE_MULTIPLE_KEY
-				*p_ref = b, p_ref = &b->base.parent;
-#endif
 				/*printf("new branch: %s.\n", orcify(b));*/
 				if(!head) b->child[0] = 0, pretail = b; /* First loop. */
 				else b->child[0] = head; /* Not first loop. */
 				head = &b->base;
 			}
-#ifdef TREE_MULTIPLE_KEY
-			*p_ref = 0;
-#endif
 		}
 
 		/* Post-error; modify the original as needed. */
@@ -567,9 +523,6 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 			assert(new_nodes > 1);
 			branch->child[1] = branch->child[0];
 			branch->child[0] = tree->root.node;
-#ifdef TREE_MULTIPLE_KEY
-			tree->root.node->parent = branch;
-#endif
 			node = tree->root.node = head, tree->root.height++;
 		} else if(space.height) { /* Add head to tree. */
 			struct PB_(branch) *const branch = PB_(branch)(node = space.node);
@@ -577,9 +530,6 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 				orcify(head), orcify(inner), inner->base.size + 1);*/
 			assert(new_nodes);
 			branch->child[branch->base.size + 1] = head;
-#ifdef TREE_MULTIPLE_KEY
-			head->parent = branch;
-#endif
 		}
 	}
 	assert(node && node->size < TREE_MAX);
@@ -606,7 +556,7 @@ static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 		orcify(tree), TREE_MIN, TREE_MAX);
 	if(!tree || !tree->root.node || tree->root.height == UINT_MAX) return;
 	for(s = tree->root; s.height; s.node = right, s.height--) {
-		unsigned distribute, right_want, take_sibling;
+		unsigned distribute, right_want, right_move, take_sibling;
 		struct PB_(branch) *parent = PB_(branch)(s.node);
 		struct PB_(leaf) *sibling = (assert(parent->base.size),
 			parent->child[parent->base.size - 1]);
@@ -614,45 +564,61 @@ static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 		printf("initial parent node %s:%u with %u size, children %s and %s.\n",
 			orcify(s.node), s.height, s.node->size,
 			orcify(sibling), orcify(right));
-		if(right->size >= TREE_MIN) { printf("cool\n"); continue; }
+		if(TREE_MIN <= right->size)
+			{ printf("cool\n"); continue; } /* Has enough. */
 		distribute = sibling->size + right->size;
-		right_want = distribute / 2; /* Minimum balancing. */
-		take_sibling = right_want - right->size - 1;
+		right_want = distribute / 2;
+		right_move = right_want - right->size;
+		take_sibling = right_move - 1;
 		printf("distributing %u, of which the right wants %u and will"
-			" take %u from sibling.\n", distribute, right_want, take_sibling);
+			" be move %u and take %u from sibling.\n", distribute, right_want,
+			right_move, take_sibling);
 		/* Either the right has met the properties of a B-tree node, (covered
 		 above,) or the left sibling is full from bulk-loading. */
 		assert(sibling->size == TREE_MAX
 			&& distribute >= 2 * TREE_MIN && right_want >= TREE_MIN
+			&& right->size < right_want
 			&& sibling->size - take_sibling >= TREE_MIN + 1);
-		/* Move one node from the parent. */
-		printf("right:%u <- parent:%u (1)\n",
-			right->size, parent->base.size - 1);
-		memcpy(right->x + right->size, parent->base.x + parent->base.size - 1,
-			sizeof *right->x);
+		/* Move the right node to accept more keys. */
+		printf("right (%u) -> right at %u\n",
+			right->size, right_move);
+		memmove(right->x + right_move, right->x,
+			sizeof *right->x * right->size);
 #ifdef TREE_VALUE
-		memcpy(right->value + right->size,
-			parent->base.value + parent->base.size - 1, sizeof *right->value);
-#endif
-		right->size++;
-		/* Move the others from the sibling. */
-		printf("right:%u <- sibling:%u (%u)\n",
-			right->size, take_sibling, take_sibling);
-		memcpy(right->x + right->size, sibling->x + take_sibling,
-			sizeof *right->x * take_sibling);
-#ifdef TREE_VALUE
-		memcpy(right->value + right->size, sibling->value + take_sibling,
-			sizeof *right->value * take_sibling);
+		memcpy(right->value + right_move, right->value,
+			sizeof *right->value * right->size);
 #endif
 		printf("height %u\n", s.height);
 		if(s.height > 1) { /* (Parent height.) */
 			struct PB_(branch) *rbranch = PB_(branch)(right),
-		*sbranch = PB_(branch)(sibling);
-			//memcpy(rbranch->child + , <#const void *__src#>, <#size_t __n#>);
+				*sbranch = PB_(branch)(sibling);
+			printf("This is not finished.\n");
+			memmove(rbranch->child + right_move, rbranch->child,
+				sizeof *rbranch->child * (right->size + 1));
+			memcpy(rbranch->child, sbranch->child + sibling->size + 1
+				- right_move, sizeof *sbranch->child * right_move);
 		}
-		right->size += take_sibling, assert(right->size == right_want);
+		right->size += right_move;
+		/* Move one node from the parent. */
+		printf("right:%u <- parent:%u (1)\n",
+			take_sibling, parent->base.size - 1);
+		memcpy(right->x + take_sibling,
+			parent->base.x + parent->base.size - 1, sizeof *right->x);
+#ifdef TREE_VALUE
+		memcpy(right->value + take_sibling,
+			parent->base.value + parent->base.size - 1, sizeof *right->value);
+#endif
+		/* Move the others from the sibling. */
+		printf("right <- sibling(%u) down to %u\n",
+			sibling->size, take_sibling);
+		memcpy(right->x, sibling->x + sibling->size - take_sibling,
+			sizeof *right->x * take_sibling);
+#ifdef TREE_VALUE
+		memcpy(right->value, sibling->value + sibling->size - take_sibling,
+			sizeof *right->value * take_sibling);
+#endif
 		sibling->size -= take_sibling;
-		/* The parent borrows from the sibling's key. */
+		/* Sibling's key is now the parent's. */
 		printf("parent:%u <- sibling:%u (1)\n",
 			parent->base.size - 1, sibling->size - 1);
 		memcpy(parent->base.x + parent->base.size - 1,
@@ -797,9 +763,6 @@ static const char *(*PB_(tree_to_string))(const struct B_(tree) *)
 #undef TREE_COMPARE
 #ifdef TREE_VALUE
 #undef TREE_VALUE
-#endif
-#ifdef TREE_MULTIPLE_KEY
-#undef TREE_MULTIPLE_KEY
 #endif
 #ifdef TREE_TEST
 #undef TREE_TEST

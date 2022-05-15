@@ -16,9 +16,15 @@ typedef struct B_(tree_test) {
 	PB_(value) value;
 } PB_(entry_test);
 static PB_(key) PB_(test_to_x)(struct B_(tree_test) *const t) { return t->x; }
+static PB_(entry_c) PB_(test_to_entry_c)(struct B_(tree_test) *const t) {
+	struct B_(tree_entry_c) e;
+	e.x = &t->x, e.value = &t->value;
+	return e;
+}
 #else
 typedef PB_(key) PB_(entry_test);
 static PB_(key) PB_(test_to_x)(PB_(key) *const x) { return *x; }
+static PB_(entry_c) PB_(test_to_entry_c)(PB_(key) *const t) { return t; }
 #endif
 
 /** Works by side-effects. Only defined if `TREE_TEST`. */
@@ -183,7 +189,7 @@ static void PB_(test)(void) {
 	const size_t n_size = sizeof n / sizeof *n;
 	PB_(entry) entry;
 	PB_(value) *value;
-	size_t i;
+	size_t i, n_unique = 0;
 	char fn[64];
 
 	errno = 0;
@@ -207,11 +213,16 @@ static void PB_(test)(void) {
 		PB_(entry_test) *const e = n + i;
 		value = B_(tree_bulk_add)(&tree, PB_(test_to_x)(e));
 		if(!value) {
+			PB_(entry_c) ent;
+			char z[12];
+			ent = PB_(test_to_entry_c)(e);
+			PB_(to_string)(ent, &z);
 			assert(errno == EDOM);
-			printf("***Value is already in tree; this is not allowed.\n");
+			printf("***Value %s is already in tree; this is not allowed.\n", z);
 			errno = 0;
 			continue;
 		}
+		n_unique++;
 #ifdef TREE_VALUE
 		*value = e->value;
 #endif
@@ -235,7 +246,7 @@ static void PB_(test)(void) {
 		printf("<%s>\n", z);
 		if(i > 100) assert(0);
 	}
-	assert(i == n_size);
+	assert(i == n_unique);
 
 	B_(tree_)(&tree), assert(!tree.root.node), PB_(valid)(&tree);
 	assert(!errno);
