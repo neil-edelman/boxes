@@ -644,6 +644,12 @@ static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 		memcpy(right->value + right->size, sibling->value + take_sibling,
 			sizeof *right->value * take_sibling);
 #endif
+		printf("height %u\n", s.height);
+		if(s.height > 1) { /* (Parent height.) */
+			struct PB_(branch) *rbranch = PB_(branch)(right),
+		*sbranch = PB_(branch)(sibling);
+			//memcpy(rbranch->child + , <#const void *__src#>, <#size_t __n#>);
+		}
 		right->size += take_sibling, assert(right->size == right_want);
 		sibling->size -= take_sibling;
 		/* The parent borrows from the sibling's key. */
