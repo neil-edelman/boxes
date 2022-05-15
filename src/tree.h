@@ -592,7 +592,6 @@ static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 		if(s.height > 1) { /* (Parent height.) */
 			struct PB_(branch) *rbranch = PB_(branch)(right),
 				*sbranch = PB_(branch)(sibling);
-			printf("This is not finished.\n");
 			memmove(rbranch->child + right_move, rbranch->child,
 				sizeof *rbranch->child * (right->size + 1));
 			memcpy(rbranch->child, sbranch->child + sibling->size + 1
