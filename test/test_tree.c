@@ -87,9 +87,13 @@ struct star_tree_test;
 static void star_filler(struct star_tree_test *);
 struct star_tree_entry_c;
 static void star_to_string(struct star_tree_entry_c, char (*)[12]);
+/* It is impossible to have a `const char *` without getting warnings about
+ duplicate `const`. This is because we want them to be `const` sometimes. This
+ is a workaround. */
 typedef const char *const_str;
 #define TREE_NAME star
 #define TREE_KEY double
+//#define TREE_MULTIPLE_KEY /* Different stars can have the same distance. */
 #define TREE_VALUE const_str
 #define TREE_TEST &star_filler
 #define TREE_EXPECT_TRAIT
@@ -147,11 +151,11 @@ static void entry_to_string(const struct entry_tree_entry_c entry,
 
 static void manual_unsigned(void) {
 	struct unsigned_tree equal = unsigned_tree(), step = unsigned_tree();
-	size_t i;
-	unsigned *x;
+	/*size_t i;
+	unsigned *x;*/
 	struct unsigned_tree_iterator ti;
 
-	for(i = 0; i < 5; i++) if(!unsigned_tree_bulk_add(&equal, 0)) goto catch;
+	/*for(i = 0; i < 5; i++) if(!unsigned_tree_bulk_add(&equal, 0)) goto catch;
 	for(i = 0; i < 15; i++) if(!unsigned_tree_bulk_add(&equal, 1)) goto catch;
 	tree_unsigned_graph(&equal, "graph/manual-equal.gv");
 	unsigned_tree_bulk_finish(&equal);
@@ -159,7 +163,7 @@ static void manual_unsigned(void) {
 	x = unsigned_tree_get(&equal, 1), assert(x);
 	printf("equal: x = %u\n", *x);
 	ti._ = tree_unsigned_lower(&equal, 1);
-	printf("equal: %s:%u\n", orcify(ti._.end.node), ti._.end.idx);
+	printf("equal: %s:%u\n", orcify(ti._.end.node), ti._.end.idx);*/
 
 	if(!unsigned_tree_bulk_add(&step, 100)
 		|| !unsigned_tree_bulk_add(&step, 200)
@@ -168,13 +172,13 @@ static void manual_unsigned(void) {
 	unsigned_tree_bulk_finish(&step);
 	tree_unsigned_graph(&step, "graph/manual-step-finalize.gv");
 	ti._ = tree_unsigned_lower(&step, 50);
-	printf("step: 50: %s:%u\n", orcify(ti._.end.node), ti._.end.idx);
+	printf("step: 50: %s:%u\n", orcify(ti._.pos.node), ti._.pos.idx);
 	ti._ = tree_unsigned_lower(&step, 150);
-	printf("step: 150: %s:%u\n", orcify(ti._.end.node), ti._.end.idx);
+	printf("step: 150: %s:%u\n", orcify(ti._.pos.node), ti._.pos.idx);
 	ti._ = tree_unsigned_lower(&step, 250);
-	printf("step: 250: %s:%u\n", orcify(ti._.end.node), ti._.end.idx);
+	printf("step: 250: %s:%u\n", orcify(ti._.pos.node), ti._.pos.idx);
 	ti._ = tree_unsigned_lower(&step, 350);
-	printf("step: 350: %s:%u\n", orcify(ti._.end.node), ti._.end.idx);
+	printf("step: 350: %s:%u\n", orcify(ti._.pos.node), ti._.pos.idx);
 	goto finally;
 catch:
 	perror("manual_unsigned");

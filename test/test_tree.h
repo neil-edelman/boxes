@@ -52,6 +52,12 @@ static void PB_(subgraph)(const struct PB_(sub) *const sub, FILE *fp) {
 			" port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
 	}
 	fprintf(fp, "</table>>];\n");
+#ifdef TREE_MULTIPLE_KEY
+	if(sub->node->parent) {
+		fprintf(fp, "\ttrunk%p -> trunk%p [dir=back];\n",
+			(const void *)&sub->node->parent->base, (const void *)sub->node);
+	}
+#endif
 	if(!sub->height) return;
 	/* Draw the lines between trees. */
 	branch = PB_(branch_c)(sub->node);
@@ -94,7 +100,7 @@ static void PB_(print_r)(const struct PB_(sub) sub) {
 	const struct PB_(branch) *branch = 0;
 	unsigned i;
 	assert(sub.node);
-	printf("\\");
+	printf("/");
 	if(sub.height) {
 		branch = PB_(branch_c)(sub.node);
 		child.height = sub.height - 1;
@@ -108,7 +114,7 @@ static void PB_(print_r)(const struct PB_(sub) sub) {
 		PB_(to_string)(e, &z);
 		printf("%s%s", i ? ", " : "", z);
 	}
-	printf("/");
+	printf("\\");
 }
 static void PB_(print)(const struct B_(tree) *const tree) {
 	printf("Inorder: ");
@@ -163,7 +169,7 @@ static int PB_(contents)(const PB_(entry) *const e) {
 
 static PB_(entry_c) PB_(to_const)(const PB_(entry) e) {
 #ifdef TREE_VALUE
-	PB_(entry_c) c = { e.x, e.value };
+	PB_(entry_c) c; c.x = e.x, c.value = e.value;
 	return c;
 #else
 	return e;
@@ -200,13 +206,19 @@ static void PB_(test)(void) {
 	for(i = 0; i < n_size; i++) {
 		PB_(entry_test) *const e = n + i;
 		value = B_(tree_bulk_add)(&tree, PB_(test_to_x)(e));
-		assert(value);
+		if(!value) {
+			assert(errno == EDOM);
+			printf("***Value is already in tree; this is not allowed.\n");
+			errno = 0;
+			continue;
+		}
 #ifdef TREE_VALUE
 		*value = e->value;
 #endif
 		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u.gv", ++PB_(no));
 		PB_(graph)(&tree, fn);
 	}
+	printf("Finalize.\n");
 	B_(tree_bulk_finish)(&tree);
 	printf("Finalize again.\n");
 	B_(tree_bulk_finish)(&tree); /* This should be idempotent. */
