@@ -9,8 +9,8 @@
  A <tag:<B>tree> is an ordered set of <typedef:<PB>key>.
 
  @param[TREE_NAME, TREE_KEY]
- `<B>` that satisfies `C` naming conventions when mangled, required, and a
- comparable type, <typedef:<PB>key>, whose default is `unsigned int`. `<PB>` is
+ `<B>` that satisfies `C` naming conventions when mangled, required, and
+ `TREE_KEY`, a comparable type, <typedef:<PB>key>. `<PB>` is
  private, whose names are prefixed in a manner to avoid collisions.
 
  @param[TREE_VALUE]
@@ -30,6 +30,7 @@
  that satisfies `C` naming conventions when mangled and function implementing
  <typedef:<PSZ>to_string_fn>.
 
+ @fixme multi-key
  @fixme merge, difference
 
  @std C89 */
@@ -147,7 +148,7 @@ static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
  * Bulk-loading always is on the right side. */
 struct PB_(leaf) {
 	unsigned char size; /* `[0, TREE_MAX]`. */
-	PB_(key) x[TREE_MAX]; /* Cache-friendly lookup. */
+	PB_(key) key[TREE_MAX]; /* Cache-friendly lookup. */
 #ifdef TREE_VALUE
 	PB_(value) value[TREE_MAX];
 #endif
@@ -168,8 +169,8 @@ static const struct PB_(branch) *PB_(branch_c)(const struct PB_(leaf) *
 /** On `TREE_VALUE`, creates a map from pointer-to-<typedef:<PB>key> to
  pointer-to-<typedef:<PB>value>. The reason these are pointers is because it
  is not connected in memory. */
-struct B_(tree_entry) { PB_(key) *x; PB_(value) *value; };
-struct B_(tree_entry_c) { PB_(key_c) *x; PB_(value_c) *value; };
+struct B_(tree_entry) { PB_(key) *key; PB_(value) *value; };
+struct B_(tree_entry_c) { PB_(key_c) *key; PB_(value_c) *value; };
 /** On `TREE_VALUE`, otherwise it's just an alias for
  pointer-to-<typedef:<PB>key>. */
 typedef struct B_(tree_entry) PB_(entry);
@@ -180,11 +181,11 @@ static PB_(entry_c) PB_(null_entry_c)(void)
 	{ const PB_(entry_c) e = { 0, 0 }; return e; }
 static PB_(entry) PB_(to_entry)(struct PB_(leaf) *const leaf,
 	const unsigned i) { PB_(entry) e;
-	e.x = leaf->x + i, e.value = leaf->value + i; return e; }
+	e.key = leaf->key + i, e.value = leaf->value + i; return e; }
 static PB_(entry_c) PB_(to_entry_c)(const struct PB_(leaf) *const leaf,
 	const unsigned i) { PB_(entry_c) e;
-	e.x = leaf->x + i, e.value = leaf->value + i; return e; }
-/*static PB_(key) PB_(to_x)(const PB_(entry) entry) { return *entry.x; }*/
+	e.key = leaf->key + i, e.value = leaf->value + i; return e; }
+/*static PB_(key) PB_(to_x)(const PB_(entry) entry) { return *entry.key; }*/
 static PB_(value) *PB_(entry_to_value)(PB_(entry) entry) { return entry.value; }
 
 #else /* value --><!-- !value */
@@ -195,9 +196,9 @@ typedef PB_(key_c) *PB_(entry_c);
 static PB_(entry_c) PB_(null_entry_c)(void) { return 0; }
 static PB_(entry) PB_(null_entry)(void) { return 0; }
 static PB_(entry) PB_(to_entry)(struct PB_(leaf) *const leaf,
-	const unsigned i) { return leaf->x + i; }
+	const unsigned i) { return leaf->key + i; }
 static PB_(entry_c) PB_(to_entry_c)(const struct PB_(leaf) *const leaf,
-	const unsigned i) { return leaf->x + i; }
+	const unsigned i) { return leaf->key + i; }
 /*static PB_(key) PB_(to_x)(const PB_(key) *const x) { return *x; }*/
 static PB_(value) *PB_(entry_to_value)(PB_(entry) x) { return x; }
 
@@ -221,7 +222,7 @@ struct B_(tree) { struct PB_(sub) root; };
 /** Is `e` not null? @implements `is_element_c` */
 static int PB_(is_element_c)(PB_(entry_c) e) {
 #ifdef TREE_VALUE
-	return !!e.x;
+	return !!e.key;
 #else
 	return !!e;
 #endif
@@ -247,13 +248,13 @@ static int PB_(forward_pin)(struct PB_(forward) *const it) {
 	if(it->end.idx < it->end.node->size) return 1; /* Likely. */
 	if(!it->end.node->size) return 0; /* Empty nodes are always at the end. */
 	/* Go down the tree again and note the next. */
-	next.node = 0, x = it->end.node->x[it->end.node->size - 1];
+	next.node = 0, x = it->end.node->key[it->end.node->size - 1];
 	for(s = *it->root; s.height;
 		s.node = PB_(branch_c)(s.node)->child[a0], s.height--) {
 		unsigned a1 = s.node->size; a0 = 0;
 		while(a0 < a1) {
 			const unsigned m = (a0 + a1) / 2;
-			if(PB_(compare)(x, s.node->x[m]) > 0) a0 = m + 1; else a1 = m;
+			if(PB_(compare)(x, s.node->key[m]) > 0) a0 = m + 1; else a1 = m;
 		}
 		if(a0 < s.node->size)
 			next.node = s.node, next.height = s.height, next.idx = a0;
@@ -280,7 +281,7 @@ static PB_(entry_c) PB_(forward_next)(struct PB_(forward) *const it)
 /** Is `x` not null? @implements `is_element` */
 static int PB_(is_element)(const PB_(entry) e) {
 #ifdef TREE_VALUE
-	return !!e.x;
+	return !!e.key;
 #else
 	return !!e;
 #endif
@@ -303,13 +304,13 @@ static int PB_(pin)(struct PB_(iterator) *const it) {
 		it->pos.idx = 0;
 	if(it->pos.idx < it->pos.node->size) return 1; /* Likely. */
 	if(!it->pos.node->size) return 0; /* Empty nodes are always at the end. */
-	next.node = 0, x = it->pos.node->x[it->pos.node->size - 1];
+	next.node = 0, x = it->pos.node->key[it->pos.node->size - 1];
 	for(s = *it->root; s.height;
 		s.node = PB_(branch_c)(s.node)->child[a0], s.height--) {
 		unsigned a1 = s.node->size; a0 = 0;
 		while(a0 < a1) {
 			const unsigned m = (a0 + a1) / 2;
-			if(PB_(compare)(x, s.node->x[m]) > 0) a0 = m + 1; else a1 = m;
+			if(PB_(compare)(x, s.node->key[m]) > 0) a0 = m + 1; else a1 = m;
 		}
 		if(a0 < s.node->size)
 			next.node = s.node, next.height = s.height, next.idx = a0;
@@ -345,11 +346,11 @@ static struct PB_(pos) PB_(lower_r)(struct PB_(sub) *const tree,
 		if(!hi) continue; /* No nodes; bulk-add? */
 		do {
 			const unsigned m = (lo.idx + hi) / 2;
-			if(PB_(compare)(x, lo.node->x[m]) > 0) lo.idx = m + 1; else hi = m;
+			if(PB_(compare)(x, lo.node->key[m]) > 0) lo.idx = m + 1; else hi = m;
 		} while(lo.idx < hi);
 		if(!lo.height) break; /* Leaf node. */
 		if(lo.idx == lo.node->size) continue; /* Off the end. */
-		if(PB_(compare)(lo.node->x[lo.idx], x) <= 0) break; /* Total order. */
+		if(PB_(compare)(lo.node->key[lo.idx], x) <= 0) break; /* Total order. */
 	}
 	return lo;
 }
@@ -487,7 +488,7 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 		}
 
 		{
-			const PB_(key) l = last->x[last->size - 1];
+			const PB_(key) l = last->key[last->size - 1];
 			/* Verify that the argument is not smaller than the largest. */
 			if(PB_(compare)(l, x) > 0 || PB_(compare)(x, l) <= 0)
 				{ errno = EDOM; goto catch; }
@@ -533,7 +534,7 @@ static PB_(value) *B_(tree_bulk_add)(struct B_(tree) *const tree, PB_(key) x) {
 		}
 	}
 	assert(node && node->size < TREE_MAX);
-	node->x[node->size] = x;
+	node->key[node->size] = x;
 	return PB_(entry_to_value)(PB_(to_entry)(node, node->size++));
 catch:
 	/*printf("!!! freeing %s\n", orcify(node));*/
@@ -582,8 +583,8 @@ static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 		/* Move the right node to accept more keys. */
 		printf("right (%u) -> right at %u\n",
 			right->size, right_move);
-		memmove(right->x + right_move, right->x,
-			sizeof *right->x * right->size);
+		memmove(right->key + right_move, right->key,
+			sizeof *right->key * right->size);
 #ifdef TREE_VALUE
 		memcpy(right->value + right_move, right->value,
 			sizeof *right->value * right->size);
@@ -601,8 +602,8 @@ static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 		/* Move one node from the parent. */
 		printf("right:%u <- parent:%u (1)\n",
 			take_sibling, parent->base.size - 1);
-		memcpy(right->x + take_sibling,
-			parent->base.x + parent->base.size - 1, sizeof *right->x);
+		memcpy(right->key + take_sibling,
+			parent->base.key + parent->base.size - 1, sizeof *right->key);
 #ifdef TREE_VALUE
 		memcpy(right->value + take_sibling,
 			parent->base.value + parent->base.size - 1, sizeof *right->value);
@@ -610,8 +611,8 @@ static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 		/* Move the others from the sibling. */
 		printf("right <- sibling(%u) down to %u\n",
 			sibling->size, take_sibling);
-		memcpy(right->x, sibling->x + sibling->size - take_sibling,
-			sizeof *right->x * take_sibling);
+		memcpy(right->key, sibling->key + sibling->size - take_sibling,
+			sizeof *right->key * take_sibling);
 #ifdef TREE_VALUE
 		memcpy(right->value, sibling->value + sibling->size - take_sibling,
 			sizeof *right->value * take_sibling);
@@ -620,8 +621,8 @@ static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 		/* Sibling's key is now the parent's. */
 		printf("parent:%u <- sibling:%u (1)\n",
 			parent->base.size - 1, sibling->size - 1);
-		memcpy(parent->base.x + parent->base.size - 1,
-			sibling->x + sibling->size - 1, sizeof *right->x);
+		memcpy(parent->base.key + parent->base.size - 1,
+			sibling->key + sibling->size - 1, sizeof *right->key);
 #ifdef TREE_VALUE
 		memcpy(parent->base.value + parent->base.size - 1,
 			sibling->value + sibling->size - 1, sizeof *right->value);

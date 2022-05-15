@@ -40,13 +40,13 @@ static void pair_to_string(const struct pair_tree_entry_c, char (*)[12]);
 #include "../src/tree.h"
 /** @implements <typedef:<PB>action_fn> */
 static void pair_filler(struct pair_tree_test *x) {
-	unsigned_filler(&x->x);
+	unsigned_filler(&x->key);
 	unsigned_filler(&x->value), x->value += 10000;
-	printf("generated %u->%u\n", x->x, x->value);
+	printf("generated %u->%u\n", x->key, x->value);
 }
 /** @implements <typedef:<PSZ>to_string_fn> */
 static void pair_to_string(const struct pair_tree_entry_c x,
-	char (*const z)[12]) { sprintf(*z, "%u→%u", *x.x, *x.value); } /* 3+3+5 */
+	char (*const z)[12]) { sprintf(*z, "%u→%u", *x.key, *x.value); } /* 3+3+5 */
 
 
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
@@ -103,7 +103,7 @@ typedef const char *const_str;
 /** @implements <typedef:<PB>action_fn> */
 static void star_filler(struct star_tree_test *x) {
 	const unsigned i = (unsigned)rand() / (RAND_MAX / star_size + 1);
-	x->x = star_distances[i], x->value = star_names[i];
+	x->key = star_distances[i], x->value = star_names[i];
 }
 /** @implements <typedef:<PSZ>to_string_fn> */
 static void star_to_string(const struct star_tree_entry_c x,
@@ -134,18 +134,18 @@ static void entry_to_string(struct entry_tree_entry_c, char (*)[12]);
 #define TREE_TO_STRING &entry_to_string
 #include "../src/tree.h"
 static void entry_filler(struct entry_tree_test *test) {
-	test->x.u32 = (uint32_t)rand();
-	test->x.year %= 10000;
-	test->x.month = test->x.month % 12 + 1;
-	test->x.day = test->x.day % 31 + 1;
+	test->key.u32 = (uint32_t)rand();
+	test->key.year %= 10000;
+	test->key.month = test->key.month % 12 + 1;
+	test->key.day = test->key.day % 31 + 1;
 	test->value = 42;
 }
 static void entry_to_string(const struct entry_tree_entry_c entry,
 	char (*const z)[12]) {
-	assert(entry.x->year < 10000 && entry.x->month && entry.x->month <= 31
-		&& entry.x->day && entry.x->day <= 31);
+	assert(entry.key->year < 10000 && entry.key->month && entry.key->month <= 31
+		&& entry.key->day && entry.key->day <= 31);
 	sprintf(*z, "%u-%2.2u-%2.2u",
-		entry.x->year % 10000, entry.x->month, entry.x->day);
+		entry.key->year % 10000, entry.key->month, entry.key->day);
 }
 
 

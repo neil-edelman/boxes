@@ -12,13 +12,13 @@
 #ifdef TREE_VALUE
 /** This makes the key-value in the same place; will have to copy. */
 typedef struct B_(tree_test) {
-	PB_(key) x;
+	PB_(key) key;
 	PB_(value) value;
 } PB_(entry_test);
-static PB_(key) PB_(test_to_x)(struct B_(tree_test) *const t) { return t->x; }
+static PB_(key) PB_(test_to_x)(struct B_(tree_test) *const t) { return t->key; }
 static PB_(entry_c) PB_(test_to_entry_c)(struct B_(tree_test) *const t) {
 	struct B_(tree_entry_c) e;
-	e.x = &t->x, e.value = &t->value;
+	e.key = &t->key, e.value = &t->value;
 	return e;
 }
 #else
@@ -167,7 +167,7 @@ static void PB_(sort)(PB_(entry_test) *a, const size_t size) {
 
 static int PB_(contents)(const PB_(entry) *const e) {
 #ifdef TREE_VALUE
-	return !!e->x;
+	return !!e->key;
 #else
 	return !!*e;
 #endif
@@ -175,7 +175,7 @@ static int PB_(contents)(const PB_(entry) *const e) {
 
 static PB_(entry_c) PB_(to_const)(const PB_(entry) e) {
 #ifdef TREE_VALUE
-	PB_(entry_c) c; c.x = e.x, c.value = e.value;
+	PB_(entry_c) c; c.key = e.key, c.value = e.value;
 	return c;
 #else
 	return e;
