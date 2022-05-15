@@ -82,14 +82,15 @@
  independent of the value added. This means that odd orders, (even `TREE_MAX`,)
  instead of balance 0, it's either 0 or 2, and would not work. Even order it's
  always 1-unbalanced, (which is better; I don't feel like doing virtual
- functions for each case.) */
+ functions for each case.)
+ @fixme Now it doesn't; test 2. */
 #if TREE_MAX < 3 || TREE_MAX > UCHAR_MAX
 #error TREE_MAX parameter range `[3, UCHAR_MAX]`.
 #endif
-/* Usually this is `⌊TREE_MAX/2⌋`, the maximum, corresponding to
- `⌈TREE_ORDER/2⌉` children. Any smaller value provides hysteresis in the spirit
- of <Johnson, Shasha, 1990, Free-at-Empty>, and is less-eager than the original.
- We don't get worse-case at small occupancies, but worse worse-case at large. */
+/* This is the worst-case branching factor; the performance will be
+ \O(log_{`TREE_MIN`+1} `size`). Usually this is `⌈(TREE_MAX+1)/2⌉-1`. However,
+ smaller values are less-eager; this has been chosen to provide hysteresis. In
+ the extreme, <Johnson, Shasha, 1990, Free-at-Empty> show good results. */
 #define TREE_MIN (TREE_MAX / 3)
 #if TREE_MIN == 0 || TREE_MIN > TREE_MAX / 2
 #error TREE_MIN parameter range `[1, \floor(TREE_MAX / 2)]`.
