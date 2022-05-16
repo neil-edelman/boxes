@@ -13,16 +13,16 @@
 
 /* Unsigned numbers: testing framework. */
 /** @implements <typedef:<PB>action_fn> */
-static void unsigned_filler(unsigned *x)
+static void int_filler(unsigned *x)
 	{ *x = (unsigned)rand() / (RAND_MAX / 1000 + 1); }
 /** @implements <typedef:<PSZ>to_string_fn> */
-static void unsigned_to_string(const unsigned *x, char (*const z)[12])
+static void int_to_string(const unsigned *x, char (*const z)[12])
 	{ sprintf(*z, "%u", *x); }
-#define TREE_NAME unsigned
-#define TREE_TEST &unsigned_filler
+#define TREE_NAME int
+#define TREE_TEST &int_filler
 #define TREE_EXPECT_TRAIT
 #include "../src/tree.h"
-#define TREE_TO_STRING &unsigned_to_string
+#define TREE_TO_STRING &int_to_string
 #include "../src/tree.h"
 
 
@@ -40,8 +40,8 @@ static void pair_to_string(const struct pair_tree_entry_c, char (*)[12]);
 #include "../src/tree.h"
 /** @implements <typedef:<PB>action_fn> */
 static void pair_filler(struct pair_tree_test *x) {
-	unsigned_filler(&x->key);
-	unsigned_filler(&x->value), x->value += 10000;
+	int_filler(&x->key);
+	int_filler(&x->value), x->value += 10000;
 	printf("generated %u->%u\n", x->key, x->value);
 }
 /** @implements <typedef:<PSZ>to_string_fn> */
@@ -149,11 +149,12 @@ static void entry_to_string(const struct entry_tree_entry_c entry,
 }
 
 
-static void manual_unsigned(void) {
-	struct unsigned_tree equal = unsigned_tree(), step = unsigned_tree();
+static void manual_int(void) {
+	struct int_tree equal = int_tree(), step = int_tree();
 	/*size_t i;
 	unsigned *x;*/
-	struct unsigned_tree_iterator ti;
+	struct int_tree_iterator it;
+	unsigned *v;
 
 	/*for(i = 0; i < 5; i++) if(!unsigned_tree_bulk_add(&equal, 0)) goto catch;
 	for(i = 0; i < 15; i++) if(!unsigned_tree_bulk_add(&equal, 1)) goto catch;
@@ -165,39 +166,52 @@ static void manual_unsigned(void) {
 	ti._ = tree_unsigned_lower(&equal, 1);
 	printf("equal: %s:%u\n", orcify(ti._.end.node), ti._.end.idx);*/
 
-	if(!unsigned_tree_bulk_add(&step, 100)
-		|| !unsigned_tree_bulk_add(&step, 200)
-		|| !unsigned_tree_bulk_add(&step, 300)) goto catch;
-	tree_unsigned_graph(&step, "graph/manual-step.gv");
-	unsigned_tree_bulk_finish(&step);
-	tree_unsigned_graph(&step, "graph/manual-step-finalize.gv");
-	ti._ = tree_unsigned_lower(&step, 50);
-	printf("step: 50: %s:%u\n", orcify(ti._.pos.node), ti._.pos.idx);
-	ti._ = tree_unsigned_lower(&step, 150);
-	printf("step: 150: %s:%u\n", orcify(ti._.pos.node), ti._.pos.idx);
-	ti._ = tree_unsigned_lower(&step, 250);
-	printf("step: 250: %s:%u\n", orcify(ti._.pos.node), ti._.pos.idx);
-	ti._ = tree_unsigned_lower(&step, 350);
-	printf("step: 350: %s:%u\n", orcify(ti._.pos.node), ti._.pos.idx);
+	if(!int_tree_bulk_add(&step, 100, 0)
+		|| !int_tree_bulk_add(&step, 200, 0)
+		|| !int_tree_bulk_add(&step, 300, 0)) goto catch;
+	tree_int_graph(&step, "graph/step.gv");
+	int_tree_bulk_finish(&step);
+	tree_int_graph(&step, "graph/step-finalize.gv");
+	it = int_tree_lower(&step, 50);
+	printf("step: 50: %s:%u.\n", orcify(it._.ref.node), it._.ref.idx);
+	v = int_tree_next(&it), assert(v && *v == 100);
+	printf("It's %u.\n", *v);
+	it = int_tree_lower(&step, 150);
+	printf("step: 150: %s:%u\n", orcify(it._.ref.node), it._.ref.idx);
+	v = int_tree_next(&it), assert(v && *v == 200);
+	printf("It's %u.\n", *v);
+	it = int_tree_lower(&step, 250);
+	printf("step: 250: %s:%u\n", orcify(it._.ref.node), it._.ref.idx);
+	v = int_tree_next(&it), assert(v && *v == 300);
+	printf("It's %u.\n", *v);
+	it = int_tree_lower(&step, 350);
+	printf("step: 350: %s:%u\n", orcify(it._.ref.node), it._.ref.idx);
+	v = int_tree_next(&it), assert(!v);
+	printf("It's null.\n");
+	v = int_tree_get_next(&step, 50), assert(v && *v == 100);
+	v = int_tree_get_next(&step, 150), assert(v && *v == 200);
+	v = int_tree_get_next(&step, 250), assert(v && *v == 300);
+	v = int_tree_get_next(&step, 300), assert(v && *v == 300);
+	v = int_tree_get_next(&step, 350), assert(!v);
 	goto finally;
 catch:
 	perror("manual_unsigned");
 	assert(0);
 finally:
-	unsigned_tree_(&equal);
-	unsigned_tree_(&step);
+	int_tree_(&equal);
+	int_tree_(&step);
 	printf("\n");
 }
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	unsigned_tree_test();
+	int_tree_test();
 	pair_tree_test();
 	/* 649516 fails with two levels of equal keys at the end, (of course; it's
 	 lower!) */
 	star_tree_test();
 	entry_tree_test();
-	manual_unsigned();
+	manual_int();
 	return EXIT_SUCCESS;
 }

@@ -52,7 +52,7 @@ static void PB_(subgraph)(const struct PB_(sub) *const sub, FILE *fp) {
 	for(i = 0; i < sub->node->size; i++) {
 		const char *const bgc = i & 1 ? "" : " bgcolor=\"Gray90\"";
 		char z[12];
-		PB_(entry_c) e = PB_(to_entry_c)(sub->node, i);
+		PB_(entry_c) e = PB_(leaf_to_entry_c)(sub->node, i);
 		PB_(to_string)(e, &z);
 		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
 			" port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
@@ -116,7 +116,7 @@ static void PB_(print_r)(const struct PB_(sub) sub) {
 		PB_(entry_c) e;
 		if(sub.height) child.node = branch->child[i], PB_(print_r)(child);
 		if(i == sub.node->size) break;
-		e = PB_(to_entry_c)(sub.node, i);
+		e = PB_(leaf_to_entry_c)(sub.node, i);
 		PB_(to_string)(e, &z);
 		printf("%s%s", i ? ", " : "", z);
 	}
@@ -204,28 +204,29 @@ static void PB_(test)(void) {
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
 	it = B_(tree_lower)(0, PB_(test_to_x)(n + 0)), assert(!it._.root);
-	value = B_(tree_get)(0, PB_(test_to_x)(n + 0)), assert(!value);
-	it = B_(tree_lower)(&tree, PB_(test_to_x)(n + 0)), assert(!it._.root);
-	value = B_(tree_get)(&tree, PB_(test_to_x)(n + 0)), assert(!value);
+	value = B_(tree_get_next)(0, PB_(test_to_x)(n + 0)), assert(!value);
+	it = B_(tree_lower)(&tree, PB_(test_to_x)(n + 0)), assert(!it._.ref.node);
+	value = B_(tree_get_next)(&tree, PB_(test_to_x)(n + 0)), assert(!value);
 
 	/* Test. */
 	for(i = 0; i < n_size; i++) {
+		PB_(entry_c) ent;
+		char z[12];
 		PB_(entry_test) *const e = n + i;
-		value = B_(tree_bulk_add)(&tree, PB_(test_to_x)(e));
-		if(!value) {
-			PB_(entry_c) ent;
-			char z[12];
-			ent = PB_(test_to_entry_c)(e);
-			PB_(to_string)(ent, &z);
-			assert(errno == EDOM);
-			printf("***Value %s is already in tree; this is not allowed.\n", z);
-			errno = 0;
-			continue;
-		}
-		n_unique++;
+		ent = PB_(test_to_entry_c)(e);
+		PB_(to_string)(ent, &z);
+		printf("Adding <%s>.\n", z);
+		switch(B_(tree_bulk_add)(&tree, PB_(test_to_x)(e), &value)) {
+		case TREE_ERROR: perror("What?"); assert(0); break;
+		case TREE_YIELD: printf("*** Key <%s> is already in tree.\n", z); break;
+		case TREE_UNIQUE:
+			n_unique++;
 #ifdef TREE_VALUE
-		*value = e->value;
+			*value = e->value;
 #endif
+			break;
+		case TREE_REPLACE: assert(0);
+		}
 		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u.gv", ++PB_(no));
 		PB_(graph)(&tree, fn);
 	}
@@ -233,8 +234,7 @@ static void PB_(test)(void) {
 	B_(tree_bulk_finish)(&tree);
 	printf("Finalize again.\n");
 	B_(tree_bulk_finish)(&tree); /* This should be idempotent. */
-	sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u-finalized.gv", ++PB_(no));
-	PB_(graph)(&tree, fn);
+	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-finalized.gv");
 
 	//printf("Tree: %s.\n", PB_(tree_to_string)(&tree));
 	/* Iteration. */
