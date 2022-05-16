@@ -271,6 +271,7 @@ static int PB_(pin_c)(struct PB_(sub) sub, struct PB_(ref_c) *const ref) { \
 }
 TREE_PIN(pin_c, ref_c)
 TREE_PIN(pin, ref)
+#undef TREE_PIN
 /* This could be expanded! */
 
 /* A constant iterator. @implements `forward` */
