@@ -69,14 +69,14 @@
 #define B_(n) TREE_CAT(TREE_NAME, n)
 #define PB_(n) TREE_CAT(tree, B_(n))
 /* Leaf: `TREE_MAX type`; branch: `TREE_MAX type + TREE_ORDER pointer`. */
-#define TREE_MAX 2
+#define TREE_MAX 4
 #if TREE_MAX < 2 || TREE_MAX > UCHAR_MAX
 #error TREE_MAX parameter range `[3, UCHAR_MAX]`.
 #endif
 /* This is the worst-case branching factor; the performance will be
  \O(log_{`TREE_MIN`+1} `size`). Usually this is `⌈(TREE_MAX+1)/2⌉-1`. However,
  smaller values are less-eager; this has been chosen to provide hysteresis. In
- the extreme, <Johnson, Shasha, 1990, Free-at-Empty> show good results. (Except
+ the extreme, <Johnson, Shasha, 1993, Free-at-Empty> show good results. (Except
  TREE_MAX 2.) */
 #define TREE_MIN (TREE_MAX / 3 ? TREE_MAX / 3 : 1)
 #if TREE_MIN == 0 || TREE_MIN > TREE_MAX / 2
@@ -644,17 +644,19 @@ static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 
 static PB_(value) *B_(tree_add)(struct B_(tree) *const tree, PB_(key) x) {
 	struct PB_(node) *node = 0, *head = 0;
+	struct PB_(ref) add;
+	add.node = 0;
 	if(!tree) return 0;
-	if(!tree->root.node) { /* Idle tree. */
+	if(!(node = tree->root.node)) { /* Idle tree. */
 		assert(!tree->root.height);
 		if(!(node = malloc(sizeof *node))) goto catch;
-		node->size = 0;
-		tree->root.node = node;
-		/*printf("Idle tree: new %s.\n", orcify(node));*/
+		node->size = 1;
+		add.node = tree->root.node = node, add.idx = 0;
+		printf("add: idle tree, new %s.\n", orcify(node));
 	} else if(tree->root.height == UINT_MAX) { /* Empty tree. */
-		tree->root.height = 0;
-		tree->root.node->size = 0;
-		/*printf("Empty tree, %s.\n", orcify(node));*/
+		tree->root.height = 0, node->size = 1;
+		add.node = node, add.idx = 0;
+		printf("add: empty tree, %s.\n", orcify(node));
 	} else {
 #if 0
 		struct B_(tree) space = { 0, 0 }; /* Furthest node with space. */
