@@ -93,7 +93,9 @@ static void star_to_string(struct star_tree_entry_c, char (*)[12]);
 typedef const char *const_str;
 #define TREE_NAME star
 #define TREE_KEY double
-//#define TREE_MULTIPLE_KEY /* Different stars can have the same distance. */
+/*#define TREE_MULTIPLE_KEY work in progress; do I want to have extra stuff in
+ the tree, or the iterator? Both do not sound fun. */ /* Different stars can
+ have the same distance. */
 #define TREE_VALUE const_str
 #define TREE_TEST &star_filler
 #define TREE_EXPECT_TRAIT
@@ -116,7 +118,10 @@ static void star_to_string(const struct star_tree_entry_c x,
 #include <stdint.h> /* C99 */
 union date32 {
 	uint32_t u32;
-	struct { unsigned day : 5, month : 4, year : 23; }; /* C11 */
+	/* C11 would be good; a little! but also, wtf are they doing? Obviously
+	 they should have make an anonymous keyword, screw not breaking things, it
+	 would have been **so useful**. */
+	struct { unsigned day : 5, month : 4, year : 23; } d;
 };
 static int entry_compare(const union date32 a, const union date32 b)
 	{ return a.u32 > b.u32; }
@@ -135,17 +140,18 @@ static void entry_to_string(struct entry_tree_entry_c, char (*)[12]);
 #include "../src/tree.h"
 static void entry_filler(struct entry_tree_test *test) {
 	test->key.u32 = (uint32_t)rand();
-	test->key.year %= 10000;
-	test->key.month = test->key.month % 12 + 1;
-	test->key.day = test->key.day % 31 + 1;
+	test->key.d.year %= 10000;
+	test->key.d.month = test->key.d.month % 12 + 1;
+	test->key.d.day = test->key.d.day % 31 + 1;
 	test->value = 42;
 }
 static void entry_to_string(const struct entry_tree_entry_c entry,
 	char (*const z)[12]) {
-	assert(entry.key->year < 10000 && entry.key->month && entry.key->month <= 31
-		&& entry.key->day && entry.key->day <= 31);
+	assert(entry.key->d.year < 10000 && entry.key->d.month
+		&& entry.key->d.month <= 31
+		&& entry.key->d.day && entry.key->d.day <= 31);
 	sprintf(*z, "%u-%2.2u-%2.2u",
-		entry.key->year % 10000, entry.key->month, entry.key->day);
+		entry.key->d.year % 10000, entry.key->d.month, entry.key->d.day);
 }
 
 

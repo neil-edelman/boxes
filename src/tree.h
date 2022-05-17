@@ -6,12 +6,13 @@
 
  @subtitle Ordered tree
 
- A <tag:<B>tree> is an ordered set of <typedef:<PB>key>.
+ A <tag:<B>tree> is an ordered set or map.
 
  @param[TREE_NAME, TREE_KEY]
  `<B>` that satisfies `C` naming conventions when mangled, required, and
- `TREE_KEY`, a comparable type, <typedef:<PB>key>. `<PB>` is
- private, whose names are prefixed in a manner to avoid collisions.
+ `TREE_KEY`, a comparable type, <typedef:<PB>key>, whose default is
+ `unsigned int`. `<PB>` is private, whose names are prefixed in a manner to
+ avoid collisions.
 
  @param[TREE_VALUE]
  `TRIE_VALUE` is an optional payload to go with the type, <typedef:<PB>value>.
