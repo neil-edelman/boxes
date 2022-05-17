@@ -155,6 +155,7 @@ static void manual_int(void) {
 	unsigned *x;*/
 	struct int_tree_iterator it;
 	unsigned *v;
+	int ret;
 
 	/*for(i = 0; i < 5; i++) if(!unsigned_tree_bulk_add(&equal, 0)) goto catch;
 	for(i = 0; i < 15; i++) if(!unsigned_tree_bulk_add(&equal, 1)) goto catch;
@@ -170,7 +171,8 @@ static void manual_int(void) {
 		|| !int_tree_bulk_add(&step, 200, 0)
 		|| !int_tree_bulk_add(&step, 300, 0)) goto catch;
 	tree_int_graph(&step, "graph/step.gv");
-	int_tree_bulk_finish(&step);
+	ret = int_tree_bulk_finish(&step);
+	assert(ret);
 	tree_int_graph(&step, "graph/step-finalize.gv");
 	it = int_tree_lower(&step, 50);
 	printf("step: 50: %s:%u.\n", orcify(it._.ref.node), it._.ref.idx);

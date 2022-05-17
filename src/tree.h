@@ -77,7 +77,7 @@
  \O(log_{`TREE_MIN`+1} `size`). Usually this is `⌈(TREE_MAX+1)/2⌉-1`. However,
  smaller values are less-eager; this has been chosen to provide hysteresis. In
  the extreme, <Johnson, Shasha, 1993, Free-at-Empty> show good results. (Except
- TREE_MAX 2.) */
+ `TREE_MAX 2`, one can be the only value.) */
 #define TREE_MIN (TREE_MAX / 3 ? TREE_MAX / 3 : 1)
 #if TREE_MIN == 0 || TREE_MIN > TREE_MAX / 2
 #error TREE_MIN parameter range `[1, \floor(TREE_MAX / 2)]`.
@@ -134,13 +134,13 @@ static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
 
 /* B-tree node, as <Bayer, McCreight, 1972, Large>. These rules are more lazy
  than the original so as to not exhibit worst-case behaviour in small trees, as
- <Johnson, Shasha, 1990, Free-at-Empty>, but lookup is potentially slower after
+ <Johnson, Shasha, 1993, Free-at-Empty>, but lookup is potentially slower after
  deleting; this is a design decision that nodes are not cached. In the
  terminology of <Knuth, 1998 Art 3>,
  * Every branch has at most `TREE_ORDER == TREE_MAX + 1` children, which is at
-   minimum three, (four with pre-emptive operations.)
- * Every non-root and non-bulk-loaded node has at least
-   `TREE_MIN = ⎣TREE_MAX/3⎦` keys.
+   minimum three.
+ * Every non-root and non-bulk-loaded node has at least `TREE_MIN` keys,
+   (`⎣TREE_MAX/3⎦`.)
  * Every branch has at least one child, `k`, and contains `k - 1` keys, (this
    is a consequence of the fact that they are implicitly storing a complete
    binary sub-tree.)
@@ -151,7 +151,8 @@ static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
    0 -- 1: idle `{ 0, 0 }`, and `{ garbage leaf, UINT_MAX }`, one could test,
    `!root || height == UINT_MAX`.
  * Bulk-loading always is on the right side.
- It is also a leaf at height zero, or part of a branch. */
+ * A branch node is a specialization of a (leaf) node with children. One can
+   tell if it's a branch by the non-zero height. */
 struct PB_(node) {
 	unsigned char size; /* `[0, TREE_MAX]`. */
 	PB_(key) key[TREE_MAX]; /* Cache-friendly lookup. */
@@ -552,12 +553,12 @@ catch:
 	return TREE_ERROR;
 }
 
-static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
+static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 	struct PB_(sub) s;
 	struct PB_(node) *right;
 	printf("tree_bulk_finish(%s) number of nodes [%u, %u]\n",
 		orcify(tree), TREE_MIN, TREE_MAX);
-	if(!tree || !tree->root.node || tree->root.height == UINT_MAX) return;
+	if(!tree || !tree->root.node || tree->root.height == UINT_MAX) return 1;
 	for(s = tree->root; s.height; s.node = right, s.height--) {
 		unsigned distribute, right_want, right_move, take_sibling;
 		struct PB_(branch) *parent = PB_(branch)(s.node);
@@ -570,6 +571,7 @@ static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 		if(TREE_MIN <= right->size)
 			{ printf("cool\n"); continue; } /* Has enough. */
 		distribute = sibling->size + right->size;
+		if(distribute < 2 * TREE_MIN) return 0;
 		right_want = distribute / 2;
 		right_move = right_want - right->size;
 		take_sibling = right_move - 1;
@@ -577,10 +579,8 @@ static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 			" be move %u and take %u from sibling.\n", distribute, right_want,
 			right_move, take_sibling);
 		/* Either the right has met the properties of a B-tree node, (covered
-		 above,) or the left sibling is full from bulk-loading. */
-		assert(sibling->size == TREE_MAX
-			&& distribute >= 2 * TREE_MIN && right_want >= TREE_MIN
-			&& right->size < right_want
+		 above,) or the left sibling is full from bulk-loading (relaxed.) */
+		assert(right->size < right_want && right_want >= TREE_MIN
 			&& sibling->size - take_sibling >= TREE_MIN + 1);
 		/* Move the right node to accept more keys. */
 		printf("right (%u) -> right at %u\n",
@@ -635,6 +635,7 @@ static void B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 			parent->base.size, orcify(right), right->size, orcify(sibling),
 			sibling->size);
 	}
+	return 1;
 }
 
 
