@@ -93,7 +93,7 @@ static const PSTR_(to_string_fn) PSTR_(to_string) = (TO_STRING);
  loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`.
  @return Address of the static buffer. @order \Theta(1) @allow */
 static const char *STR_(to_string)(const PSTR_(box) *const box) {
-	const char comma = ',', space = ' ', *const ellipsis = "…",
+	const char comma = ',', space = ' ', ellipsis[] = "…",
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;
 	const size_t ellipsis_len = sizeof ellipsis - 1;
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;

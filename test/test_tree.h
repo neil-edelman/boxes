@@ -242,7 +242,7 @@ static void PB_(test)(void) {
 	B_(tree_bulk_finish)(&tree); /* This should be idempotent. */
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-finalized.gv");
 
-	//printf("Tree: %s.\n", PB_(tree_to_string)(&tree));
+	printf("Tree: %s.\n", PB_(tree_to_string)(&tree));
 	/* Iteration. */
 	it = B_(tree_begin)(&tree), i = 0;
 	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
