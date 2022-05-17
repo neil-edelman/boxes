@@ -167,9 +167,9 @@ static void manual_int(void) {
 	ti._ = tree_unsigned_lower(&equal, 1);
 	printf("equal: %s:%u\n", orcify(ti._.end.node), ti._.end.idx);*/
 
-	if(!int_tree_bulk_add(&step, 100, 0)
-		|| !int_tree_bulk_add(&step, 200, 0)
-		|| !int_tree_bulk_add(&step, 300, 0)) goto catch;
+	if(!int_tree_bulk_add(&step, 100)
+		|| !int_tree_bulk_add(&step, 200)
+		|| !int_tree_bulk_add(&step, 300)) goto catch;
 	tree_int_graph(&step, "graph/step.gv");
 	ret = int_tree_bulk_finish(&step);
 	assert(ret);

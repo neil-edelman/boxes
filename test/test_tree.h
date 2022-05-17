@@ -216,7 +216,13 @@ static void PB_(test)(void) {
 		ent = PB_(test_to_entry_c)(e);
 		PB_(to_string)(ent, &z);
 		printf("Adding <%s>.\n", z);
-		switch(B_(tree_bulk_add)(&tree, PB_(test_to_x)(e), &value)) {
+		switch(
+#ifdef TREE_VALUE
+		B_(tree_bulk_add)(&tree, PB_(test_to_x)(e), &value)
+#else
+		B_(tree_bulk_add)(&tree, PB_(test_to_x)(e))
+#endif
+			){
 		case TREE_ERROR: perror("What?"); assert(0); break;
 		case TREE_YIELD: printf("*** Key <%s> is already in tree.\n", z); break;
 		case TREE_UNIQUE:

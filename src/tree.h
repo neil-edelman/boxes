@@ -445,11 +445,23 @@ static void PB_(print)(const struct B_(tree) *const tree)
 	{ (void)tree, printf("not printable\n"); }
 #endif
 
+#ifdef TREE_VALUE /* <!-- map */
 /** `x` must be higher than the largest key in `tree`.
+ @param[value] A pointer to the key's value which is set by the function on
+ returning true. A null pointer in this parameter causes the value to go
+ uninitialized. This parameter is not there if one didn't specify `TREE_VALUE`.
+ @return One of <tag:tree_result>: `TREE_ERROR` and `errno` will be set,
+ `TREE_YIELD` if the key is already (the highest) in the tree, and
+ `TREE_UNIQUE`, added, the `value` (if specified) is uninitialized.
  @throws[EDOM] `x` is not higher than any key in `tree`.
  @throws[malloc] */
 static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
-	PB_(key) x, PB_(value) **const value) {
+	PB_(key) x, PB_(value) **const value)
+#else /* map --><!-- set */
+static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
+	PB_(key) x)
+#endif
+{
 	struct PB_(node) *node = 0, *head = 0; /* The original and new. */
 	assert(tree);
 	if(!tree->root.node) { /* Idle tree. */
@@ -484,11 +496,13 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 			/* Verify that the argument is not smaller than the largest. */
 			if(PB_(compare)(l, x) > 0) return errno = EDOM, TREE_ERROR;
 			if(PB_(compare)(x, l) <= 0) {
+#ifdef TREE_VALUE
 				if(value) { /* Last value in the last node. */
 					struct PB_(ref) ref;
 					ref.node = last, ref.idx = last->size - 1;
 					*value = PB_(ref_to_value)(ref);
 				}
+#endif
 				return TREE_YIELD;
 			}
 		}
@@ -534,11 +548,13 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 	}
 	assert(node && node->size < TREE_MAX);
 	node->key[node->size] = x;
+#ifdef TREE_VALUE
 	if(value) {
 		struct PB_(ref) ref;
 		ref.node = node, ref.idx = node->size;
 		*value = PB_(ref_to_value)(ref);
 	}
+#endif
 	node->size++;
 	return TREE_UNIQUE;
 catch:
@@ -719,7 +735,12 @@ static void PB_(unused_base)(void) {
 	B_(tree)(); B_(tree_)(0); B_(tree_begin)(0); B_(tree_next)(0);
 	B_(tree_lower)(0, k);
 	B_(tree_get_next)(0, k);
-	B_(tree_bulk_add)(0, k, 0); B_(tree_bulk_finish)(0); B_(tree_add)(0, k);
+#ifdef TREE_VALUE
+	B_(tree_bulk_add)(0, k, 0);
+#else
+	B_(tree_bulk_add)(0, k);
+#endif
+	B_(tree_bulk_finish)(0); B_(tree_add)(0, k);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
