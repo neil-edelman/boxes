@@ -321,9 +321,20 @@ static PB_(entry) PB_(next)(struct PB_(iterator) *const it) {
 
 #include "../test/orcish.h"
 
+static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
+	unsigned hi = lo->node->size;
+	lo->idx = 0;
+	if(!hi) return;
+	do {
+		const unsigned m = (lo->idx + hi) / 2;
+		if(PB_(compare)(key, lo->node->key[m]) > 0) lo->idx = m + 1;
+		else hi = m;
+	} while(lo->idx < hi);
+}
+
 /** Assume `tree` and `x` are checked for non-empty validity. */
 static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const tree,
-	const PB_(key) x, struct PB_(ref) *const unfull, int *const is_equal) {
+	const PB_(key) key, struct PB_(ref) *const unfull, int *const is_equal) {
 	struct PB_(ref) lo;
 	for(lo.node = tree->node, lo.height = tree->height; ;
 		lo.node = PB_(branch_c)(lo.node)->child[lo.idx], lo.height--) {
@@ -333,12 +344,13 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const tree,
 		if(!hi) continue; /* No nodes; bulk-add? */
 		do {
 			const unsigned m = (lo.idx + hi) / 2;
-			if(PB_(compare)(x, lo.node->key[m]) > 0) lo.idx = m + 1; else hi = m;
+			if(PB_(compare)(key, lo.node->key[m]) > 0) lo.idx = m + 1;
+			else hi = m;
 		} while(lo.idx < hi);
 		if(!lo.height) break; /* Leaf node. */
 		if(lo.idx == lo.node->size) continue; /* Off the end. */
 		/* Total order and monotonic, otherwise have to check right. */
-		if(PB_(compare)(lo.node->key[lo.idx], x) > 0) continue;
+		if(PB_(compare)(lo.node->key[lo.idx], key) > 0) continue;
 		if(is_equal) *is_equal = 1;
 		break;
 	}
@@ -650,36 +662,107 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 
 
 
-
-
-
 static PB_(value) *B_(tree_add)(struct B_(tree) *const tree, PB_(key) key) {
 	struct PB_(node) *head = 0;
-	struct PB_(ref) add = { 0, 0, 0 };
-	add.node = 0;
+	struct PB_(ref) add, unfull;
+	int is_equal;
+	struct PB_(ref) ref;
+
+	/* Take care of corner cases. */
 	if(!tree) return 0;
 	if(!(add.node = tree->root.node)) { /* Idle tree. */
 		assert(!tree->root.height);
 		if(!(add.node = malloc(sizeof *add.node))) goto catch;
-		add.node->size = 1, tree->root.node = add.node, add.idx = 0;
+		add.node->size = 0, tree->root.node = add.node, add.idx = 0;
 		printf("add: idle tree, new %s.\n", orcify(add.node));
+		goto insert;
 	} else if(tree->root.height == UINT_MAX) { /* Empty tree. */
-		tree->root.height = 0, add.node->size = 1, add.idx = 0;
+		tree->root.height = 0, add.node->size = 0, add.idx = 0;
 		printf("add: empty tree, %s.\n", orcify(add.node));
-	} else {
-#if 0
-		struct B_(tree) space = { 0, 0 }; /* Furthest node with space. */
-		PB_(key) *last = 0; /* Key of the last for comparing with arg. */
-		unsigned new_nodes, n; /* Count new nodes. */
-		struct PB_(node) *tail = 0; /* New nodes. */
-		struct PB_(branch) *pretail = 0;
-		PB_(print)(tree);
-		end = PB_(lower_r)(tree, x, &unfull);
-#endif
-		head = 0;
-		(void)key;
+		goto insert;
+	}
+
+	/* Now adding to tree with content. */
+	printf("add: tree...\n"), PB_(print)(tree);
+	unfull.node = 0, is_equal = 0;
+	ref = PB_(lower_r)(&tree->root, key, &unfull, &is_equal);
+	if(is_equal) assert(0); /* fixme: return already there? */
+	printf("add: unfull %s, ref: %s:%u.\n",
+		orcify(unfull.node), orcify(ref.node), ref.idx);
+	if(unfull.node != ref.node) { /* Split. */
+		if(!unfull.node) { /* Tree height increase. */
+			assert(0);
+		}
 		assert(0);
 	}
+	assert(0);
+#if 0
+	/*for(scout = tree->root; ; scout.node = PB_(branch)(scout.node)
+		->child[scout.node->size], scout.height--) {
+		if(scout.node->size < TREE_MAX) unfull = scout;
+		if(!scout.height) break;
+	}*/
+	/* Verify that the argument is not smaller than the largest. */
+	if(PB_(compare)(i, key) > 0) return errno = EDOM, TREE_ERROR;
+	if(PB_(compare)(key, i) <= 0) {
+#ifdef TREE_VALUE
+		if(value) { /* Last value in the last node. */
+			struct PB_(ref) ref;
+			ref.node = last, ref.idx = last->size - 1;
+			*value = PB_(ref_to_value)(ref);
+		}
+#endif
+		return TREE_YIELD;
+	}
+
+	/* One leaf, and the rest branches. */
+	new_nodes = n = unfull.node ? unfull.height : tree->root.height + 2;
+	/*printf("new_nodes: %u, tree height %u\n", new_nodes, tree->height);*/
+	if(!n) {
+		node = unfull.node;
+	} else {
+		if(!(node = tail = malloc(sizeof *tail))) goto catch;
+		tail->size = 0;
+		/*printf("new tail: %s.\n", orcify(tail));*/
+		while(--n) {
+			struct PB_(branch) *b;
+			if(!(b = malloc(sizeof *b))) goto catch;
+			b->base.size = 0;
+			/*printf("new branch: %s.\n", orcify(b));*/
+			if(!head) b->child[0] = 0, pretail = b; /* First loop. */
+			else b->child[0] = head; /* Not first loop. */
+			head = &b->base;
+		}
+	}
+
+	/* Post-error; modify the original as needed. */
+	if(pretail) pretail->child[0] = tail;
+	else head = node;
+	if(!unfull.node) { /* Add tree to head. */
+		struct PB_(branch) *const branch = PB_(branch)(head);
+		/*printf("adding the existing root, %s to %s\n",
+			orcify(tree->root), orcify(head));*/
+		assert(new_nodes > 1);
+		branch->child[1] = branch->child[0];
+		branch->child[0] = tree->root.node;
+		node = tree->root.node = head, tree->root.height++;
+	} else if(unfull.height) { /* Add head to tree. */
+		struct PB_(branch) *const branch = PB_(branch)(node = unfull.node);
+		/*printf("adding the linked list, %s to %s at %u\n",
+			orcify(head), orcify(inner), inner->base.size + 1);*/
+		assert(new_nodes);
+		branch->child[branch->base.size + 1] = head;
+	}
+#endif
+insert:
+	assert(add.node && add.idx <= add.node->size && add.node->size < TREE_MAX);
+	memmove(add.node->key + add.idx + 1, add.node->key + add.idx,
+		sizeof *add.node->key * (add.node->size - add.idx));
+#ifdef TREE_VALUE
+	memmove(add.node->value + add.idx + 1, add.node->value + add.idx,
+		sizeof *add.node->value * (add.node->size - add.idx));
+#endif
+	add.node->size++;
 	add.node->key[add.idx] = key;
 	goto finally;
 catch:
