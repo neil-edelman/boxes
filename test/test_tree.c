@@ -118,10 +118,7 @@ static void star_to_string(const struct star_tree_entry_c x,
 #include <stdint.h> /* C99 */
 union date32 {
 	uint32_t u32;
-	/* C11 would be good; a little! but also, wtf are they doing? Obviously
-	 they should have make an anonymous keyword, screw not breaking things, it
-	 would have been **so useful**. */
-	struct { unsigned day : 5, month : 4, year : 23; } d;
+	struct { unsigned day : 5, month : 4, year : 23; } d; /* Usually works. */
 };
 static int entry_compare(const union date32 a, const union date32 b)
 	{ return a.u32 > b.u32; }
@@ -156,7 +153,8 @@ static void entry_to_string(const struct entry_tree_entry_c entry,
 
 
 static void manual_int(void) {
-	struct int_tree equal = int_tree(), step = int_tree();
+	struct int_tree equal = int_tree(), step = int_tree(),
+		discrete = int_tree();
 	/*size_t i;
 	unsigned *x;*/
 	struct int_tree_iterator it;
@@ -201,6 +199,14 @@ static void manual_int(void) {
 	v = int_tree_get_next(&step, 250), assert(v && *v == 300);
 	v = int_tree_get_next(&step, 300), assert(v && *v == 300);
 	v = int_tree_get_next(&step, 350), assert(!v);
+
+	/* Add tests. */
+	int_tree_add(&discrete, 100);
+	tree_int_graph(&discrete, "graph/discrete-1.gv");
+	int_tree_add(&discrete, 300);
+	tree_int_graph(&discrete, "graph/discrete-2.gv");
+	int_tree_add(&discrete, 200);
+	tree_int_graph(&discrete, "graph/discrete-3.gv");
 	goto finally;
 catch:
 	perror("manual_unsigned");

@@ -31,7 +31,7 @@
  that satisfies `C` naming conventions when mangled and function implementing
  <typedef:<PSZ>to_string_fn>.
 
- @fixme multi-key
+ @fixme multi-key; implementation of order statistic tree
  @fixme merge, difference
 
  @std C89 */
@@ -342,7 +342,6 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const tree,
 		if(is_equal) *is_equal = 1;
 		break;
 	}
-	printf("lower_r: %s, h%u, i%u\n", orcify(lo.node), lo.height, lo.idx);
 	return lo;
 }
 
@@ -431,13 +430,6 @@ static PB_(value) *B_(tree_get_next)(struct B_(tree) *const tree,
 	return tree && (ref = PB_(lower)(tree->root, x, 0, 0),
 		PB_(pin)(tree->root, &ref)) ? PB_(ref_to_value)(ref) : 0;
 }
-/*{
-	struct PB_(iterator) it = PB_(lower)(tree, x);
-	PB_(entry) e = PB_(next)(&it);
-	return PB_(is_element)(e) ? PB_(entry_to_value)(e) : 0;
-}*/
-
-/** @return  */
 
 #include "../test/orcish.h"
 static void PB_(print)(const struct B_(tree) *const tree);
@@ -447,20 +439,20 @@ static void PB_(print)(const struct B_(tree) *const tree)
 #endif
 
 #ifdef TREE_VALUE /* <!-- map */
-/** `x` must be higher than the largest key in `tree`.
+/** Packs `key` on the right side of `tree` without doing the usual
+ restructuring. This is best followed by <fn:<B>tree_bulk_finish>.
  @param[value] A pointer to the key's value which is set by the function on
  returning true. A null pointer in this parameter causes the value to go
  uninitialized. This parameter is not there if one didn't specify `TREE_VALUE`.
  @return One of <tag:tree_result>: `TREE_ERROR` and `errno` will be set,
  `TREE_YIELD` if the key is already (the highest) in the tree, and
  `TREE_UNIQUE`, added, the `value` (if specified) is uninitialized.
- @throws[EDOM] `x` is not higher than any key in `tree`.
- @throws[malloc] */
+ @throws[EDOM] `x` is smaller than the largest key in `tree`. @throws[malloc] */
 static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
-	PB_(key) x, PB_(value) **const value)
+	PB_(key) key, PB_(value) **const value)
 #else /* map --><!-- set */
 static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
-	PB_(key) x)
+	PB_(key) key)
 #endif
 {
 	struct PB_(node) *node = 0, *head = 0; /* The original and new. */
@@ -476,43 +468,38 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 		tree->root.node->size = 0;
 		printf("bulk: empty\n");
 	} else {
-		/* Furthest node with space and the last value. */
-		struct PB_(sub) space = { 0, 0 };
+		struct PB_(sub) unfull = { 0, 0 };
 		unsigned new_nodes, n; /* Count new nodes. */
-		struct PB_(node) *tail = 0, *last = 0; /* New nodes. */
+		struct PB_(node) *tail = 0, *last = 0;
 		struct PB_(branch) *pretail = 0;
+		struct PB_(sub) scout;
+		PB_(key) i;
 		printf("bulk: tree...\n"), PB_(print)(tree);
-		{ /* Figure out where `space` and `last` are in `log size`. */
-			struct PB_(sub) expl;
-			for(expl = tree->root; ; expl.node = PB_(branch)(expl.node)
-				->child[expl.node->size], expl.height--) {
-				if(expl.node->size < TREE_MAX) space = expl;
-				if(expl.node->size) last = expl.node;
-				if(!expl.height) break;
-			}
-			assert(last); /* Else it would be empty. */
+		for(scout = tree->root; ; scout.node = PB_(branch)(scout.node)
+			->child[scout.node->size], scout.height--) {
+			if(scout.node->size < TREE_MAX) unfull = scout;
+			if(scout.node->size) last = scout.node;
+			if(!scout.height) break;
 		}
-		{
-			const PB_(key) l = last->key[last->size - 1];
-			/* Verify that the argument is not smaller than the largest. */
-			if(PB_(compare)(l, x) > 0) return errno = EDOM, TREE_ERROR;
-			if(PB_(compare)(x, l) <= 0) {
+		assert(last), i = last->key[last->size - 1];
+		/* Verify that the argument is not smaller than the largest. */
+		if(PB_(compare)(i, key) > 0) return errno = EDOM, TREE_ERROR;
+		if(PB_(compare)(key, i) <= 0) {
 #ifdef TREE_VALUE
-				if(value) { /* Last value in the last node. */
-					struct PB_(ref) ref;
-					ref.node = last, ref.idx = last->size - 1;
-					*value = PB_(ref_to_value)(ref);
-				}
-#endif
-				return TREE_YIELD;
+			if(value) { /* Last value in the last node. */
+				struct PB_(ref) ref;
+				ref.node = last, ref.idx = last->size - 1;
+				*value = PB_(ref_to_value)(ref);
 			}
+#endif
+			return TREE_YIELD;
 		}
 
 		/* One leaf, and the rest branches. */
-		new_nodes = n = space.node ? space.height : tree->root.height + 2;
+		new_nodes = n = unfull.node ? unfull.height : tree->root.height + 2;
 		/*printf("new_nodes: %u, tree height %u\n", new_nodes, tree->height);*/
 		if(!n) {
-			node = space.node;
+			node = unfull.node;
 		} else {
 			if(!(node = tail = malloc(sizeof *tail))) goto catch;
 			tail->size = 0;
@@ -531,7 +518,7 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 		/* Post-error; modify the original as needed. */
 		if(pretail) pretail->child[0] = tail;
 		else head = node;
-		if(!space.node) { /* Add tree to head. */
+		if(!unfull.node) { /* Add tree to head. */
 			struct PB_(branch) *const branch = PB_(branch)(head);
 			/*printf("adding the existing root, %s to %s\n",
 				orcify(tree->root), orcify(head));*/
@@ -539,8 +526,8 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 			branch->child[1] = branch->child[0];
 			branch->child[0] = tree->root.node;
 			node = tree->root.node = head, tree->root.height++;
-		} else if(space.height) { /* Add head to tree. */
-			struct PB_(branch) *const branch = PB_(branch)(node = space.node);
+		} else if(unfull.height) { /* Add head to tree. */
+			struct PB_(branch) *const branch = PB_(branch)(node = unfull.node);
 			/*printf("adding the linked list, %s to %s at %u\n",
 				orcify(head), orcify(inner), inner->base.size + 1);*/
 			assert(new_nodes);
@@ -548,7 +535,7 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 		}
 	}
 	assert(node && node->size < TREE_MAX);
-	node->key[node->size] = x;
+	node->key[node->size] = key;
 #ifdef TREE_VALUE
 	if(value) {
 		struct PB_(ref) ref;
@@ -570,6 +557,12 @@ catch:
 	return TREE_ERROR;
 }
 
+/** Distributes `tree` on the right side so that, after a series of
+ <fn:<B>tree_bulk_add>, it will be consistent with the minimum number of keys
+ in a node. @return The distribution was a success and all nodes are within
+ rules. The only time that it would be false is if, maybe, a regular insertion
+ instead of a bulk insertion was performed interspersed with a bulk insertion
+ without calling this function. */
 static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 	struct PB_(sub) s;
 	struct PB_(node) *right;
@@ -660,21 +653,19 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 
 
 
-static PB_(value) *B_(tree_add)(struct B_(tree) *const tree, PB_(key) x) {
-	struct PB_(node) *node = 0, *head = 0;
-	struct PB_(ref) add;
+static PB_(value) *B_(tree_add)(struct B_(tree) *const tree, PB_(key) key) {
+	struct PB_(node) *head = 0;
+	struct PB_(ref) add = { 0, 0, 0 };
 	add.node = 0;
 	if(!tree) return 0;
-	if(!(node = tree->root.node)) { /* Idle tree. */
+	if(!(add.node = tree->root.node)) { /* Idle tree. */
 		assert(!tree->root.height);
-		if(!(node = malloc(sizeof *node))) goto catch;
-		node->size = 1;
-		add.node = tree->root.node = node, add.idx = 0;
-		printf("add: idle tree, new %s.\n", orcify(node));
+		if(!(add.node = malloc(sizeof *add.node))) goto catch;
+		add.node->size = 1, tree->root.node = add.node, add.idx = 0;
+		printf("add: idle tree, new %s.\n", orcify(add.node));
 	} else if(tree->root.height == UINT_MAX) { /* Empty tree. */
-		tree->root.height = 0, node->size = 1;
-		add.node = node, add.idx = 0;
-		printf("add: empty tree, %s.\n", orcify(node));
+		tree->root.height = 0, add.node->size = 1, add.idx = 0;
+		printf("add: empty tree, %s.\n", orcify(add.node));
 	} else {
 #if 0
 		struct B_(tree) space = { 0, 0 }; /* Furthest node with space. */
@@ -683,15 +674,18 @@ static PB_(value) *B_(tree_add)(struct B_(tree) *const tree, PB_(key) x) {
 		struct PB_(node) *tail = 0; /* New nodes. */
 		struct PB_(branch) *pretail = 0;
 		PB_(print)(tree);
-		struct PB_(ref) end, unfull;
-		unfull.leaf = 0; /* Start off at the top. */
 		end = PB_(lower_r)(tree, x, &unfull);
 #endif
 		head = 0;
-		(void)x;
+		(void)key;
+		assert(0);
 	}
+	add.node->key[add.idx] = key;
+	goto finally;
 catch:
-	return 0;
+	assert(0);
+finally:
+	return PB_(ref_to_value)(add);
 }
 
 #if 0
