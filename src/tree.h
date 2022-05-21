@@ -70,7 +70,7 @@
 #define B_(n) TREE_CAT(TREE_NAME, n)
 #define PB_(n) TREE_CAT(tree, B_(n))
 /* Leaf: `TREE_MAX type`; branch: `TREE_MAX type + TREE_ORDER pointer`. */
-#define TREE_MAX 4
+#define TREE_MAX 2
 #if TREE_MAX < 2 || TREE_MAX > UCHAR_MAX
 #error TREE_MAX parameter range `[3, UCHAR_MAX]`.
 #endif
@@ -663,10 +663,10 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 
 
 static PB_(value) *B_(tree_add)(struct B_(tree) *const tree, PB_(key) key) {
-	struct PB_(node) *head = 0;
+	struct PB_(node) *leaf = 0, *branch_head = 0;
+	unsigned new_nodes;
 	struct PB_(ref) add, unfull;
 	int is_equal;
-	struct PB_(ref) ref;
 
 	/* Take care of corner cases. */
 	if(!tree) return 0;
@@ -681,79 +681,39 @@ static PB_(value) *B_(tree_add)(struct B_(tree) *const tree, PB_(key) key) {
 		printf("add: empty tree, %s.\n", orcify(add.node));
 		goto insert;
 	}
-
 	/* Now adding to tree with content. */
 	printf("add: tree...\n"), PB_(print)(tree);
 	unfull.node = 0, is_equal = 0;
-	ref = PB_(lower_r)(&tree->root, key, &unfull, &is_equal);
-	if(is_equal) assert(0); /* fixme: return already there? */
-	printf("add: unfull %s, ref: %s:%u.\n",
-		orcify(unfull.node), orcify(ref.node), ref.idx);
-	if(unfull.node != ref.node) { /* Split. */
-		if(!unfull.node) { /* Tree height increase. */
-			assert(0);
-		}
-		assert(0);
-	}
-	assert(0);
+	add = PB_(lower_r)(&tree->root, key, &unfull, &is_equal);
+	if(is_equal) { assert(0); return 0; } /* fixme: return already there? */
 #if 0
-	/*for(scout = tree->root; ; scout.node = PB_(branch)(scout.node)
-		->child[scout.node->size], scout.height--) {
-		if(scout.node->size < TREE_MAX) unfull = scout;
-		if(!scout.height) break;
-	}*/
-	/* Verify that the argument is not smaller than the largest. */
-	if(PB_(compare)(i, key) > 0) return errno = EDOM, TREE_ERROR;
-	if(PB_(compare)(key, i) <= 0) {
 #ifdef TREE_VALUE
-		if(value) { /* Last value in the last node. */
-			struct PB_(ref) ref;
-			ref.node = last, ref.idx = last->size - 1;
-			*value = PB_(ref_to_value)(ref);
-		}
+	{ if(value) {
+		struct PB_(ref) ref;
+		ref.node = last, ref.idx = last->size - 1;
+		*value = PB_(ref_to_value)(ref);
+	} return TREE_YIELD; }
 #endif
-		return TREE_YIELD;
-	}
-
-	/* One leaf, and the rest branches. */
-	new_nodes = n = unfull.node ? unfull.height : tree->root.height + 2;
-	/*printf("new_nodes: %u, tree height %u\n", new_nodes, tree->height);*/
-	if(!n) {
-		node = unfull.node;
-	} else {
-		if(!(node = tail = malloc(sizeof *tail))) goto catch;
-		tail->size = 0;
-		/*printf("new tail: %s.\n", orcify(tail));*/
-		while(--n) {
-			struct PB_(branch) *b;
-			if(!(b = malloc(sizeof *b))) goto catch;
-			b->base.size = 0;
-			/*printf("new branch: %s.\n", orcify(b));*/
-			if(!head) b->child[0] = 0, pretail = b; /* First loop. */
-			else b->child[0] = head; /* Not first loop. */
-			head = &b->base;
-		}
-	}
-
-	/* Post-error; modify the original as needed. */
-	if(pretail) pretail->child[0] = tail;
-	else head = node;
-	if(!unfull.node) { /* Add tree to head. */
-		struct PB_(branch) *const branch = PB_(branch)(head);
-		/*printf("adding the existing root, %s to %s\n",
-			orcify(tree->root), orcify(head));*/
-		assert(new_nodes > 1);
-		branch->child[1] = branch->child[0];
-		branch->child[0] = tree->root.node;
-		node = tree->root.node = head, tree->root.height++;
-	} else if(unfull.height) { /* Add head to tree. */
-		struct PB_(branch) *const branch = PB_(branch)(node = unfull.node);
-		/*printf("adding the linked list, %s to %s at %u\n",
-			orcify(head), orcify(inner), inner->base.size + 1);*/
-		assert(new_nodes);
-		branch->child[branch->base.size + 1] = head;
-	}
 #endif
+	printf("add: unfull %s, ref: %s:%u.\n",
+		orcify(unfull.node), orcify(add.node), add.idx);
+	if(unfull.node == add.node) goto insert; /* No new nodes; likely. */
+	/* Pre-allocate all new nodes. */
+	new_nodes = unfull.node ? unfull.height + 1 : tree->root.height + 2;
+	printf("add: new_nodes %u.\n", new_nodes);
+	if(!(leaf = malloc(sizeof *leaf))) goto catch;
+	printf("new leaf %s\n", orcify(leaf));
+	while(--new_nodes) {
+		struct PB_(branch) *branch;
+		if(!(branch = malloc(sizeof *branch))) goto catch;
+		printf("new branch %s\n", orcify(branch));
+		branch->child[0] = branch_head, branch_head = &branch->base;
+	}
+	/* Split top-down. */
+	{
+
+	}
+	goto catch;
 insert:
 	assert(add.node && add.idx <= add.node->size && add.node->size < TREE_MAX);
 	memmove(add.node->key + add.idx + 1, add.node->key + add.idx,
@@ -766,6 +726,12 @@ insert:
 	add.node->key[add.idx] = key;
 	goto finally;
 catch:
+	while(branch_head) {
+		struct PB_(branch) *const branch = PB_(branch)(branch_head);
+		branch_head = branch->child[0];
+		printf("free branch %s\n", orcify(branch)), free(branch);
+	}
+	printf("free leaf %s\n", orcify(leaf)), free(leaf);
 	assert(0);
 finally:
 	return PB_(ref_to_value)(add);
