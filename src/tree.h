@@ -668,7 +668,7 @@ static PB_(value) *B_(tree_add)(struct B_(tree) *const tree, PB_(key) key) {
 	struct PB_(ref) add, unfull;
 	int is_equal;
 
-	/* Take care of corner cases. */
+	/* Take care of zero -- corner cases. */
 	if(!tree) return 0;
 	if(!(add.node = tree->root.node)) { /* Idle tree. */
 		assert(!tree->root.height);
@@ -681,7 +681,8 @@ static PB_(value) *B_(tree_add)(struct B_(tree) *const tree, PB_(key) key) {
 		printf("add: empty tree, %s.\n", orcify(add.node));
 		goto insert;
 	}
-	/* Now adding to tree with content. */
+
+	/* Descend the tree; place markers. */
 	printf("add: tree...\n"), PB_(print)(tree);
 	unfull.node = 0, is_equal = 0;
 	add = PB_(lower_r)(&tree->root, key, &unfull, &is_equal);
@@ -698,7 +699,8 @@ static PB_(value) *B_(tree_add)(struct B_(tree) *const tree, PB_(key) key) {
 	printf("add: unfull %s, ref: %s:%u.\n",
 		orcify(unfull.node), orcify(add.node), add.idx);
 	if(unfull.node == add.node) goto insert; /* No new nodes; likely. */
-	/* Pre-allocate all new nodes. */
+
+	/* Pre-allocate new nodes. (We know how many at this point.) */
 	new_nodes = unfull.node ? unfull.height + 1 : tree->root.height + 2;
 	printf("add: new_nodes %u.\n", new_nodes);
 	if(!(leaf = malloc(sizeof *leaf))) goto catch;
@@ -709,6 +711,7 @@ static PB_(value) *B_(tree_add)(struct B_(tree) *const tree, PB_(key) key) {
 		printf("new branch %s\n", orcify(branch));
 		branch->child[0] = branch_head, branch_head = &branch->base;
 	}
+
 	/* Split top-down. */
 	{
 
