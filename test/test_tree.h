@@ -231,7 +231,6 @@ static void PB_(test)(void) {
 			*value = e->value;
 #endif
 			break;
-		case TREE_REPLACE: assert(0);
 		}
 		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u.gv", ++PB_(no));
 		PB_(graph)(&tree, fn);
