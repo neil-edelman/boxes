@@ -673,6 +673,7 @@ static enum tree_result B_(tree_add)(struct B_(tree) *const tree,
 	PB_(key) key)
 #endif
 {
+	struct PB_(node) *new_head = 0;
 	unsigned i;
 	struct PB_(ref) add, hole, cursor;
 	int is_equal;
@@ -705,15 +706,16 @@ descend: /* Record last node that has space. */
 	if(hole.node == add.node) goto insert; else goto grow;
 grow: /* Leaf is full. */ {
 	const unsigned new_no = hole.node ? hole.height + 1 : tree->root.height + 2;
-	struct PB_(node) *new_head = 0, **new_next = &new_head;
+	struct PB_(node) **new_next = &new_head, *new_leaf;
 	struct PB_(branch) *new_branch;
-	struct PB_(node) *new_leaf;
-	/* Allocate new nodes in succession. (_Sic_, `malloc` in order, mostly.) */
+	/* Allocate new nodes in succession. */
 	for(i = 0; i < new_no - 1; i++) {
 		if(!(new_branch = malloc(sizeof *new_branch))) goto catch;
 		new_branch->base.size = 0;
+		new_branch->child[0] = 0;
 		*new_next = &new_branch->base, new_next = new_branch->child;
 	}
+	/* Last point of failure. */
 	if(!(new_leaf = malloc(sizeof *new_leaf))) goto catch;
 	new_leaf->size = 0;
 	*new_next = new_leaf;
@@ -735,13 +737,6 @@ grow: /* Leaf is full. */ {
 	}
 	cursor = hole; /* Start at the hole, go down. */
 	goto split;
-catch:
-	while(new_head) {
-		new_branch = PB_(branch)(new_head), new_head = new_branch->child[0];
-		printf("free branch %s\n", orcify(new_branch)), free(new_branch);
-	}
-	if(!errno) errno = ERANGE;
-	return TREE_ERROR;
 } split:
 	{
 		char fn[64];
@@ -805,6 +800,15 @@ unique: /* `add` is a new value. */
 	if(value) *value = PB_(ref_to_value)(add);
 #endif
 	return TREE_UNIQUE;
+catch:
+	while(new_head) {
+		struct PB_(branch) *const top = PB_(branch)(new_head);
+		new_head = top->child[0];
+		printf("free branch %s\n", orcify(top));
+		free(top);
+	}
+	if(!errno) errno = ERANGE;
+	return TREE_ERROR;
 }
 
 #if 0
