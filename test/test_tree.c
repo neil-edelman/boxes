@@ -200,13 +200,37 @@ static void manual_int(void) {
 	v = int_tree_get_next(&step, 300), assert(v && *v == 300);
 	v = int_tree_get_next(&step, 350), assert(!v);
 
-	/* Add tests. */
-	int_tree_add(&discrete, 100);
+	/* For m=3 add test. */
+	int_tree_bulk_add(&discrete, 2);
+	int_tree_bulk_add(&discrete, 4);
+	int_tree_bulk_add(&discrete, 6);
+	int_tree_bulk_add(&discrete, 8);
+	int_tree_bulk_add(&discrete, 10);
+	int_tree_bulk_add(&discrete, 12);
+	int_tree_bulk_add(&discrete, 14);
+	int_tree_bulk_add(&discrete, 16);
+	int_tree_bulk_add(&discrete, 18);
+	int_tree_bulk_add(&discrete, 20);
+	int_tree_bulk_add(&discrete, 22);
+	int_tree_bulk_add(&discrete, 24);
+	int_tree_bulk_add(&discrete, 26);
+	int_tree_bulk_add(&discrete, 28);
+	int_tree_bulk_add(&discrete, 30);
+	int_tree_bulk_add(&discrete, 32);
+	int_tree_bulk_add(&discrete, 34);
+	int_tree_bulk_add(&discrete, 36);
+	int_tree_bulk_add(&discrete, 38);
+	int_tree_bulk_add(&discrete, 40);
+	int_tree_bulk_add(&discrete, 42);
+	int_tree_bulk_add(&discrete, 44);
+	int_tree_bulk_add(&discrete, 46);
+	int_tree_bulk_add(&discrete, 48);
+	int_tree_bulk_add(&discrete, 50);
+	int_tree_bulk_add(&discrete, 52);
+	int_tree_bulk_finish(&discrete);
 	tree_int_graph(&discrete, "graph/discrete-1.gv");
-	int_tree_add(&discrete, 300);
+	int_tree_add(&discrete, 27);
 	tree_int_graph(&discrete, "graph/discrete-2.gv");
-	int_tree_add(&discrete, 200);
-	tree_int_graph(&discrete, "graph/discrete-3.gv");
 	goto finally;
 catch:
 	perror("manual_unsigned");
@@ -214,6 +238,7 @@ catch:
 finally:
 	int_tree_(&equal);
 	int_tree_(&step);
+	int_tree_(&discrete);
 	printf("\n");
 }
 
