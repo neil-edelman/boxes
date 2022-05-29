@@ -561,10 +561,9 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 	return TREE_UNIQUE;
 catch:
 	free(node); /* Didn't work out. */
-	if(head) for( ; ; ) {
+	while(head) {
 		struct PB_(node) *const next = PB_(branch)(head)->child[0];
-		free(head); /* Didn't work out. */
-		if(!next) break;
+		free(head);
 		head = next;
 	}
 	if(!errno) errno = ERANGE;
