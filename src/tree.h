@@ -740,7 +740,7 @@ grow: /* Leaf is full. */ {
 		new_branch->child[0] = 0;
 		*new_next = &new_branch->base, new_next = new_branch->child;
 	}
-	/* Last point of potential failure. */
+	/* Last point of potential failure; (don't need to catch this.) */
 	if(!(new_leaf = malloc(sizeof *new_leaf))) goto catch;
 	new_leaf->size = 0;
 	*new_next = new_leaf;
@@ -816,7 +816,7 @@ grow: /* Leaf is full. */ {
 		printf("free branch %s\n", orcify(top));
 		free(top);
 	}
-	if(!errno) errno = ERANGE;
+	if(!errno) errno = ERANGE; /* Non-POSIX OS are not mandated to set errno. */
 	return TREE_ERROR;
 }
 
