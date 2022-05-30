@@ -87,7 +87,7 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
 		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
-		" fontname=\"Bitstream Vera Sans\"];\n"
+		" fontname=\"Bitstream Vera Sans\", splines=false];\n"
 		"\tnode [shape=none, fontname=\"Bitstream Vera Sans\"];\n"
 		"\tedge [fontname=\"Bitstream Vera Sans\", style=dashed];\n"
 		"\n");
