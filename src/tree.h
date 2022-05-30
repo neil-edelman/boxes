@@ -669,6 +669,11 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 #endif
 
 #ifdef TREE_VALUE /* <!-- map */
+/** @param[value] If non-null and successful, a pointer that receives the
+ address of the value associated with the key. Only present if `TREE_VALUE`
+ (map) was specified.
+ @return Either `TREE_ERROR` and doesn't touch `tree`, `TREE_UNIQUE` adds a new
+ key, or `TREE_YIELD` updates an existing key. @throws[malloc] */
 static enum tree_result B_(tree_add)(struct B_(tree) *const tree,
 	PB_(key) key, PB_(value) **const value)
 #else /* map --><!-- set */
@@ -714,7 +719,7 @@ descend: /* Record last node that has space. */
 		orcify(hole.node), hole.height, hole.idx,
 		orcify(add.node), add.height, add.idx);
 	if(hole.node == add.node) goto insert; else goto grow;
-insert: /* `add` has space to spare; usually end up here. */
+insert: /* Leaf has space to spare; usually end up here. */
 	assert(add.node && add.idx <= add.node->size && add.node->size < TREE_MAX
 		&& !add.height);
 	memmove(add.node->key + add.idx + 1, add.node->key + add.idx,
@@ -780,9 +785,8 @@ grow: /* Leaf is full. */ {
 		orcify(cursor.node), cursor.height, cursor.idx,
 		orcify(hole.node), hole.height, hole.idx, orcify(sibling));
 	assert(!sibling->size && cursor.node->size == TREE_MAX); /* Atomic. */
-	if(cursor.idx == TREE_SPLIT) { /* Down the middle. */
-		printf("down middle\n");
-		sibling->size = TREE_MAX - TREE_SPLIT - 1;
+	/* Expand `cursor`, which is full, to multiple nodes. */
+	if(cursor.idx == TREE_SPLIT) { /* Leave the hole where it is. */
 		memcpy(sibling->key, cursor.node->key + TREE_SPLIT,
 			sizeof *sibling->key * (TREE_MAX - TREE_SPLIT));
 #ifdef TREE_VALUE
@@ -795,13 +799,38 @@ grow: /* Leaf is full. */ {
 			memcpy(sbranch->child + 1, cbranch->child + TREE_SPLIT + 1,
 				sizeof *cbranch->child * (TREE_MAX - TREE_SPLIT));
 		}
-		cursor.node->size = TREE_SPLIT;
-		sibling->size = TREE_MAX - TREE_SPLIT;
 	} else if(cursor.idx < TREE_SPLIT) {
-		assert(0);
-	} else /* Greater than. */ {
+		memcpy(sibling->key, cursor.node->key + TREE_SPLIT,
+			sizeof *sibling->key * (TREE_MAX - TREE_SPLIT));
+#ifdef TREE_VALUE
+		memcpy(sibling->value, cursor.node->value + TREE_SPLIT,
+			sizeof *sibling->value * (TREE_MAX - TREE_SPLIT));
+#endif
+		hole.node->key[hole.idx] = cursor.node->key[TREE_SPLIT - 1];
+#ifdef TREE_VALUE
+		hole.node->value[hole.idx] = cursor.node->value[TREE_SPLIT - 1];
+#endif
+		memmove(cursor.node->key + cursor.idx + 1,
+			cursor.node->key + cursor.idx,
+			sizeof *cursor.node->key * (TREE_SPLIT - 1 - cursor.idx));
+#ifdef TREE_VALUE
+		memmove(cursor.node->value + cursor.idx + 1,
+			cursor.node->value + cursor.idx,
+			sizeof *cursor.node->value * (TREE_SPLIT - 1 - cursor.idx));
+#endif
+		if(cursor.height) {
+			/* ...this is wrong; exchange with hole `[)`. */
+			struct PB_(branch) *const cbranch = PB_(branch)(cursor.node),
+				*const sbranch = PB_(branch)(sibling);
+			memcpy(sbranch->child + 1, cbranch->child + TREE_SPLIT + 1,
+				sizeof *cbranch->child * (TREE_MAX - TREE_SPLIT));
+		}
+		hole = cursor;
+	} else { /* Hole wants to be in `sibling`. */
 		assert(0);
 	}
+	cursor.node->size = TREE_SPLIT;
+	sibling->size = TREE_MAX - TREE_SPLIT; /* Divide `TREE_MAX + 1`. */
 	if(cursor.height) goto split;
 	hole.node->key[hole.idx] = key;
 	PB_(graph)(tree, "graph/topology-0.gv");
