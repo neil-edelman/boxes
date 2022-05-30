@@ -674,7 +674,7 @@ static enum tree_result B_(tree_add)(struct B_(tree) *const tree,
 #else /* map --><!-- set */
 static enum tree_result B_(tree_add)(struct B_(tree) *const tree,
 	PB_(key) key)
-#endif
+#endif /* set --> */
 {
 	struct PB_(node) *new_head = 0;
 	unsigned i;
