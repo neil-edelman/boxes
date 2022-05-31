@@ -682,9 +682,7 @@ static enum tree_result B_(tree_add)(struct B_(tree) *const tree,
 #endif /* set --> */
 {
 	struct PB_(node) *new_head = 0;
-	unsigned i;
 	struct PB_(ref) add, hole, cursor;
-	int is_equal;
 	assert(tree);
 	if(!(add.node = tree->root.node)) goto idle;
 	else if(tree->root.height == UINT_MAX) goto empty;
@@ -705,15 +703,18 @@ empty: /* Reserved dynamic memory, but tree is empty. */
 	goto insert;
 descend: /* Record last node that has space. */
 	printf("add: contents...\n"), PB_(print)(tree);
-	hole.node = 0, is_equal = 0;
-	add = PB_(lower_r)(&tree->root, key, &hole, &is_equal);
-	if(is_equal) {
-		/* Assumes key is unique; we might not want this for multi-maps, but
-		 that is not implemented yet. */
+	{
+		int is_equal = 0;
+		hole.node = 0;
+		add = PB_(lower_r)(&tree->root, key, &hole, &is_equal);
+		if(is_equal) { /* This is not happening! */
+			/* Assumes key is unique; we might not want this for multi-maps,
+			 but that is not implemented yet. */
 #ifdef TREE_VALUE
-		if(value) *value = PB_(ref_to_value)(add);
+			if(value) *value = PB_(ref_to_value)(add);
 #endif
-		return TREE_YIELD;
+			return TREE_YIELD;
+		}
 	}
 	printf("add: fill %s(%u):%u, add %s(%u):%u.\n",
 		orcify(hole.node), hole.height, hole.idx,
@@ -735,25 +736,21 @@ insert: /* Leaf has space to spare; usually end up here. */
 #endif
 	return TREE_UNIQUE;
 grow: /* Leaf is full. */ {
-	const unsigned new_no = hole.node ? hole.height + 1 : tree->root.height + 2;
+	unsigned new_no = hole.node ? hole.height + 1 : tree->root.height + 2;
 	struct PB_(node) **new_next = &new_head, *new_leaf;
 	struct PB_(branch) *new_branch;
 	/* Allocate new nodes in succession. */
-	for(i = 0; i < new_no - 1; i++) {
+	while(new_no) {
 		if(!(new_branch = malloc(sizeof *new_branch))) goto catch;
 		new_branch->base.size = 0;
 		new_branch->child[0] = 0;
 		*new_next = &new_branch->base, new_next = new_branch->child;
+		new_no--;
 	}
-	/* Last point of potential failure; (don't need to catch this.) */
+	/* Last point of potential failure; (don't need to have entry in catch.) */
 	if(!(new_leaf = malloc(sizeof *new_leaf))) goto catch;
 	new_leaf->size = 0;
 	*new_next = new_leaf;
-	printf("add: new { ");
-	for(i = 0, cursor.node = new_head; i < new_no; i++, cursor.node
-		= PB_(branch)(cursor.node)->child[0])
-		printf("%s%s", i ? ", " : "", orcify(cursor.node));
-	printf(" }.\n");
 	/* Attach new nodes to the tree. The hole is now an actual hole. */
 	if(hole.node) { /* New nodes are a sub-structure of the tree. */
 		assert(0);
@@ -765,7 +762,7 @@ grow: /* Leaf is full. */ {
 		hole.node->size = 1;
 		printf("grow, now root %s.\n", orcify(new_root));
 	}
-	cursor = hole; /* Start at the hole, go down. */
+	cursor = hole; /* Go down; (as opposed to doing it on paper.) */
 	goto split;
 } split: { /* Split between the new and existing nodes. */
 	{
@@ -786,20 +783,7 @@ grow: /* Leaf is full. */ {
 		orcify(hole.node), hole.height, hole.idx, orcify(sibling));
 	assert(!sibling->size && cursor.node->size == TREE_MAX); /* Atomic. */
 	/* Expand `cursor`, which is full, to multiple nodes. */
-	if(cursor.idx == TREE_SPLIT) { /* Leave the hole where it is. */
-		memcpy(sibling->key, cursor.node->key + TREE_SPLIT,
-			sizeof *sibling->key * (TREE_MAX - TREE_SPLIT));
-#ifdef TREE_VALUE
-		memcpy(sibling->value, cursor.node->value + TREE_SPLIT,
-			sizeof *sibling->value * (TREE_MAX - TREE_SPLIT));
-#endif
-		if(cursor.height) {
-			struct PB_(branch) *const cb = PB_(branch)(cursor.node),
-				*const sb = PB_(branch)(sibling);
-			memcpy(sb->child + 1, cb->child + TREE_SPLIT + 1,
-				sizeof *cb->child * (TREE_MAX - TREE_SPLIT));
-		}
-	} else if(cursor.idx < TREE_SPLIT) { /* Descend hole to `cursor`. */
+	if(cursor.idx < TREE_SPLIT) { /* Descend hole to `cursor`. */
 		memcpy(sibling->key, cursor.node->key + TREE_SPLIT,
 			sizeof *sibling->key * (TREE_MAX - TREE_SPLIT));
 #ifdef TREE_VALUE
@@ -829,12 +813,26 @@ grow: /* Leaf is full. */ {
 			cb->child[cursor.idx + 1] = temp;
 		}
 		hole = cursor;
-	} else { /* Descend hole to `sibling`. */
+	} else if(cursor.idx > TREE_SPLIT) { /* Descend hole to `sibling`. */
+		/*memcpy(sibling->key + cursor.idx - TREE_SPLIT - 1, <#const void *__src#>, <#size_t __n#>);*/
 		assert(0);
+	} else { /* Equal split: leave the hole where it is. */
+		memcpy(sibling->key, cursor.node->key + TREE_SPLIT,
+			sizeof *sibling->key * (TREE_MAX - TREE_SPLIT));
+#ifdef TREE_VALUE
+		memcpy(sibling->value, cursor.node->value + TREE_SPLIT,
+			sizeof *sibling->value * (TREE_MAX - TREE_SPLIT));
+#endif
+		if(cursor.height) {
+			struct PB_(branch) *const cb = PB_(branch)(cursor.node),
+				*const sb = PB_(branch)(sibling);
+			memcpy(sb->child + 1, cb->child + TREE_SPLIT + 1,
+				sizeof *cb->child * (TREE_MAX - TREE_SPLIT));
+		}
 	}
 	cursor.node->size = TREE_SPLIT;
 	sibling->size = TREE_MAX - TREE_SPLIT; /* Divide `TREE_MAX + 1`. */
-	if(cursor.height) goto split;
+	if(cursor.height) goto split; /* Loop max `log_{TREE_MIN} size`. */
 	hole.node->key[hole.idx] = key;
 	PB_(graph)(tree, "graph/topology-0.gv");
 #ifdef TREE_VALUE

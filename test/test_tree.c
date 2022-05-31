@@ -155,8 +155,8 @@ static void entry_to_string(const struct entry_tree_entry_c entry,
 static void manual_int(void) {
 	struct int_tree equal = int_tree(), step = int_tree(),
 		discrete = int_tree();
-	/*size_t i;
-	unsigned *x;*/
+	size_t i, size;
+	/*unsigned *x;*/
 	struct int_tree_iterator it;
 	unsigned *v;
 	int ret;
@@ -200,37 +200,19 @@ static void manual_int(void) {
 	v = int_tree_get_next(&step, 300), assert(v && *v == 300);
 	v = int_tree_get_next(&step, 350), assert(!v);
 
-	/* For m=3 add test. */
-	int_tree_bulk_add(&discrete, 2);
-	int_tree_bulk_add(&discrete, 4);
-	int_tree_bulk_add(&discrete, 6);
-	int_tree_bulk_add(&discrete, 8);
-	int_tree_bulk_add(&discrete, 10);
-	int_tree_bulk_add(&discrete, 12);
-	int_tree_bulk_add(&discrete, 14);
-	int_tree_bulk_add(&discrete, 16);
-	int_tree_bulk_add(&discrete, 18);
-	int_tree_bulk_add(&discrete, 20);
-	int_tree_bulk_add(&discrete, 22);
-	int_tree_bulk_add(&discrete, 24);
-	int_tree_bulk_add(&discrete, 26);
-	int_tree_bulk_add(&discrete, 28);
-	int_tree_bulk_add(&discrete, 30);
-	int_tree_bulk_add(&discrete, 32);
-	int_tree_bulk_add(&discrete, 34);
-	int_tree_bulk_add(&discrete, 36);
-	int_tree_bulk_add(&discrete, 38);
-	int_tree_bulk_add(&discrete, 40);
-	int_tree_bulk_add(&discrete, 42);
-	int_tree_bulk_add(&discrete, 44);
-	int_tree_bulk_add(&discrete, 46);
-	int_tree_bulk_add(&discrete, 48);
-	int_tree_bulk_add(&discrete, 50);
-	int_tree_bulk_add(&discrete, 52);
-	int_tree_bulk_finish(&discrete);
+	/* Full add test, nodes, `\sum_{n=0}^{h} m^n = \frac{m^{h+1}-1}{m-1}`,
+	 gives keys, `m^{h+1}-1`. */
+	size = TREE_ORDER * TREE_ORDER * TREE_ORDER - 1; /* Three levels. */
+	for(i = 0; i < size; i++) /* Even for odd spaces between them. */
+		if(!int_tree_bulk_add(&discrete, ((unsigned)i + 1) * 2)) assert(0);
+	int_tree_bulk_finish(&discrete); /* Does nothing, in this case. */
 	tree_int_graph(&discrete, "graph/discrete-1.gv");
+	printf("size = %zu\n", size);
+	int_tree_add(&discrete, (unsigned)size + 1); /* Middle element. */
+	/*int_tree_add(&discrete, 1);*/
 	/*int_tree_add(&discrete, 27);*/
-	int_tree_add(&discrete, 21);
+	/*int_tree_add(&discrete, 21);*/
+	/*int_tree_add(&discrete, 53);*/
 	tree_int_graph(&discrete, "graph/discrete-2.gv");
 	goto finally;
 catch:
