@@ -794,12 +794,12 @@ grow: /* Leaf is full. */ {
 			sizeof *sibling->value * (TREE_MAX - TREE_SPLIT));
 #endif
 		if(cursor.height) {
-			struct PB_(branch) *const cbranch = PB_(branch)(cursor.node),
-				*const sbranch = PB_(branch)(sibling);
-			memcpy(sbranch->child + 1, cbranch->child + TREE_SPLIT + 1,
-				sizeof *cbranch->child * (TREE_MAX - TREE_SPLIT));
+			struct PB_(branch) *const cb = PB_(branch)(cursor.node),
+				*const sb = PB_(branch)(sibling);
+			memcpy(sb->child + 1, cb->child + TREE_SPLIT + 1,
+				sizeof *cb->child * (TREE_MAX - TREE_SPLIT));
 		}
-	} else if(cursor.idx < TREE_SPLIT) {
+	} else if(cursor.idx < TREE_SPLIT) { /* Descend hole to `cursor`. */
 		memcpy(sibling->key, cursor.node->key + TREE_SPLIT,
 			sizeof *sibling->key * (TREE_MAX - TREE_SPLIT));
 #ifdef TREE_VALUE
@@ -818,15 +818,18 @@ grow: /* Leaf is full. */ {
 			cursor.node->value + cursor.idx,
 			sizeof *cursor.node->value * (TREE_SPLIT - 1 - cursor.idx));
 #endif
-		if(cursor.height) {
-			/* ...this is wrong; exchange with hole `[)`. */
-			struct PB_(branch) *const cbranch = PB_(branch)(cursor.node),
-				*const sbranch = PB_(branch)(sibling);
-			memcpy(sbranch->child + 1, cbranch->child + TREE_SPLIT + 1,
-				sizeof *cbranch->child * (TREE_MAX - TREE_SPLIT));
+		if(cursor.height) { /* Rotate the edges. */
+			struct PB_(branch) *const cb = PB_(branch)(cursor.node),
+				*const sb = PB_(branch)(sibling);
+			struct PB_(node) *temp = sb->child[0];
+			memcpy(sb->child, cb->child + TREE_SPLIT,
+				sizeof *cb->child * (TREE_MAX - TREE_SPLIT + 1));
+			memmove(cb->child + cursor.idx + 1, cb->child + cursor.idx,
+				sizeof *cb->child * (TREE_SPLIT - cursor.idx));
+			cb->child[cursor.idx] = temp;
 		}
 		hole = cursor;
-	} else { /* Hole wants to be in `sibling`. */
+	} else { /* Descend hole to `sibling`. */
 		assert(0);
 	}
 	cursor.node->size = TREE_SPLIT;
