@@ -818,15 +818,15 @@ grow: /* Leaf is full. */ {
 			cursor.node->value + cursor.idx,
 			sizeof *cursor.node->value * (TREE_SPLIT - 1 - cursor.idx));
 #endif
-		if(cursor.height) { /* Rotate the edges. */
+		if(cursor.height) {
 			struct PB_(branch) *const cb = PB_(branch)(cursor.node),
 				*const sb = PB_(branch)(sibling);
 			struct PB_(node) *temp = sb->child[0];
 			memcpy(sb->child, cb->child + TREE_SPLIT,
 				sizeof *cb->child * (TREE_MAX - TREE_SPLIT + 1));
-			memmove(cb->child + cursor.idx + 1, cb->child + cursor.idx,
-				sizeof *cb->child * (TREE_SPLIT - cursor.idx));
-			cb->child[cursor.idx] = temp;
+			memmove(cb->child + cursor.idx + 2, cb->child + cursor.idx + 1,
+				sizeof *cb->child * (TREE_SPLIT - 1 - cursor.idx));
+			cb->child[cursor.idx + 1] = temp;
 		}
 		hole = cursor;
 	} else { /* Descend hole to `sibling`. */

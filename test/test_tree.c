@@ -230,7 +230,7 @@ static void manual_int(void) {
 	int_tree_bulk_finish(&discrete);
 	tree_int_graph(&discrete, "graph/discrete-1.gv");
 	/*int_tree_add(&discrete, 27);*/
-	int_tree_add(&discrete, 1);
+	int_tree_add(&discrete, 21);
 	tree_int_graph(&discrete, "graph/discrete-2.gv");
 	goto finally;
 catch:
