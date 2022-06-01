@@ -814,8 +814,38 @@ grow: /* Leaf is full. */ {
 		}
 		hole = cursor;
 	} else if(cursor.idx > TREE_SPLIT) { /* Descend hole to `sibling`. */
-		/*memcpy(sibling->key + cursor.idx - TREE_SPLIT - 1, <#const void *__src#>, <#size_t __n#>);*/
-		assert(0);
+		printf("assign hole from cursor:%u\n", TREE_SPLIT);
+		hole.node->key[hole.idx] = cursor.node->key[TREE_SPLIT];
+#ifdef TREE_VALUE
+		hole.node->value[hole.idx] = cursor.node->value[TREE_SPLIT];
+#endif
+		hole.node = sibling, hole.height = cursor.height,
+			hole.idx = cursor.idx - TREE_SPLIT - 1;
+		printf("now hole is sibling:%u\n", hole.idx);
+		printf("cpy to 0, from %u, size %u\n", TREE_SPLIT + 1, hole.idx);
+		printf("cpy to %u, from %u, size %u\n", hole.idx + 1, cursor.idx, TREE_MAX - cursor.idx);
+		memcpy(sibling->key, cursor.node->key + TREE_SPLIT + 1,
+			sizeof *sibling->key * hole.idx);
+		memcpy(sibling->key + hole.idx + 1, cursor.node->key + cursor.idx,
+			sizeof *sibling->key * (TREE_MAX - cursor.idx));
+#ifdef TREE_VALUE
+		memcpy(sibling->value, cursor.node->value + TREE_SPLIT + 1,
+			sizeof *sibling->value * hole.idx);
+		memcpy(sibling->value + hole.idx + 1, cursor.node->value + cursor.idx,
+			sizeof *sibling->value * (TREE_MAX - cursor.idx));
+#endif
+		if(cursor.height) {
+			struct PB_(branch) *const cb = PB_(branch)(cursor.node),
+				*const sb = PB_(branch)(sibling);
+			struct PB_(node) *temp = sb->child[0];
+			printf("cpy edges to 0, from %u, size %u\n", TREE_SPLIT + 1, hole.idx + 1);
+			printf("cpy edges to %u, from %u, size %u\n", hole.idx + 2, cursor.idx + 1, TREE_MAX - cursor.idx);
+			memcpy(sb->child, cb->child + TREE_SPLIT + 1,
+				sizeof *cb->child * (hole.idx + 1));
+			memcpy(sb->child + hole.idx + 2, cb->child + cursor.idx + 1,
+				sizeof *cb->child * (TREE_MAX - cursor.idx));
+			sb->child[hole.idx + 1] = temp;
+		}
 	} else { /* Equal split: leave the hole where it is. */
 		memcpy(sibling->key, cursor.node->key + TREE_SPLIT,
 			sizeof *sibling->key * (TREE_MAX - TREE_SPLIT));

@@ -208,11 +208,11 @@ static void manual_int(void) {
 	int_tree_bulk_finish(&discrete); /* Does nothing, in this case. */
 	tree_int_graph(&discrete, "graph/discrete-1.gv");
 	printf("size = %zu\n", size);
-	int_tree_add(&discrete, (unsigned)size + 1); /* Middle element. */
-	/*int_tree_add(&discrete, 1);*/
+	/*int_tree_add(&discrete, (unsigned)size + 1);*/ /* Middle element. */
+	/*int_tree_add(&discrete, 1);*/ /* First element. */
+	int_tree_add(&discrete, 53); /* Doesn't work? */
 	/*int_tree_add(&discrete, 27);*/
 	/*int_tree_add(&discrete, 21);*/
-	/*int_tree_add(&discrete, 53);*/
 	tree_int_graph(&discrete, "graph/discrete-2.gv");
 	goto finally;
 catch:
