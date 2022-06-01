@@ -392,7 +392,7 @@ static void PB_(clear_r)(struct PB_(sub) sub, struct PB_(node) **const one) {
 #define BOX_ PB_
 #define BOX struct B_(tree)
 
-/** Initializes `tree` to idle. @order \Theta(1) @allow */
+/** @return Initializes `tree` to idle. @order \Theta(1) @allow */
 static struct B_(tree) B_(tree)(void)
 	{ struct B_(tree) tree; tree.root.node = 0; tree.root.height = 0;
 	return tree; }
@@ -906,6 +906,22 @@ static int B_(trie_remove)(struct B_(trie) *const trie,
 	const char *const key) { return PB_(remove)(trie, key); }
 #endif
 
+/** Copies `copy` to `tree`.
+ @param[tree] An idle or empty tree. @param[copy] Can be null.
+ @return Success.
+ @throws[malloc] @throws[EDOM] If `tree` is null or is not empty. */
+static int B_(tree_copy)(struct B_(tree) *const tree,
+	const struct B_(tree) *const copy) {
+	struct PB_(node) *hysteresis;
+	if(!tree || !(!tree->root.node || tree->root.height == UINT_MAX))
+		return errno = EDOM, 0;
+	if(!copy || !copy->root.node || copy->root.height == UINT_MAX) return 1;
+	hysteresis = tree->root.node;
+catch:
+	tree->root.node = hysteresis;
+	return 0;
+}
+
 #ifdef TREE_TEST /* <!-- test */
 /* Forward-declare. */
 static void (*PB_(to_string))(PB_(entry_c), char (*)[12]);
@@ -930,6 +946,7 @@ static void PB_(unused_base)(void) {
 	B_(tree_add)(0, k);
 #endif
 	B_(tree_bulk_finish)(0);
+	B_(tree_copy)(0, 0);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
