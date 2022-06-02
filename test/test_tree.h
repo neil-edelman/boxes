@@ -183,7 +183,7 @@ static PB_(entry_c) PB_(to_const)(const PB_(entry) e) {
 }
 
 static void PB_(test)(void) {
-	struct B_(tree) tree = B_(tree)();
+	struct B_(tree) tree = B_(tree)(), empty = B_(tree)();
 	struct B_(tree_iterator) it;
 	PB_(entry_test) n[20];
 	const size_t n_size = sizeof n / sizeof *n;
@@ -252,6 +252,11 @@ static void PB_(test)(void) {
 		if(i > 100) assert(0);
 	}
 	assert(i == n_unique);
+
+	B_(tree_clear)(0);
+	B_(tree_clear)(&empty), assert(!empty.root.node);
+	B_(tree_clear)(&tree), assert(tree.root.node
+		&& tree.root.height == UINT_MAX);
 
 	B_(tree_)(&tree), assert(!tree.root.node), PB_(valid)(&tree);
 	assert(!errno);

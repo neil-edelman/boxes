@@ -370,8 +370,9 @@ static struct PB_(ref) PB_(lower)(struct PB_(sub) sub,
 	}
 }
 
-/** Clears non-empty `tree` and it's children recursively, but doesn't put it
- to idle or clear pointers. If `one` is valid, tries to keep one leaf. */
+/** Frees non-empty `sub` and it's children recursively, but doesn't put it
+ to idle or clear pointers.
+ @param[one] If `one` is valid, tries to keep one leaf. Set to null before. */
 static void PB_(clear_r)(struct PB_(sub) sub, struct PB_(node) **const one) {
 	assert(sub.node);
 	if(!sub.height) {
@@ -386,6 +387,17 @@ static void PB_(clear_r)(struct PB_(sub) sub, struct PB_(node) **const one) {
 			PB_(clear_r)(child, one);
 		free(PB_(branch)(sub.node));
 	}
+}
+/** `tree` can be null. */
+static void PB_(clear)(struct B_(tree) *tree) {
+	struct PB_(node) *one = 0;
+	/* Already not there/idle/empty. */
+	if(!tree || !tree->root.node || tree->root.height == UINT_MAX) return;
+	PB_(clear_r)(tree->root, &one), assert(one);
+	/* This is a special state where the tree has one leaf, but it is empty.
+	 This state exists because it gives hysteresis to 0 -- 1 transition. */
+	tree->root.node = one;
+	tree->root.height = UINT_MAX;
 }
 
 /* Box override information. */
@@ -444,6 +456,10 @@ static PB_(value) *B_(tree_get_next)(struct B_(tree) *const tree,
 	return tree && (ref = PB_(lower)(tree->root, x, 0, 0),
 		PB_(pin)(tree->root, &ref)) ? PB_(ref_to_value)(ref) : 0;
 }
+
+/** Clears `tree`, which can be null, idle, empty, or full. If it is empty or
+ full, it remains active. */
+static void B_(tree_clear)(struct B_(tree) *const tree) { PB_(clear)(tree); }
 
 #include "../test/orcish.h"
 static void PB_(print)(const struct B_(tree) *const tree);
@@ -940,14 +956,14 @@ static int PB_(count)(const struct B_(tree) *const tree,
 /** Copies `copy` to `tree`, overwriting and replacing on success.
  @param[copy] In the case where it's null or idle, if `tree` is empty, then it
  continues to be.
- @return Success.
+ @return Success. Both the trees are not modified if returns false.
  @throws[malloc] @throws[EDOM] `tree` is null.
  @throws[ERANGE] The size of `copy` doesn't fit into `size_t`. @allow */
-static int B_(tree_copy)(struct B_(tree) *const tree,
+static int B_(tree_clone)(struct B_(tree) *const tree,
 	const struct B_(tree) *const copy) {
 	struct PB_(count) tc, cc;
-	size_t need_leaf, leaves = 0, need_branch;
-	struct PB_(node) **leaf_stack = 0;
+	size_t scaffold_no, need_leaf, leaves = 0, need_branch;
+	struct PB_(node) **leaf_stack = 0, *scaffold = 0;
 	struct PB_(branch) *branch_head = 0, *branch_tail = 0, *b;
 	int success = 0;
 	if(!tree) { errno = EDOM; goto catch; }
@@ -955,6 +971,10 @@ static int B_(tree_copy)(struct B_(tree) *const tree,
 	printf("<B>tree_copy: tc.branch %zu; tc.leaf %zu; "
 		"cc.branch %zu; cc.leaf %zu.\n",
 		tc.branch, tc.leaf, cc.branch, cc.leaf);
+	if((scaffold_no = cc.branch + cc.leaf) < cc.branch)
+		{ errno = ERANGE; goto catch; }
+	if(!scaffold_no) {}
+
 	need_leaf = cc.leaf > tc.leaf ? cc.leaf - tc.leaf : 0;
 	need_branch = cc.branch > tc.branch ? cc.branch - tc.branch : 0;
 	printf("need leaf %zu branch %zu\n", need_leaf, need_branch);
@@ -1003,6 +1023,7 @@ static void PB_(unused_base)(void) {
 	PB_(is_element_c); PB_(forward_begin); PB_(forward_next);
 	PB_(is_element);
 	B_(tree)(); B_(tree_)(0); B_(tree_begin)(0); B_(tree_next)(0);
+	B_(tree_clear)(0);
 	B_(tree_lower)(0, k);
 	B_(tree_get_next)(0, k);
 #ifdef TREE_VALUE
@@ -1013,7 +1034,7 @@ static void PB_(unused_base)(void) {
 	B_(tree_add)(0, k);
 #endif
 	B_(tree_bulk_finish)(0);
-	B_(tree_copy)(0, 0);
+	B_(tree_clone)(0, 0);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }

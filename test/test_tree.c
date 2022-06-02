@@ -153,8 +153,7 @@ static void entry_to_string(const struct entry_tree_entry_c entry,
 
 
 static void manual_int(void) {
-	struct int_tree equal = int_tree(), step = int_tree(),
-		discrete = int_tree();
+	struct int_tree equal = int_tree(), step = int_tree(), even = int_tree();
 	size_t i, size;
 	/*unsigned *x;*/
 	struct int_tree_iterator it;
@@ -204,19 +203,18 @@ static void manual_int(void) {
 	 gives keys, `m^{h+1}-1`. */
 	size = TREE_ORDER * TREE_ORDER * TREE_ORDER - 1; /* Three levels. */
 	for(i = 0; i < size; i++) /* Even for odd spaces between them. */
-		if(!int_tree_bulk_add(&discrete, ((unsigned)i + 1) * 2)) assert(0);
-	int_tree_bulk_finish(&discrete); /* Does nothing, in this case. */
-	tree_int_graph(&discrete, "graph/discrete-1.gv");
+		if(!int_tree_bulk_add(&even, ((unsigned)i + 1) * 2)) assert(0);
+	int_tree_bulk_finish(&even); /* Does nothing, in this case. */
+	tree_int_graph(&even, "graph/discrete-1.gv");
 	printf("size = %zu\n", size);
-	if(!int_tree_copy(&step, &discrete)) goto catch;
+	if(!int_tree_clone(&step, &even)) goto catch;
 	/*int_tree_add(&discrete, (unsigned)size + 1);*/ /* Middle element. */
 	/*int_tree_add(&discrete, 1);*/ /* First element. */
 	/*int_tree_add(&discrete, 53);*/ /* Last element. */
 	/*int_tree_add(&discrete, 27);*/
 	/*int_tree_add(&discrete, 21);*/
-	int_tree_add(&discrete, 43);
-	tree_int_graph(&discrete, "graph/discrete-2.gv");
-	if(!int_tree_copy(&step, &discrete)) goto catch;
+	int_tree_add(&step, 43);
+	tree_int_graph(&step, "graph/discrete-2.gv");
 	goto finally;
 catch:
 	perror("manual_unsigned");
@@ -224,7 +222,7 @@ catch:
 finally:
 	int_tree_(&equal);
 	int_tree_(&step);
-	int_tree_(&discrete);
+	int_tree_(&even);
 	printf("\n");
 }
 
