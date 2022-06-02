@@ -765,12 +765,12 @@ grow: /* Leaf is full. */ {
 	cursor = hole; /* Go down; (as opposed to doing it on paper.) */
 	goto split;
 } split: { /* Split between the new and existing nodes. */
+	struct PB_(node) *sibling;
 	{
 		char fn[64];
 		sprintf(fn, "graph/topology-%u.gv", cursor.height);
 		PB_(graph)(tree, fn);
 	}
-	struct PB_(node) *sibling;
 	assert(cursor.node && cursor.node->size && cursor.height);
 	sibling = new_head;
 	/* Descend now while split hasn't happened -- easier. */
@@ -906,20 +906,87 @@ static int B_(trie_remove)(struct B_(trie) *const trie,
 	const char *const key) { return PB_(remove)(trie, key); }
 #endif
 
-/** Copies `copy` to `tree`.
- @param[tree] An idle or empty tree. @param[copy] Can be null.
+struct PB_(count) { size_t branch, leaf; };
+static int PB_(complex)(struct PB_(ref) ref, struct PB_(count) *const count) {
+	assert(ref.node && ref.height);
+	if(!++count->branch) return 0;
+	if(ref.height == 1) {
+		if(count->leaf + ref.node->size + 1 < count->leaf) return 0;
+		count->leaf += ref.node->size + 1;
+	} else while(ref.idx <= ref.node->size) {
+		struct PB_(ref) child;
+		child.node = PB_(branch)(ref.node)->child[ref.idx];
+		child.height = ref.height - 1;
+		child.idx = 0;
+		if(!PB_(complex)(child, count)) return 0;
+		ref.idx++;
+	}
+	return 1;
+}
+static int PB_(count)(const struct B_(tree) *const tree,
+	struct PB_(count) *const count) {
+	assert(tree && count);
+	count->branch = 0, count->leaf = 0;
+	if(!tree->root.node) { /* Idle. */
+	} else if(tree->root.height == UINT_MAX || !tree->root.height) {
+		count->leaf = 1;
+	} else { /* Complex. */
+		struct PB_(ref) ref; ref.node = tree->root.node,
+			ref.height = tree->root.height, ref.idx = 0;
+		if(!PB_(complex)(ref, count)) return errno = ERANGE, 0;
+	}
+	return 1;
+}
+/** Copies `copy` to `tree`, overwriting and replacing on success.
+ @param[copy] In the case where it's null or idle, if `tree` is empty, then it
+ continues to be.
  @return Success.
- @throws[malloc] @throws[EDOM] If `tree` is null or is not empty. */
+ @throws[malloc] @throws[EDOM] `tree` is null.
+ @throws[ERANGE] The size of `copy` doesn't fit into `size_t`. @allow */
 static int B_(tree_copy)(struct B_(tree) *const tree,
 	const struct B_(tree) *const copy) {
-	struct PB_(node) *hysteresis;
-	if(!tree || !(!tree->root.node || tree->root.height == UINT_MAX))
-		return errno = EDOM, 0;
-	if(!copy || !copy->root.node || copy->root.height == UINT_MAX) return 1;
-	hysteresis = tree->root.node;
+	struct PB_(count) tc, cc;
+	size_t need_leaf, leaves = 0, need_branch;
+	struct PB_(node) **leaf_stack = 0;
+	struct PB_(branch) *branch_head = 0, *branch_tail = 0, *b;
+	int success = 0;
+	if(!tree) { errno = EDOM; goto catch; }
+	if(!PB_(count)(tree, &tc) || !PB_(count)(copy, &cc)) goto catch;
+	printf("<B>tree_copy: tc.branch %zu; tc.leaf %zu; "
+		"cc.branch %zu; cc.leaf %zu.\n",
+		tc.branch, tc.leaf, cc.branch, cc.leaf);
+	need_leaf = cc.leaf > tc.leaf ? cc.leaf - tc.leaf : 0;
+	need_branch = cc.branch > tc.branch ? cc.branch - tc.branch : 0;
+	printf("need leaf %zu branch %zu\n", need_leaf, need_branch);
+	while(need_branch) {
+		if(!(b = malloc(sizeof *b))) goto catch;
+		b->base.size = 0;
+		b->child[0] = branch_tail ? &branch_tail->base : 0;
+		if(!branch_head) branch_head = b;
+		branch_tail = b;
+		need_branch--;
+	}
+	if(need_leaf) { /* Fixme: really? */
+		if(!(leaf_stack = malloc(sizeof *leaf_stack * need_leaf))) goto catch;
+		while(leaves < need_leaf) {
+			struct PB_(node) *leaf;
+			if(!(leaf = malloc(sizeof *leaf))) goto catch;
+			leaf->size = 0;
+			leaf_stack[leaves++] = leaf;
+		}
+	}
+	goto finally;
 catch:
-	tree->root.node = hysteresis;
-	return 0;
+	success = 0;
+finally:
+	while(leaves) free(leaf_stack[--leaves]);
+	free(leaf_stack);
+	while(branch_head) {
+		struct PB_(branch) *const erase = branch_head;
+		branch_head = PB_(branch)(branch_head->child[0]);
+		free(erase);
+	}
+	return success;
 }
 
 #ifdef TREE_TEST /* <!-- test */

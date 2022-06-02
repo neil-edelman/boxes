@@ -208,6 +208,7 @@ static void manual_int(void) {
 	int_tree_bulk_finish(&discrete); /* Does nothing, in this case. */
 	tree_int_graph(&discrete, "graph/discrete-1.gv");
 	printf("size = %zu\n", size);
+	if(!int_tree_copy(&step, &discrete)) goto catch;
 	/*int_tree_add(&discrete, (unsigned)size + 1);*/ /* Middle element. */
 	/*int_tree_add(&discrete, 1);*/ /* First element. */
 	/*int_tree_add(&discrete, 53);*/ /* Last element. */
@@ -215,6 +216,7 @@ static void manual_int(void) {
 	/*int_tree_add(&discrete, 21);*/
 	int_tree_add(&discrete, 43);
 	tree_int_graph(&discrete, "graph/discrete-2.gv");
+	if(!int_tree_copy(&step, &discrete)) goto catch;
 	goto finally;
 catch:
 	perror("manual_unsigned");
