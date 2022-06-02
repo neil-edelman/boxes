@@ -923,7 +923,8 @@ static int B_(trie_remove)(struct B_(trie) *const trie,
 #endif
 
 struct PB_(count) { size_t branch, leaf; };
-static int PB_(complex)(struct PB_(ref) ref, struct PB_(count) *const count) {
+static int PB_(count_r)(struct PB_(ref) ref,
+	struct PB_(count) *const count) {
 	assert(ref.node && ref.height);
 	if(!++count->branch) return 0;
 	if(ref.height == 1) {
@@ -934,7 +935,7 @@ static int PB_(complex)(struct PB_(ref) ref, struct PB_(count) *const count) {
 		child.node = PB_(branch)(ref.node)->child[ref.idx];
 		child.height = ref.height - 1;
 		child.idx = 0;
-		if(!PB_(complex)(child, count)) return 0;
+		if(!PB_(count_r)(child, count)) return 0;
 		ref.idx++;
 	}
 	return 1;
@@ -949,7 +950,7 @@ static int PB_(count)(const struct B_(tree) *const tree,
 	} else { /* Complex. */
 		struct PB_(ref) ref; ref.node = tree->root.node,
 			ref.height = tree->root.height, ref.idx = 0;
-		if(!PB_(complex)(ref, count)) return errno = ERANGE, 0;
+		if(!PB_(count_r)(ref, count)) return 0;
 	}
 	return 1;
 }
@@ -962,50 +963,75 @@ static int PB_(count)(const struct B_(tree) *const tree,
 static int B_(tree_clone)(struct B_(tree) *const tree,
 	const struct B_(tree) *const copy) {
 	struct PB_(count) tc, cc;
-	size_t scaffold_no, need_leaf, leaves = 0, need_branch;
-	struct PB_(node) **leaf_stack = 0, *scaffold = 0;
-	struct PB_(branch) *branch_head = 0, *branch_tail = 0, *b;
-	int success = 0;
+	struct {
+		size_t no;
+		struct PB_(node) **data;
+		struct { struct PB_(node) **head, **fresh, **cursor; } branch, leaf;
+	} scaffold;
+	int success = 1;
+	scaffold.data = 0;
 	if(!tree) { errno = EDOM; goto catch; }
-	if(!PB_(count)(tree, &tc) || !PB_(count)(copy, &cc)) goto catch;
+	if(!PB_(count)(tree, &tc) || !PB_(count)(copy, &cc)
+		|| (scaffold.no = cc.branch + cc.leaf) < cc.branch)
+		{ errno = ERANGE; goto catch; } /* Overflow. */
 	printf("<B>tree_copy: tc.branch %zu; tc.leaf %zu; "
 		"cc.branch %zu; cc.leaf %zu.\n",
 		tc.branch, tc.leaf, cc.branch, cc.leaf);
-	if((scaffold_no = cc.branch + cc.leaf) < cc.branch)
-		{ errno = ERANGE; goto catch; }
-	if(!scaffold_no) {}
-
-	need_leaf = cc.leaf > tc.leaf ? cc.leaf - tc.leaf : 0;
-	need_branch = cc.branch > tc.branch ? cc.branch - tc.branch : 0;
-	printf("need leaf %zu branch %zu\n", need_leaf, need_branch);
-	while(need_branch) {
-		if(!(b = malloc(sizeof *b))) goto catch;
-		b->base.size = 0;
-		b->child[0] = branch_tail ? &branch_tail->base : 0;
-		if(!branch_head) branch_head = b;
-		branch_tail = b;
-		need_branch--;
+	if(!scaffold.no) { PB_(clear)(tree); goto finally; }
+	if(!(scaffold.data = malloc(sizeof *scaffold.data * scaffold.no)))
+		{ if(!errno) errno = ERANGE; goto catch; }
+	{
+		const size_t need_leaf = cc.leaf > tc.leaf ? cc.leaf - tc.leaf : 0,
+			need_branch = cc.branch > tc.branch ? cc.branch - tc.branch : 0;
+		printf("need branch %zu leaf %zu\n", need_branch, need_leaf);
+		/* Fill in values for catch. */
+		scaffold.branch.head = scaffold.data;
+		scaffold.branch.fresh = scaffold.branch.cursor
+			= scaffold.branch.head + cc.branch - need_branch;
+		scaffold.leaf.head = scaffold.branch.fresh + need_branch;
+		scaffold.leaf.fresh = scaffold.leaf.cursor
+			= scaffold.leaf.head + cc.leaf - need_leaf;
+		printf("index [0, %zu) is branch [%zu, %zu) leaf [%zu, %zu)\n", scaffold.no,
+			scaffold.branch.head - scaffold.data,
+			scaffold.branch.fresh - scaffold.data,
+			scaffold.leaf.head - scaffold.data,
+			scaffold.leaf.fresh - scaffold.data);
+		assert(scaffold.leaf.fresh + need_leaf == scaffold.data + scaffold.no);
 	}
-	if(need_leaf) { /* Fixme: really? */
-		if(!(leaf_stack = malloc(sizeof *leaf_stack * need_leaf))) goto catch;
-		while(leaves < need_leaf) {
-			struct PB_(node) *leaf;
-			if(!(leaf = malloc(sizeof *leaf))) goto catch;
-			leaf->size = 0;
-			leaf_stack[leaves++] = leaf;
-		}
+	while(scaffold.branch.cursor != scaffold.leaf.head) {
+		struct PB_(branch) *branch;
+		if(!(branch = malloc(sizeof *branch))) goto catch;
+		printf("new branch %s\n", orcify(branch));
+		branch->base.size = 0;
+		branch->child[0] = 0;
+		*scaffold.branch.cursor++ = &branch->base;
 	}
+	while(scaffold.leaf.cursor != scaffold.data + scaffold.no) {
+		struct PB_(node) *leaf;
+		if(!(leaf = malloc(sizeof *leaf))) goto catch;
+		printf("new leaf %s\n", orcify(leaf));
+		leaf->size = 0;
+		*scaffold.leaf.cursor++ = leaf;
+	}
+	goto catch;
 	goto finally;
 catch:
 	success = 0;
-finally:
-	while(leaves) free(leaf_stack[--leaves]);
-	free(leaf_stack);
-	while(branch_head) {
-		struct PB_(branch) *const erase = branch_head;
-		branch_head = PB_(branch)(branch_head->child[0]);
-		free(erase);
+	if(!scaffold.data) goto finally;
+	while(scaffold.leaf.cursor != scaffold.leaf.fresh) {
+		struct PB_(node) *leaf = *(--scaffold.leaf.cursor);
+		printf("del leaf %s\n", orcify(leaf));
+		assert(leaf);
+		free(leaf);
 	}
+	while(scaffold.branch.cursor != scaffold.branch.fresh) {
+		struct PB_(branch) *branch = PB_(branch)(*(--scaffold.branch.cursor));
+		printf("del branch %s\n", orcify(branch));
+		assert(branch);
+		free(branch);
+	}
+finally:
+	free(scaffold.data);
 	return success;
 }
 
