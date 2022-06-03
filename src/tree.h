@@ -954,6 +954,31 @@ static int PB_(count)(const struct B_(tree) *const tree,
 	}
 	return 1;
 }
+struct PB_(fill_scaffold) { struct PB_(node) **branch, **leaf; };
+static void PB_(tree_in_fill_r)(struct PB_(ref) ref,
+	struct PB_(fill_scaffold) *const fill) {
+	assert(ref.node && ref.height);
+	fill->branch = &ref.node, fill->branch++;
+	if(ref.height == 1) {
+		unsigned n;
+		for(n = 0; n <= ref.node->size; n++)
+		fill->leaf = &PB_(branch)(ref.node)->child[n], fill->leaf++;
+	} else while(ref.idx <= ref.node->size) {
+		struct PB_(ref) child;
+		child.node = PB_(branch)(ref.node)->child[ref.idx];
+		child.height = ref.height - 1;
+		child.idx = 0;
+		PB_(tree_in_fill_r)(child, fill);
+	}
+}
+static void PB_(tree_in_fill)(const struct B_(tree) *const tree,
+	struct PB_(fill_scaffold) *const fill) {
+	struct PB_(ref) ref;
+	assert(tree && fill);
+	ref.node = tree->root.node, ref.height = tree->root.height, ref.idx = 0;
+	PB_(tree_in_fill_r)(ref, fill);
+}
+
 /** Copies `copy` to `tree`, overwriting and replacing on success.
  @param[copy] In the case where it's null or idle, if `tree` is empty, then it
  continues to be.
@@ -1012,6 +1037,16 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 		printf("new leaf %s\n", orcify(leaf));
 		leaf->size = 0;
 		*scaffold.leaf.cursor++ = leaf;
+	}
+	{ /* Fill the nodes from existing the existing tree. (FIXME: only grows.) */
+		struct PB_(fill_scaffold) fill;
+		fill.branch = scaffold.branch.head, fill.leaf = scaffold.leaf.head;
+		PB_(tree_in_fill)(tree, &fill);
+	}
+	{
+		size_t i;
+		for(i = 0; i < scaffold.no; i++)
+			printf("> %s\n", orcify(scaffold.data[i]));
 	}
 	goto catch;
 	goto finally;
