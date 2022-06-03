@@ -958,11 +958,11 @@ struct PB_(fill_scaffold) { struct PB_(node) **branch, **leaf; };
 static void PB_(tree_in_fill_r)(struct PB_(ref) ref,
 	struct PB_(fill_scaffold) *const fill) {
 	assert(ref.node && ref.height);
-	fill->branch = &ref.node, fill->branch++;
+	*fill->branch = ref.node, printf("ex branch %s\n", orcify(*fill->branch)), fill->branch++;
 	if(ref.height == 1) {
 		unsigned n;
 		for(n = 0; n <= ref.node->size; n++)
-		fill->leaf = &PB_(branch)(ref.node)->child[n], fill->leaf++;
+			*fill->leaf = PB_(branch)(ref.node)->child[n], printf("ex leaf %s\n", orcify(*fill->leaf)), fill->leaf++;
 	} else while(ref.idx <= ref.node->size) {
 		struct PB_(ref) child;
 		child.node = PB_(branch)(ref.node)->child[ref.idx];
