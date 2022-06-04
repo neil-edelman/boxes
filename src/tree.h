@@ -995,8 +995,11 @@ static void PB_(cannibalize)(const struct B_(tree) *const tree,
 	sc->leaf.cursor = sc->leaf.head;
 	PB_(cannibalize_r)(ref, sc);
 }
-static void PB_(clone_r)(struct PB_(node) dst, struct PB_(ref) cpy,
+static struct PB_(node) *PB_(clone_r)(struct PB_(ref) cpy,
 	struct PB_(scaffold) *const sc) {
+	struct PB_(node) *node;
+
+#if 0
 	struct PB_(branch) *branch = PB_(branch)(dst.node);
 	const int keep_branch = sc->branch.cursor < sc->branch.fresh;
 	assert(dst.node && dst.height && sc);
@@ -1020,20 +1023,26 @@ static void PB_(clone_r)(struct PB_(node) dst, struct PB_(ref) cpy,
 		PB_(clone_r)(child, child_copy, height - 1, sc);
 	}
 	if(!keep_branch) printf("fill free branch %s\n", orcify(branch)), free(branch);
+#endif
+	assert(0);
 }
-static void PB_(clone)(struct B_(tree) *const tree,
-	const struct B_(tree) *const clone, struct PB_(scaffold) *const sc) {
-	struct PB_(node) *dst;
+static struct PB_(sub) PB_(clone)(const struct PB_(sub) *const clone,
+	struct PB_(scaffold) *const sc) {
+	struct PB_(sub) sub;
 	struct PB_(ref) cpy;
-	assert(tree && clone && sc);
-	cpy.node = clone->root.node, cpy.height = clone->root.height, cpy.idx = 0;
+	assert(clone && clone->node && sc);
+	printf("Have %zu in scaffold.\n", sc->no);
 	/* Go back to the beginning of the scaffold. */
 	sc->branch.cursor = sc->branch.head;
 	sc->leaf.cursor = sc->leaf.head;
-	PB_(clone_r)(dst, cpy, sc);
-	tree->root.height = clone->root.height;
+	if(sub.height = clone->height) { /* Multiple nodes. */
+		cpy.node = clone->node, cpy.height = clone->height, cpy.idx = 0;
+		sub.node = PB_(clone_r)(cpy, sc);
+	} else { /* One node. */
+		assert(0);
+	}
+	return sub;
 }
-
 /** Copies and overwrites `copy` to `tree`.
  @param[copy] In the case where it's null or idle, if `tree` is empty, then it
  continues to be.
@@ -1110,7 +1119,7 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 			printf("> scaffold %s\n", orcify(sc.data[i]));
 	}
 	/* The scaffold has the exact number of nodes we need. Overwrite. */
-	PB_(clone)(tree, clone, &sc);
+	tree->root = PB_(clone)(&clone->root, &sc);
 	goto finally;
 catch:
 	success = 0;
