@@ -96,6 +96,7 @@ enum tree_result { TREE_RESULT };
 static const char *const tree_result_str[] = { TREE_RESULT };
 #undef X
 #undef TREE_RESULT
+struct tree_count { size_t branches, leaves; };
 #endif /* idempotent --> */
 
 
@@ -922,151 +923,172 @@ static int B_(trie_remove)(struct B_(trie) *const trie,
 	const char *const key) { return PB_(remove)(trie, key); }
 #endif
 
-struct PB_(count) { size_t branch, leaf; };
-static int PB_(count_r)(struct PB_(ref) ref,
-	struct PB_(count) *const count) {
+/* All these are used in clone; it's convenient to use `\O(\log size)` stack
+ space. [existing branches][new branches][existing leaves][new leaves] no */
+struct PB_(scaffold) {
+	struct tree_count tree, copy;
+	size_t no;
+	struct PB_(node) **data;
+	struct { struct PB_(node) **head, **fresh, **cursor; } branch, leaf;
+};
+static int PB_(count_r)(struct PB_(ref) ref, struct tree_count *const c) {
 	assert(ref.node && ref.height);
-	if(!++count->branch) return 0;
+	if(!++c->branches) return 0;
 	if(ref.height == 1) {
-		if(count->leaf + ref.node->size + 1 < count->leaf) return 0;
-		count->leaf += ref.node->size + 1;
+		if(c->leaves + ref.node->size + 1 < c->leaves) return 0; /* Overflow. */
+		c->leaves += ref.node->size + 1;
 	} else while(ref.idx <= ref.node->size) {
 		struct PB_(ref) child;
 		child.node = PB_(branch)(ref.node)->child[ref.idx];
 		child.height = ref.height - 1;
 		child.idx = 0;
-		if(!PB_(count_r)(child, count)) return 0;
+		if(!PB_(count_r)(child, c)) return 0;
 		ref.idx++;
 	}
 	return 1;
 }
 static int PB_(count)(const struct B_(tree) *const tree,
-	struct PB_(count) *const count) {
-	assert(tree && count);
-	count->branch = 0, count->leaf = 0;
+	struct tree_count *const c) {
+	assert(tree && c);
+	c->branches = c->leaves = 0;
 	if(!tree->root.node) { /* Idle. */
 	} else if(tree->root.height == UINT_MAX || !tree->root.height) {
-		count->leaf = 1;
+		c->leaves = 1;
 	} else { /* Complex. */
 		struct PB_(ref) ref; ref.node = tree->root.node,
 			ref.height = tree->root.height, ref.idx = 0;
-		if(!PB_(count_r)(ref, count)) return 0;
+		if(!PB_(count_r)(ref, c)) return 0;
 	}
 	return 1;
 }
-struct PB_(fill_scaffold) { struct PB_(node) **branch, **leaf; };
-static void PB_(tree_in_fill_r)(struct PB_(ref) ref,
-	struct PB_(fill_scaffold) *const fill) {
-	assert(ref.node && ref.height);
-	*fill->branch = ref.node, printf("ex branch %s\n", orcify(*fill->branch)), fill->branch++;
-	if(ref.height == 1) {
+static void PB_(tree_fill_r)(struct PB_(ref) ref,
+	struct PB_(scaffold) *const sc) {
+	struct PB_(branch) *branch = PB_(branch)(ref.node);
+	const int keep_branch = sc->branch.cursor < sc->branch.fresh;
+	assert(ref.node && ref.height && sc);
+	if(keep_branch) *sc->branch.cursor = ref.node, printf("fill branch %s\n", orcify(*sc->branch.cursor)), sc->branch.cursor++;
+	if(ref.height == 1) { /* Children are leaves. */
 		unsigned n;
-		for(n = 0; n <= ref.node->size; n++)
-			*fill->leaf = PB_(branch)(ref.node)->child[n], printf("ex leaf %s\n", orcify(*fill->leaf)), fill->leaf++;
+		for(n = 0; n <= ref.node->size; n++) {
+			const int keep_leaf = sc->leaf.cursor < sc->leaf.fresh;
+			struct PB_(node) *child = branch->child[n];
+			if(keep_leaf) *sc->leaf.cursor = child, printf("fill leaf %s\n", orcify(child)), sc->leaf.cursor++;
+			else printf("fill free leaf %s\n", orcify(child)), free(child);
+		}
 	} else while(ref.idx <= ref.node->size) {
 		struct PB_(ref) child;
 		child.node = PB_(branch)(ref.node)->child[ref.idx];
 		child.height = ref.height - 1;
 		child.idx = 0;
-		PB_(tree_in_fill_r)(child, fill);
+		PB_(tree_fill_r)(child, sc);
 	}
+	if(!keep_branch) printf("fill free branch %s\n", orcify(branch)), free(branch);
 }
-static void PB_(tree_in_fill)(const struct B_(tree) *const tree,
-	struct PB_(fill_scaffold) *const fill) {
+static void PB_(tree_fill)(const struct B_(tree) *const tree,
+	struct PB_(scaffold) *const sc) {
 	struct PB_(ref) ref;
-	assert(tree && fill);
+	assert(tree && tree->root.node && tree->root.height != UINT_MAX && sc);
 	ref.node = tree->root.node, ref.height = tree->root.height, ref.idx = 0;
-	PB_(tree_in_fill_r)(ref, fill);
+	sc->branch.cursor = sc->branch.head;
+	sc->leaf.cursor = sc->leaf.head;
+	PB_(tree_fill_r)(ref, sc);
 }
 
-/** Copies `copy` to `tree`, overwriting and replacing on success.
+/** Copies and overwrites `copy` to `tree`.
  @param[copy] In the case where it's null or idle, if `tree` is empty, then it
  continues to be.
- @return Success. Both the trees are not modified if returns false.
- @throws[malloc] @throws[EDOM] `tree` is null.
- @throws[ERANGE] The size of `copy` doesn't fit into `size_t`. @allow */
+ @return Success, otherwise `tree` is not modified.
+ @throws[malloc] @throws[EDOM] `tree` is null. @throws[ERANGE] The size of
+ `copy` doesn't fit into `size_t`. @allow */
 static int B_(tree_clone)(struct B_(tree) *const tree,
-	const struct B_(tree) *const copy) {
-	struct PB_(count) tc, cc;
-	struct {
-		size_t no;
-		struct PB_(node) **data;
-		struct { struct PB_(node) **head, **fresh, **cursor; } branch, leaf;
-	} scaffold;
+	const struct B_(tree) *const clone) {
+	struct PB_(scaffold) sc;
 	int success = 1;
-	scaffold.data = 0;
+	sc.data = 0; /* Need to keep this updated to catch. */
 	if(!tree) { errno = EDOM; goto catch; }
-	if(!PB_(count)(tree, &tc) || !PB_(count)(copy, &cc)
-		|| (scaffold.no = cc.branch + cc.leaf) < cc.branch)
+	/* Count the number of nodes and set up to copy. */
+	if(!PB_(count)(tree, &sc.tree) || !PB_(count)(clone, &sc.copy)
+		|| (sc.no = sc.copy.branches + sc.copy.leaves) < sc.copy.branches)
 		{ errno = ERANGE; goto catch; } /* Overflow. */
-	printf("<B>tree_copy: tc.branch %zu; tc.leaf %zu; "
-		"cc.branch %zu; cc.leaf %zu.\n",
-		tc.branch, tc.leaf, cc.branch, cc.leaf);
-	if(!scaffold.no) { PB_(clear)(tree); goto finally; }
-	if(!(scaffold.data = malloc(sizeof *scaffold.data * scaffold.no)))
+	printf("<B>tree_copy: tree.branches %zu; tree.leaves %zu; "
+		"copy.branches %zu; copy.leaves %zu.\n",
+		sc.tree.branches, sc.tree.leaves, sc.copy.branches, sc.copy.leaves);
+	if(!sc.no) { PB_(clear)(tree); goto finally; } /* No need to allocate. */
+	if(!(sc.data = malloc(sizeof *sc.data * sc.no)))
 		{ if(!errno) errno = ERANGE; goto catch; }
+	/* debug */
 	{
-		const size_t need_leaf = cc.leaf > tc.leaf ? cc.leaf - tc.leaf : 0,
-			need_branch = cc.branch > tc.branch ? cc.branch - tc.branch : 0;
-		printf("need branch %zu leaf %zu\n", need_branch, need_leaf);
-		/* Fill in values for catch. */
-		scaffold.branch.head = scaffold.data;
-		scaffold.branch.fresh = scaffold.branch.cursor
-			= scaffold.branch.head + cc.branch - need_branch;
-		scaffold.leaf.head = scaffold.branch.fresh + need_branch;
-		scaffold.leaf.fresh = scaffold.leaf.cursor
-			= scaffold.leaf.head + cc.leaf - need_leaf;
-		printf("index [0, %zu) is branch [%zu, %zu) leaf [%zu, %zu)\n", scaffold.no,
-			scaffold.branch.head - scaffold.data,
-			scaffold.branch.fresh - scaffold.data,
-			scaffold.leaf.head - scaffold.data,
-			scaffold.leaf.fresh - scaffold.data);
-		assert(scaffold.leaf.fresh + need_leaf == scaffold.data + scaffold.no);
+		size_t i;
+		for(i = 0; i < sc.no; i++) sc.data[i] = 0;
 	}
-	while(scaffold.branch.cursor != scaffold.leaf.head) {
+	{ /* Ready scaffold. */
+		struct tree_count need;
+		need.leaves = sc.copy.leaves > sc.tree.leaves
+			? sc.copy.leaves - sc.tree.leaves : 0;
+		need.branches = sc.copy.branches > sc.tree.branches
+			? sc.copy.branches - sc.tree.branches : 0;
+		printf("need { branches %zu leaves %zu }\n",
+			need.branches, need.leaves);
+		sc.branch.head = sc.data;
+		sc.branch.fresh = sc.branch.cursor
+			= sc.branch.head + sc.copy.branches - need.branches;
+		sc.leaf.head = sc.branch.fresh + need.branches;
+		sc.leaf.fresh = sc.leaf.cursor
+			= sc.leaf.head + sc.copy.leaves - need.leaves;
+		printf("index [0, %zu) is branch [%zu, %zu) leaf [%zu, %zu)\n", sc.no,
+			sc.branch.head - sc.data,
+			sc.branch.fresh - sc.data,
+			sc.leaf.head - sc.data,
+			sc.leaf.fresh - sc.data);
+		assert(sc.leaf.fresh + need.leaves == sc.data + sc.no);
+	}
+	/* Add new nodes. */
+	while(sc.branch.cursor != sc.leaf.head) {
 		struct PB_(branch) *branch;
 		if(!(branch = malloc(sizeof *branch))) goto catch;
 		printf("new branch %s\n", orcify(branch));
 		branch->base.size = 0;
 		branch->child[0] = 0;
-		*scaffold.branch.cursor++ = &branch->base;
+		*sc.branch.cursor++ = &branch->base;
 	}
-	while(scaffold.leaf.cursor != scaffold.data + scaffold.no) {
+	while(sc.leaf.cursor != sc.data + sc.no) {
 		struct PB_(node) *leaf;
 		if(!(leaf = malloc(sizeof *leaf))) goto catch;
 		printf("new leaf %s\n", orcify(leaf));
 		leaf->size = 0;
-		*scaffold.leaf.cursor++ = leaf;
+		*sc.leaf.cursor++ = leaf;
 	}
-	{ /* Fill the nodes from existing the existing tree. (FIXME: only grows.) */
-		struct PB_(fill_scaffold) fill;
-		fill.branch = scaffold.branch.head, fill.leaf = scaffold.leaf.head;
-		PB_(tree_in_fill)(tree, &fill);
+	{ /* debug */
+		size_t i;
+		for(i = 0; i < sc.no; i++) printf("> new: %s\n", orcify(sc.data[i]));
 	}
+	/* All resources have been acquired; copy the nodes from `clone` and free
+	 not-used. */
+	//tree->root.height = clone->root.height;
+	PB_(tree_fill)(tree, &sc);
 	{
 		size_t i;
-		for(i = 0; i < scaffold.no; i++)
-			printf("> %s\n", orcify(scaffold.data[i]));
+		for(i = 0; i < sc.no; i++)
+			printf("> scaffold %s\n", orcify(sc.data[i]));
 	}
-	goto catch;
 	goto finally;
 catch:
 	success = 0;
-	if(!scaffold.data) goto finally;
-	while(scaffold.leaf.cursor != scaffold.leaf.fresh) {
-		struct PB_(node) *leaf = *(--scaffold.leaf.cursor);
+	if(!sc.data) goto finally;
+	while(sc.leaf.cursor != sc.leaf.fresh) {
+		struct PB_(node) *leaf = *(--sc.leaf.cursor);
 		printf("del leaf %s\n", orcify(leaf));
 		assert(leaf);
 		free(leaf);
 	}
-	while(scaffold.branch.cursor != scaffold.branch.fresh) {
-		struct PB_(branch) *branch = PB_(branch)(*(--scaffold.branch.cursor));
+	while(sc.branch.cursor != sc.branch.fresh) {
+		struct PB_(branch) *branch = PB_(branch)(*(--sc.branch.cursor));
 		printf("del branch %s\n", orcify(branch));
 		assert(branch);
 		free(branch);
 	}
 finally:
-	free(scaffold.data);
+	free(sc.data); /* Temporary memory. */
 	return success;
 }
 
