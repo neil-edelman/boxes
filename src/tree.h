@@ -961,7 +961,7 @@ static int PB_(count)(const struct B_(tree) *const tree,
 	}
 	return 1;
 }
-static void PB_(tree_fill_r)(struct PB_(ref) ref,
+static void PB_(cannibalize_r)(struct PB_(ref) ref,
 	struct PB_(scaffold) *const sc) {
 	struct PB_(branch) *branch = PB_(branch)(ref.node);
 	const int keep_branch = sc->branch.cursor < sc->branch.fresh;
@@ -980,18 +980,58 @@ static void PB_(tree_fill_r)(struct PB_(ref) ref,
 		child.node = PB_(branch)(ref.node)->child[ref.idx];
 		child.height = ref.height - 1;
 		child.idx = 0;
-		PB_(tree_fill_r)(child, sc);
+		PB_(cannibalize_r)(child, sc);
+		ref.idx++;
 	}
 	if(!keep_branch) printf("fill free branch %s\n", orcify(branch)), free(branch);
 }
-static void PB_(tree_fill)(const struct B_(tree) *const tree,
+static void PB_(cannibalize)(const struct B_(tree) *const tree,
 	struct PB_(scaffold) *const sc) {
 	struct PB_(ref) ref;
 	assert(tree && tree->root.node && tree->root.height != UINT_MAX && sc);
 	ref.node = tree->root.node, ref.height = tree->root.height, ref.idx = 0;
+	assert(ref.height); /* this will fail */
 	sc->branch.cursor = sc->branch.head;
 	sc->leaf.cursor = sc->leaf.head;
-	PB_(tree_fill_r)(ref, sc);
+	PB_(cannibalize_r)(ref, sc);
+}
+static void PB_(clone_r)(struct PB_(node) dst, struct PB_(ref) cpy,
+	struct PB_(scaffold) *const sc) {
+	struct PB_(branch) *branch = PB_(branch)(dst.node);
+	const int keep_branch = sc->branch.cursor < sc->branch.fresh;
+	assert(dst.node && dst.height && sc);
+	if(keep_branch) *sc->branch.cursor = dst.node, printf("fill branch %s\n", orcify(*sc->branch.cursor)), sc->branch.cursor++;
+	if(dst.height == 1) { /* Children are leaves. */
+		unsigned n;
+		for(n = 0; n <= dst.node->size; n++) {
+			const int keep_leaf = sc->leaf.cursor < sc->leaf.fresh;
+			struct PB_(node) *child = branch->child[n];
+			if(keep_leaf) *sc->leaf.cursor = child, printf("fill leaf %s\n", orcify(child)), sc->leaf.cursor++;
+			else printf("fill free leaf %s\n", orcify(child)), free(child);
+		}
+	} else while(dst.idx <= dst.node->size) {
+		struct PB_(ref) child, child_copy;
+		child.node = PB_(branch)(dst.node)->child[dst.idx];
+		child.height = dst.height - 1;
+		child.idx = 0;
+		child_copy.node = PB_(branch)(dst.node)->child[dst.idx];
+		child_copy.height = dst.height - 1;
+		child_copy.idx = 0;
+		PB_(clone_r)(child, child_copy, height - 1, sc);
+	}
+	if(!keep_branch) printf("fill free branch %s\n", orcify(branch)), free(branch);
+}
+static void PB_(clone)(struct B_(tree) *const tree,
+	const struct B_(tree) *const clone, struct PB_(scaffold) *const sc) {
+	struct PB_(node) *dst;
+	struct PB_(ref) cpy;
+	assert(tree && clone && sc);
+	cpy.node = clone->root.node, cpy.height = clone->root.height, cpy.idx = 0;
+	/* Go back to the beginning of the scaffold. */
+	sc->branch.cursor = sc->branch.head;
+	sc->leaf.cursor = sc->leaf.head;
+	PB_(clone_r)(dst, cpy, sc);
+	tree->root.height = clone->root.height;
 }
 
 /** Copies and overwrites `copy` to `tree`.
@@ -1062,15 +1102,15 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 		size_t i;
 		for(i = 0; i < sc.no; i++) printf("> new: %s\n", orcify(sc.data[i]));
 	}
-	/* All resources have been acquired; copy the nodes from `clone` and free
-	 not-used. */
-	//tree->root.height = clone->root.height;
-	PB_(tree_fill)(tree, &sc);
+	/* Resources acquired; now we don't care about tree. */
+	PB_(cannibalize)(tree, &sc);
 	{
 		size_t i;
 		for(i = 0; i < sc.no; i++)
 			printf("> scaffold %s\n", orcify(sc.data[i]));
 	}
+	/* The scaffold has the exact number of nodes we need. Overwrite. */
+	PB_(clone)(tree, clone, &sc);
 	goto finally;
 catch:
 	success = 0;
