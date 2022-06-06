@@ -736,7 +736,7 @@ descend: /* Record last node that has space. */
 			return TREE_YIELD;
 		}
 	}
-	printf("add: fill %s(%u):%u, add %s(%u):%u.\n",
+	printf("add: hole %s(%u):%u, add %s(%u):%u.\n",
 		orcify(hole.node), hole.height, hole.idx,
 		orcify(add.node), add.height, add.idx);
 	if(hole.node == add.node) goto insert; else goto grow;
@@ -750,7 +750,6 @@ insert: /* Leaf has space to spare; usually end up here. */
 		sizeof *add.node->value * (add.node->size - add.idx));
 #endif
 	add.node->size++;
-	if(is_growing) goto split;
 	add.node->key[add.idx] = key;
 #ifdef TREE_VALUE
 	if(value) *value = PB_(ref_to_value)(add);
@@ -776,10 +775,20 @@ grow: /* Leaf is full. */ {
 	printf("tree_add: new leaf %s\n", orcify(new_leaf));
 	/* Attach new nodes to the tree. The hole is now an actual hole. */
 	if(hole.node) { /* New nodes are a sub-structure of the tree. */
+
+		/************* PROBLEM HERE **********/
+
+		struct PB_(branch) *holeb = PB_(branch)(hole.node);
 		printf("tree_add: inserting into %s:%u\n", orcify(hole.node), hole.idx);
-		is_growing = 1;
-		cursor = add = hole;
-		goto insert;
+		memmove(hole.node->key + hole.idx + 1, hole.node->key + hole.idx,
+			sizeof *hole.node->key * (hole.node->size - hole.idx));
+#ifdef TREE_VALUE
+		memmove(hole.node->value + hole.idx + 1, hole.node->value + hole.idx,
+			sizeof *hole.node->value * (hole.node->size - hole.idx));
+#endif
+		memmove(holeb->child + hole.idx + 2, holeb->child + hole.idx + 1,
+			sizeof *holeb->child * (hole.node->size - hole.idx));
+		hole.node->size++;
 	} else { /* New nodes raise tree height. */
 		struct PB_(branch) *const new_root = PB_(branch)(new_head);
 		hole.node = new_head, hole.height = ++tree->root.height, hole.idx = 0;
