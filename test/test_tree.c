@@ -206,7 +206,7 @@ static void manual_int(void) {
 		if(!int_tree_bulk_add(&even, ((unsigned)i + 1) * 2)) assert(0);
 	int_tree_bulk_finish(&even); /* Does nothing, in this case. */
 	tree_int_graph(&even, "graph/discrete-1.gv");
-	for(i = 0; i <= size; i++) {
+	for(i = 0; i <= 0/*size*/; i++) {
 		char fn[64];
 		sprintf(fn, "graph/discrete-clone-%u.gv", (unsigned)i * 2 + 1);
 		if(!int_tree_clone(&step, &even)) goto catch;
