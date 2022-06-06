@@ -759,17 +759,19 @@ grow: /* Leaf is full. */ {
 	struct PB_(node) **new_next = &new_head, *new_leaf;
 	struct PB_(branch) *new_branch;
 	/* Allocate new nodes in succession. */
-	while(new_no) {
+	while(new_no != 1) { /* All branches except one. */
 		if(!(new_branch = malloc(sizeof *new_branch))) goto catch;
 		new_branch->base.size = 0;
 		new_branch->child[0] = 0;
 		*new_next = &new_branch->base, new_next = new_branch->child;
 		new_no--;
+		printf("tree_add: new branch %s\n", orcify(new_branch));
 	}
 	/* Last point of potential failure; (don't need to have entry in catch.) */
 	if(!(new_leaf = malloc(sizeof *new_leaf))) goto catch; //12 bytes in 1 blocks are definitely lost in loss record 1 of 1
 	new_leaf->size = 0;
 	*new_next = new_leaf;
+	printf("tree_add: new leaf %s\n", orcify(new_leaf));
 	/* Attach new nodes to the tree. The hole is now an actual hole. */
 	if(hole.node) { /* New nodes are a sub-structure of the tree. */
 		assert(0);

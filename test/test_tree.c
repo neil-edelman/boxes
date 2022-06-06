@@ -218,8 +218,11 @@ catch:
 	perror("manual_unsigned");
 	assert(0);
 finally:
+	printf("free equal:\n");
 	int_tree_(&equal);
+	printf("free step:\n");
 	int_tree_(&step);
+	printf("free even:\n");
 	int_tree_(&even);
 	printf("\n");
 }
