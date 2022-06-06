@@ -995,52 +995,38 @@ static void PB_(cannibalize)(const struct B_(tree) *const tree,
 	sc->leaf.cursor = sc->leaf.head;
 	PB_(cannibalize_r)(ref, sc);
 }
-static struct PB_(node) *PB_(clone_r)(struct PB_(ref) cpy,
+static struct PB_(node) *PB_(clone_r)(struct PB_(sub) cpy,
 	struct PB_(scaffold) *const sc) {
 	struct PB_(node) *node;
-
-#if 0
-	struct PB_(branch) *branch = PB_(branch)(dst.node);
-	const int keep_branch = sc->branch.cursor < sc->branch.fresh;
-	assert(dst.node && dst.height && sc);
-	if(keep_branch) *sc->branch.cursor = dst.node, printf("fill branch %s\n", orcify(*sc->branch.cursor)), sc->branch.cursor++;
-	if(dst.height == 1) { /* Children are leaves. */
-		unsigned n;
-		for(n = 0; n <= dst.node->size; n++) {
-			const int keep_leaf = sc->leaf.cursor < sc->leaf.fresh;
-			struct PB_(node) *child = branch->child[n];
-			if(keep_leaf) *sc->leaf.cursor = child, printf("fill leaf %s\n", orcify(child)), sc->leaf.cursor++;
-			else printf("fill free leaf %s\n", orcify(child)), free(child);
+	if(cpy.height) {
+		struct PB_(branch) *const cpyb = PB_(branch)(cpy.node),
+			*const branch = PB_(branch)(node = *sc->branch.cursor++);
+		unsigned i;
+		*node = *cpy.node; /* Copy node. */
+		cpy.height--;
+		for(i = 0; i <= cpy.node->size; i++) { /* Different links. */
+			cpy.node = cpyb->child[i];
+			branch->child[i] = PB_(clone_r)(cpy, sc);
 		}
-	} else while(dst.idx <= dst.node->size) {
-		struct PB_(ref) child, child_copy;
-		child.node = PB_(branch)(dst.node)->child[dst.idx];
-		child.height = dst.height - 1;
-		child.idx = 0;
-		child_copy.node = PB_(branch)(dst.node)->child[dst.idx];
-		child_copy.height = dst.height - 1;
-		child_copy.idx = 0;
-		PB_(clone_r)(child, child_copy, height - 1, sc);
+	} else { /* Leaves. */
+		node = *sc->leaf.cursor++;
+		*node = *cpy.node;
 	}
-	if(!keep_branch) printf("fill free branch %s\n", orcify(branch)), free(branch);
-#endif
-	assert(0);
+	return node;
 }
-static struct PB_(sub) PB_(clone)(const struct PB_(sub) *const clone,
+static struct PB_(sub) PB_(clone)(struct PB_(sub) *const clone,
 	struct PB_(scaffold) *const sc) {
 	struct PB_(sub) sub;
-	struct PB_(ref) cpy;
 	assert(clone && clone->node && sc);
 	printf("Have %zu in scaffold.\n", sc->no);
-	/* Go back to the beginning of the scaffold. */
+	/* Go back to the beginning of the scaffold and pick off one by one. */
 	sc->branch.cursor = sc->branch.head;
 	sc->leaf.cursor = sc->leaf.head;
-	if(sub.height = clone->height) { /* Multiple nodes. */
-		cpy.node = clone->node, cpy.height = clone->height, cpy.idx = 0;
-		sub.node = PB_(clone_r)(cpy, sc);
-	} else { /* One node. */
-		assert(0);
-	}
+	sub.node = PB_(clone_r)(*clone, sc);
+	sub.height = clone->height;
+	/* Used up all of them. */
+	assert(sc->branch.cursor == sc->leaf.head
+		&& sc->leaf.cursor == sc->data + sc->no);
 	return sub;
 }
 /** Copies and overwrites `copy` to `tree`.

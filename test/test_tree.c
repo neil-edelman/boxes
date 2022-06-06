@@ -206,15 +206,13 @@ static void manual_int(void) {
 		if(!int_tree_bulk_add(&even, ((unsigned)i + 1) * 2)) assert(0);
 	int_tree_bulk_finish(&even); /* Does nothing, in this case. */
 	tree_int_graph(&even, "graph/discrete-1.gv");
-	printf("size = %zu\n", size);
-	if(!int_tree_clone(&step, &even)) goto catch;
-	/*int_tree_add(&discrete, (unsigned)size + 1);*/ /* Middle element. */
-	/*int_tree_add(&discrete, 1);*/ /* First element. */
-	/*int_tree_add(&discrete, 53);*/ /* Last element. */
-	/*int_tree_add(&discrete, 27);*/
-	/*int_tree_add(&discrete, 21);*/
-	int_tree_add(&step, 43);
-	tree_int_graph(&step, "graph/discrete-2.gv");
+	for(i = 0; i <= size; i++) {
+		char fn[64];
+		sprintf(fn, "graph/discrete-clone-%u.gv", (unsigned)i * 2 + 1);
+		if(!int_tree_clone(&step, &even)) goto catch;
+		int_tree_add(&step, (unsigned)i * 2 + 1);
+		tree_int_graph(&step, fn);
+	}
 	goto finally;
 catch:
 	perror("manual_unsigned");
