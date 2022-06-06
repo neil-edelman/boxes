@@ -70,7 +70,7 @@
 #define B_(n) TREE_CAT(TREE_NAME, n)
 #define PB_(n) TREE_CAT(tree, B_(n))
 /* Leaf: `TREE_MAX type`; branch: `TREE_MAX type + TREE_ORDER pointer`. */
-#define TREE_MAX 3
+#define TREE_MAX 2
 #if TREE_MAX < 2 || TREE_MAX > UCHAR_MAX
 #error TREE_MAX parameter range `[3, UCHAR_MAX]`.
 #endif
