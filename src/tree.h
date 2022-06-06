@@ -70,7 +70,7 @@
 #define B_(n) TREE_CAT(TREE_NAME, n)
 #define PB_(n) TREE_CAT(tree, B_(n))
 /* Leaf: `TREE_MAX type`; branch: `TREE_MAX type + TREE_ORDER pointer`. */
-#define TREE_MAX 2
+#define TREE_MAX 3
 #if TREE_MAX < 2 || TREE_MAX > UCHAR_MAX
 #error TREE_MAX parameter range `[3, UCHAR_MAX]`.
 #endif
@@ -926,38 +926,39 @@ static int B_(trie_remove)(struct B_(trie) *const trie,
 /* All these are used in clone; it's convenient to use `\O(\log size)` stack
  space. [existing branches][new branches][existing leaves][new leaves] no */
 struct PB_(scaffold) {
-	struct tree_count tree, copy;
+	struct tree_count victim, clone;
 	size_t no;
 	struct PB_(node) **data;
 	struct { struct PB_(node) **head, **fresh, **cursor; } branch, leaf;
 };
-static int PB_(count_r)(struct PB_(ref) ref, struct tree_count *const c) {
-	assert(ref.node && ref.height);
-	if(!++c->branches) return 0;
-	if(ref.height == 1) {
-		if(c->leaves + ref.node->size + 1 < c->leaves) return 0; /* Overflow. */
-		c->leaves += ref.node->size + 1;
-	} else while(ref.idx <= ref.node->size) {
-		struct PB_(ref) child;
-		child.node = PB_(branch)(ref.node)->child[ref.idx];
-		child.height = ref.height - 1;
-		child.idx = 0;
-		if(!PB_(count_r)(child, c)) return 0;
-		ref.idx++;
+static int PB_(count_r)(struct PB_(sub) sub, struct tree_count *const no) {
+	assert(sub.node && sub.height);
+	if(!++no->branches) return 0;
+	if(sub.height == 1) {
+		/* Overflow; aren't guaranteed against this. */
+		if(no->leaves + sub.node->size + 1 < no->leaves) return 0;
+		no->leaves += sub.node->size + 1;
+	} else {
+		unsigned char i;
+		for(i = 0; i <= sub.node->size; i++) {
+			struct PB_(sub) child;
+			child.node = PB_(branch)(sub.node)->child[i];
+			child.height = sub.height - 1;
+			if(!PB_(count_r)(child, no)) return 0;
+		}
 	}
 	return 1;
 }
 static int PB_(count)(const struct B_(tree) *const tree,
-	struct tree_count *const c) {
-	assert(tree && c);
-	c->branches = c->leaves = 0;
+	struct tree_count *const no) {
+	assert(tree && no);
+	no->branches = no->leaves = 0;
 	if(!tree->root.node) { /* Idle. */
 	} else if(tree->root.height == UINT_MAX || !tree->root.height) {
-		c->leaves = 1;
+		no->leaves = 1;
 	} else { /* Complex. */
-		struct PB_(ref) ref; ref.node = tree->root.node,
-			ref.height = tree->root.height, ref.idx = 0;
-		if(!PB_(count_r)(ref, c)) return 0;
+		struct PB_(sub) sub = tree->root;
+		if(!PB_(count_r)(sub, no)) return 0;
 	}
 	return 1;
 }
@@ -990,10 +991,13 @@ static void PB_(cannibalize)(const struct B_(tree) *const tree,
 	struct PB_(ref) ref;
 	assert(tree && tree->root.node && tree->root.height != UINT_MAX && sc);
 	ref.node = tree->root.node, ref.height = tree->root.height, ref.idx = 0;
-	assert(ref.height); /* this will fail */
 	sc->branch.cursor = sc->branch.head;
 	sc->leaf.cursor = sc->leaf.head;
-	PB_(cannibalize_r)(ref, sc);
+	if(ref.height) {
+		PB_(cannibalize_r)(ref, sc);
+	} else { /* Just one node. */
+		*sc->leaf.cursor = ref.node;
+	}
 }
 static struct PB_(node) *PB_(clone_r)(struct PB_(sub) cpy,
 	struct PB_(scaffold) *const sc) {
@@ -1014,7 +1018,7 @@ static struct PB_(node) *PB_(clone_r)(struct PB_(sub) cpy,
 	}
 	return node;
 }
-static struct PB_(sub) PB_(clone)(struct PB_(sub) *const clone,
+static struct PB_(sub) PB_(clone)(const struct PB_(sub) *const clone,
 	struct PB_(scaffold) *const sc) {
 	struct PB_(sub) sub;
 	assert(clone && clone->node && sc);
@@ -1042,12 +1046,12 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 	sc.data = 0; /* Need to keep this updated to catch. */
 	if(!tree) { errno = EDOM; goto catch; }
 	/* Count the number of nodes and set up to copy. */
-	if(!PB_(count)(tree, &sc.tree) || !PB_(count)(clone, &sc.copy)
-		|| (sc.no = sc.copy.branches + sc.copy.leaves) < sc.copy.branches)
+	if(!PB_(count)(tree, &sc.victim) || !PB_(count)(clone, &sc.clone)
+		|| (sc.no = sc.clone.branches + sc.clone.leaves) < sc.clone.branches)
 		{ errno = ERANGE; goto catch; } /* Overflow. */
-	printf("<B>tree_copy: tree.branches %zu; tree.leaves %zu; "
+	printf("<B>tree_clone: tree.branches %zu; tree.leaves %zu; "
 		"copy.branches %zu; copy.leaves %zu.\n",
-		sc.tree.branches, sc.tree.leaves, sc.copy.branches, sc.copy.leaves);
+		sc.victim.branches, sc.victim.leaves, sc.clone.branches, sc.clone.leaves);
 	if(!sc.no) { PB_(clear)(tree); goto finally; } /* No need to allocate. */
 	if(!(sc.data = malloc(sizeof *sc.data * sc.no)))
 		{ if(!errno) errno = ERANGE; goto catch; }
@@ -1058,18 +1062,18 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 	}
 	{ /* Ready scaffold. */
 		struct tree_count need;
-		need.leaves = sc.copy.leaves > sc.tree.leaves
-			? sc.copy.leaves - sc.tree.leaves : 0;
-		need.branches = sc.copy.branches > sc.tree.branches
-			? sc.copy.branches - sc.tree.branches : 0;
+		need.leaves = sc.clone.leaves > sc.victim.leaves
+			? sc.clone.leaves - sc.victim.leaves : 0;
+		need.branches = sc.clone.branches > sc.victim.branches
+			? sc.clone.branches - sc.victim.branches : 0;
 		printf("need { branches %zu leaves %zu }\n",
 			need.branches, need.leaves);
 		sc.branch.head = sc.data;
 		sc.branch.fresh = sc.branch.cursor
-			= sc.branch.head + sc.copy.branches - need.branches;
+			= sc.branch.head + sc.clone.branches - need.branches;
 		sc.leaf.head = sc.branch.fresh + need.branches;
 		sc.leaf.fresh = sc.leaf.cursor
-			= sc.leaf.head + sc.copy.leaves - need.leaves;
+			= sc.leaf.head + sc.clone.leaves - need.leaves;
 		printf("index [0, %zu) is branch [%zu, %zu) leaf [%zu, %zu)\n", sc.no,
 			sc.branch.head - sc.data,
 			sc.branch.fresh - sc.data,
