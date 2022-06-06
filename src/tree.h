@@ -997,7 +997,7 @@ static void PB_(cannibalize)(const struct B_(tree) *const tree,
 		PB_(cannibalize_r)(ref, sc);
 	} else { /* Just one leaf. */
 		*sc->leaf.cursor = ref.node;
-		printf("cannibal just one leaf %s\n", ref.node);
+		printf("cannibal just one leaf %s\n", orcify(ref.node));
 	}
 }
 static struct PB_(node) *PB_(clone_r)(struct PB_(sub) cpy,
