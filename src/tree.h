@@ -702,6 +702,7 @@ static enum tree_result B_(tree_add)(struct B_(tree) *const tree,
 {
 	struct PB_(node) *new_head = 0;
 	struct PB_(ref) add, hole, cursor;
+	int is_growing = 0;
 	assert(tree);
 	if(!(add.node = tree->root.node)) goto idle;
 	else if(tree->root.height == UINT_MAX) goto empty;
@@ -715,7 +716,7 @@ idle: /* No reserved memory. */
 	goto empty;
 empty: /* Reserved dynamic memory, but tree is empty. */
 	assert(add.node && tree->root.height == UINT_MAX);
-	tree->root.height = 0;
+	add.height = tree->root.height = 0;
 	add.node->size = 0;
 	add.idx = 0;
 	printf("add: empty tree, %s.\n", orcify(add.node));
@@ -741,7 +742,7 @@ descend: /* Record last node that has space. */
 	if(hole.node == add.node) goto insert; else goto grow;
 insert: /* Leaf has space to spare; usually end up here. */
 	assert(add.node && add.idx <= add.node->size && add.node->size < TREE_MAX
-		&& !add.height);
+		&& (!add.height || is_growing));
 	memmove(add.node->key + add.idx + 1, add.node->key + add.idx,
 		sizeof *add.node->key * (add.node->size - add.idx));
 #ifdef TREE_VALUE
@@ -749,6 +750,7 @@ insert: /* Leaf has space to spare; usually end up here. */
 		sizeof *add.node->value * (add.node->size - add.idx));
 #endif
 	add.node->size++;
+	if(is_growing) goto split;
 	add.node->key[add.idx] = key;
 #ifdef TREE_VALUE
 	if(value) *value = PB_(ref_to_value)(add);
@@ -768,13 +770,16 @@ grow: /* Leaf is full. */ {
 		printf("tree_add: new branch %s\n", orcify(new_branch));
 	}
 	/* Last point of potential failure; (don't need to have entry in catch.) */
-	if(!(new_leaf = malloc(sizeof *new_leaf))) goto catch; //12 bytes in 1 blocks are definitely lost in loss record 1 of 1
+	if(!(new_leaf = malloc(sizeof *new_leaf))) goto catch;
 	new_leaf->size = 0;
 	*new_next = new_leaf;
 	printf("tree_add: new leaf %s\n", orcify(new_leaf));
 	/* Attach new nodes to the tree. The hole is now an actual hole. */
 	if(hole.node) { /* New nodes are a sub-structure of the tree. */
-		assert(0);
+		printf("tree_add: inserting into %s:%u\n", orcify(hole.node), hole.idx);
+		is_growing = 1;
+		cursor = add = hole;
+		goto insert;
 	} else { /* New nodes raise tree height. */
 		struct PB_(branch) *const new_root = PB_(branch)(new_head);
 		hole.node = new_head, hole.height = ++tree->root.height, hole.idx = 0;

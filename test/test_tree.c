@@ -201,18 +201,34 @@ static void manual_int(void) {
 
 	/* Full add test, nodes, `\sum_{n=0}^{h} m^n = \frac{m^{h+1}-1}{m-1}`,
 	 gives keys, `m^{h+1}-1`. */
+#if TREE_ORDER < 10 /* <!-- small */
 	size = TREE_ORDER * TREE_ORDER * TREE_ORDER - 1; /* Three levels. */
 	for(i = 0; i < size; i++) /* Even for odd spaces between them. */
 		if(!int_tree_bulk_add(&even, ((unsigned)i + 1) * 2)) assert(0);
 	int_tree_bulk_finish(&even); /* Does nothing, in this case. */
 	tree_int_graph(&even, "graph/discrete-1.gv");
-	for(i = 0; i <= 0/*size*/; i++) {
+	for(i = 0; i <= size; i++) {
 		char fn[64];
 		sprintf(fn, "graph/discrete-clone-%u.gv", (unsigned)i * 2 + 1);
 		if(!int_tree_clone(&step, &even)) goto catch;
-		int_tree_add(&step, (unsigned)i * 2 + 1);
+		if(!int_tree_add(&step, (unsigned)i * 2 + 1)) goto catch;
 		tree_int_graph(&step, fn);
 	}
+#endif /* small --> */
+
+	int_tree_clear(&equal);
+	for(i = 0; i < 50; i++) {
+		unsigned x = rand() & 65535;
+		char fn[64];
+		switch(int_tree_add(&equal, x)) {
+		case TREE_ERROR: goto catch;
+		case TREE_YIELD: printf("%u already in tree\n", x);
+		case TREE_UNIQUE: printf("%u added\n", x);
+		}
+		sprintf(fn, "graph/add-%u.gv", (unsigned)i);
+		tree_int_graph(&equal, fn);
+	}
+
 	goto finally;
 catch:
 	perror("manual_unsigned");
