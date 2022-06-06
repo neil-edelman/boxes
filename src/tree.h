@@ -765,7 +765,7 @@ grow: /* Leaf is full. */ {
 		new_no--;
 	}
 	/* Last point of potential failure; (don't need to have entry in catch.) */
-	if(!(new_leaf = malloc(sizeof *new_leaf))) goto catch;
+	if(!(new_leaf = malloc(sizeof *new_leaf))) goto catch; //12 bytes in 1 blocks are definitely lost in loss record 1 of 1
 	new_leaf->size = 0;
 	*new_next = new_leaf;
 	/* Attach new nodes to the tree. The hole is now an actual hole. */
@@ -967,14 +967,14 @@ static void PB_(cannibalize_r)(struct PB_(ref) ref,
 	struct PB_(branch) *branch = PB_(branch)(ref.node);
 	const int keep_branch = sc->branch.cursor < sc->branch.fresh;
 	assert(ref.node && ref.height && sc);
-	if(keep_branch) *sc->branch.cursor = ref.node, printf("fill branch %s\n", orcify(*sc->branch.cursor)), sc->branch.cursor++;
+	if(keep_branch) *sc->branch.cursor = ref.node, printf("cannibal branch %s\n", orcify(*sc->branch.cursor)), sc->branch.cursor++;
 	if(ref.height == 1) { /* Children are leaves. */
 		unsigned n;
 		for(n = 0; n <= ref.node->size; n++) {
 			const int keep_leaf = sc->leaf.cursor < sc->leaf.fresh;
 			struct PB_(node) *child = branch->child[n];
-			if(keep_leaf) *sc->leaf.cursor = child, printf("fill leaf %s\n", orcify(child)), sc->leaf.cursor++;
-			else printf("fill free leaf %s\n", orcify(child)), free(child);
+			if(keep_leaf) *sc->leaf.cursor = child, printf("cannibal leaf %s\n", orcify(child)), sc->leaf.cursor++;
+			else printf("cannibal free leaf %s\n", orcify(child)), free(child);
 		}
 	} else while(ref.idx <= ref.node->size) {
 		struct PB_(ref) child;
@@ -984,7 +984,7 @@ static void PB_(cannibalize_r)(struct PB_(ref) ref,
 		PB_(cannibalize_r)(child, sc);
 		ref.idx++;
 	}
-	if(!keep_branch) printf("fill free branch %s\n", orcify(branch)), free(branch);
+	if(!keep_branch) printf("cannibal free branch %s\n", orcify(branch)), free(branch);
 }
 static void PB_(cannibalize)(const struct B_(tree) *const tree,
 	struct PB_(scaffold) *const sc) {
@@ -995,8 +995,9 @@ static void PB_(cannibalize)(const struct B_(tree) *const tree,
 	sc->leaf.cursor = sc->leaf.head;
 	if(ref.height) {
 		PB_(cannibalize_r)(ref, sc);
-	} else { /* Just one node. */
+	} else { /* Just one leaf. */
 		*sc->leaf.cursor = ref.node;
+		printf("cannibal just one leaf %s\n", ref.node);
 	}
 }
 static struct PB_(node) *PB_(clone_r)(struct PB_(sub) cpy,
