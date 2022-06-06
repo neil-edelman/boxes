@@ -374,18 +374,19 @@ static struct PB_(ref) PB_(lower)(struct PB_(sub) sub,
 /** Frees non-empty `sub` and it's children recursively, but doesn't put it
  to idle or clear pointers.
  @param[one] If `one` is valid, tries to keep one leaf. Set to null before. */
-static void PB_(clear_r)(struct PB_(sub) sub, struct PB_(node) **const one) {
+static void PB_(clear_r)(struct PB_(sub) sub, struct PB_(node) **const keep) {
 	assert(sub.node);
 	if(!sub.height) {
-		if(one && !*one) *one = sub.node;
-		else free(sub.node);
+		if(keep && !*keep) printf("clear keep leaf %s\n", orcify(sub.node)), *keep = sub.node;
+		else printf("clear free leaf %s\n", orcify(sub.node)), free(sub.node);
 	} else {
 		struct PB_(sub) child;
 		unsigned i;
 		child.height = sub.height - 1;
 		for(i = 0; i <= sub.node->size; i++)
 			child.node = PB_(branch)(sub.node)->child[i],
-			PB_(clear_r)(child, one);
+			PB_(clear_r)(child, keep);
+		printf("clear free branch %s\n", orcify(PB_(branch)(sub.node)));
 		free(PB_(branch)(sub.node));
 	}
 }
@@ -416,6 +417,7 @@ static void B_(tree_)(struct B_(tree) *const tree) {
 	if(!tree->root.node) { /* Idle. */
 		assert(!tree->root.height);
 	} else if(tree->root.height == UINT_MAX) { /* Empty. */
+		printf("tree_ %s\n", orcify(tree->root.node));
 		assert(tree->root.node); free(tree->root.node);
 	} else {
 		PB_(clear_r)(tree->root, 0);
@@ -1029,7 +1031,7 @@ static struct PB_(sub) PB_(clone)(const struct PB_(sub) *const clone,
 	sc->leaf.cursor = sc->leaf.head;
 	sub.node = PB_(clone_r)(*clone, sc);
 	sub.height = clone->height;
-	/* Used up all of them. */
+	/* Used up all of them. No concurrent modifications, please. */
 	assert(sc->branch.cursor == sc->leaf.head
 		&& sc->leaf.cursor == sc->data + sc->no);
 	return sub;
