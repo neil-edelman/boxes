@@ -220,6 +220,7 @@ static void manual_int(void) {
 	for(i = 0; i < 50; i++) {
 		unsigned x = rand() & 65535;
 		char fn[64];
+		printf("__%u) Going to add %u__\n", (unsigned)i, x);
 		switch(int_tree_add(&equal, x)) {
 		case TREE_ERROR: goto catch;
 		case TREE_YIELD: printf("%u already in tree\n", x);
@@ -245,7 +246,7 @@ finally:
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
-	srand(seed), rand(), printf("Seed %u.\n", seed);
+	srand(568951/*seed*/), rand(), printf("Seed %u.\n", seed);
 	int_tree_test();
 	pair_tree_test();
 	star_tree_test();

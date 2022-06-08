@@ -335,12 +335,13 @@ static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 }
 
 /** Assume `tree` and `x` are checked for non-empty validity. */
-static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const tree,
+static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const sub,
 	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal) {
 	struct PB_(ref) lo;
-	for(lo.node = tree->node, lo.height = tree->height; ;
+	for(lo.node = sub->node, lo.height = sub->height; ;
 		lo.node = PB_(branch_c)(lo.node)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.node->size;
+		printf("(key %u) lo %s\n", key, orcify(lo.node));
 		lo.idx = 0;
 		if(hole && hi < TREE_MAX) *hole = lo;
 		if(!hi) continue; /* No nodes; bulk-add? */
@@ -349,7 +350,7 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const tree,
 			if(PB_(compare)(key, lo.node->key[m]) > 0) lo.idx = m + 1;
 			else hi = m;
 		} while(lo.idx < hi);
-		if(hole && hi < TREE_MAX) hole->idx = lo.idx; /* Update. */
+		if(hole && lo.node->size < TREE_MAX) hole->idx = lo.idx, printf("key<-%u\n", lo.idx); /* Update. */
 		if(!lo.height) break; /* Leaf node. */
 		if(lo.idx == lo.node->size) continue; /* Off the end. */
 		/* Total order and monotonic, otherwise have to check right. */
@@ -357,6 +358,7 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const tree,
 		if(is_equal) *is_equal = 1; /* Check right, multi-key, not yet. */
 		break;
 	}
+	if(hole) printf("node %s; idx %u.\n", orcify(hole->node), hole->idx);
 	return lo;
 }
 
@@ -736,7 +738,7 @@ descend: /* Record last node that has space. */
 			return TREE_YIELD;
 		}
 	}
-	printf("add: hole %s(%u):%u, add %s(%u):%u.\n",
+	printf("tree_add: hole %s(%u):%u, add %s(%u):%u.\n",
 		orcify(hole.node), hole.height, hole.idx,
 		orcify(add.node), add.height, add.idx);
 	if(hole.node == add.node) goto insert; else goto grow;
@@ -756,7 +758,10 @@ insert: /* Leaf has space to spare; usually end up here. */
 #endif
 	return TREE_UNIQUE;
 grow: /* Leaf is full. */ {
-	unsigned new_no = hole.node ? hole.height + 1 : tree->root.height + 2;
+	unsigned new_no = hole.node ? hole.height : tree->root.height + 2;
+	assert(new_no);
+	printf("tree_add: new_no %u%s\n",
+		new_no, hole.node ? " [this is a sub-tree]" : "");
 	struct PB_(node) **new_next = &new_head, *new_leaf;
 	struct PB_(branch) *new_branch;
 	/* Allocate new nodes in succession. */
@@ -775,9 +780,7 @@ grow: /* Leaf is full. */ {
 	printf("tree_add: new leaf %s\n", orcify(new_leaf));
 	/* Attach new nodes to the tree. The hole is now an actual hole. */
 	if(hole.node) { /* New nodes are a sub-structure of the tree. */
-
 		/************* PROBLEM HERE **********/
-
 		struct PB_(branch) *holeb = PB_(branch)(hole.node);
 		printf("tree_add: inserting into %s:%u\n", orcify(hole.node), hole.idx);
 		memmove(hole.node->key + hole.idx + 1, hole.node->key + hole.idx,
@@ -788,6 +791,7 @@ grow: /* Leaf is full. */ {
 #endif
 		memmove(holeb->child + hole.idx + 2, holeb->child + hole.idx + 1,
 			sizeof *holeb->child * (hole.node->size - hole.idx));
+		holeb->child[hole.idx + 1] = new_head;
 		hole.node->size++;
 	} else { /* New nodes raise tree height. */
 		struct PB_(branch) *const new_root = PB_(branch)(new_head);
