@@ -17,7 +17,7 @@ static void int_filler(unsigned *x)
 	{ *x = (unsigned)rand() / (RAND_MAX / 1000 + 1); }
 /** @implements <typedef:<PSZ>to_string_fn> */
 static void int_to_string(const unsigned *x, char (*const z)[12])
-	{ sprintf(*z, "%u", *x); }
+	{ /*assert(*x < 10000000000),*/ sprintf(*z, "%u", *x); }
 #define TREE_NAME int
 #define TREE_TEST &int_filler
 #define TREE_EXPECT_TRAIT
@@ -41,12 +41,14 @@ static void pair_to_string(const struct pair_tree_entry_c, char (*)[12]);
 /** @implements <typedef:<PB>action_fn> */
 static void pair_filler(struct pair_tree_test *x) {
 	int_filler(&x->key);
-	int_filler(&x->value), x->value += 10000;
+	int_filler(&x->value), x->value /*+*/= 42/*10000*/;
 	printf("generated %u->%u\n", x->key, x->value);
 }
 /** @implements <typedef:<PSZ>to_string_fn> */
 static void pair_to_string(const struct pair_tree_entry_c x,
-	char (*const z)[12]) { sprintf(*z, "%u→%u", *x.key, *x.value); } /* 3+3+5 */
+	char (*const z)[12])
+	{ assert(*x.key < 1000 && *x.value < 100000); /* Arrow 3. */
+	sprintf(*z, "%u→%u", *x.key, *x.value); }
 
 
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
@@ -154,7 +156,7 @@ static void entry_to_string(const struct entry_tree_entry_c entry,
 
 static void manual_int(void) {
 	struct int_tree equal = int_tree(), step = int_tree(), even = int_tree();
-	size_t i, size;
+	size_t i;
 	/*unsigned *x;*/
 	struct int_tree_iterator it;
 	unsigned *v;
@@ -224,8 +226,8 @@ static void manual_int(void) {
 		printf("__%u) Going to add %u__\n", (unsigned)i, x);
 		switch(int_tree_add(&equal, x)) {
 		case TREE_ERROR: goto catch;
-		case TREE_YIELD: printf("%u already in tree\n", x);
-		case TREE_UNIQUE: printf("%u added\n", x);
+		case TREE_YIELD: printf("%u already in tree\n", x); break;
+		case TREE_UNIQUE: printf("%u added\n", x); break;
 		}
 		sprintf(fn, "graph/add-%u.gv", (unsigned)i);
 		tree_int_graph(&equal, fn);

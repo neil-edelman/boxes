@@ -188,7 +188,7 @@ static PB_(entry_c) PB_(to_const)(const PB_(entry) e) {
 static void PB_(test)(void) {
 	struct B_(tree) tree = B_(tree)(), empty = B_(tree)();
 	struct B_(tree_iterator) it;
-	PB_(entry_test) n[20];
+	PB_(entry_test) n[200];
 	const size_t n_size = sizeof n / sizeof *n;
 	PB_(entry) entry;
 	PB_(value) *value;
@@ -213,14 +213,14 @@ static void PB_(test)(void) {
 	it = B_(tree_lower)(&tree, PB_(test_to_key)(n + 0)), assert(!it._.ref.node);
 	value = B_(tree_get_next)(&tree, PB_(test_to_key)(n + 0)), assert(!value);
 
-	/* Test. */
+	/* Bulk, (simple.) */
 	for(i = 0; i < n_size; i++) {
 		PB_(entry_c) ent;
 		char z[12];
 		PB_(entry_test) *const e = n + i;
 		ent = PB_(test_to_entry_c)(e);
 		PB_(to_string)(ent, &z);
-		printf("Adding <%s>.\n", z);
+		printf("%lu -- bulk adding <%s>.\n", (unsigned long)i, z);
 		switch(
 #ifdef TREE_VALUE
 		B_(tree_bulk_add)(&tree, PB_(test_to_key)(e), &value)
@@ -237,16 +237,18 @@ static void PB_(test)(void) {
 #endif
 			break;
 		}
-		sprintf(fn, "graph/" QUOTE(TREE_NAME) "-%u.gv", ++PB_(no));
-		PB_(graph)(&tree, fn);
+		if(!(i & (i + 1)) || i == n_size - 1) {
+			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-bulk-%lu.gv", i + 1);
+			PB_(graph)(&tree, fn);
+		}
 	}
 	printf("Finalize.\n");
 	B_(tree_bulk_finish)(&tree);
-	printf("Finalize again.\n");
-	B_(tree_bulk_finish)(&tree); /* This should be idempotent. */
-	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-finalized.gv");
-
+	printf("Finalize again. This should be idempotent.\n");
+	B_(tree_bulk_finish)(&tree);
+	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-bulk-finalized.gv");
 	printf("Tree: %s.\n", PB_(tree_to_string)(&tree));
+
 	/* Iteration; checksum. */
 	it = B_(tree_begin)(&tree), i = 0;
 	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
@@ -258,15 +260,44 @@ static void PB_(test)(void) {
 			assert(cmp > 0);
 		}
 		last = PB_(entry_to_key)(entry);
-		if(++i > 100) assert(0);
+		if(++i > n_size) assert(0); /* Avoids loops. */
 	}
 	assert(i == n_unique);
 
+	/* Clear. */
 	B_(tree_clear)(0);
 	B_(tree_clear)(&empty), assert(!empty.root.node);
 	B_(tree_clear)(&tree), assert(tree.root.node
 		&& tree.root.height == UINT_MAX);
 
+	/* Fill again, this time, don't sort. */
+	for(i = 0; i < n_size; i++) PB_(filler)(n + i);
+
+	/* Add. */
+	for(i = 0; i < n_size; i++) {
+		PB_(entry_c) ent;
+		char z[12];
+		PB_(entry_test) *const e = n + i;
+		ent = PB_(test_to_entry_c)(e);
+		PB_(to_string)(ent, &z);
+		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);
+#ifdef TREE_VALUE
+		switch(B_(tree_add)(&tree, n[i].key, &value))
+#else
+		switch(B_(tree_add)(&tree, n[i]))
+#endif
+		{
+		case TREE_ERROR: perror("unexpected"); assert(0); return;
+		case TREE_YIELD: printf("<%s> already in tree\n", z); break;
+		case TREE_UNIQUE: printf("<%s> added\n", z); break;
+		}
+		if(!(i & (i + 1)) || i == n_size - 1) {
+			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-add-%lu.gv", i + 1);
+			PB_(graph)(&tree, fn);
+		}
+	}
+
+	/* Destroy. */
 	B_(tree_)(&tree), assert(!tree.root.node), PB_(valid)(&tree);
 	assert(!errno);
 }

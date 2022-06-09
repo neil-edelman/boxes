@@ -802,11 +802,11 @@ grow: /* Leaf is full. */ {
 	goto split;
 } split: { /* Split between the new and existing nodes. */
 	struct PB_(node) *sibling;
-	/*{
+	{
 		char fn[64];
 		sprintf(fn, "graph/topology-%u.gv", cursor.height);
 		PB_(graph)(tree, fn);
-	}*/
+	}
 	assert(cursor.node && cursor.node->size && cursor.height);
 	sibling = new_head;
 	/* Descend now while split hasn't happened -- easier. */
@@ -904,6 +904,7 @@ grow: /* Leaf is full. */ {
 #ifdef TREE_VALUE
 	if(value) *value = PB_(ref_to_value)(hole);
 #endif
+	assert(!new_head);
 	return TREE_UNIQUE;
 } catch:
 	while(new_head) {
