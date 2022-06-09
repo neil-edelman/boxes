@@ -89,6 +89,10 @@ struct star_tree_test;
 static void star_filler(struct star_tree_test *);
 struct star_tree_entry_c;
 static void star_to_string(struct star_tree_entry_c, char (*)[12]);
+/** We can't get away with only doing one comparison because floating point
+ approximates numbers. */
+static int double_compare(const double a, const double b)
+	{ return (a > b) - (b > a); }
 /* It is impossible to have a `const char *` without getting warnings about
  duplicate `const`. This is because we want them to be `const` sometimes. This
  is a workaround. */
@@ -100,6 +104,7 @@ typedef const char *const_str;
  have the same distance. */
 #define TREE_VALUE const_str
 #define TREE_TEST &star_filler
+#define TREE_COMPARE &double_compare /* This is needed. */
 #define TREE_EXPECT_TRAIT
 #include "../src/tree.h"
 #define TREE_TO_STRING &star_to_string
