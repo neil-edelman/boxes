@@ -160,7 +160,8 @@ static void manual_int(void) {
 	unsigned *v;
 	int ret;
 
-	/*for(i = 0; i < 5; i++) if(!unsigned_tree_bulk_add(&equal, 0)) goto catch;
+	/* Multi-maps. This is less useful.
+	for(i = 0; i < 5; i++) if(!unsigned_tree_bulk_add(&equal, 0)) goto catch;
 	for(i = 0; i < 15; i++) if(!unsigned_tree_bulk_add(&equal, 1)) goto catch;
 	tree_unsigned_graph(&equal, "graph/manual-equal.gv");
 	unsigned_tree_bulk_finish(&equal);
@@ -246,7 +247,7 @@ finally:
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
-	srand(568951/*seed*/), rand(), printf("Seed %u.\n", seed);
+	srand(seed), rand(), printf("Seed %u.\n", seed);
 	int_tree_test();
 	pair_tree_test();
 	star_tree_test();

@@ -15,7 +15,9 @@ typedef struct B_(tree_test) {
 	PB_(key) key;
 	PB_(value) value;
 } PB_(entry_test);
-static PB_(key) PB_(test_to_x)(struct B_(tree_test) *const t) { return t->key; }
+static PB_(key) PB_(test_to_key)(struct B_(tree_test) *const t)
+	{ return t->key; }
+static PB_(key) PB_(entry_to_key)(PB_(entry) e) { return *e.key; }
 static PB_(entry_c) PB_(test_to_entry_c)(struct B_(tree_test) *const t) {
 	struct B_(tree_entry_c) e;
 	e.key = &t->key, e.value = &t->value;
@@ -23,7 +25,8 @@ static PB_(entry_c) PB_(test_to_entry_c)(struct B_(tree_test) *const t) {
 }
 #else
 typedef PB_(key) PB_(entry_test);
-static PB_(key) PB_(test_to_x)(PB_(key) *const x) { return *x; }
+static PB_(key) PB_(test_to_key)(PB_(key) *const x) { return *x; }
+static PB_(key) PB_(entry_to_key)(PB_(entry) e) { return *e; }
 static PB_(entry_c) PB_(test_to_entry_c)(PB_(key) *const t) { return t; }
 #endif
 
@@ -156,8 +159,8 @@ static void PB_(sort)(PB_(entry_test) *a, const size_t size) {
 	size_t i;
 	for(i = 1; i < size; i++) {
 		size_t j;
-		for(j = i; j && PB_(compare)(PB_(test_to_x)(a + j - 1),
-			PB_(test_to_x)(a + i)) > 0; j--);
+		for(j = i; j && PB_(compare)(PB_(test_to_key)(a + j - 1),
+			PB_(test_to_key)(a + i)) > 0; j--);
 		if(j == i) continue;
 		temp = a[i];
 		memmove(a + j + 1, a + j, sizeof *a * (i - j));
@@ -189,10 +192,12 @@ static void PB_(test)(void) {
 	const size_t n_size = sizeof n / sizeof *n;
 	PB_(entry) entry;
 	PB_(value) *value;
+	PB_(key) last;
 	size_t i, n_unique = 0;
 	char fn[64];
 
 	errno = 0;
+	memset(&last, 0, sizeof last);
 
 	/* Fill. */
 	for(i = 0; i < n_size; i++) PB_(filler)(n + i);
@@ -203,10 +208,10 @@ static void PB_(test)(void) {
 	PB_(valid)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
-	it = B_(tree_lower)(0, PB_(test_to_x)(n + 0)), assert(!it._.root);
-	value = B_(tree_get_next)(0, PB_(test_to_x)(n + 0)), assert(!value);
-	it = B_(tree_lower)(&tree, PB_(test_to_x)(n + 0)), assert(!it._.ref.node);
-	value = B_(tree_get_next)(&tree, PB_(test_to_x)(n + 0)), assert(!value);
+	it = B_(tree_lower)(0, PB_(test_to_key)(n + 0)), assert(!it._.root);
+	value = B_(tree_get_next)(0, PB_(test_to_key)(n + 0)), assert(!value);
+	it = B_(tree_lower)(&tree, PB_(test_to_key)(n + 0)), assert(!it._.ref.node);
+	value = B_(tree_get_next)(&tree, PB_(test_to_key)(n + 0)), assert(!value);
 
 	/* Test. */
 	for(i = 0; i < n_size; i++) {
@@ -218,9 +223,9 @@ static void PB_(test)(void) {
 		printf("Adding <%s>.\n", z);
 		switch(
 #ifdef TREE_VALUE
-		B_(tree_bulk_add)(&tree, PB_(test_to_x)(e), &value)
+		B_(tree_bulk_add)(&tree, PB_(test_to_key)(e), &value)
 #else
-		B_(tree_bulk_add)(&tree, PB_(test_to_x)(e))
+		B_(tree_bulk_add)(&tree, PB_(test_to_key)(e))
 #endif
 			){
 		case TREE_ERROR: perror("What?"); assert(0); break;
@@ -242,14 +247,18 @@ static void PB_(test)(void) {
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-finalized.gv");
 
 	printf("Tree: %s.\n", PB_(tree_to_string)(&tree));
-	/* Iteration. */
+	/* Iteration; checksum. */
 	it = B_(tree_begin)(&tree), i = 0;
 	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
 		char z[12];
-		i++;
 		PB_(to_string)(PB_(to_const)(entry), &z);
 		printf("<%s>\n", z);
-		if(i > 100) assert(0);
+		if(i) {
+			const int cmp = PB_(compare)(PB_(entry_to_key)(entry), last);
+			assert(cmp > 0);
+		}
+		last = PB_(entry_to_key)(entry);
+		if(++i > 100) assert(0);
 	}
 	assert(i == n_unique);
 

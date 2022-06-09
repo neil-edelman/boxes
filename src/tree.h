@@ -70,7 +70,7 @@
 #define B_(n) TREE_CAT(TREE_NAME, n)
 #define PB_(n) TREE_CAT(tree, B_(n))
 /* Leaf: `TREE_MAX type`; branch: `TREE_MAX type + TREE_ORDER pointer`. */
-#define TREE_MAX 2
+#define TREE_MAX 10
 #if TREE_MAX < 2 || TREE_MAX > UCHAR_MAX
 #error TREE_MAX parameter range `[3, UCHAR_MAX]`.
 #endif
@@ -341,7 +341,6 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const sub,
 	for(lo.node = sub->node, lo.height = sub->height; ;
 		lo.node = PB_(branch_c)(lo.node)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.node->size;
-		printf("(key %u) lo %s\n", key, orcify(lo.node));
 		lo.idx = 0;
 		if(hole && hi < TREE_MAX) *hole = lo;
 		if(!hi) continue; /* No nodes; bulk-add? */
@@ -350,7 +349,7 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const sub,
 			if(PB_(compare)(key, lo.node->key[m]) > 0) lo.idx = m + 1;
 			else hi = m;
 		} while(lo.idx < hi);
-		if(hole && lo.node->size < TREE_MAX) hole->idx = lo.idx, printf("key<-%u\n", lo.idx); /* Update. */
+		if(hole && lo.node->size < TREE_MAX) hole->idx = lo.idx; /* Update. */
 		if(!lo.height) break; /* Leaf node. */
 		if(lo.idx == lo.node->size) continue; /* Off the end. */
 		/* Total order and monotonic, otherwise have to check right. */
@@ -358,7 +357,6 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const sub,
 		if(is_equal) *is_equal = 1; /* Check right, multi-key, not yet. */
 		break;
 	}
-	if(hole) printf("node %s; idx %u.\n", orcify(hole->node), hole->idx);
 	return lo;
 }
 
@@ -780,7 +778,6 @@ grow: /* Leaf is full. */ {
 	printf("tree_add: new leaf %s\n", orcify(new_leaf));
 	/* Attach new nodes to the tree. The hole is now an actual hole. */
 	if(hole.node) { /* New nodes are a sub-structure of the tree. */
-		/************* PROBLEM HERE **********/
 		struct PB_(branch) *holeb = PB_(branch)(hole.node);
 		printf("tree_add: inserting into %s:%u\n", orcify(hole.node), hole.idx);
 		memmove(hole.node->key + hole.idx + 1, hole.node->key + hole.idx,
@@ -805,11 +802,11 @@ grow: /* Leaf is full. */ {
 	goto split;
 } split: { /* Split between the new and existing nodes. */
 	struct PB_(node) *sibling;
-	{
+	/*{
 		char fn[64];
 		sprintf(fn, "graph/topology-%u.gv", cursor.height);
 		PB_(graph)(tree, fn);
-	}
+	}*/
 	assert(cursor.node && cursor.node->size && cursor.height);
 	sibling = new_head;
 	/* Descend now while split hasn't happened -- easier. */
@@ -903,7 +900,7 @@ grow: /* Leaf is full. */ {
 	sibling->size = TREE_MAX - TREE_SPLIT; /* Divide `TREE_MAX + 1`. */
 	if(cursor.height) goto split; /* Loop max `log_{TREE_MIN} size`. */
 	hole.node->key[hole.idx] = key;
-	PB_(graph)(tree, "graph/topology-0.gv");
+	//PB_(graph)(tree, "graph/topology-0.gv");
 #ifdef TREE_VALUE
 	if(value) *value = PB_(ref_to_value)(hole);
 #endif
