@@ -41,7 +41,7 @@ static void pair_to_string(const struct pair_tree_entry_c, char (*)[12]);
 /** @implements <typedef:<PB>action_fn> */
 static void pair_filler(struct pair_tree_test *x) {
 	int_filler(&x->key);
-	int_filler(&x->value), x->value /*+*/= 42/*10000*/;
+	int_filler(&x->value), x->value += /*42*/10000;
 	printf("generated %u->%u\n", x->key, x->value);
 }
 /** @implements <typedef:<PSZ>to_string_fn> */

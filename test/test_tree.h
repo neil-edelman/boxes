@@ -282,15 +282,18 @@ static void PB_(test)(void) {
 		PB_(to_string)(ent, &z);
 		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);
 #ifdef TREE_VALUE
-		switch(B_(tree_add)(&tree, n[i].key, &value))
+		switch(B_(tree_add)(&tree, e->key, &value))
 #else
-		switch(B_(tree_add)(&tree, n[i]))
+		switch(B_(tree_add)(&tree, *e))
 #endif
 		{
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
 		case TREE_YIELD: printf("<%s> already in tree\n", z); break;
 		case TREE_UNIQUE: printf("<%s> added\n", z); break;
 		}
+#ifdef TREE_VALUE
+		*value = e->value;
+#endif
 		if(!(i & (i + 1)) || i == n_size - 1) {
 			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-add-%lu.gv", i + 1);
 			PB_(graph)(&tree, fn);
