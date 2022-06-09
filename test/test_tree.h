@@ -188,7 +188,7 @@ static PB_(entry_c) PB_(to_const)(const PB_(entry) e) {
 static void PB_(test)(void) {
 	struct B_(tree) tree = B_(tree)(), empty = B_(tree)();
 	struct B_(tree_iterator) it;
-	PB_(entry_test) n[40];
+	PB_(entry_test) n[80];
 	const size_t n_size = sizeof n / sizeof *n;
 	PB_(entry) entry;
 	PB_(value) *value;

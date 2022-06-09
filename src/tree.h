@@ -688,7 +688,8 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 #endif
 
 #ifdef TREE_VALUE /* <!-- map */
-/** @param[value] If non-null and successful, a pointer that receives the
+/** @fixme Be more careful for floating-point values.
+ @param[value] If non-null and successful, a pointer that receives the
  address of the value associated with the key. Only present if `TREE_VALUE`
  (map) was specified.
  @return Either `TREE_ERROR` and doesn't touch `tree`, `TREE_UNIQUE` adds a new
@@ -727,9 +728,10 @@ descend: /* Record last node that has space. */
 		int is_equal = 0;
 		hole.node = 0;
 		add = PB_(lower_r)(&tree->root, key, &hole, &is_equal);
-		if(is_equal) { /* This is not happening! */
+		if(is_equal) { /* fixme: This is not happening! */
 			/* Assumes key is unique; we might not want this for multi-maps,
 			 but that is not implemented yet. */
+			printf("\tadd: equal!!!!\n");
 #ifdef TREE_VALUE
 			if(value) *value = PB_(ref_to_value)(add);
 #endif
