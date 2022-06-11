@@ -516,7 +516,7 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 		}
 		assert(last), i = last->key[last->size - 1];
 		/* Verify that the argument is not smaller than the largest. */
-		if(PB_(compare)(i, key) > 0) return errno = EDOM, TREE_ERROR;
+		if(PB_(compare)(i, key) > 0) return printf("What?\n"), errno = EDOM, TREE_ERROR;
 		if(PB_(compare)(key, i) <= 0) {
 #ifdef TREE_VALUE
 			if(value) { /* Last value in the last node. */

@@ -89,28 +89,16 @@ struct star_tree_test;
 static void star_filler(struct star_tree_test *);
 struct star_tree_entry_c;
 static void star_to_string(struct star_tree_entry_c, char (*)[12]);
+#if 0
 #include <float.h>
 #include <math.h>
-/** Return the value of the distance in ULPs. (Doesn't work for ordering.)
- https://bitbashing.io/comparing-floats.html */
 static int double_compare(const double a, const double b) {
-	if(fabs(a - b) > 1000 * DBL_EPSILON * fabs(a + b)) return 0;
-
-	int64_t ia, ib;
-	assert(sizeof a == sizeof ia);
-	/* Also handles +0 == -0 if (a == b) return 0; */
-	if (isnan(a) || isnan(b) || isinf(a) || isinf(b)) return INT_MAX;
-	memcpy(&ia, &a, sizeof a);
-	memcpy(&ib, &b, sizeof b);
-	if(ia < ib) {
-		return -1;
-	} else if(ia > ib) {
-		return 1;
-	} else {
-		return 0;
-	}
+	if(fabs(a - b) < DBL_EPSILON * fabs(a + b)) return 0;
+	return a - b > 0 ? 1 : -1;
+	/*if(fabs(a - b) > 1000 * DBL_EPSILON * fabs(a + b)) return printf("eq\n"), 0;
+	return a - b > ((fabs(a) < fabs(b) ? fabs(b) : fabs(a))
+		* DBL_EPSILON * 1000) ? 1 : -1;*/
 }
-#if 0
 /** Positive or zero floating-point numbers as keys. @fixme Not enough. */
 static int double_compare(const double a, const double b) {
 	/* (a > b) - (a < b) */
@@ -130,7 +118,7 @@ typedef const char *const_str;
  have the same distance. */
 #define TREE_VALUE const_str
 #define TREE_TEST &star_filler
-#define TREE_COMPARE &double_compare /* This doesn't work. */
+/*#define TREE_COMPARE &double_compare*/ /* This doesn't work. */
 #define TREE_EXPECT_TRAIT
 #include "../src/tree.h"
 #define TREE_TO_STRING &star_to_string
