@@ -591,10 +591,10 @@ catch:
 
 /** Distributes `tree` on the right side so that, after a series of
  <fn:<B>tree_bulk_add>, it will be consistent with the minimum number of keys
- in a node. @return The distribution was a success and all nodes are within
- rules. The only time that it would be false is if, maybe, a regular insertion
- instead of a bulk insertion was performed interspersed with a bulk insertion
- without calling this function. */
+ in a node. @return The re-distribution was a success and all nodes are within
+ rules. The only time that it would be false is if a regular operation was
+ performed interspersed with a bulk insertion without calling this function.
+ @order \O(\log `size`) */
 static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 	struct PB_(sub) s;
 	struct PB_(node) *right;
@@ -613,6 +613,7 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 		if(TREE_MIN <= right->size)
 			{ printf("cool\n"); continue; } /* Has enough. */
 		distribute = sibling->size + right->size;
+		/* Should have at least `TREE_MAX` on left. */
 		if(distribute < 2 * TREE_MIN) return 0;
 		right_want = distribute / 2;
 		right_move = right_want - right->size;
