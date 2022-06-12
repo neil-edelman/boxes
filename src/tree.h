@@ -322,6 +322,7 @@ static PB_(entry) PB_(next)(struct PB_(iterator) *const it) {
 }
 
 #include "../test/orcish.h"
+static void (*PB_(to_string))(PB_(entry_c), char (*)[12]);
 
 static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 	unsigned hi = lo->node->size;
@@ -338,6 +339,15 @@ static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const sub,
 	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal) {
 	struct PB_(ref) lo;
+	char z[12];
+#ifdef TREE_VALUE
+	int v = 0;
+	PB_(entry_c) e = { &key, &v };
+#else
+	PB_(entry_c) e = &key;
+#endif
+	PB_(to_string)(e, &z);
+	printf("lower %s\n", z);
 	for(lo.node = sub->node, lo.height = sub->height; ;
 		lo.node = PB_(branch_c)(lo.node)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.node->size;
@@ -348,14 +358,24 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const sub,
 			const unsigned m = (lo.idx + hi) / 2;
 			if(PB_(compare)(key, lo.node->key[m]) > 0) lo.idx = m + 1;
 			else hi = m;
+#ifdef TREE_VALUE
+			e.key = &lo.node->key[m];
+#else
+			e = &lo.node->key[m];
+#endif
+			PB_(to_string)(e, &z);
+			printf(" ->%u:%s [%u,%u]\n", m, z, lo.idx, hi);
 		} while(lo.idx < hi);
 		if(hole && lo.node->size < TREE_MAX) hole->idx = lo.idx; /* Update. */
-		if(!lo.height) break; /* Leaf node. */
-		if(lo.idx == lo.node->size) continue; /* Off the end. */
-		/* Total order and monotonic, otherwise have to check right. */
-		if(PB_(compare)(lo.node->key[lo.idx], key) > 0) continue;
-		if(is_equal) *is_equal = 1; /* Check right, multi-key, not yet. */
-		break;
+		/* Total order and (strictly, for now) monotonic,
+		 (otherwise have to check right, later when multikey.) */
+		if(lo.idx < lo.node->size
+			&& PB_(compare)(lo.node->key[lo.idx], key) <= 0) {
+			/* Multi-key check right. (Not implemented.) */
+			if(is_equal) *is_equal = 1;
+			break;
+		}
+		if(!lo.height) break; /* Leaf. */
 	}
 	return lo;
 }
@@ -516,7 +536,7 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 		}
 		assert(last), i = last->key[last->size - 1];
 		/* Verify that the argument is not smaller than the largest. */
-		if(PB_(compare)(i, key) > 0) return printf("What?\n"), errno = EDOM, TREE_ERROR;
+		if(PB_(compare)(i, key) > 0) return errno = EDOM, TREE_ERROR;
 		if(PB_(compare)(key, i) <= 0) {
 #ifdef TREE_VALUE
 			if(value) { /* Last value in the last node. */
@@ -729,10 +749,10 @@ descend: /* Record last node that has space. */
 		int is_equal = 0;
 		hole.node = 0;
 		add = PB_(lower_r)(&tree->root, key, &hole, &is_equal);
-		if(is_equal) { /* fixme: This is not happening! */
+		if(is_equal) {
 			/* Assumes key is unique; we might not want this for multi-maps,
 			 but that is not implemented yet. */
-			printf("\tadd: equal!!!!\n");
+			printf("\tadd: equal\n");
 #ifdef TREE_VALUE
 			if(value) *value = PB_(ref_to_value)(add);
 #endif

@@ -112,7 +112,7 @@ static int double_compare(const double a, const double b) {
  is a workaround. */
 typedef const char *const_str;
 #define TREE_NAME star
-#define TREE_KEY double
+#define TREE_KEY unsigned
 /*#define TREE_MULTIPLE_KEY work in progress; do I want to have extra stuff in
  the tree, or the iterator? Both do not sound fun. */ /* Different stars can
  have the same distance. */
@@ -126,11 +126,11 @@ typedef const char *const_str;
 /** @implements <typedef:<PB>action_fn> */
 static void star_filler(struct star_tree_test *x) {
 	const unsigned i = (unsigned)rand() / (RAND_MAX / star_size + 1);
-	x->key = star_distances[i], x->value = star_names[i];
+	x->key = (unsigned)star_distances[i], x->value = star_names[i];
 }
 /** @implements <typedef:<PSZ>to_string_fn> */
 static void star_to_string(const struct star_tree_entry_c x,
-	char (*const z)[12]) { sprintf(*z, "%.11s", *x.value); }
+	char (*const z)[12]) { sprintf(*z, /*"%.11s", *x.value*/"%u", *x.key); }
 
 
 /* §6.7.2.1/P11 implementation defined; hopefully it will work. This is so
@@ -267,7 +267,7 @@ finally:
 }
 
 int main(void) {
-	unsigned seed = (unsigned)clock();
+	unsigned seed = 552962/*(unsigned)clock()*/;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	int_tree_test();
 	pair_tree_test();
