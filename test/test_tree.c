@@ -89,36 +89,17 @@ struct star_tree_test;
 static void star_filler(struct star_tree_test *);
 struct star_tree_entry_c;
 static void star_to_string(struct star_tree_entry_c, char (*)[12]);
-#if 0
-#include <float.h>
-#include <math.h>
-static int double_compare(const double a, const double b) {
-	if(fabs(a - b) < DBL_EPSILON * fabs(a + b)) return 0;
-	return a - b > 0 ? 1 : -1;
-	/*if(fabs(a - b) > 1000 * DBL_EPSILON * fabs(a + b)) return printf("eq\n"), 0;
-	return a - b > ((fabs(a) < fabs(b) ? fabs(b) : fabs(a))
-		* DBL_EPSILON * 1000) ? 1 : -1;*/
-}
-/** Positive or zero floating-point numbers as keys. @fixme Not enough. */
-static int double_compare(const double a, const double b) {
-	/* (a > b) - (a < b) */
-	/* (long)a > (long)b */
-	/* a > b - 0.001 */
-	return a > b;
-}
-#endif
 /* It is impossible to have a `const char *` without getting warnings about
  duplicate `const`. This is because we want them to be `const` sometimes. This
  is a workaround. */
 typedef const char *const_str;
 #define TREE_NAME star
-#define TREE_KEY unsigned
+#define TREE_KEY double
 /*#define TREE_MULTIPLE_KEY work in progress; do I want to have extra stuff in
  the tree, or the iterator? Both do not sound fun. */ /* Different stars can
  have the same distance. */
 #define TREE_VALUE const_str
 #define TREE_TEST &star_filler
-/*#define TREE_COMPARE &double_compare*/ /* This doesn't work. */
 #define TREE_EXPECT_TRAIT
 #include "../src/tree.h"
 #define TREE_TO_STRING &star_to_string
@@ -126,11 +107,11 @@ typedef const char *const_str;
 /** @implements <typedef:<PB>action_fn> */
 static void star_filler(struct star_tree_test *x) {
 	const unsigned i = (unsigned)rand() / (RAND_MAX / star_size + 1);
-	x->key = (unsigned)star_distances[i], x->value = star_names[i];
+	x->key = star_distances[i], x->value = star_names[i];
 }
 /** @implements <typedef:<PSZ>to_string_fn> */
 static void star_to_string(const struct star_tree_entry_c x,
-	char (*const z)[12]) { sprintf(*z, /*"%.11s", *x.value*/"%u", *x.key); }
+	char (*const z)[12]) { sprintf(*z, "%.11s", *x.value/*"%u", *x.key*/); }
 
 
 /* §6.7.2.1/P11 implementation defined; hopefully it will work. This is so
@@ -267,7 +248,7 @@ finally:
 }
 
 int main(void) {
-	unsigned seed = 552962/*(unsigned)clock()*/;
+	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	int_tree_test();
 	pair_tree_test();

@@ -339,15 +339,6 @@ static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const sub,
 	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal) {
 	struct PB_(ref) lo;
-	char z[12];
-#ifdef TREE_VALUE
-	int v = 0;
-	PB_(entry_c) e = { &key, &v };
-#else
-	PB_(entry_c) e = &key;
-#endif
-	PB_(to_string)(e, &z);
-	printf("lower %s\n", z);
 	for(lo.node = sub->node, lo.height = sub->height; ;
 		lo.node = PB_(branch_c)(lo.node)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.node->size;
@@ -358,13 +349,6 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const sub,
 			const unsigned m = (lo.idx + hi) / 2;
 			if(PB_(compare)(key, lo.node->key[m]) > 0) lo.idx = m + 1;
 			else hi = m;
-#ifdef TREE_VALUE
-			e.key = &lo.node->key[m];
-#else
-			e = &lo.node->key[m];
-#endif
-			PB_(to_string)(e, &z);
-			printf(" ->%u:%s [%u,%u]\n", m, z, lo.idx, hi);
 		} while(lo.idx < hi);
 		if(hole && lo.node->size < TREE_MAX) hole->idx = lo.idx; /* Update. */
 		/* Total order and (strictly, for now) monotonic,

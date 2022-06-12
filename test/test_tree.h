@@ -229,7 +229,7 @@ static void PB_(test)(void) {
 #endif
 			){
 		case TREE_ERROR: perror("What?"); assert(0); break;
-		case TREE_YIELD: printf("*** Key <%s> is already in tree.\n", z); break;
+		case TREE_YIELD: printf("Key <%s> is already in tree.\n", z); break;
 		case TREE_UNIQUE:
 			n_unique++;
 #ifdef TREE_VALUE
