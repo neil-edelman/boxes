@@ -42,7 +42,7 @@ static const PB_(action_fn) PB_(filler) = (TREE_TEST);
 static unsigned PB_(no);
 
 /** Recursively draws `outer` in `fp` with the actual `height`. */
-static void PB_(subgraph)(const struct PB_(sub) *const sub, FILE *fp) {
+static void PB_(subgraph)(const struct PB_(tree) *const sub, FILE *fp) {
 	const struct PB_(branch) *branch;
 	unsigned i;
 	assert(sub->node && fp);
@@ -75,7 +75,7 @@ static void PB_(subgraph)(const struct PB_(sub) *const sub, FILE *fp) {
 		(const void *)sub->node, i, (const void *)branch->child[i]);
 	/* Recurse. */
 	for(i = 0; i <= branch->base.size; i++) {
-		struct PB_(sub) child;
+		struct PB_(tree) child;
 		child.node = branch->child[i], child.height = sub->height - 1;
 		PB_(subgraph)(&child, fp);
 	}
@@ -104,8 +104,8 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 	fclose(fp);
 }
 
-static void PB_(print_r)(const struct PB_(sub) sub) {
-	struct PB_(sub) child = { 0, 0 };
+static void PB_(print_r)(const struct PB_(tree) sub) {
+	struct PB_(tree) child = { 0, 0 };
 	const struct PB_(branch) *branch = 0;
 	unsigned i;
 	assert(sub.node);

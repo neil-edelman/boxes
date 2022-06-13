@@ -177,7 +177,7 @@ static const struct PB_(branch) *PB_(branch_c)(const struct PB_(node) *
 	((const char *)as_node - offsetof(struct PB_(branch), base)); }
 
 /* Subtree is a node with a height. */
-struct PB_(sub) { struct PB_(node) *node; unsigned height; };
+struct PB_(tree) { struct PB_(node) *node; unsigned height; };
 /* Address specific entry. */
 struct PB_(ref) { struct PB_(node) *node; unsigned height, idx; };
 struct PB_(ref_c) { const struct PB_(node) *node; unsigned height, idx; };
@@ -228,7 +228,7 @@ static PB_(value) *PB_(ref_to_value)(const struct PB_(ref) ref)
 
  ![States.](../doc/states.png) */
 struct B_(tree);
-struct B_(tree) { struct PB_(sub) root; };
+struct B_(tree) { struct PB_(tree) root; };
 
 #define BOX_CONTENT PB_(entry_c)
 /** Is `e` not null? @implements `is_element_c` */
@@ -245,7 +245,7 @@ static int PB_(is_element_c)(PB_(entry_c) e) {
  node's limits, uses `sub` to go to the next node.
  @return True unless there are no more `ref`. */
 #define TREE_PIN(pin_c, ref_c) \
-static int PB_(pin_c)(struct PB_(sub) sub, struct PB_(ref_c) *const ref) { \
+static int PB_(pin_c)(struct PB_(tree) sub, struct PB_(ref_c) *const ref) { \
 	struct PB_(ref_c) next; \
 	unsigned a0; \
 	PB_(key) x; \
@@ -280,8 +280,9 @@ TREE_PIN(pin, ref)
 #undef TREE_PIN
 /* This could be expanded! */
 
-/* A constant iterator. @implements `forward` */
-struct PB_(forward) { const struct PB_(sub) *root; struct PB_(ref_c) ref; };
+/* A constant iterator. Need the root to get the next one after it goes off the
+ side. @implements `forward` */
+struct PB_(forward) { const struct PB_(tree) *root; struct PB_(ref_c) ref; };
 /** @return Before `tree`. @implements `forward_begin` */
 static struct PB_(forward) PB_(forward_begin)(const struct B_(tree) *const
 	tree) {
@@ -308,7 +309,7 @@ static int PB_(is_element)(const PB_(entry) e) {
 }
 /* A certain position and the top level tree for backtracking.
  @implements `iterator` */
-struct PB_(iterator) { struct PB_(sub) *root; struct PB_(ref) ref; };
+struct PB_(iterator) { struct PB_(tree) *root; struct PB_(ref) ref; };
 /** @return Before `tree`. @implements `forward_begin` */
 static struct PB_(iterator) PB_(begin)(struct B_(tree) *const tree) {
 	struct PB_(iterator) it;
@@ -338,7 +339,7 @@ static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 }
 
 /** Assume `tree` and `x` are checked for non-empty validity. */
-static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const sub,
+static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const sub,
 	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal) {
 	struct PB_(ref) lo;
 	for(lo.node = sub->node, lo.height = sub->height; ;
@@ -368,7 +369,7 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(sub) *const sub,
 
 /** @param[tree] Can be null. @return Lower bound of `x` in `tree`.
  @order \O(\log |`tree`|) */
-static struct PB_(ref) PB_(lower)(struct PB_(sub) sub,
+static struct PB_(ref) PB_(lower)(struct PB_(tree) sub,
 	const PB_(key) x, struct PB_(ref) *const unfull, int *const is_equal) {
 	if(!sub.node || sub.height == UINT_MAX) {
 		struct PB_(ref) ref; ref.node = 0; return ref;
@@ -380,13 +381,13 @@ static struct PB_(ref) PB_(lower)(struct PB_(sub) sub,
 /** Frees non-empty `sub` and it's children recursively, but doesn't put it
  to idle or clear pointers.
  @param[one] If `one` is valid, tries to keep one leaf. Set to null before. */
-static void PB_(clear_r)(struct PB_(sub) sub, struct PB_(node) **const keep) {
+static void PB_(clear_r)(struct PB_(tree) sub, struct PB_(node) **const keep) {
 	assert(sub.node);
 	if(!sub.height) {
 		if(keep && !*keep) printf("clear keep leaf %s\n", orcify(sub.node)), *keep = sub.node;
 		else printf("clear free leaf %s\n", orcify(sub.node)), free(sub.node);
 	} else {
-		struct PB_(sub) child;
+		struct PB_(tree) child;
 		unsigned i;
 		child.height = sub.height - 1;
 		for(i = 0; i <= sub.node->size; i++)
@@ -507,11 +508,11 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 		tree->root.node->size = 0;
 		printf("bulk: empty\n");
 	} else {
-		struct PB_(sub) unfull = { 0, 0 };
+		struct PB_(tree) unfull = { 0, 0 };
 		unsigned new_nodes, n; /* Count new nodes. */
 		struct PB_(node) *tail = 0, *last = 0;
 		struct PB_(branch) *pretail = 0;
-		struct PB_(sub) scout;
+		struct PB_(tree) scout;
 		PB_(key) i;
 		printf("bulk: tree...\n"), PB_(print)(tree);
 		for(scout = tree->root; ; scout.node = PB_(branch)(scout.node)
@@ -602,7 +603,7 @@ catch:
  performed interspersed with a bulk insertion without calling this function.
  @order \O(\log `size`) */
 static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
-	struct PB_(sub) s;
+	struct PB_(tree) s;
 	struct PB_(node) *right;
 	printf("tree_bulk_finish(%s) number of nodes [%u, %u]\n",
 		orcify(tree), TREE_MIN, TREE_MAX);
@@ -686,13 +687,6 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 	}
 	return 1;
 }
-
-static void PB_(graph)(const struct B_(tree) *const tree,
-	const char *const fn);
-#ifndef TREE_TEST
-static void PB_(graph)(const struct B_(tree) *const tree,
-	const char *const fn) { (void)tree, (void)fn; }
-#endif
 
 #ifdef TREE_VALUE /* <!-- map */
 /** @param[value] If non-null and successful, a pointer that receives the
@@ -913,7 +907,7 @@ struct PB_(scaffold) {
 	struct PB_(node) **data;
 	struct { struct PB_(node) **head, **fresh, **cursor; } branch, leaf;
 };
-static int PB_(count_r)(struct PB_(sub) sub, struct tree_count *const no) {
+static int PB_(count_r)(struct PB_(tree) sub, struct tree_count *const no) {
 	assert(sub.node && sub.height);
 	if(!++no->branches) return 0;
 	if(sub.height == 1) {
@@ -923,7 +917,7 @@ static int PB_(count_r)(struct PB_(sub) sub, struct tree_count *const no) {
 	} else {
 		unsigned char i;
 		for(i = 0; i <= sub.node->size; i++) {
-			struct PB_(sub) child;
+			struct PB_(tree) child;
 			child.node = PB_(branch)(sub.node)->child[i];
 			child.height = sub.height - 1;
 			if(!PB_(count_r)(child, no)) return 0;
@@ -939,7 +933,7 @@ static int PB_(count)(const struct B_(tree) *const tree,
 	} else if(tree->root.height == UINT_MAX || !tree->root.height) {
 		no->leaves = 1;
 	} else { /* Complex. */
-		struct PB_(sub) sub = tree->root;
+		struct PB_(tree) sub = tree->root;
 		if(!PB_(count_r)(sub, no)) return 0;
 	}
 	return 1;
@@ -982,7 +976,7 @@ static void PB_(cannibalize)(const struct B_(tree) *const tree,
 		printf("cannibal just one leaf %s\n", orcify(ref.node));
 	}
 }
-static struct PB_(node) *PB_(clone_r)(struct PB_(sub) cpy,
+static struct PB_(node) *PB_(clone_r)(struct PB_(tree) cpy,
 	struct PB_(scaffold) *const sc) {
 	struct PB_(node) *node;
 	if(cpy.height) {
@@ -1001,9 +995,9 @@ static struct PB_(node) *PB_(clone_r)(struct PB_(sub) cpy,
 	}
 	return node;
 }
-static struct PB_(sub) PB_(clone)(const struct PB_(sub) *const clone,
+static struct PB_(tree) PB_(clone)(const struct PB_(tree) *const clone,
 	struct PB_(scaffold) *const sc) {
-	struct PB_(sub) sub;
+	struct PB_(tree) sub;
 	assert(clone && clone->node && sc);
 	printf("Have %zu in scaffold.\n", sc->no);
 	/* Go back to the beginning of the scaffold and pick off one by one. */
