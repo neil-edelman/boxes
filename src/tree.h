@@ -176,11 +176,17 @@ static const struct PB_(branch) *PB_(branch_c)(const struct PB_(node) *
 	const as_node) { return (const struct PB_(branch) *)(const void *)
 	((const char *)as_node - offsetof(struct PB_(branch), base)); }
 
-/* Subtree is a node with a height. */
-struct PB_(tree) { struct PB_(node) *node; unsigned height; };
 /* Address specific entry. */
 struct PB_(ref) { struct PB_(node) *node; unsigned height, idx; };
 struct PB_(ref_c) { const struct PB_(node) *node; unsigned height, idx; };
+struct PB_(tree) { struct PB_(node) *node; unsigned height; };
+/** To initialize it to an idle state, see <fn:<B>tree>, `TRIE_IDLE`, `{0}`
+ (`C99`), or being `static`. This is a B-tree, as
+ <Bayer, McCreight, 1972 Large>.
+
+ ![States.](../doc/states.png) */
+struct B_(tree);
+struct B_(tree) { struct PB_(tree) root; };
 
 #ifdef TREE_VALUE /* <!-- value */
 
@@ -221,14 +227,6 @@ static PB_(value) *PB_(ref_to_value)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->key + ref.idx : 0; }
 
 #endif /* !value --> */
-
-/** To initialize it to an idle state, see <fn:<B>tree>, `TRIE_IDLE`, `{0}`
- (`C99`), or being `static`. This is a B-tree, as
- <Bayer, McCreight, 1972 Large>.
-
- ![States.](../doc/states.png) */
-struct B_(tree);
-struct B_(tree) { struct PB_(tree) root; };
 
 #define BOX_CONTENT PB_(entry_c)
 /** Is `e` not null? @implements `is_element_c` */
