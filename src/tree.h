@@ -69,16 +69,18 @@
 #define TREE_CAT(n, m) TREE_CAT_(n, m)
 #define B_(n) TREE_CAT(TREE_NAME, n)
 #define PB_(n) TREE_CAT(tree, B_(n))
-/* Leaf: `TREE_MAX type`; branch: `TREE_MAX type + TREE_ORDER pointer`. */
+/* Leaf: `TREE_MAX type`; branch: `TREE_MAX type + TREE_ORDER pointer`. In
+ <Goodrich, Tamassia, Mount, 2011, Data>, these are (a,b)-trees as
+ (TREE_MIN+1,TREE_MAX+1)-trees. */
 #define TREE_MAX 10
 #if TREE_MAX < 2 || TREE_MAX > UCHAR_MAX
 #error TREE_MAX parameter range `[3, UCHAR_MAX]`.
 #endif
 /* This is the worst-case branching factor; the performance will be
  \O(log_{`TREE_MIN`+1} `size`). Usually this is `⌈(TREE_MAX+1)/2⌉-1`. However,
- smaller values are less-eager; this has been chosen to provide hysteresis. In
- the extreme, <Johnson, Shasha, 1993, Free-at-Empty> show good results. (Except
- `TREE_MAX 2`, one can be the only value.) */
+ smaller values are less-eager; in the extreme,
+ <Johnson, Shasha, 1993, Free-at-Empty>, show good results; this has been
+ chosen to provide hysteresis. (Except `TREE_MAX 2`, it's fixed.) */
 #define TREE_MIN (TREE_MAX / 3 ? TREE_MAX / 3 : 1)
 #if TREE_MIN == 0 || TREE_MIN > TREE_MAX / 2
 #error TREE_MIN parameter range `[1, \floor(TREE_MAX / 2)]`.
@@ -693,12 +695,12 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 #endif
 
 #ifdef TREE_VALUE /* <!-- map */
-/** @fixme Be more careful for floating-point values.
- @param[value] If non-null and successful, a pointer that receives the
+/** @param[value] If non-null and successful, a pointer that receives the
  address of the value associated with the key. Only present if `TREE_VALUE`
  (map) was specified.
- @return Either `TREE_ERROR` and doesn't touch `tree`, `TREE_UNIQUE` adds a new
- key, or `TREE_YIELD` updates an existing key. @throws[malloc] */
+ @return Either `TREE_ERROR` (false) and doesn't touch `tree`, `TREE_UNIQUE`
+ and adds a new key, or `TREE_YIELD` and updates an existing key.
+ @throws[malloc] */
 static enum tree_result B_(tree_add)(struct B_(tree) *const tree,
 	PB_(key) key, PB_(value) **const value)
 #else /* map --><!-- set */
@@ -718,17 +720,14 @@ idle: /* No reserved memory. */
 	if(!(add.node = malloc(sizeof *add.node))) goto catch;
 	tree->root.node = add.node;
 	tree->root.height = UINT_MAX;
-	printf("add: idle tree, new %s.\n", orcify(add.node));
 	goto empty;
 empty: /* Reserved dynamic memory, but tree is empty. */
 	assert(add.node && tree->root.height == UINT_MAX);
 	add.height = tree->root.height = 0;
 	add.node->size = 0;
 	add.idx = 0;
-	printf("add: empty tree, %s.\n", orcify(add.node));
 	goto insert;
 descend: /* Record last node that has space. */
-	printf("add: contents...\n"), PB_(print)(tree);
 	{
 		int is_equal = 0;
 		hole.node = 0;
@@ -736,16 +735,12 @@ descend: /* Record last node that has space. */
 		if(is_equal) {
 			/* Assumes key is unique; we might not want this for multi-maps,
 			 but that is not implemented yet. */
-			printf("\tadd: equal\n");
 #ifdef TREE_VALUE
 			if(value) *value = PB_(ref_to_value)(add);
 #endif
 			return TREE_YIELD;
 		}
 	}
-	printf("tree_add: hole %s(%u):%u, add %s(%u):%u.\n",
-		orcify(hole.node), hole.height, hole.idx,
-		orcify(add.node), add.height, add.idx);
 	if(hole.node == add.node) goto insert; else goto grow;
 insert: /* Leaf has space to spare; usually end up here. */
 	assert(add.node && add.idx <= add.node->size && add.node->size < TREE_MAX
@@ -765,8 +760,6 @@ insert: /* Leaf has space to spare; usually end up here. */
 grow: /* Leaf is full. */ {
 	unsigned new_no = hole.node ? hole.height : tree->root.height + 2;
 	assert(new_no);
-	printf("tree_add: new_no %u%s\n",
-		new_no, hole.node ? " [this is a sub-tree]" : "");
 	struct PB_(node) **new_next = &new_head, *new_leaf;
 	struct PB_(branch) *new_branch;
 	/* Allocate new nodes in succession. */
@@ -776,17 +769,14 @@ grow: /* Leaf is full. */ {
 		new_branch->child[0] = 0;
 		*new_next = &new_branch->base, new_next = new_branch->child;
 		new_no--;
-		printf("tree_add: new branch %s\n", orcify(new_branch));
 	}
 	/* Last point of potential failure; (don't need to have entry in catch.) */
 	if(!(new_leaf = malloc(sizeof *new_leaf))) goto catch;
 	new_leaf->size = 0;
 	*new_next = new_leaf;
-	printf("tree_add: new leaf %s\n", orcify(new_leaf));
 	/* Attach new nodes to the tree. The hole is now an actual hole. */
 	if(hole.node) { /* New nodes are a sub-structure of the tree. */
 		struct PB_(branch) *holeb = PB_(branch)(hole.node);
-		printf("tree_add: inserting into %s:%u\n", orcify(hole.node), hole.idx);
 		memmove(hole.node->key + hole.idx + 1, hole.node->key + hole.idx,
 			sizeof *hole.node->key * (hole.node->size - hole.idx));
 #ifdef TREE_VALUE
@@ -803,27 +793,17 @@ grow: /* Leaf is full. */ {
 		new_head = new_root->child[1] = new_root->child[0];
 		new_root->child[0] = tree->root.node, tree->root.node = hole.node;
 		hole.node->size = 1;
-		printf("grow, now root %s.\n", orcify(new_root));
 	}
 	cursor = hole; /* Go down; (as opposed to doing it on paper.) */
 	goto split;
 } split: { /* Split between the new and existing nodes. */
 	struct PB_(node) *sibling;
-	/*{
-		char fn[64];
-		sprintf(fn, "graph/topology-%u.gv", cursor.height);
-		PB_(graph)(tree, fn);
-	}*/
 	assert(cursor.node && cursor.node->size && cursor.height);
 	sibling = new_head;
 	/* Descend now while split hasn't happened -- easier. */
 	new_head = --cursor.height ? PB_(branch)(new_head)->child[0] : 0;
-	printf("new_head moved down to %s.\n", orcify(new_head));
 	cursor.node = PB_(branch)(cursor.node)->child[cursor.idx];
 	PB_(find_idx)(&cursor, key);
-	printf("cursor %s:%u, idx %u; hole %s:%u, idx %u; sibling %s.\n",
-		orcify(cursor.node), cursor.height, cursor.idx,
-		orcify(hole.node), hole.height, hole.idx, orcify(sibling));
 	assert(!sibling->size && cursor.node->size == TREE_MAX); /* Atomic. */
 	/* Expand `cursor`, which is full, to multiple nodes. */
 	if(cursor.idx < TREE_SPLIT) { /* Descend hole to `cursor`. */
@@ -857,16 +837,12 @@ grow: /* Leaf is full. */ {
 		}
 		hole = cursor;
 	} else if(cursor.idx > TREE_SPLIT) { /* Descend hole to `sibling`. */
-		printf("assign hole from cursor:%u\n", TREE_SPLIT);
 		hole.node->key[hole.idx] = cursor.node->key[TREE_SPLIT];
 #ifdef TREE_VALUE
 		hole.node->value[hole.idx] = cursor.node->value[TREE_SPLIT];
 #endif
 		hole.node = sibling, hole.height = cursor.height,
 			hole.idx = cursor.idx - TREE_SPLIT - 1;
-		printf("now hole is sibling:%u\n", hole.idx);
-		printf("cpy to 0, from %u, size %u\n", TREE_SPLIT + 1, hole.idx);
-		printf("cpy to %u, from %u, size %u\n", hole.idx + 1, cursor.idx, TREE_MAX - cursor.idx);
 		memcpy(sibling->key, cursor.node->key + TREE_SPLIT + 1,
 			sizeof *sibling->key * hole.idx);
 		memcpy(sibling->key + hole.idx + 1, cursor.node->key + cursor.idx,
@@ -881,8 +857,6 @@ grow: /* Leaf is full. */ {
 			struct PB_(branch) *const cb = PB_(branch)(cursor.node),
 				*const sb = PB_(branch)(sibling);
 			struct PB_(node) *temp = sb->child[0];
-			printf("cpy edges to 0, from %u, size %u\n", TREE_SPLIT + 1, hole.idx + 1);
-			printf("cpy edges to %u, from %u, size %u\n", hole.idx + 2, cursor.idx + 1, TREE_MAX - cursor.idx);
 			memcpy(sb->child, cb->child + TREE_SPLIT + 1,
 				sizeof *cb->child * (hole.idx + 1));
 			memcpy(sb->child + hole.idx + 2, cb->child + cursor.idx + 1,
@@ -903,11 +877,10 @@ grow: /* Leaf is full. */ {
 				sizeof *cb->child * (TREE_MAX - TREE_SPLIT));
 		}
 	}
-	cursor.node->size = TREE_SPLIT;
-	sibling->size = TREE_MAX - TREE_SPLIT; /* Divide `TREE_MAX + 1`. */
-	if(cursor.height) goto split; /* Loop max `log_{TREE_MIN} size`. */
+	/* Divide `TREE_MAX + 1` into two trees. */
+	cursor.node->size = TREE_SPLIT, sibling->size = TREE_MAX - TREE_SPLIT;
+	if(cursor.height) goto split; /* Loop max `\log_{TREE_MIN} size`. */
 	hole.node->key[hole.idx] = key;
-	//PB_(graph)(tree, "graph/topology-0.gv");
 #ifdef TREE_VALUE
 	if(value) *value = PB_(ref_to_value)(hole);
 #endif
@@ -917,38 +890,20 @@ grow: /* Leaf is full. */ {
 	while(new_head) {
 		struct PB_(branch) *const top = PB_(branch)(new_head);
 		new_head = top->child[0];
-		printf("free branch %s\n", orcify(top));
 		free(top);
 	}
-	if(!errno) errno = ERANGE; /* Non-POSIX OS are not mandated to set errno. */
+	if(!errno) errno = ERANGE; /* Non-POSIX OSs not mandated to set errno. */
 	return TREE_ERROR;
 }
 
-#if 0
-/** Updates or adds a pointer to `x` into `trie`.
- @param[eject] If not null, on success it will hold the overwritten value or
- a pointer-to-null if it did not overwrite any value.
- @return Success. @throws[realloc, ERANGE] @order \O(|`key`|) @allow */
-static int B_(trie_put)(struct B_(trie) *const trie, const PB_(entry) x,
-	PB_(entry) */*const fixme*/eject)
-	{ return assert(trie && x), PB_(put)(trie, x, &eject, 0); }
-
-/** Adds a pointer to `x` to `trie` only if the entry is absent or if calling
- `replace` returns true or is null.
- @param[eject] If not null, on success it will hold the overwritten value or
- a pointer-to-null if it did not overwrite any value. If a collision occurs and
- `replace` does not return true, this will be a pointer to `x`.
- @param[replace] Called on collision and only replaces it if the function
- returns true. If null, it is semantically equivalent to <fn:<T>trie_put>.
- @return Success. @throws[realloc, ERANGE] @order \O(|`key`|) @allow */
-static int B_(trie_policy)(struct B_(trie) *const trie, const PB_(entry) x,
-	PB_(entry) */*const*/ eject, const PB_(replace_fn) replace)
-	{ return assert(trie && x), PB_(put)(trie, x, &eject, replace); }
-
 /** Tries to remove `key` from `trie`. @return Success. */
-static int B_(trie_remove)(struct B_(trie) *const trie,
-	const char *const key) { return PB_(remove)(trie, key); }
-#endif
+static int B_(tree_remove)(struct B_(tree) *const tree,
+	const PB_(key) key) {
+	struct PB_(ref) rm;
+	assert(tree);
+	if(!(rm.node = tree->root.node) || tree->root.height == UINT_MAX) return 0;
+	return 0;
+}
 
 /* All these are used in clone; it's convenient to use `\O(\log size)` stack
  space. [existing branches][new branches][existing leaves][new leaves] no */
@@ -1173,18 +1128,13 @@ static void PB_(unused_base)(void) {
 	PB_(is_element_c); PB_(forward_begin); PB_(forward_next);
 	PB_(is_element);
 	B_(tree)(); B_(tree_)(0); B_(tree_begin)(0); B_(tree_next)(0);
-	B_(tree_clear)(0);
-	B_(tree_lower)(0, k);
-	B_(tree_get_next)(0, k);
+	B_(tree_clear)(0); B_(tree_lower)(0, k); B_(tree_get_next)(0, k);
 #ifdef TREE_VALUE
-	B_(tree_bulk_add)(0, k, 0);
-	B_(tree_add)(0, k, 0);
+	B_(tree_bulk_add)(0, k, 0); B_(tree_add)(0, k, 0);
 #else
-	B_(tree_bulk_add)(0, k);
-	B_(tree_add)(0, k);
+	B_(tree_bulk_add)(0, k); B_(tree_add)(0, k);
 #endif
-	B_(tree_bulk_finish)(0);
-	B_(tree_clone)(0, 0);
+	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
