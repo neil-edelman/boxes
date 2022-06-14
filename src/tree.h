@@ -772,9 +772,9 @@ insert: /* Leaf has space to spare; usually end up here. */
 	return TREE_UNIQUE;
 grow: /* Leaf is full. */ {
 	unsigned new_no = hole.node ? hole.height : tree->root.height + 2;
-	assert(new_no);
 	struct PB_(node) **new_next = &new_head, *new_leaf;
 	struct PB_(branch) *new_branch;
+	assert(new_no);
 	/* Allocate new nodes in succession. */
 	while(new_no != 1) { /* All branches except one. */
 		if(!(new_branch = malloc(sizeof *new_branch))) goto catch;
