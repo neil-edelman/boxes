@@ -197,7 +197,6 @@ static void PB_(test)(void) {
 	char fn[64];
 
 	errno = 0;
-	memset(&last, 0, sizeof last);
 
 	/* Fill. */
 	for(i = 0; i < n_size; i++) PB_(filler)(n + i);
@@ -250,6 +249,7 @@ static void PB_(test)(void) {
 	printf("Tree: %s.\n", PB_(tree_to_string)(&tree));
 
 	/* Iteration; checksum. */
+	memset(&last, 0, sizeof last);
 	it = B_(tree_begin)(&tree), i = 0;
 	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
 		char z[12];
@@ -269,6 +269,7 @@ static void PB_(test)(void) {
 	B_(tree_clear)(&empty), assert(!empty.root.node);
 	B_(tree_clear)(&tree), assert(tree.root.node
 		&& tree.root.height == UINT_MAX);
+	n_unique = 0;
 
 	/* Fill again, this time, don't sort. */
 	for(i = 0; i < n_size; i++) PB_(filler)(n + i);
@@ -289,7 +290,7 @@ static void PB_(test)(void) {
 		{
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
 		case TREE_YIELD: printf("<%s> already in tree\n", z); break;
-		case TREE_UNIQUE: printf("<%s> added\n", z); break;
+		case TREE_UNIQUE: printf("<%s> added\n", z); n_unique++; break;
 		}
 #ifdef TREE_VALUE
 		*value = e->value;
@@ -299,6 +300,23 @@ static void PB_(test)(void) {
 			PB_(graph)(&tree, fn);
 		}
 	}
+
+	/* Iteration; checksum. */
+	memset(&last, 0, sizeof last);
+	it = B_(tree_begin)(&tree), i = 0;
+	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
+		char z[12];
+		PB_(to_string)(PB_(to_const)(entry), &z);
+		printf("<%s>\n", z);
+		if(i) {
+			const int cmp = PB_(compare)(PB_(entry_to_key)(entry), last);
+			assert(cmp > 0);
+		}
+		last = PB_(entry_to_key)(entry);
+		if(++i > n_size) assert(0); /* Avoids loops. */
+		B_(tree_remove)(&tree, last);
+	}
+	assert(i == n_unique);
 
 	/* Destroy. */
 	B_(tree_)(&tree), assert(!tree.root.node), PB_(valid)(&tree);

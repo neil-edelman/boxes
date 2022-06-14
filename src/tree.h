@@ -336,34 +336,56 @@ static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 	} while(lo->idx < hi);
 }
 
-/** Assume `tree` and `x` are checked for non-empty validity. */
-static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const sub,
-	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal) {
-	struct PB_(ref) lo;
-	for(lo.node = sub->node, lo.height = sub->height; ;
-		lo.node = PB_(branch_c)(lo.node)->child[lo.idx], lo.height--) {
-		unsigned hi = lo.node->size;
-		lo.idx = 0;
-		if(hole && hi < TREE_MAX) *hole = lo;
-		if(!hi) continue; /* No nodes; bulk-add? */
-		do {
-			const unsigned m = (lo.idx + hi) / 2;
-			if(PB_(compare)(key, lo.node->key[m]) > 0) lo.idx = m + 1;
-			else hi = m;
-		} while(lo.idx < hi);
-		if(hole && lo.node->size < TREE_MAX) hole->idx = lo.idx; /* Update. */
-		/* Total order and (strictly, for now) monotonic,
-		 (otherwise have to check right, later when multikey.) */
-		if(lo.idx < lo.node->size
-			&& PB_(compare)(lo.node->key[lo.idx], key) <= 0) {
-			/* Multi-key check right. (Not implemented.) */
-			if(is_equal) *is_equal = 1;
-			break;
-		}
-		if(!lo.height) break; /* Leaf. */
-	}
-	return lo;
+/* This is basically the same function for search, insert, and delete. Since it
+ is quite volatile (planning on making a multi-map), we make a macro. */
+#define TREE_LOWER(NOSIZE, IDXSET, EQUALITY) { \
+	struct PB_(ref) lo; \
+	for(lo.node = sub->node, lo.height = sub->height; ; \
+		lo.node = PB_(branch_c)(lo.node)->child[lo.idx], lo.height--) { \
+		unsigned hi = lo.node->size; \
+		lo.idx = 0; \
+		NOSIZE; \
+		if(!hi) continue; \
+		do { \
+			const unsigned m = (lo.idx + hi) / 2; \
+			if(PB_(compare)(key, lo.node->key[m]) > 0) lo.idx = m + 1; \
+			else hi = m; \
+		} while(lo.idx < hi); \
+		IDXSET; \
+		if(lo.idx < lo.node->size \
+			&& PB_(compare)(lo.node->key[lo.idx], key) <= 0) { \
+			EQUALITY; \
+			break; \
+		} \
+		if(!lo.height) break; \
+	} \
+	return lo; \
 }
+/** Finds lower-bound of `key` in `sub`. */
+static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const sub,
+	const PB_(key) key)
+	TREE_LOWER((void)0, (void)0, (void)0)
+/** Finds lower-bound of `key` in `sub` while counting the non-filled `hole`
+ and `is_equal`. */
+static struct PB_(ref) PB_(insert_lower_r)(struct PB_(tree) *const sub,
+	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal)
+	TREE_LOWER(if(hi < TREE_MAX) *hole = lo,
+	if(lo.node->size < TREE_MAX) hole->idx = lo.idx,
+	*is_equal = 1)
+/** Finds lower-bound of `key` in `sub` while counting the non-minimum `hole`
+ and `is_equal`. */
+static struct PB_(ref) PB_(remove_lower_r)(struct PB_(tree) *const sub,
+	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal)
+	TREE_LOWER((void)0, /* fixme: What to do when this happens? */
+	if(lo.node->size > TREE_MIN || lo.height
+	&& (
+		lo.idx
+		&& PB_(branch)(lo.node)->child[lo.idx - 1]->size > TREE_MIN
+		|| lo.idx < lo.node->size
+		&& PB_(branch)(lo.node)->child[lo.idx + 1]->size > TREE_MIN
+	)) *hole = lo,
+	*is_equal = 1)
+#undef TREE_LOWER
 
 /** @param[tree] Can be null. @return Lower bound of `x` in `tree`.
  @order \O(\log |`tree`|) */
@@ -371,7 +393,7 @@ static struct PB_(ref) PB_(lower)(struct PB_(tree) sub, const PB_(key) x) {
 	if(!sub.node || sub.height == UINT_MAX) {
 		struct PB_(ref) ref; ref.node = 0; return ref;
 	} else {
-		return PB_(lower_r)(&sub, x, 0, 0);
+		return PB_(lower_r)(&sub, x);
 	}
 }
 
@@ -598,6 +620,7 @@ catch:
  in a node. @return The re-distribution was a success and all nodes are within
  rules. The only time that it would be false is if a regular operation was
  performed interspersed with a bulk insertion without calling this function.
+ (Maybe we should up the minimum to 1/2 for this function?)
  @order \O(\log `size`) */
 static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 	struct PB_(tree) s;
@@ -722,7 +745,7 @@ descend: /* Record last node that has space. */
 	{
 		int is_equal = 0;
 		hole.node = 0;
-		add = PB_(lower_r)(&tree->root, key, &hole, &is_equal);
+		add = PB_(insert_lower_r)(&tree->root, key, &hole, &is_equal);
 		if(is_equal) {
 			/* Assumes key is unique; we might not want this for multi-maps,
 			 but that is not implemented yet. */
@@ -890,9 +913,15 @@ grow: /* Leaf is full. */ {
 /** Tries to remove `key` from `trie`. @return Success. */
 static int B_(tree_remove)(struct B_(tree) *const tree,
 	const PB_(key) key) {
-	struct PB_(ref) rm;
+	struct PB_(ref) rm, hole;
 	assert(tree);
 	if(!(rm.node = tree->root.node) || tree->root.height == UINT_MAX) return 0;
+	{
+		int is_equal = 0;
+		hole.node = 0;
+		rm = PB_(remove_lower_r)(&tree->root, key, &hole, &is_equal);
+		if(!is_equal) return 0;
+	}
 	return 0;
 }
 
