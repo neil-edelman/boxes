@@ -175,7 +175,6 @@ static struct PB_(branch) *PB_(branch)(struct PB_(node) *const as_leaf)
 static const struct PB_(branch) *PB_(branch_c)(const struct PB_(node) *
 	const as_node) { return (const struct PB_(branch) *)(const void *)
 	((const char *)as_node - offsetof(struct PB_(branch), base)); }
-
 /* Address specific entry. */
 struct PB_(ref) { struct PB_(node) *node; unsigned height, idx; };
 struct PB_(ref_c) { const struct PB_(node) *node; unsigned height, idx; };
@@ -910,13 +909,13 @@ grow: /* Leaf is full. */ {
 	return TREE_ERROR;
 }
 
-/** Tries to remove `key` from `trie`. @return Success. */
+/** Tries to remove `key` from `tree`. @return Success. */
 static int B_(tree_remove)(struct B_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) rm, hole;
 	assert(tree);
 	if(!(rm.node = tree->root.node) || tree->root.height == UINT_MAX) return 0;
-	{
+	{ /* Find the key; keep track of the lowest level where hole will stop. */
 		int is_equal = 0;
 		hole.node = 0;
 		rm = PB_(remove_lower_r)(&tree->root, key, &hole, &is_equal);
