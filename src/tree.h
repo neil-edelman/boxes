@@ -367,12 +367,11 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const sub,
 
 /** @param[tree] Can be null. @return Lower bound of `x` in `tree`.
  @order \O(\log |`tree`|) */
-static struct PB_(ref) PB_(lower)(struct PB_(tree) sub,
-	const PB_(key) x, struct PB_(ref) *const unfull, int *const is_equal) {
+static struct PB_(ref) PB_(lower)(struct PB_(tree) sub, const PB_(key) x) {
 	if(!sub.node || sub.height == UINT_MAX) {
 		struct PB_(ref) ref; ref.node = 0; return ref;
 	} else {
-		return PB_(lower_r)(&sub, x, unfull, is_equal);
+		return PB_(lower_r)(&sub, x, 0, 0);
 	}
 }
 
@@ -449,7 +448,7 @@ static struct B_(tree_iterator) B_(tree_lower)(struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct B_(tree_iterator) it;
 	if(!tree) return it._.root = 0, it;
-	it._.ref = PB_(lower)(tree->root, x, 0, 0);
+	it._.ref = PB_(lower)(tree->root, x);
 	it._.root = &tree->root;
 	return it;
 }
@@ -461,7 +460,7 @@ static struct B_(tree_iterator) B_(tree_lower)(struct B_(tree) *const tree,
 static PB_(value) *B_(tree_get_next)(struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct PB_(ref) ref;
-	return tree && (ref = PB_(lower)(tree->root, x, 0, 0),
+	return tree && (ref = PB_(lower)(tree->root, x),
 		PB_(pin)(tree->root, &ref)) ? PB_(ref_to_value)(ref) : 0;
 }
 
