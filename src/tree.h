@@ -72,7 +72,7 @@
 /* Leaf: `TREE_MAX type`; branch: `TREE_MAX type + TREE_ORDER pointer`. In
  <Goodrich, Tamassia, Mount, 2011, Data>, these are (a,b)-trees as
  (TREE_MIN+1,TREE_MAX+1)-trees. */
-#define TREE_MAX 10
+#define TREE_MAX 2
 #if TREE_MAX < 2 || TREE_MAX > UCHAR_MAX
 #error TREE_MAX parameter range `[3, UCHAR_MAX]`.
 #endif
@@ -236,8 +236,85 @@ static int PB_(is_element_c)(PB_(entry_c) e) {
 	return !!e;
 #endif
 }
-/* Two copies of the same code, with and without `const`.
- @param[sub] A copy of the tree's root.
+
+#include "../test/orcish.h"
+static void (*PB_(to_string))(PB_(entry_c), char (*)[12]);
+
+static int PB_(to_predecessor)(struct PB_(tree) tree,
+	struct PB_(ref) *const ref) {
+	struct PB_(ref) prev;
+	unsigned a0;
+	PB_(key) x;
+	assert(ref);
+	if(!tree.node || tree.height == UINT_MAX) return 0; /* Empty. */
+	if(!ref->node) { /* Null: `ret` is the last key. */
+		struct PB_(tree) descend = tree;
+		while(descend.height) descend.height--,
+			descend.node = PB_(branch)(descend.node)->child[descend.node->size];
+		/* While bulk-loading, could have empty right. */
+		if(descend.node->size) ref->node = descend.node,
+			ref->height = 0, ref->idx = descend.node->size - 1;
+		else assert(tree.node->size), ref->node = tree.node,
+			ref->height = tree.height, ref->idx = tree.node->size - 1;
+		return 1;
+	}
+	while(ref->height) ref->height--,
+		ref->node = PB_(branch_c)(ref->node)->child[ref->idx],
+		ref->idx = ref->node->size;
+	if(ref->idx) return ref->idx--, 1; /* Likely. */
+	/* Re-descend and note the minimum height node that has a previous key. */
+	printf("off right -- re-descend\n");
+	for(prev.node = 0, x = ref->node->key[0]; tree.height;
+		tree.node = PB_(branch_c)(tree.node)->child[a0], tree.height--) {
+		unsigned a1 = tree.node->size;
+		a0 = 0;
+		while(a0 < a1) {
+			const unsigned m = (a0 + a1) / 2;
+			if(PB_(compare)(x, tree.node->key[m]) > 0) a0 = m + 1; else a1 = m;
+		}
+		if(a0)
+			printf("maybe at %s(%u)\n", orcify(tree.node), tree.height),
+			prev.node = tree.node, prev.height = tree.height, prev.idx = a0 - 1;
+	}
+	if(!prev.node) return 0; /* Off the left. */
+	*ref = prev;
+	return 1; /* Jumped nodes. */
+
+}
+static int PB_(to_successor)(struct PB_(tree) tree,
+	struct PB_(ref_c) *const ref) {
+	struct PB_(ref_c) next;
+	unsigned a0;
+	PB_(key) x;
+	assert(ref);
+	if(!tree.node || tree.height == UINT_MAX) return 0; /* Empty. */
+	if(!ref->node)
+		ref->node = tree.node, ref->height = tree.height, ref->idx = 0;
+	else
+		ref->idx++;
+	while(ref->height) ref->height--,
+		ref->node = PB_(branch_c)(ref->node)->child[ref->idx], ref->idx = 0;
+	if(ref->idx < ref->node->size) return 1; /* Likely. */
+	if(!ref->node->size) return 0; /* When bulk-loading. */
+	/* Re-descend tree and note the minimum height node that has a next key. */
+	for(next.node = 0, x = ref->node->key[ref->node->size - 1]; tree.height;
+		tree.node = PB_(branch_c)(tree.node)->child[a0], tree.height--) {
+		unsigned a1 = tree.node->size;
+		a0 = 0;
+		while(a0 < a1) {
+			const unsigned m = (a0 + a1) / 2;
+			if(PB_(compare)(x, tree.node->key[m]) > 0) a0 = m + 1; else a1 = m;
+		}
+		if(a0 < tree.node->size)
+			next.node = tree.node, next.height = tree.height, next.idx = a0;
+	}
+	if(!next.node) return 0; /* Off the right. */
+	*ref = next;
+	return 1; /* Jumped nodes. */
+}
+
+/* Two copies of the same code, with and without `const`. Used in determining a
+ key's successor in `sub`, but `ref` is already one past.
  @param[ref] If it has a null node, starts at the first key; if it's past the
  node's limits, uses `sub` to go to the next node.
  @return True unless there are no more `ref`. */
@@ -320,9 +397,6 @@ static PB_(entry) PB_(next)(struct PB_(iterator) *const it) {
 	return assert(it), PB_(pin)(*it->root, &it->ref) ?
 		PB_(leaf_to_entry)(it->ref.node, it->ref.idx++) : PB_(null_entry)();
 }
-
-#include "../test/orcish.h"
-static void (*PB_(to_string))(PB_(entry_c), char (*)[12]);
 
 static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 	unsigned hi = lo->node->size;
@@ -909,20 +983,63 @@ grow: /* Leaf is full. */ {
 	return TREE_ERROR;
 }
 
+/****************************/
+
+
+
 /** Tries to remove `key` from `tree`. @return Success. */
 static int B_(tree_remove)(struct B_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) rm, hole;
+	struct PB_(ref) pred;
+	struct PB_(ref_c) succ;
 	assert(tree);
 	if(!(rm.node = tree->root.node) || tree->root.height == UINT_MAX) return 0;
-	{ /* Find the key; keep track of the lowest level where hole will stop. */
-		int is_equal = 0;
-		hole.node = 0;
-		rm = PB_(remove_lower_r)(&tree->root, key, &hole, &is_equal);
-		if(!is_equal) return 0;
+{ /* Find the key while keeping track of the hole. */
+	int is_equal = 0;
+	hole.node = 0;
+	rm = PB_(remove_lower_r)(&tree->root, key, &hole, &is_equal);
+	if(!is_equal) return 0;
+}
+	printf("remove: hole %s:%u -> rm %s:%u.\n",
+		orcify(hole.node), hole.idx, orcify(rm.node), rm.idx);
+	pred = rm;
+	if(PB_(to_predecessor)(tree->root, &pred)) printf("has predecessor %s(%u):%u\n",
+		orcify(pred.node), pred.height, pred.idx);
+	else printf("doesn't have predecessor\n");
+	succ.node = rm.node, succ.height = rm.height, succ.idx = rm.idx;
+	if(PB_(to_successor)(tree->root, &succ)) printf("has successor %s(%u):%u\n",
+		orcify(succ.node), succ.height, succ.idx);
+	else printf("doesn't have successor\n");
+	if(!rm.height) goto bottom;
+{ /* Splits to pick the lowest hole from in-order predecessor and successor. */
+	assert(0);
+} bottom:
+	if(rm.node == hole.node) goto end;
+	if(!hole.node) goto shrink;
+	/*assert(0);*/
+	return 0;
+end:
+	assert(rm.node && rm.idx < rm.node->size && rm.node->size > TREE_MIN);
+	memmove(rm.node->key + rm.idx, rm.node->key + rm.idx + 1,
+		sizeof *rm.node->key * (rm.node->size - rm.idx - 1));
+#ifdef TREE_VALUE
+	memmove(rm.node->value + rm.idx, rm.node->value + rm.idx + 1,
+		sizeof *rm.node->value * (rm.node->size - rm.idx - 1));
+#endif
+	if(rm.height) {
+		/*assert(0);*/
 	}
+	rm.node->size--;
+	return 0;
+shrink:
+	assert(0);
 	return 0;
 }
+
+
+
+/****************************/
 
 /* All these are used in clone; it's convenient to use `\O(\log size)` stack
  space. [existing branches][new branches][existing leaves][new leaves] no */

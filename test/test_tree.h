@@ -315,6 +315,10 @@ static void PB_(test)(void) {
 		last = PB_(entry_to_key)(entry);
 		if(++i > n_size) assert(0); /* Avoids loops. */
 		B_(tree_remove)(&tree, last);
+		{
+			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-rm-%lu.gv", i);
+			PB_(graph)(&tree, fn);
+		}
 	}
 	assert(i == n_unique);
 
