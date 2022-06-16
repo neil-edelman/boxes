@@ -180,27 +180,27 @@ static void manual_int(void) {
 	ret = int_tree_bulk_finish(&step);
 	assert(ret);
 	tree_int_graph(&step, "graph/step-finalize.gv");
-	it = int_tree_lower(&step, 50);
+	it = int_tree_lower_iterator(&step, 50);
 	printf("step: 50: %s:%u.\n", orcify(it._.ref.node), it._.ref.idx);
 	v = int_tree_next(&it), assert(v && *v == 100);
 	printf("It's %u.\n", *v);
-	it = int_tree_lower(&step, 150);
+	it = int_tree_lower_iterator(&step, 150);
 	printf("step: 150: %s:%u\n", orcify(it._.ref.node), it._.ref.idx);
 	v = int_tree_next(&it), assert(v && *v == 200);
 	printf("It's %u.\n", *v);
-	it = int_tree_lower(&step, 250);
+	it = int_tree_lower_iterator(&step, 250);
 	printf("step: 250: %s:%u\n", orcify(it._.ref.node), it._.ref.idx);
 	v = int_tree_next(&it), assert(v && *v == 300);
 	printf("It's %u.\n", *v);
-	it = int_tree_lower(&step, 350);
+	it = int_tree_lower_iterator(&step, 350);
 	printf("step: 350: %s:%u\n", orcify(it._.ref.node), it._.ref.idx);
 	v = int_tree_next(&it), assert(!v);
 	printf("It's null.\n");
-	v = int_tree_get_next(&step, 50), assert(v && *v == 100);
-	v = int_tree_get_next(&step, 150), assert(v && *v == 200);
-	v = int_tree_get_next(&step, 250), assert(v && *v == 300);
-	v = int_tree_get_next(&step, 300), assert(v && *v == 300);
-	v = int_tree_get_next(&step, 350), assert(!v);
+	v = int_tree_lower_value(&step, 50), assert(v && *v == 100);
+	v = int_tree_lower_value(&step, 150), assert(v && *v == 200);
+	v = int_tree_lower_value(&step, 250), assert(v && *v == 300);
+	v = int_tree_lower_value(&step, 300), assert(v && *v == 300);
+	v = int_tree_lower_value(&step, 350), assert(!v);
 
 	/* Full add test, nodes, `\sum_{n=0}^{h} m^n = \frac{m^{h+1}-1}{m-1}`,
 	 gives keys, `m^{h+1}-1`. */

@@ -207,10 +207,12 @@ static void PB_(test)(void) {
 	PB_(valid)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
-	it = B_(tree_lower)(0, PB_(test_to_key)(n + 0)), assert(!it._.root);
-	value = B_(tree_get_next)(0, PB_(test_to_key)(n + 0)), assert(!value);
-	it = B_(tree_lower)(&tree, PB_(test_to_key)(n + 0)), assert(!it._.ref.node);
-	value = B_(tree_get_next)(&tree, PB_(test_to_key)(n + 0)), assert(!value);
+	it = B_(tree_lower_iterator)(0, PB_(test_to_key)(n + 0)),
+		assert(!it._.root);
+	value = B_(tree_lower_value)(0, PB_(test_to_key)(n + 0)), assert(!value);
+	it = B_(tree_lower_iterator)(&tree, PB_(test_to_key)(n + 0)),
+		assert(!it._.ref.node);
+	value = B_(tree_lower_value)(&tree, PB_(test_to_key)(n + 0)),assert(!value);
 
 	/* Bulk, (simple.) */
 	for(i = 0; i < n_size; i++) {
