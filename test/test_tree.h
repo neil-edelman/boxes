@@ -211,7 +211,7 @@ static void PB_(test)(void) {
 		assert(!it._.root);
 	value = B_(tree_lower_value)(0, PB_(test_to_key)(n + 0)), assert(!value);
 	it = B_(tree_lower_iterator)(&tree, PB_(test_to_key)(n + 0)),
-		assert(!it._.ref.node);
+		assert(!it._.cur.node);
 	value = B_(tree_lower_value)(&tree, PB_(test_to_key)(n + 0)),assert(!value);
 
 	/* Bulk, (simple.) */
