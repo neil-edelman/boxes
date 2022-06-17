@@ -128,7 +128,7 @@ struct PA_(iterator) { struct A_(array) *a; size_t cur; int dir; };
 /** @return Before `a`. @implements `begin` */
 static struct PA_(iterator) PA_(begin)(struct A_(array) *const a)
 	{ struct PA_(iterator) it; it.a = a, it.cur = 0, it.dir = 0; return it; }
-/** After `a`. @implements `end` */
+/** @return After `a`. @implements `end` */
 static struct PA_(iterator) PA_(end)(struct A_(array) *const a)
 	{ struct PA_(iterator) it; it.a = a, it.cur = a ? a->size : 0, it.dir = 1;
 	return it; }
