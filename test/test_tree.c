@@ -155,8 +155,12 @@ static void entry_to_string(const struct entry_tree_entry_c entry,
 
 
 static void manual_int(void) {
-	struct int_tree equal = int_tree(), step = int_tree(), even = int_tree();
+	struct int_tree between = int_tree(),
+		rnd = int_tree(),
+		even = int_tree(), even_clone = int_tree(),
+		consecutive = int_tree();
 	size_t i;
+	const size_t size_rnd = 100;
 	/*unsigned *x;*/
 	struct int_tree_iterator it;
 	unsigned *v;
@@ -173,95 +177,99 @@ static void manual_int(void) {
 	ti._ = tree_unsigned_lower(&equal, 1);
 	printf("equal: %s:%u\n", orcify(ti._.end.node), ti._.end.idx);*/
 
-	if(!int_tree_bulk_add(&step, 100)
-		|| !int_tree_bulk_add(&step, 200)
-		|| !int_tree_bulk_add(&step, 300)) goto catch;
-	tree_int_graph(&step, "graph/step.gv");
-	ret = int_tree_bulk_finish(&step);
+	/* Lookup between nodes. */
+	if(!int_tree_bulk_add(&between, 100)
+		|| !int_tree_bulk_add(&between, 200)
+		|| !int_tree_bulk_add(&between, 300)) goto catch;
+	ret = int_tree_bulk_finish(&between);
 	assert(ret);
-	tree_int_graph(&step, "graph/step-finalize.gv");
-	it = int_tree_lower_iterator(&step, 50);
+	tree_int_graph(&between, "graph/between.gv");
+	it = int_tree_lower_iterator(&between, 50);
 	printf("step: 50: %s:%u.\n", orcify(it._.i.node), it._.i.idx);
 	v = int_tree_next(&it), assert(v && *v == 100);
 	printf("It's %u.\n", *v);
-	it = int_tree_lower_iterator(&step, 150);
+	it = int_tree_lower_iterator(&between, 150);
 	printf("step: 150: %s:%u\n", orcify(it._.i.node), it._.i.idx);
 	v = int_tree_next(&it), assert(v && *v == 200);
 	printf("It's %u.\n", *v);
-	it = int_tree_lower_iterator(&step, 250);
+	it = int_tree_lower_iterator(&between, 250);
 	printf("step: 250: %s:%u\n", orcify(it._.i.node), it._.i.idx);
 	v = int_tree_next(&it), assert(v && *v == 300);
 	printf("It's %u.\n", *v);
-	it = int_tree_lower_iterator(&step, 350);
+	it = int_tree_lower_iterator(&between, 350);
 	printf("step: 350: %s:%u\n", orcify(it._.i.node), it._.i.idx);
-	v = int_tree_next(&it), /*assert(!v)*/ assert(v && *v == 100);
-	v = int_tree_lower_value(&step, 50), assert(v && *v == 100);
-	v = int_tree_lower_value(&step, 150), assert(v && *v == 200);
-	v = int_tree_lower_value(&step, 250), assert(v && *v == 300);
-	v = int_tree_lower_value(&step, 300), assert(v && *v == 300);
-	v = int_tree_lower_value(&step, 350), assert(!v);
+	assert(!it._.i.node);
+	v = int_tree_next(&it), /*assert(!v) not ideal*/ assert(v && *v == 100);
+	/* The value of the iterator. */
+	v = int_tree_lower_value(&between, 50), assert(v && *v == 100);
+	v = int_tree_lower_value(&between, 150), assert(v && *v == 200);
+	v = int_tree_lower_value(&between, 250), assert(v && *v == 300);
+	v = int_tree_lower_value(&between, 300), assert(v && *v == 300);
+	v = int_tree_lower_value(&between, 350), assert(!v);
 
-	/* Full add test, nodes, `\sum_{n=0}^{h} m^n = \frac{m^{h+1}-1}{m-1}`,
-	 gives keys, `m^{h+1}-1`. */
+	/* Random. */
+	for(i = 0; i < size_rnd; i++) {
+		unsigned x = rand() & 65535;
+		printf("__%u) add random value %u__\n", (unsigned)i, x);
+		switch(int_tree_add(&rnd, x)) {
+		case TREE_ERROR: goto catch;
+		case TREE_YIELD: printf("%u already in tree\n", x); break;
+		case TREE_UNIQUE: printf("%u added\n", x); break;
+		}
+		if(!(i & (i + 1)) || i == size_rnd - 1) {
+			char fn[64];
+			sprintf(fn, "graph/rnd-%u.gv", (unsigned)i);
+			tree_int_graph(&rnd, fn);
+		}
+	}
+
 #if TREE_ORDER < 10 /* <!-- small */
-	{ /* Three levels. */
+
+	{ /* Full add test, nodes, `\sum_{n=0}^{h} m^n = \frac{m^{h+1}-1}{m-1}`,
+		 gives keys, `m^{h+1}-1`, three levels. */
 		const size_t size = TREE_ORDER * TREE_ORDER * TREE_ORDER - 1;
 		for(i = 0; i < size; i++) /* Even for odd spaces between them. */
 			if(!int_tree_bulk_add(&even, ((unsigned)i + 1) * 2)) assert(0);
 		int_tree_bulk_finish(&even); /* Does nothing, in this case. */
-		tree_int_graph(&even, "graph/discrete-1.gv");
+		tree_int_graph(&even, "graph/even-1.gv");
 		for(i = 0; i <= size; i++) {
 			char fn[64];
-			sprintf(fn, "graph/discrete-clone-%u.gv", (unsigned)i * 2 + 1);
-			if(!int_tree_clone(&step, &even)) goto catch;
-			if(!int_tree_add(&step, (unsigned)i * 2 + 1)) goto catch;
-			tree_int_graph(&step, fn);
+			if(!int_tree_clone(&even_clone, &even)) goto catch;
+			if(!int_tree_add(&even_clone, (unsigned)i * 2 + 1)) goto catch;
+			sprintf(fn, "graph/even-clone-%u.gv", (unsigned)i * 2 + 1);
+			tree_int_graph(&even_clone, fn);
 		}
 	}
+
+	{ /* Consecutive. */
+		const size_t size = 4 * TREE_ORDER - 1;
+		for(i = 0; i < size; i++) {
+			unsigned x = (unsigned)i + 1;
+			char fn[64];
+			printf("__%u) Going to add consecutive %u__\n", (unsigned)i, x);
+			switch(int_tree_add(&consecutive, x)) {
+			case TREE_ERROR: goto catch;
+			case TREE_YIELD: printf("%u already in tree\n", x); break;
+			case TREE_UNIQUE: printf("%u added\n", x); break;
+			}
+			sprintf(fn, "graph/consecutive-%u.gv", (unsigned)i);
+			tree_int_graph(&consecutive, fn);
+		}
+		int_tree_remove(&consecutive, 1);
+		assert(0);
+	}
+
 #endif /* small --> */
-
-	int_tree_clear(&equal);
-	for(i = 0; i < 50; i++) {
-		unsigned x = rand() & 65535;
-		char fn[64];
-		printf("__%u) Going to add %u__\n", (unsigned)i, x);
-		switch(int_tree_add(&equal, x)) {
-		case TREE_ERROR: goto catch;
-		case TREE_YIELD: printf("%u already in tree\n", x); break;
-		case TREE_UNIQUE: printf("%u added\n", x); break;
-		}
-		sprintf(fn, "graph/add-%u.gv", (unsigned)i);
-		tree_int_graph(&equal, fn);
-	}
-
-	int_tree_clear(&equal);
-	for(i = 0; i < 11; i++) {
-		unsigned x = (unsigned)i + 1;
-		char fn[64];
-		printf("__%u) Going to add %u__\n", (unsigned)i, x);
-		switch(int_tree_add(&equal, x)) {
-		case TREE_ERROR: goto catch;
-		case TREE_YIELD: printf("%u already in tree\n", x); break;
-		case TREE_UNIQUE: printf("%u added\n", x); break;
-		}
-		sprintf(fn, "graph/consecutive-%u.gv", (unsigned)i);
-		tree_int_graph(&equal, fn);
-	}
-	int_tree_remove(&equal, 1);
-	assert(0);
 
 	goto finally;
 catch:
 	perror("manual_unsigned");
 	assert(0);
 finally:
-	printf("free equal:\n");
-	int_tree_(&equal);
-	printf("free step:\n");
-	int_tree_(&step);
-	printf("free even:\n");
-	int_tree_(&even);
-	printf("\n");
+	int_tree_(&between);
+	int_tree_(&rnd);
+	int_tree_(&even), int_tree_(&even_clone);
+	int_tree_(&consecutive);
 }
 
 int main(void) {

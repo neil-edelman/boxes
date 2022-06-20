@@ -1023,7 +1023,7 @@ shrink:
 /* All these are used in clone; it's convenient to use `\O(\log size)` stack
  space. [existing branches][new branches][existing leaves][new leaves] no */
 struct PB_(scaffold) {
-	struct tree_count victim, clone;
+	struct tree_count victim, source;
 	size_t no;
 	struct PB_(node) **data;
 	struct { struct PB_(node) **head, **fresh, **cursor; } branch, leaf;
@@ -1086,7 +1086,10 @@ static void PB_(cannibalize_r)(struct PB_(ref) ref,
 static void PB_(cannibalize)(const struct B_(tree) *const tree,
 	struct PB_(scaffold) *const sc) {
 	struct PB_(ref) ref;
-	assert(tree && tree->root.node && tree->root.height != UINT_MAX && sc);
+	assert(tree && tree->root.height != UINT_MAX && sc);
+	/* Nothing to cannibalize. */
+	if(!sc->victim.branches && !sc->victim.leaves) return;
+	assert(tree->root.node);
 	ref.node = tree->root.node, ref.height = tree->root.height, ref.idx = 0;
 	sc->branch.cursor = sc->branch.head;
 	sc->leaf.cursor = sc->leaf.head;
@@ -1144,12 +1147,12 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 	sc.data = 0; /* Need to keep this updated to catch. */
 	if(!tree) { errno = EDOM; goto catch; }
 	/* Count the number of nodes and set up to copy. */
-	if(!PB_(count)(tree, &sc.victim) || !PB_(count)(source, &sc.clone)
-		|| (sc.no = sc.clone.branches + sc.clone.leaves) < sc.clone.branches)
+	if(!PB_(count)(tree, &sc.victim) || !PB_(count)(source, &sc.source)
+		|| (sc.no = sc.source.branches + sc.source.leaves) < sc.source.branches)
 		{ errno = ERANGE; goto catch; } /* Overflow. */
-	printf("<B>tree_clone: tree.branches %zu; tree.leaves %zu; "
-		"copy.branches %zu; copy.leaves %zu.\n", sc.victim.branches,
-		sc.victim.leaves, sc.clone.branches, sc.clone.leaves);
+	printf("<B>tree_clone: victim.branches %zu; victim.leaves %zu; "
+		"source.branches %zu; source.leaves %zu.\n", sc.victim.branches,
+		sc.victim.leaves, sc.source.branches, sc.source.leaves);
 	if(!sc.no) { PB_(clear)(tree); goto finally; } /* No need to allocate. */
 	if(!(sc.data = malloc(sizeof *sc.data * sc.no)))
 		{ if(!errno) errno = ERANGE; goto catch; }
@@ -1160,18 +1163,18 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 	}
 	{ /* Ready scaffold. */
 		struct tree_count need;
-		need.leaves = sc.clone.leaves > sc.victim.leaves
-			? sc.clone.leaves - sc.victim.leaves : 0;
-		need.branches = sc.clone.branches > sc.victim.branches
-			? sc.clone.branches - sc.victim.branches : 0;
+		need.leaves = sc.source.leaves > sc.victim.leaves
+			? sc.source.leaves - sc.victim.leaves : 0;
+		need.branches = sc.source.branches > sc.victim.branches
+			? sc.source.branches - sc.victim.branches : 0;
 		printf("need { branches %zu leaves %zu }\n",
 			need.branches, need.leaves);
 		sc.branch.head = sc.data;
 		sc.branch.fresh = sc.branch.cursor
-			= sc.branch.head + sc.clone.branches - need.branches;
+			= sc.branch.head + sc.source.branches - need.branches;
 		sc.leaf.head = sc.branch.fresh + need.branches;
 		sc.leaf.fresh = sc.leaf.cursor
-			= sc.leaf.head + sc.clone.leaves - need.leaves;
+			= sc.leaf.head + sc.source.leaves - need.leaves;
 		printf("index [0, %zu) is branch [%zu, %zu) leaf [%zu, %zu)\n", sc.no,
 			sc.branch.head - sc.data,
 			sc.branch.fresh - sc.data,
