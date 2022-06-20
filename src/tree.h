@@ -400,7 +400,7 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
 	return lo;
 }
 /** Finds lower-bound of `key` in `tree` while counting the non-filled `hole`
- and `is_equal`. */
+ and `is_equal`. (fixme: is_equal useless) */
 static struct PB_(ref) PB_(lower_r_insert)(struct PB_(tree) *const tree,
 	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal) {
 	struct PB_(ref) lo;
@@ -415,7 +415,7 @@ static struct PB_(ref) PB_(lower_r_insert)(struct PB_(tree) *const tree,
 	return lo;
 }
 /** Finds lower-bound of `key` in `tree` while counting the non-minimum `hole`
- and `is_equal`. */
+ and `is_equal`. (fixme: is_equal useless) */
 static struct PB_(ref) PB_(lower_r_remove)(struct PB_(tree) *const tree,
 	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal) {
 	struct PB_(ref) lo;
@@ -978,6 +978,15 @@ static int B_(tree_remove)(struct B_(tree) *const tree,
 	rm = PB_(lower_r_remove)(&tree->root, key, &lump, &is_equal);
 	if(!is_equal) return 0;
 }
+	/*while(ref->height) ref->height--,
+		ref->node = PB_(branch_c)(ref->node)->child[ref->idx],
+		ref->idx = ref->node->size;
+	if(ref->idx) return ref->idx--, 1; <-- predecessor */
+	/*ref->idx++; \
+while(ref->height) ref->height--, \
+	ref->node = PB_(branch_c)(ref->node)->child[ref->idx], ref->idx = 0; \
+if(ref->idx < ref->node->size) return 1; <-- successor */
+
 	printf("remove: lump %s:%u -> rm %s:%u.\n",
 		orcify(lump.node), lump.idx, orcify(rm.node), rm.idx);
 	pred = rm;
