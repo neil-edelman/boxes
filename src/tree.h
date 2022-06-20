@@ -274,7 +274,6 @@ static int PB_(to_predecessor)(struct PB_(tree) tree,
 static int PB_(to_successor_c)(struct PB_(tree) tree, \
 	struct PB_(ref_c) *const ref) { \
 	assert(ref); \
-printf("<succ>\n");\
 	if(!tree.node || tree.height == UINT_MAX) return 0; /* Empty. */ \
 	if(!ref->node) \
 		ref->node = tree.node, ref->height = tree.height, ref->idx = 0; \
@@ -282,7 +281,7 @@ printf("<succ>\n");\
 		ref->idx++; \
 	while(ref->height) ref->height--, \
 		ref->node = PB_(branch_c)(ref->node)->child[ref->idx], ref->idx = 0; \
-	if(ref->idx < ref->node->size) return printf("<node %s:%u>\n", orcify(ref->node), ref->idx), 1; /* Likely. */ \
+	if(ref->idx < ref->node->size) return 1; /* Likely. */ \
 	if(!ref->node->size) return 0; /* When bulk-loading. */ \
 {	/* Re-descend; pick the minimum height node that has a next key. */ \
 	struct PB_(ref_c) next; \
@@ -297,10 +296,9 @@ printf("<succ>\n");\
 			if(PB_(compare)(x, tree.node->key[m]) > 0) a0 = m + 1; else a1 = m;\
 		} \
 		if(a0 < tree.node->size) \
-printf("<maybe %s:%u>\n", orcify(tree.node), a0),\
 			next.node = tree.node, next.height = tree.height, next.idx = a0; \
 	} \
-	if(!next.node) return printf("<successor:end>\n"), 0; /* Off the right. */ \
+	if(!next.node) return 0; /* Off the right. */ \
 	*ref = next; \
 }	return 1; /* Jumped nodes. */ \
 }
@@ -969,33 +967,33 @@ grow: /* Leaf is full. */ {
 /** Tries to remove `key` from `tree`. @return Success. */
 static int B_(tree_remove)(struct B_(tree) *const tree,
 	const PB_(key) key) {
-	struct PB_(ref) rm, hole;
+	struct PB_(ref) rm, lump;
 	struct PB_(ref) pred;
 	struct PB_(ref) succ;
 	assert(tree);
 	if(!(rm.node = tree->root.node) || tree->root.height == UINT_MAX) return 0;
-{ /* Find the key while keeping track of the hole. */
+{ /* Find the key while keeping track of the lump (opposite of the hole.) */
 	int is_equal = 0;
-	hole.node = 0;
-	rm = PB_(lower_r_remove)(&tree->root, key, &hole, &is_equal);
+	lump.node = 0;
+	rm = PB_(lower_r_remove)(&tree->root, key, &lump, &is_equal);
 	if(!is_equal) return 0;
 }
-	printf("remove: hole %s:%u -> rm %s:%u.\n",
-		orcify(hole.node), hole.idx, orcify(rm.node), rm.idx);
+	printf("remove: lump %s:%u -> rm %s:%u.\n",
+		orcify(lump.node), lump.idx, orcify(rm.node), rm.idx);
 	pred = rm;
-	if(PB_(to_predecessor)(tree->root, &pred)) printf("has predecessor %s(%u):%u\n",
+	if(PB_(to_predecessor)(tree->root, &pred)) printf("rm has predecessor %s(%u):%u\n",
 		orcify(pred.node), pred.height, pred.idx);
-	else printf("doesn't have predecessor\n");
-	succ.node = rm.node, succ.height = rm.height, succ.idx = rm.idx;
-	if(PB_(to_successor)(tree->root, &succ)) printf("has successor %s(%u):%u\n",
+	else printf("rm doesn't have predecessor\n");
+	succ = rm;
+	if(PB_(to_successor)(tree->root, &succ)) printf("rm has successor %s(%u):%u\n",
 		orcify(succ.node), succ.height, succ.idx);
-	else printf("doesn't have successor\n");
+	else printf("rm doesn't have successor\n");
 	if(!rm.height) goto bottom;
 { /* Splits to pick the lowest hole from in-order predecessor and successor. */
 	assert(0);
 } bottom:
-	if(rm.node == hole.node) goto end;
-	if(!hole.node) goto shrink;
+	if(rm.node == lump.node) goto end;
+	if(!lump.node) goto shrink;
 	/*assert(0);*/
 	return 0;
 end:

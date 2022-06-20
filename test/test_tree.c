@@ -244,6 +244,7 @@ static void manual_int(void) {
 	{ /* Consecutive. */
 		const size_t size = 4 * TREE_ORDER - 1;
 		char fn[64];
+		const unsigned rm = 1;
 		for(i = 0; i < size; i++) {
 			unsigned x = (unsigned)i + 1;
 			printf("__%u) Going to add consecutive %u__\n", (unsigned)i, x);
@@ -255,8 +256,9 @@ static void manual_int(void) {
 			sprintf(fn, "graph/consecutive-%u.gv", (unsigned)i);
 			tree_int_graph(&consecutive, fn);
 		}
-		int_tree_remove(&consecutive, 1);
-		sprintf(fn, "graph/consecutive-rm-%u.gv", (unsigned)1);
+		printf("Remove %u.\n", rm);
+		int_tree_remove(&consecutive, rm);
+		sprintf(fn, "graph/consecutive-rm-%u.gv", (unsigned)rm);
 		tree_int_graph(&consecutive, fn);
 		assert(0);
 	}
