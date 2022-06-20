@@ -142,12 +142,12 @@ struct H_(heap) { struct PH_(node_array) _; };
 static int PH_(is_content)(const PH_(node) *const x) { return !!x; }
 /* @implements `forward` */
 struct PH_(forward) { struct PAH_(forward) _; };
-/** @return Before `h`. @implements `forward_begin` */
-static struct PH_(forward) PH_(forward_begin)(const struct H_(heap) *const h) {
-	struct PH_(forward) it; it._ = PAH_(forward_begin)(&h->_); return it; }
-/** @return The next `it` or null. @implements `forward_next` */
-static const PH_(node) *PH_(forward_next)(struct PH_(forward) *const it)
-	{ return PAH_(forward_next)(&it->_); }
+/** @return Before `h`. @implements `forward` */
+static struct PH_(forward) PH_(forward)(const struct H_(heap) *const h) {
+	struct PH_(forward) it; it._ = PAH_(forward)(&h->_); return it; }
+/** @return The next `it` or null. @implements `next_c` */
+static const PH_(node) *PH_(next_c)(struct PH_(forward) *const it)
+	{ return PAH_(next_c)(&it->_); }
 #undef PAH_
 
 /** Extracts the <typedef:<PH>priority> of `node`, which must not be null. */
@@ -353,7 +353,7 @@ static const char *(*PH_(heap_to_string))(const struct H_(heap) *);
 static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
 	PH_(node) unused; memset(&unused, 0, sizeof unused);
-	PH_(is_content)(0); PH_(forward_begin)(0); PH_(forward_next)(0);
+	PH_(is_content)(0); PH_(forward)(0); PH_(next_c)(0);
 	H_(heap)(); H_(heap_)(0); H_(heap_clear)(0); H_(heap_size)(0);
 	H_(heap_add)(0, unused); H_(heap_peek)(0); H_(heap_pop)(0);
 	H_(heap_buffer)(0, 0); H_(heap_append)(0, 0); H_(heap_affix)(0, 0);
