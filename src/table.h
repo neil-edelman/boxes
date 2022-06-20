@@ -546,30 +546,30 @@ static enum table_result PN_(put)(struct N_(table) *const table,
 static int PN_(is_element_c)(const struct PN_(bucket) *const x) { return !!x; }
 /* Enumerate the contents, (in no particular order, usually, but
  deterministic up to topology changes.) @implements `forward` */
-struct PN_(forward) { const struct N_(table) *table; PN_(uint) cur; };
+struct PN_(forward) { const struct N_(table) *table; PN_(uint) i; };
 /** Helper to skip the buckets of `it` that are not there.
  @return Whether it found another index. */
 static int PN_(forward_skip)(struct PN_(forward) *const it) {
 	const struct N_(table) *const hash = it->table;
 	const PN_(uint) limit = PN_(capacity)(hash);
 	assert(it && it->table && it->table->buckets);
-	while(it->cur < limit) {
-		struct PN_(bucket) *const bucket = hash->buckets + it->cur;
+	while(it->i < limit) {
+		struct PN_(bucket) *const bucket = hash->buckets + it->i;
 		if(bucket->next != TABLE_NULL) return 1;
-		it->cur++;
+		it->i++;
 	}
 	return 0;
 }
-/** @return Before `table`. @implements `forward_begin` */
-static struct PN_(forward) PN_(forward_begin)(const struct N_(table) *const
-	table) { struct PN_(forward) it; it.table = table, it.cur = 0; return it; }
+/** @return Before `table`. @implements `forward` */
+static struct PN_(forward) PN_(forward)(const struct N_(table) *const
+	table) { struct PN_(forward) it; it.table = table, it.i = 0; return it; }
 /** Advances `it` to the next element. @return Pointer to the current element
- or null. @implements `forward_next` */
-static const struct PN_(bucket) *PN_(forward_next)(struct PN_(forward) *const
+ or null. @implements `next_c` */
+static const struct PN_(bucket) *PN_(next_c)(struct PN_(forward) *const
 	it) { assert(it);
 	if(!it->table || !it->table->buckets) return 0;
-	if(PN_(forward_skip)(it)) return it->table->buckets + it->cur++;
-	it->table = 0, it->cur = 0;
+	if(PN_(forward_skip)(it)) return it->table->buckets + it->i++;
+	it->table = 0, it->i = 0;
 	return 0;
 }
 
@@ -579,11 +579,11 @@ struct PN_(iterator) { struct N_(table) *table; PN_(uint) cur; PN_(uint) prev;};
 /** Helper to skip the buckets of `it` that are not there.
  @return Whether it found another index. */
 static int PN_(skip)(struct PN_(iterator) *const it) {
-	const struct N_(table) *const hash = it->table;
-	const PN_(uint) limit = PN_(capacity)(hash);
+	const struct N_(table) *const t = it->table;
+	const PN_(uint) limit = PN_(capacity)(t);
 	assert(it && it->table && it->table->buckets);
 	while(it->cur < limit) {
-		struct PN_(bucket) *const bucket = hash->buckets + it->cur;
+		struct PN_(bucket) *const bucket = t->buckets + it->cur;
 		if(bucket->next != TABLE_NULL) return 1;
 		it->cur++;
 	}
@@ -878,7 +878,7 @@ static void PN_(unused_base_coda)(void);
 static void PN_(unused_base)(void) {
 	PN_(entry) e; PN_(key) k; PN_(value) v;
 	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
-	PN_(is_element_c)(0); PN_(forward_begin)(0); PN_(forward_next)(0);
+	PN_(is_element_c)(0); PN_(forward)(0); PN_(next_c)(0);
 	N_(table)(); N_(table_)(0); N_(table_begin)(0); N_(table_next)(0, 0);
 	N_(table_buffer)(0, 0); N_(table_clear)(0); N_(table_is)(0, k);
 	N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v); N_(table_try)(0, e);
