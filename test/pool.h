@@ -116,12 +116,12 @@ static int PP_(is_element_c)(PP_(type_c) *const x) { return !!x; }
  otherwise, since (presumably) the memory address is in local variables and
  will be freed (hopefully.) Unreliable. */
 struct PP_(forward) { struct PP_(slot) *slot0; size_t i; };
-/** @return Before `p`. @implements `forward_begin` */
-static struct PP_(forward) PP_(forward_begin)(const struct P_(pool) *const p)
+/** @return Before `p`. @implements `forward` */
+static struct PP_(forward) PP_(forward)(const struct P_(pool) *const p)
 	{ struct PP_(forward) it; it.slot0 = p && p->slots.size
 	? p->slots.data + 0 : 0, it.i = 0; return it; }
-/** Move to next `it`. @return Element or null. @implements `forward_next` */
-static PP_(type_c) *PP_(forward_next)(struct PP_(forward) *const it)
+/** Move to next `it`. @return Element or null. @implements `next_c` */
+static PP_(type_c) *PP_(next_c)(struct PP_(forward) *const it)
 	{ return assert(it), it->slot0 && it->i < it->slot0->size
 	? it->slot0->slab + it->i++ : 0; }
 
@@ -325,7 +325,7 @@ static const char *(*PP_(pool_to_string))(const struct P_(pool) *);
 
 static void PP_(unused_base_coda)(void);
 static void PP_(unused_base)(void) {
-	PP_(is_element_c)(0); PP_(forward_begin)(0); PP_(forward_next)(0);
+	PP_(is_element_c)(0); PP_(forward)(0); PP_(next_c)(0);
 	P_(pool)(); P_(pool_)(0); P_(pool_buffer)(0, 0); P_(pool_new)(0);
 	P_(pool_remove)(0, 0); P_(pool_clear)(0); PP_(unused_base_coda)();
 }

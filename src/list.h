@@ -118,11 +118,11 @@ static int PL_(is_element_c)(const struct L_(listlink) *const x)
 /* Since this is a permutation, the iteration is defined by none other then
  itself. @implements `forward` */
 struct PL_(forward) { const struct L_(listlink) *link; };
-/** @return Before `l`. @implements `forward_begin` */
-static struct PL_(forward) PL_(forward_begin)(const struct L_(list) *const l)
+/** @return Before `l`. @implements `forward` */
+static struct PL_(forward) PL_(forward)(const struct L_(list) *const l)
 	{ struct PL_(forward) it; it.link = l ? &l->u.as_head.head : 0; return it; }
-/** Move to next `it`. @return Element or null. @implements `forward_next` */
-static const struct L_(listlink) *PL_(forward_next)(struct PL_(forward) *const
+/** Move to next `it`. @return Element or null. @implements `next_c` */
+static const struct L_(listlink) *PL_(next_c)(struct PL_(forward) *const
 	it) { struct L_(listlink) *n; assert(it);
 	if(!it->link || !(n = it->link->next)) return 0;
 	return (it->link = n)->next ? n : 0; }
@@ -132,33 +132,47 @@ static const struct L_(listlink) *PL_(forward_next)(struct PL_(forward) *const
 static int PL_(is_element)(struct L_(listlink) *const x)
 	{ return assert(x ? x->next && x->prev : 1), !!x; }
 /* @implements `iterator` */
-struct PL_(iterator) { struct L_(listlink) *link; int dir; };
-/** @return Before `l`. @implements `begin` */
-static struct PL_(iterator) PL_(begin)(struct L_(list) *const l)
+struct PL_(iterator) { struct L_(listlink) *link; int seen; };
+/** @return A pointer to null in `l`. @implements `iterator` */
+static struct PL_(iterator) PL_(iterator)(struct L_(list) *const l)
 	{ struct PL_(iterator) it; it.link = l ? &l->u.as_head.head : 0;
-	it.dir = 0; return it; }
-/** @return After `l`. @implements `begin` */
-static struct PL_(iterator) PL_(end)(struct L_(list) *const l)
-	{ struct PL_(iterator) it; it.link = l ? &l->u.as_tail.tail : 0;
-	it.dir = 0; return it; }
+	it.seen = 0; return it; }
 /** Advances `it`. @implements `next` */
 static struct L_(listlink) *PL_(next)(struct PL_(iterator) *const it) {
-	struct L_(listlink) *n; assert(it);
-	if(!it->link || !(n = it->link->next)) return 0;
-	return (it->link = n)->next ? (it->dir = 1, n) : 0;
+	struct L_(listlink) *next; assert(it);
+	if(!it->link) return 0; /* Iterator unattached. */
+	next = it->link->next, assert(next);
+	if(!next->next) { /* End of list; reset. */
+		it->link = &((struct L_(list) *)(void *)((char *)next
+			- offsetof(struct L_(list), u.as_tail.tail)))->u.as_head.head;
+		it->seen = 0;
+		return 0;
+	}
+	return it->seen = 1, it->link = next;
 }
 /** Reverses `it`. @implements `previous` */
 static struct L_(listlink) *PL_(previous)(struct PL_(iterator) *const it) {
-	struct L_(listlink) *n; assert(it);
-	if(!it->link || !(n = it->link->prev)) return 0;
-	return (it->link = n)->prev ? (it->dir = -1, n) : 0;
+	struct L_(listlink) *prev; assert(it);
+	if(!it->link) return 0; /* Iterator unattached. */
+	prev = it->link->prev, assert(prev);
+	if(!prev->prev) { /* Beginning of list; reset. */
+		it->link = prev;
+		it->seen = 0;
+		return 0;
+	}
+	/* Header has `prev = 0`, special case when must not have seen because
+	 there is nothing to see; (should not enter this state, but recoverable.) */
+	if(it->seen || !it->link->next) it->link = prev;
+	else prev = it->link;
+	return (it->seen = 1), prev;
 }
 /** Removes the element last returned by `it`. (Untested.)
  @return There was an element. @implements `remove` */
 static int PL_(remove)(struct PL_(iterator) *const it) {
 	struct L_(listlink) *n; assert(0 && it);
-	if(!it->dir || !(n = it->link) || !n->next || !n->prev) return 0;
-	it->link = it->dir < 0 ? n->prev : n->next;
+	if(!it->link) return 0;
+	if(!it->seen || !(n = it->link) || !n->next || !n->prev) return 0;
+	it->link = n->prev, it->seen = 0;
 	n->prev->next = n->next;
 	n->next->prev = n->prev;
 	n->prev = n->next = 0;
@@ -377,9 +391,9 @@ static const char *(*PL_(list_to_string))(const struct L_(list) *);
 
 static void PL_(unused_base_coda)(void);
 static void PL_(unused_base)(void) {
-	PL_(is_element_c)(0); PL_(forward_begin)(0); PL_(forward_next)(0);
-	PL_(is_element)(0); PL_(begin)(0); PL_(end)(0); PL_(previous)(0);
-	PL_(next)(0); PL_(remove)(0);
+	PL_(is_element_c)(0); PL_(forward)(0); PL_(next_c)(0);
+	PL_(is_element)(0); PL_(iterator)(0); PL_(previous)(0); PL_(next)(0);
+	PL_(remove)(0);
 	L_(list_head_c)(0); L_(list_head)(0); L_(list_tail_c)(0); L_(list_tail)(0);
 	L_(list_previous_c)(0); L_(list_previous)(0);
 	L_(list_next_c)(0); L_(list_next)(0);

@@ -866,7 +866,7 @@ static void mount_info_filler(struct mount_info *const this,
 	this->is_allowed = is_allowed;
 }
 /** Destructor for all. */
-static void Animals_(void) {
+static void animals_(void) {
 	id_list_clear(&animals.list);
 	lemur_pool_(&animals.lemurs);
 	llama_pool_(&animals.llamas);
@@ -1043,7 +1043,7 @@ static int animals_tests(void) {
 	} while(0); if(!is_success) {
 		perror("Animals");
 	} {
-		Animals_();
+		animals_();
 	}
 	fprintf(stderr, "Time: %lu\n", (unsigned long)(clock() - t));
 

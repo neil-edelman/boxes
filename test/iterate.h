@@ -18,7 +18,8 @@
  does not expire after box completion.
  */
 
-/* `BOX_CONTENT`: is_content, forward, forward_begin, forward_next. */
+/* `BOX_CONTENT`: is_element_c, forward, next_c.
+ `BOX_ITERATOR`: is_element, iterator, next */
 #if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
 	|| !defined(BOX_ITERATOR) || !defined(ITR_)
 #error Unexpected preprocessor symbols.
@@ -56,32 +57,37 @@ static PITR_(element) ITR_(any)(PITR_(box) *const box,
 	struct BOX_(iterator) it;
 	PITR_(element) i;
 	assert(box && predicate);
-	for(it = BOX_(begin)(box); i = BOX_(next)(&it); )
+	for(it = BOX_(iterator)(box); BOX_(is_element)(i = BOX_(next)(&it)); )
 		if(predicate(i)) return i;
 	return 0;
 }
 
 /** <src/iterate.h>: Iterates through `box` and calls `action` on all the
- elements. The topology of the list must not change while in this function.
- @order \O(|`box`|) \times \O(`action`) @allow */
+ elements. @order \O(|`box`|) \times \O(`action`) @allow */
 static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
 	struct BOX_(iterator) it;
 	PITR_(element) i;
 	assert(box && action);
-	for(it = BOX_(begin)(box); i = BOX_(next)(&it); ) action(i);
+	for(it = BOX_(iterator)(box), i = BOX_(next)(&it); BOX_(is_element)(i); ) {
+		PITR_(element) j = BOX_(next)(&it);
+		action(i);
+		i = j; /* Could be to remove `i` from the list. */
+	}
 }
 
 /** <src/iterate.h>: Iterates through `box` and calls `action` on all the
- elements for which `predicate` returns true. The topology of the list must not
- change while in this function.
+ elements for which `predicate` returns true.
  @order \O(`box.size`) \times (\O(`predicate`) + \O(`action`)) @allow */
 static void ITR_(if_each)(PITR_(box) *const box,
 	const PITR_(predicate_fn) predicate, const PITR_(action_fn) action) {
 	struct BOX_(iterator) it;
 	PITR_(element) i;
 	assert(box && predicate && action);
-	for(it = BOX_(begin)(box); i = BOX_(next)(&it); )
+	for(it = BOX_(iterator)(box), i = BOX_(next)(&it); BOX_(is_element)(i); ) {
+		PITR_(element) j = BOX_(next)(&it);
 		if(predicate(i)) action(i);
+		i = j; /* Could be to remove `i` from the list. */
+	}
 }
 
 #ifdef BOX_CONTIGUOUS /* <!-- contiguous */

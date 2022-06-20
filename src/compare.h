@@ -16,7 +16,7 @@
 
  @std C89 */
 
-/* `BOX_CONTENT`: is_content, forward, forward_begin, forward_next. */
+/* `BOX_CONTENT`: is_content_c, forward, next_c. */
 #if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
 	|| !defined(CMP_) || !(defined(COMPARE_IS_EQUAL) ^ defined(COMPARE)) \
 	|| defined(BOX_CONTIGUOUS) && !defined(BOX_ITERATOR)
@@ -69,11 +69,11 @@ static const PCMP_(compare_fn) PCMP_(compare) = (COMPARE);
  @order \O(`|a|` & `|b|`) @allow */
 static int CMP_(compare)(const PCMP_(box) *restrict const a,
 	const PCMP_(box) *restrict const b) {
-	struct BOX_(forward) ia = BOX_(forward_begin)(a),
-		ib = BOX_(forward_begin)(b);
+	struct BOX_(forward) ia = BOX_(forward)(a),
+		ib = BOX_(forward)(b);
 	for( ; ; ) {
-		const PCMP_(element_c) x = BOX_(forward_next)(&ia),
-			y = BOX_(forward_next)(&ib);
+		const PCMP_(element_c) x = BOX_(next_c)(&ia),
+			y = BOX_(next_c)(&ib);
 		int diff;
 		if(!BOX_(is_element_c)(x)) return BOX_(is_element_c)(y) ? -1 : 0;
 		else if(!BOX_(is_element_c)(y)) return 1;
@@ -180,11 +180,11 @@ static const PCMP_(bipredicate_fn) PCMP_(is_equal) = (COMPARE_IS_EQUAL);
  which both can be null. @order \O(|`a`| & |`b`|) @allow */
 static int CMP_(is_equal)(const PCMP_(box) *restrict const a,
 	const PCMP_(box) *restrict const b) {
-	struct BOX_(forward) ia = BOX_(forward_begin)(a),
-		ib = BOX_(forward_begin)(b);
+	struct BOX_(forward) ia = BOX_(forward)(a),
+		ib = BOX_(forward)(b);
 	for( ; ; ) {
-		const PCMP_(element_c) x = BOX_(forward_next)(&ia),
-			y = BOX_(forward_next)(&ib);
+		const PCMP_(element_c) x = BOX_(next_c)(&ia),
+			y = BOX_(next_c)(&ib);
 		if(!BOX_(is_element_c)(x)) return !BOX_(is_element_c)(y);
 		else if(!BOX_(is_element_c)(y)) return 0;
 		if(!PCMP_(is_equal)(x, y)) return 0;
