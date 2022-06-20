@@ -283,7 +283,7 @@ printf("<succ>\n");\
 		ref->idx++; \
 	while(ref->height) ref->height--, \
 		ref->node = PB_(branch_c)(ref->node)->child[ref->idx], ref->idx = 0; \
-	if(ref->idx < ref->node->size) return printf("<node %u>\n", ref->idx), 1; /* Likely. */ \
+	if(ref->idx < ref->node->size) return printf("<node %s:%u>\n", orcify(ref->node), ref->idx), 1; /* Likely. */ \
 	if(!ref->node->size) return 0; /* When bulk-loading. */ \
 {	/* Re-descend; pick the minimum height node that has a next key. */ \
 	struct PB_(ref_c) next; \
@@ -385,6 +385,68 @@ static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 		else hi = m;
 	} while(lo->idx < hi);
 }
+#define TREE_FORTREE(i) i.node = tree->node, i.height = tree->height; ; \
+	i.node = PB_(branch_c)(i.node)->child[i.idx], i.height--
+#define TREE_START(i) unsigned hi = i.node->size; i.idx = 0;
+#define TREE_NODE(i) if(!hi) continue; \
+do { \
+	const unsigned m = (i.idx + hi) / 2; \
+	if(PB_(compare)(key, i.node->key[m]) > 0) i.idx = m + 1; \
+	else hi = m; \
+} while(i.idx < hi);
+#define TREE_FLIPPED(i) PB_(compare)(i.node->key[i.idx], key) <= 0
+
+/** Finds lower-bound of `key` in `tree`. */
+static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
+	const PB_(key) key) {
+	struct PB_(ref) i, lo = { 0, 0, 0 };
+	for(TREE_FORTREE(i)) {
+		TREE_START(i)
+		TREE_NODE(i)
+		if(i.idx < i.node->size) {
+			lo = i;
+			/* Might be useful expanding this to multi-keys. */
+			if(TREE_FLIPPED(i)) break;
+		}
+		if(!i.height) break;
+	}
+	return lo;
+}
+/** Finds lower-bound of `key` in `tree` while counting the non-filled `hole`
+ and `is_equal`. */
+static struct PB_(ref) PB_(lower_r_insert)(struct PB_(tree) *const tree,
+	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal) {
+	struct PB_(ref) lo;
+	for(TREE_FORTREE(lo)) {
+		TREE_START(lo)
+		if(hi < TREE_MAX) *hole = lo;
+		TREE_NODE(lo)
+		if(lo.node->size < TREE_MAX) hole->idx = lo.idx;
+		if(lo.idx < lo.node->size && TREE_FLIPPED(lo)) { *is_equal = 1; break; }
+		if(!lo.height) break;
+	}
+	return lo;
+}
+/** Finds lower-bound of `key` in `tree` while counting the non-minimum `hole`
+ and `is_equal`. */
+static struct PB_(ref) PB_(lower_r_remove)(struct PB_(tree) *const tree,
+	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal) {
+	struct PB_(ref) lo;
+	for(TREE_FORTREE(lo)) {
+		TREE_START(lo)
+		TREE_NODE(lo)
+		if(lo.node->size > TREE_MIN || lo.height && (
+			lo.idx
+			&& PB_(branch)(lo.node)->child[lo.idx - 1]->size > TREE_MIN
+			|| lo.idx < lo.node->size
+			&& PB_(branch)(lo.node)->child[lo.idx + 1]->size > TREE_MIN
+		)) *hole = lo;
+		if(lo.idx < lo.node->size && TREE_FLIPPED(lo)) { *is_equal = 1; break; }
+		if(!lo.height) break;
+	}
+	return lo;
+}
+
 /* This is basically the same function for search, insert, and delete. */
 /* fixme: have an extra variable for search that keeps it tightly in bounds.
  THIS IS NOT CORRECT! */
@@ -414,30 +476,6 @@ printf("<lower!>\n");\
 	} \
 	return lo; \
 }
-/** Finds lower-bound of `key` in `tree`. */
-static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
-	const PB_(key) key)
-	TREE_LOWER((void)0, (void)0, (void)0)
-/** Finds lower-bound of `key` in `tree` while counting the non-filled `hole`
- and `is_equal`. */
-static struct PB_(ref) PB_(lower_r_insert)(struct PB_(tree) *const tree,
-	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal)
-	TREE_LOWER(if(hi < TREE_MAX) *hole = i,
-	if(i.node->size < TREE_MAX) hole->idx = i.idx,
-	*is_equal = 1)
-/** Finds lower-bound of `key` in `tree` while counting the non-minimum `hole`
- and `is_equal`. */
-static struct PB_(ref) PB_(lower_r_remove)(struct PB_(tree) *const tree,
-	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal)
-	TREE_LOWER((void)0, /* fixme: What to do when this happens? */
-	if(i.node->size > TREE_MIN || i.height
-	&& (
-		i.idx
-		&& PB_(branch)(i.node)->child[i.idx - 1]->size > TREE_MIN
-		|| i.idx < i.node->size
-		&& PB_(branch)(i.node)->child[i.idx + 1]->size > TREE_MIN
-	)) *hole = i,
-	*is_equal = 1)
 #undef TREE_LOWER
 
 /** @param[tree] Can be null. @return Lower bound of `x` in `tree`.

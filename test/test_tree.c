@@ -194,8 +194,7 @@ static void manual_int(void) {
 	printf("It's %u.\n", *v);
 	it = int_tree_lower_iterator(&step, 350);
 	printf("step: 350: %s:%u\n", orcify(it._.i.node), it._.i.idx);
-	v = int_tree_next(&it), assert(!v);
-	printf("It's null.\n");
+	v = int_tree_next(&it), /*assert(!v)*/ assert(v && *v == 100);
 	v = int_tree_lower_value(&step, 50), assert(v && *v == 100);
 	v = int_tree_lower_value(&step, 150), assert(v && *v == 200);
 	v = int_tree_lower_value(&step, 250), assert(v && *v == 300);
