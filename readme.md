@@ -367,7 +367,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;ITR&gt;each</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;action_fn <em>action</em>)</code>
 
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements\. The topology of the list must not change while in this function\.
+[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements\.
 
  * Order:  
    &#927;\(|`box`|\) &#215; &#927;\(`action`\)
@@ -379,7 +379,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;ITR&gt;if_each</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>, const &lt;PITR&gt;action_fn <em>action</em>)</code>
 
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\. The topology of the list must not change while in this function\.
+[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\.
 
  * Order:  
    &#927;\(`box.size`\) &#215; \(&#927;\(`predicate`\) \+ &#927;\(`action`\)\)

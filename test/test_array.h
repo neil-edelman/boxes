@@ -78,7 +78,6 @@ static void PA_(test_basic)(void) {
 	PA_(valid_state)(0);
 
 	printf("Test empty.\n");
-	item = (PA_(type) *)1;
 	assert(errno == 0);
 	PA_(valid_state)(&a);
 
@@ -114,29 +113,27 @@ static void PA_(test_basic)(void) {
 	}
 	printf("Testing iteration, a = %s.\n",
 		PA_(array_to_string)(&a));
-	for(it = A_(array_begin)(&a), i = 0; item = A_(array_next)(&it); i++)
+	for(it = A_(array_iterator)(&a), i = 0; item = A_(array_next)(&it); i++)
 		assert(!memcmp(item, items + i, sizeof *item));
 	assert(i == 3);
 	printf("Backwards:\n");
-	for(it = A_(array_end)(&a), i = 0; item = A_(array_previous)(&it); i++)
+	for(it = A_(array_iterator)(&a), i = 0; item = A_(array_previous)(&it); i++)
 		PA_(to_string)(item, &z), printf("%s\n", z),
 		assert(!memcmp(item, items + 2 - i, sizeof *item));
 	assert(i == 3);
-	it = A_(array_begin)(&a);
+	it = A_(array_iterator)(&a);
 	item = A_(array_next)(&it), assert(item), PA_(to_string)(item, &z);
 	A_(array_next)(&it), item = A_(array_previous)(&it);
 	assert(!memcmp(item, items + 0, sizeof *item));
 	for(i = 0; i < 3; i++) {
-		it = A_(array_index)(&a, i);
+		it = A_(array_iterator_before)(&a, i);
 		item = A_(array_next)(&it), assert(item);
 		PA_(to_string)(item, &z), printf("a[%lu] = %s\n", (unsigned long)i, z);
 		assert(!memcmp(item, items + i, sizeof *item));
 	}
-	it = A_(array_index)(&a,i/*3*/), item = A_(array_next)(&it), assert(!item);
-	/* One previous. */
-	it = A_(array_begin)(&a);
-	item = A_(array_previous)(&it), assert(!item);
+	it = A_(array_iterator_before)(&a,i/*3*/), item = A_(array_next)(&it), assert(!item);
 	/* Iteration and back. */
+	it = A_(array_iterator)(&a);
 	item = A_(array_next)(&it), assert(!memcmp(item, items + 0, sizeof *item));
 	item = A_(array_previous)(&it), assert(!item);
 	/* Two iterations and back. */
@@ -145,10 +142,8 @@ static void PA_(test_basic)(void) {
 	item = A_(array_previous)(&it),
 		assert(!memcmp(item, items + 0, sizeof *item));
 	item = A_(array_previous)(&it), assert(!item);
-	/* End iteration. */
-	it = A_(array_end)(&a);
-	item = A_(array_next)(&it), assert(!item);
 	/* Iteration and back. */
+	it = A_(array_iterator)(&a);
 	item = A_(array_previous)(&it),
 		assert(!memcmp(item, items + 2, sizeof *item));
 	item = A_(array_next)(&it), assert(!item);
@@ -236,6 +231,7 @@ static void PA_(test_random)(void) {
 		} else {
 			const unsigned t = RAND_MAX / 2;
 			r = (unsigned)rand();
+			assert(size);
 			if(r < t) {
 				data = A_(array_peek)(&a);
 				assert(data);
@@ -605,7 +601,7 @@ static void PCMP_(test_compare)(void) {
 	printf("\ntest compare: %s.\n", PA_(array_to_string)(&a));
 	assert(ts_size == a.size);
 	t = 0, i = 0;
-	it = A_(array_begin)(&a);
+	it = A_(array_iterator)(&a);
 	while(t = A_(array_next)(&it)) {
 		char z[12];
 		PA_(to_string)(t, &z);
