@@ -4,9 +4,11 @@
  @abstract Stand-alone header <src/tree.h>; examples <test/test_tree.c>. On a
  compatible workstation, `make` creates the test suite of the examples.
 
- @subtitle Ordered tree
+ @subtitle Ordered key-tree
 
- A <tag:<B>tree> is an ordered set or map.
+ A <tag:<B>tree> is an ordered set or map contained in a tree. For memory
+ locality, this is implemented B-tree, described in
+ <Bayer, McCreight, 1972, Large>.
 
  @param[TREE_NAME, TREE_KEY]
  `<B>` that satisfies `C` naming conventions when mangled, required, and
@@ -31,7 +33,7 @@
  that satisfies `C` naming conventions when mangled and function implementing
  <typedef:<PSZ>to_string_fn>.
 
- @fixme multi-key; implementation of order statistic tree
+ @fixme multi-key; implementation of order statistic tree?
  @fixme merge, difference
 
  @std C89 */
@@ -137,11 +139,10 @@ static int PB_(default_compare)(PB_(key_c) a, PB_(key_c) b)
  <typedef:<PB>compare_fn>, if defined. */
 static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
 
-/* B-tree node, as <Bayer, McCreight, 1972, Large>. These rules are more lazy
- than the original so as to not exhibit worst-case behaviour in small trees, as
- <Johnson, Shasha, 1993, Free-at-Empty>, but lookup is potentially slower after
- deleting; this is a design decision that nodes are not cached. In the
- terminology of <Knuth, 1998 Art 3>,
+/* These rules are more lazy than the original so as to not exhibit worst-case
+ behaviour in small trees, as <Johnson, Shasha, 1993, Free-at-Empty>, (lookup
+ is potentially slower after deleting.) In the terminology of
+ <Knuth, 1998 Art 3>,
  * Every branch has at most `TREE_ORDER == TREE_MAX + 1` children, which is at
    minimum three.
  * Every non-root and non-bulk-loaded node has at least `TREE_MIN` keys,
@@ -150,14 +151,13 @@ static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
    is a consequence of the fact that they are implicitly storing a complete
    binary sub-tree.)
  * All leaves are at the maximum depth and height zero; they do'n't carry links
-   to other nodes. (The height is one less then the original paper, as
-   <Knuth, 1998 Art 3>, for computational simplicity.)
+   to other nodes, (hence, leaf.) In this code, a branch node is a
+   specialization of a (leaf) node with children. One can tell if it's a branch
+   by keeping track of the height.
  * There are two empty B-trees to facilitate allocation hysteresis between
    0 -- 1: idle `{ 0, 0 }`, and `{ garbage leaf, UINT_MAX }`, one could test,
    `!root || height == UINT_MAX`.
- * Bulk-loading always is on the right side.
- * A branch node is a specialization of a (leaf) node with children. One can
-   tell if it's a branch by the non-zero height. */
+ * Bulk-loading always is on the right side. */
 struct PB_(node) {
 	unsigned char size; /* `[0, TREE_MAX]`. */
 	PB_(key) key[TREE_MAX]; /* Cache-friendly lookup. */
@@ -167,11 +167,11 @@ struct PB_(node) {
 };
 /* B-tree branch is a <tag:<PB>node> and links to `size + 1` nodes. */
 struct PB_(branch) { struct PB_(node) base, *child[TREE_ORDER]; };
-/** @return Upcasts `as_node` to a branch. */
+/** @return Downcasts `as_node` to a branch. */
 static struct PB_(branch) *PB_(branch)(struct PB_(node) *const as_leaf)
 	{ return (struct PB_(branch) *)(void *)
 	((char *)as_leaf - offsetof(struct PB_(branch), base)); }
-/** @return Upcasts `as_node` to a branch. */
+/** @return Downcasts `as_node` to a branch. */
 static const struct PB_(branch) *PB_(branch_c)(const struct PB_(node) *
 	const as_node) { return (const struct PB_(branch) *)(const void *)
 	((const char *)as_node - offsetof(struct PB_(branch), base)); }
@@ -180,8 +180,7 @@ struct PB_(ref) { struct PB_(node) *node; unsigned height, idx; };
 struct PB_(ref_c) { const struct PB_(node) *node; unsigned height, idx; };
 struct PB_(tree) { struct PB_(node) *node; unsigned height; };
 /** To initialize it to an idle state, see <fn:<B>tree>, `TRIE_IDLE`, `{0}`
- (`C99`), or being `static`. This is a B-tree, as
- <Bayer, McCreight, 1972 Large>.
+ (`C99`), or being `static`.
 
  ![States.](../doc/states.png) */
 struct B_(tree);
@@ -191,7 +190,7 @@ struct B_(tree) { struct PB_(tree) root; };
 
 /** On `TREE_VALUE`, creates a map from pointer-to-<typedef:<PB>key> to
  pointer-to-<typedef:<PB>value>. The reason these are pointers is because it
- is not connected in memory. */
+ is not connected in memory. (Does `key` still have to be?) */
 struct B_(tree_entry) { PB_(key) *key; PB_(value) *value; };
 struct B_(tree_entry_c) { PB_(key_c) *key; PB_(value_c) *value; };
 /** On `TREE_VALUE`, otherwise it's just an alias for
@@ -270,7 +269,7 @@ static int PB_(to_predecessor)(struct PB_(tree) tree,
 	*ref = prev;
 }	return 1; /* Jumped nodes. */
 }
-/** @return If `ref_c` in `tree` has a successor, then it increments. */
+/* @return If `ref_c` in `tree` has a successor, then it increments. */
 #define TREE_TO_SUCCESSOR(to_successor_c, ref_c) \
 static int PB_(to_successor_c)(struct PB_(tree) tree, \
 	struct PB_(ref_c) *const ref) { \
@@ -352,21 +351,17 @@ static struct PB_(iterator) PB_(iterator)(struct B_(tree) *const tree) {
 /** Advances `it`. @return Element or null. @implements `next` */
 static PB_(entry) PB_(next)(struct PB_(iterator) *const it) {
 	assert(it);
-	if(!it->root) goto finished;
-	if((it->seen || !it->i.node)) {
-		printf("**[next:suc]\n");
-		if(!PB_(to_successor)(*it->root, &it->i)) goto finished;
+	if(!it->root
+		|| (it->seen || !it->i.node) && !PB_(to_successor)(*it->root, &it->i)) {
+		it->i.node = 0, it->seen = 0;
+		return PB_(null_entry)();
 	}
-	printf("[next: %s:%u ... seen %d]\n", orcify(it->i.node), it->i.idx, it->seen);
 	it->seen = 1;
 	return PB_(leaf_to_entry)(it->i.node, it->i.idx);
-finished:
-	it->i.node = 0, it->seen = 0;
-	return PB_(null_entry)();
 }
 /** Move to previous `it`. @return Element or null. @implements `previous` */
 static PB_(entry) PB_(previous)(struct PB_(iterator) *const it) {
-	assert(it);
+	assert(it && 0);
 	if(!it->root || !it->i.node && it->seen != -1
 		|| it->seen && !PB_(to_predecessor)(*it->root, &it->i))
 		return PB_(null_entry)();
@@ -374,35 +369,29 @@ static PB_(entry) PB_(previous)(struct PB_(iterator) *const it) {
 	return PB_(leaf_to_entry)(it->i.node, it->i.idx);
 }
 
-/** One height at a time; _cf_ lower. (fixme: macro, stick in TREE_LOWER.) */
-static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
-	unsigned hi = lo->node->size;
-	lo->idx = 0;
-	if(!hi) return;
-	do {
-		const unsigned m = (lo->idx + hi) / 2;
-		if(PB_(compare)(key, lo->node->key[m]) > 0) lo->idx = m + 1;
-		else hi = m;
-	} while(lo->idx < hi);
-}
+/* Want to find slightly different things; code re-use is bad. Confusing. */
 #define TREE_FORTREE(i) i.node = tree->node, i.height = tree->height; ; \
 	i.node = PB_(branch_c)(i.node)->child[i.idx], i.height--
 #define TREE_START(i) unsigned hi = i.node->size; i.idx = 0;
-#define TREE_NODE(i) if(!hi) continue; \
+#define TREE_FORNODE(i, continue) if(!hi) continue; \
 do { \
 	const unsigned m = (i.idx + hi) / 2; \
 	if(PB_(compare)(key, i.node->key[m]) > 0) i.idx = m + 1; \
 	else hi = m; \
 } while(i.idx < hi);
 #define TREE_FLIPPED(i) PB_(compare)(i.node->key[i.idx], key) <= 0
-
+/** One height at a time. */
+static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
+	TREE_START((*lo))
+	TREE_FORNODE((*lo), return)
+}
 /** Finds lower-bound of `key` in `tree`. */
 static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) i, lo = { 0, 0, 0 };
 	for(TREE_FORTREE(i)) {
 		TREE_START(i)
-		TREE_NODE(i)
+		TREE_FORNODE(i, continue)
 		if(i.idx < i.node->size) {
 			lo = i;
 			/* Might be useful expanding this to multi-keys. */
@@ -420,7 +409,7 @@ static struct PB_(ref) PB_(lower_r_insert)(struct PB_(tree) *const tree,
 	for(TREE_FORTREE(lo)) {
 		TREE_START(lo)
 		if(hi < TREE_MAX) *hole = lo;
-		TREE_NODE(lo)
+		TREE_FORNODE(lo, continue)
 		if(lo.node->size < TREE_MAX) hole->idx = lo.idx;
 		if(lo.idx < lo.node->size && TREE_FLIPPED(lo)) { *is_equal = 1; break; }
 		if(!lo.height) break;
@@ -434,7 +423,7 @@ static struct PB_(ref) PB_(lower_r_remove)(struct PB_(tree) *const tree,
 	struct PB_(ref) lo;
 	for(TREE_FORTREE(lo)) {
 		TREE_START(lo)
-		TREE_NODE(lo)
+		TREE_FORNODE(lo, continue)
 		if(lo.node->size > TREE_MIN || lo.height && (
 			lo.idx
 			&& PB_(branch)(lo.node)->child[lo.idx - 1]->size > TREE_MIN
@@ -446,37 +435,10 @@ static struct PB_(ref) PB_(lower_r_remove)(struct PB_(tree) *const tree,
 	}
 	return lo;
 }
-
-/* This is basically the same function for search, insert, and delete. */
-/* fixme: have an extra variable for search that keeps it tightly in bounds.
- THIS IS NOT CORRECT! */
-#define TREE_LOWER(NOSIZE, IDXSET, EQUALITY) { \
-	struct PB_(ref) i, lo = { 0, 0, 0 }; \
-printf("<lower!>\n");\
-	for(i.node = tree->node, i.height = tree->height; ; \
-		i.node = PB_(branch_c)(i.node)->child[i.idx], i.height--) { \
-		unsigned hi = i.node->size; \
-		i.idx = 0; \
-		NOSIZE; \
-		if(!hi) continue; \
-		do { \
-			const unsigned m = (i.idx + hi) / 2; \
-			if(PB_(compare)(key, i.node->key[m]) > 0) i.idx = m + 1; \
-			else hi = m; \
-		} while(i.idx < hi); \
-		IDXSET; \
-		if(i.idx < i.node->size) { \
-			lo = i; \
-			if(PB_(compare)(i.node->key[i.idx], key) <= 0) { \
-				EQUALITY; \
-				break; \
-			} \
-		} \
-		if(!i.height) break; \
-	} \
-	return lo; \
-}
-#undef TREE_LOWER
+#undef TREE_FORTREE
+#undef TREE_START
+#undef TREE_FORNODE
+#undef TREE_FLIPPED
 
 /** @param[tree] Can be null. @return Lower bound of `x` in `tree`.
  @order \O(\log |`tree`|) */
@@ -543,7 +505,7 @@ static void B_(tree_)(struct B_(tree) *const tree) {
 }
 
 /** Stores an iteration in a tree. Generally, changes in the topology of the
- tree invalidate it. */
+ tree invalidate it. (Future: have insert and delete with iterators.) */
 struct B_(tree_iterator) { struct PB_(iterator) _; };
 /** @return An iterator before the first element of `tree`. Can be null.
  @allow */
@@ -588,7 +550,8 @@ static void PB_(print)(const struct B_(tree) *const tree)
 
 #ifdef TREE_VALUE /* <!-- map */
 /** Packs `key` on the right side of `tree` without doing the usual
- restructuring. This is best followed by <fn:<B>tree_bulk_finish>.
+ restructuring. All other topology modification functions should be avoided
+ until followed by <fn:<B>tree_bulk_finish>.
  @param[value] A pointer to the key's value which is set by the function on
  returning true. A null pointer in this parameter causes the value to go
  uninitialized. This parameter is not there if one didn't specify `TREE_VALUE`.
