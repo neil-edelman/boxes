@@ -106,9 +106,9 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 		&& to_string_buffer_size >= 1 + 11 + 1 + ellipsis_len + 1 + 1);
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
-	it = BOX_(forward_begin)(box);
+	it = BOX_(forward)(box);
 	*b++ = left;
-	while(BOX_(is_element_c)(x = BOX_(forward_next)(&it))) {
+	while(BOX_(is_element_c)(x = BOX_(next_c)(&it))) {
 		PSTR_(to_string)(x, (char (*)[12])b);
 		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
@@ -116,7 +116,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size_t)(b - buffer)
 			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1)
-			if(BOX_(is_element_c)(BOX_(forward_next)(&it))) goto ellipsis;
+			if(BOX_(is_element_c)(BOX_(next_c)(&it))) goto ellipsis;
 			else break;
 	}
 	if(is_sep) b -= 2;

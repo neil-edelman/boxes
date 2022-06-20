@@ -275,6 +275,7 @@ static int PB_(to_predecessor)(struct PB_(tree) tree,
 static int PB_(to_successor_c)(struct PB_(tree) tree, \
 	struct PB_(ref_c) *const ref) { \
 	assert(ref); \
+printf("<succ>\n");\
 	if(!tree.node || tree.height == UINT_MAX) return 0; /* Empty. */ \
 	if(!ref->node) \
 		ref->node = tree.node, ref->height = tree.height, ref->idx = 0; \
@@ -282,7 +283,7 @@ static int PB_(to_successor_c)(struct PB_(tree) tree, \
 		ref->idx++; \
 	while(ref->height) ref->height--, \
 		ref->node = PB_(branch_c)(ref->node)->child[ref->idx], ref->idx = 0; \
-	if(ref->idx < ref->node->size) return 1; /* Likely. */ \
+	if(ref->idx < ref->node->size) return printf("<node %u>\n", ref->idx), 1; /* Likely. */ \
 	if(!ref->node->size) return 0; /* When bulk-loading. */ \
 {	/* Re-descend; pick the minimum height node that has a next key. */ \
 	struct PB_(ref_c) next; \
@@ -297,9 +298,10 @@ static int PB_(to_successor_c)(struct PB_(tree) tree, \
 			if(PB_(compare)(x, tree.node->key[m]) > 0) a0 = m + 1; else a1 = m;\
 		} \
 		if(a0 < tree.node->size) \
+printf("<maybe %s:%u>\n", orcify(tree.node), a0),\
 			next.node = tree.node, next.height = tree.height, next.idx = a0; \
 	} \
-	if(!next.node) return 0; /* Off the right. */ \
+	if(!next.node) return printf("<successor:end>\n"), 0; /* Off the right. */ \
 	*ref = next; \
 }	return 1; /* Jumped nodes. */ \
 }
@@ -317,18 +319,17 @@ static int PB_(is_element_c)(PB_(entry_c) e) {
 #endif
 }
 /* @implements `forward` */
-struct PB_(forward) { const struct PB_(tree) *root; struct PB_(ref_c) cur; };
-/** @return Before `tree`. @implements `forward_begin` */
-static struct PB_(forward) PB_(forward_begin)(const struct B_(tree) *const
-	tree) {
-	struct PB_(forward) it;
-	it.root = tree ? &tree->root : 0, it.cur.node = 0;
+struct PB_(forward) { const struct PB_(tree) *root; struct PB_(ref_c) next; };
+/** @return Before `tree`. @implements `forward` */
+static struct PB_(forward) PB_(forward)(const struct B_(tree) *const
+	tree) { struct PB_(forward) it;
+	it.root = tree ? &tree->root : 0, it.next.node = 0;
 	return it;
 }
-/** Move to next `it`. @return Element or null. @implements `forward_next` */
-static PB_(entry_c) PB_(forward_next)(struct PB_(forward) *const it) {
-	return assert(it), PB_(to_successor_c)(*it->root, &it->cur) ?
-		PB_(leaf_to_entry_c)(it->cur.node, it->cur.idx) : PB_(null_entry_c)();
+/** Move to next `it`. @return Element or null. @implements `next_c` */
+static PB_(entry_c) PB_(next_c)(struct PB_(forward) *const it) {
+	return assert(it), PB_(to_successor_c)(*it->root, &it->next) ?
+		PB_(leaf_to_entry_c)(it->next.node, it->next.idx) : PB_(null_entry_c)();
 }
 
 #define BOX_ITERATOR PB_(entry)
@@ -340,42 +341,37 @@ static int PB_(is_element)(const PB_(entry) e) {
 	return !!e;
 #endif
 }
-/* A certain position and the top level tree for backtracking.
- @implements `iterator` */
-struct PB_(iterator) { struct PB_(tree) *root; struct PB_(ref) cur; int dir; };
-/* fixme: Nopeeee. I think that it should be one null entry and circular. */
-/** @return Iterator before the first element in `tree`.
- @implements `begin` */
-static struct PB_(iterator) PB_(begin)(struct B_(tree) *const tree) {
+/* @implements `iterator` */
+struct PB_(iterator) { struct PB_(tree) *root; struct PB_(ref) i; int seen; };
+/** @return Iterator to null in `tree`. @implements `iterator` */
+static struct PB_(iterator) PB_(iterator)(struct B_(tree) *const tree) {
 	struct PB_(iterator) it;
-	it.root = tree ? &tree->root : 0, it.cur.node = 0, it.dir = 1;
-	return it;
-}
-/** @return Iterator to the last element in `tree`.
- @implements `end` */
-static struct PB_(iterator) PB_(end)(struct B_(tree) *const tree) {
-	struct PB_(iterator) it;
-	it.root = tree ? &tree->root : 0, it.cur.node = 0, it.dir = -1;
+	it.root = tree ? &tree->root : 0, it.i.node = 0, it.seen = 0;
 	return it;
 }
 /** Advances `it`. @return Element or null. @implements `next` */
 static PB_(entry) PB_(next)(struct PB_(iterator) *const it) {
 	assert(it);
-	if(!it->root || !it->cur.node /*nope*/&& it->dir != 1
-		|| it->dir && !PB_(to_successor)(*it->root, &it->cur)
-		|| it->cur.idx >= it->cur.node->size)
-		return PB_(null_entry)();
-	it->dir = 1;
-	return PB_(leaf_to_entry)(it->cur.node, it->cur.idx);
+	if(!it->root) goto finished;
+	if((it->seen || !it->i.node)) {
+		printf("**[next:suc]\n");
+		if(!PB_(to_successor)(*it->root, &it->i)) goto finished;
+	}
+	printf("[next: %s:%u ... seen %d]\n", orcify(it->i.node), it->i.idx, it->seen);
+	it->seen = 1;
+	return PB_(leaf_to_entry)(it->i.node, it->i.idx);
+finished:
+	it->i.node = 0, it->seen = 0;
+	return PB_(null_entry)();
 }
 /** Move to previous `it`. @return Element or null. @implements `previous` */
 static PB_(entry) PB_(previous)(struct PB_(iterator) *const it) {
 	assert(it);
-	if(!it->root || !it->cur.node && it->dir != -1
-		|| it->dir && !PB_(to_predecessor)(*it->root, &it->cur))
+	if(!it->root || !it->i.node && it->seen != -1
+		|| it->seen && !PB_(to_predecessor)(*it->root, &it->i))
 		return PB_(null_entry)();
-	it->dir = -1;
-	return PB_(leaf_to_entry)(it->cur.node, it->cur.idx);
+	it->seen = -1;
+	return PB_(leaf_to_entry)(it->i.node, it->i.idx);
 }
 
 /** One height at a time; _cf_ lower. (fixme: macro, stick in TREE_LOWER.) */
@@ -390,53 +386,57 @@ static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 	} while(lo->idx < hi);
 }
 /* This is basically the same function for search, insert, and delete. */
-/* fixme: have an extra variable for search that keeps it tightly in bounds. */
+/* fixme: have an extra variable for search that keeps it tightly in bounds.
+ THIS IS NOT CORRECT! */
 #define TREE_LOWER(NOSIZE, IDXSET, EQUALITY) { \
-	struct PB_(ref) lo; \
-	for(lo.node = sub->node, lo.height = sub->height; ; \
-		lo.node = PB_(branch_c)(lo.node)->child[lo.idx], lo.height--) { \
-		unsigned hi = lo.node->size; \
-		lo.idx = 0; \
+	struct PB_(ref) i, lo = { 0, 0, 0 }; \
+printf("<lower!>\n");\
+	for(i.node = tree->node, i.height = tree->height; ; \
+		i.node = PB_(branch_c)(i.node)->child[i.idx], i.height--) { \
+		unsigned hi = i.node->size; \
+		i.idx = 0; \
 		NOSIZE; \
 		if(!hi) continue; \
 		do { \
-			const unsigned m = (lo.idx + hi) / 2; \
-			if(PB_(compare)(key, lo.node->key[m]) > 0) lo.idx = m + 1; \
+			const unsigned m = (i.idx + hi) / 2; \
+			if(PB_(compare)(key, i.node->key[m]) > 0) i.idx = m + 1; \
 			else hi = m; \
-		} while(lo.idx < hi); \
+		} while(i.idx < hi); \
 		IDXSET; \
-		if(lo.idx < lo.node->size \
-			&& PB_(compare)(lo.node->key[lo.idx], key) <= 0) { \
-			EQUALITY; \
-			break; \
+		if(i.idx < i.node->size) { \
+			lo = i; \
+			if(PB_(compare)(i.node->key[i.idx], key) <= 0) { \
+				EQUALITY; \
+				break; \
+			} \
 		} \
-		if(!lo.height) break; \
+		if(!i.height) break; \
 	} \
 	return lo; \
 }
-/** Finds lower-bound of `key` in `sub`. */
-static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const sub,
+/** Finds lower-bound of `key` in `tree`. */
+static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
 	const PB_(key) key)
 	TREE_LOWER((void)0, (void)0, (void)0)
-/** Finds lower-bound of `key` in `sub` while counting the non-filled `hole`
+/** Finds lower-bound of `key` in `tree` while counting the non-filled `hole`
  and `is_equal`. */
-static struct PB_(ref) PB_(lower_r_insert)(struct PB_(tree) *const sub,
+static struct PB_(ref) PB_(lower_r_insert)(struct PB_(tree) *const tree,
 	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal)
-	TREE_LOWER(if(hi < TREE_MAX) *hole = lo,
-	if(lo.node->size < TREE_MAX) hole->idx = lo.idx,
+	TREE_LOWER(if(hi < TREE_MAX) *hole = i,
+	if(i.node->size < TREE_MAX) hole->idx = i.idx,
 	*is_equal = 1)
-/** Finds lower-bound of `key` in `sub` while counting the non-minimum `hole`
+/** Finds lower-bound of `key` in `tree` while counting the non-minimum `hole`
  and `is_equal`. */
-static struct PB_(ref) PB_(lower_r_remove)(struct PB_(tree) *const sub,
+static struct PB_(ref) PB_(lower_r_remove)(struct PB_(tree) *const tree,
 	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal)
 	TREE_LOWER((void)0, /* fixme: What to do when this happens? */
-	if(lo.node->size > TREE_MIN || lo.height
+	if(i.node->size > TREE_MIN || i.height
 	&& (
-		lo.idx
-		&& PB_(branch)(lo.node)->child[lo.idx - 1]->size > TREE_MIN
-		|| lo.idx < lo.node->size
-		&& PB_(branch)(lo.node)->child[lo.idx + 1]->size > TREE_MIN
-	)) *hole = lo,
+		i.idx
+		&& PB_(branch)(i.node)->child[i.idx - 1]->size > TREE_MIN
+		|| i.idx < i.node->size
+		&& PB_(branch)(i.node)->child[i.idx + 1]->size > TREE_MIN
+	)) *hole = i,
 	*is_equal = 1)
 #undef TREE_LOWER
 
@@ -450,22 +450,22 @@ static struct PB_(ref) PB_(lower)(struct PB_(tree) tree, const PB_(key) x) {
 	}
 }
 
-/** Frees non-empty `sub` and it's children recursively, but doesn't put it
+/** Frees non-empty `tree` and it's children recursively, but doesn't put it
  to idle or clear pointers.
  @param[one] If `one` is valid, tries to keep one leaf. Set to null before. */
-static void PB_(clear_r)(struct PB_(tree) sub, struct PB_(node) **const keep) {
-	assert(sub.node);
-	if(!sub.height) {
-		if(keep && !*keep) *keep = sub.node;
-		else free(sub.node);
+static void PB_(clear_r)(struct PB_(tree) tree, struct PB_(node) **const keep) {
+	assert(tree.node);
+	if(!tree.height) {
+		if(keep && !*keep) *keep = tree.node;
+		else free(tree.node);
 	} else {
 		struct PB_(tree) child;
 		unsigned i;
-		child.height = sub.height - 1;
-		for(i = 0; i <= sub.node->size; i++)
-			child.node = PB_(branch)(sub.node)->child[i],
+		child.height = tree.height - 1;
+		for(i = 0; i <= tree.node->size; i++)
+			child.node = PB_(branch)(tree.node)->child[i],
 			PB_(clear_r)(child, keep);
-		free(PB_(branch)(sub.node));
+		free(PB_(branch)(tree.node));
 	}
 }
 /** `tree` can be null. */
@@ -509,8 +509,8 @@ static void B_(tree_)(struct B_(tree) *const tree) {
 struct B_(tree_iterator) { struct PB_(iterator) _; };
 /** @return An iterator before the first element of `tree`. Can be null.
  @allow */
-static struct B_(tree_iterator) B_(tree_begin)(struct B_(tree) *const tree)
-	{ struct B_(tree_iterator) it; it._ = PB_(begin)(tree); return it; }
+static struct B_(tree_iterator) B_(tree_iterator)(struct B_(tree) *const tree)
+	{ struct B_(tree_iterator) it; it._ = PB_(iterator)(tree); return it; }
 /** Advances `it` to the next element. @return A pointer to the current
  element or null. @allow */
 static PB_(entry) B_(tree_next)(struct B_(tree_iterator) *const it)
@@ -523,9 +523,9 @@ static struct B_(tree_iterator) B_(tree_lower_iterator)
 	(struct B_(tree) *const tree, const PB_(key) x) {
 	struct B_(tree_iterator) it;
 	if(!tree) return it._.root = 0, it;
-	it._.cur = PB_(lower)(tree->root, x);
+	it._.i = PB_(lower)(tree->root, x);
 	it._.root = &tree->root;
-	it._.dir = 0;
+	it._.seen = 0;
 	return it;
 }
 
@@ -796,7 +796,7 @@ descend: /* Record last node that has space. */
 	{
 		int is_equal = 0;
 		hole.node = 0;
-		add = PB_(insert_lower_r)(&tree->root, key, &hole, &is_equal);
+		add = PB_(lower_r_insert)(&tree->root, key, &hole, &is_equal);
 		if(is_equal) {
 			/* Assumes key is unique; we might not want this for multi-maps,
 			 but that is not implemented yet. */
@@ -976,7 +976,7 @@ static int B_(tree_remove)(struct B_(tree) *const tree,
 { /* Find the key while keeping track of the hole. */
 	int is_equal = 0;
 	hole.node = 0;
-	rm = PB_(remove_lower_r)(&tree->root, key, &hole, &is_equal);
+	rm = PB_(lower_r_remove)(&tree->root, key, &hole, &is_equal);
 	if(!is_equal) return 0;
 }
 	printf("remove: hole %s:%u -> rm %s:%u.\n",
@@ -1027,19 +1027,19 @@ struct PB_(scaffold) {
 	struct PB_(node) **data;
 	struct { struct PB_(node) **head, **fresh, **cursor; } branch, leaf;
 };
-static int PB_(count_r)(struct PB_(tree) sub, struct tree_count *const no) {
-	assert(sub.node && sub.height);
+static int PB_(count_r)(struct PB_(tree) tree, struct tree_count *const no) {
+	assert(tree.node && tree.height);
 	if(!++no->branches) return 0;
-	if(sub.height == 1) {
+	if(tree.height == 1) {
 		/* Overflow; aren't guaranteed against this. */
-		if(no->leaves + sub.node->size + 1 < no->leaves) return 0;
-		no->leaves += sub.node->size + 1;
+		if(no->leaves + tree.node->size + 1 < no->leaves) return 0;
+		no->leaves += tree.node->size + 1;
 	} else {
 		unsigned char i;
-		for(i = 0; i <= sub.node->size; i++) {
+		for(i = 0; i <= tree.node->size; i++) {
 			struct PB_(tree) child;
-			child.node = PB_(branch)(sub.node)->child[i];
-			child.height = sub.height - 1;
+			child.node = PB_(branch)(tree.node)->child[i];
+			child.height = tree.height - 1;
 			if(!PB_(count_r)(child, no)) return 0;
 		}
 	}
@@ -1096,59 +1096,59 @@ static void PB_(cannibalize)(const struct B_(tree) *const tree,
 		printf("cannibal just one leaf %s\n", orcify(ref.node));
 	}
 }
-static struct PB_(node) *PB_(clone_r)(struct PB_(tree) cpy,
+static struct PB_(node) *PB_(clone_r)(struct PB_(tree) src,
 	struct PB_(scaffold) *const sc) {
 	struct PB_(node) *node;
-	if(cpy.height) {
-		struct PB_(branch) *const cpyb = PB_(branch)(cpy.node),
+	if(src.height) {
+		struct PB_(branch) *const cpyb = PB_(branch)(src.node),
 			*const branch = PB_(branch)(node = *sc->branch.cursor++);
 		unsigned i;
-		*node = *cpy.node; /* Copy node. */
-		cpy.height--;
-		for(i = 0; i <= cpy.node->size; i++) { /* Different links. */
-			cpy.node = cpyb->child[i];
-			branch->child[i] = PB_(clone_r)(cpy, sc);
+		*node = *src.node; /* Copy node. */
+		src.height--;
+		for(i = 0; i <= src.node->size; i++) { /* Different links. */
+			src.node = cpyb->child[i];
+			branch->child[i] = PB_(clone_r)(src, sc);
 		}
 	} else { /* Leaves. */
 		node = *sc->leaf.cursor++;
-		*node = *cpy.node;
+		*node = *src.node;
 	}
 	return node;
 }
-static struct PB_(tree) PB_(clone)(const struct PB_(tree) *const clone,
+static struct PB_(tree) PB_(clone)(const struct PB_(tree) *const src,
 	struct PB_(scaffold) *const sc) {
 	struct PB_(tree) sub;
-	assert(clone && clone->node && sc);
+	assert(src && src->node && sc);
 	printf("Have %zu in scaffold.\n", sc->no);
 	/* Go back to the beginning of the scaffold and pick off one by one. */
 	sc->branch.cursor = sc->branch.head;
 	sc->leaf.cursor = sc->leaf.head;
-	sub.node = PB_(clone_r)(*clone, sc);
-	sub.height = clone->height;
+	sub.node = PB_(clone_r)(*src, sc);
+	sub.height = src->height;
 	/* Used up all of them. No concurrent modifications, please. */
 	assert(sc->branch.cursor == sc->leaf.head
 		&& sc->leaf.cursor == sc->data + sc->no);
 	return sub;
 }
-/** Copies and overwrites `copy` to `tree`.
- @param[copy] In the case where it's null or idle, if `tree` is empty, then it
- continues to be.
+/** `source` is copied to, and overwrites, `tree`.
+ @param[source] In the case where it's null or idle, if `tree` is empty, then
+ it continues to be.
  @return Success, otherwise `tree` is not modified.
  @throws[malloc] @throws[EDOM] `tree` is null. @throws[ERANGE] The size of
- `copy` doesn't fit into `size_t`. @allow */
+ `source` doesn't fit into `size_t`. @allow */
 static int B_(tree_clone)(struct B_(tree) *const tree,
-	const struct B_(tree) *const clone) {
+	const struct B_(tree) *const source) {
 	struct PB_(scaffold) sc;
 	int success = 1;
 	sc.data = 0; /* Need to keep this updated to catch. */
 	if(!tree) { errno = EDOM; goto catch; }
 	/* Count the number of nodes and set up to copy. */
-	if(!PB_(count)(tree, &sc.victim) || !PB_(count)(clone, &sc.clone)
+	if(!PB_(count)(tree, &sc.victim) || !PB_(count)(source, &sc.clone)
 		|| (sc.no = sc.clone.branches + sc.clone.leaves) < sc.clone.branches)
 		{ errno = ERANGE; goto catch; } /* Overflow. */
 	printf("<B>tree_clone: tree.branches %zu; tree.leaves %zu; "
-		"copy.branches %zu; copy.leaves %zu.\n",
-		sc.victim.branches, sc.victim.leaves, sc.clone.branches, sc.clone.leaves);
+		"copy.branches %zu; copy.leaves %zu.\n", sc.victim.branches,
+		sc.victim.leaves, sc.clone.branches, sc.clone.leaves);
 	if(!sc.no) { PB_(clear)(tree); goto finally; } /* No need to allocate. */
 	if(!(sc.data = malloc(sizeof *sc.data * sc.no)))
 		{ if(!errno) errno = ERANGE; goto catch; }
@@ -1206,7 +1206,7 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 			printf("> scaffold %s\n", orcify(sc.data[i]));
 	}
 	/* The scaffold has the exact number of nodes we need. Overwrite. */
-	tree->root = PB_(clone)(&clone->root, &sc);
+	tree->root = PB_(clone)(&source->root, &sc);
 	goto finally;
 catch:
 	success = 0;
@@ -1239,9 +1239,8 @@ static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
 	PB_(key) k;
 	memset(&k, 0, sizeof k);
-	PB_(is_element_c); PB_(forward_begin); PB_(forward_next);
-	PB_(is_element);
-	B_(tree)(); B_(tree_)(0); B_(tree_begin)(0); B_(tree_next)(0);
+	PB_(is_element_c); PB_(forward); PB_(next_c); PB_(is_element);
+	B_(tree)(); B_(tree_)(0); B_(tree_iterator)(0); B_(tree_next)(0);
 	B_(tree_clear)(0);
 	B_(tree_lower_iterator)(0, k); B_(tree_lower_value)(0, k);
 #ifdef TREE_VALUE

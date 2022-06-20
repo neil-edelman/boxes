@@ -211,7 +211,7 @@ static void PB_(test)(void) {
 		assert(!it._.root);
 	value = B_(tree_lower_value)(0, PB_(test_to_key)(n + 0)), assert(!value);
 	it = B_(tree_lower_iterator)(&tree, PB_(test_to_key)(n + 0)),
-		assert(!it._.cur.node);
+		assert(!it._.i.node);
 	value = B_(tree_lower_value)(&tree, PB_(test_to_key)(n + 0)),assert(!value);
 
 	/* Bulk, (simple.) */
@@ -252,7 +252,7 @@ static void PB_(test)(void) {
 
 	/* Iteration; checksum. */
 	memset(&last, 0, sizeof last);
-	it = B_(tree_begin)(&tree), i = 0;
+	it = B_(tree_iterator)(&tree), i = 0;
 	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
 		char z[12];
 		PB_(to_string)(PB_(to_const)(entry), &z);
@@ -305,7 +305,7 @@ static void PB_(test)(void) {
 
 	/* Iteration; checksum. */
 	memset(&last, 0, sizeof last);
-	it = B_(tree_begin)(&tree), i = 0;
+	it = B_(tree_iterator)(&tree), i = 0;
 	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
 		char z[12];
 		PB_(to_string)(PB_(to_const)(entry), &z);
