@@ -257,7 +257,7 @@ static void manual_int(void) {
 			tree_int_graph(&consecutive, fn);
 		}
 		printf("Remove %u.\n", rm);
-		int_tree_remove(&consecutive, rm);
+		if(!int_tree_remove(&consecutive, rm)) assert(0);
 		sprintf(fn, "graph/consecutive-rm-%u.gv", (unsigned)rm);
 		tree_int_graph(&consecutive, fn);
 		assert(0);

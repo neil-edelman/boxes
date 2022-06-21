@@ -401,9 +401,10 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
 }
 /** Finds lower-bound of `key` in `tree` while counting the non-filled `hole`
  and `is_equal`. (fixme: is_equal useless) */
-static struct PB_(ref) PB_(lower_r_insert)(struct PB_(tree) *const tree,
+static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) *const tree,
 	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal) {
 	struct PB_(ref) lo;
+	hole->node = 0;
 	for(TREE_FORTREE(lo)) {
 		TREE_START(lo)
 		if(hi < TREE_MAX) *hole = lo;
@@ -416,9 +417,10 @@ static struct PB_(ref) PB_(lower_r_insert)(struct PB_(tree) *const tree,
 }
 /** Finds lower-bound of `key` in `tree` while counting the non-minimum `hole`
  and `is_equal`. (fixme: is_equal useless) */
-static struct PB_(ref) PB_(lower_r_remove)(struct PB_(tree) *const tree,
-	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal) {
+static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
+	const PB_(key) key, struct PB_(ref) *const lump) {
 	struct PB_(ref) lo;
+	lump->node = 0;
 	for(TREE_FORTREE(lo)) {
 		TREE_START(lo)
 		TREE_FORNODE(lo, continue)
@@ -427,9 +429,9 @@ static struct PB_(ref) PB_(lower_r_remove)(struct PB_(tree) *const tree,
 			&& PB_(branch)(lo.node)->child[lo.idx - 1]->size > TREE_MIN
 			|| lo.idx < lo.node->size
 			&& PB_(branch)(lo.node)->child[lo.idx + 1]->size > TREE_MIN
-		)) *hole = lo;
-		if(lo.idx < lo.node->size && TREE_FLIPPED(lo)) { *is_equal = 1; break; }
-		if(!lo.height) break;
+		)) *lump = lo;
+		if(lo.idx < lo.node->size && TREE_FLIPPED(lo)) break;
+		if(!lo.height) { lo.node = 0; break; } /* Was not in. */
 	}
 	return lo;
 }
@@ -794,8 +796,7 @@ empty: /* Reserved dynamic memory, but tree is empty. */
 descend: /* Record last node that has space. */
 	{
 		int is_equal = 0;
-		hole.node = 0;
-		add = PB_(lower_r_insert)(&tree->root, key, &hole, &is_equal);
+		add = PB_(lookup_insert)(&tree->root, key, &hole, &is_equal);
 		if(is_equal) {
 			/* Assumes key is unique; we might not want this for multi-maps,
 			 but that is not implemented yet. */
@@ -968,58 +969,69 @@ grow: /* Leaf is full. */ {
 static int B_(tree_remove)(struct B_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) rm, lump;
-	struct PB_(ref) pred;
-	struct PB_(ref) succ;
 	assert(tree);
-	if(!(rm.node = tree->root.node) || tree->root.height == UINT_MAX) return 0;
-{ /* Find the key while keeping track of the lump (opposite of the hole.) */
-	int is_equal = 0;
-	lump.node = 0;
-	rm = PB_(lower_r_remove)(&tree->root, key, &lump, &is_equal);
-	if(!is_equal) return 0;
-}
-	/*while(ref->height) ref->height--,
-		ref->node = PB_(branch_c)(ref->node)->child[ref->idx],
-		ref->idx = ref->node->size;
-	if(ref->idx) return ref->idx--, 1; <-- predecessor */
-	/*ref->idx++; \
-while(ref->height) ref->height--, \
-	ref->node = PB_(branch_c)(ref->node)->child[ref->idx], ref->idx = 0; \
-if(ref->idx < ref->node->size) return 1; <-- successor */
-
-	printf("remove: lump %s:%u -> rm %s:%u.\n",
-		orcify(lump.node), lump.idx, orcify(rm.node), rm.idx);
+	/* Traverse down the tree until the `key`. */
+	if(!(rm.node = tree->root.node) || tree->root.height == UINT_MAX
+		|| !(rm = PB_(lookup_remove)(&tree->root, key, &lump)).node) return 0;
+	if(rm.height) goto make_leaf; else goto leaf;
+make_leaf: { /* Replace the internal node by it's predecessor or successor. */
+	struct PB_(ref) succ;
+	struct PB_(ref) pred;
 	pred = rm;
-	if(PB_(to_predecessor)(tree->root, &pred)) printf("rm has predecessor %s(%u):%u\n",
+	if(PB_(to_predecessor)(tree->root, &pred))
+		printf("rm has predecessor %s(%u):%u\n",
 		orcify(pred.node), pred.height, pred.idx);
 	else printf("rm doesn't have predecessor\n");
 	succ = rm;
-	if(PB_(to_successor)(tree->root, &succ)) printf("rm has successor %s(%u):%u\n",
+	if(PB_(to_successor)(tree->root, &succ))
+		printf("rm has successor %s(%u):%u\n",
 		orcify(succ.node), succ.height, succ.idx);
 	else printf("rm doesn't have successor\n");
-	if(!rm.height) goto bottom;
-{ /* Splits to pick the lowest hole from in-order predecessor and successor. */
+	/* This will be more efficient duplicating code? it actually doesn't need
+	 all the code.
+	while(ref->height) ref->height--,
+		ref->node = PB_(branch_c)(ref->node)->child[ref->idx],
+		ref->idx = ref->node->size;
+	if(ref->idx) return ref->idx--, 1; <-- predecessor
+	ref->idx++;
+	 while(ref->height) ref->height--,
+	ref->node = PB_(branch_c)(ref->node)->child[ref->idx], ref->idx = 0;
+	if(ref->idx < ref->node->size) return 1; <-- successor */
 	assert(0);
-} bottom:
+} leaf: /* Deleting from a leaf. */
+	printf("remove: lump %s(%u):%u -> rm %s(%u):%u.\n",
+		orcify(lump.node), lump.height, lump.idx,
+		orcify(rm.node), rm.height, rm.idx);
 	if(rm.node == lump.node) goto end;
-	if(!lump.node) goto shrink;
-	/*assert(0);*/
+	else if(lump.node) goto merge;
+	else goto shrink;
+merge: { /* Merge two. Prefer less work. */
+	struct PB_(node) *cursor, *left, *right;
+	struct PB_(branch) *const lumpb = PB_(branch)(lump.node);
+	assert(lump.height && lump.idx <= lump.node->size && lump.node->size > 0);
+	cursor = lumpb->child[lump.idx];
+	if(lump.idx == lump.node->size)
+		left = lumpb->child[lump.idx - 1], right = cursor;
+	else
+		left = cursor, right = lumpb->child[lump.idx + 1];
+	printf("remove: merging %s and %s.\n", orcify(left), orcify(right));
+	assert(left->size == TREE_MIN && right->size == TREE_MIN);
+	assert(0);
+	PB_(find_idx)(&lump, key);
 	return 0;
-end:
-	assert(rm.node && rm.idx < rm.node->size && rm.node->size > TREE_MIN);
+} shrink: /* Every node along the path is minimal, the height decreases. */
+	assert(0);
+	return 0;
+end: /* Have enough keys to just delete from the leaf. */
+	assert(rm.node && rm.idx < rm.node->size && rm.node->size > TREE_MIN
+		&& !rm.height);
 	memmove(rm.node->key + rm.idx, rm.node->key + rm.idx + 1,
 		sizeof *rm.node->key * (rm.node->size - rm.idx - 1));
 #ifdef TREE_VALUE
 	memmove(rm.node->value + rm.idx, rm.node->value + rm.idx + 1,
 		sizeof *rm.node->value * (rm.node->size - rm.idx - 1));
 #endif
-	if(rm.height) {
-		/*assert(0);*/
-	}
 	rm.node->size--;
-	return 0;
-shrink:
-	assert(0);
 	return 0;
 }
 
