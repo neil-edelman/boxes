@@ -969,6 +969,13 @@ grow: /* Leaf is full. */ {
 static int B_(tree_remove)(struct B_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) rm, lump;
+	struct {
+		PB_(key) key;
+#ifdef TREE_VALUE
+		PB_(value) value;
+#endif
+		struct PB_(node) *link;
+	} temp;
 	assert(tree);
 	/* Traverse down the tree until the `key`. */
 	if(!(rm.node = tree->root.node) || tree->root.height == UINT_MAX
@@ -1005,15 +1012,21 @@ make_leaf: { /* Replace the internal node by it's predecessor or successor. */
 	if(rm.node == lump.node) goto end;
 	else if(lump.node) goto merge;
 	else goto shrink;
-merge: { /* Merge two. Prefer less work. */
-	struct PB_(node) *cursor, *left, *right;
+merge: { /* Merge two minimal. Prefer less work. */
+	struct PB_(ref) lump1;
+	struct PB_(node) *left, *right;
 	struct PB_(branch) *const lumpb = PB_(branch)(lump.node);
+	int is_right;
 	assert(lump.height && lump.idx <= lump.node->size && lump.node->size > 0);
-	cursor = lumpb->child[lump.idx];
+	lump1.node = lumpb->child[lump.idx];
+	lump1.height = lump.height - 1;
+	PB_(find_idx)(&lump1, key);
+	printf("remove: lump1 %s(%u):%u.\n",
+		orcify(lump1.node), lump1.height, lump1.idx);
 	if(lump.idx == lump.node->size)
-		left = lumpb->child[lump.idx - 1], right = cursor;
+		is_right = 1, left = lumpb->child[lump.idx - 1], right = lump1.node;
 	else
-		left = cursor, right = lumpb->child[lump.idx + 1];
+		is_right = 0, left = lump1.node, right = lumpb->child[lump.idx + 1];
 	printf("remove: merging %s and %s.\n", orcify(left), orcify(right));
 	assert(left->size == TREE_MIN && right->size == TREE_MIN);
 	assert(0);
