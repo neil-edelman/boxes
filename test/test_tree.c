@@ -241,6 +241,17 @@ static void manual_int(void) {
 		}
 	}
 
+	{ /* One level. */
+		const size_t size = TREE_ORDER + 1;
+		char fn[64];
+		for(i = 0; i < size; i++)
+			if(!int_tree_bulk_add(&consecutive, (unsigned)i + 1)) goto catch;
+		int_tree_bulk_finish(&consecutive);
+		tree_int_graph(&consecutive, "graph/small.gv");
+		int_tree_remove(&consecutive, size);
+		int_tree_clear(&consecutive);
+	}
+
 	{ /* Consecutive. */
 		const size_t size = 4 * TREE_ORDER - 1;
 		char fn[64];
