@@ -267,11 +267,13 @@ static void manual_int(void) {
 			sprintf(fn, "graph/consecutive-%u.gv", (unsigned)i);
 			tree_int_graph(&consecutive, fn);
 		}
-		printf("Remove %u.\n", rm);
-		if(!int_tree_remove(&consecutive, rm)) assert(0);
-		sprintf(fn, "graph/consecutive-rm-%u.gv", (unsigned)rm);
-		tree_int_graph(&consecutive, fn);
-		assert(0);
+		for(i = 0; i < size; i++) {
+			unsigned x = (unsigned)i + 1;
+			printf("__%u) Going to remove %u__\n", (unsigned)i, x);
+			if(!int_tree_remove(&consecutive, x)) assert(0);
+			sprintf(fn, "graph/consecutive-rm-%u.gv", (unsigned)x);
+			tree_int_graph(&consecutive, fn);
+		}
 	}
 
 #endif /* small --> */
