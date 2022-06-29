@@ -979,6 +979,7 @@ static int B_(tree_remove)(struct B_(tree) *const tree,
 			PB_(value) value;
 #endif
 			struct PB_(node) *link;
+			int link_lt;
 		} store[2];
 		unsigned next;
 	} temp;
@@ -990,8 +991,8 @@ static int B_(tree_remove)(struct B_(tree) *const tree,
 	printf("remove: %s(%u):%u <%u>; lump edge %s(%u):%u.\n",
 		   orcify(rm.node), rm.height, rm.idx, rm.node->key[rm.idx],
 		   orcify(lump.node), lump.height, lump.idx);
-	if(rm.height) goto make_leaf; else goto leaf;
-make_leaf: {
+	if(rm.height) goto branch; else goto leaf;
+branch: {
 	struct PB_(ref) succ;
 	struct PB_(ref) pred;
 	pred = rm;
@@ -1045,37 +1046,40 @@ balance: {
 		struct PB_(branch) *const lessb
 			= lump.height > 1 ? PB_(branch)(sibling.less) : 0;
 		const unsigned combined = child.node->size + sibling.less->size,
-			promote = combined / 2, to_more = promote + 1,
+			to_promote = combined / 2, to_more = to_promote + 1,
 			transfer = sibling.less->size - to_more;
-		printf("combined %u; promote %u; to_more %u -> transfer %u\n",
-			combined, promote, to_more, transfer);
-		assert(promote >= TREE_MIN && to_more <= sibling.less->size);
+		assert(lump.idx);
+		printf("combined %u; to_promote %u; to_more %u -> transfer %u\n",
+			combined, to_promote, to_more, transfer);
+		assert(to_promote >= TREE_MIN && to_more <= sibling.less->size);
 		assert(child.idx < child.node->size); /* fixme! */
 		/* Make way for the keys from the less. */
-		printf("move child %u\n", child.node->size - child.idx - 1);
+		printf("move child1 (%u)\n", child.node->size - child.idx - 1);
 		memmove(child.node->key + child.idx + 1 + transfer,
 			child.node->key + child.idx + 1,
 			sizeof *child.node->key * (child.node->size - child.idx - 1));
-		printf("move child %u\n", child.idx);
+		printf("move child2 (%u)\n", child.idx);
 		memmove(child.node->key + 1 + transfer, child.node->key,
 			sizeof *child.node->key * child.idx);
-		printf("demote <%u> into %s:%u %u\n", lump.node->key[lump.idx], orcify(lump.node), lump.idx, transfer);
-		child.node->key[transfer] = lump.node->key[lump.idx];
+		printf("demote <%u> %s:%u %u ->\n", lump.node->key[lump.idx-1], orcify(lump.node), lump.idx-1, transfer);
+		child.node->key[transfer] = lump.node->key[lump.idx - 1];
 		printf("less %u(%u) -> 0\n", to_more, transfer); /* fixme: choose */
 		memcpy(child.node->key, sibling.less->key + to_more,
 			sizeof *sibling.less->key * transfer);
 		PB_(graph)(tree, "graph/work1.gv");
-		lump.node->key[lump.idx] = sibling.less->key[promote];
+		lump.node->key[lump.idx - 1] = sibling.less->key[to_promote];
 		assert(child.node->size <= TREE_MAX - transfer);
 		child.node->size += transfer;
-		sibling.less->size = (unsigned char)promote;
+		sibling.less->size = (unsigned char)to_promote;
 		PB_(graph)(tree, "graph/work2.gv");
-		assert(0);
-		if(lessb);
+		if(lessb) {
+			assert(0);
+		}
 	} else {                        /* Split on the right. */
 		assert(0);
 	}
-
+	goto end;
+merge:
 	if(lump.idx < lump.node->size && lumpb->child[lump.idx + 1] && (lump.node->size > TREE_MIN)) {
 lean_left: /* Prefer left-leaning: less work for copying. */
 		/*left = child.node, right = lumpb->child[lump.idx + 1];*/
@@ -1109,7 +1113,7 @@ lean_left: /* Prefer left-leaning: less work for copying. */
 } shrink: /* Every node along the path is minimal, the height decreases. */
 	assert(0);
 	return 0;
-end: /* Have enough keys to just delete from the leaf. */
+excess:
 	assert(rm.node && rm.idx < rm.node->size && rm.node->size > TREE_MIN
 		&& !rm.height);
 	memmove(rm.node->key + rm.idx, rm.node->key + rm.idx + 1,
@@ -1119,7 +1123,9 @@ end: /* Have enough keys to just delete from the leaf. */
 		sizeof *rm.node->value * (rm.node->size - rm.idx - 1));
 #endif
 	rm.node->size--;
-	return 0;
+	goto end;
+end:
+	return 1;
 }
 
 
@@ -1170,14 +1176,14 @@ static void PB_(cannibalize_r)(struct PB_(ref) ref,
 	struct PB_(branch) *branch = PB_(branch)(ref.node);
 	const int keep_branch = sc->branch.cursor < sc->branch.fresh;
 	assert(ref.node && ref.height && sc);
-	if(keep_branch) *sc->branch.cursor = ref.node, printf("cannibal branch %s\n", orcify(*sc->branch.cursor)), sc->branch.cursor++;
+	if(keep_branch) *sc->branch.cursor = ref.node, sc->branch.cursor++;
 	if(ref.height == 1) { /* Children are leaves. */
 		unsigned n;
 		for(n = 0; n <= ref.node->size; n++) {
 			const int keep_leaf = sc->leaf.cursor < sc->leaf.fresh;
 			struct PB_(node) *child = branch->child[n];
-			if(keep_leaf) *sc->leaf.cursor = child, printf("cannibal leaf %s\n", orcify(child)), sc->leaf.cursor++;
-			else printf("cannibal free leaf %s\n", orcify(child)), free(child);
+			if(keep_leaf) *sc->leaf.cursor = child, sc->leaf.cursor++;
+			else free(child);
 		}
 	} else while(ref.idx <= ref.node->size) {
 		struct PB_(ref) child;
@@ -1187,7 +1193,7 @@ static void PB_(cannibalize_r)(struct PB_(ref) ref,
 		PB_(cannibalize_r)(child, sc);
 		ref.idx++;
 	}
-	if(!keep_branch) printf("cannibal free branch %s\n", orcify(branch)), free(branch);
+	if(!keep_branch) free(branch);
 }
 static void PB_(cannibalize)(const struct B_(tree) *const tree,
 	struct PB_(scaffold) *const sc) {
@@ -1203,7 +1209,6 @@ static void PB_(cannibalize)(const struct B_(tree) *const tree,
 		PB_(cannibalize_r)(ref, sc);
 	} else { /* Just one leaf. */
 		*sc->leaf.cursor = ref.node;
-		printf("cannibal just one leaf %s\n", orcify(ref.node));
 	}
 }
 static struct PB_(node) *PB_(clone_r)(struct PB_(tree) src,
@@ -1229,7 +1234,6 @@ static struct PB_(tree) PB_(clone)(const struct PB_(tree) *const src,
 	struct PB_(scaffold) *const sc) {
 	struct PB_(tree) sub;
 	assert(src && src->node && sc);
-	printf("Have %zu in scaffold.\n", sc->no);
 	/* Go back to the beginning of the scaffold and pick off one by one. */
 	sc->branch.cursor = sc->branch.head;
 	sc->leaf.cursor = sc->leaf.head;
@@ -1273,26 +1277,18 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 			? sc.source.leaves - sc.victim.leaves : 0;
 		need.branches = sc.source.branches > sc.victim.branches
 			? sc.source.branches - sc.victim.branches : 0;
-		printf("need { branches %zu leaves %zu }\n",
-			need.branches, need.leaves);
 		sc.branch.head = sc.data;
 		sc.branch.fresh = sc.branch.cursor
 			= sc.branch.head + sc.source.branches - need.branches;
 		sc.leaf.head = sc.branch.fresh + need.branches;
 		sc.leaf.fresh = sc.leaf.cursor
 			= sc.leaf.head + sc.source.leaves - need.leaves;
-		printf("index [0, %zu) is branch [%zu, %zu) leaf [%zu, %zu)\n", sc.no,
-			sc.branch.head - sc.data,
-			sc.branch.fresh - sc.data,
-			sc.leaf.head - sc.data,
-			sc.leaf.fresh - sc.data);
 		assert(sc.leaf.fresh + need.leaves == sc.data + sc.no);
 	}
 	/* Add new nodes. */
 	while(sc.branch.cursor != sc.leaf.head) {
 		struct PB_(branch) *branch;
 		if(!(branch = malloc(sizeof *branch))) goto catch;
-		printf("new branch %s\n", orcify(branch));
 		branch->base.size = 0;
 		branch->child[0] = 0;
 		*sc.branch.cursor++ = &branch->base;
@@ -1300,21 +1296,11 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 	while(sc.leaf.cursor != sc.data + sc.no) {
 		struct PB_(node) *leaf;
 		if(!(leaf = malloc(sizeof *leaf))) goto catch;
-		printf("new leaf %s\n", orcify(leaf));
 		leaf->size = 0;
 		*sc.leaf.cursor++ = leaf;
 	}
-	{ /* debug */
-		size_t i;
-		for(i = 0; i < sc.no; i++) printf("> new: %s\n", orcify(sc.data[i]));
-	}
 	/* Resources acquired; now we don't care about tree. */
 	PB_(cannibalize)(tree, &sc);
-	{
-		size_t i;
-		for(i = 0; i < sc.no; i++)
-			printf("> scaffold %s\n", orcify(sc.data[i]));
-	}
 	/* The scaffold has the exact number of nodes we need. Overwrite. */
 	tree->root = PB_(clone)(&source->root, &sc);
 	goto finally;
@@ -1323,13 +1309,11 @@ catch:
 	if(!sc.data) goto finally;
 	while(sc.leaf.cursor != sc.leaf.fresh) {
 		struct PB_(node) *leaf = *(--sc.leaf.cursor);
-		printf("del leaf %s\n", orcify(leaf));
 		assert(leaf);
 		free(leaf);
 	}
 	while(sc.branch.cursor != sc.branch.fresh) {
 		struct PB_(branch) *branch = PB_(branch)(*(--sc.branch.cursor));
-		printf("del branch %s\n", orcify(branch));
 		assert(branch);
 		free(branch);
 	}
