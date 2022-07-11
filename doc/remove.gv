@@ -1,0 +1,20 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans"];
+	node [shape=box, style=filled, fontname="Bitstream Vera Sans", fillcolor="Grey90"];
+	edge [fontname="Bitstream Vera Sans"];
+
+	start [shape=circle];
+	start -> branch;
+	start -> leaf;
+	branch -> leaf;
+	leaf -> balance;
+	leaf -> down;
+	leaf -> shrink;
+	balance -> down;
+	down -> down;
+	down -> end;
+	balance -> end;
+	shrink -> down;
+	shrink -> end;
+	end [shape=circle];
+}
