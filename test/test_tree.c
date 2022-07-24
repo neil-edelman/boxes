@@ -158,7 +158,8 @@ static void manual_int(void) {
 	struct int_tree between = int_tree(),
 		rnd = int_tree(),
 		even = int_tree(), even_clone = int_tree(),
-		consecutive = int_tree();
+		consecutive = int_tree(),
+		removal = int_tree();
 	size_t i;
 	const size_t size_rnd = 100;
 	/*unsigned *x;*/
@@ -241,6 +242,31 @@ static void manual_int(void) {
 		}
 	}
 
+#if TREE_ORDER == 3
+	{
+		int in[TREE_ORDER * TREE_ORDER * TREE_ORDER - 1];
+		const unsigned size = sizeof in / sizeof *in;
+		unsigned n;
+		memset(&in, 0, sizeof in);
+		for(n = 0; n < size; n++) {
+			if(!(int_tree_bulk_add(&removal, n + 1))) goto catch;
+			in[n] = 1;
+		}
+		int_tree_bulk_finish(&even);
+		/* Leaf, no redistributing needed. */
+		tree_int_graph(&removal, "graph/removal-0.gv");
+		int_tree_remove(&removal, 14), in[13] = 0;
+		tree_int_graph(&removal, "graph/removal-1.gv");
+		for(n = 0; n < size; n++)
+			assert(int_tree_contains(&removal, n + 1) == in[n]);
+		/* Leaf, free the node; distribute one level above. */
+		int_tree_remove(&removal, 13), in[12] = 0;
+		tree_int_graph(&removal, "graph/removal-2.gv");
+		for(n = 0; n < size; n++)
+			assert(int_tree_contains(&removal, n + 1) == in[n]);
+	}
+#endif
+
 	{ /* One level. */
 		const size_t size = TREE_ORDER + 1;
 		char fn[64];
@@ -285,6 +311,7 @@ catch:
 finally:
 	int_tree_(&between);
 	int_tree_(&rnd);
+	int_tree_(&removal);
 	int_tree_(&even), int_tree_(&even_clone);
 	int_tree_(&consecutive);
 }

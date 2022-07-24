@@ -399,6 +399,22 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
 	}
 	return lo;
 }
+/** Finds (one?) exact `key` in `tree`. This is what not settling on a
+ definition of a tree gets you. */
+static struct PB_(ref) PB_(find)(struct PB_(tree) *const tree,
+	const PB_(key) key) {
+	struct PB_(ref) i;
+	for(TREE_FORTREE(i)) {
+		TREE_START(i)
+		TREE_FORNODE(i, continue)
+		if(i.idx < i.node->size && TREE_FLIPPED(i)) break;
+		if(!i.height) {
+			struct PB_(ref) no = { 0, 0, 0 };
+			return no;
+		}
+	}
+	return i;
+}
 /** Finds lower-bound of `key` in `tree` while counting the non-filled `hole`
  and `is_equal`. (fixme: is_equal useless) */
 static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) *const tree,
@@ -551,6 +567,12 @@ static void PB_(print)(const struct B_(tree) *const tree);
 static void PB_(print)(const struct B_(tree) *const tree)
 	{ (void)tree, printf("not printable\n"); }
 #endif
+
+/** Contains. */
+static int B_(tree_contains)(struct B_(tree) *const tree, const PB_(key) x) {
+	assert(tree);
+	return PB_(find)(&tree->root, x).node ? 1 : 0;
+}
 
 #ifdef TREE_VALUE /* <!-- map */
 /** Packs `key` on the right side of `tree` without doing the usual
@@ -975,7 +997,8 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 /** Tries to remove `key` from `tree`. @return Success. */
 static int B_(tree_remove)(struct B_(tree) *const tree,
 	const PB_(key) key) {
-	/* This is so complex! */
+	/* Couldn't get the top-down approach to work with two-temp queue; too many
+	 cases. This feels like a hack, but very intuitive. */
 	struct PB_(ref) rm, lump;
 	struct {
 		unsigned size, next;
@@ -990,16 +1013,19 @@ static int B_(tree_remove)(struct B_(tree) *const tree,
 	} queue; /* Requires two temporary slots. */
 	queue.size = queue.next = 0;
 	assert(tree);
+	printf("MIN %u, MAX %u, ORDER %u\n", TREE_MIN, TREE_MAX, TREE_ORDER);
 	/* Traverse down the tree until `key`. */
 	if(!(rm.node = tree->root.node) || tree->root.height == UINT_MAX
-		|| !(rm = PB_(lookup_remove)(&tree->root, key, &lump)).node) return 0;
+		|| !(rm = PB_(lookup_remove)(&tree->root, key, &lump)).node)
+		{ printf("remove: didn't match any nodes.\n"); return 0; }
 	printf("remove: %s(%u):%u <%u>; lump edge %s(%u):%u.\n",
 		   orcify(rm.node), rm.height, rm.idx, rm.node->key[rm.idx],
 		   orcify(lump.node), lump.height, lump.idx);
 	if(rm.height) goto branch; else goto leaf;
-branch: { /* Can only delete from leaf; replace by successor or predecessor. */
+branch: {
 	struct PB_(ref) succ;
 	struct PB_(ref) pred;
+	printf("remove: branch; replace by successor or predecessor.\n");
 	pred = rm;
 	if(PB_(to_predecessor)(tree->root, &pred))
 		printf("rm has predecessor %s(%u):%u\n",
@@ -1021,18 +1047,19 @@ branch: { /* Can only delete from leaf; replace by successor or predecessor. */
 	ref->node = PB_(branch_c)(ref->node)->child[ref->idx], ref->idx = 0;
 	if(ref->idx < ref->node->size) return 1; <-- successor */
 	assert(0);
-} leaf: /* Choose state. */
-	if(rm.node == lump.node) goto down;
-	else if(lump.node) /* and size <= MIN for root? */ goto balance;
-	else {
-		assert(0); /* Root is a special case, it can have down to one. */
-		goto shrink;
-	}
-balance: { /* At least one of the sizes is not minimal, `lump`. */
+} leaf:
+	printf("remove: in leaf node.\n");
+	if(!lump.node) goto shrink;
+	if(rm.node == lump.node) goto excess;
+	goto balance;
+
+balance: { /* Rebalance it. */
 	struct PB_(branch) *const lump_branch = PB_(branch)(lump.node);
 	struct PB_(ref) child, merge;
-	struct { struct PB_(node) *less, *more; } sibling;
-	enum { BALANCE_LESS, BALANCE_MORE } balance;
+	struct {
+		struct PB_(node) *less, *more;
+		enum { BALANCE_LESS, BALANCE_MORE } balance;
+	} sibling;
 	assert(lump.height && lump.idx <= lump.node->size && lump.node->size > 0);
 
 	/* Find the child and sibling edges. */
@@ -1154,7 +1181,7 @@ lean_left: /* Prefer left-leaning: less work for copying. */
 } shrink: /* Every node along the path is minimal, the height decreases. */
 	assert(0);
 	return 0;
-down:
+excess: /* Leaf has more than `TREE_MIN`; remove from lump node. */
 	assert(rm.node && rm.idx < rm.node->size && rm.node->size > TREE_MIN
 		&& !rm.height);
 	memmove(rm.node->key + rm.idx, rm.node->key + rm.idx + 1,
