@@ -997,8 +997,6 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 /** Tries to remove `key` from `tree`. @return Success. */
 static int B_(tree_remove)(struct B_(tree) *const tree,
 	const PB_(key) key) {
-	/* Couldn't get the top-down approach to work with two-temp queue; too many
-	 cases. This feels like a hack, but very intuitive. */
 	struct PB_(ref) rm, lump;
 	struct {
 		unsigned size, next;
@@ -1055,15 +1053,11 @@ branch: {
 		else goto shrink;
 	}
 	if(rm.node == lump.node) goto excess;
-	goto borrow;
-
-borrow: { /* Rebalance it. */
+	goto down;
+down: {
 	struct PB_(branch) *const lump_branch = PB_(branch)(lump.node);
 	struct PB_(ref) child;
-	struct {
-		struct PB_(node) *less, *more;
-		enum { BALANCE_LESS, BALANCE_MORE } balance;
-	} sibling;
+	struct { struct PB_(node) *less, *more; } sibling;
 	unsigned combined, to_promote, to_more, transfer;
 	assert(lump.height && lump.idx <= lump.node->size && lump.node->size > 0
 		&& !queue.size);
@@ -1085,17 +1079,17 @@ borrow: { /* Rebalance it. */
 		//queue.data[queue.next].key = child.node[];
 		assert(0);
 	}
-	/* Pick the sibling key with the most nodes to balance, preferring less. */
-	sibling.balance = (sibling.less ? sibling.less->size : 0)
-		>= (sibling.more ? sibling.more->size : 0)
-		? BALANCE_LESS : BALANCE_MORE;
-	if(sibling.balance == BALANCE_LESS) lump.idx--;
 	assert(lump.idx < lump.node->size);
-	printf("lump: %s:%u <%u> %s\n",
-		orcify(lump.node), lump.idx, lump.node->key[lump.idx],
-		sibling.balance == BALANCE_LESS ? "LESS" : "MORE");
-	if(sibling.balance == BALANCE_LESS) goto balance_less;
-	else goto balance_more;
+	printf("lump: %s:%u <%u>\n",
+		orcify(lump.node), lump.idx, lump.node->key[lump.idx]);
+	/* Pick the sibling key with the most nodes to balance, preferring less. */
+	if((sibling.less ? sibling.less->size : 0)
+		>= (sibling.more ? sibling.more->size : 0)) {
+		assert(lump.idx), lump.idx--;
+		goto balance_less;
+	} else {
+		goto balance_more;
+	}
 balance_less:
 	combined = child.node->size + sibling.less->size;
 	printf("balance less: combined %u\n", combined);
