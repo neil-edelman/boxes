@@ -1049,19 +1049,24 @@ branch: {
 	assert(0);
 } leaf:
 	printf("remove: in leaf node.\n");
-	if(!lump.node) goto shrink;
+	if(!lump.node) {
+		/* Root special case. */
+		if(tree->root.node->size > 1) lump.node = tree->root.node, printf("remove: special case of root.\n");
+		else goto shrink;
+	}
 	if(rm.node == lump.node) goto excess;
-	goto balance;
+	goto borrow;
 
-balance: { /* Rebalance it. */
+borrow: { /* Rebalance it. */
 	struct PB_(branch) *const lump_branch = PB_(branch)(lump.node);
-	struct PB_(ref) child, merge;
+	struct PB_(ref) child;
 	struct {
 		struct PB_(node) *less, *more;
 		enum { BALANCE_LESS, BALANCE_MORE } balance;
 	} sibling;
-	assert(lump.height && lump.idx <= lump.node->size && lump.node->size > 0);
-
+	unsigned combined, to_promote, to_more, transfer;
+	assert(lump.height && lump.idx <= lump.node->size && lump.node->size > 0
+		&& !queue.size);
 	/* Find the child and sibling edges. */
 	child.node = lump_branch->child[lump.idx];
 	if(child.height = lump.height - 1) PB_(find_idx)(&child, key);
@@ -1074,59 +1079,63 @@ balance: { /* Rebalance it. */
 	printf("remove: child edge %s(%u):%u, siblings %s and %s.\n",
 		orcify(child.node), child.height, child.idx,
 		orcify(sibling.less), orcify(sibling.more));
-	assert(queue.size < 2);
-	queue.data[queue.next].key = child.node->key[lump.idx];
-	PB_(graph)(tree, "graph/work0.gv");
-
-	/* Move it down by putting on the queue. */
 	if(lump.height - 1) {
+		printf("enqueuing\n");
+		queue.data[queue.next].key = child.node->key[lump.idx];
 		//queue.data[queue.next].key = child.node[];
 		assert(0);
 	}
-
-	/* Pick the sibling key with the most nodes to balance. */
-	merge = lump;
-	balance = (sibling.less ? sibling.less->size : 0)
-		> (sibling.more ? sibling.more->size : 0) ? BALANCE_LESS : BALANCE_MORE;
-	if(balance == BALANCE_LESS) merge.idx--;
-	assert(merge.idx < merge.node->size);
-	printf("merge: %s:%u <%u>\n",
-		orcify(merge.node), merge.idx, merge.node->key[merge.idx]);
-
+	/* Pick the sibling key with the most nodes to balance, preferring less. */
+	sibling.balance = (sibling.less ? sibling.less->size : 0)
+		>= (sibling.more ? sibling.more->size : 0)
+		? BALANCE_LESS : BALANCE_MORE;
+	if(sibling.balance == BALANCE_LESS) lump.idx--;
+	assert(lump.idx < lump.node->size);
+	printf("lump: %s:%u <%u> %s\n",
+		orcify(lump.node), lump.idx, lump.node->key[lump.idx],
+		sibling.balance == BALANCE_LESS ? "LESS" : "MORE");
+	if(sibling.balance == BALANCE_LESS) goto balance_less;
+	else goto balance_more;
+balance_less:
+	combined = child.node->size + sibling.less->size;
+	printf("balance less: combined %u\n", combined);
+	if(combined < 2 * TREE_MIN + 1) goto merge_less;
+	to_promote = combined / 2; /* Index `⌈(combined - 1)/2⌉`. */
+	to_more = to_promote + 1;
+	transfer = sibling.less->size - to_more;
+	printf("promote %u, more %u, transfer %u\n", to_promote, to_more, transfer);
+	/* Make way for the keys from the less. */
+	printf("move child1 entries %u\n", child.node->size - child.idx - 1);
+	memmove(child.node->key + child.idx + 1 + transfer,
+		child.node->key + child.idx + 1,
+		sizeof *child.node->key * (child.node->size - child.idx - 1));
+	/* And... */
+	printf("move child2 entries %u\n", child.idx);
+	memmove(child.node->key + 1 + transfer, child.node->key,
+		sizeof *child.node->key * child.idx);
+	printf("demote <%u> %s:%u %u ->\n", lump.node->key[lump.idx], orcify(lump.node), lump.idx, transfer);
+	child.node->key[transfer] = lump.node->key[lump.idx];
+	printf("transfer %u(%u) from less\n", to_more, transfer);
+	memcpy(child.node->key, sibling.less->key + to_more,
+		sizeof *sibling.less->key * transfer);
+	PB_(graph)(tree, "graph/work1.gv");
+	printf("lump from less\n");
+	lump.node->key[lump.idx] = sibling.less->key[to_promote];
+	assert(child.node->size <= TREE_MAX - transfer);
+	child.node->size += transfer;
+	sibling.less->size = (unsigned char)to_promote;
+	PB_(graph)(tree, "graph/work2.gv");
+	if(lump.height > 1) {
+		struct PB_(branch) *const lessb = PB_(branch)(sibling.less);
+		assert(0);
+	}
+	goto end;
+merge_less:
+	assert(combined <= TREE_MAX);
+	assert(0);
+balance_more:
 	assert(0);
 #if 0
-	else
-		/* Split left. */
-		const unsigned combined = child.node->size + sibling.less->size,
-			to_promote = combined / 2, to_more = to_promote + 1,
-			transfer = sibling.less->size - to_more;
-		assert(sibling.less && lump.idx
-			&& to_promote >= TREE_MIN && to_more <= sibling.less->size);
-		printf("split less: combined %u; to_promote %u; to_more %u -> transfer %u\n",
-			combined, to_promote, to_more, transfer);
-		/* Make way for the keys from the less. */
-		printf("move child1 (%u)\n", child.node->size - child.idx - 1);
-		memmove(child.node->key + child.idx + 1 + transfer,
-			child.node->key + child.idx + 1,
-			sizeof *child.node->key * (child.node->size - child.idx - 1));
-		printf("move child2 (%u)\n", child.idx);
-		memmove(child.node->key + 1 + transfer, child.node->key,
-			sizeof *child.node->key * child.idx);
-		printf("demote <%u> %s:%u %u ->\n", lump.node->key[lump.idx-1], orcify(lump.node), lump.idx-1, transfer);
-		child.node->key[transfer] = lump.node->key[lump.idx - 1];
-		printf("less %u(%u) -> 0\n", to_more, transfer);
-		memcpy(child.node->key, sibling.less->key + to_more,
-			sizeof *sibling.less->key * transfer);
-		PB_(graph)(tree, "graph/work1.gv");
-		lump.node->key[lump.idx - 1] = sibling.less->key[to_promote];
-		assert(child.node->size <= TREE_MAX - transfer);
-		child.node->size += transfer;
-		sibling.less->size = (unsigned char)to_promote;
-		PB_(graph)(tree, "graph/work2.gv");
-		if(lump.height > 1) {
-			struct PB_(branch) *const lessb = PB_(branch)(sibling.less);
-			assert(0);
-		}
 	} else { /* Split right. ***incorrect***? */
 		const unsigned combined = child.node->size + sibling.more->size,
 			to_promote = (combined - 1) / 2, to_more = to_promote - 1;
