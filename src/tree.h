@@ -1109,7 +1109,7 @@ balance_less:
 	memmove(child.node->key + child.idx + 1 + transfer,
 		child.node->key + child.idx + 1,
 		sizeof *child.node->key * (child.node->size - child.idx - 1));
-	/* And... */
+	/* fixme: And... */
 	printf("move child2 entries %u\n", child.idx);
 	memmove(child.node->key + 1 + transfer, child.node->key,
 		sizeof *child.node->key * child.idx);
@@ -1118,13 +1118,11 @@ balance_less:
 	printf("transfer %u(%u) from less\n", to_more, transfer);
 	memcpy(child.node->key, sibling.less->key + to_more,
 		sizeof *sibling.less->key * transfer);
-	PB_(graph)(tree, "graph/work1.gv");
 	printf("lump from less\n");
 	lump.node->key[lump.idx] = sibling.less->key[to_promote];
 	assert(child.node->size <= TREE_MAX - transfer);
 	child.node->size += transfer;
 	sibling.less->size = (unsigned char)to_promote;
-	PB_(graph)(tree, "graph/work2.gv");
 	if(lump.height > 1) {
 		struct PB_(branch) *const lessb = PB_(branch)(sibling.less);
 		assert(0);

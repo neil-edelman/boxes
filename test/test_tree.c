@@ -264,6 +264,11 @@ static void manual_int(void) {
 		tree_int_graph(&removal, "graph/removal-2.gv");
 		for(n = 0; n < size; n++)
 			assert(int_tree_contains(&removal, n + 1) == in[n]);
+		/* Other side. */
+		int_tree_remove(&removal, 12), in[11] = 0;
+		tree_int_graph(&removal, "graph/removal-3.gv");
+		for(n = 0; n < size; n++)
+			assert(int_tree_contains(&removal, n + 1) == in[n]);
 	}
 #endif
 
