@@ -1085,7 +1085,7 @@ down: {
 	/* Pick the sibling key with the most nodes to balance, preferring less. */
 	if((sibling.less ? sibling.less->size : 0)
 		>= (sibling.more ? sibling.more->size : 0)) {
-		assert(lump.idx), lump.idx--;
+		assert(lump.idx), lump.idx--; /* Switch to less. */
 		goto balance_less;
 	} else {
 		goto balance_more;
@@ -1126,13 +1126,14 @@ merge_less:
 	assert(combined <= TREE_MAX);
 	assert(0);
 balance_more:
-	assert(0);
+	/* ***incorrect***? */
+	combined = child.node->size + sibling.more->size;
+	if(combined < 2 * TREE_MIN + 1) goto merge_more;
+	to_promote = (combined - 1) / 2;
+	to_more = to_promote - 1;
+	printf("balance more; to_promote %u, to_more %u\n", to_promote, to_more);
+	assert(sibling.more && to_promote && to_promote < sibling.more->size);
 #if 0
-	} else { /* Split right. ***incorrect***? */
-		const unsigned combined = child.node->size + sibling.more->size,
-			to_promote = (combined - 1) / 2, to_more = to_promote - 1;
-		printf("split more; to_promote %u, to_more %u\n", to_promote, to_more);
-		assert(sibling.more && to_promote && to_promote < sibling.more->size);
 		/* Make way for the keys from the less. */
 		printf("move child (%u)\n", child.node->size - child.idx - 1);
 		memmove(child.node->key + child.idx, child.node->key + child.idx + 1,
@@ -1145,7 +1146,10 @@ balance_more:
 		assert(0);
 	}
 #endif
+	assert(0);
 	goto end;
+merge_more:
+	assert(0);
 merge:
 	if(lump.idx < lump.node->size && lump_branch->child[lump.idx + 1] && (lump.node->size > TREE_MIN)) {
 lean_left: /* Prefer left-leaning: less work for copying. */
