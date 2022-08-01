@@ -1058,7 +1058,7 @@ down: {
 	struct PB_(branch) *const lump_branch = PB_(branch)(lump.node);
 	struct PB_(ref) child;
 	struct { struct PB_(node) *less, *more; } sibling;
-	unsigned combined, to_promote, to_more, transfer;
+	unsigned combined, to_promote, to_more, to_less, transfer;
 	assert(lump.height && lump.idx <= lump.node->size && lump.node->size > 0
 		&& !queue.size);
 	/* Find the child and sibling edges. */
@@ -1126,27 +1126,27 @@ merge_less:
 	assert(combined <= TREE_MAX);
 	assert(0);
 balance_more:
-	/* ***incorrect***? */
 	combined = child.node->size + sibling.more->size;
+	printf("balance more: combined %u\n", combined);
 	if(combined < 2 * TREE_MIN + 1) goto merge_more;
 	to_promote = (combined - 1) / 2;
-	to_more = to_promote - 1;
-	printf("balance more; to_promote %u, to_more %u\n", to_promote, to_more);
-	assert(sibling.more && to_promote && to_promote < sibling.more->size);
-#if 0
-		/* Make way for the keys from the less. */
-		printf("move child (%u)\n", child.node->size - child.idx - 1);
-		memmove(child.node->key + child.idx, child.node->key + child.idx + 1,
-			sizeof *child.node->key * (child.node->size - child.idx - 1));
-		printf("demote <%u> %s:%u\n", lump.node->key[lump.idx], orcify(lump.node), lump.idx);
-		child.node->key[child.node->size - 1] = lump.node->key[lump.idx];
-		memcpy(child.node->key + child.node->size, sibling.more->key,
-			sizeof *sibling.more->key * to_more);
-		PB_(graph)(tree, "graph/work1.gv");
-		assert(0);
-	}
-#endif
-	assert(0);
+	to_less = to_promote - TREE_MIN;
+	printf("promote %u, less %u\n", to_promote, to_less);
+	assert(sibling.more && to_promote && to_less < sibling.more->size);
+	/* Delete victim. */
+	memmove(child.node->key + child.idx, child.node->key + child.idx + 1,
+		sizeof *child.node->key * (child.node->size - child.idx - 1));
+	/* Demote into hole. */
+	child.node->key[child.node->size - 1] = lump.node->key[lump.idx];
+	/* Transfer some keys from more to child. */
+	memcpy(child.node->key + child.node->size, sibling.more->key,
+		sizeof *sibling.more->key * to_less);
+	/* Promote one key from more. */
+	lump.node->key[lump.idx] = sibling.more->key[to_less];
+	memmove(sibling.more->key, sibling.more->key + to_less + 1, sizeof *sibling.more->key * (sibling.more->size - to_less - 1));
+	child.node->size += to_less;
+	sibling.more->size -= to_less + 1;
+	PB_(graph)(tree, "graph/work1.gv");
 	goto end;
 merge_more:
 	assert(0);
