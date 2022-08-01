@@ -35,12 +35,13 @@
 
 <p>Stand-alone header <a href = "src/tree.h">src/tree.h</a>; examples <a href = "test/test_tree.c">test/test_tree.c</a>. On a compatible workstation, <code>make</code> creates the test suite of the examples.</p>
 
-<h2>Ordered tree</h2>
+<h2>Ordered key-tree</h2>
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
 	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PB>key">&lt;PB&gt;key</a>, <a href = "#typedef:<PB>value">&lt;PB&gt;value</a>, <a href = "#typedef:<PB>compare_fn">&lt;PB&gt;compare_fn</a>, <a href = "#typedef:<PB>entry">&lt;PB&gt;entry</a>, <a href = "#typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<B>tree_entry">&lt;B&gt;tree_entry</a>, <a href = "#tag:<B>tree">&lt;B&gt;tree</a>, <a href = "#tag:<B>tree_iterator">&lt;B&gt;tree_iterator</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:tree_result">tree_result</a>, <a href = "#tag:<B>tree">&lt;B&gt;tree</a>, <a href = "#tag:<B>tree_entry">&lt;B&gt;tree_entry</a>, <a href = "#tag:<B>tree_iterator">&lt;B&gt;tree_iterator</a></li>
+	<li><a href = "#data:">General Declarations</a>: <a href = "#data:e">e</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -50,23 +51,23 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p>A <a href = "#tag:&lt;B&gt;tree">&lt;B&gt;tree</a> is an ordered collection of read-only <a href = "#typedef:&lt;PB&gt;key">&lt;PB&gt;key</a>, and an optional <a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a> to go with them. This can be a map or set, but in general, it can have identical keys, (a multi-map). Internally, this is a B-tree, described in <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large">Bayer, McCreight, 1972 Large</a>.</p>
-
-<p>Advances <code>it</code> to the next element.</p>
+<p>A <a href = "#tag:&lt;B&gt;tree">&lt;B&gt;tree</a> is an ordered set or map contained in a tree. For memory locality, this is implemented B-tree, described in <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972%2C+Large">Bayer, McCreight, 1972, Large</a>.</p>
 
 <dl>
 	<dt>Parameter: TREE_NAME, TREE_KEY</dt>
-	<dd><code>&lt;B&gt;</code> that satisfies <code>C</code> naming conventions when mangled, required, and an integral type, <a href = "#typedef:&lt;PB&gt;key">&lt;PB&gt;key</a>, whose default is <code>unsigned int</code>. <code>&lt;PB&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
+	<dd><code>&lt;B&gt;</code> that satisfies <code>C</code> naming conventions when mangled, required, and <code>TREE_KEY</code>, a comparable type, <a href = "#typedef:&lt;PB&gt;key">&lt;PB&gt;key</a>, whose default is <code>unsigned int</code>. <code>&lt;PB&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: TREE_VALUE</dt>
-	<dd><code>TRIE_VALUE</code> is an optional payload to go with the type, <a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a>.</dd>
+	<dd><code>TRIE_VALUE</code> is an optional payload to go with the type, <a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a>. The makes it a map of <a href = "#tag:&lt;B&gt;tree_entry">&lt;B&gt;tree_entry</a> instead of a set.</dd>
 	<dt>Parameter: TREE_COMPARE</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PB&gt;compare_fn">&lt;PB&gt;compare_fn</a>. Defaults to ascending order. Required if <code>TREE_KEY</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: TREE_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
 	<dt>Parameter: TREE_TO_STRING_NAME, TREE_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; an optional unique <code>&lt;SZ&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PSZ&gt;to_string_fn">&lt;PSZ&gt;to_string_fn</a>.</dd>
+	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; an optional unique <code>&lt;SZ&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
+	<dt>Caveat:</dt>
+	<dd>multi-key; implementation of order statistic tree? merge, difference</dd>
 </dl>
 
 </div>
@@ -79,7 +80,7 @@
 
 <p><code>typedef TREE_KEY <strong>&lt;PB&gt;key</strong>;</code></p>
 
-<p>A comparable type, defaults to <code>unsigned</code>. Note that <code>key</code> is used loosely; there can be multiple keys with the same value stored in the same <a href = "#tag:&lt;B&gt;tree">&lt;B&gt;tree</a>, if one chooses.</p>
+<p>A comparable type, defaults to <code>unsigned</code>.</p>
 
 </div>
 
@@ -89,7 +90,7 @@
 
 <p><code>typedef TREE_VALUE <strong>&lt;PB&gt;value</strong>;</code></p>
 
-<p>On <code>TREE_VALUE</code>, otherwise just a (multi)-set of <a href = "#typedef:&lt;PB&gt;key">&lt;PB&gt;key</a>.</p>
+<p>On <code>TREE_VALUE</code>, otherwise just a set of <a href = "#typedef:&lt;PB&gt;key">&lt;PB&gt;key</a>.</p>
 
 </div>
 
@@ -127,11 +128,11 @@
 
 <div>
 
-<h3><a id = "tag:<B>tree_entry" name = "tag:<B>tree_entry">&lt;B&gt;tree_entry</a></h3>
+<h3><a id = "tag:tree_result" name = "tag:tree_result">tree_result</a></h3>
 
-<p><code>struct <strong>&lt;B&gt;tree_entry</strong> { &lt;PB&gt;key *x; &lt;PB&gt;value *value; };</code></p>
+<p><code>enum <strong>tree_result</strong> { TREE_RESULT };</code></p>
 
-<p>On <code>TREE_VALUE</code>, creates a map from pointer-to-<a href = "#typedef:&lt;PB&gt;key">&lt;PB&gt;key</a> to pointer-to-<a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a>. The reason these are pointers is because it is not connected in memory.</p>
+<p>A result of modifying the tree, of which <code>TREE_ERROR</code> is false. <img alt = "A diagram of the result states." src = "../doc/put.png"></p>
 
 </div>
 
@@ -149,11 +150,38 @@
 
 <div>
 
+<h3><a id = "tag:<B>tree_entry" name = "tag:<B>tree_entry">&lt;B&gt;tree_entry</a></h3>
+
+<p><code>struct <strong>&lt;B&gt;tree_entry</strong> { &lt;PB&gt;key *key; &lt;PB&gt;value *value; };</code></p>
+
+<p>On <code>TREE_VALUE</code>, creates a map from pointer-to-<a href = "#typedef:&lt;PB&gt;key">&lt;PB&gt;key</a> to pointer-to-<a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a>. The reason these are pointers is because it is not connected in memory. (Does <code>key</code> still have to be?)</p>
+
+</div>
+
+<div>
+
 <h3><a id = "tag:<B>tree_iterator" name = "tag:<B>tree_iterator">&lt;B&gt;tree_iterator</a></h3>
 
 <p><code>struct <strong>&lt;B&gt;tree_iterator</strong> { struct &lt;PB&gt;iterator _; };</code></p>
 
-<p>Stores an iteration in a tree. Generally, changes in the topology of the tree invalidate it.</p>
+<p>Stores an iteration in a tree. Generally, changes in the topology of the tree invalidate it. (Future: have insert and delete with iterators.)</p>
+
+</div>
+
+<h2><a id = "data:" name = "data:">General Declarations</a></h2>
+
+<div>
+
+<h3><a id = "data:e" name = "data:e">e</a></h3>
+
+<p><code>TREE_TO_SUCCESSOR(to_successor, ref)TREE_TO_SUCCESSOR(to_successor_c, ref_c)static int &lt;PB&gt;is_element_c(&lt;PB&gt;entry_c <strong>e</strong>){ return !!e .key; return !!e; } struct &lt;PB&gt;forward { const struct &lt;PB&gt;tree *root; struct &lt;PB&gt;ref_c next; };</code></p>
+
+<p>Is <code>e</code> not null?</p>
+
+<dl>
+	<dt>Implements:</dt>
+	<dd><code>is_element_c</code></dd>
+</dl>
 
 </div>
 
@@ -169,17 +197,15 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<B>tree_">&lt;B&gt;tree_</a></td><td>tree</td></tr>
 
-<tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#fn:<B>tree_begin">&lt;B&gt;tree_begin</a></td><td>tree</td></tr>
+<tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#fn:<B>tree_iterator">&lt;B&gt;tree_iterator</a></td><td>tree</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#fn:<B>trie_size">&lt;B&gt;trie_size</a></td><td>it</td></tr>
+<tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#fn:<B>tree_next">&lt;B&gt;tree_next</a></td><td>it</td></tr>
 
-<tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#fn:<B>tree_lower">&lt;B&gt;tree_lower</a></td><td>tree, x</td></tr>
+<tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#fn:<B>tree_lower_iterator">&lt;B&gt;tree_lower_iterator</a></td><td>tree, x</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#fn:<B>tree_get">&lt;B&gt;tree_get</a></td><td>tree, x</td></tr>
+<tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#fn:<B>tree_lower_value">&lt;B&gt;tree_lower_value</a></td><td>tree, x</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<B>trie_put">&lt;B&gt;trie_put</a></td><td>trie, x, /*const fixme*/eject</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#fn:<B>trie_policy">&lt;B&gt;trie_policy</a></td><td>trie, x, eject, replace</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<B>tree_clone">&lt;B&gt;tree_clone</a></td><td>tree, source</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<STR>to_string">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
@@ -197,9 +223,9 @@
 
 <p><code>static struct &lt;B&gt;tree <strong>&lt;B&gt;tree</strong>(void)</code></p>
 
-<p>Initializes <code>tree</code> to idle.</p>
-
 <dl>
+	<dt>Return:</dt>
+	<dd>Initializes <code>tree</code> to idle.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
@@ -218,9 +244,9 @@
 
 <div>
 
-<h3><a id = "fn:<B>tree_begin" name = "fn:<B>tree_begin">&lt;B&gt;tree_begin</a></h3>
+<h3><a id = "fn:<B>tree_iterator" name = "fn:<B>tree_iterator">&lt;B&gt;tree_iterator</a></h3>
 
-<p><code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_begin</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code></p>
+<p><code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_iterator</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -231,30 +257,30 @@
 
 <div>
 
-<h3><a id = "fn:<B>trie_size" name = "fn:<B>trie_size">&lt;B&gt;trie_size</a></h3>
+<h3><a id = "fn:<B>tree_next" name = "fn:<B>tree_next">&lt;B&gt;tree_next</a></h3>
 
-<p><code>static size_t <strong>&lt;B&gt;trie_size</strong>(const struct &lt;B&gt;trie_iterator *const <em>it</em>)</code></p>
+<p><code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_next</strong>(struct &lt;B&gt;tree_iterator *const <em>it</em>)</code></p>
 
-<p>Counts the of the items in initialized <code>it</code>.</p>
+<p>Advances <code>it</code> to the next element.</p>
 
 <dl>
-	<dt>Order:</dt>
-	<dd>&#927;(|<code>it</code>|)</dd>
+	<dt>Return:</dt>
+	<dd>A pointer to the current element or null.</dd>
 </dl>
 
 </div>
 
 <div>
 
-<h3><a id = "fn:<B>tree_lower" name = "fn:<B>tree_lower">&lt;B&gt;tree_lower</a></h3>
+<h3><a id = "fn:<B>tree_lower_iterator" name = "fn:<B>tree_lower_iterator">&lt;B&gt;tree_lower_iterator</a></h3>
 
-<p><code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_lower</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
+<p><code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_lower_iterator</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
 
 <dl>
 	<dt>Parameter: <em>tree</em></dt>
 	<dd>Can be null.</dd>
 	<dt>Return:</dt>
-	<dd>Finds the smallest entry in <code>tree</code> that is not less than <code>x</code>. If <code>x</code> is higher than any of <code>tree</code>, it will be placed just passed the end.</dd>
+	<dd>Finds the smallest entry in <code>tree</code> that is at the lower bound of <code>x</code>. If <code>x</code> is higher than any of <code>tree</code>, it will be placed just passed the end.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(\log |<code>tree</code>|)</dd>
 </dl>
@@ -263,13 +289,15 @@
 
 <div>
 
-<h3><a id = "fn:<B>tree_get" name = "fn:<B>tree_get">&lt;B&gt;tree_get</a></h3>
+<h3><a id = "fn:<B>tree_lower_value" name = "fn:<B>tree_lower_value">&lt;B&gt;tree_lower_value</a></h3>
 
-<p><code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_get</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
+<p><code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_lower_value</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
+
+<p>For example, <code>tree = { 10 }</code>, <code>x = 5 -&gt; 10</code>, <code>x = 10 -&gt; 10</code>, <code>x = 11 -&gt; null</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Lowest value match for <code>x</code> in <code>tree</code> or null no such item exists.</dd>
+	<dd>Lower-bound value match for <code>x</code> in <code>tree</code> or null if <code>x</code> is greater than all in <code>tree</code>.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(\log |<code>tree</code>|)</dd>
 </dl>
@@ -278,40 +306,22 @@
 
 <div>
 
-<h3><a id = "fn:<B>trie_put" name = "fn:<B>trie_put">&lt;B&gt;trie_put</a></h3>
+<h3><a id = "fn:<B>tree_clone" name = "fn:<B>tree_clone">&lt;B&gt;tree_clone</a></h3>
 
-<p><code>static int <strong>&lt;B&gt;trie_put</strong>(struct &lt;B&gt;trie *const <em>trie</em>, const &lt;PB&gt;entry <em>x</em>, &lt;PB&gt;entry *<em>/*const fixme*/eject</em>)</code></p>
+<p><code>static int <strong>&lt;B&gt;tree_clone</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const struct &lt;B&gt;tree *const <em>source</em>)</code></p>
 
-<p>Updates or adds a pointer to <code>x</code> into <code>trie</code>.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>Success.</dd>
-	<dt>Exceptional return: realloc, ERANGE</dt>
-	<dt>Order:</dt>
-	<dd>&#927;(|<code>key</code>|)</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<B>trie_policy" name = "fn:<B>trie_policy">&lt;B&gt;trie_policy</a></h3>
-
-<p><code>static int <strong>&lt;B&gt;trie_policy</strong>(struct &lt;B&gt;trie *const <em>trie</em>, const &lt;PB&gt;entry <em>x</em>, &lt;PB&gt;entry *<em>eject</em>, const &lt;PB&gt;replace_fn <em>replace</em>)</code></p>
-
-<p>Adds a pointer to <code>x</code> to <code>trie</code> only if the entry is absent or if calling <code>replace</code> returns true or is null.</p>
+<p><code>source</code> is copied to, and overwrites, <code>tree</code>.</p>
 
 <dl>
-	<dt>Parameter: <em>eject</em></dt>
-	<dd>If not null, on success it will hold the overwritten value or a pointer-to-null if it did not overwrite any value. If a collision occurs and <code>replace</code> does not return true, this will be a pointer to <code>x</code>.</dd>
-	<dt>Parameter: <em>replace</em></dt>
-	<dd>Called on collision and only replaces it if the function returns true. If null, it is semantically equivalent to <a href = "#fn:&lt;T&gt;trie_put">&lt;T&gt;trie_put</a>.</dd>
+	<dt>Parameter: <em>source</em></dt>
+	<dd>In the case where it's null or idle, if <code>tree</code> is empty, then it continues to be.</dd>
 	<dt>Return:</dt>
-	<dd>Success.</dd>
-	<dt>Exceptional return: realloc, ERANGE</dt>
-	<dt>Order:</dt>
-	<dd>&#927;(|<code>key</code>|)</dd>
+	<dd>Success, otherwise <code>tree</code> is not modified.</dd>
+	<dt>Exceptional return: malloc</dt>
+	<dt>Exceptional return: EDOM</dt>
+	<dd><code>tree</code> is null.</dd>
+	<dt>Exceptional return: ERANGE</dt>
+	<dd>The size of <code>source</code> doesn't fit into <code>size_t</code>.</dd>
 </dl>
 
 </div>

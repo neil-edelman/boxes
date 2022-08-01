@@ -31,7 +31,7 @@
  @param[TREE_TO_STRING_NAME, TREE_TO_STRING]
  To string trait contained in <to_string.h>; an optional unique `<SZ>`
  that satisfies `C` naming conventions when mangled and function implementing
- <typedef:<PSZ>to_string_fn>.
+ <typedef:<PSTR>to_string_fn>.
 
  @fixme multi-key; implementation of order statistic tree?
  @fixme merge, difference
@@ -129,7 +129,7 @@ typedef int (*PB_(compare_fn))(PB_(key_c) a, PB_(key_c) b);
 
 #ifndef TREE_COMPARE /* <!-- !cmp */
 /** The default `TREE_COMPARE` on `a` and `b` is integer comparison that
- results in ascending order. @implements <typedef:<PH>compare_fn> */
+ results in ascending order. @implements <typedef:<PB>compare_fn> */
 static int PB_(default_compare)(PB_(key_c) a, PB_(key_c) b)
 	{ return a > b; }
 #define TREE_COMPARE &PB_(default_compare)
@@ -167,7 +167,7 @@ struct PB_(node) {
 };
 /* B-tree branch is a <tag:<PB>node> and links to `size + 1` nodes. */
 struct PB_(branch) { struct PB_(node) base, *child[TREE_ORDER]; };
-/** @return Downcasts `as_node` to a branch. */
+/** @return Downcasts `as_leaf` to a branch. */
 static struct PB_(branch) *PB_(branch)(struct PB_(node) *const as_leaf)
 	{ return (struct PB_(branch) *)(void *)
 	((char *)as_leaf - offsetof(struct PB_(branch), base)); }
@@ -416,7 +416,7 @@ static struct PB_(ref) PB_(find)(struct PB_(tree) *const tree,
 	return i;
 }
 /** Finds lower-bound of `key` in `tree` while counting the non-filled `hole`
- and `is_equal`. (fixme: is_equal useless) */
+ and `is_equal`. (fixme: `is_equal` useless) */
 static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) *const tree,
 	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal) {
 	struct PB_(ref) lo;
@@ -432,7 +432,7 @@ static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) *const tree,
 	return lo;
 }
 /** Finds lower-bound of `key` in `tree` while counting the non-minimum `hole`
- and `is_equal`. (fixme: is_equal useless) */
+ and `is_equal`. (fixme: `is_equal` useless) */
 static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
 	const PB_(key) key, struct PB_(ref) *const lump) {
 	struct PB_(ref) lo;
@@ -586,12 +586,11 @@ static int B_(tree_contains)(struct B_(tree) *const tree, const PB_(key) x) {
  `TREE_UNIQUE`, added, the `value` (if specified) is uninitialized.
  @throws[EDOM] `x` is smaller than the largest key in `tree`. @throws[malloc] */
 static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
-	PB_(key) key, PB_(value) **const value)
+	PB_(key) key, PB_(value) **const value) {
 #else /* map --><!-- set */
 static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
-	PB_(key) key)
+	PB_(key) key) {
 #endif
-{
 	struct PB_(node) *node = 0, *head = 0; /* The original and new. */
 	assert(tree);
 	if(!tree->root.node) { /* Idle tree. */
@@ -682,8 +681,8 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 #endif
 	node->size++;
 	return TREE_UNIQUE;
-catch:
-	free(node); /* Didn't work out. */
+catch: /* Didn't work. Reset. */
+	free(node);
 	while(head) {
 		struct PB_(node) *const next = PB_(branch)(head)->child[0];
 		free(head);
@@ -691,7 +690,11 @@ catch:
 	}
 	if(!errno) errno = ERANGE;
 	return TREE_ERROR;
+#ifdef TREE_VALUE
 }
+#else
+}
+#endif
 
 /** Distributes `tree` on the right side so that, after a series of
  <fn:<B>tree_bulk_add>, it will be consistent with the minimum number of keys
@@ -794,12 +797,11 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
  and adds a new key, or `TREE_YIELD` and updates an existing key.
  @throws[malloc] */
 static enum tree_result B_(tree_add)(struct B_(tree) *const tree,
-	PB_(key) key, PB_(value) **const value)
+	PB_(key) key, PB_(value) **const value) {
 #else /* map --><!-- set */
 static enum tree_result B_(tree_add)(struct B_(tree) *const tree,
-	PB_(key) key)
+	PB_(key) key) {
 #endif /* set --> */
-{
 	struct PB_(node) *new_head = 0;
 	struct PB_(ref) add, hole, cursor;
 	int is_growing = 0;
@@ -977,7 +979,7 @@ grow: /* Leaf is full. */ {
 #endif
 	assert(!new_head);
 	return TREE_UNIQUE;
-} catch:
+} catch: /* Didn't work. Reset. */
 	while(new_head) {
 		struct PB_(branch) *const top = PB_(branch)(new_head);
 		new_head = top->child[0];
@@ -985,7 +987,11 @@ grow: /* Leaf is full. */ {
 	}
 	if(!errno) errno = ERANGE; /* Non-POSIX OSs not mandated to set errno. */
 	return TREE_ERROR;
+#ifdef TREE_VALUE
 }
+#else
+}
+#endif
 
 /****************************/
 static void PB_(graph)(const struct B_(tree) *const tree,
@@ -1079,18 +1085,14 @@ down: {
 		//queue.data[queue.next].key = child.node[];
 		assert(0);
 	}
-	assert(lump.idx < lump.node->size);
-	printf("lump: %s:%u <%u>\n",
-		orcify(lump.node), lump.idx, lump.node->key[lump.idx]);
+	assert(lump.idx <= lump.node->size);
+	printf("lump: %s:%u\n", orcify(lump.node), lump.idx);
 	/* Pick the sibling key with the most nodes to balance, preferring less. */
 	if((sibling.less ? sibling.less->size : 0)
-		>= (sibling.more ? sibling.more->size : 0)) {
-		assert(lump.idx), lump.idx--; /* Switch to less. */
-		goto balance_less;
-	} else {
-		goto balance_more;
-	}
+		>= (sibling.more ? sibling.more->size : 0)) goto balance_less;
+	else goto balance_more;
 balance_less:
+	assert(lump.idx), lump.idx--; /* Switch to less. */
 	combined = child.node->size + sibling.less->size;
 	printf("balance less: combined %u\n", combined);
 	if(combined < 2 * TREE_MIN + 1) goto merge_less;
@@ -1124,6 +1126,10 @@ balance_less:
 	goto end;
 merge_less:
 	assert(combined <= TREE_MAX);
+	printf("merge less %s, %s through %d\n",
+		orcify(sibling.less), orcify(child.node), lump.node->key[lump.idx]);
+	/* Merge more is more efficient, less moving things around. */
+	if(lump.idx + 1 < lump.node->size) { lump.idx++; goto merge_more; }
 	assert(0);
 balance_more:
 	combined = child.node->size + sibling.more->size;
@@ -1146,11 +1152,16 @@ balance_more:
 	memmove(sibling.more->key, sibling.more->key + to_less + 1, sizeof *sibling.more->key * (sibling.more->size - to_less - 1));
 	child.node->size += to_less;
 	sibling.more->size -= to_less + 1;
-	PB_(graph)(tree, "graph/work1.gv");
+	if(lump.height > 1) {
+		struct PB_(branch) *const moreb = PB_(branch)(sibling.more);
+		assert(0);
+	}
 	goto end;
 merge_more:
+	assert(combined <= TREE_MAX);
+	printf("merge more %s, %s through %d\n",
+		orcify(child.node), orcify(sibling.more), lump.node->key[lump.idx]);
 	assert(0);
-merge:
 	if(lump.idx < lump.node->size && lump_branch->child[lump.idx + 1] && (lump.node->size > TREE_MIN)) {
 lean_left: /* Prefer left-leaning: less work for copying. */
 		/*left = child.node, right = lumpb->child[lump.idx + 1];*/
