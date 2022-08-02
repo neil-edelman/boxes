@@ -1293,11 +1293,11 @@ static struct PB_(node) *PB_(clone_r)(struct PB_(tree) src,
 		struct PB_(branch) *const srcb = PB_(as_branch)(src.node),
 			*const branch = PB_(as_branch)(node = *sc->branch.cursor++);
 		unsigned i;
+		struct PB_(tree) child;
 		*node = *src.node; /* Copy node. */
+		child.height = src.height - 1;
 		for(i = 0; i <= src.node->size; i++) { /* Different links. */
-			struct PB_(tree) child;
 			child.node = srcb->child[i];
-			child.height = src.height - 1;
 			branch->child[i] = PB_(clone_r)(child, sc);
 		}
 	} else { /* Leaves. */
