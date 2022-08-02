@@ -1082,8 +1082,12 @@ down: {
 		orcify(sibling.less), orcify(sibling.more));
 	if(lump.height - 1) {
 		printf("enqueuing\n");
+		assert(queue.size < 2);
 		queue.data[queue.next].key = child.node->key[lump.idx];
-		//queue.data[queue.next].key = child.node[];
+#ifdef TREE_VALUE
+		queue.data[queue.next].value = child.node->value[lump.idx];
+#endif
+		queue.size++;
 		assert(0);
 	}
 	assert(lump.idx <= lump.node->size);
@@ -1130,8 +1134,8 @@ merge_less:
 	printf("merge less %s, %s through %d\n",
 		orcify(sibling.less), orcify(child.node), lump.node->key[lump.idx]);
 	/* Merge more is more efficient, less moving things around. */
+	/* No, it's more. But now this doesn't work otherwise. */
 	if(lump.idx + 1 < lump.node->size) { lump.idx++; goto merge_more; }
-	PB_(graph)(tree, "graph/work3.gv");
 	assert(child.idx < child.node->size && lump.idx < lump.node->size);
 	/* Demote. */
 	sibling.less->key[sibling.less->size] = lump.node->key[lump.idx];
@@ -1146,7 +1150,8 @@ merge_less:
 		sizeof *lump.node->key * (lump.node->size - lump.idx - 1));
 	sibling.less->size += child.node->size;
 	lump.node->size--;
-	free(child.node);
+	/* Sloppy. */
+	free(child.node); printf("Remove: freeing %s.\n", orcify(child.node));
 	goto end;
 balance_more:
 	combined = child.node->size + sibling.more->size;
@@ -1198,8 +1203,6 @@ merge_more:
 	lump.node->size--;
 	/* Sloppy. */
 	free(sibling.more); printf("Remove: freeing %s.\n", orcify(sibling.more));
-
-	PB_(graph)(tree, "graph/work4.gv");
 	goto end;
 } shrink: /* Every node along the path is minimal, the height decreases. */
 	assert(0);
