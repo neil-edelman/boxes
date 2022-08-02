@@ -1294,23 +1294,15 @@ static struct PB_(node) *PB_(clone_r)(struct PB_(tree) src,
 			*const branch = PB_(as_branch)(node = *sc->branch.cursor++);
 		unsigned i;
 		*node = *src.node; /* Copy node. */
-		printf("copy branch %s->%s with %u / %u children %u height\n",
-			orcify(src.node), orcify(node), src.node->size + 1, srcb->base.size + 1, src.height);
-		src.height--;
 		for(i = 0; i <= src.node->size; i++) { /* Different links. */
-			struct PB_(node) *backup = src.node;
-			printf("%u{i%u with %u / %u children\n",
-				src.height, i, src.node->size + 1, srcb->base.size + 1);
-			src.node = srcb->child[i];
-			branch->child[i] = PB_(clone_r)(src, sc);
-			src.node = backup;
-			printf("}%u\n", src.height);
+			struct PB_(tree) child;
+			child.node = srcb->child[i];
+			child.height = src.height - 1;
+			branch->child[i] = PB_(clone_r)(child, sc);
 		}
-		src.height++;
 	} else { /* Leaves. */
 		node = *sc->leaf.cursor++;
 		*node = *src.node;
-		printf("copy leaf %s->%s\n", orcify(src.node), orcify(node));
 	}
 	return node;
 }
