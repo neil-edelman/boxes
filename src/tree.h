@@ -1131,7 +1131,23 @@ merge_less:
 		orcify(sibling.less), orcify(child.node), lump.node->key[lump.idx]);
 	/* Merge more is more efficient, less moving things around. */
 	if(lump.idx + 1 < lump.node->size) { lump.idx++; goto merge_more; }
-	assert(0);
+	PB_(graph)(tree, "graph/work3.gv");
+	assert(child.idx < child.node->size && lump.idx < lump.node->size);
+	/* Demote. */
+	sibling.less->key[sibling.less->size] = lump.node->key[lump.idx];
+	/* Copy the keys, leaving out deleted. */
+	memcpy(sibling.less->key + sibling.less->size + 1, child.node->key,
+		sizeof *child.node->key * child.idx);
+	memcpy(sibling.less->key + sibling.less->size + 1 + child.idx,
+		child.node->key + child.idx + 1,
+		sizeof *child.node->key * (child.node->size - child.idx - 1));
+	/* Move back from demoted. */
+	memmove(lump.node->key + lump.idx, lump.node->key + lump.idx + 1,
+		sizeof *lump.node->key * (lump.node->size - lump.idx - 1));
+	sibling.less->size += child.node->size;
+	lump.node->size--;
+	free(child.node);
+	goto end;
 balance_more:
 	combined = child.node->size + sibling.more->size;
 	printf("balance more: combined %u\n", combined);

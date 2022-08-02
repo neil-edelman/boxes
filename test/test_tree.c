@@ -286,10 +286,10 @@ static void manual_int(void) {
 		/* High. */
 		in[14] = 1;
 		if(!int_tree_clone(&copy, &removal)) goto catch;
-		int_tree_remove(&removal, 17), in[16] = 0;
-		tree_int_graph(&removal, "graph/removal-4c.gv");
+		int_tree_remove(&copy, 17), in[16] = 0;
+		tree_int_graph(&copy, "graph/removal-4c.gv");
 		for(n = 0; n < size; n++)
-			assert(int_tree_contains(&removal, n + 1) == in[n]);
+			assert(int_tree_contains(&copy, n + 1) == in[n]);
 		in[16] = 1;
 
 		/* Rearrange (already done?) */
