@@ -1367,14 +1367,12 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 		branch->base.size = 0;
 		branch->child[0] = 0;
 		*sc.branch.cursor++ = &branch->base;
-		printf("clone: new branch %s.\n", orcify(&branch->base));
 	}
 	while(sc.leaf.cursor != sc.data + sc.no) {
 		struct PB_(node) *leaf;
 		if(!(leaf = malloc(sizeof *leaf))) goto catch;
 		leaf->size = 0;
 		*sc.leaf.cursor++ = leaf;
-		printf("clone: new leaf %s.\n", orcify(leaf));
 	}
 	/* Resources acquired; now we don't care about tree. */
 	PB_(cannibalize)(tree, &sc);
