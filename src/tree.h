@@ -168,11 +168,11 @@ struct PB_(node) {
 /* B-tree branch is a <tag:<PB>node> and links to `size + 1` nodes. */
 struct PB_(branch) { struct PB_(node) base, *child[TREE_ORDER]; };
 /** @return Downcasts `as_leaf` to a branch. */
-static struct PB_(branch) *PB_(branch)(struct PB_(node) *const as_leaf)
+static struct PB_(branch) *PB_(as_branch)(struct PB_(node) *const as_leaf)
 	{ return (struct PB_(branch) *)(void *)
 	((char *)as_leaf - offsetof(struct PB_(branch), base)); }
 /** @return Downcasts `as_node` to a branch. */
-static const struct PB_(branch) *PB_(branch_c)(const struct PB_(node) *
+static const struct PB_(branch) *PB_(as_branch_c)(const struct PB_(node) *
 	const as_node) { return (const struct PB_(branch) *)(const void *)
 	((const char *)as_node - offsetof(struct PB_(branch), base)); }
 /* Address specific entry. */
@@ -236,8 +236,8 @@ static int PB_(to_predecessor)(struct PB_(tree) tree,
 	if(!tree.node || tree.height == UINT_MAX) return 0; /* Empty. */
 	if(!ref->node) { /* Null: `ret` is the last key. */
 		struct PB_(tree) descend = tree;
-		while(descend.height) descend.height--,
-			descend.node = PB_(branch)(descend.node)->child[descend.node->size];
+		while(descend.height) descend.height--, descend.node
+			= PB_(as_branch)(descend.node)->child[descend.node->size];
 		/* While bulk-loading, could have empty right. */
 		if(descend.node->size) ref->node = descend.node,
 			ref->height = 0, ref->idx = descend.node->size - 1;
@@ -246,7 +246,7 @@ static int PB_(to_predecessor)(struct PB_(tree) tree,
 		return 1;
 	}
 	while(ref->height) ref->height--,
-		ref->node = PB_(branch_c)(ref->node)->child[ref->idx],
+		ref->node = PB_(as_branch_c)(ref->node)->child[ref->idx],
 		ref->idx = ref->node->size;
 	if(ref->idx) return ref->idx--, 1; /* Likely. */
 { /* Re-descend; pick the minimum height node that has a previous key. */
@@ -254,7 +254,7 @@ static int PB_(to_predecessor)(struct PB_(tree) tree,
 	unsigned a0;
 	PB_(key) x;
 	for(prev.node = 0, x = ref->node->key[0]; tree.height;
-		tree.node = PB_(branch_c)(tree.node)->child[a0], tree.height--) {
+		tree.node = PB_(as_branch_c)(tree.node)->child[a0], tree.height--) {
 		/* fixme: This is repeated. */
 		unsigned a1 = tree.node->size;
 		a0 = 0;
@@ -280,7 +280,7 @@ static int PB_(to_successor_c)(struct PB_(tree) tree, \
 	else \
 		ref->idx++; \
 	while(ref->height) ref->height--, \
-		ref->node = PB_(branch_c)(ref->node)->child[ref->idx], ref->idx = 0; \
+		ref->node = PB_(as_branch_c)(ref->node)->child[ref->idx], ref->idx = 0; \
 	if(ref->idx < ref->node->size) return 1; /* Likely. */ \
 	if(!ref->node->size) return 0; /* When bulk-loading. */ \
 {	/* Re-descend; pick the minimum height node that has a next key. */ \
@@ -288,7 +288,7 @@ static int PB_(to_successor_c)(struct PB_(tree) tree, \
 	unsigned a0; \
 	PB_(key) x; \
 	for(next.node = 0, x = ref->node->key[ref->node->size - 1]; tree.height; \
-		tree.node = PB_(branch_c)(tree.node)->child[a0], tree.height--) { \
+		tree.node = PB_(as_branch_c)(tree.node)->child[a0], tree.height--) { \
 		unsigned a1 = tree.node->size; \
 		a0 = 0; \
 		while(a0 < a1) { \
@@ -369,7 +369,7 @@ static PB_(entry) PB_(previous)(struct PB_(iterator) *const it) {
 
 /* Want to find slightly different things; code re-use is bad. Confusing. */
 #define TREE_FORTREE(i) i.node = tree->node, i.height = tree->height; ; \
-	i.node = PB_(branch_c)(i.node)->child[i.idx], i.height--
+	i.node = PB_(as_branch_c)(i.node)->child[i.idx], i.height--
 #define TREE_START(i) unsigned hi = i.node->size; i.idx = 0;
 #define TREE_FORNODE(i, continue) if(!hi) continue; \
 do { \
@@ -442,9 +442,9 @@ static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
 		TREE_FORNODE(lo, continue)
 		if(lo.node->size > TREE_MIN || lo.height && (
 			lo.idx
-			&& PB_(branch)(lo.node)->child[lo.idx - 1]->size > TREE_MIN
+			&& PB_(as_branch)(lo.node)->child[lo.idx - 1]->size > TREE_MIN
 			|| lo.idx < lo.node->size
-			&& PB_(branch)(lo.node)->child[lo.idx + 1]->size > TREE_MIN
+			&& PB_(as_branch)(lo.node)->child[lo.idx + 1]->size > TREE_MIN
 		)) *lump = lo;
 		if(lo.idx < lo.node->size && TREE_FLIPPED(lo)) break;
 		if(!lo.height) { lo.node = 0; break; } /* Was not in. */
@@ -483,9 +483,9 @@ static void PB_(clear_r)(struct PB_(tree) tree, struct PB_(node) **const keep) {
 		unsigned i;
 		child.height = tree.height - 1;
 		for(i = 0; i <= tree.node->size; i++)
-			child.node = PB_(branch)(tree.node)->child[i],
+			child.node = PB_(as_branch)(tree.node)->child[i],
 			PB_(clear_r)(child, keep);
-		free(PB_(branch)(tree.node));
+		free(PB_(as_branch)(tree.node));
 	}
 }
 /** `tree` can be null. */
@@ -611,7 +611,7 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 		struct PB_(tree) scout;
 		PB_(key) i;
 		printf("bulk: tree...\n"), PB_(print)(tree);
-		for(scout = tree->root; ; scout.node = PB_(branch)(scout.node)
+		for(scout = tree->root; ; scout.node = PB_(as_branch)(scout.node)
 			->child[scout.node->size], scout.height--) {
 			if(scout.node->size < TREE_MAX) unfull = scout;
 			if(scout.node->size) last = scout.node;
@@ -655,7 +655,7 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 		if(pretail) pretail->child[0] = tail;
 		else head = node;
 		if(!unfull.node) { /* Add tree to head. */
-			struct PB_(branch) *const branch = PB_(branch)(head);
+			struct PB_(branch) *const branch = PB_(as_branch)(head);
 			/*printf("adding the existing root, %s to %s\n",
 				orcify(tree->root), orcify(head));*/
 			assert(new_nodes > 1);
@@ -663,7 +663,8 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 			branch->child[0] = tree->root.node;
 			node = tree->root.node = head, tree->root.height++;
 		} else if(unfull.height) { /* Add head to tree. */
-			struct PB_(branch) *const branch = PB_(branch)(node = unfull.node);
+			struct PB_(branch) *const branch
+				= PB_(as_branch)(node = unfull.node);
 			/*printf("adding the linked list, %s to %s at %u\n",
 				orcify(head), orcify(inner), inner->base.size + 1);*/
 			assert(new_nodes);
@@ -684,7 +685,7 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 catch: /* Didn't work. Reset. */
 	free(node);
 	while(head) {
-		struct PB_(node) *const next = PB_(branch)(head)->child[0];
+		struct PB_(node) *const next = PB_(as_branch)(head)->child[0];
 		free(head);
 		head = next;
 	}
@@ -711,7 +712,7 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 	if(!tree || !tree->root.node || tree->root.height == UINT_MAX) return 1;
 	for(s = tree->root; s.height; s.node = right, s.height--) {
 		unsigned distribute, right_want, right_move, take_sibling;
-		struct PB_(branch) *parent = PB_(branch)(s.node);
+		struct PB_(branch) *parent = PB_(as_branch)(s.node);
 		struct PB_(node) *sibling = (assert(parent->base.size),
 			parent->child[parent->base.size - 1]);
 		right = parent->child[parent->base.size];
@@ -744,8 +745,8 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 #endif
 		printf("height %u\n", s.height);
 		if(s.height > 1) { /* (Parent height.) */
-			struct PB_(branch) *rbranch = PB_(branch)(right),
-				*sbranch = PB_(branch)(sibling);
+			struct PB_(branch) *rbranch = PB_(as_branch)(right),
+				*sbranch = PB_(as_branch)(sibling);
 			memmove(rbranch->child + right_move, rbranch->child,
 				sizeof *rbranch->child * (right->size + 1));
 			memcpy(rbranch->child, sbranch->child + sibling->size + 1
@@ -869,7 +870,7 @@ grow: /* Leaf is full. */ {
 	*new_next = new_leaf;
 	/* Attach new nodes to the tree. The hole is now an actual hole. */
 	if(hole.node) { /* New nodes are a sub-structure of the tree. */
-		struct PB_(branch) *holeb = PB_(branch)(hole.node);
+		struct PB_(branch) *holeb = PB_(as_branch)(hole.node);
 		memmove(hole.node->key + hole.idx + 1, hole.node->key + hole.idx,
 			sizeof *hole.node->key * (hole.node->size - hole.idx));
 #ifdef TREE_VALUE
@@ -881,7 +882,7 @@ grow: /* Leaf is full. */ {
 		holeb->child[hole.idx + 1] = new_head;
 		hole.node->size++;
 	} else { /* New nodes raise tree height. */
-		struct PB_(branch) *const new_root = PB_(branch)(new_head);
+		struct PB_(branch) *const new_root = PB_(as_branch)(new_head);
 		hole.node = new_head, hole.height = ++tree->root.height, hole.idx = 0;
 		new_head = new_root->child[1] = new_root->child[0];
 		new_root->child[0] = tree->root.node, tree->root.node = hole.node;
@@ -894,8 +895,8 @@ grow: /* Leaf is full. */ {
 	assert(cursor.node && cursor.node->size && cursor.height);
 	sibling = new_head;
 	/* Descend now while split hasn't happened -- easier. */
-	new_head = --cursor.height ? PB_(branch)(new_head)->child[0] : 0;
-	cursor.node = PB_(branch)(cursor.node)->child[cursor.idx];
+	new_head = --cursor.height ? PB_(as_branch)(new_head)->child[0] : 0;
+	cursor.node = PB_(as_branch)(cursor.node)->child[cursor.idx];
 	PB_(find_idx)(&cursor, key);
 	assert(!sibling->size && cursor.node->size == TREE_MAX); /* Atomic. */
 	/* Expand `cursor`, which is full, to multiple nodes. */
@@ -919,8 +920,8 @@ grow: /* Leaf is full. */ {
 			sizeof *cursor.node->value * (TREE_SPLIT - 1 - cursor.idx));
 #endif
 		if(cursor.height) {
-			struct PB_(branch) *const cb = PB_(branch)(cursor.node),
-				*const sb = PB_(branch)(sibling);
+			struct PB_(branch) *const cb = PB_(as_branch)(cursor.node),
+				*const sb = PB_(as_branch)(sibling);
 			struct PB_(node) *temp = sb->child[0];
 			memcpy(sb->child, cb->child + TREE_SPLIT,
 				sizeof *cb->child * (TREE_MAX - TREE_SPLIT + 1));
@@ -947,8 +948,8 @@ grow: /* Leaf is full. */ {
 			sizeof *sibling->value * (TREE_MAX - cursor.idx));
 #endif
 		if(cursor.height) {
-			struct PB_(branch) *const cb = PB_(branch)(cursor.node),
-				*const sb = PB_(branch)(sibling);
+			struct PB_(branch) *const cb = PB_(as_branch)(cursor.node),
+				*const sb = PB_(as_branch)(sibling);
 			struct PB_(node) *temp = sb->child[0];
 			memcpy(sb->child, cb->child + TREE_SPLIT + 1,
 				sizeof *cb->child * (hole.idx + 1));
@@ -964,8 +965,8 @@ grow: /* Leaf is full. */ {
 			sizeof *sibling->value * (TREE_MAX - TREE_SPLIT));
 #endif
 		if(cursor.height) {
-			struct PB_(branch) *const cb = PB_(branch)(cursor.node),
-				*const sb = PB_(branch)(sibling);
+			struct PB_(branch) *const cb = PB_(as_branch)(cursor.node),
+				*const sb = PB_(as_branch)(sibling);
 			memcpy(sb->child + 1, cb->child + TREE_SPLIT + 1,
 				sizeof *cb->child * (TREE_MAX - TREE_SPLIT));
 		}
@@ -981,7 +982,7 @@ grow: /* Leaf is full. */ {
 	return TREE_UNIQUE;
 } catch: /* Didn't work. Reset. */
 	while(new_head) {
-		struct PB_(branch) *const top = PB_(branch)(new_head);
+		struct PB_(branch) *const top = PB_(as_branch)(new_head);
 		new_head = top->child[0];
 		free(top);
 	}
@@ -1043,12 +1044,12 @@ branch: {
 	/* This will be more efficient duplicating code? it actually doesn't need
 	 all the code.
 	while(ref->height) ref->height--,
-		ref->node = PB_(branch_c)(ref->node)->child[ref->idx],
+		ref->node = PB_(as_branch_c)(ref->node)->child[ref->idx],
 		ref->idx = ref->node->size;
 	if(ref->idx) return ref->idx--, 1; <-- predecessor
 	ref->idx++;
 	 while(ref->height) ref->height--,
-	ref->node = PB_(branch_c)(ref->node)->child[ref->idx], ref->idx = 0;
+	ref->node = PB_(as_branch_c)(ref->node)->child[ref->idx], ref->idx = 0;
 	if(ref->idx < ref->node->size) return 1; <-- successor */
 	assert(0);
 } leaf:
@@ -1061,7 +1062,7 @@ branch: {
 	if(rm.node == lump.node) goto excess;
 	goto down;
 down: {
-	struct PB_(branch) *const lump_branch = PB_(branch)(lump.node);
+	struct PB_(branch) *const lump_branch = PB_(as_branch)(lump.node);
 	struct PB_(ref) child;
 	struct { struct PB_(node) *less, *more; } sibling;
 	unsigned combined, to_promote, to_more, to_less, transfer;
@@ -1120,7 +1121,7 @@ balance_less:
 	child.node->size += transfer;
 	sibling.less->size = (unsigned char)to_promote;
 	if(lump.height > 1) {
-		struct PB_(branch) *const lessb = PB_(branch)(sibling.less);
+		struct PB_(branch) *const lessb = PB_(as_branch)(sibling.less);
 		assert(0);
 	}
 	goto end;
@@ -1153,7 +1154,7 @@ balance_more:
 	child.node->size += to_less;
 	sibling.more->size -= to_less + 1;
 	if(lump.height > 1) {
-		struct PB_(branch) *const moreb = PB_(branch)(sibling.more);
+		struct PB_(branch) *const moreb = PB_(as_branch)(sibling.more);
 		assert(0);
 	}
 	goto end;
@@ -1180,7 +1181,8 @@ lean_left: /* Prefer left-leaning: less work for copying. */
 		memmove(lump.node->value + lump.idx, lump.node->value + lump.idx + 1,
 			sizeof *lump.node->value * (lump.node->size - lump.idx - 1));
 #endif
-		memmove(lump_branch->child + lump.idx + 1, lump_branch->child + lump.idx + 2,
+		memmove(lump_branch->child + lump.idx + 1, lump_branch->child
+			+ lump.idx + 2,
 			sizeof *lump_branch->child * (lump.node->size - lump.idx - 1));
 		lump.node->size--;
 	} else {
@@ -1235,7 +1237,7 @@ static int PB_(count_r)(struct PB_(tree) tree, struct tree_count *const no) {
 		unsigned char i;
 		for(i = 0; i <= tree.node->size; i++) {
 			struct PB_(tree) child;
-			child.node = PB_(branch)(tree.node)->child[i];
+			child.node = PB_(as_branch)(tree.node)->child[i];
 			child.height = tree.height - 1;
 			if(!PB_(count_r)(child, no)) return 0;
 		}
@@ -1257,7 +1259,7 @@ static int PB_(count)(const struct B_(tree) *const tree,
 }
 static void PB_(cannibalize_r)(struct PB_(ref) ref,
 	struct PB_(scaffold) *const sc) {
-	struct PB_(branch) *branch = PB_(branch)(ref.node);
+	struct PB_(branch) *branch = PB_(as_branch)(ref.node);
 	const int keep_branch = sc->branch.cursor < sc->branch.fresh;
 	assert(ref.node && ref.height && sc);
 	if(keep_branch) *sc->branch.cursor = ref.node, sc->branch.cursor++;
@@ -1271,7 +1273,7 @@ static void PB_(cannibalize_r)(struct PB_(ref) ref,
 		}
 	} else while(ref.idx <= ref.node->size) {
 		struct PB_(ref) child;
-		child.node = PB_(branch)(ref.node)->child[ref.idx];
+		child.node = PB_(as_branch)(ref.node)->child[ref.idx];
 		child.height = ref.height - 1;
 		child.idx = 0;
 		PB_(cannibalize_r)(child, sc);
@@ -1299,8 +1301,8 @@ static struct PB_(node) *PB_(clone_r)(struct PB_(tree) src,
 	struct PB_(scaffold) *const sc) {
 	struct PB_(node) *node;
 	if(src.height) {
-		struct PB_(branch) *const cpyb = PB_(branch)(src.node),
-			*const branch = PB_(branch)(node = *sc->branch.cursor++);
+		struct PB_(branch) *const cpyb = PB_(as_branch)(src.node),
+			*const branch = PB_(as_branch)(node = *sc->branch.cursor++);
 		unsigned i;
 		*node = *src.node; /* Copy node. */
 		src.height--;
@@ -1397,7 +1399,7 @@ catch:
 		free(leaf);
 	}
 	while(sc.branch.cursor != sc.branch.fresh) {
-		struct PB_(branch) *branch = PB_(branch)(*(--sc.branch.cursor));
+		struct PB_(branch) *branch = PB_(as_branch)(*(--sc.branch.cursor));
 		assert(branch);
 		free(branch);
 	}

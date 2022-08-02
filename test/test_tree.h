@@ -69,7 +69,7 @@ static void PB_(subgraph)(const struct PB_(tree) *const sub, FILE *fp) {
 #endif
 	if(!sub->height) return;
 	/* Draw the lines between trees. */
-	branch = PB_(branch_c)(sub->node);
+	branch = PB_(as_branch_c)(sub->node);
 	for(i = 0; i <= branch->base.size; i++)
 		fprintf(fp, "\ttrunk%p:%u:se -> trunk%p;\n",
 		(const void *)sub->node, i, (const void *)branch->child[i]);
@@ -111,7 +111,7 @@ static void PB_(print_r)(const struct PB_(tree) sub) {
 	assert(sub.node);
 	printf("/");
 	if(sub.height) {
-		branch = PB_(branch_c)(sub.node);
+		branch = PB_(as_branch_c)(sub.node);
 		child.height = sub.height - 1;
 	}
 	for(i = 0; ; i++) {
