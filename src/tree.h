@@ -1024,8 +1024,8 @@ static int B_(tree_remove)(struct B_(tree) *const tree,
 		|| !(rm = PB_(lookup_remove)(&tree->root, key, &lump)).node)
 		{ printf("remove: didn't match any nodes.\n"); return 0; }
 	printf("remove: %s(%u):%u <%u>; lump edge %s(%u):%u.\n",
-		   orcify(rm.node), rm.height, rm.idx, rm.node->key[rm.idx],
-		   orcify(lump.node), lump.height, lump.idx);
+		orcify(rm.node), rm.height, rm.idx, rm.node->key[rm.idx],
+		orcify(lump.node), lump.height, lump.idx);
 	if(rm.height) goto branch; else goto leaf;
 branch: {
 	struct PB_(ref) succ;
@@ -1162,40 +1162,29 @@ merge_more:
 	assert(combined <= TREE_MAX);
 	printf("merge more %s, %s through %d\n",
 		orcify(child.node), orcify(sibling.more), lump.node->key[lump.idx]);
-	assert(0);
-	if(lump.idx < lump.node->size && lump_branch->child[lump.idx + 1] && (lump.node->size > TREE_MIN)) {
-lean_left: /* Prefer left-leaning: less work for copying. */
-		/*left = child.node, right = lumpb->child[lump.idx + 1];*/
-		assert(queue.size < 2);
-		assert(0);
-//		queue.store[queue.next].key = lump.node->key[lump.idx];
-#ifdef TREE_VALUE
-	//	temp.store[temp.next].value = lump.node->value[lump.idx];
-#endif
-		//queue.store[queue.next].link = lumpb->child[lump.idx + 1];
-		//printf("temp[%u] = %u, %s; moving %lu\n", queue.next, queue.store[queue.next].key, orcify(queue.store[queue.next].link), (lump.node->size - lump.idx - 1));
-		/* Not necessarily! */
-		memmove(lump.node->key + lump.idx, lump.node->key + lump.idx + 1,
-			sizeof *lump.node->key * (lump.node->size - lump.idx - 1));
-#ifdef TREE_VALUE
-		memmove(lump.node->value + lump.idx, lump.node->value + lump.idx + 1,
-			sizeof *lump.node->value * (lump.node->size - lump.idx - 1));
-#endif
-		memmove(lump_branch->child + lump.idx + 1, lump_branch->child
-			+ lump.idx + 2,
-			sizeof *lump_branch->child * (lump.node->size - lump.idx - 1));
-		lump.node->size--;
-	} else {
-		/*left = lumpb->child[lump.idx - 1], right = child.node;*/
-		assert(0);
-	}
-	//queue.next = !queue.next;
-	PB_(graph)(tree, "graph/work1.gv");
-	/*printf("remove: merging %s and %s.\n", orcify(left), orcify(right));
-	assert(left->size == TREE_MIN && right->size == TREE_MIN);*/
-	assert(0);
-	PB_(find_idx)(&lump, key);
-	return 0;
+	assert(lump.idx < lump.node->size && lump.node->size > TREE_MIN
+		&& child.idx < child.node->size && child.node->size == TREE_MIN
+		&& sibling.more->size == TREE_MIN);
+	/* Delete the key in the child node. */
+	memmove(child.node->key + child.idx, child.node->key + child.idx + 1,
+		sizeof *child.node->key * (child.node->size - child.idx - 1)); /*and*/
+	/* Move the parent key to the child. */
+	child.node->key[child.node->size - 1] = lump.node->key[lump.idx];
+	/* Merge the sibling. */
+	memcpy(child.node->key + child.node->size, sibling.more->key,
+		sizeof *sibling.more->key * sibling.more->size);
+	/* Moved the lump's key to the child. */
+	memmove(lump.node->key + lump.idx, lump.node->key + lump.idx + 1,
+		sizeof *lump.node->key * (lump.node->size - lump.idx - 1));
+	memmove(lump_branch->child + lump.idx + 1, lump_branch->child + lump.idx + 2,
+		sizeof *lump_branch->child * (lump.node->size - lump.idx - 1));
+	child.node->size += sibling.more->size;
+	lump.node->size--;
+	/* Sloppy. */
+	free(sibling.more); printf("Remove: freeing %s.\n", orcify(sibling.more));
+
+	PB_(graph)(tree, "graph/work4.gv");
+	goto end;
 } shrink: /* Every node along the path is minimal, the height decreases. */
 	assert(0);
 	return 0;
@@ -1305,14 +1294,19 @@ static struct PB_(node) *PB_(clone_r)(struct PB_(tree) src,
 			*const branch = PB_(as_branch)(node = *sc->branch.cursor++);
 		unsigned i;
 		*node = *src.node; /* Copy node. */
+		printf("copy branch %s->%s with %u / %u children\n",
+			orcify(src.node), orcify(node), src.node->size + 1, cpyb->base.size + 1);
 		src.height--;
 		for(i = 0; i <= src.node->size; i++) { /* Different links. */
+			printf("(with %u / %u children)\n",
+				src.node->size + 1, cpyb->base.size + 1);
 			src.node = cpyb->child[i];
 			branch->child[i] = PB_(clone_r)(src, sc);
 		}
 	} else { /* Leaves. */
 		node = *sc->leaf.cursor++;
 		*node = *src.node;
+		printf("copy leaf %s->%s\n", orcify(src.node), orcify(node));
 	}
 	return node;
 }
@@ -1352,8 +1346,7 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 	if(!sc.no) { PB_(clear)(tree); goto finally; } /* No need to allocate. */
 	if(!(sc.data = malloc(sizeof *sc.data * sc.no)))
 		{ if(!errno) errno = ERANGE; goto catch; }
-	/* debug */
-	{
+	{ /* Makes debugging easier; not necessary. */
 		size_t i;
 		for(i = 0; i < sc.no; i++) sc.data[i] = 0;
 	}
@@ -1378,12 +1371,14 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 		branch->base.size = 0;
 		branch->child[0] = 0;
 		*sc.branch.cursor++ = &branch->base;
+		printf("clone: new branch %s.\n", orcify(&branch->base));
 	}
 	while(sc.leaf.cursor != sc.data + sc.no) {
 		struct PB_(node) *leaf;
 		if(!(leaf = malloc(sizeof *leaf))) goto catch;
 		leaf->size = 0;
 		*sc.leaf.cursor++ = leaf;
+		printf("clone: new leaf %s.\n", orcify(leaf));
 	}
 	/* Resources acquired; now we don't care about tree. */
 	PB_(cannibalize)(tree, &sc);

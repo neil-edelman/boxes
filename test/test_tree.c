@@ -159,7 +159,8 @@ static void manual_int(void) {
 		rnd = int_tree(),
 		even = int_tree(), even_clone = int_tree(),
 		consecutive = int_tree(),
-		removal = int_tree();
+		removal = int_tree(),
+		copy = int_tree();
 	size_t i;
 	const size_t size_rnd = 100;
 	/*unsigned *x;*/
@@ -269,9 +270,22 @@ static void manual_int(void) {
 		tree_int_graph(&removal, "graph/removal-3.gv");
 		for(n = 0; n < size; n++)
 			assert(int_tree_contains(&removal, n + 1) == in[n]);
-		/* Merge. */
+		/* Merge three ways. */
+		if(!int_tree_clone(&copy, &removal)) goto catch;
+		int_tree_remove(&copy, 10), in[9] = 0;
+		tree_int_graph(&copy, "graph/removal-4a.gv");
+		for(n = 0; n < size; n++)
+			assert(int_tree_contains(&copy, n + 1) == in[n]);
+		in[9] = 1;
+		/*  */
+
 		int_tree_remove(&removal, 15), in[14] = 0;
 		tree_int_graph(&removal, "graph/removal-4.gv");
+		for(n = 0; n < size; n++)
+			assert(int_tree_contains(&removal, n + 1) == in[n]);
+		/* Rearrange (already done?) */
+		int_tree_remove(&removal, 10), in[9] = 0;
+		tree_int_graph(&removal, "graph/removal-5.gv");
 		for(n = 0; n < size; n++)
 			assert(int_tree_contains(&removal, n + 1) == in[n]);
 	}
@@ -324,6 +338,7 @@ finally:
 	int_tree_(&removal);
 	int_tree_(&even), int_tree_(&even_clone);
 	int_tree_(&consecutive);
+	int_tree_(&copy);
 }
 
 int main(void) {
