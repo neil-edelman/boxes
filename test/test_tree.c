@@ -272,6 +272,7 @@ static void manual_int(void) {
 			assert(int_tree_contains(&removal, n + 1) == in[n]);
 		/* Merge three ways. */
 		if(!int_tree_clone(&copy, &removal)) goto catch;
+		tree_int_graph(&copy, "graph/removal-4aa.gv");
 		int_tree_remove(&copy, 10), in[9] = 0;
 		tree_int_graph(&copy, "graph/removal-4a.gv");
 		for(n = 0; n < size; n++)
