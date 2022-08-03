@@ -434,9 +434,9 @@ static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) *const tree,
 /** Finds lower-bound of `key` in `tree` while counting the non-minimum `hole`
  and `is_equal`. (fixme: `is_equal` useless) */
 static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
-	const PB_(key) key, struct PB_(ref) *const lump) {
+	const PB_(key) key, struct PB_(ref) *const parent) {
 	struct PB_(ref) lo;
-	lump->node = 0;
+	parent->node = 0;
 	for(TREE_FORTREE(lo)) {
 		TREE_START(lo)
 		TREE_FORNODE(lo, continue)
@@ -445,11 +445,11 @@ static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
 			&& PB_(as_branch)(lo.node)->child[lo.idx - 1]->size > TREE_MIN
 			|| lo.idx < lo.node->size
 			&& PB_(as_branch)(lo.node)->child[lo.idx + 1]->size > TREE_MIN
-		)) *lump = lo;
+		)) *parent = lo;
 		if(lo.idx < lo.node->size && TREE_FLIPPED(lo)) break;
 		if(!lo.height) { lo.node = 0; break; } /* Was not in. */
 	}
-	if(!lump->node) {
+	if(!parent->node) {
 		/* Check for root. */
 		assert(0);
 	}
@@ -1004,28 +1004,46 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 /** Tries to remove `key` from `tree`. @return Success. */
 static int B_(tree_remove)(struct B_(tree) *const tree,
 	const PB_(key) key) {
-	struct PB_(ref) rm, lump;
+	/* This is a temporary 2-element queue for keys that move down the tree. */
+#define TREE_STATUS X(EMPTY), X(EVEN1), X(EVEN2), X(ODD1), X(ODD2), X(ERROR)
+#define X(n) n
+	enum status { TREE_STATUS };
+#undef X
+#define X(n) #n
+	const char *const status_string[] = { TREE_STATUS }; /* Debug. */
+#undef X
+#undef TREE_STATUS
+	const struct { const unsigned next[6], tail[6];
+		enum status enqueue[6], dequeue[6]; } lut = {
+			{ 0, 1, ERROR, 0, ERROR, ERROR },
+			{ ERROR, 0, 0, 1, 1, ERROR },
+			{ EVEN1, EVEN2, ERROR, ODD2, ERROR, ERROR },
+			{ ERROR, EMPTY, ODD1, EMPTY, EVEN1 }
+		};
 	struct {
-		unsigned size, next;
+		enum status status;
 		struct {
 			PB_(key) key;
 #ifdef TREE_VALUE
 			PB_(value) value;
 #endif
 			struct PB_(node) *link;
-			enum { LESS, MORE } order;
+			enum { LEFT, RIGHT } link_order;
 		} data[2];
-	} queue; /* Requires two temporary slots. */
-	queue.size = queue.next = 0;
+	} queue;
+	/* The parent is the ancestor (or itself) with excess nodes to spare. */
+	struct PB_(ref) rm, parent;
+	queue.status = EMPTY;
+	(void)status_string; /* Debug, not there in release. */
 	assert(tree);
 	printf("MIN %u, MAX %u, ORDER %u\n", TREE_MIN, TREE_MAX, TREE_ORDER);
 	/* Traverse down the tree until `key`. */
 	if(!(rm.node = tree->root.node) || tree->root.height == UINT_MAX
-		|| !(rm = PB_(lookup_remove)(&tree->root, key, &lump)).node)
+		|| !(rm = PB_(lookup_remove)(&tree->root, key, &parent)).node)
 		{ printf("remove: didn't match any nodes.\n"); return 0; }
-	printf("remove: %s(%u):%u <%u>; lump edge %s(%u):%u.\n",
+	printf("remove: %s(%u):%u <%u>; parent edge %s(%u):%u.\n",
 		orcify(rm.node), rm.height, rm.idx, rm.node->key[rm.idx],
-		orcify(lump.node), lump.height, lump.idx);
+		orcify(parent.node), parent.height, parent.idx);
 	if(rm.height) goto branch; else goto leaf;
 branch: {
 	struct PB_(ref) succ;
@@ -1054,50 +1072,56 @@ branch: {
 	assert(0);
 } leaf:
 	printf("remove: in leaf node.\n");
-	if(!lump.node) {
+	if(!parent.node) {
 		/* Root special case. */
-		if(tree->root.node->size > 1) lump.node = tree->root.node, printf("remove: special case of root.\n");
+		if(tree->root.node->size > 1) parent.node = tree->root.node, printf("remove: special case of root.\n");
 		else goto shrink;
 	}
-	if(rm.node == lump.node) goto excess;
+	if(rm.node == parent.node) goto excess;
 	goto down;
 down: {
-	struct PB_(branch) *const lump_branch = PB_(as_branch)(lump.node);
+	struct PB_(branch) *const parent_branch = PB_(as_branch)(parent.node);
 	struct PB_(ref) child;
 	struct { struct PB_(node) *less, *more; } sibling;
 	unsigned combined, to_promote, to_more, to_less, transfer;
-	assert(lump.height && lump.idx <= lump.node->size && lump.node->size > 0
-		&& !queue.size);
+	assert(parent.height && parent.idx <= parent.node->size
+		&& parent.node->size > 0 && queue.status == EMPTY);
 	/* Find the child and sibling edges. */
-	child.node = lump_branch->child[lump.idx];
-	if(child.height = lump.height - 1) PB_(find_idx)(&child, key);
+	child.node = parent_branch->child[parent.idx];
+	if(child.height = parent.height - 1) PB_(find_idx)(&child, key);
 	else assert(child.node == rm.node), child.idx = rm.idx;
 	assert(child.node->size == TREE_MIN);
-	sibling.less = lump.idx ? lump_branch->child[lump.idx - 1] : 0;
-	sibling.more = lump.idx < lump.node->size
-		? lump_branch->child[lump.idx + 1] : 0;
+	sibling.less = parent.idx ? parent_branch->child[parent.idx - 1] : 0;
+	sibling.more = parent.idx < parent.node->size
+		? parent_branch->child[parent.idx + 1] : 0;
 	assert(sibling.less || sibling.more);
 	printf("remove: child edge %s(%u):%u, siblings %s and %s.\n",
 		orcify(child.node), child.height, child.idx,
 		orcify(sibling.less), orcify(sibling.more));
-	if(lump.height - 1) {
-		printf("enqueuing\n");
-		assert(queue.size < 2);
-		queue.data[queue.next].key = child.node->key[lump.idx];
+	if(parent.height - 1) {
+		const unsigned next = lut.next[queue.status],
+			back = child.idx >= child.node->size;
+		queue.status = lut.enqueue[queue.status];
+		printf("enqueuing %s:%u in %u result %s\n",
+			orcify(child.node), child.idx - back, next, status_string[queue.status]);
+		assert(next != ERROR && queue.status != ERROR);
+		queue.data[next].key = child.node->key[child.idx - back];
 #ifdef TREE_VALUE
-		queue.data[queue.next].value = child.node->value[lump.idx];
+		queue.data[next].value = child.node->value[child.idx - back];
 #endif
-		queue.size++;
-		assert(0);
+		queue.data[next].link = parent.height - 2 ?
+			PB_(as_branch_c)(child.node)->child[child.idx] : 0;
+		queue.data[next].link_order = back ? RIGHT : LEFT;
+		printf("\\key %u\n", queue.data[next].key);
 	}
-	assert(lump.idx <= lump.node->size);
-	printf("lump: %s:%u\n", orcify(lump.node), lump.idx);
+	assert(parent.idx <= parent.node->size);
+	printf("parent: %s:%u\n", orcify(parent.node), parent.idx);
 	/* Pick the sibling key with the most nodes to balance, preferring less. */
 	if((sibling.less ? sibling.less->size : 0)
 		>= (sibling.more ? sibling.more->size : 0)) goto balance_less;
 	else goto balance_more;
 balance_less:
-	assert(lump.idx), lump.idx--; /* Switch to less. */
+	assert(parent.idx), parent.idx--; /* Switch to less. */
 	combined = child.node->size + sibling.less->size;
 	printf("balance less: combined %u\n", combined);
 	if(combined < 2 * TREE_MIN + 1) goto merge_less;
@@ -1114,17 +1138,17 @@ balance_less:
 	printf("move child2 entries %u\n", child.idx);
 	memmove(child.node->key + 1 + transfer, child.node->key,
 		sizeof *child.node->key * child.idx);
-	printf("demote <%u> %s:%u %u ->\n", lump.node->key[lump.idx], orcify(lump.node), lump.idx, transfer);
-	child.node->key[transfer] = lump.node->key[lump.idx];
+	printf("demote <%u> %s:%u %u ->\n", parent.node->key[parent.idx], orcify(parent.node), parent.idx, transfer);
+	child.node->key[transfer] = parent.node->key[parent.idx];
 	printf("transfer %u(%u) from less\n", to_more, transfer);
 	memcpy(child.node->key, sibling.less->key + to_more,
 		sizeof *sibling.less->key * transfer);
-	printf("lump from less\n");
-	lump.node->key[lump.idx] = sibling.less->key[to_promote];
+	printf("parent from less\n");
+	parent.node->key[parent.idx] = sibling.less->key[to_promote];
 	assert(child.node->size <= TREE_MAX - transfer);
 	child.node->size += transfer;
 	sibling.less->size = (unsigned char)to_promote;
-	if(lump.height > 1) {
+	if(parent.height > 1) {
 		struct PB_(branch) *const lessb = PB_(as_branch)(sibling.less);
 		assert(0);
 	}
@@ -1132,13 +1156,13 @@ balance_less:
 merge_less:
 	assert(combined <= TREE_MAX);
 	printf("merge less %s, %s through %d\n",
-		orcify(sibling.less), orcify(child.node), lump.node->key[lump.idx]);
+		orcify(sibling.less), orcify(child.node), parent.node->key[parent.idx]);
 	/* Merge more is more efficient, less moving things around. */
 	/* No, it's more. But now this doesn't work otherwise. */
-	if(lump.idx + 1 < lump.node->size) { lump.idx++; goto merge_more; }
-	assert(child.idx < child.node->size && lump.idx < lump.node->size);
+	if(parent.idx + 1 < parent.node->size) { parent.idx++; goto merge_more; }
+	assert(child.idx < child.node->size && parent.idx < parent.node->size);
 	/* Demote. */
-	sibling.less->key[sibling.less->size] = lump.node->key[lump.idx];
+	sibling.less->key[sibling.less->size] = parent.node->key[parent.idx];
 	/* Copy the keys, leaving out deleted. */
 	memcpy(sibling.less->key + sibling.less->size + 1, child.node->key,
 		sizeof *child.node->key * child.idx);
@@ -1146,10 +1170,10 @@ merge_less:
 		child.node->key + child.idx + 1,
 		sizeof *child.node->key * (child.node->size - child.idx - 1));
 	/* Move back from demoted. */
-	memmove(lump.node->key + lump.idx, lump.node->key + lump.idx + 1,
-		sizeof *lump.node->key * (lump.node->size - lump.idx - 1));
+	memmove(parent.node->key + parent.idx, parent.node->key + parent.idx + 1,
+		sizeof *parent.node->key * (parent.node->size - parent.idx - 1));
 	sibling.less->size += child.node->size;
-	lump.node->size--;
+	parent.node->size--;
 	/* Sloppy. */
 	free(child.node); printf("Remove: freeing %s.\n", orcify(child.node));
 	goto end;
@@ -1165,16 +1189,16 @@ balance_more:
 	memmove(child.node->key + child.idx, child.node->key + child.idx + 1,
 		sizeof *child.node->key * (child.node->size - child.idx - 1));
 	/* Demote into hole. */
-	child.node->key[child.node->size - 1] = lump.node->key[lump.idx];
+	child.node->key[child.node->size - 1] = parent.node->key[parent.idx];
 	/* Transfer some keys from more to child. */
 	memcpy(child.node->key + child.node->size, sibling.more->key,
 		sizeof *sibling.more->key * to_less);
 	/* Promote one key from more. */
-	lump.node->key[lump.idx] = sibling.more->key[to_less];
+	parent.node->key[parent.idx] = sibling.more->key[to_less];
 	memmove(sibling.more->key, sibling.more->key + to_less + 1, sizeof *sibling.more->key * (sibling.more->size - to_less - 1));
 	child.node->size += to_less;
 	sibling.more->size -= to_less + 1;
-	if(lump.height > 1) {
+	if(parent.height > 1) {
 		struct PB_(branch) *const moreb = PB_(as_branch)(sibling.more);
 		assert(0);
 	}
@@ -1182,32 +1206,32 @@ balance_more:
 merge_more:
 	assert(combined <= TREE_MAX);
 	printf("merge more %s, %s through %d\n",
-		orcify(child.node), orcify(sibling.more), lump.node->key[lump.idx]);
-	assert(lump.idx < lump.node->size && lump.node->size > TREE_MIN
+		orcify(child.node), orcify(sibling.more), parent.node->key[parent.idx]);
+	assert(parent.idx < parent.node->size && parent.node->size > TREE_MIN
 		&& child.idx < child.node->size && child.node->size == TREE_MIN
 		&& sibling.more->size == TREE_MIN);
 	/* Delete the key in the child node. */
 	memmove(child.node->key + child.idx, child.node->key + child.idx + 1,
 		sizeof *child.node->key * (child.node->size - child.idx - 1)); /*and*/
 	/* Move the parent key to the child. */
-	child.node->key[child.node->size - 1] = lump.node->key[lump.idx];
+	child.node->key[child.node->size - 1] = parent.node->key[parent.idx];
 	/* Merge the sibling. */
 	memcpy(child.node->key + child.node->size, sibling.more->key,
 		sizeof *sibling.more->key * sibling.more->size);
-	/* Moved the lump's key to the child. */
-	memmove(lump.node->key + lump.idx, lump.node->key + lump.idx + 1,
-		sizeof *lump.node->key * (lump.node->size - lump.idx - 1));
-	memmove(lump_branch->child + lump.idx + 1, lump_branch->child + lump.idx + 2,
-		sizeof *lump_branch->child * (lump.node->size - lump.idx - 1));
+	/* Moved the parent's key to the child. */
+	memmove(parent.node->key + parent.idx, parent.node->key + parent.idx + 1,
+		sizeof *parent.node->key * (parent.node->size - parent.idx - 1));
+	memmove(parent_branch->child + parent.idx + 1, parent_branch->child + parent.idx + 2,
+		sizeof *parent_branch->child * (parent.node->size - parent.idx - 1));
 	child.node->size += sibling.more->size;
-	lump.node->size--;
+	parent.node->size--;
 	/* Sloppy. */
 	free(sibling.more); printf("Remove: freeing %s.\n", orcify(sibling.more));
 	goto end;
 } shrink: /* Every node along the path is minimal, the height decreases. */
 	assert(0);
 	return 0;
-excess: /* Leaf has more than `TREE_MIN`; remove from lump node. */
+excess: /* Leaf has more than `TREE_MIN`; remove from parent node. */
 	assert(rm.node && rm.idx < rm.node->size && rm.node->size > TREE_MIN
 		&& !rm.height);
 	memmove(rm.node->key + rm.idx, rm.node->key + rm.idx + 1,
