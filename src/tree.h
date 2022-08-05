@@ -4,7 +4,7 @@
  @abstract Stand-alone header <src/tree.h>; examples <test/test_tree.c>. On a
  compatible workstation, `make` creates the test suite of the examples.
 
- @subtitle Ordered key-tree
+ @subtitle Ordered tree
 
  A <tag:<B>tree> is an ordered set or map contained in a tree. For memory
  locality, this is implemented B-tree, described in
@@ -23,6 +23,12 @@
  @param[TREE_COMPARE]
  A function satisfying <typedef:<PB>compare_fn>. Defaults to ascending order.
  Required if `TREE_KEY` is changed to an incomparable type.
+
+ @param[TREE_ORDER]
+ Sets the branching factor, or order as <Knuth, 1998 Art 3>, to the range
+ `[3, UCHAR_MAX+1]`. Default is most likely fine except when specific
+ constraints have to be met. (That is, setting `TREE_ORDER` to 4 is an
+ isomorphism to red-black trees.)
 
  @param[TREE_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
@@ -74,20 +80,13 @@
 /* Leaf: `TREE_MAX type`; branch: `TREE_MAX type + TREE_ORDER pointer`. In
  <Goodrich, Tamassia, Mount, 2011, Data>, these are (a,b)-trees as
  (TREE_MIN+1,TREE_MAX+1)-trees. */
-#define TREE_MAX 2
-#if TREE_MAX < 2 || TREE_MAX > UCHAR_MAX
-#error TREE_MAX parameter range `[2, UCHAR_MAX]`.
-#endif
+#define TREE_MAX (TREE_ORDER - 1)
 /* This is the worst-case branching factor; the performance will be
  \O(log_{`TREE_MIN`+1} `size`). Usually this is `⌈(TREE_MAX+1)/2⌉-1`. However,
  smaller values are less-eager; in the extreme,
  <Johnson, Shasha, 1993, Free-at-Empty>, show good results; this has been
  chosen to provide hysteresis. (Except `TREE_MAX 2`, it's fixed.) */
 #define TREE_MIN (TREE_MAX / 3 ? TREE_MAX / 3 : 1)
-#if TREE_MIN == 0 || TREE_MIN > TREE_MAX / 2
-#error TREE_MIN parameter range `[1, \floor(TREE_MAX / 2)]`.
-#endif
-#define TREE_ORDER (TREE_MAX + 1) /* Maximum degree, (branching factor.) */
 #define TREE_SPLIT (TREE_ORDER / 2) /* Split index: even order left-leaning. */
 #define TREE_RESULT X(ERROR), X(UNIQUE), X(YIELD)
 #define X(n) TREE_##n
@@ -107,6 +106,12 @@ struct tree_count { size_t branches, leaves; };
 #if TREE_TRAITS == 0 /* <!-- base code */
 
 
+#ifndef TREE_ORDER
+#define TREE_ORDER 3 /* Maximum degree, (branching factor.) */
+#endif
+#if TREE_ORDER < 3 || TREE_ORDER > UCHAR_MAX + 1
+#error TREE_ORDER parameter range `[3, UCHAR_MAX+1]`.
+#endif
 #ifndef TREE_KEY
 #define TREE_KEY unsigned
 #endif
@@ -1500,6 +1505,7 @@ static const char *(*PB_(tree_to_string))(const struct B_(tree) *)
 #ifdef TREE_TEST
 #error No TREE_TO_STRING traits defined for TREE_TEST.
 #endif
+#undef TREE_ORDER
 #undef TREE_NAME
 #undef TREE_KEY
 #undef TREE_COMPARE
