@@ -106,9 +106,49 @@ We use fixed-length nodes. In \cite{goodrich2011data}, these are $(a,b)$-trees a
 Performance will be
 $\mathcal{O}(\log_{\text{minimum}+1} \text{size})$. Usually this is $\text{minimum} = \lceil (\text{maximum}+1)/2\rceil-1$. However,
  smaller values are less-eager, providing another layer of hysteresis. This is especially good for smaller trees. \cite{johnson1993b} shows good results with freeing at empty, but in this the worst-case is all the nodes contain one key.
-For our purposes, a compromise of $\lceil(\text{maximum}+1)/3\rceil-1$ is proposed. In a sense, it is the opposite of a B$^*$-tree, where $\frac{1}{3}$ instead of $\frac{2}{3}$ of the capacity is full. This reduces performance in the long run, but increases laziness for small trees.
+For our purposes, a compromise of $\lceil(\text{maximum}+1)/3\rceil-1$ is proposed. In a sense, it is the opposite of a B$^*$-tree\cite{knuth1997sorting, douglas1979ubiquitous}, where $\frac{1}{3}$ instead of $\frac{2}{3}$ of the capacity is full. This reduces asymptotic performance, but increases laziness and modification efficiency.
 
 \subsection{Bulk add}
+
+In this tree implementation, bulk loading is ordered addition such that the key is always the maximum in the tree so far. This will quickly produce a more compact tree initially. If the keys are in order, compare adding them normally, which results one-half occupancy.
+
+Bulk-add will add the key to the maximum side at the lowest level where there is space, ignoring the rules for splitting. If this is a non-leaf, additional nodes with no-keys and one child are recruited. If there is no space at all on the maximum side, another level is made. Because the B-tree rules may be violated, the final tree where bulk-addition has occurred should finalize the maximum side of the tree, balancing and restoring the B-tree invariants.
+
+\begin{figure}%
+\centering%
+\digraph[scale=\Scale]{bulk}{
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans", splines=false];
+	node [shape=none, fontname="Bitstream Vera Sans"];
+	edge [fontname="Bitstream Vera Sans", style=dashed];
+	trunk0x100606ca0 [label = <
+<table border="1" cellspacing="0" bgcolor="Grey95">
+	<tr><td border="0" port="0"><font color="Gray75">Ologshar</font></td></tr>
+	<tr><td border="0" align="left" port="1" bgcolor="Gray90">38</td></tr>
+	<tr><td border="0" align="left" port="2">60</td></tr>
+</table>>];
+	trunk0x100606ca0:0:se -> trunk0x100709020;
+	trunk0x100606ca0:1:se -> trunk0x10060d650;
+	trunk0x100606ca0:2:se -> trunk0x100606cd0;
+	trunk0x100709020 [label = <
+<table border="1" cellspacing="0" bgcolor="Grey95">
+	<tr><td border="0" port="0"><font color="Gray75">Ronkaron</font></td></tr>
+	<tr><td border="0" align="left" port="1" bgcolor="Gray90">4</td></tr>
+	<tr><td border="0" align="left" port="2">8</td></tr>
+</table>>];
+	trunk0x10060d650 [label = <
+<table border="1" cellspacing="0" bgcolor="Grey95">
+	<tr><td border="0" port="0"><font color="Gray75">Overil</font></td></tr>
+	<tr><td border="0" align="left" port="1" bgcolor="Gray90">43</td></tr>
+	<tr><td border="0" align="left" port="2">48</td></tr>
+</table>>];
+	trunk0x100606cd0 [label = <
+<table border="1" cellspacing="0" bgcolor="Grey95">
+	<tr><td border="0" port="0"><font color="Gray75">Ickkhalok</font></td></tr>
+</table>>];
+}
+\caption{An order-3 sample that is undergoing bulk-addition. The adds must be in order. The minimum invariant for \code{Ickkhalok} is violated, since it has no keys. The finalize method would balance the keys with \code{Overil}.}%
+\label{bulk}%
+\end{figure}%
 
 \subsection{Adding a key}
 
@@ -573,37 +613,7 @@ The \code{next} field in offers a convenient place to store out-of-band informat
 
 Since the \code{next} field must store the range of addressable buckets, minus one for itself, this is one short of representing the whole range. Since the implementation uses power-of-two resizes, it causes the addressable space to be one-bit less; we waste nearly a bit, half the size, or the equivalent of a signed integer. The values \code{NULL} and \code{END} were chosen to minimize average power requirements while leaving a natural $[0, 011..11]$ for addressing. That is, $100..00$, and $100..01$. In Figure~\ref{types:inline}, where there are 8~bits, the addressable space is $[0, 127]$, and \code{NULL}, \code{END} are 128, 129. The \code{next} theoretically takes up one-byte, but alignment issues will cause it to take more.
 
-\subsection{Load Factor}
-
-It is possible to get rid of load factor calculations by making the maximum load factor identically one. Only if the hash-table is full does one resize. In an inline-chained hash-table, the entries and the next index are overlapped; this means that the capacity for each goes up in the same allocation.
-
-\subsection{Power-of-Two}
-
-During the rehashing phase, closed entries have an expected value of,
-
-\begin{align*}
-E[\text{will move}] &= \frac{\text{old capacity}}{\text{new capacity}}
-\end{align*}
-
-that they will move. This can be seen as a form of consistent hashing\cite{karger1997consistent}, and was a consideration when designing the hash-table with power-of-two resizes. Instead of swapping moved entries with open entries, something that could take $\mathcal{O}(n^2)$, we rehash all the open entries.
-
-\subsection{Stack and Maintaining Orthogonality}
-
-We can tell whether an element is of the stack by it being open; if the address and the address given by the hash function does not match, it is not the head of the bucket. To keep track of the open entries, we place them on top of a stack formed from unused buckets. In this way, only one parameter needs to be added for the table: the \code{top} of the stack. The stack has to yield to a new entry and replace a deleted entry that is in it's range. This involves moving the stack pointer up and down. For that, we need to take the front closed element in the bucket with the \code{top}'s address and iterate until one before the \code{top}.
-
-It is convenient to grow the stack from the back. That way, when rehashing the stack, a stack entry never conflicts with another. The alternative would allow $\mathcal{O}(1)$ low-numbered stack items to keep their place, but at a much more complex copying procedure.
-
-The stack jumps over occupied entries, but it is bounded by $\mathcal{O}(n)$ in $n$ inserts. A slight subtlety is that this amortization is not valid if inserting {\it and} deleting. Despite $\mathcal{O}(n)$ worst-case performance anyway, it is useful to minimize this as much as possible.
-
 Since the \code{top} is an address, and the addresses only go to half the available space, we have a bit to spare. This has been used for a lazy stack. In this way, repeatedly adding and deleting to the open stack just sets the lazy bit. Only when one deletes twice does it break hysteresis loop, a move is forced.
-
-\subsection{Inverse Hash Function}
-
-If the hash function forms a bijection between the range in the space where elements live and the image in hash-space, the keys are not stored in the hash-table at all. They are generated from the hashes using an inverse-mapping. This can be the case when the items being hashed are discrete, like an \code{enum}, or a discrete integer set.
-
-\subsection{Iteration}
-
-Inline-chaining is generally good for iteration. For implementations that do not provide a special iteration mechanism, iteration on separate-chaining is $\mathcal{O}(\text{capacity} + \text{size})$. For open-addressing and inline-chaining, because we store collisions in the hash-table itself, it's $\mathcal{O}(\text{capacity})$. However, a practical capacity in open-addressing will be larger because the decrease in performance as the load-factor reaches saturation.
 
 \section{Conclusion}
 
