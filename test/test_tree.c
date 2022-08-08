@@ -240,7 +240,7 @@ static void manual(void) {
 		for(i = 0; i < size; i++) /* Even for odd spaces between them. */
 			if(!o23_tree_bulk_add(&even, ((unsigned)i + 1) * 2)) assert(0);
 		o23_tree_bulk_finish(&even); /* Does nothing, in this case. */
-		tree_o23_graph(&even, "graph/even-1.gv");
+		tree_o23_graph_usual(&even, "graph/even-1.gv");
 		for(i = 0; i <= size; i++) {
 			char fn[64];
 			if(!o23_tree_clone(&even_clone, &even)) goto catch;

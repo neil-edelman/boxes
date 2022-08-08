@@ -46,7 +46,6 @@ static void PB_(subgraph)(const struct PB_(tree) *const sub, FILE *fp) {
 	const struct PB_(branch) *branch;
 	unsigned i;
 	assert(sub->node && fp);
-	/* It still has a margin, augh. */
 	fprintf(fp, "\ttrunk%p [label = <\n"
 		"<table border=\"1\" cellspacing=\"0\" bgcolor=\"Grey95\">\n"
 		"\t<tr><td border=\"0\" port=\"0\">"
@@ -92,13 +91,81 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
 		" fontname=\"Bitstream Vera Sans\", splines=false];\n"
 		"\tnode [shape=none, fontname=\"Bitstream Vera Sans\"];\n"
-		"\tedge [fontname=\"Bitstream Vera Sans\", style=dashed];\n"
 		"\n");
 	if(!tree->root.node)
 		fprintf(fp, "\tidle [shape=plaintext];\n");
 	else if(tree->root.height == UINT_MAX)
 		fprintf(fp, "\tempty [shape=plaintext];\n");
 	else PB_(subgraph)(&tree->root, fp);
+	fprintf(fp, "\tnode [color=\"Red\"];\n"
+		"}\n");
+	fclose(fp);
+}
+
+/** Aligns the `port` in the right way between nodes. */
+static char *PB_(usual_port)(unsigned port) {
+	static char s[32];
+	if(!port) sprintf(s, "0:sw");
+	else sprintf(s, "%u:se", port - 1);
+	return s;
+}
+
+/** Recursively draws `outer` in `fp` with the actual `height`. */
+static void PB_(subgraph_usual)(const struct PB_(tree) *const sub, FILE *fp) {
+	const struct PB_(branch) *branch;
+	unsigned i;
+	assert(sub->node && fp);
+	fprintf(fp, "\ttrunk%p [label = <\n"
+		"<table border=\"1\" cellspacing=\"0\" bgcolor=\"Grey95\">\n"
+		"\t<tr><td border=\"0\" colspan=\"%u\">"
+		"<font color=\"Gray75\">%s</font></td></tr>\n"
+		"\t<tr>\n", (const void *)sub->node,
+		sub->node->size ? sub->node->size : 1, orcify(sub->node));
+	for(i = 0; i < sub->node->size; i++) {
+		const char *const bgc = i & 1 ? "" : " bgcolor=\"Gray90\"";
+		char z[12];
+		PB_(entry_c) e = PB_(leaf_to_entry_c)(sub->node, i);
+		PB_(to_string)(e, &z);
+		fprintf(fp, "\t<td border=\"0\" align=\"center\""
+			" port=\"%u\"%s>%s</td>\n", i, bgc, z);
+	}
+	/* Dummy node when size is zero. */
+	if(!sub->node->size)
+		fprintf(fp, "\t<td border=\"0\" port=\"0\">&nbsp;</td>\n");
+	fprintf(fp, "\t</tr>\n"
+		"</table>>];\n");
+	if(!sub->height) return;
+	/* Draw the lines between trees. */
+	branch = PB_(as_branch_c)(sub->node);
+	for(i = 0; i <= branch->base.size; i++)
+		fprintf(fp, "\ttrunk%p:%s -> trunk%p;\n",
+		(const void *)sub->node, PB_(usual_port)(i), (const void *)branch->child[i]);
+	/* Recurse. */
+	for(i = 0; i <= branch->base.size; i++) {
+		struct PB_(tree) child;
+		child.node = branch->child[i], child.height = sub->height - 1;
+		PB_(subgraph_usual)(&child, fp);
+	}
+}
+
+/** Draw a graph of `tree` to `fn` in Graphviz format, the usual way, but too
+ large for many labels. */
+static void PB_(graph_usual)(const struct B_(tree) *const tree,
+	const char *const fn) {
+	FILE *fp;
+	assert(tree && fn);
+	printf("***(usual) %s.\n\n", fn);
+	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
+	fprintf(fp, "digraph {\n"
+		"\tgraph [truecolor=true, bgcolor=transparent,"
+		" fontname=\"Bitstream Vera Sans\", splines=false];\n"
+		"\tnode [shape=none, fontname=\"Bitstream Vera Sans\"];\n"
+		"\n");
+	if(!tree->root.node)
+		fprintf(fp, "\tidle [shape=plaintext];\n");
+	else if(tree->root.height == UINT_MAX)
+		fprintf(fp, "\tempty [shape=plaintext];\n");
+	else PB_(subgraph_usual)(&tree->root, fp);
 	fprintf(fp, "\tnode [color=\"Red\"];\n"
 		"}\n");
 	fclose(fp);
