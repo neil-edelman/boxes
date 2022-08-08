@@ -1,19 +1,35 @@
 digraph {
 	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans"];
-	node [shape=box, style=filled, fontname="Bitstream Vera Sans", fillcolor="Grey90"];
+	node [shape=record, style=filled, fontname="Bitstream Vera Sans", fillcolor="Grey90"];
 	edge [fontname="Bitstream Vera Sans"];
 
-	start [shape=circle];
-	start -> idle;
-	start -> empty;
-	start -> descend;
+	add [shape=circle, style=none];
+
+	idle [label="{idle\l|Allocate empty\lleaf root.\l}"]
+	empty [label="{empty\l|add = root\l}"];
+	insert [label="{insert\l|add non-full leaf.}"];
+	descend [label="{descend\l|add=lookup(),\lkeeping track of\lminimum node\lthat has space,\lif any, hole.\l}"];
+	grow [label="{grow\l|add leaf full;\lallocate hole height,\lif hole dne, tree height+2;\l1 leaf, the rest branches.\lcursor=hole\l}"];
+	split [label="{split\l|on cursor's child between\lnew hole and existing\lnodes; update cursor and\lmaybe hole.\l}"];
+	hole [label="fill hole"];
+
+	error [label="ERROR", shape=none, style=none];
+	error2 [label="ERROR", shape=none, style=none];
+	unique [label="UNIQUE", shape=none, style=none];
+	yield [label="YIELD", shape=none, style=none];
+
+	idle -> error;
+	add -> idle [label="root dne"];
+	add -> empty [label="root empty"];
+	add -> descend;
 	idle -> empty;
 	empty -> insert;
-	descend -> insert;
+	descend -> yield [label="equal"];
+	descend -> insert [label="hole=add"];
 	descend -> grow;
 	grow -> split;
+	grow -> error2;
 	split -> split;
-	split -> end;
-	insert -> end;
-	end [shape=circle];
+	split -> hole -> unique;
+	insert -> unique;
 }
