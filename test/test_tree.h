@@ -116,24 +116,26 @@ static void PB_(subgraph_usual)(const struct PB_(tree) *const sub, FILE *fp) {
 	unsigned i;
 	assert(sub->node && fp);
 	fprintf(fp, "\ttrunk%p [label = <\n"
-		"<table border=\"1\" cellspacing=\"0\" bgcolor=\"Grey95\">\n"
+		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td border=\"0\" colspan=\"%u\">"
 		"<font color=\"Gray75\">%s</font></td></tr>\n"
+		"\t<hr/>\n"
 		"\t<tr>\n", (const void *)sub->node,
 		sub->node->size ? sub->node->size : 1, orcify(sub->node));
 	for(i = 0; i < sub->node->size; i++) {
-		const char *const bgc = i & 1 ? "" : " bgcolor=\"Gray90\"";
 		char z[12];
 		PB_(entry_c) e = PB_(leaf_to_entry_c)(sub->node, i);
 		PB_(to_string)(e, &z);
 		fprintf(fp, "\t<td border=\"0\" align=\"center\""
-			" port=\"%u\"%s>%s</td>\n", i, bgc, z);
+			" port=\"%u\">%s</td>\n", i, z);
 	}
 	/* Dummy node when size is zero. */
 	if(!sub->node->size)
 		fprintf(fp, "\t<td border=\"0\" port=\"0\">&nbsp;</td>\n");
-	fprintf(fp, "\t</tr>\n"
-		"</table>>];\n");
+	fprintf(fp, "\t</tr>\n");
+	if(sub->height) fprintf(fp, "\t<hr/>\n"
+		"\t<tr><td></td></tr>\n");
+	fprintf(fp, "</table>>];\n");
 	if(!sub->height) return;
 	/* Draw the lines between trees. */
 	branch = PB_(as_branch_c)(sub->node);

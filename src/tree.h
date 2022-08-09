@@ -605,8 +605,9 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 		tree->root.node = node;
 		printf("bulk: idle\n");
 	} else if(tree->root.height == UINT_MAX) { /* Empty tree. */
+		node = tree->root.node;
 		tree->root.height = 0;
-		tree->root.node->size = 0;
+		node->size = 0;
 		printf("bulk: empty\n");
 	} else {
 		struct PB_(tree) unfull = { 0, 0 };

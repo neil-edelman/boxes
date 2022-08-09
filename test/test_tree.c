@@ -168,14 +168,14 @@ static void manual(void) {
 		consecutive = o23_tree(),
 		removal = o23_tree(),
 		copy = o23_tree();
-	size_t i;
-	const size_t size_rnd = 100;
+	unsigned i;
+	const unsigned size_rnd = 100;
 	struct o23_tree_iterator it;
 	unsigned *v;
 	int ret;
 	const size_t o23_order
 		= sizeof rnd.root.node->key / sizeof *rnd.root.node->key + 1;
-	printf("o23 order %lu\n", o23_order);
+	printf("manual: o23 order %lu\n", o23_order);
 	assert(o23_order == 3);
 	/* Multi-maps. This is less useful.
 	for(i = 0; i < 5; i++) if(!unsigned_tree_bulk_add(&equal, 0)) goto catch;
@@ -194,7 +194,7 @@ static void manual(void) {
 		|| !o23_tree_bulk_add(&between, 300)) goto catch;
 	ret = o23_tree_bulk_finish(&between);
 	assert(ret);
-	tree_o23_graph(&between, "graph/between.gv");
+	tree_o23_graph_usual(&between, "graph/between.gv");
 	it = o23_tree_lower_iterator(&between, 50);
 	printf("step: 50: %s:%u.\n", orcify(it._.i.node), it._.i.idx);
 	v = o23_tree_next(&it), assert(v && *v == 100);
@@ -217,6 +217,21 @@ static void manual(void) {
 	v = o23_tree_lower_value(&between, 250), assert(v && *v == 300);
 	v = o23_tree_lower_value(&between, 300), assert(v && *v == 300);
 	v = o23_tree_lower_value(&between, 350), assert(!v);
+
+	/* For the paper. */
+	o23_tree_clear(&between);
+	o23_tree_bulk_add(&between, 1);
+	o23_tree_bulk_add(&between, 2);
+	if(!o23_tree_clone(&copy, &between)) goto catch;
+	tree_o23_graph_usual(&copy, "graph/bulk2.gv");
+	o23_tree_bulk_add(&between, 3);
+	if(!o23_tree_clone(&copy, &between)) goto catch;
+	tree_o23_graph_usual(&copy, "graph/bulk3.gv");
+	o23_tree_bulk_add(&copy, 4);
+	tree_o23_graph_usual(&copy, "graph/bulk4.gv");
+	if(!o23_tree_clone(&copy, &between)) goto catch;
+	o23_tree_bulk_finish(&copy);
+	tree_o23_graph_usual(&copy, "graph/bulk3-finish.gv");
 
 	/* Random. */
 	for(i = 0; i < size_rnd; i++) {
@@ -244,9 +259,11 @@ static void manual(void) {
 		for(i = 0; i <= size; i++) {
 			char fn[64];
 			if(!o23_tree_clone(&even_clone, &even)) goto catch;
+			if(i == 4)
+				tree_o23_graph_usual(&even_clone, "graph/even-clone-9-pre.gv");
 			if(!o23_tree_add(&even_clone, (unsigned)i * 2 + 1)) goto catch;
 			sprintf(fn, "graph/even-clone-%u.gv", (unsigned)i * 2 + 1);
-			tree_o23_graph(&even_clone, fn);
+			tree_o23_graph_usual(&even_clone, fn);
 		}
 	}
 
