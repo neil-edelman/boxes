@@ -796,6 +796,9 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 	return 1;
 }
 
+static void PB_(graph_usual)(const struct B_(tree) *const tree,
+							 const char *const fn);
+
 #ifdef TREE_VALUE /* <!-- map */
 /** @param[value] If non-null and successful, a pointer that receives the
  address of the value associated with the key. Only present if `TREE_VALUE`
@@ -900,6 +903,7 @@ grow: /* Leaf is full. */ {
 	struct PB_(node) *sibling;
 	assert(cursor.node && cursor.node->size && cursor.height);
 	sibling = new_head;
+	/*PB_(graph_usual)(tree, "graph/work.gv");*/
 	/* Descend now while split hasn't happened -- easier. */
 	new_head = --cursor.height ? PB_(as_branch)(new_head)->child[0] : 0;
 	cursor.node = PB_(as_branch)(cursor.node)->child[cursor.idx];
@@ -1038,18 +1042,18 @@ static int B_(tree_remove)(struct B_(tree) *const tree,
 		} data[2];
 	} queue;
 	/* The parent is the ancestor (or itself) with excess nodes to spare. */
-	struct PB_(ref) rm, parent;
+	struct PB_(ref) rm, excess;
 	queue.status = EMPTY;
 	(void)status_string; /* Debug, not there in release. */
 	assert(tree);
 	printf("MIN %u, MAX %u, ORDER %u\n", TREE_MIN, TREE_MAX, TREE_ORDER);
 	/* Traverse down the tree until `key`. */
 	if(!(rm.node = tree->root.node) || tree->root.height == UINT_MAX
-		|| !(rm = PB_(lookup_remove)(&tree->root, key, &parent)).node)
+		|| !(rm = PB_(lookup_remove)(&tree->root, key, &excess)).node)
 		{ printf("remove: didn't match any nodes.\n"); return 0; }
-	printf("remove: %s(%u):%u <%u>; parent edge %s(%u):%u.\n",
+	printf("remove: %s(%u):%u <%u>; excess edge %s(%u):%u.\n",
 		orcify(rm.node), rm.height, rm.idx, rm.node->key[rm.idx],
-		orcify(parent.node), parent.height, parent.idx);
+		orcify(excess.node), excess.height, excess.idx);
 	if(rm.height) goto branch; else goto leaf;
 branch: {
 	struct PB_(ref) succ;
@@ -1078,57 +1082,56 @@ branch: {
 	assert(0);
 } leaf:
 	printf("remove: in leaf node.\n");
-	if(!parent.node) {
+	if(!excess.node) {
 		/* Root special case. */
-		if(tree->root.node->size > 1) parent.node = tree->root.node, printf("remove: special case of root.\n");
+		if(tree->root.node->size > 1) excess.node = tree->root.node, printf("remove: special case of root.\n");
 		else goto shrink;
 	}
-	if(rm.node == parent.node) goto excess;
-	goto down;
-down: {
-	struct PB_(branch) *const parent_branch = PB_(as_branch)(parent.node);
-	struct PB_(ref) child;
+	if(rm.node == excess.node) goto excess;
+	goto descend;
+descend: {
+	struct PB_(branch) *const excess_branch = PB_(as_branch)(excess.node);
+	struct PB_(ref) path;
 	struct { struct PB_(node) *less, *more; } sibling;
 	unsigned combined, to_promote, to_more, to_less, transfer;
-	assert(parent.height && parent.idx <= parent.node->size
-		&& parent.node->size > 0 && queue.status == EMPTY);
+	assert(excess.height && excess.idx <= excess.node->size
+		&& excess.node->size > 0 && queue.status == EMPTY);
 	/* Find the child and sibling edges. */
-	child.node = parent_branch->child[parent.idx];
-	if(child.height = parent.height - 1) PB_(find_idx)(&child, key);
-	else assert(child.node == rm.node), child.idx = rm.idx;
-	assert(child.node->size == TREE_MIN);
-	sibling.less = parent.idx ? parent_branch->child[parent.idx - 1] : 0;
-	sibling.more = parent.idx < parent.node->size
-		? parent_branch->child[parent.idx + 1] : 0;
+	path.node = excess_branch->child[excess.idx];
+	if(path.height = excess.height - 1) PB_(find_idx)(&path, key);
+	else assert(path.node == rm.node), path.idx = rm.idx;
+	assert(path.node->size == TREE_MIN);
+	sibling.less = excess.idx ? excess_branch->child[excess.idx - 1] : 0;
+	sibling.more = excess.idx < excess.node->size
+		? excess_branch->child[excess.idx + 1] : 0;
 	assert(sibling.less || sibling.more);
-	printf("remove: child edge %s(%u):%u, siblings %s and %s.\n",
-		orcify(child.node), child.height, child.idx,
+	assert(excess.idx <= excess.node->size);
+	printf("remove: descend! excess %s:%u, path %s(%u):%u, siblings %s and %s.\n", orcify(excess.node), excess.idx,
+		orcify(path.node), path.height, path.idx,
 		orcify(sibling.less), orcify(sibling.more));
-	if(parent.height - 1) {
+	if(path.height) {
 		const unsigned next = lut.next[queue.status],
-			back = child.idx >= child.node->size;
+			back = path.idx >= path.node->size;
 		queue.status = lut.enqueue[queue.status];
-		printf("enqueuing %s:%u in %u result %s\n",
-			orcify(child.node), child.idx - back, next, status_string[queue.status]);
 		assert(next != ERROR && queue.status != ERROR);
-		queue.data[next].key = child.node->key[child.idx - back];
+		queue.data[next].key = path.node->key[path.idx - back];
 #ifdef TREE_VALUE
-		queue.data[next].value = child.node->value[child.idx - back];
+		queue.data[next].value = path.node->value[path.idx - back];
 #endif
-		queue.data[next].link = parent.height - 2 ?
-			PB_(as_branch_c)(child.node)->child[child.idx] : 0;
+		queue.data[next].link = excess.height - 2 ?
+			PB_(as_branch_c)(path.node)->child[path.idx] : 0;
 		queue.data[next].link_order = back ? RIGHT : LEFT;
-		printf("\\key %u\n", queue.data[next].key);
+		printf("enqueuing %s:%u in queue[%u] key %u, result %s\n",
+			orcify(path.node), path.idx - back, next,
+			queue.data[next].key, status_string[queue.status]);
 	}
-	assert(parent.idx <= parent.node->size);
-	printf("parent: %s:%u\n", orcify(parent.node), parent.idx);
 	/* Pick the sibling key with the most nodes to balance, preferring less. */
 	if((sibling.less ? sibling.less->size : 0)
 		>= (sibling.more ? sibling.more->size : 0)) goto balance_less;
 	else goto balance_more;
 balance_less:
-	assert(parent.idx), parent.idx--; /* Switch to less. */
-	combined = child.node->size + sibling.less->size;
+	assert(excess.idx), excess.idx--; /* Switch to less. */
+	combined = path.node->size + sibling.less->size;
 	printf("balance less: combined %u\n", combined);
 	if(combined < 2 * TREE_MIN + 1) goto merge_less;
 	to_promote = combined / 2; /* Index `⌈(combined - 1)/2⌉`. */
@@ -1136,25 +1139,25 @@ balance_less:
 	transfer = sibling.less->size - to_more;
 	printf("promote %u, more %u, transfer %u\n", to_promote, to_more, transfer);
 	/* Make way for the keys from the less. */
-	printf("move child1 entries %u\n", child.node->size - child.idx - 1);
-	memmove(child.node->key + child.idx + 1 + transfer,
-		child.node->key + child.idx + 1,
-		sizeof *child.node->key * (child.node->size - child.idx - 1));
+	printf("move child1 entries %u\n", path.node->size - path.idx - 1);
+	memmove(path.node->key + path.idx + 1 + transfer,
+		path.node->key + path.idx + 1,
+		sizeof *path.node->key * (path.node->size - path.idx - 1));
 	/* fixme: And... */
-	printf("move child2 entries %u\n", child.idx);
-	memmove(child.node->key + 1 + transfer, child.node->key,
-		sizeof *child.node->key * child.idx);
-	printf("demote <%u> %s:%u %u ->\n", parent.node->key[parent.idx], orcify(parent.node), parent.idx, transfer);
-	child.node->key[transfer] = parent.node->key[parent.idx];
+	printf("move child2 entries %u\n", path.idx);
+	memmove(path.node->key + 1 + transfer, path.node->key,
+		sizeof *path.node->key * path.idx);
+	printf("demote <%u> %s:%u %u ->\n", excess.node->key[excess.idx], orcify(excess.node), excess.idx, transfer);
+	path.node->key[transfer] = excess.node->key[excess.idx];
 	printf("transfer %u(%u) from less\n", to_more, transfer);
-	memcpy(child.node->key, sibling.less->key + to_more,
+	memcpy(path.node->key, sibling.less->key + to_more,
 		sizeof *sibling.less->key * transfer);
 	printf("parent from less\n");
-	parent.node->key[parent.idx] = sibling.less->key[to_promote];
-	assert(child.node->size <= TREE_MAX - transfer);
-	child.node->size += transfer;
+	excess.node->key[excess.idx] = sibling.less->key[to_promote];
+	assert(path.node->size <= TREE_MAX - transfer);
+	path.node->size += transfer;
 	sibling.less->size = (unsigned char)to_promote;
-	if(parent.height > 1) {
+	if(path.height) {
 		struct PB_(branch) *const lessb = PB_(as_branch)(sibling.less);
 		assert(0);
 	}
@@ -1162,29 +1165,29 @@ balance_less:
 merge_less:
 	assert(combined <= TREE_MAX);
 	printf("merge less %s, %s through %d\n",
-		orcify(sibling.less), orcify(child.node), parent.node->key[parent.idx]);
+		orcify(sibling.less), orcify(path.node), excess.node->key[excess.idx]);
 	/* Merge more is more efficient, less moving things around. */
 	/* No, it's more. But now this doesn't work otherwise. */
-	if(parent.idx + 1 < parent.node->size) { parent.idx++; goto merge_more; }
-	assert(child.idx < child.node->size && parent.idx < parent.node->size);
+	if(excess.idx + 1 < excess.node->size) { excess.idx++; goto merge_more; }
+	assert(path.idx < path.node->size && excess.idx < excess.node->size);
 	/* Demote. */
-	sibling.less->key[sibling.less->size] = parent.node->key[parent.idx];
+	sibling.less->key[sibling.less->size] = excess.node->key[excess.idx];
 	/* Copy the keys, leaving out deleted. */
-	memcpy(sibling.less->key + sibling.less->size + 1, child.node->key,
-		sizeof *child.node->key * child.idx);
-	memcpy(sibling.less->key + sibling.less->size + 1 + child.idx,
-		child.node->key + child.idx + 1,
-		sizeof *child.node->key * (child.node->size - child.idx - 1));
+	memcpy(sibling.less->key + sibling.less->size + 1, path.node->key,
+		sizeof *path.node->key * path.idx);
+	memcpy(sibling.less->key + sibling.less->size + 1 + path.idx,
+		path.node->key + path.idx + 1,
+		sizeof *path.node->key * (path.node->size - path.idx - 1));
 	/* Move back from demoted. */
-	memmove(parent.node->key + parent.idx, parent.node->key + parent.idx + 1,
-		sizeof *parent.node->key * (parent.node->size - parent.idx - 1));
-	sibling.less->size += child.node->size;
-	parent.node->size--;
+	memmove(excess.node->key + excess.idx, excess.node->key + excess.idx + 1,
+		sizeof *excess.node->key * (excess.node->size - excess.idx - 1));
+	sibling.less->size += path.node->size;
+	excess.node->size--;
 	/* Sloppy. */
-	free(child.node); printf("Remove: freeing %s.\n", orcify(child.node));
+	free(path.node); printf("Remove: freeing %s.\n", orcify(path.node));
 	goto end;
 balance_more:
-	combined = child.node->size + sibling.more->size;
+	combined = path.node->size + sibling.more->size;
 	printf("balance more: combined %u\n", combined);
 	if(combined < 2 * TREE_MIN + 1) goto merge_more;
 	to_promote = (combined - 1) / 2;
@@ -1192,19 +1195,19 @@ balance_more:
 	printf("promote %u, less %u\n", to_promote, to_less);
 	assert(sibling.more && to_promote && to_less < sibling.more->size);
 	/* Delete victim. */
-	memmove(child.node->key + child.idx, child.node->key + child.idx + 1,
-		sizeof *child.node->key * (child.node->size - child.idx - 1));
+	memmove(path.node->key + path.idx, path.node->key + path.idx + 1,
+		sizeof *path.node->key * (path.node->size - path.idx - 1));
 	/* Demote into hole. */
-	child.node->key[child.node->size - 1] = parent.node->key[parent.idx];
+	path.node->key[path.node->size - 1] = excess.node->key[excess.idx];
 	/* Transfer some keys from more to child. */
-	memcpy(child.node->key + child.node->size, sibling.more->key,
+	memcpy(path.node->key + path.node->size, sibling.more->key,
 		sizeof *sibling.more->key * to_less);
 	/* Promote one key from more. */
-	parent.node->key[parent.idx] = sibling.more->key[to_less];
+	excess.node->key[excess.idx] = sibling.more->key[to_less];
 	memmove(sibling.more->key, sibling.more->key + to_less + 1, sizeof *sibling.more->key * (sibling.more->size - to_less - 1));
-	child.node->size += to_less;
+	path.node->size += to_less;
 	sibling.more->size -= to_less + 1;
-	if(parent.height > 1) {
+	if(excess.height > 1) {
 		struct PB_(branch) *const moreb = PB_(as_branch)(sibling.more);
 		assert(0);
 	}
@@ -1212,25 +1215,25 @@ balance_more:
 merge_more:
 	assert(combined <= TREE_MAX);
 	printf("merge more %s, %s through %d\n",
-		orcify(child.node), orcify(sibling.more), parent.node->key[parent.idx]);
-	assert(parent.idx < parent.node->size && parent.node->size > TREE_MIN
-		&& child.idx < child.node->size && child.node->size == TREE_MIN
+		orcify(path.node), orcify(sibling.more), excess.node->key[excess.idx]);
+	assert(excess.idx < excess.node->size && excess.node->size > TREE_MIN
+		&& path.idx < path.node->size && path.node->size == TREE_MIN
 		&& sibling.more->size == TREE_MIN);
 	/* Delete the key in the child node. */
-	memmove(child.node->key + child.idx, child.node->key + child.idx + 1,
-		sizeof *child.node->key * (child.node->size - child.idx - 1)); /*and*/
+	memmove(path.node->key + path.idx, path.node->key + path.idx + 1,
+		sizeof *path.node->key * (path.node->size - path.idx - 1)); /*and*/
 	/* Move the parent key to the child. */
-	child.node->key[child.node->size - 1] = parent.node->key[parent.idx];
+	path.node->key[path.node->size - 1] = excess.node->key[excess.idx];
 	/* Merge the sibling. */
-	memcpy(child.node->key + child.node->size, sibling.more->key,
+	memcpy(path.node->key + path.node->size, sibling.more->key,
 		sizeof *sibling.more->key * sibling.more->size);
 	/* Moved the parent's key to the child. */
-	memmove(parent.node->key + parent.idx, parent.node->key + parent.idx + 1,
-		sizeof *parent.node->key * (parent.node->size - parent.idx - 1));
-	memmove(parent_branch->child + parent.idx + 1, parent_branch->child + parent.idx + 2,
-		sizeof *parent_branch->child * (parent.node->size - parent.idx - 1));
-	child.node->size += sibling.more->size;
-	parent.node->size--;
+	memmove(excess.node->key + excess.idx, excess.node->key + excess.idx + 1,
+		sizeof *excess.node->key * (excess.node->size - excess.idx - 1));
+	memmove(excess_branch->child + excess.idx + 1, excess_branch->child + excess.idx + 2,
+		sizeof *excess_branch->child * (excess.node->size - excess.idx - 1));
+	path.node->size += sibling.more->size;
+	excess.node->size--;
 	/* Sloppy. */
 	free(sibling.more); printf("Remove: freeing %s.\n", orcify(sibling.more));
 	goto end;

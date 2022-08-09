@@ -89,7 +89,7 @@
 
 \maketitle
 
-\abstract{Several design decisions for a B-tree are discussed.}
+\abstract{Several design decisions for a practical B-tree are discussed.}
 
 \section{Design}
 
@@ -97,11 +97,11 @@ A tree is used as an ordered set or map. For memory locality, this is implemente
 
 \subsection{Branching factor}
 
-The branching factor, or order as \cite{knuth1997sorting}, is a fixed value between $[3,\text{UCHAR\_MAX}+1]$. The implementation has no buffering or middle-memory management. Thus, a high-order means greater memory allocation granularity, leading to asymptotically desirable trees. Small values produce much more compact trees. Four produces an isomorphism with left-leaning red-black trees\cite{sedgewick2008left}. In general, it is left-leaning where convenient because keys on the right side are faster to move because of the array configuration of the nodes.
+The branching factor, or order as \cite{knuth1998sorting}, is a fixed value between $[3,\text{UCHAR\_MAX}+1]$. The implementation has no buffering or middle-memory management. Thus, a high-order means greater memory allocation granularity, leading to asymptotically desirable trees. Small values produce much more compact trees. Four produces an isomorphism with left-leaning red-black trees\cite{sedgewick2008left}. In general, it is left-leaning where convenient because keys on the right side are faster to move because of the array configuration of the nodes.
 
 \subsection{Minimum and maximum keys}
 
-We use fixed-length nodes. In \cite{goodrich2011data}, these are $(a,b)$-trees as $(\text{minimum}+1, \text{maxumum}+1)$\nobreakdash-trees. That is, the maximum is the node's key capacity. Since the keys can be thought of as an implicit complete binary tree, necessarily maximum+1 is the order. Unlike \cite{knuth1997sorting}, we differentiate by branch and leaf; a leaf node has no need for null-children, so we don't include them.
+We use fixed-length nodes. In \cite{goodrich2011data}, these are $(a,b)$-trees as $(\text{minimum}+1, \text{maxumum}+1)$\nobreakdash-trees. That is, the maximum is the node's key capacity. Since the keys can be thought of as an implicit complete binary tree, necessarily maximum+1 is the order. Unlike \cite{knuth1998sorting}, we differentiate by branch and leaf; a leaf node has no need for null-children, so we don't include them.
 
 Performance will be
 $\mathcal{O}(\log_{\text{minimum}+1} \text{size})$. Equation~\ref{usual-min} gives the standard B-tree minimum in terms of the maximum.
@@ -116,7 +116,7 @@ Freeing at empty gives good results in \cite{johnson1993b}. We compromise with E
 \text{minimum} = \left\lceil \frac{\text{maximum}+1}{3} \right\rceil - 1 \label{min}
 \end{align}
 
-In a sense, it is the opposite of a B$^*$-tree\cite{knuth1997sorting, douglas1979ubiquitous}, where $\frac{1}{3}$ instead of $\frac{2}{3}$ of the capacity is full: instead of being stricter, it is lazier.
+In a sense, it is the opposite of a B$^*$-tree\cite{knuth1998sorting, douglas1979ubiquitous}, where $\frac{1}{3}$ instead of $\frac{2}{3}$ of the capacity is full: instead of being stricter, it is lazier.
 
 \subsection{Bulk loading}
 
@@ -262,13 +262,6 @@ Bulk-add will add the key to the maximum side at the lowest level where there is
 	node [shape=record, style=filled, fontname="Bitstream Vera Sans", fillcolor="Grey90"];
 	edge [fontname="Bitstream Vera Sans"];
 	add [shape=circle, style=none];
-	%idle [label="{idle}"]
-	%empty [label="{empty\l|add = root\l}"];
-	%insert [label="{insert\l|add non-full leaf.}"];
-	%descend [label="{descend\l|add=lookup(),\lkeeping track of\lminimum node\lthat has space,\lif any, hole.\l}"];
-	%grow [label="{grow\l|add leaf full;\lallocate hole height,\lif hole dne, tree height+2;\l1 leaf, the rest branches.\lcursor=hole\l}"];
-	%split [label="{split\l|on cursor's child between\lnew hole and existing\lnodes; update cursor and\lmaybe hole.\l}"];
-	%hole [label="fill hole"];
 	error [label="ERROR", shape=none, style=none];
 	error2 [label="ERROR", shape=none, style=none];
 	unique [label="UNIQUE", shape=none, style=none];
@@ -298,20 +291,15 @@ The \code{descend} path is taken by any non-empty tree, and descends the tree to
 
 A non-empty leaf node results in the \code{insert} path, and a single time down the tree; specifying a high-order makes taking this path more likely than having to repeat, but makes the reservation of keys more aggressive.
 
-An add must \code{grow} if it has the maximum keys in the leaf node. The height of the \code{hole} (zero-based) is the number of nodes extra that need to be reserved. A null \code{hole} means all of the path is full of keys. This requires increased tree height, and tree height + 2 nodes. We do pre-allocation so that no exceptions can occur while we modify the tree. The reserved nodes form a stack. We introduce \text{cursor} that starts as \text{hole} and moves down the tree.
-(fixme: no! that's not what happens. It is attached more-then with zero keys then balance hole and new-old node.)
-
-\code{split} takes the full node below \code{cursor} in the path to the key and expands it to include \code{hole}, thus splits it with the popped item from the stack. \code{hole} can either go to the left, right, or exactly in between. Now \code{cursor} does not have a full node, so it descends height on the path. This repeats while the stack is not empty. In \text{fill}, the added key then goes in \code{hole}.
-
 \begin{figure}
 	\centering%
 	\subcaptionbox{Full tree of even numbers.\label{even:full}}{%
-		\digraph[scale=\Scale]{even9}{
+		\digraph[scale=0.45]{add0}{
 	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans", splines=false];
 	node [shape=none, fontname="Bitstream Vera Sans"];
-	trunk0x100632390 [label = <
+	trunk0x100604080 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Sinizg</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Iabug</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">18</td>
@@ -320,12 +308,12 @@ An add must \code{grow} if it has the maximum keys in the leaf node. The height 
 	<hr/>
 	<tr><td></td></tr>
 </table>>];
-	trunk0x100632390:0:sw -> trunk0x100632360;
-	trunk0x100632390:0:se -> trunk0x10200c8e0;
-	trunk0x100632390:1:se -> trunk0x100632420;
-	trunk0x100632360 [label = <
+	trunk0x100604080:0:sw -> trunk0x100604480;
+	trunk0x100604080:0:se -> trunk0x10281b590;
+	trunk0x100604080:1:se -> trunk0x1006040f0;
+	trunk0x100604480 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Nashdugon</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Dabshar</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">6</td>
@@ -334,39 +322,39 @@ An add must \code{grow} if it has the maximum keys in the leaf node. The height 
 	<hr/>
 	<tr><td></td></tr>
 </table>>];
-	trunk0x100632360:0:sw -> trunk0x100707ac0;
-	trunk0x100632360:0:se -> trunk0x10062b9c0;
-	trunk0x100632360:1:se -> trunk0x100625530;
-	trunk0x100707ac0 [label = <
+	trunk0x100604480:0:sw -> trunk0x100537ef0;
+	trunk0x100604480:0:se -> trunk0x1006040e0;
+	trunk0x100604480:1:se -> trunk0x100604520;
+	trunk0x100537ef0 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Ulazgash</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Fidan</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">2</td>
 	<td border="0" align="center" port="1">4</td>
 	</tr>
 </table>>];
-	trunk0x10062b9c0 [label = <
+	trunk0x1006040e0 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Ickizg</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Rutdan</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">8</td>
 	<td border="0" align="center" port="1">10</td>
 	</tr>
 </table>>];
-	trunk0x100625530 [label = <
+	trunk0x100604520 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Darshai</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Umologath</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">14</td>
 	<td border="0" align="center" port="1">16</td>
 	</tr>
 </table>>];
-	trunk0x10200c8e0 [label = <
+	trunk0x10281b590 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Ick-gimb</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Radien</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">24</td>
@@ -375,39 +363,39 @@ An add must \code{grow} if it has the maximum keys in the leaf node. The height 
 	<hr/>
 	<tr><td></td></tr>
 </table>>];
-	trunk0x10200c8e0:0:sw -> trunk0x10200b9e0;
-	trunk0x10200c8e0:0:se -> trunk0x100752d00;
-	trunk0x10200c8e0:1:se -> trunk0x10074efe0;
-	trunk0x10200b9e0 [label = <
+	trunk0x10281b590:0:sw -> trunk0x10281b5c0;
+	trunk0x10281b590:0:se -> trunk0x100531520;
+	trunk0x10281b590:1:se -> trunk0x100537dd0;
+	trunk0x10281b5c0 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Gakhgolug</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Ickpuga</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">20</td>
 	<td border="0" align="center" port="1">22</td>
 	</tr>
 </table>>];
-	trunk0x100752d00 [label = <
+	trunk0x100531520 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Azanduf</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Nashsinat</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">26</td>
 	<td border="0" align="center" port="1">28</td>
 	</tr>
 </table>>];
-	trunk0x10074efe0 [label = <
+	trunk0x100537dd0 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Iakrimp</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Etholog</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">32</td>
 	<td border="0" align="center" port="1">34</td>
 	</tr>
 </table>>];
-	trunk0x100632420 [label = <
+	trunk0x1006040f0 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Vakskinaz</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Ufthluk</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">42</td>
@@ -416,30 +404,30 @@ An add must \code{grow} if it has the maximum keys in the leaf node. The height 
 	<hr/>
 	<tr><td></td></tr>
 </table>>];
-	trunk0x100632420:0:sw -> trunk0x10074d4b0;
-	trunk0x100632420:0:se -> trunk0x10074bda0;
-	trunk0x100632420:1:se -> trunk0x10074b020;
-	trunk0x10074d4b0 [label = <
+	trunk0x1006040f0:0:sw -> trunk0x100537120;
+	trunk0x1006040f0:0:se -> trunk0x1005329b0;
+	trunk0x1006040f0:1:se -> trunk0x100535b20;
+	trunk0x100537120 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Ickkrimpa</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Azansha</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">38</td>
 	<td border="0" align="center" port="1">40</td>
 	</tr>
 </table>>];
-	trunk0x10074bda0 [label = <
+	trunk0x1005329b0 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Luthth</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Fimak</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">44</td>
 	<td border="0" align="center" port="1">46</td>
 	</tr>
 </table>>];
-	trunk0x10074b020 [label = <
+	trunk0x100535b20 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Bobag</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Shaak</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">50</td>
@@ -448,107 +436,80 @@ An add must \code{grow} if it has the maximum keys in the leaf node. The height 
 </table>>];
 		}
 	}\\
-	\subcaptionbox{Add 9.\label{even:insert}}{%
-		\digraph[scale=\Scale]{even9insert}{
+	\subcaptionbox{Add 9; four new nodes, the first split.\label{even:work1}}{%
+		\digraph[width=0.4\textwidth]{evenwork1}{
 	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans", splines=false];
 	node [shape=none, fontname="Bitstream Vera Sans"];
-	trunk0x100707a50 [label = <
+	trunk0x10075f990 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="1"><font color="Gray75">Annhilin</font></td></tr>
+	<tr><td border="0" colspan="1"><font color="Gray75">Urbolgun</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">hole</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10075f990:0:sw -> trunk0x100604080;
+	trunk0x10075f990:0:se -> trunk0x10075f9c0;
+	trunk0x100604080 [label = <
+<table border="0" cellspacing="0" bgcolor="Grey95">
+	<tr><td border="0" colspan="2"><font color="Grey50">Iabug</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">18</td>
+	<td border="0" align="center" port="1">36</td>
 	</tr>
 	<hr/>
 	<tr><td></td></tr>
 </table>>];
-	trunk0x100707a50:0:sw -> trunk0x100632390;
-	trunk0x100707a50:0:se -> trunk0x100707a80;
-	trunk0x100632390 [label = <
+	trunk0x100604080:0:sw -> trunk0x100604480;
+	trunk0x100604080:0:se -> trunk0x10281b590;
+	trunk0x100604080:1:se -> trunk0x1006040f0;
+	trunk0x100604480 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="1"><font color="Gray75">Sinizg</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">9</td>
-	</tr>
-	<hr/>
-	<tr><td></td></tr>
-</table>>];
-	trunk0x100632390:0:sw -> trunk0x100632360;
-	trunk0x100632390:0:se -> trunk0x1007070e0;
-	trunk0x100632360 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="1"><font color="Gray75">Nashdugon</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Dabshar</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">6</td>
+	<td border="0" align="center" port="1">12</td>
 	</tr>
 	<hr/>
 	<tr><td></td></tr>
 </table>>];
-	trunk0x100632360:0:sw -> trunk0x100707ac0;
-	trunk0x100632360:0:se -> trunk0x10062b9c0;
-	trunk0x100707ac0 [label = <
+	trunk0x100604480:0:sw -> trunk0x100537ef0;
+	trunk0x100604480:0:se -> trunk0x1006040e0;
+	trunk0x100604480:1:se -> trunk0x100604520;
+	trunk0x100537ef0 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Ulazgash</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Fidan</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">2</td>
 	<td border="0" align="center" port="1">4</td>
 	</tr>
 </table>>];
-	trunk0x10062b9c0 [label = <
+	trunk0x1006040e0 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="1"><font color="Gray75">Ickizg</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Rutdan</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">8</td>
+	<td border="0" align="center" port="1">10</td>
 	</tr>
 </table>>];
-	trunk0x1007070e0 [label = <
+	trunk0x100604520 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="1"><font color="Gray75">Labgimbat</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">12</td>
-	</tr>
-	<hr/>
-	<tr><td></td></tr>
-</table>>];
-	trunk0x1007070e0:0:sw -> trunk0x10074aa20;
-	trunk0x1007070e0:0:se -> trunk0x100625530;
-	trunk0x10074aa20 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="1"><font color="Gray75">Muzgritz</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">10</td>
-	</tr>
-</table>>];
-	trunk0x100625530 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Darshai</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Umologath</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">14</td>
 	<td border="0" align="center" port="1">16</td>
 	</tr>
 </table>>];
-	trunk0x100707a80 [label = <
+	trunk0x10281b590 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="1"><font color="Gray75">Bizsnasha</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">36</td>
-	</tr>
-	<hr/>
-	<tr><td></td></tr>
-</table>>];
-	trunk0x100707a80:0:sw -> trunk0x10200c8e0;
-	trunk0x100707a80:0:se -> trunk0x100632420;
-	trunk0x10200c8e0 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Ick-gimb</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Radien</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">24</td>
@@ -557,39 +518,39 @@ An add must \code{grow} if it has the maximum keys in the leaf node. The height 
 	<hr/>
 	<tr><td></td></tr>
 </table>>];
-	trunk0x10200c8e0:0:sw -> trunk0x10200b9e0;
-	trunk0x10200c8e0:0:se -> trunk0x100752d00;
-	trunk0x10200c8e0:1:se -> trunk0x10074efe0;
-	trunk0x10200b9e0 [label = <
+	trunk0x10281b590:0:sw -> trunk0x10281b5c0;
+	trunk0x10281b590:0:se -> trunk0x100531520;
+	trunk0x10281b590:1:se -> trunk0x100537dd0;
+	trunk0x10281b5c0 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Gakhgolug</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Ickpuga</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">20</td>
 	<td border="0" align="center" port="1">22</td>
 	</tr>
 </table>>];
-	trunk0x100752d00 [label = <
+	trunk0x100531520 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Azanduf</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Nashsinat</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">26</td>
 	<td border="0" align="center" port="1">28</td>
 	</tr>
 </table>>];
-	trunk0x10074efe0 [label = <
+	trunk0x100537dd0 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Iakrimp</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Etholog</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">32</td>
 	<td border="0" align="center" port="1">34</td>
 	</tr>
 </table>>];
-	trunk0x100632420 [label = <
+	trunk0x1006040f0 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Vakskinaz</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Ufthluk</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">42</td>
@@ -598,30 +559,245 @@ An add must \code{grow} if it has the maximum keys in the leaf node. The height 
 	<hr/>
 	<tr><td></td></tr>
 </table>>];
-	trunk0x100632420:0:sw -> trunk0x10074d4b0;
-	trunk0x100632420:0:se -> trunk0x10074bda0;
-	trunk0x100632420:1:se -> trunk0x10074b020;
-	trunk0x10074d4b0 [label = <
+	trunk0x1006040f0:0:sw -> trunk0x100537120;
+	trunk0x1006040f0:0:se -> trunk0x1005329b0;
+	trunk0x1006040f0:1:se -> trunk0x100535b20;
+	trunk0x100537120 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Ickkrimpa</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Azansha</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">38</td>
 	<td border="0" align="center" port="1">40</td>
 	</tr>
 </table>>];
-	trunk0x10074bda0 [label = <
+	trunk0x1005329b0 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Luthth</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Fimak</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">44</td>
 	<td border="0" align="center" port="1">46</td>
 	</tr>
 </table>>];
-	trunk0x10074b020 [label = <
+	trunk0x100535b20 [label = <
 <table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Bobag</font></td></tr>
+	<tr><td border="0" colspan="2"><font color="Gray75">Shaak</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">50</td>
+	<td border="0" align="center" port="1">52</td>
+	</tr>
+</table>>];
+	trunk0x10075f9c0 [label = <
+<table border="0" cellspacing="0" bgcolor="Grey95">
+	<tr><td border="0" colspan="1"><font color="Gray50">Beoub</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" port="0">&nbsp;</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10075f9c0:0:sw -> trunk0x10075f9f0;
+	trunk0x10075f9f0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Naagh</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" port="0">&nbsp;</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10075f9f0:0:sw -> trunk0x100735af0;
+	trunk0x100735af0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Olog</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" port="0">&nbsp;</td>
+	</tr>
+</table>>];
+	node [color="Red"];
+		}
+	}
+	\subcaptionbox{After one split.\label{even:work2}}{%
+		\digraph[width=0.4\textwidth]{evenwork2}{
+	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans", splines=false];
+	node [shape=none, fontname="Bitstream Vera Sans"];
+	trunk0x10075f990 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Urbolgun</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">18</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10075f990:0:sw -> trunk0x100604080;
+	trunk0x10075f990:0:se -> trunk0x10075f9c0;
+	trunk0x100604080 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Iabug</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">hole</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x100604080:0:sw -> trunk0x100604480;
+	trunk0x100604080:0:se -> trunk0x10075f9f0;
+	trunk0x100604480 [label = <
+<table border="0" cellspacing="0" bgcolor="Grey95">
+	<tr><td border="0" colspan="2"><font color="Gray50">Dabshar</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">6</td>
+	<td border="0" align="center" port="1">12</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x100604480:0:sw -> trunk0x100537ef0;
+	trunk0x100604480:0:se -> trunk0x1006040e0;
+	trunk0x100604480:1:se -> trunk0x100604520;
+	trunk0x100537ef0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Fidan</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">2</td>
+	<td border="0" align="center" port="1">4</td>
+	</tr>
+</table>>];
+	trunk0x1006040e0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Rutdan</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">8</td>
+	<td border="0" align="center" port="1">10</td>
+	</tr>
+</table>>];
+	trunk0x100604520 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Umologath</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">14</td>
+	<td border="0" align="center" port="1">16</td>
+	</tr>
+</table>>];
+	trunk0x10075f9f0 [label = <
+<table border="0" cellspacing="0" bgcolor="Grey95">
+	<tr><td border="0" colspan="1"><font color="Gray50">Naagh</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" port="0">&nbsp;</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10075f9f0:0:sw -> trunk0x100735af0;
+	trunk0x100735af0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Olog</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" port="0">&nbsp;</td>
+	</tr>
+</table>>];
+	trunk0x10075f9c0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Beoub</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">36</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10075f9c0:0:sw -> trunk0x10281b590;
+	trunk0x10075f9c0:0:se -> trunk0x1006040f0;
+	trunk0x10281b590 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Radien</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">24</td>
+	<td border="0" align="center" port="1">30</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10281b590:0:sw -> trunk0x10281b5c0;
+	trunk0x10281b590:0:se -> trunk0x100531520;
+	trunk0x10281b590:1:se -> trunk0x100537dd0;
+	trunk0x10281b5c0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Ickpuga</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">20</td>
+	<td border="0" align="center" port="1">22</td>
+	</tr>
+</table>>];
+	trunk0x100531520 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Nashsinat</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">26</td>
+	<td border="0" align="center" port="1">28</td>
+	</tr>
+</table>>];
+	trunk0x100537dd0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Etholog</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">32</td>
+	<td border="0" align="center" port="1">34</td>
+	</tr>
+</table>>];
+	trunk0x1006040f0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Ufthluk</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">42</td>
+	<td border="0" align="center" port="1">48</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x1006040f0:0:sw -> trunk0x100537120;
+	trunk0x1006040f0:0:se -> trunk0x1005329b0;
+	trunk0x1006040f0:1:se -> trunk0x100535b20;
+	trunk0x100537120 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Azansha</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">38</td>
+	<td border="0" align="center" port="1">40</td>
+	</tr>
+</table>>];
+	trunk0x1005329b0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Fimak</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">44</td>
+	<td border="0" align="center" port="1">46</td>
+	</tr>
+</table>>];
+	trunk0x100535b20 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Shaak</font></td></tr>
 	<hr/>
 	<tr>
 	<td border="0" align="center" port="0">50</td>
@@ -630,480 +806,386 @@ An add must \code{grow} if it has the maximum keys in the leaf node. The height 
 </table>>];
 		}
 	}
-    \caption{\ref{even:full}. order-3 full tree. \ref{even:insert}. addition of any number will cause the tree height to increase.}%
+	\subcaptionbox{Further split.\label{even:work3}}{%
+		\digraph[width=0.4\textwidth]{evenwork3}{
+	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans", splines=false];
+	node [shape=none, fontname="Bitstream Vera Sans"];
+	trunk0x10075f990 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Urbolgun</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">18</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10075f990:0:sw -> trunk0x100604080;
+	trunk0x10075f990:0:se -> trunk0x10075f9c0;
+	trunk0x100604080 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Iabug</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">hole</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x100604080:0:sw -> trunk0x100604480;
+	trunk0x100604080:0:se -> trunk0x10075f9f0;
+	trunk0x100604480 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Dabshar</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">6</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x100604480:0:sw -> trunk0x100537ef0;
+	trunk0x100604480:0:se -> trunk0x1006040e0;
+	trunk0x100537ef0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Fidan</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">2</td>
+	<td border="0" align="center" port="1">4</td>
+	</tr>
+</table>>];
+	trunk0x1006040e0 [label = <
+<table border="0" cellspacing="0" bgcolor="Grey90">
+	<tr><td border="0" colspan="2"><font color="Gray50">Rutdan</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">8</td>
+	<td border="0" align="center" port="1">10</td>
+	</tr>
+</table>>];
+	trunk0x10075f9f0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Naagh</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">12</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10075f9f0:0:sw -> trunk0x100735af0;
+	trunk0x10075f9f0:0:se -> trunk0x100604520;
+	trunk0x100735af0 [label = <
+<table border="0" cellspacing="0" bgcolor="Grey90">
+	<tr><td border="0" colspan="1"><font color="Gray50">Olog</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" port="0">&nbsp;</td>
+	</tr>
+</table>>];
+	trunk0x100604520 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Umologath</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">14</td>
+	<td border="0" align="center" port="1">16</td>
+	</tr>
+</table>>];
+	trunk0x10075f9c0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Beoub</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">36</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10075f9c0:0:sw -> trunk0x10281b590;
+	trunk0x10075f9c0:0:se -> trunk0x1006040f0;
+	trunk0x10281b590 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Radien</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">24</td>
+	<td border="0" align="center" port="1">30</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10281b590:0:sw -> trunk0x10281b5c0;
+	trunk0x10281b590:0:se -> trunk0x100531520;
+	trunk0x10281b590:1:se -> trunk0x100537dd0;
+	trunk0x10281b5c0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Ickpuga</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">20</td>
+	<td border="0" align="center" port="1">22</td>
+	</tr>
+</table>>];
+	trunk0x100531520 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Nashsinat</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">26</td>
+	<td border="0" align="center" port="1">28</td>
+	</tr>
+</table>>];
+	trunk0x100537dd0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Etholog</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">32</td>
+	<td border="0" align="center" port="1">34</td>
+	</tr>
+</table>>];
+	trunk0x1006040f0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Ufthluk</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">42</td>
+	<td border="0" align="center" port="1">48</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x1006040f0:0:sw -> trunk0x100537120;
+	trunk0x1006040f0:0:se -> trunk0x1005329b0;
+	trunk0x1006040f0:1:se -> trunk0x100535b20;
+	trunk0x100537120 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Azansha</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">38</td>
+	<td border="0" align="center" port="1">40</td>
+	</tr>
+</table>>];
+	trunk0x1005329b0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Fimak</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">44</td>
+	<td border="0" align="center" port="1">46</td>
+	</tr>
+</table>>];
+	trunk0x100535b20 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Shaak</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">50</td>
+	<td border="0" align="center" port="1">52</td>
+	</tr>
+</table>>];
+		}
+	}
+	\subcaptionbox{After fill.\label{even:insert}}{%
+		\digraph[scale=0.45]{add1}{
+	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans", splines=false];
+	node [shape=none, fontname="Bitstream Vera Sans"];
+	trunk0x10075f990 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Urbolgun</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">18</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10075f990:0:sw -> trunk0x100604080;
+	trunk0x10075f990:0:se -> trunk0x10075f9c0;
+	trunk0x100604080 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Iabug</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">9</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x100604080:0:sw -> trunk0x100604480;
+	trunk0x100604080:0:se -> trunk0x10075f9f0;
+	trunk0x100604480 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Dabshar</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">6</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x100604480:0:sw -> trunk0x100537ef0;
+	trunk0x100604480:0:se -> trunk0x1006040e0;
+	trunk0x100537ef0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Fidan</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">2</td>
+	<td border="0" align="center" port="1">4</td>
+	</tr>
+</table>>];
+	trunk0x1006040e0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Rutdan</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">8</td>
+	</tr>
+</table>>];
+	trunk0x10075f9f0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Naagh</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">12</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10075f9f0:0:sw -> trunk0x100735af0;
+	trunk0x10075f9f0:0:se -> trunk0x100604520;
+	trunk0x100735af0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Olog</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">10</td>
+	</tr>
+</table>>];
+	trunk0x100604520 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Umologath</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">14</td>
+	<td border="0" align="center" port="1">16</td>
+	</tr>
+</table>>];
+	trunk0x10075f9c0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Beoub</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">36</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10075f9c0:0:sw -> trunk0x10281b590;
+	trunk0x10075f9c0:0:se -> trunk0x1006040f0;
+	trunk0x10281b590 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Radien</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">24</td>
+	<td border="0" align="center" port="1">30</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10281b590:0:sw -> trunk0x10281b5c0;
+	trunk0x10281b590:0:se -> trunk0x100531520;
+	trunk0x10281b590:1:se -> trunk0x100537dd0;
+	trunk0x10281b5c0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Ickpuga</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">20</td>
+	<td border="0" align="center" port="1">22</td>
+	</tr>
+</table>>];
+	trunk0x100531520 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Nashsinat</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">26</td>
+	<td border="0" align="center" port="1">28</td>
+	</tr>
+</table>>];
+	trunk0x100537dd0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Etholog</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">32</td>
+	<td border="0" align="center" port="1">34</td>
+	</tr>
+</table>>];
+	trunk0x1006040f0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Ufthluk</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">42</td>
+	<td border="0" align="center" port="1">48</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x1006040f0:0:sw -> trunk0x100537120;
+	trunk0x1006040f0:0:se -> trunk0x1005329b0;
+	trunk0x1006040f0:1:se -> trunk0x100535b20;
+	trunk0x100537120 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Azansha</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">38</td>
+	<td border="0" align="center" port="1">40</td>
+	</tr>
+</table>>];
+	trunk0x1005329b0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Fimak</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">44</td>
+	<td border="0" align="center" port="1">46</td>
+	</tr>
+</table>>];
+	trunk0x100535b20 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Shaak</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">50</td>
+	<td border="0" align="center" port="1">52</td>
+	</tr>
+</table>>];
+		}
+	}
+    \caption{\ref{even:full}: order-3 full tree. \ref{even:work1} -- \ref{even:work3}: working down the tree. \ref{even:insert}: addition of any number will cause the tree height to increase.}%
 	\label{even}%
 \end{figure}%
 
-In Figure~\ref{even}, the path from \ref{even:full} to \ref{even:insert} to insert 9 on Figure~\ref{add} is \code{descend}, \code{grow}, \code{split} four times (the maximum for this size), \code{fill}, and returns \code{UNIQUE}. The new nodes are (branches) \code{Annhilin}, \code{Bizsnasha}, \code{Labgimbat}, and (leaf) \code{Muzgritz}.
+An add must \code{grow} if it has the maximum keys in the leaf node. The height of the \code{hole} (zero-based) is the number of nodes extra that need to be reserved. A null \code{hole} means all of the path is full of keys; this requires increased tree height: tree height + 2 nodes. These new nodes are strung together and added to the tree.
 
-The path of \code{hole} is...
+\code{split} introduces \code{cursor}, along the path to the leaf, and \code{sibling}, the new zero-key node.  in the path to the key and expands it to include \code{hole}, thus splits it with the popped item from the stack. \code{hole} can either go to the left, right, or exactly in between. Now \code{cursor} does not have a full node, so it descends height on the path. This repeats while the stack is not empty. In \text{fill}, the added key then goes in \code{hole}.
+
+In Figure~\ref{even}, the path from \ref{even:full} to \ref{even:insert} to insert 9 on Figure~\ref{add} is \code{descend}, \code{grow}, \code{split} four times (the maximum for this size), \code{fill}, and returns \code{UNIQUE}. The new nodes are (branches) \code{Urbolgun}, \code{Beoub}, \code{Naagh}, and (leaf) \code{Olog}. This is the most complicated path, when the height increases.
 
 \subsection{Deleting a key}
 
-\section{Example Comparison}
 
-%\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
-\begin{figure}
-	\centering
-	\subcaptionbox{Separate-chaining.\label{types:separate}}{%
-		\digraph[scale=\Scale]{separate}{
-	rankdir=LR;
-	graph [truecolor=true, bgcolor=transparent];
-	fontface=modern;
-	node [shape=box, style=filled, fillcolor="Gray95"];
-	hash [label=<<TABLE BORDER="0">
-	<TR>
-		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">next</FONT></TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x0</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x1</TD>
-		<TD PORT="1">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x2</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x3</TD>
-		<TD PORT="3">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4</TD>
-		<TD PORT="4" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x5</TD>
-		<TD PORT="5">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x6</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x7</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x8</TD>
-		<TD PORT="8" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x9</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xa</TD>
-		<TD PORT="10" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BORDER="0">0xb</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xc</TD>
-		<TD PORT="12" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0xd</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xe</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0xf</TD>
-		<TD PORT="15">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e1 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x91</TD>
-		<TD ALIGN="LEFT">Castor</TD>
-		<TD ALIGN="RIGHT">52</TD>
-		<TD PORT="1">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e3 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x3</TD>
-		<TD ALIGN="LEFT">Deneb</TD>
-		<TD ALIGN="RIGHT">2615</TD>
-		<TD PORT="3">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e4 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x44</TD>
-		<TD ALIGN="LEFT">Sirius</TD>
-		<TD ALIGN="RIGHT">8.6</TD>
-		<TD PORT="4">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e5 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x35</TD>
-		<TD ALIGN="LEFT">Spica</TD>
-		<TD ALIGN="RIGHT">250</TD>
-		<TD PORT="5">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e8 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xd8</TD>
-		<TD ALIGN="LEFT">Rigel</TD>
-		<TD ALIGN="RIGHT">860</TD>
-		<TD PORT="8">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e10 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4a</TD>
-		<TD ALIGN="LEFT">Betelgeuse</TD>
-		<TD ALIGN="RIGHT">700</TD>
-		<TD PORT="10">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e11 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4f</TD>
-		<TD ALIGN="LEFT">Procyon</TD>
-		<TD ALIGN="RIGHT">11</TD>
-		<TD PORT="11">\detokenize{◯}</TD>
-	</TR>
-</TABLE>>];
-	e12 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xec</TD>
-		<TD ALIGN="LEFT">Regulus</TD>
-		<TD ALIGN="RIGHT">79</TD>
-		<TD PORT="12">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e13 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x33</TD>
-		<TD ALIGN="LEFT">Antares</TD>
-		<TD ALIGN="RIGHT">550</TD>
-		<TD PORT="13">\detokenize{◯}</TD>
-	</TR>
-</TABLE>>];
-	e14 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xb3</TD>
-		<TD ALIGN="LEFT">Sol</TD>
-		<TD ALIGN="RIGHT">0</TD>
-		<TD PORT="14">\detokenize{◯}</TD>
-	</TR>
-</TABLE>>];
-	e15 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x9f</TD>
-		<TD ALIGN="LEFT">Polaris</TD>
-		<TD ALIGN="RIGHT">430</TD>
-		<TD PORT="15">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	node [shape=plain, fillcolor=none, headclip = false, tailclip=false]
-	hash:1 -> e1;
-	hash:3 -> e3 -> e13 -> e14;
-	hash:4 -> e4;
-	hash:5 -> e5;
-	hash:8 -> e8;
-	hash:10 -> e10;
-	hash:12 -> e12;
-	hash:15 -> e15;
-	e15 -> e11;
-		}
-	}
-	\subcaptionbox{Open-addressing.\label{types:open}}{%
-		\digraph[scale=\Scale]{open}{
-	rankdir=LR;
-	graph [truecolor=true, bgcolor=transparent];
-	fontface=modern;
-	node [shape=box, style=filled, fillcolor="Gray95"];
-	hash [label=<<TABLE BORDER="0">
-	<TR>
-		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Italic">disp.</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">hash</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">key</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">value</FONT></TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x0</TD>
-		<TD BGCOLOR="Gray90">1</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4f</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Procyon</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">11</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x1</TD>
-		<TD>0</TD>
-		<TD ALIGN="RIGHT">0x91</TD>
-		<TD ALIGN="LEFT">Castor</TD>
-		<TD ALIGN="RIGHT">52</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x2</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x3</TD>
-		<TD>0</TD>
-		<TD ALIGN="RIGHT">0x3</TD>
-		<TD ALIGN="LEFT">Deneb</TD>
-		<TD ALIGN="RIGHT">2615</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4</TD>
-		<TD BGCOLOR="Gray90">1</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x33</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Antares</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">550</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x5</TD>
-		<TD PORT="14">2</TD>
-		<TD ALIGN="RIGHT">0xb3</TD>
-		<TD ALIGN="LEFT">Sol</TD>
-		<TD ALIGN="RIGHT">0</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x6</TD>
-		<TD BGCOLOR="Gray90">2</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x44</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sirius</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">8.6</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x7</TD>
-		<TD>2</TD>
-		<TD ALIGN="RIGHT">0x35</TD>
-		<TD ALIGN="LEFT">Spica</TD>
-		<TD ALIGN="RIGHT">250</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x8</TD>
-		<TD PORT="8" BGCOLOR="Gray90">0</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xd8</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Rigel</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">860</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x9</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xa</TD>
-		<TD PORT="10" BGCOLOR="Gray90">0</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4a</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Betelgeuse</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">700</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0xb</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xc</TD>
-		<TD PORT="12" BGCOLOR="Gray90">0</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xec</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Regulus</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">79</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0xd</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xe</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0xf</TD>
-		<TD PORT="15">0</TD>
-		<TD ALIGN="RIGHT">0x9f</TD>
-		<TD ALIGN="LEFT">Polaris</TD>
-		<TD ALIGN="RIGHT">430</TD>
-	</TR>
-</TABLE>>];
-	node [shape=plain, fillcolor=none]
-		}
-	}
-	\subcaptionbox{Inline-chaining.\label{types:inline}}{%
-		\digraph[scale=\Scale]{inline}{
-	rankdir=LR;
-	graph [truecolor=true, bgcolor=transparent];
-	fontface=modern;
-	node [shape=box, style=filled, fillcolor="Gray95"];
-	hash [label=<<TABLE BORDER="0">
-	<TR>
-		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">hash</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">key</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">value</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">next</FONT></TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x0</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x1</TD>
-		<TD ALIGN="RIGHT">0x91</TD>
-		<TD ALIGN="LEFT">Castor</TD>
-		<TD ALIGN="RIGHT">52</TD>
-		<TD PORT="1">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x2</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x3</TD>
-		<TD ALIGN="RIGHT">0x3</TD>
-		<TD ALIGN="LEFT">Deneb</TD>
-		<TD ALIGN="RIGHT">2615</TD>
-		<TD PORT="3">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x44</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sirius</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">8.6</TD>
-		<TD PORT="4" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x5</TD>
-		<TD ALIGN="RIGHT">0x35</TD>
-		<TD ALIGN="LEFT">Spica</TD>
-		<TD ALIGN="RIGHT">250</TD>
-		<TD PORT="5">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x6</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x7</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x8</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xd8</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Rigel</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">860</TD>
-		<TD PORT="8" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x9</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xa</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4a</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Betelgeuse</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">700</TD>
-		<TD PORT="10" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BORDER="2">0xb</TD>
-		<TD ALIGN="RIGHT">0x4f</TD>
-		<TD ALIGN="LEFT">Procyon</TD>
-		<TD ALIGN="RIGHT">11</TD>
-		<TD PORT="11">\detokenize{◯}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xc</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xec</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Regulus</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">79</TD>
-		<TD PORT="12" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0xd</TD>
-		<TD ALIGN="RIGHT">0x33</TD>
-		<TD ALIGN="LEFT">Antares</TD>
-		<TD ALIGN="RIGHT">550</TD>
-		<TD PORT="13">\detokenize{◯}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xe</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xb3</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sol</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0</TD>
-		<TD PORT="14" BGCOLOR="Gray90">\detokenize{◯}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0xf</TD>
-		<TD ALIGN="RIGHT">0x9f</TD>
-		<TD ALIGN="LEFT">Polaris</TD>
-		<TD ALIGN="RIGHT">430</TD>
-		<TD PORT="15">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	node [shape=plain, fillcolor=none]
-	e13 [label="0xd"];
-	hash:3 -> e13 [tailclip=false];
-	e14 [label="0xe"];
-	e13 -> e14;
-	i0xe [label="0xe", fontcolor="Gray"];
-	hash:13 -> i0xe [color="Gray"];
-	e11 [label="0xb"];
-	hash:15 -> e11 [tailclip=false];
-		}
-	}
-	\caption{A map from some star names to light-year distance using different collision-resolution schemes. Load factor \sfrac{11}{16} = 0.69. Expected value: chained number of queries, 1.4(7);
-%1.36(0.7),
-open probe-length, 1.6(9),
-%1.60(0.9), (sample
-(standard deviation.)\label{types}
-Order of insertion: Sol, Sirius, Rigel, Procyon, Betelgeuse, Antares, Spica, Deneb, Regulus, Castor, Polaris.}
-\end{figure}
-
-Figure~\ref{types} shows a comparison of some standard hash-table types. It uses D.J.~Bernstein's {\it djb2} to hash a string to 8-bit unsigned integer. All tables use a most-recently-used heuristic as probe-order; experimentally, this was found to make little difference in the run-time, and is advantageous when the access pattern is non-uniform\cite{brent1973reducing, sleator1985self}.
-
-Separate-chaining is seen in Figure~\ref{types:separate}; this is more like T.D. Hanson's {\it uthash}: only being in one hash-table at a time. A similar hash to {\it $C^{++}$}'s \code{std::unordered\_map}, {\it Lua}'s \code{table}, and many others, would have another dereference between the linked-list and the entry. This style of hash-table allows unconstrained load factors. With ordered data, keeping a self-balancing tree cuts down the worst case to $\mathcal{O}(\log n)$\cite{knuth1998sorting}, as in {\it Java}. The expected number of dereferences is a constant added to the number of queries. The nodes are allocated separately from hash-table.
-
-Open-addressing\cite{peterson1957addressing} as seen in Figure~\ref{types:open}, is another, more compact, and generally more cache-coherent table design. Robin Hood hashing\cite{celis1985robin} has been used to keep the variation in the query length to a minimum; here, with the condition on whether to evict strengthened because of the most-recently-used heuristic. It has lower maximum load-factor, because clustering decreases performance as the load-factor reaches saturation.\cite{skiena2008algorithm} Although they have less data {\it per} entry, on average they have more entries. Practically, 0.69 is high; {\it Python}'s \code{dict}\cite{knuth1998sorting} uses a maximum of \sfrac{2}{3}. One can calculate the displacement from the hash, but we have to have a general way of telling if it's null. The lack of symmetry presents a difficulty removing entries.
-
-Inline-chaining, as seen in Figure~\ref{types:inline}, is, in many ways, a hybrid between the two. The dark circles represent the closed heads, and the outline the open stack, with a highlight to indicate the stack position. The expected probe-length is number of chained queries. Because of the \code{next} field, the space taken is one index {\it per} entry more then open-addressing. Being chained offers a higher load-factor, but it is not possible to exceed one: like open-addressing, the hash-table is contained in one block of memory.
-
-\section{Performance}
-
-Because the closed and open entries are orthogonal for inline-chaining, the limiting factor in the worst-case is the same as for separate-chaining, and it will have identical behaviour as long as the load-factor doesn't exceed one. In the average case, we do at least as much work by a constant factor; in addition to the steps required for chaining, we also have to sometimes also have to manage the stack. Moving the top of the stack involves finding the closed head of the top entry and iterating until the top. However, modification requires only copying one entry; we aren't concerned with the order of the stack, only the order of the next indices. However, inline-chaining does have the advantage of cache-locality.
-
-Figure~\ref{timing} benchmarks straight insertion on a closed separately-chained set like Figure~\ref{types:separate}, an inline-chained set like Figure~\ref{types:inline}, and a \code{std::unordered\_set}. The data is a pointer to a randomly generated set of non-sense names, formed out of syllables, Poisson-distributed up to 15-letters in length; a \code{char[16]} with a null-terminator. Hashed by {\it djb2} to a 64-bit \code{size\_t}.
-
-The same data is used for each replica across different methods, thus the same number of duplicates were ignored. The hash-tables were then destroyed for the next replica. The data is in a memory pool. Pre-allocation of the nodes of the separately-chained is done in an array; this is not counted towards the run-time; for the \code{unordered\_set}, however, this is transparent, and is timed. For the inline-chaining, it's behaviour with respect to allocation is like open-addressing: it is all contained it in one array.
-
-\begin{figure}%
-\centering%
-\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
-set style line 1 lt 5 lw 2 lc rgb '#0072bd' pointtype 1 pointsize 0.5
-set style line 2 lt 5 lw 2 lc rgb '#ff0000' pointtype 2 pointsize 0.5
-set style line 3 lt 5 lw 2 lc rgb '#00ac33' pointtype 5 pointsize 0.5
-set style line 4 lt 5 lw 2 lc rgb '#19d3f5' pointtype 5 pointsize 0.5
-set grid
-set xlabel "insertions"
-set ylabel "time per insertion, $t$ (ns)"
-set yrange [0:1000]
-set log x
-set format x '\tiny %g'
-set format y '\tiny %g'
-#set tics font "Modern, 8" #rotate by 20 right # ineffectual
-plot \
-"../timing/graph/closed.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "separate-chaining" ls 1, \
-"../timing/graph/open.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "inline-chaining" ls 2, \
-"../timing/graph/unordered.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "std$\:\:$unordered\\_set" ls 3
-\end{gnuplot}
-\caption{A comparison of chained techniques in a $C^{++}$ benchmark with a log-$x$ scale.}%
-\label{timing}%
-\end{figure}%
-
-\section{Implementation}
-
-This section talks about the specific implementation of inline-chained hash-table whose results are shown in Figure~\ref{timing}.
-
-\subsection{Next Entry}
-
-The \code{next} field in offers a convenient place to store out-of-band information without imposing restrictions on the key; specifically, we do not assume that it is non-zero. There are two special values that must be differentiated from the indices: there is no closed value associated with this address, called \code{NULL}, and there is no next value in the bucket, called \code{END}.
-
-Since the \code{next} field must store the range of addressable buckets, minus one for itself, this is one short of representing the whole range. Since the implementation uses power-of-two resizes, it causes the addressable space to be one-bit less; we waste nearly a bit, half the size, or the equivalent of a signed integer. The values \code{NULL} and \code{END} were chosen to minimize average power requirements while leaving a natural $[0, 011..11]$ for addressing. That is, $100..00$, and $100..01$. In Figure~\ref{types:inline}, where there are 8~bits, the addressable space is $[0, 127]$, and \code{NULL}, \code{END} are 128, 129. The \code{next} theoretically takes up one-byte, but alignment issues will cause it to take more.
-
-Since the \code{top} is an address, and the addresses only go to half the available space, we have a bit to spare. This has been used for a lazy stack. In this way, repeatedly adding and deleting to the open stack just sets the lazy bit. Only when one deletes twice does it break hysteresis loop, a move is forced.
 
 \section{Conclusion}
-
-This specific data for the average use-case shows the difference between separate-chaining and inline-chaining is not great enough to matter to performance, and even helps in some cases. For situations where one needs a new hash-table, the simplicity of inline-chaining is appealing.
 
 \bibliography{tree}
 

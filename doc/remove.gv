@@ -3,18 +3,24 @@ digraph {
 	node [shape=box, style=filled, fontname="Bitstream Vera Sans", fillcolor="Grey90"];
 	edge [fontname="Bitstream Vera Sans"];
 
-	start [shape=circle];
-	start -> branch;
-	start -> leaf;
-	branch -> leaf;
+	remove [shape=circle, style=none];
+	lookup [label="lookup: rm, excess"];
+	remove -> lookup;
+	lookup -> false;
+	lookup -> branch;
+	lookup -> leaf;
+	branch -> leaf [label="successor\lpredecessor\l"];
 	leaf -> balance;
 	leaf -> down;
 	leaf -> shrink;
+	leaf -> excess;
 	balance -> down;
 	down -> down;
-	down -> end;
-	balance -> end;
+	down -> true;
+	balance -> true;
 	shrink -> down;
-	shrink -> end;
-	end [shape=circle];
+	shrink -> true;
+	excess -> true [label="delete"];
+	true [shape=none, style=none];
+	false [shape=none, style=none];
 }
