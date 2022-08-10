@@ -1157,11 +1157,12 @@ balance_less:
 	assert(path.node->size <= TREE_MAX - transfer);
 	path.node->size += transfer;
 	sibling.less->size = (unsigned char)to_promote;
+	PB_(graph_usual)(tree, "graph/work.gv");
 	if(path.height) {
 		struct PB_(branch) *const lessb = PB_(as_branch)(sibling.less);
 		assert(0);
 	}
-	goto end;
+	goto loop;
 merge_less:
 	assert(combined <= TREE_MAX);
 	printf("merge less %s, %s through %d\n",
@@ -1185,7 +1186,7 @@ merge_less:
 	excess.node->size--;
 	/* Sloppy. */
 	free(path.node); printf("Remove: freeing %s.\n", orcify(path.node));
-	goto end;
+	goto loop;
 balance_more:
 	combined = path.node->size + sibling.more->size;
 	printf("balance more: combined %u\n", combined);
@@ -1211,7 +1212,7 @@ balance_more:
 		struct PB_(branch) *const moreb = PB_(as_branch)(sibling.more);
 		assert(0);
 	}
-	goto end;
+	goto loop;
 merge_more:
 	assert(combined <= TREE_MAX);
 	printf("merge more %s, %s through %d\n",
@@ -1236,8 +1237,16 @@ merge_more:
 	excess.node->size--;
 	/* Sloppy. */
 	free(sibling.more); printf("Remove: freeing %s.\n", orcify(sibling.more));
-	goto end;
-} shrink: /* Every node along the path is minimal, the height decreases. */
+	goto loop;
+loop:
+	if(!path.height) {
+		assert(queue.status == EMPTY);
+		goto end;
+	}
+}
+	printf("ohoh\n");
+	goto descend;
+shrink: /* Every node along the path is minimal, the height decreases. */
 	assert(0);
 	return 0;
 excess: /* Leaf has more than `TREE_MIN`; remove from parent node. */
