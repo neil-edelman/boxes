@@ -1023,10 +1023,11 @@ static int B_(tree_remove)(struct B_(tree) *const tree,
 	const char *const status_string[] = { TREE_STATUS }; /* Debug. */
 #undef X
 #undef TREE_STATUS
-	const struct { const unsigned next[6], tail[6];
+	const struct { const unsigned next[6], tail[6], no[6];
 		enum status enqueue[6], dequeue[6]; } lut = {
 			{ 0, 1, ERROR, 0, ERROR, ERROR },
 			{ ERROR, 0, 0, 1, 1, ERROR },
+			{ 0, 1, 2, 2, 1, 2, 0 },
 			{ EVEN1, EVEN2, ERROR, ODD2, ERROR, ERROR },
 			{ ERROR, EMPTY, ODD1, EMPTY, EVEN1 }
 		};
@@ -1109,6 +1110,10 @@ descend: {
 	printf("remove: descend! excess %s:%u, path %s(%u):%u, siblings %s and %s.\n", orcify(excess.node), excess.idx,
 		orcify(path.node), path.height, path.idx,
 		orcify(sibling.less), orcify(sibling.more));
+	if(lut.no[queue.status] && queue.data[lut.dequeue[queue.status]].link) {
+		printf("merging into queue\n");
+		assert(0);
+	} /* else...? */
 	if(path.height) {
 		const unsigned next = lut.next[queue.status],
 			back = path.idx >= path.node->size;
@@ -1118,12 +1123,13 @@ descend: {
 #ifdef TREE_VALUE
 		queue.data[next].value = path.node->value[path.idx - back];
 #endif
-		queue.data[next].link = excess.height - 2 ?
+		queue.data[next].link = path.height ?
 			PB_(as_branch_c)(path.node)->child[path.idx] : 0;
 		queue.data[next].link_order = back ? RIGHT : LEFT;
-		printf("enqueuing %s:%u in queue[%u] key %u, result %s\n",
+		printf("enqueuing %s:%u in queue[%u] key %u, link %s, result %s\n",
 			orcify(path.node), path.idx - back, next,
-			queue.data[next].key, status_string[queue.status]);
+			queue.data[next].key, orcify(queue.data[next].link),
+			status_string[queue.status]);
 	}
 	/* Pick the sibling key with the most nodes to balance, preferring less. */
 	if((sibling.less ? sibling.less->size : 0)
@@ -1152,16 +1158,26 @@ balance_less:
 	printf("transfer %u(%u) from less\n", to_more, transfer);
 	memcpy(path.node->key, sibling.less->key + to_more,
 		sizeof *sibling.less->key * transfer);
-	printf("parent from less\n");
 	excess.node->key[excess.idx] = sibling.less->key[to_promote];
 	assert(path.node->size <= TREE_MAX - transfer);
+	if(path.height) {
+		struct PB_(branch) *const lessb = PB_(as_branch)(sibling.less),
+			*const pathb = PB_(as_branch)(path.node);
+		unsigned transferb = transfer + 1,
+			leftbsize = path.node->size - path.idx - 1;
+		printf("transferring %u from %s to %s, leftbsize %u.\n",
+			transferb, orcify(lessb), orcify(pathb), leftbsize);
+		memmove(pathb->child + transferb + path.idx,
+			pathb->child + path.idx + 1, sizeof *pathb->child * leftbsize);
+		memmove(pathb->child + transferb, pathb->child,
+			sizeof *lessb->child * path.idx);
+		memcpy(pathb->child, lessb->child + to_promote + 1,
+			sizeof *lessb->child * transferb);
+	}
 	path.node->size += transfer;
 	sibling.less->size = (unsigned char)to_promote;
 	PB_(graph_usual)(tree, "graph/work.gv");
-	if(path.height) {
-		struct PB_(branch) *const lessb = PB_(as_branch)(sibling.less);
-		assert(0);
-	}
+	if(path.height) assert(0);
 	goto loop;
 merge_less:
 	assert(combined <= TREE_MAX);
