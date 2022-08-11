@@ -437,7 +437,8 @@ static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) *const tree,
 	return lo;
 }
 /** Finds lower-bound of `key` in `tree` while counting the non-minimum `hole`
- and `is_equal`. (fixme: `is_equal` useless) */
+ and `is_equal`. (fixme: `is_equal` useless.)
+ (fixme: update for strict equality.) */
 static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
 	const PB_(key) key, struct PB_(ref) *const parent) {
 	struct PB_(ref) lo;
@@ -580,6 +581,7 @@ static int B_(tree_contains)(struct B_(tree) *const tree, const PB_(key) x) {
 }
 
 #ifdef TREE_VALUE /* <!-- map */
+/** TREE_ERROR should be set if it's not >= high. */
 /** Packs `key` on the right side of `tree` without doing the usual
  restructuring. All other topology modification functions should be avoided
  until followed by <fn:<B>tree_bulk_finish>.
@@ -708,6 +710,7 @@ catch: /* Didn't work. Reset. */
  in a node. @return The re-distribution was a success and all nodes are within
  rules. The only time that it would be false is if a regular operation was
  performed interspersed with a bulk insertion without calling this function.
+ (Are you sure?)
  (Maybe we should up the minimum to 1/2 for this function?)
  @order \O(\log `size`) */
 static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
