@@ -87,6 +87,7 @@
  <Johnson, Shasha, 1993, Free-at-Empty>, show good results; this has been
  chosen to provide hysteresis. (Except `TREE_MAX 2`, it's fixed.) */
 #define TREE_MIN (TREE_MAX / 3 ? TREE_MAX / 3 : 1)
+/* FIXME: Is this good? */
 #define TREE_SPLIT (TREE_ORDER / 2) /* Split index: even order left-leaning. */
 #define TREE_RESULT X(ERROR), X(UNIQUE), X(YIELD)
 #define X(n) TREE_##n
@@ -444,8 +445,10 @@ static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
 	struct PB_(ref) lo;
 	parent->node = 0;
 	for(TREE_FORTREE(lo)) {
+		/* fixme: put parent on the last one of nodes with MIN keys.
+		 return if < MIN keys. */
 		TREE_START(lo)
-		TREE_FORNODE(lo, continue)
+		TREE_FORNODE(lo, continue) /* Return? */
 		if(lo.node->size > TREE_MIN || lo.height && (
 			lo.idx
 			&& PB_(as_branch)(lo.node)->child[lo.idx - 1]->size > TREE_MIN

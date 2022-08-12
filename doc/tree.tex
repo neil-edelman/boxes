@@ -82,14 +82,18 @@
 }
 
 \author{Neil A. Edelman}
-\title{B-tree design}
+\title{Practical B-tree design}
 \date{2022-08-05}
 
 \begin{document}
 
 \maketitle
 
-\abstract{Several design decisions for a practical B-tree are discussed.}
+\abstract{Several design decisions for a minimal practical B-tree are discussed, covering bulk-loading, insertion, and deletion. Any allocations are fail-fast before modifying the tree so that it remains in a valid state. Concurrency not considered.}
+
+
+
+
 
 \section{Design}
 
@@ -104,27 +108,36 @@ The branching factor, or order as \cite{knuth1998sorting}, is a fixed value betw
 We use fixed-length nodes. In \cite{goodrich2011data}, these are $(a,b)$-trees as $(\text{minimum}+1, \text{maxumum}+1)$\nobreakdash-trees. That is, the maximum is the node's key capacity. Since the keys can be thought of as an implicit complete binary tree, necessarily maximum+1 is the order. Unlike \cite{knuth1998sorting}, we differentiate by branch and leaf; a leaf node has no need for null-children, so we don't include them.
 
 Performance will be
-$\mathcal{O}(\log_{\text{minimum}+1} \text{size})$. Equation~\ref{usual-min} gives the standard B-tree minimum in terms of the maximum.
+$\mathcal{O}(\log \text{size})$. Equation~\ref{usual-min} gives the standard B-tree key minimum in terms of the key maximum. (Equivalent to the specifying the minimum children as a function of the order.)
+
+% \lceil order / 2 \rceil children
+% \lceil order / 2 \rceil - 1 keys
+% \lceil (max+1) / 2 \rceil - 1 keys
+% This can be simplified!
+%\text{child}_\text{minimum} &= \left\lceil \frac{\text{order}}{2}\right\rceil \nonumber \\
+%\text{minimum} &= \left\lceil \frac{\text{maximum}+1}{2} \right\rceil - 1 \label{usual-min}
 
 \begin{align}
-\text{minimum} = \left\lceil \frac{\text{maximum}+1}{2} \right\rceil - 1 \label{usual-min}
+\text{minimum} &= \left\lfloor \frac{\text{maximum}}{2} \right\rfloor \label{usual-min}
 \end{align}
 
-Freeing at empty gives good results in \cite{johnson1993b}. We compromise with Equation~\ref{min}. Designed to be less-eager and provides some hysteresis while balancing asymptotic performance.
+Equation~\ref{usual-min} represents the maximum minimum without borrowing from the siblings. However, freeing at empty gives good results in \cite{johnson1993b}. We compromise with Equation~\ref{min}. Designed to be less-eager and provides some hysteresis while balancing asymptotic performance.
 
 \begin{align}
-\text{minimum} = \left\lceil \frac{\text{maximum}+1}{3} \right\rceil - 1 \label{min}
+\text{minimum} = \max\left(1, \left\lfloor \frac{\text{maximum}}{3} \right\rfloor \right) \label{min}
 \end{align}
 
-In a sense, it is the opposite of a B$^*$-tree\cite{knuth1998sorting, comer1979ubiquitous}, where $\frac{1}{3}$ instead of $\frac{2}{3}$ of the capacity is full: instead of being stricter, it is lazier.
+In a sense, it is the opposite of a B$^*$-tree\cite{knuth1998sorting, comer1979ubiquitous}, where $\frac{1}{3}$ instead of $\frac{2}{3}$ of the capacity is full. It doesn't affect the shape of the tree unless deletions are performed, where instead of being stricter, it is lazier.
+
+
+
+
+
+\section{Operations}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Bulk loading}
-
-Bulk loading buffers, as described in \cite{graefe2011modern}, is too complex for our purposes. Here, the user must supply the keys in order. Such that, a key undergoing bulk-add is packed to the lowest height on the right side, ignoring the rules for splitting. A key recruits zero-key nodes below as needed. When the tree is full, the height increases.
-
-Because the B-tree rule for the minimum number of keys may be violated on bulk-add, it's important to finalize the tree. This balances and restores the B-tree invariants on the right side of the tree, under the root.
-
-Initially, this will efficiently produce a more compact tree. For example, Figure~\ref{bulk} shows bulk addition of natural numbers in order. Compare adding them normally: after a split, there's not any more keys to be added on the low side; this asymptotically results in one-half occupancy.
 
 \begin{figure}%
 	\centering%
@@ -248,16 +261,24 @@ Initially, this will efficiently produce a more compact tree. For example, Figur
 		}
 	}
     \caption{Order-3, maximum keys 2, bulk-addition, with labels for nodes.
-\ref{bulk:2}. keys 1, 2: full tree.
-\ref{bulk:3}. adding 3 increases the height. Minimum invariant is violated for \code{Mausnar}.
-\ref{bulk:3finish}. finalize would balance all the right nodes below the root.
-\ref{bulk:4}. or continue adding 4 to \ref{bulk:3}.}%
+\ref{bulk:2}. Keys 1, 2: full tree.
+\ref{bulk:3}. Adding 3 increases the height, with new nodes (branch) \code{Snamog} and (leaf) \code{Mausnar}. Minimum invariant is violated for \code{Mausnar}.
+\ref{bulk:3finish}. Finalize would balance all the right nodes below the root.
+\ref{bulk:4}. Or continue adding 4 to \ref{bulk:3}.}%
 	\label{bulk}%
 \end{figure}%
 
+Bulk loading buffers, as described in \cite{graefe2011modern}, is too complex for our purposes. Here, the user must supply the keys in order. Such that, a key undergoing bulk-add is packed to the lowest height on the right side, ignoring the rules for splitting. A key recruits zero-key nodes below as needed. When the tree is full, the height increases.
+
+Because the B-tree rule for the minimum number of keys may be violated on bulk-add, it's important to finalize the tree. This balances and restores the B-tree invariants on the right side of the tree, under the root.
+
+Initially, this will efficiently produce a more compact tree. For example, Figure~\ref{bulk} shows bulk addition of natural numbers in order. Compare adding them normally: after a split, there's not any more keys to be added on the low side; this asymptotically results in one-half occupancy.
 
 
 
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Adding a key}
 
@@ -301,149 +322,149 @@ A non-empty leaf node results in the \code{insert} path, and a single time down 
 
 \begin{figure}
 	\centering%
-	\subcaptionbox{Full tree of even numbers.\label{even:full}}{%
-		\digraph[scale=0.45]{add0}{
-	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans", splines=false];
-	node [shape=none, fontname="Bitstream Vera Sans"];
-	trunk0x100604080 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Iabug</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">18</td>
-	<td border="0" align="center" port="1">36</td>
-	</tr>
-	<hr/>
-	<tr><td></td></tr>
-</table>>];
-	trunk0x100604080:0:sw -> trunk0x100604480;
-	trunk0x100604080:0:se -> trunk0x10281b590;
-	trunk0x100604080:1:se -> trunk0x1006040f0;
-	trunk0x100604480 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Dabshar</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">6</td>
-	<td border="0" align="center" port="1">12</td>
-	</tr>
-	<hr/>
-	<tr><td></td></tr>
-</table>>];
-	trunk0x100604480:0:sw -> trunk0x100537ef0;
-	trunk0x100604480:0:se -> trunk0x1006040e0;
-	trunk0x100604480:1:se -> trunk0x100604520;
-	trunk0x100537ef0 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Fidan</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">2</td>
-	<td border="0" align="center" port="1">4</td>
-	</tr>
-</table>>];
-	trunk0x1006040e0 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Rutdan</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">8</td>
-	<td border="0" align="center" port="1">10</td>
-	</tr>
-</table>>];
-	trunk0x100604520 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Umologath</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">14</td>
-	<td border="0" align="center" port="1">16</td>
-	</tr>
-</table>>];
-	trunk0x10281b590 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Radien</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">24</td>
-	<td border="0" align="center" port="1">30</td>
-	</tr>
-	<hr/>
-	<tr><td></td></tr>
-</table>>];
-	trunk0x10281b590:0:sw -> trunk0x10281b5c0;
-	trunk0x10281b590:0:se -> trunk0x100531520;
-	trunk0x10281b590:1:se -> trunk0x100537dd0;
-	trunk0x10281b5c0 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Ickpuga</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">20</td>
-	<td border="0" align="center" port="1">22</td>
-	</tr>
-</table>>];
-	trunk0x100531520 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Nashsinat</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">26</td>
-	<td border="0" align="center" port="1">28</td>
-	</tr>
-</table>>];
-	trunk0x100537dd0 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Etholog</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">32</td>
-	<td border="0" align="center" port="1">34</td>
-	</tr>
-</table>>];
-	trunk0x1006040f0 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Ufthluk</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">42</td>
-	<td border="0" align="center" port="1">48</td>
-	</tr>
-	<hr/>
-	<tr><td></td></tr>
-</table>>];
-	trunk0x1006040f0:0:sw -> trunk0x100537120;
-	trunk0x1006040f0:0:se -> trunk0x1005329b0;
-	trunk0x1006040f0:1:se -> trunk0x100535b20;
-	trunk0x100537120 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Azansha</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">38</td>
-	<td border="0" align="center" port="1">40</td>
-	</tr>
-</table>>];
-	trunk0x1005329b0 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Fimak</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">44</td>
-	<td border="0" align="center" port="1">46</td>
-	</tr>
-</table>>];
-	trunk0x100535b20 [label = <
-<table border="0" cellspacing="0">
-	<tr><td border="0" colspan="2"><font color="Gray75">Shaak</font></td></tr>
-	<hr/>
-	<tr>
-	<td border="0" align="center" port="0">50</td>
-	<td border="0" align="center" port="1">52</td>
-	</tr>
-</table>>];
-		}
-	}\\
+%	\subcaptionbox{Full tree of even numbers.\label{even:full}}{%
+%		\digraph[scale=0.45]{add0}{
+%	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans", splines=false];
+%	node [shape=none, fontname="Bitstream Vera Sans"];
+%	trunk0x100604080 [label = <
+%<table border="0" cellspacing="0">
+%	<tr><td border="0" colspan="2"><font color="Gray75">Iabug</font></td></tr>
+%	<hr/>
+%	<tr>
+%	<td border="0" align="center" port="0">18</td>
+%	<td border="0" align="center" port="1">36</td>
+%	</tr>
+%	<hr/>
+%	<tr><td></td></tr>
+%</table>>];
+%	trunk0x100604080:0:sw -> trunk0x100604480;
+%	trunk0x100604080:0:se -> trunk0x10281b590;
+%	trunk0x100604080:1:se -> trunk0x1006040f0;
+%	trunk0x100604480 [label = <
+%<table border="0" cellspacing="0">
+%	<tr><td border="0" colspan="2"><font color="Gray75">Dabshar</font></td></tr>
+%	<hr/>
+%	<tr>
+%	<td border="0" align="center" port="0">6</td>
+%	<td border="0" align="center" port="1">12</td>
+%	</tr>
+%	<hr/>
+%	<tr><td></td></tr>
+%</table>>];
+%	trunk0x100604480:0:sw -> trunk0x100537ef0;
+%	trunk0x100604480:0:se -> trunk0x1006040e0;
+%	trunk0x100604480:1:se -> trunk0x100604520;
+%	trunk0x100537ef0 [label = <
+%<table border="0" cellspacing="0">
+%	<tr><td border="0" colspan="2"><font color="Gray75">Fidan</font></td></tr>
+%	<hr/>
+%	<tr>
+%	<td border="0" align="center" port="0">2</td>
+%	<td border="0" align="center" port="1">4</td>
+%	</tr>
+%</table>>];
+%	trunk0x1006040e0 [label = <
+%<table border="0" cellspacing="0">
+%	<tr><td border="0" colspan="2"><font color="Gray75">Rutdan</font></td></tr>
+%	<hr/>
+%	<tr>
+%	<td border="0" align="center" port="0">8</td>
+%	<td border="0" align="center" port="1">10</td>
+%	</tr>
+%</table>>];
+%	trunk0x100604520 [label = <
+%<table border="0" cellspacing="0">
+%	<tr><td border="0" colspan="2"><font color="Gray75">Umologath</font></td></tr>
+%	<hr/>
+%	<tr>
+%	<td border="0" align="center" port="0">14</td>
+%	<td border="0" align="center" port="1">16</td>
+%	</tr>
+%</table>>];
+%	trunk0x10281b590 [label = <
+%<table border="0" cellspacing="0">
+%	<tr><td border="0" colspan="2"><font color="Gray75">Radien</font></td></tr>
+%	<hr/>
+%	<tr>
+%	<td border="0" align="center" port="0">24</td>
+%	<td border="0" align="center" port="1">30</td>
+%	</tr>
+%	<hr/>
+%	<tr><td></td></tr>
+%</table>>];
+%	trunk0x10281b590:0:sw -> trunk0x10281b5c0;
+%	trunk0x10281b590:0:se -> trunk0x100531520;
+%	trunk0x10281b590:1:se -> trunk0x100537dd0;
+%	trunk0x10281b5c0 [label = <
+%<table border="0" cellspacing="0">
+%	<tr><td border="0" colspan="2"><font color="Gray75">Ickpuga</font></td></tr>
+%	<hr/>
+%	<tr>
+%	<td border="0" align="center" port="0">20</td>
+%	<td border="0" align="center" port="1">22</td>
+%	</tr>
+%</table>>];
+%	trunk0x100531520 [label = <
+%<table border="0" cellspacing="0">
+%	<tr><td border="0" colspan="2"><font color="Gray75">Nashsinat</font></td></tr>
+%	<hr/>
+%	<tr>
+%	<td border="0" align="center" port="0">26</td>
+%	<td border="0" align="center" port="1">28</td>
+%	</tr>
+%</table>>];
+%	trunk0x100537dd0 [label = <
+%<table border="0" cellspacing="0">
+%	<tr><td border="0" colspan="2"><font color="Gray75">Etholog</font></td></tr>
+%	<hr/>
+%	<tr>
+%	<td border="0" align="center" port="0">32</td>
+%	<td border="0" align="center" port="1">34</td>
+%	</tr>
+%</table>>];
+%	trunk0x1006040f0 [label = <
+%<table border="0" cellspacing="0">
+%	<tr><td border="0" colspan="2"><font color="Gray75">Ufthluk</font></td></tr>
+%	<hr/>
+%	<tr>
+%	<td border="0" align="center" port="0">42</td>
+%	<td border="0" align="center" port="1">48</td>
+%	</tr>
+%	<hr/>
+%	<tr><td></td></tr>
+%</table>>];
+%	trunk0x1006040f0:0:sw -> trunk0x100537120;
+%	trunk0x1006040f0:0:se -> trunk0x1005329b0;
+%	trunk0x1006040f0:1:se -> trunk0x100535b20;
+%	trunk0x100537120 [label = <
+%<table border="0" cellspacing="0">
+%	<tr><td border="0" colspan="2"><font color="Gray75">Azansha</font></td></tr>
+%	<hr/>
+%	<tr>
+%	<td border="0" align="center" port="0">38</td>
+%	<td border="0" align="center" port="1">40</td>
+%	</tr>
+%</table>>];
+%	trunk0x1005329b0 [label = <
+%<table border="0" cellspacing="0">
+%	<tr><td border="0" colspan="2"><font color="Gray75">Fimak</font></td></tr>
+%	<hr/>
+%	<tr>
+%	<td border="0" align="center" port="0">44</td>
+%	<td border="0" align="center" port="1">46</td>
+%	</tr>
+%</table>>];
+%	trunk0x100535b20 [label = <
+%<table border="0" cellspacing="0">
+%	<tr><td border="0" colspan="2"><font color="Gray75">Shaak</font></td></tr>
+%	<hr/>
+%	<tr>
+%	<td border="0" align="center" port="0">50</td>
+%	<td border="0" align="center" port="1">52</td>
+%	</tr>
+%</table>>];
+%		}
+%	}\\
 	\subcaptionbox{Add 9; four new nodes, the first split.\label{even:work1}}{%
 		\digraph[width=0.4\textwidth]{evenwork1}{
 	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans", splines=false];
@@ -1179,17 +1200,63 @@ A non-empty leaf node results in the \code{insert} path, and a single time down 
 </table>>];
 		}
 	}
-    \caption{\ref{even:full}: full order-3 tree. \ref{even:work1} -- \ref{even:work3}: working down the tree. \ref{even:insert}: addition of any number will cause the tree height to increase.}%
+    \caption{Full order-3 tree: addition of any number will cause the tree height to increase.
+    \ref{even:work1}~--~\ref{even:work3}: working down the tree in \code{split}. \ref{even:insert} after \code{fill}.}%
 	\label{even}%
 \end{figure}%
 
-An add must \code{grow} if it has the maximum keys in the leaf node. The height of the \code{hole} (zero-based) is the number of nodes extra that need to be reserved. The allocation is fail-fast before modifying the tree. A null \code{hole} means all of the path is full of keys; this requires increased tree height: tree~height~+~2 new nodes. These new empty nodes are then strung together and added to the tree.
+An add must \code{grow} if it has the maximum keys in the leaf node. The height of the \code{hole} (zero-based) is the number of nodes extra that need to be reserved. A null \code{hole} means all of the path is full of keys; this requires increased tree height: tree~height~+~2 new nodes. These new empty nodes are then strung together and added to the tree.
 
 \code{split} introduces \code{cursor}, along the path to the leaf, and \code{sibling}, the new node ancestry. The \code{cursor} is initially the \code{hole}; it descends a second time, balancing with \code{sibling}, thus splits it with the new node. \code{hole} can either go to the left, right, or exactly in between. \code{cursor} descends on the path, and \code{sibling} descends on the new nodes. In \code{fill}, the added key then goes in \code{hole}.
 
-In Figure~\ref{even}, the path from \ref{even:full} to \ref{even:insert} to insert 9 on Figure~\ref{add} is \code{descend}, \code{grow}, \code{split} four times (the maximum for this size), \code{fill}, and returns \code{UNIQUE}. The new nodes are (branches) \code{Urbolgun}, \code{Beoub}, \code{Naagh}, and (leaf) \code{Olog}. This is the most complicated path, when the height increases.
+In Figure~\ref{even}, the path from before \ref{even:work1} to \ref{even:insert} to insert 9 on Figure~\ref{add} is \code{descend}, \code{grow}, \code{split} four times (the maximum for this size), \code{fill}, and returns \code{UNIQUE}. The new nodes are (branches) \code{Urbolgun}, \code{Beoub}, \code{Naagh}, and (leaf) \code{Olog}. This is the most complicated path, when the height increases.
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \subsection{Deleting a key}
+
+\begin{figure}
+	\centering%
+	\digraph[scale=\Scale]{remove}{
+	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans"];
+	node [shape=box, style=filled, fontname="Bitstream Vera Sans", fillcolor="Grey90"];
+	edge [fontname="Bitstream Vera Sans"];
+	remove [shape=circle, style=none];
+	lookup [label="lookup victim"];
+	remove -> lookup;
+	lookup -> false;
+	lookup -> branch;
+	lookup -> leaf;
+	branch -> leaf [label="transfer"];
+	leaf -> decide;
+	decide -> true [label="space or parent dne"];
+	left [label="balance left"];
+	decide -> left [label="left>=right"];
+	left -> true;
+	right [label="balance right"];
+	decide -> right [label="left<right"];
+	right -> true;
+	decide -> merge [label="all nodes min"];
+	merge -> decide [label="victim moves up"];
+	true [shape=none, style=none];
+	false [shape=none, style=none];
+	}
+    \caption{\code{remove} is the opposite of \code{add} in Figure~\ref{add}.}%
+	\label{remove}%
+\end{figure}%
+
+
+
+
+
+
+\section{LOL}
+
+\subsection{Set or map}
+
 
 
 

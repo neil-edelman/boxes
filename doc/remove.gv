@@ -2,25 +2,23 @@ digraph {
 	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans"];
 	node [shape=box, style=filled, fontname="Bitstream Vera Sans", fillcolor="Grey90"];
 	edge [fontname="Bitstream Vera Sans"];
-
 	remove [shape=circle, style=none];
-	lookup [label="lookup: rm, excess"];
+	lookup [label="lookup victim"];
 	remove -> lookup;
 	lookup -> false;
 	lookup -> branch;
 	lookup -> leaf;
-	branch -> leaf [label="successor\lpredecessor\l"];
-	leaf -> balance;
-	leaf -> down;
-	leaf -> shrink;
-	leaf -> excess;
-	balance -> down;
-	down -> down;
-	down -> true;
-	balance -> true;
-	shrink -> down;
-	shrink -> true;
-	excess -> true [label="delete"];
+	branch -> leaf [label="transfer"];
+	leaf -> decide;
+	decide -> true [label="space or parent dne"];
+	left [label="balance left"];
+	decide -> left [label="left>=right"];
+	left -> true;
+	right [label="balance right"];
+	decide -> right [label="left<right"];
+	right -> true;
+	decide -> merge [label="all nodes min"];
+	merge -> decide [label="victim moves up"];
 	true [shape=none, style=none];
 	false [shape=none, style=none];
 }
