@@ -363,7 +363,8 @@ static PB_(entry) PB_(next)(struct PB_(iterator) *const it) {
 	it->seen = 1;
 	return PB_(leaf_to_entry)(it->i.node, it->i.idx);
 }
-/** Move to previous `it`. @return Element or null. @implements `previous` */
+/** Move to previous `it`. @return Element or null. @implements `previous`
+ @fixme */
 static PB_(entry) PB_(previous)(struct PB_(iterator) *const it) {
 	assert(it && 0);
 	if(!it->root || !it->i.node && it->seen != -1
@@ -377,8 +378,7 @@ static PB_(entry) PB_(previous)(struct PB_(iterator) *const it) {
 #define TREE_FORTREE(i) i.node = tree->node, i.height = tree->height; ; \
 	i.node = PB_(as_branch_c)(i.node)->child[i.idx], i.height--
 #define TREE_START(i) unsigned hi = i.node->size; i.idx = 0;
-#define TREE_FORNODE(i, continue) if(!hi) continue; \
-do { \
+#define TREE_FORNODE(i) do { \
 	const unsigned m = (i.idx + hi) / 2; \
 	if(PB_(compare)(key, i.node->key[m]) > 0) i.idx = m + 1; \
 	else hi = m; \
@@ -387,7 +387,8 @@ do { \
 /** One height at a time. */
 static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 	TREE_START((*lo))
-	TREE_FORNODE((*lo), return)
+	if(!lo) return;
+	TREE_FORNODE((*lo))
 }
 /** Finds lower-bound of `key` in `tree`. */
 static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
@@ -395,7 +396,8 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
 	struct PB_(ref) i, lo = { 0, 0, 0 };
 	for(TREE_FORTREE(i)) {
 		TREE_START(i)
-		TREE_FORNODE(i, continue)
+		if(!hi) continue;
+		TREE_FORNODE(i)
 		if(i.idx < i.node->size) {
 			lo = i;
 			/* Might be useful expanding this to multi-keys. */
@@ -412,12 +414,10 @@ static struct PB_(ref) PB_(find)(struct PB_(tree) *const tree,
 	struct PB_(ref) i;
 	for(TREE_FORTREE(i)) {
 		TREE_START(i)
-		TREE_FORNODE(i, continue)
+		if(!hi) continue;
+		TREE_FORNODE(i)
 		if(i.idx < i.node->size && TREE_FLIPPED(i)) break;
-		if(!i.height) {
-			struct PB_(ref) no = { 0, 0, 0 };
-			return no;
-		}
+		if(!i.height) { i.node = 0; return i; }
 	}
 	return i;
 }
@@ -430,37 +430,32 @@ static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) *const tree,
 	for(TREE_FORTREE(lo)) {
 		TREE_START(lo)
 		if(hi < TREE_MAX) *hole = lo;
-		TREE_FORNODE(lo, continue)
+		if(!hi) continue;
+		TREE_FORNODE(lo)
 		if(lo.node->size < TREE_MAX) hole->idx = lo.idx;
 		if(lo.idx < lo.node->size && TREE_FLIPPED(lo)) { *is_equal = 1; break; }
 		if(!lo.height) break;
 	}
 	return lo;
 }
-/** Finds lower-bound of `key` in `tree` while counting the non-minimum `hole`
- and `is_equal`. (fixme: `is_equal` useless.)
- (fixme: update for strict equality.) */
+/** Finds exact `key` in `tree`. If `node` is found, temporarily, the nodes
+ that have `TREE_MIN` keys have `as_branch(node).child[TREE_MAX] = parent` or,
+ for leaves, `leaf_parent`, which must be set. */
 static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
-	const PB_(key) key, struct PB_(ref) *const parent) {
+	const PB_(key) key, struct PB_(node) **leaf_parent) {
+	struct PB_(node) *parent = 0;
 	struct PB_(ref) lo;
-	parent->node = 0;
 	for(TREE_FORTREE(lo)) {
-		/* fixme: put parent on the last one of nodes with MIN keys.
-		 return if < MIN keys. */
 		TREE_START(lo)
-		TREE_FORNODE(lo, continue) /* Return? */
-		if(lo.node->size > TREE_MIN || lo.height && (
-			lo.idx
-			&& PB_(as_branch)(lo.node)->child[lo.idx - 1]->size > TREE_MIN
-			|| lo.idx < lo.node->size
-			&& PB_(as_branch)(lo.node)->child[lo.idx + 1]->size > TREE_MIN
-		)) *parent = lo;
+		if(!hi) { lo.node = 0; break; } /* Cannot delete bulk load. */
+		if(hi <= TREE_MIN) { /* Remember the parent temporarily. */
+			if(lo.height) PB_(as_branch)(lo.node)->child[TREE_MAX] = parent;
+			else *leaf_parent = parent;
+		}
+		TREE_FORNODE(lo)
 		if(lo.idx < lo.node->size && TREE_FLIPPED(lo)) break;
 		if(!lo.height) { lo.node = 0; break; } /* Was not in. */
-	}
-	if(!parent->node) {
-		/* Check for root. */
-		assert(0);
+		parent = lo.node;
 	}
 	return lo;
 }
@@ -1020,47 +1015,18 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 /** Tries to remove `key` from `tree`. @return Success. */
 static int B_(tree_remove)(struct B_(tree) *const tree,
 	const PB_(key) key) {
-	/* This is a temporary 2-element queue for keys that move down the tree. */
-#define TREE_STATUS X(EMPTY), X(EVEN1), X(EVEN2), X(ODD1), X(ODD2), X(ERROR)
-#define X(n) n
-	enum status { TREE_STATUS };
-#undef X
-#define X(n) #n
-	const char *const status_string[] = { TREE_STATUS }; /* Debug. */
-#undef X
-#undef TREE_STATUS
-	const struct { const unsigned next[6], tail[6], no[6];
-		enum status enqueue[6], dequeue[6]; } lut = {
-			{ 0, 1, ERROR, 0, ERROR, ERROR },
-			{ ERROR, 0, 0, 1, 1, ERROR },
-			{ 0, 1, 2, 2, 1, 2, 0 },
-			{ EVEN1, EVEN2, ERROR, ODD2, ERROR, ERROR },
-			{ ERROR, EMPTY, ODD1, EMPTY, EVEN1 }
-		};
-	struct {
-		enum status status;
-		struct {
-			PB_(key) key;
-#ifdef TREE_VALUE
-			PB_(value) value;
-#endif
-			struct PB_(node) *link;
-			enum { LEFT, RIGHT } link_order;
-		} data[2];
-	} queue;
-	/* The parent is the ancestor (or itself) with excess nodes to spare. */
-	struct PB_(ref) rm, excess;
-	queue.status = EMPTY;
-	(void)status_string; /* Debug, not there in release. */
+	struct PB_(ref) rm, parent /* Only if `key.size <= TREE_MIN`. */;
+	struct { struct PB_(node) *less, *more; } sibling;
+	parent.node = 0;
 	assert(tree);
 	printf("MIN %u, MAX %u, ORDER %u\n", TREE_MIN, TREE_MAX, TREE_ORDER);
-	/* Traverse down the tree until `key`. */
-	if(!(rm.node = tree->root.node) || tree->root.height == UINT_MAX
-		|| !(rm = PB_(lookup_remove)(&tree->root, key, &excess)).node)
+	/* Traverse down the tree until `key`, leaving breadcrumbs for parents of
+	 minimum key nodes. */
+	if(!tree->root.node || tree->root.height == UINT_MAX
+		|| !(rm = PB_(lookup_remove)(&tree->root, key, &parent.node)).node)
 		{ printf("remove: didn't match any nodes.\n"); return 0; }
-	printf("remove: %s(%u):%u <%u>; excess edge %s(%u):%u.\n",
-		orcify(rm.node), rm.height, rm.idx, rm.node->key[rm.idx],
-		orcify(excess.node), excess.height, excess.idx);
+	printf("remove: %s(%u):%u <%u>. Parent node %s.\n", orcify(rm.node),
+		rm.height, rm.idx, rm.node->key[rm.idx], orcify(parent.node));
 	if(rm.height) goto branch; else goto leaf;
 branch: {
 	struct PB_(ref) succ;
@@ -1089,17 +1055,23 @@ branch: {
 	assert(0);
 } leaf:
 	printf("remove: in leaf node.\n");
-	if(!excess.node) {
-		/* Root special case. */
-		if(tree->root.node->size > 1) excess.node = tree->root.node, printf("remove: special case of root.\n");
-		else goto shrink;
-	}
-	if(rm.node == excess.node) goto excess;
-	goto descend;
+	goto ascend;
+ascend:
+	assert(rm.node);
+	if(!parent.node) goto space;
+	/* Retrieve forgot information about the index in parent. (This is not as
+	 fast at it could be, but holding parent data in minimum keys allows it to
+	 be in place.) */
+	PB_(find_idx)(&parent, key);
+	assert(PB_(as_branch)(parent.node)->child[parent.idx] == rm.node);
+	assert(0);
+
+
+#if 0
+
 descend: {
 	struct PB_(branch) *const excess_branch = PB_(as_branch)(excess.node);
 	struct PB_(ref) path;
-	struct { struct PB_(node) *less, *more; } sibling;
 	unsigned combined, to_promote, to_more, to_less, transfer;
 	assert(excess.height && excess.idx <= excess.node->size
 		&& excess.node->size > 0 && queue.status == EMPTY);
@@ -1271,16 +1243,29 @@ loop:
 shrink: /* Every node along the path is minimal, the height decreases. */
 	assert(0);
 	return 0;
-excess: /* Leaf has more than `TREE_MIN`; remove from parent node. */
-	assert(rm.node && rm.idx < rm.node->size && rm.node->size > TREE_MIN
-		&& !rm.height);
+excess:
+#endif
+
+space: /* Node is root or has more than `TREE_MIN`; branches taken care of. */
+	assert(rm.node && rm.idx < rm.node->size
+		&& (rm.node->size > TREE_MIN || rm.node == tree->root.node));
 	memmove(rm.node->key + rm.idx, rm.node->key + rm.idx + 1,
 		sizeof *rm.node->key * (rm.node->size - rm.idx - 1));
 #ifdef TREE_VALUE
 	memmove(rm.node->value + rm.idx, rm.node->value + rm.idx + 1,
 		sizeof *rm.node->value * (rm.node->size - rm.idx - 1));
 #endif
-	rm.node->size--;
+	if(!--rm.node->size) {
+		assert(rm.node == tree->root.node);
+		if(tree->root.height) {
+			tree->root.node = PB_(as_branch)(rm.node)->child[0];
+			tree->root.height--;
+			printf("***freeing %s\n", orcify(rm.node));
+			free(PB_(as_branch)(rm.node));
+		} else { /* Just deleted the last one. Set flag for zero container. */
+			tree->root.height = UINT_MAX;
+		}
+	}
 	goto end;
 end:
 	return 1;

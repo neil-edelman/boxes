@@ -1225,26 +1225,23 @@ In Figure~\ref{even}, the path from before \ref{even:work1} to \ref{even:insert}
 	node [shape=box, style=filled, fontname="Bitstream Vera Sans", fillcolor="Grey90"];
 	edge [fontname="Bitstream Vera Sans"];
 	remove [shape=circle, style=none];
-	lookup [label="lookup victim"];
-	remove -> lookup;
+	lookup [label="lookup rm"];
+	remove -> lookup [label="when min, write parent"];
 	lookup -> false;
 	lookup -> branch;
 	lookup -> leaf;
 	branch -> leaf [label="transfer"];
-	leaf -> decide;
-	decide -> true [label="space or parent dne"];
-	left [label="balance left"];
-	decide -> left [label="left>=right"];
-	left -> true;
-	right [label="balance right"];
-	decide -> right [label="left<right"];
-	right -> true;
-	decide -> merge [label="all nodes min"];
-	merge -> decide [label="victim moves up"];
+	leaf -> ascend;
+	ascend -> space [label="or parent dne"];
+	space -> true;
+	ascend -> balance [label="left>min or right>min"];
+	balance -> true;
+	ascend -> merge [label="all nodes min"];
+	merge -> ascend [label="rm moves up"];
 	true [shape=none, style=none];
 	false [shape=none, style=none];
 	}
-    \caption{\code{remove} is the opposite of \code{add} in Figure~\ref{add}.}%
+    \caption{\code{remove} is the opposite of \code{add} in Figure~\ref{add}. \code{rm} starts at the bottom; works up to find any node or siblings that have excess.}%
 	\label{remove}%
 \end{figure}%
 
