@@ -295,6 +295,7 @@ static void manual(void) {
 			assert(o23_tree_contains(&removal, n + 1) == in[n]);
 		/* Merge three ways: lower. */
 		if(!o23_tree_clone(&copy, &removal)) goto catch;
+		tree_o23_graph_usual(&copy, "graph/removal-4.gv");
 		o23_tree_remove(&copy, 10), in[9] = 0;
 		tree_o23_graph_usual(&copy, "graph/removal-4a.gv");
 		for(n = 0; n < size; n++)

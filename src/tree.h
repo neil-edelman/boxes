@@ -1078,7 +1078,8 @@ ascend:
 		orcify(sibling.less), sibling.less ? sibling.less->size : 0,
 		orcify(sibling.more), sibling.more ? sibling.more->size : 0);
 	/* It's not clear which of `{ <, <= }` would be better. */
-	if(sibling.less->size < sibling.more->size) goto balance_more;
+	if((sibling.more ? sibling.more->size : 0)
+		> (sibling.less ? sibling.less->size : 0)) goto balance_more;
 	else goto balance_less;
 balance_less: {
 	const unsigned combined = rm.node->size + sibling.less->size;
@@ -1167,10 +1168,7 @@ balance_less: {
 }
 merge_less:
 	assert(0);
-merge_more:
-	assert(0);
 #if 0
-merge_less:
 	assert(combined <= TREE_MAX);
 	printf("merge less %s, %s through %d\n",
 		orcify(sibling.less), orcify(path.node), excess.node->key[excess.idx]);
@@ -1193,14 +1191,16 @@ merge_less:
 	excess.node->size--;
 	/* Sloppy. */
 	free(path.node); printf("Remove: freeing %s.\n", orcify(path.node));
-	goto loop;
+#endif
 merge_more:
-	assert(combined <= TREE_MAX);
-	printf("merge more %s, %s through %d\n",
-		orcify(path.node), orcify(sibling.more), excess.node->key[excess.idx]);
-	assert(excess.idx < excess.node->size && excess.node->size > TREE_MIN
-		&& path.idx < path.node->size && path.node->size == TREE_MIN
-		&& sibling.more->size == TREE_MIN);
+	/*assert(combined <= TREE_MAX);*/
+	printf("merge more (%s, %s) through <%d>\n",
+		orcify(rm.node), orcify(sibling.more), parent.node->key[parent.idx]);
+	assert(parent.idx < parent.node->size && parent.node->size
+		&& rm.idx < rm.node->size && rm.node->size == TREE_MIN
+		&& sibling.more->size == TREE_MIN); /* Maybe violated on bulk? */
+	assert(0);
+#if 0
 	/* Delete the key in the child node. */
 	memmove(path.node->key + path.idx, path.node->key + path.idx + 1,
 		sizeof *path.node->key * (path.node->size - path.idx - 1)); /*and*/
@@ -1218,19 +1218,6 @@ merge_more:
 	excess.node->size--;
 	/* Sloppy. */
 	free(sibling.more); printf("Remove: freeing %s.\n", orcify(sibling.more));
-	goto loop;
-loop:
-	if(!path.height) {
-		assert(queue.status == EMPTY);
-		goto end;
-	}
-}
-	printf("ohoh\n");
-	goto descend;
-shrink: /* Every node along the path is minimal, the height decreases. */
-	assert(0);
-	return 0;
-excess:
 #endif
 
 space: /* Node is root or has more than `TREE_MIN`; branches taken care of. */
