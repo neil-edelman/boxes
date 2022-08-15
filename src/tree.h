@@ -240,7 +240,7 @@ static int PB_(to_predecessor)(struct PB_(tree) tree,
 	struct PB_(ref) *const ref) {
 	assert(ref);
 	if(!tree.node || tree.height == UINT_MAX) return 0; /* Empty. */
-	if(!ref->node) { /* Null: `ret` is the last key. */
+	if(!ref->node) { /* Null: `ref` is the last key. */
 		struct PB_(tree) descend = tree;
 		while(descend.height) descend.height--, descend.node
 			= PB_(as_branch)(descend.node)->child[descend.node->size];
@@ -447,7 +447,8 @@ static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
 	struct PB_(ref) lo;
 	for(TREE_FORTREE(lo)) {
 		TREE_START(lo)
-		if(!hi) { lo.node = 0; break; } /* Cannot delete bulk add. */
+		/* Cannot delete bulk add. */
+		if(parent && hi < TREE_MIN || !parent && !hi) { lo.node = 0; break; }
 		if(hi <= TREE_MIN) { /* Remember the parent temporarily. */
 			if(lo.height) PB_(as_branch)(lo.node)->child[TREE_MAX] = parent;
 			else *leaf_parent = parent;
@@ -1028,35 +1029,81 @@ static int B_(tree_remove)(struct B_(tree) *const tree,
 		{ printf("remove: didn't match any nodes.\n"); return 0; }
 	/* Important when `rm = parent`; `find_idx` later. */
 	parent.height = rm.height + 1;
+	assert(rm.idx < rm.node->size);
 	printf("remove: %s(%u):%u <%u>. Parent node %s, height %u\n",
 		orcify(rm.node), rm.height, rm.idx, rm.node->key[rm.idx],
 		orcify(parent.node), parent.height);
 	if(rm.height) goto branch; else goto upward;
 branch: {
-	struct PB_(ref) succ;
-	struct PB_(ref) pred;
+	struct { struct PB_(ref) leaf; struct PB_(node) *parent; unsigned top; }
+		pred, succ, chosen;
+	assert(rm.height);
 	printf("remove: branch; replace by successor or predecessor.\n");
-	pred = rm;
-	if(PB_(to_predecessor)(tree->root, &pred))
-		printf("rm has predecessor %s(%u):%u\n",
-		orcify(pred.node), pred.height, pred.idx);
-	else printf("rm doesn't have predecessor\n");
-	succ = rm;
-	if(PB_(to_successor)(tree->root, &succ))
-		printf("rm has successor %s(%u):%u\n",
-		orcify(succ.node), succ.height, succ.idx);
-	else printf("rm doesn't have successor\n");
-	/* This will be more efficient duplicating code? it actually doesn't need
-	 all the code.
-	while(ref->height) ref->height--,
-		ref->node = PB_(as_branch_c)(ref->node)->child[ref->idx],
-		ref->idx = ref->node->size;
-	if(ref->idx) return ref->idx--, 1; <-- predecessor
-	ref->idx++;
-	 while(ref->height) ref->height--,
-	ref->node = PB_(as_branch_c)(ref->node)->child[ref->idx], ref->idx = 0;
-	if(ref->idx < ref->node->size) return 1; <-- successor */
-	assert(0);
+	/* Predecessor leaf. */
+	pred.leaf = rm, pred.top = UINT_MAX;
+	do {
+		struct PB_(node) *const up = pred.leaf.node;
+		pred.leaf.node = PB_(as_branch_c)(pred.leaf.node)->child[pred.leaf.idx];
+		pred.leaf.idx = pred.leaf.node->size;
+		pred.leaf.height--;
+		if(pred.leaf.node->size < TREE_MIN)
+			{ pred.leaf.node = 0; goto no_pred; }
+		else if(pred.leaf.node->size > TREE_MIN) pred.top = pred.leaf.height;
+		else if(pred.leaf.height)
+			PB_(as_branch)(pred.leaf.node)->child[TREE_MAX] = up;
+		else pred.parent = up;
+	} while(pred.leaf.height);
+	pred.leaf.idx--;
+	printf("pred %s(%u):%u\n",
+		orcify(pred.leaf.node), pred.leaf.height, pred.leaf.idx);
+no_pred:
+	/* Successor leaf. */
+	succ.leaf = rm, succ.top = UINT_MAX;
+	succ.leaf.idx++;
+	do {
+		struct PB_(node) *const up = succ.leaf.node;
+		succ.leaf.node = PB_(as_branch_c)(succ.leaf.node)->child[succ.leaf.idx],
+		succ.leaf.idx = 0;
+		succ.leaf.height--;
+		if(succ.leaf.node->size < TREE_MIN)
+			{ succ.leaf.node = 0; goto no_succ; }
+		else if(succ.leaf.node->size > TREE_MIN) succ.top = succ.leaf.height;
+		else if(succ.leaf.height)
+			PB_(as_branch)(succ.leaf.node)->child[TREE_MAX] = up;
+		else succ.parent = up;
+	} while(succ.leaf.height);
+	printf("succ %s(%u):%u\n",
+		orcify(succ.leaf.node), succ.leaf.height, succ.leaf.idx);
+no_succ:
+	printf("pred %s, succ: %s\n",
+		orcify(pred.leaf.node), orcify(succ.leaf.node));
+	/* Choose the predecessor or successor. */
+	if(!pred.leaf.node) {
+		assert(succ.leaf.node);
+		printf("succ! (pred null)\n");
+		chosen = succ;
+	} else if(!succ.leaf.node) {
+		assert(pred.leaf.node);
+		printf("pred! (succ null)\n");
+		chosen = pred;
+	} else if(pred.leaf.node->size < succ.leaf.node->size) {
+		printf("succ! (has more keys)\n");
+		chosen = succ;
+	} else if(pred.leaf.node->size > succ.leaf.node->size) {
+		printf("pred! (has more keys)\n");
+		chosen = pred;
+	} else if(pred.top > succ.top) {
+		printf("succ! (less iterations)\n");
+		chosen = succ;
+	} else {
+		printf("pred! (less or equal iterations)\n");
+		chosen = pred;
+	}
+	/* Replace `rm` with the predecessor or the successor leaf. */
+	rm.node->key[rm.idx] = chosen.leaf.node->key[chosen.leaf.idx];
+	rm = chosen.leaf;
+	PB_(graph_usual)(tree, "graph/work2.gv");
+	goto upward;
 } upward: /* The first iteration, this will be a leaf. */
 	assert(rm.node);
 	if(!parent.node) goto space; /* Same predicate. */
