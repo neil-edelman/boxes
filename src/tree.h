@@ -1102,7 +1102,6 @@ no_succ:
 	/* Replace `rm` with the predecessor or the successor leaf. */
 	rm.node->key[rm.idx] = chosen.leaf.node->key[chosen.leaf.idx];
 	rm = chosen.leaf;
-	PB_(graph_usual)(tree, "graph/work2.gv");
 	goto upward;
 } upward: /* The first iteration, this will be a leaf. */
 	assert(rm.node);
@@ -1173,12 +1172,10 @@ balance_less: {
 			sizeof *lessb->child * rm.idx);
 		memcpy(rmb->child, lessb->child + promote + 1,
 			sizeof *lessb->child * transferb);
-		assert(0);
 	}
 	rm.node->size += transfer;
 	sibling.less->size = (unsigned char)promote;
 	PB_(graph_usual)(tree, "graph/work.gv");
-	if(rm.height) assert(0);
 	goto end;
 } balance_more: {
 	const unsigned combined = rm.node->size + sibling.more->size;
