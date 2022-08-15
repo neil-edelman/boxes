@@ -267,7 +267,7 @@ static void manual(void) {
 		}
 	}
 
-	{
+	{ /* Rm tdd. */
 		int in[3 * 3 * 3 - 1];
 		const unsigned size = sizeof in / sizeof *in;
 		unsigned n;
@@ -329,6 +329,9 @@ static void manual(void) {
 		tree_o23_graph_usual(&removal, "graph/removal-6.gv");
 		for(n = 0; n < size; n++)
 			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+	}
+
+	{ /* More systematic rm, but much slower. */
 	}
 
 	{ /* One level. */
