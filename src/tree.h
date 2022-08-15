@@ -1193,12 +1193,37 @@ merge_less:
 	free(path.node); printf("Remove: freeing %s.\n", orcify(path.node));
 #endif
 merge_more:
-	/*assert(combined <= TREE_MAX);*/
 	printf("merge more (%s, %s) through <%d>\n",
 		orcify(rm.node), orcify(sibling.more), parent.node->key[parent.idx]);
 	assert(parent.idx < parent.node->size && parent.node->size
 		&& rm.idx < rm.node->size && rm.node->size == TREE_MIN
-		&& sibling.more->size == TREE_MIN); /* Maybe violated on bulk? */
+		&& sibling.more->size == TREE_MIN
+		&& rm.node->size + sibling.more->size <= TREE_MAX); /* Violated bulk? */
+	/* Remove `rm`. */
+	memmove(rm.node->key + rm.idx, rm.node->key + rm.idx + 1,
+		sizeof *rm.node->key * (rm.node->size - rm.idx - 1));
+	/* Bring down key from `parent` to append to `rm`. */
+	rm.node->key[rm.node->size - 1] = parent.node->key[parent.idx];
+	/* Merge `more` into `rm`. */
+	memcpy(rm.node->key + rm.node->size, sibling.more->key,
+		sizeof *sibling.more->key * sibling.more->size);
+	if(rm.height) { /* The `parent` links will have one less. */
+		struct PB_(branch) *const rmb = PB_(as_branch)(rm.node),
+			*const moreb = PB_(as_branch)(sibling.more);
+		memcpy(rmb->child + rm.node->size, moreb->child,
+			sizeof *moreb->child * (sibling.more->size + 1));
+	}
+	/* Remove references to `more` from `parent`. The parent will have one less
+	 link than key (_ie_, an equal number.) This is good. */
+	parentb = PB_(as_branch)(parent.node);
+	memmove(parentb->child + parent.idx + 1,
+		parentb->child + parent.idx + 2,
+		sizeof *parentb->child * (parent.node->size - parent.idx - 1));
+	printf("***FREE %s\n", orcify(sibling.more));
+	free(sibling.more);
+	/* Fix the hole by moving it up the tree. */
+	PB_(graph_usual)(tree, "graph/work1.gv");
+	/* parent.height is uninitialized . . . should it be? */
 	assert(0);
 #if 0
 	/* Delete the key in the child node. */
