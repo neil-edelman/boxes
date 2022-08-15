@@ -447,7 +447,7 @@ static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
 	struct PB_(ref) lo;
 	for(TREE_FORTREE(lo)) {
 		TREE_START(lo)
-		if(!hi) { lo.node = 0; break; } /* Cannot delete bulk load. */
+		if(!hi) { lo.node = 0; break; } /* Cannot delete bulk add. */
 		if(hi <= TREE_MIN) { /* Remember the parent temporarily. */
 			if(lo.height) PB_(as_branch)(lo.node)->child[TREE_MAX] = parent;
 			else *leaf_parent = parent;
@@ -1026,8 +1026,11 @@ static int B_(tree_remove)(struct B_(tree) *const tree,
 	if(!tree->root.node || tree->root.height == UINT_MAX
 		|| !(rm = PB_(lookup_remove)(&tree->root, key, &parent.node)).node)
 		{ printf("remove: didn't match any nodes.\n"); return 0; }
-	printf("remove: %s(%u):%u <%u>. Parent node %s.\n", orcify(rm.node),
-		rm.height, rm.idx, rm.node->key[rm.idx], orcify(parent.node));
+	/* Important when `rm = parent`; `find_idx` later. */
+	parent.height = rm.height + 1;
+	printf("remove: %s(%u):%u <%u>. Parent node %s, height %u\n",
+		orcify(rm.node), rm.height, rm.idx, rm.node->key[rm.idx],
+		orcify(parent.node), parent.height);
 	if(rm.height) goto branch; else goto leaf;
 branch: {
 	struct PB_(ref) succ;
@@ -1193,8 +1196,9 @@ merge_less:
 	free(path.node); printf("Remove: freeing %s.\n", orcify(path.node));
 #endif
 merge_more:
-	printf("merge more (%s, %s) through <%d>\n",
-		orcify(rm.node), orcify(sibling.more), parent.node->key[parent.idx]);
+	printf("merge more (%s, %s) through %s with %u keys <%d>\n",
+		orcify(rm.node), orcify(sibling.more), orcify(parent.node),
+		parent.node->size, parent.node->key[parent.idx]);
 	assert(parent.idx < parent.node->size && parent.node->size
 		&& rm.idx < rm.node->size && rm.node->size == TREE_MIN
 		&& sibling.more->size == TREE_MIN
@@ -1213,6 +1217,7 @@ merge_more:
 		memcpy(rmb->child + rm.node->size, moreb->child,
 			sizeof *moreb->child * (sibling.more->size + 1));
 	}
+	rm.node->size += sibling.more->size;
 	/* Remove references to `more` from `parent`. The parent will have one less
 	 link than key (_ie_, an equal number.) This is good. */
 	parentb = PB_(as_branch)(parent.node);
@@ -1223,8 +1228,17 @@ merge_more:
 	free(sibling.more);
 	/* Fix the hole by moving it up the tree. */
 	PB_(graph_usual)(tree, "graph/work1.gv");
-	/* parent.height is uninitialized . . . should it be? */
-	assert(0);
+	rm = parent;
+	if(rm.node->size <= TREE_MIN) {
+		if(!(parent.node = PB_(as_branch)(rm.node)->child[TREE_MAX])) {
+			assert(tree->root.height == rm.height);
+		} else {
+			parent.height++;
+		}
+	} else {
+		parent.node = 0;
+	}
+	goto ascend;
 #if 0
 	/* Delete the key in the child node. */
 	memmove(path.node->key + path.idx, path.node->key + path.idx + 1,
