@@ -1031,7 +1031,7 @@ static int B_(tree_remove)(struct B_(tree) *const tree,
 	printf("remove: %s(%u):%u <%u>. Parent node %s, height %u\n",
 		orcify(rm.node), rm.height, rm.idx, rm.node->key[rm.idx],
 		orcify(parent.node), parent.height);
-	if(rm.height) goto branch; else goto leaf;
+	if(rm.height) goto branch; else goto upward;
 branch: {
 	struct PB_(ref) succ;
 	struct PB_(ref) pred;
@@ -1057,10 +1057,7 @@ branch: {
 	ref->node = PB_(as_branch_c)(ref->node)->child[ref->idx], ref->idx = 0;
 	if(ref->idx < ref->node->size) return 1; <-- successor */
 	assert(0);
-} leaf:
-	printf("remove: in leaf node.\n");
-	goto ascend;
-ascend:
+} upward: /* The first iteration, this will be a leaf. */
 	assert(rm.node);
 	if(!parent.node) goto space; /* Same predicate. */
 	/* Retrieve forgot information about the index in parent. (This is not as
@@ -1075,7 +1072,7 @@ ascend:
 	sibling.more = parent.idx < parent.node->size
 		? parentb->child[parent.idx + 1] : 0;
 	assert(sibling.less || sibling.more);
-	printf("remove: _ascend_ parent %s:%u,"
+	printf("remove: upward parent %s:%u,"
 		" siblings %s (size %u) and %s (size %u).\n",
 		orcify(parent.node), parent.idx,
 		orcify(sibling.less), sibling.less ? sibling.less->size : 0,
@@ -1195,6 +1192,7 @@ merge_less:
 	/* Sloppy. */
 	free(path.node); printf("Remove: freeing %s.\n", orcify(path.node));
 #endif
+	goto ascend;
 merge_more:
 	printf("merge more (%s, %s) through %s with %u keys <%d>\n",
 		orcify(rm.node), orcify(sibling.more), orcify(parent.node),
@@ -1220,12 +1218,13 @@ merge_more:
 	rm.node->size += sibling.more->size;
 	/* Remove references to `more` from `parent`. The parent will have one less
 	 link than key (_ie_, an equal number.) This is good. */
-	parentb = PB_(as_branch)(parent.node);
 	memmove(parentb->child + parent.idx + 1,
 		parentb->child + parent.idx + 2,
 		sizeof *parentb->child * (parent.node->size - parent.idx - 1));
 	printf("***FREE %s\n", orcify(sibling.more));
 	free(sibling.more);
+	goto ascend;
+ascend:
 	/* Fix the hole by moving it up the tree. */
 	PB_(graph_usual)(tree, "graph/work1.gv");
 	rm = parent;
@@ -1238,27 +1237,7 @@ merge_more:
 	} else {
 		parent.node = 0;
 	}
-	goto ascend;
-#if 0
-	/* Delete the key in the child node. */
-	memmove(path.node->key + path.idx, path.node->key + path.idx + 1,
-		sizeof *path.node->key * (path.node->size - path.idx - 1)); /*and*/
-	/* Move the parent key to the child. */
-	path.node->key[path.node->size - 1] = excess.node->key[excess.idx];
-	/* Merge the sibling. */
-	memcpy(path.node->key + path.node->size, sibling.more->key,
-		sizeof *sibling.more->key * sibling.more->size);
-	/* Moved the parent's key to the child. */
-	memmove(excess.node->key + excess.idx, excess.node->key + excess.idx + 1,
-		sizeof *excess.node->key * (excess.node->size - excess.idx - 1));
-	memmove(excess_branch->child + excess.idx + 1, excess_branch->child + excess.idx + 2,
-		sizeof *excess_branch->child * (excess.node->size - excess.idx - 1));
-	path.node->size += sibling.more->size;
-	excess.node->size--;
-	/* Sloppy. */
-	free(sibling.more); printf("Remove: freeing %s.\n", orcify(sibling.more));
-#endif
-
+	goto upward;
 space: /* Node is root or has more than `TREE_MIN`; branches taken care of. */
 	assert(rm.node && rm.idx < rm.node->size
 		&& (rm.node->size > TREE_MIN || rm.node == tree->root.node));
