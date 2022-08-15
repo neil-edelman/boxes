@@ -295,30 +295,33 @@ static void manual(void) {
 			assert(o23_tree_contains(&removal, n + 1) == in[n]);
 		/* Merge three ways: lower. */
 		if(!o23_tree_clone(&copy, &removal)) goto catch;
-		tree_o23_graph_usual(&copy, "graph/removal-4.gv");
+		tree_o23_graph_usual(&copy, "graph/removal-4a0.gv");
 		o23_tree_remove(&copy, 10), in[9] = 0;
-		tree_o23_graph_usual(&copy, "graph/removal-4a.gv");
+		tree_o23_graph_usual(&copy, "graph/removal-4a1.gv");
 		for(n = 0; n < size; n++)
 			assert(o23_tree_contains(&copy, n + 1) == in[n]);
 		in[9] = 1;
 		/* Middle. */
 		if(!o23_tree_clone(&copy, &removal)) goto catch;
+		tree_o23_graph_usual(&copy, "graph/removal-4b0.gv");
 		o23_tree_remove(&copy, 15), in[14] = 0;
-		tree_o23_graph_usual(&copy, "graph/removal-4b.gv");
+		tree_o23_graph_usual(&copy, "graph/removal-4b1.gv");
 		for(n = 0; n < size; n++)
 			assert(o23_tree_contains(&copy, n + 1) == in[n]);
 		in[14] = 1;
 		/* High. */
 		if(!o23_tree_clone(&copy, &removal)) goto catch;
+		tree_o23_graph_usual(&copy, "graph/removal-4c0.gv");
 		o23_tree_remove(&copy, 17), in[16] = 0;
-		tree_o23_graph_usual(&copy, "graph/removal-4c.gv");
+		tree_o23_graph_usual(&copy, "graph/removal-4c1.gv");
 		for(n = 0; n < size; n++)
 			assert(o23_tree_contains(&copy, n + 1) == in[n]);
 		in[16] = 1;
 		/* Already done. */
 		o23_tree_remove(&removal, 15), in[14] = 0;
+		tree_o23_graph_usual(&removal, "graph/removal-5b.gv");
 		o23_tree_remove(&removal, 16), in[15] = 0;
-		tree_o23_graph_usual(&removal, "graph/removal-5.gv");
+		tree_o23_graph_usual(&removal, "graph/removal-5c.gv");
 		for(n = 0; n < size; n++)
 			assert(o23_tree_contains(&removal, n + 1) == in[n]);
 		/* Multi-level. */

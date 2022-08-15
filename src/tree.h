@@ -1167,31 +1167,38 @@ balance_less: {
 	goto end;
 }
 merge_less:
-	assert(0);
-#if 0
-	assert(combined <= TREE_MAX);
-	printf("merge less %s, %s through %d\n",
-		orcify(sibling.less), orcify(path.node), excess.node->key[excess.idx]);
-	/* Merge more is more efficient, less moving things around. */
-	/* No, it's more. But now this doesn't work otherwise. */
-	if(excess.idx + 1 < excess.node->size) { excess.idx++; goto merge_more; }
-	assert(path.idx < path.node->size && excess.idx < excess.node->size);
-	/* Demote. */
-	sibling.less->key[sibling.less->size] = excess.node->key[excess.idx];
+	printf("merge less (%s, %s) through %s with %u keys <%d>\n",
+		orcify(sibling.less), orcify(rm.node), orcify(parent.node),
+		parent.node->size, parent.node->key[parent.idx - 1]);
+	assert(parent.idx && parent.idx <= parent.node->size && parent.node->size
+		&& rm.idx < rm.node->size && rm.node->size == TREE_MIN
+		&& sibling.less->size == TREE_MIN
+		&& sibling.less->size + rm.node->size <= TREE_MAX);
+	/* There are (maybe) two spots that we can merge, this is the less. */
+	parent.idx--;
+	/* Bring down key from `parent` to append to `less`. */
+	sibling.less->key[sibling.less->size] = parent.node->key[parent.idx];
+	printf("ori %u\n", sibling.less->key[sibling.less->size]);
 	/* Copy the keys, leaving out deleted. */
-	memcpy(sibling.less->key + sibling.less->size + 1, path.node->key,
-		sizeof *path.node->key * path.idx);
-	memcpy(sibling.less->key + sibling.less->size + 1 + path.idx,
-		path.node->key + path.idx + 1,
-		sizeof *path.node->key * (path.node->size - path.idx - 1));
-	/* Move back from demoted. */
-	memmove(excess.node->key + excess.idx, excess.node->key + excess.idx + 1,
-		sizeof *excess.node->key * (excess.node->size - excess.idx - 1));
-	sibling.less->size += path.node->size;
-	excess.node->size--;
-	/* Sloppy. */
-	free(path.node); printf("Remove: freeing %s.\n", orcify(path.node));
-#endif
+	memcpy(sibling.less->key + sibling.less->size + 1, rm.node->key,
+		sizeof *rm.node->key * rm.idx);
+	memcpy(sibling.less->key + sibling.less->size + 1 + rm.idx,
+		rm.node->key + rm.idx + 1,
+		sizeof *rm.node->key * (rm.node->size - rm.idx - 1));
+	printf("now %u\n", sibling.less->key[sibling.less->size]);
+	if(rm.height) { /* The `parent` links will have one less. Copying twice. */
+		struct PB_(branch) *const lessb = PB_(as_branch)(sibling.less),
+			*const rmb = PB_(as_branch)(rm.node);
+		memcpy(lessb->child + sibling.less->size + 1, rmb->child,
+			sizeof *rmb->child * rm.node->size); /* _Sic_. */
+	}
+	sibling.less->size += rm.node->size;
+	/* Remove references to `rm` from `parent`. The parent will have one less
+	 link than key (_ie_, an equal number.) This is good. */
+	memmove(parentb->child + parent.idx + 1, parentb->child + parent.idx + 2,
+		sizeof *parentb->child * (parent.node->size - parent.idx - 1));
+	printf("***FREE %s\n", orcify(rm.node));
+	free(rm.node);
 	goto ascend;
 merge_more:
 	printf("merge more (%s, %s) through %s with %u keys <%d>\n",
@@ -1218,8 +1225,7 @@ merge_more:
 	rm.node->size += sibling.more->size;
 	/* Remove references to `more` from `parent`. The parent will have one less
 	 link than key (_ie_, an equal number.) This is good. */
-	memmove(parentb->child + parent.idx + 1,
-		parentb->child + parent.idx + 2,
+	memmove(parentb->child + parent.idx + 1, parentb->child + parent.idx + 2,
 		sizeof *parentb->child * (parent.node->size - parent.idx - 1));
 	printf("***FREE %s\n", orcify(sibling.more));
 	free(sibling.more);
