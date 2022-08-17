@@ -89,7 +89,7 @@
 
 \maketitle
 
-\abstract{Several design decisions for a minimal practical B-tree are discussed, covering bulk-loading, insertion, and deletion. Any allocations are fail-fast before modifying the tree so that it remains in a valid state. Concurrency not considered.}
+\abstract{Several design decisions for a minimal in-memory B-tree are discussed, covering bulk-loading, insertion, and deletion. Any allocations are fail-fast before modifying the tree so that it remains in a valid state. Concurrency not considered.}
 
 
 
@@ -97,7 +97,7 @@
 
 \section{Design}
 
-A tree is used as an ordered set or map. For memory locality, this is implemented B-tree\cite{bayer1972organization}. In an implementation for C, we would expect memory usage to be low, performance to be high, and simplicity over complexity. Practically, this means that B$^+$-trees and B$^*$-trees are less attractive, along with an added layer of order statistic tree. The nodes are linked one-way and iteration is very simple. This precludes multi-maps. The use-case has no concurrency and places importance on modification.
+A tree is used as an ordered set or map. For memory locality, this is implemented B-tree\cite{bayer1972organization}. In an implementation for C, we would expect memory usage to be low, performance to be high, and simplicity over complexity. Practically, this means that B$^+$-trees and B$^*$-trees are less attractive, along with an added layer of order statistic tree. The nodes are linked one-way and iteration is very simple. This precludes multi-maps. The use-case has no concurrency and places importance on modification with operations being as lazy as is reasonably possible.
 
 \subsection{Branching factor}
 
@@ -1229,15 +1229,20 @@ In Figure~\ref{even}, the path from before \ref{even:work1} to \ref{even:insert}
 	remove -> lookup [label="when min, write parent"];
 	lookup -> false;
 	lookup -> branch;
-	lookup -> leaf;
-	branch -> leaf [label="transfer"];
-	leaf -> ascend;
-	ascend -> space [label="or parent dne"];
-	space -> true;
-	ascend -> balance [label="left>min or right>min"];
-	balance -> true;
-	ascend -> merge [label="all nodes min"];
-	merge -> ascend [label="rm moves up"];
+	lookup -> upward;
+	branch -> upward [label="transfer to leaf"];
+	upward -> space [label="parent dne"];
+	upward -> balance_less;
+	upward -> balance_more;
+	balance_less -> merge_less [label="min"];
+	balance_more -> merge_more [label="min"];
+	balance_less -> end;
+	balance_more -> end;
+	merge_less -> ascend;
+	merge_more -> ascend;
+	ascend -> upward;
+	space -> end;
+	end -> true;
 	true [shape=none, style=none];
 	false [shape=none, style=none];
 	}
@@ -1245,15 +1250,18 @@ In Figure~\ref{even}, the path from before \ref{even:work1} to \ref{even:insert}
 	\label{remove}%
 \end{figure}%
 
+Figure~\ref{remove} shows a schematic diagram of removal of one key . . .
 
 
 
 
+\section{Characteristics}
 
-\section{LOL}
+\subsection{Map}
 
-\subsection{Set or map}
+When the tree set has an extra value {\it per} key that is not associated with the tree operations, it becomes a map. To facilitate cache performance, these values are not interspersed with the keys. On lookup, only the key's value is ever accessed or iterated over.
 
+\subsection{Performance}
 
 
 

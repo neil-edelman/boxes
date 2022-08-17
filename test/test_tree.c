@@ -325,6 +325,7 @@ static void manual(void) {
 		for(n = 0; n < size; n++)
 			assert(o23_tree_contains(&removal, n + 1) == in[n]);
 		/* Multi-level. */
+		printf("\n\n__6__\n");
 		o23_tree_remove(&removal, 10), in[9] = 0;
 		tree_o23_graph_usual(&removal, "graph/removal-6.gv");
 		for(n = 0; n < size; n++)
