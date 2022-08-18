@@ -358,6 +358,30 @@ static void manual(void) {
 		tree_o23_graph_usual(&removal, "graph/removal-13.gv");
 		for(n = 0; n < size; n++)
 			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+		o23_tree_remove(&removal, 9), in[8] = 0;
+		tree_o23_graph_usual(&removal, "graph/removal-14.gv");
+		for(n = 0; n < size; n++)
+			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+		o23_tree_remove(&removal, 8), in[7] = 0;
+		tree_o23_graph_usual(&removal, "graph/removal-15.gv");
+		for(n = 0; n < size; n++)
+			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+		o23_tree_remove(&removal, 7), in[6] = 0;
+		tree_o23_graph_usual(&removal, "graph/removal-16.gv");
+		for(n = 0; n < size; n++)
+			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+		o23_tree_remove(&removal, 6), in[5] = 0;
+		tree_o23_graph_usual(&removal, "graph/removal-17.gv");
+		for(n = 0; n < size; n++)
+			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+		o23_tree_remove(&removal, 5), in[4] = 0;
+		tree_o23_graph_usual(&removal, "graph/removal-18.gv");
+		for(n = 0; n < size; n++)
+			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+		o23_tree_remove(&removal, 4), in[3] = 0;
+		tree_o23_graph_usual(&removal, "graph/removal-19.gv");
+		for(n = 0; n < size; n++)
+			assert(o23_tree_contains(&removal, n + 1) == in[n]);
 	}
 
 	{ /* More systematic rm, but much slower. */
