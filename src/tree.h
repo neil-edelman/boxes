@@ -1048,7 +1048,7 @@ branch: {
 		pred.leaf.node = PB_(as_branch_c)(pred.leaf.node)->child[pred.leaf.idx];
 		pred.leaf.idx = pred.leaf.node->size;
 		pred.leaf.height--;
-		if(pred.leaf.node->size < TREE_MIN)
+		if(pred.leaf.node->size < TREE_MIN) /* Possible in bulk-add. */
 			{ pred.leaf.node = 0; goto no_pred; }
 		else if(pred.leaf.node->size > TREE_MIN) pred.top = pred.leaf.height;
 		else if(pred.leaf.height)
@@ -1077,6 +1077,7 @@ no_pred:
 	printf(" succ %s(%u):%u\n",
 		orcify(succ.leaf.node), succ.leaf.height, succ.leaf.idx);
 no_succ:
+	printf(" iterations pred %u, succ %u\n", pred.top, succ.top);
 	/* Choose the predecessor or successor. */
 	if(!pred.leaf.node) {
 		assert(succ.leaf.node);
@@ -1102,6 +1103,8 @@ no_succ:
 	/* Replace `rm` with the predecessor or the successor leaf. */
 	rm.node->key[rm.idx] = chosen.leaf.node->key[chosen.leaf.idx];
 	rm = chosen.leaf;
+	if(chosen.leaf.node->size <= TREE_MIN) parent.node = chosen.parent;
+	parent.height = 1;
 	goto upward;
 } upward: /* The first iteration, this will be a leaf. */
 	assert(rm.node);
@@ -1161,18 +1164,15 @@ balance_less: {
 		orcify(parent.node), parent.idx - 1);
 	parent.node->key[parent.idx - 1] = sibling.less->key[promote];
 	if(rm.height) {
-		/* THIS IS THE PROBLEM! RIGHT HERE! We are not moving it to the
-		 right. */
 		struct PB_(branch) *const lessb = PB_(as_branch)(sibling.less),
 			*const rmb = PB_(as_branch)(rm.node);
-		unsigned transferb = transfer + 1,
-			leftbsize = rm.node->size - rm.idx - 1;
-		printf(" transferring %u from %s to %s, leftbsize %u.\n",
-			transferb, orcify(lessb), orcify(rmb), leftbsize);
-		memmove(rmb->child + transferb + rm.idx,
-			rmb->child + rm.idx + 1, sizeof *rmb->child * leftbsize);
+		unsigned transferb = transfer + 1, rm_size = rm.node->size + transfer;
+		printf(" transferring %u branches from less %s(%u) -> rm %s(%u).\n",
+			transferb, orcify(lessb), sibling.less->size, orcify(rmb),
+			rm.node->size);
+		/* This is already moved; inefficient. */
 		memmove(rmb->child + transferb, rmb->child,
-			sizeof *lessb->child * rm.idx);
+			sizeof *rmb->child * (rm.node->size + 1 - 1));
 		memcpy(rmb->child, lessb->child + promote + 1,
 			sizeof *lessb->child * transferb);
 	}
@@ -1295,8 +1295,9 @@ ascend:
 	goto upward;
 space: /* Node is root or has more than `TREE_MIN`; branches taken care of. */
 	printf("<space> %s\n", orcify(rm.node));
-	assert(rm.node && rm.idx < rm.node->size
-		&& (rm.node->size > TREE_MIN || rm.node == tree->root.node));
+	assert(rm.node);
+	assert(rm.idx < rm.node->size);
+	assert(rm.node->size > TREE_MIN || rm.node == tree->root.node);
 	memmove(rm.node->key + rm.idx, rm.node->key + rm.idx + 1,
 		sizeof *rm.node->key * (rm.node->size - rm.idx - 1));
 #ifdef TREE_VALUE
