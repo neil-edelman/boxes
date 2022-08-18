@@ -421,6 +421,8 @@ static void manual(void) {
 		tree_o23_graph_usual(&removal, "graph/removal-b-9.gv");
 		for(n = 0; n < size; n++)
 			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+		assert(removal.root.height == UINT_MAX && removal.root.node);
+		for(n = 0; n < size; n++) assert(!in[n]);
 	}
 
 	{ /* More systematic rm, but much slower. */
