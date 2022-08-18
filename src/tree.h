@@ -1111,7 +1111,8 @@ no_succ:
 } upward: /* The first iteration, this will be a leaf. */
 	assert(rm.node);
 	printf("<upward> %s; parent %s\n", orcify(rm.node), orcify(parent.node));
-	if(!parent.node) goto space; /* Same predicate. */
+	if(!parent.node) goto space;
+	assert(rm.node->size <= TREE_MIN); /* Or else it would not have a parent. */
 	/* Retrieve forgot information about the index in parent. (This is not as
 	 fast at it could be, but holding parent data in minimum keys allows it to
 	 be in place.) */
@@ -1139,6 +1140,7 @@ balance_less: {
 		orcify(rm.node), orcify(sibling.less), combined);
 	assert(parent.idx);
 	if(combined < 2 * TREE_MIN + 1) goto merge_less; /* Don't have enough. */
+	assert(sibling.less->size > TREE_MIN); /* Since `rm.size <= TREE_MIN`. */
 	promote = (combined - 1 + 1) / 2, more = promote + 1;
 	transfer = sibling.less->size - more;
 	assert(transfer < TREE_MAX && rm.node->size <= TREE_MAX - transfer);
@@ -1188,7 +1190,8 @@ balance_less: {
 		orcify(rm.node), orcify(sibling.more), combined);
 	assert(rm.node->size);
 	if(combined < 2 * TREE_MIN + 1) goto merge_more; /* Don't have enough. */
-	promote = (combined - 1) / 2 - rm.node->size;
+	assert(sibling.more->size > TREE_MIN); /* Since `rm.size <= TREE_MIN`. */
+	promote = (combined - 1) / 2 - rm.node->size; /* In `more`. Could be +1. */
 	assert(promote < TREE_MAX && rm.node->size <= TREE_MAX - promote);
 	printf(" promote %u from more\n", promote);
 	/* Delete key. */
@@ -1210,17 +1213,16 @@ balance_less: {
 	if(rm.height) {
 		struct PB_(branch) *const moreb = PB_(as_branch)(sibling.more),
 			*const rmb = PB_(as_branch)(rm.node);
-		unsigned transferb = 1;
+		unsigned transferb = promote + 1;
 		printf(" transferring %u branches from more %s(%u) -> rm %s(%u).\n",
 			transferb, orcify(moreb), sibling.more->size, orcify(rmb),
 			rm.node->size);
 		/* This is already moved; inefficient. */
-		/*
-		memmove(rmb->child + transferb, rmb->child,
-			sizeof *rmb->child * (rm.node->size + 1 - 1));
-		memcpy(rmb->child, lessb->child + promote + 1,
-			sizeof *lessb->child * transferb);
-		 */ assert(0);
+		memcpy(rmb->child + rm.node->size, moreb->child,
+			sizeof *moreb->child * transferb);
+		/* THIS IS WRONG */
+		memmove(moreb->child, rmb->child + transferb,
+			sizeof *rmb->child * (rm.node->size + 1 - transferb));
 	}
 	rm.node->size += promote;
 	sibling.more->size -= promote + 1;
