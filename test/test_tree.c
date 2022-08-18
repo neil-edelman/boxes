@@ -406,6 +406,21 @@ static void manual(void) {
 		tree_o23_graph_usual(&removal, "graph/removal-b-8.gv");
 		for(n = 0; n < size; n++)
 			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+		/* Yay. Now to try deleting the rest. */
+		o23_tree_remove(&removal, 21), in[20] = 0;
+		o23_tree_remove(&removal, 20), in[19] = 0;
+		o23_tree_remove(&removal, 22), in[21] = 0;
+		o23_tree_remove(&removal, 19), in[18] = 0;
+		o23_tree_remove(&removal, 18), in[17] = 0;
+		o23_tree_remove(&removal, 16), in[15] = 0;
+		o23_tree_remove(&removal, 24), in[23] = 0;
+		o23_tree_remove(&removal, 23), in[22] = 0;
+		o23_tree_remove(&removal, 25), in[24] = 0;
+		o23_tree_remove(&removal, 15), in[14] = 0;
+		o23_tree_remove(&removal, 26), in[25] = 0;
+		tree_o23_graph_usual(&removal, "graph/removal-b-9.gv");
+		for(n = 0; n < size; n++)
+			assert(o23_tree_contains(&removal, n + 1) == in[n]);
 	}
 
 	{ /* More systematic rm, but much slower. */
