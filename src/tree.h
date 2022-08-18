@@ -1019,6 +1019,7 @@ static int B_(tree_remove)(struct B_(tree) *const tree,
 	struct PB_(ref) rm, parent /* Only if `key.size <= TREE_MIN`. */;
 	struct PB_(branch) *parentb;
 	struct { struct PB_(node) *less, *more; } sibling;
+	PB_(key) quasi_key = key;
 	parent.node = 0;
 	assert(tree);
 	printf("<remove> MIN %u, MAX %u, ORDER %u\n",
@@ -1101,10 +1102,11 @@ no_succ:
 		chosen = pred;
 	}
 	/* Replace `rm` with the predecessor or the successor leaf. */
-	rm.node->key[rm.idx] = chosen.leaf.node->key[chosen.leaf.idx];
+	quasi_key = rm.node->key[rm.idx] = chosen.leaf.node->key[chosen.leaf.idx];
 	rm = chosen.leaf;
 	if(chosen.leaf.node->size <= TREE_MIN) parent.node = chosen.parent;
 	parent.height = 1;
+	printf(" quasi-key %u replaces %u\n", quasi_key, key);
 	goto upward;
 } upward: /* The first iteration, this will be a leaf. */
 	assert(rm.node);
@@ -1113,9 +1115,8 @@ no_succ:
 	/* Retrieve forgot information about the index in parent. (This is not as
 	 fast at it could be, but holding parent data in minimum keys allows it to
 	 be in place.) */
-	PB_(find_idx)(&parent, key);
+	PB_(find_idx)(&parent, quasi_key);
 	parentb = PB_(as_branch)(parent.node);
-	
 	assert(parent.idx <= parent.node->size);
 	assert(parentb->child[parent.idx] == rm.node);
 	/* Sibling edges. */
