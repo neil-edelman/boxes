@@ -1220,9 +1220,9 @@ balance_less: {
 		/* This is already moved; inefficient. */
 		memcpy(rmb->child + rm.node->size, moreb->child,
 			sizeof *moreb->child * transferb);
-		/* THIS IS WRONG */
-		memmove(moreb->child, rmb->child + transferb,
-			sizeof *rmb->child * (rm.node->size + 1 - transferb));
+		printf(" rm %s transfering %u space %u back\n", orcify(rm.node), rm.node->size + 1 - promote, transferb);
+		memmove(moreb->child, moreb->child + transferb,
+			sizeof *rmb->child * (rm.node->size + 1 - promote));
 	}
 	rm.node->size += promote;
 	sibling.more->size -= promote + 1;
