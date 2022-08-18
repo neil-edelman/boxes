@@ -390,7 +390,7 @@ static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 	if(!lo) return;
 	TREE_FORNODE((*lo))
 }
-/** Finds lower-bound of `key` in `tree`. */
+/** Finds lower-bound of a `key` in non-empty `tree`. */
 static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) i, lo = { 0, 0, 0 };
@@ -407,8 +407,8 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
 	}
 	return lo;
 }
-/** Finds (one?) exact `key` in `tree`. This is what not settling on a
- definition of a tree gets you. */
+/** Finds (one?) exact `key` in non-empty `tree`. This is what not settling on
+ a definition of a tree gets you. */
 static struct PB_(ref) PB_(find)(struct PB_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) i;
@@ -421,8 +421,8 @@ static struct PB_(ref) PB_(find)(struct PB_(tree) *const tree,
 	}
 	return i;
 }
-/** Finds lower-bound of `key` in `tree` while counting the non-filled `hole`
- and `is_equal`. (fixme: `is_equal` useless) */
+/** Finds lower-bound of `key` in non-empty `tree` while counting the
+ non-filled `hole` and `is_equal`. (fixme: `is_equal` useless) */
 static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) *const tree,
 	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal) {
 	struct PB_(ref) lo;
@@ -438,9 +438,10 @@ static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) *const tree,
 	}
 	return lo;
 }
-/** Finds exact `key` in `tree`. If `node` is found, temporarily, the nodes
- that have `TREE_MIN` keys have `as_branch(node).child[TREE_MAX] = parent` or,
- for leaves, `leaf_parent`, which must be set. */
+/** Finds exact `key` in non-empty `tree`. If `node` is found, temporarily, the
+ nodes that have `TREE_MIN` keys have
+ `as_branch(node).child[TREE_MAX] = parent` or, for leaves, `leaf_parent`,
+ which must be set. */
 static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
 	const PB_(key) key, struct PB_(node) **leaf_parent) {
 	struct PB_(node) *parent = 0;
@@ -576,7 +577,8 @@ static void PB_(print)(const struct B_(tree) *const tree)
 /** Contains. */
 static int B_(tree_contains)(struct B_(tree) *const tree, const PB_(key) x) {
 	assert(tree);
-	return PB_(find)(&tree->root, x).node ? 1 : 0;
+	return tree->root.node && tree->root.height != UINT_MAX
+		&& PB_(find)(&tree->root, x).node ? 1 : 0;
 }
 
 #ifdef TREE_VALUE /* <!-- map */
