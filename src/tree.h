@@ -1168,7 +1168,7 @@ balance_less: {
 	if(rm.height) {
 		struct PB_(branch) *const lessb = PB_(as_branch)(sibling.less),
 			*const rmb = PB_(as_branch)(rm.node);
-		unsigned transferb = transfer + 1, rm_size = rm.node->size + transfer;
+		unsigned transferb = transfer + 1;
 		printf(" transferring %u branches from less %s(%u) -> rm %s(%u).\n",
 			transferb, orcify(lessb), sibling.less->size, orcify(rmb),
 			rm.node->size);
@@ -1208,8 +1208,19 @@ balance_less: {
 	memmove(sibling.more->key, sibling.more->key + promote + 1,
 		sizeof *sibling.more->key * (sibling.more->size - promote - 1));
 	if(rm.height) {
-		struct PB_(branch) *const moreb = PB_(as_branch)(sibling.more);
-		assert(0);
+		struct PB_(branch) *const moreb = PB_(as_branch)(sibling.more),
+			*const rmb = PB_(as_branch)(rm.node);
+		unsigned transferb = 1;
+		printf(" transferring %u branches from more %s(%u) -> rm %s(%u).\n",
+			transferb, orcify(moreb), sibling.more->size, orcify(rmb),
+			rm.node->size);
+		/* This is already moved; inefficient. */
+		/*
+		memmove(rmb->child + transferb, rmb->child,
+			sizeof *rmb->child * (rm.node->size + 1 - 1));
+		memcpy(rmb->child, lessb->child + promote + 1,
+			sizeof *lessb->child * transferb);
+		 */ assert(0);
 	}
 	rm.node->size += promote;
 	sibling.more->size -= promote + 1;

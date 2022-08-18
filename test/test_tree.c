@@ -382,6 +382,30 @@ static void manual(void) {
 		tree_o23_graph_usual(&removal, "graph/removal-19.gv");
 		for(n = 0; n < size; n++)
 			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+		/* There are some states that haven't been tested. */
+		if(!o23_tree_clone(&removal, &copy)) goto catch;
+		for(n = 0; n < size; n++) in[n] = 1;
+		tree_o23_graph_usual(&removal, "graph/removal-b-6.gv");
+		in[11] = 0, in[12] = 0, in[13] = 0, in[16] = 0;
+		for(n = 0; n < size; n++)
+			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+		o23_tree_remove(&removal, 3), in[2] = 0;
+		o23_tree_remove(&removal, 2), in[1] = 0;
+		o23_tree_remove(&removal, 4), in[3] = 0;
+		o23_tree_remove(&removal, 6), in[5] = 0;
+		o23_tree_remove(&removal, 5), in[4] = 0;
+		o23_tree_remove(&removal, 7), in[6] = 0;
+		o23_tree_remove(&removal, 9), in[8] = 0;
+		o23_tree_remove(&removal, 1), in[0] = 0;
+		o23_tree_remove(&removal, 8), in[7] = 0;
+		o23_tree_remove(&removal, 10), in[9] = 0;
+		tree_o23_graph_usual(&removal, "graph/removal-b-7.gv");
+		for(n = 0; n < size; n++)
+			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+		o23_tree_remove(&removal, 11), in[10] = 0;
+		tree_o23_graph_usual(&removal, "graph/removal-b-8.gv");
+		for(n = 0; n < size; n++)
+			assert(o23_tree_contains(&removal, n + 1) == in[n]);
 	}
 
 	{ /* More systematic rm, but much slower. */
@@ -389,7 +413,6 @@ static void manual(void) {
 
 	{ /* One level. */
 		const size_t size = o23_order + 1;
-		char fn[64];
 		for(i = 0; i < size; i++)
 			if(!o23_tree_bulk_add(&consecutive, (unsigned)i + 1)) goto catch;
 		o23_tree_bulk_finish(&consecutive);
