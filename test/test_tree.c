@@ -334,14 +334,28 @@ static void manual(void) {
 		tree_o23_graph_usual(&removal, "graph/removal-7.gv");
 		for(n = 0; n < size; n++)
 			assert(o23_tree_contains(&removal, n + 1) == in[n]);
-		/* In root. */
 		o23_tree_remove(&removal, 17), in[16] = 0;
 		tree_o23_graph_usual(&removal, "graph/removal-8.gv");
 		for(n = 0; n < size; n++)
 			assert(o23_tree_contains(&removal, n + 1) == in[n]);
-		/* In root. */
 		o23_tree_remove(&removal, 19), in[18] = 0;
 		tree_o23_graph_usual(&removal, "graph/removal-9.gv");
+		for(n = 0; n < size; n++)
+			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+		o23_tree_remove(&removal, 20), in[19] = 0;
+		tree_o23_graph_usual(&removal, "graph/removal-10.gv");
+		for(n = 0; n < size; n++)
+			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+		o23_tree_remove(&removal, 21), in[20] = 0;
+		tree_o23_graph_usual(&removal, "graph/removal-11.gv");
+		for(n = 0; n < size; n++)
+			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+		o23_tree_remove(&removal, 22), in[21] = 0;
+		tree_o23_graph_usual(&removal, "graph/removal-12.gv");
+		for(n = 0; n < size; n++)
+			assert(o23_tree_contains(&removal, n + 1) == in[n]);
+		o23_tree_remove(&removal, 11), in[10] = 0;
+		tree_o23_graph_usual(&removal, "graph/removal-13.gv");
 		for(n = 0; n < size; n++)
 			assert(o23_tree_contains(&removal, n + 1) == in[n]);
 	}

@@ -1108,15 +1108,16 @@ no_succ:
 	goto upward;
 } upward: /* The first iteration, this will be a leaf. */
 	assert(rm.node);
-	printf("<upward> %s\n", orcify(rm.node));
+	printf("<upward> %s; parent %s\n", orcify(rm.node), orcify(parent.node));
 	if(!parent.node) goto space; /* Same predicate. */
 	/* Retrieve forgot information about the index in parent. (This is not as
 	 fast at it could be, but holding parent data in minimum keys allows it to
 	 be in place.) */
 	PB_(find_idx)(&parent, key);
 	parentb = PB_(as_branch)(parent.node);
-	assert(parent.idx <= parent.node->size
-		&& parentb->child[parent.idx] == rm.node);
+	
+	assert(parent.idx <= parent.node->size);
+	assert(parentb->child[parent.idx] == rm.node);
 	/* Sibling edges. */
 	sibling.less = parent.idx ? parentb->child[parent.idx - 1] : 0;
 	sibling.more = parent.idx < parent.node->size
