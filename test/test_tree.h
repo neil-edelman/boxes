@@ -371,11 +371,15 @@ static void PB_(test)(void) {
 			PB_(graph)(&tree, fn);
 		}
 	}
+	printf("Number of entries in the tree: %lu/%lu.\n",
+		(unsigned long)n_unique, (unsigned long)n_size);
 
-	/* Iteration; checksum. */
-	memset(&last, 0, sizeof last);
-	it = B_(tree_iterator)(&tree), i = 0;
-	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
+	/* Iteration; checksum. No. We can not do this because deletion invalidates
+	 the iterator. */
+	i = 0;
+	while(it = B_(tree_iterator)(&tree),
+		entry = B_(tree_next)(&it),
+		PB_(contents)(&entry)) {
 		char z[12];
 		PB_(to_string)(PB_(to_const)(entry), &z);
 		printf("<%s>\n", z);

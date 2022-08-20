@@ -423,25 +423,15 @@ static void manual(void) {
 			assert(o23_tree_contains(&removal, n + 1) == in[n]);
 		assert(removal.root.height == UINT_MAX && removal.root.node);
 		for(n = 0; n < size; n++) assert(!in[n]);
-	}
-
-	{ /* More systematic rm, but much slower. */
-	}
-
-	{ /* One level. */
-		const size_t size = o23_order + 1;
-		for(i = 0; i < size; i++)
-			if(!o23_tree_bulk_add(&consecutive, (unsigned)i + 1)) goto catch;
-		o23_tree_bulk_finish(&consecutive);
-		tree_o23_graph(&consecutive, "graph/small.gv");
-		o23_tree_remove(&consecutive, size);
-		o23_tree_clear(&consecutive);
+		{
+			int success = o23_tree_remove(&removal, 0);
+			assert(!success);
+		}
 	}
 
 	{ /* Consecutive. */
 		const size_t size = 4 * o23_order - 1;
 		char fn[64];
-		const unsigned rm = 1;
 		for(i = 0; i < size; i++) {
 			unsigned x = (unsigned)i + 1;
 			printf("__%u) Going to add consecutive %u__\n", (unsigned)i, x);
