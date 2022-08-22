@@ -1203,14 +1203,14 @@ balance_less: {
 } balance_more: {
 	const unsigned combined = rm.node->size + sibling.more->size;
 	unsigned promote;
-	printf("<balance_more> %s; more %s; combined %u\n",
-		orcify(rm.node), orcify(sibling.more), combined);
+	/*printf("<balance_more> %s; more %s; combined %u\n",
+		orcify(rm.node), orcify(sibling.more), combined);*/
 	assert(rm.node->size);
 	if(combined < 2 * TREE_MIN + 1) goto merge_more; /* Don't have enough. */
 	assert(sibling.more->size > TREE_MIN); /* Since `rm.size <= TREE_MIN`. */
 	promote = (combined - 1) / 2 - rm.node->size; /* In `more`. Could be +1. */
 	assert(promote < TREE_MAX && rm.node->size <= TREE_MAX - promote);
-	printf(" promote %u from more\n", promote);
+	/*printf(" promote %u from more\n", promote);*/
 	/* Delete key. */
 	memmove(rm.node->key + rm.idx, rm.node->key + rm.idx + 1,
 		sizeof *rm.node->key * (rm.node->size - rm.idx - 1));
@@ -1232,14 +1232,14 @@ balance_less: {
 		struct PB_(branch) *const moreb = PB_(as_branch)(sibling.more),
 			*const rmb = PB_(as_branch)(rm.node);
 		unsigned transferb = promote + 1;
-		printf(" transferring %u branches from more %s(%u) -> rm %s(%u).\n",
+		/*printf(" transferring %u branches from more %s(%u) -> rm %s(%u).\n",
 			transferb, orcify(moreb), sibling.more->size, orcify(rmb),
-			rm.node->size);
+			rm.node->size);*/
 		/* This is already moved; inefficient. */
 		memcpy(rmb->child + rm.node->size, moreb->child,
 			sizeof *moreb->child * transferb);
-		printf(" more %s transfering size %u, %u back\n", orcify(sibling.more),
-			moreb->base.size + 1 - transferb, transferb);
+		/*printf(" more %s transfering size %u, %u back\n", orcify(sibling.more),
+			moreb->base.size + 1 - transferb, transferb);*/
 		memmove(moreb->child, moreb->child + transferb,
 			sizeof *rmb->child * (moreb->base.size + 1 - transferb));
 		B_(cover).balance_more_height = 1;
@@ -1318,7 +1318,7 @@ merge_more:
 	/*printf(" %u<-%u(%u)\n", parent.idx + 1, parent.idx + 2, parent.node->size - parent.idx - 1);*/
 	memmove(parentb->child + parent.idx + 1, parentb->child + parent.idx + 2,
 		sizeof *parentb->child * (parent.node->size - parent.idx - 1));
-	printf(" ***FREE %s\n", orcify(sibling.more));
+	/*printf(" ***FREE %s\n", orcify(sibling.more));*/
 	free(sibling.more);
 	goto ascend;
 ascend:
@@ -1372,6 +1372,24 @@ end:
 	return 1;
 }
 
+static size_t PB_(count_r)(const struct PB_(tree) tree) {
+	size_t c = tree.node->size;
+	if(tree.height) {
+		const struct PB_(branch) *const branch = PB_(as_branch)(tree.node);
+		struct PB_(tree) sub;
+		sub.height = tree.height - 1;
+		size_t i;
+		for(i = 0; i <= tree.node->size; i++) {
+			sub.node = branch->child[i];
+			c += PB_(count_r)(sub);
+		}
+	}
+	return c;
+}
+static size_t B_(tree_count)(const struct B_(tree) *const tree) {
+	return tree && tree->root.height != UINT_MAX
+		? PB_(count_r)(tree->root) : 0;
+}
 
 
 /****************************/
@@ -1384,7 +1402,7 @@ struct PB_(scaffold) {
 	struct PB_(node) **data;
 	struct { struct PB_(node) **head, **fresh, **cursor; } branch, leaf;
 };
-static int PB_(count_r)(struct PB_(tree) tree, struct tree_count *const no) {
+static int PB_(nodes_r)(struct PB_(tree) tree, struct tree_count *const no) {
 	assert(tree.node && tree.height);
 	if(!++no->branches) return 0;
 	if(tree.height == 1) {
@@ -1397,12 +1415,12 @@ static int PB_(count_r)(struct PB_(tree) tree, struct tree_count *const no) {
 			struct PB_(tree) child;
 			child.node = PB_(as_branch)(tree.node)->child[i];
 			child.height = tree.height - 1;
-			if(!PB_(count_r)(child, no)) return 0;
+			if(!PB_(nodes_r)(child, no)) return 0;
 		}
 	}
 	return 1;
 }
-static int PB_(count)(const struct B_(tree) *const tree,
+static int PB_(nodes)(const struct B_(tree) *const tree,
 	struct tree_count *const no) {
 	assert(tree && no);
 	no->branches = no->leaves = 0;
@@ -1411,7 +1429,7 @@ static int PB_(count)(const struct B_(tree) *const tree,
 		no->leaves = 1;
 	} else { /* Complex. */
 		struct PB_(tree) sub = tree->root;
-		if(!PB_(count_r)(sub, no)) return 0;
+		if(!PB_(nodes_r)(sub, no)) return 0;
 	}
 	return 1;
 }
@@ -1502,7 +1520,7 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 	sc.data = 0; /* Need to keep this updated to catch. */
 	if(!tree) { errno = EDOM; goto catch; }
 	/* Count the number of nodes and set up to copy. */
-	if(!PB_(count)(tree, &sc.victim) || !PB_(count)(source, &sc.source)
+	if(!PB_(nodes)(tree, &sc.victim) || !PB_(nodes)(source, &sc.source)
 		|| (sc.no = sc.source.branches + sc.source.leaves) < sc.source.branches)
 		{ errno = ERANGE; goto catch; } /* Overflow. */
 	printf("<B>tree_clone: victim.branches %zu; victim.leaves %zu; "

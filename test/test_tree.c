@@ -476,37 +476,67 @@ finally:
 }
 
 static void redblack(void) {
-	struct redblack_tree between = redblack_tree(),
-		rnd = redblack_tree(),
-		even = redblack_tree(), even_clone = redblack_tree(),
-		consecutive = redblack_tree(),
-		removal = redblack_tree(),
-		copy = redblack_tree();
-	unsigned i;
-	const unsigned size_rnd = 100;
-	struct o23_tree_iterator it;
-	unsigned *v;
-	int ret;
+	struct redblack_tree tree = redblack_tree();
+	unsigned i, n;
+	struct { unsigned x; int in; } rnd[100];
+	const unsigned rnd_size = sizeof rnd / sizeof *rnd;
 	const size_t redblack_order
-		= sizeof rnd.root.node->key / sizeof *rnd.root.node->key + 1;
-	printf("manual: redblack order %lu\n", redblack_order);
+		= sizeof tree.root.node->key / sizeof *tree.root.node->key + 1;
+	printf("Redblack: order %lu.\n", redblack_order);
 	assert(redblack_order == 4);
 
 	/* Random. */
-	for(i = 0; i < size_rnd; i++) {
-		unsigned x = rand() & 65535;
-		printf("__%u) add random value %u__\n", (unsigned)i, x);
-		switch(redblack_tree_add(&rnd, x)) {
+	for(i = 0; i < rnd_size; i++) rnd[i].x = rand() & 65535, rnd[i].in = 0;
+
+	/* In tree. */
+	for(n = 0, i = 0; i < rnd_size; i++) {
+		switch(redblack_tree_add(&tree, rnd[i].x)) {
 		case TREE_ERROR: goto catch;
-		case TREE_YIELD: printf("%u already in tree\n", x); break;
-		case TREE_UNIQUE: printf("%u added\n", x); break;
+		case TREE_YIELD: printf("%u already in tree\n", rnd[i].x); break;
+		case TREE_UNIQUE: rnd[i].in = 1; n++; break;
 		}
-		if(!(i & (i + 1)) || i == size_rnd - 1) {
+		if(!(i & (i + 1)) || i == rnd_size - 1) {
 			char fn[64];
 			sprintf(fn, "graph/rb-rnd-%u.gv", (unsigned)i);
-			tree_redblack_graph(&rnd, fn);
+			tree_redblack_graph_usual(&tree, fn);
 		}
 	}
+	printf("Redblack tree %u/%u: %s.\n",
+		n, rnd_size, redblack_tree_to_string(&tree));
+	{
+		size_t ver = redblack_tree_count(&tree);
+		assert(ver == n);
+	}
+	while(n) {
+		assert(tree.root.height != UINT_MAX);
+		i = (unsigned)rand() / (RAND_MAX / n + 1);
+		printf("drew %u -> %u which is %sin.\n",
+			i, rnd[i].x, rnd[i].in ? "" : "not ");
+		if(redblack_tree_remove(&tree, rnd[i].x)) {
+			assert(rnd[i].in);
+			rnd[i].in = 0;
+			if(!(n & (n + 1)) || n == rnd_size - 1) {
+				char fn[64];
+				sprintf(fn, "graph/rb-rnd-rm-%u.gv", (unsigned)i);
+				tree_redblack_graph_usual(&tree, fn);
+			}
+			n--;
+			if(i != n) rnd[i] = rnd[n];
+		} else {
+			assert(!rnd[i].in);
+		}
+		{ /* Verify */
+			size_t count = redblack_tree_count(&tree);
+			assert(n == count);
+		}
+		for(i = 0; i <= n; i++) {
+			int cont = redblack_tree_contains(&tree, rnd[i].x);
+			assert(cont == rnd[i].in);
+		}
+	}
+	assert(tree.root.height == UINT_MAX);
+
+
 
 #if 0
 	{ /* Full add test, nodes, `\sum_{n=0}^{h} m^n = \frac{m^{h+1}-1}{m-1}`,
@@ -718,12 +748,7 @@ catch:
 	perror("redblack");
 	assert(0);
 finally:
-	redblack_tree_(&between);
-	redblack_tree_(&rnd);
-	redblack_tree_(&removal);
-	redblack_tree_(&even), redblack_tree_(&even_clone);
-	redblack_tree_(&consecutive);
-	redblack_tree_(&copy);
+	redblack_tree_(&tree);
 }
 
 
@@ -731,6 +756,7 @@ int main(void) {
 	unsigned seed = 788609/*(unsigned)clock()*/;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	manual();
+	redblack();
 	o23_tree_test();
 	redblack_tree_test();
 	int_tree_test();
