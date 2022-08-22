@@ -1203,14 +1203,14 @@ balance_less: {
 } balance_more: {
 	const unsigned combined = rm.node->size + sibling.more->size;
 	unsigned promote;
-	/*printf("<balance_more> %s; more %s; combined %u\n",
-		orcify(rm.node), orcify(sibling.more), combined);*/
+	printf("<balance_more> %s; more %s; combined %u\n",
+		orcify(rm.node), orcify(sibling.more), combined);
 	assert(rm.node->size);
 	if(combined < 2 * TREE_MIN + 1) goto merge_more; /* Don't have enough. */
 	assert(sibling.more->size > TREE_MIN); /* Since `rm.size <= TREE_MIN`. */
 	promote = (combined - 1) / 2 - rm.node->size; /* In `more`. Could be +1. */
 	assert(promote < TREE_MAX && rm.node->size <= TREE_MAX - promote);
-	/*printf(" promote %u from more\n", promote);*/
+	printf(" promote %u from more\n", promote);
 	/* Delete key. */
 	memmove(rm.node->key + rm.idx, rm.node->key + rm.idx + 1,
 		sizeof *rm.node->key * (rm.node->size - rm.idx - 1));
@@ -1228,18 +1228,20 @@ balance_less: {
 	memmove(sibling.more->key, sibling.more->key + promote + 1,
 		sizeof *sibling.more->key * (sibling.more->size - promote - 1));
 	if(rm.height) {
+		/* BUG HERE */
 		struct PB_(branch) *const moreb = PB_(as_branch)(sibling.more),
 			*const rmb = PB_(as_branch)(rm.node);
 		unsigned transferb = promote + 1;
-		/*printf(" transferring %u branches from more %s(%u) -> rm %s(%u).\n",
+		printf(" transferring %u branches from more %s(%u) -> rm %s(%u).\n",
 			transferb, orcify(moreb), sibling.more->size, orcify(rmb),
-			rm.node->size);*/
+			rm.node->size);
 		/* This is already moved; inefficient. */
 		memcpy(rmb->child + rm.node->size, moreb->child,
 			sizeof *moreb->child * transferb);
-		/*printf(" rm %s transfering %u space %u back\n", orcify(rm.node), rm.node->size + 1 - promote, transferb);*/
+		printf(" more %s transfering size %u, %u back\n", orcify(sibling.more),
+			moreb->base.size + 1 - transferb, transferb);
 		memmove(moreb->child, moreb->child + transferb,
-			sizeof *rmb->child * (rm.node->size + 1 - promote));
+			sizeof *rmb->child * (moreb->base.size + 1 - transferb));
 		B_(cover).balance_more_height = 1;
 	} else {
 		B_(cover).balance_more = 1;
@@ -1316,7 +1318,7 @@ merge_more:
 	/*printf(" %u<-%u(%u)\n", parent.idx + 1, parent.idx + 2, parent.node->size - parent.idx - 1);*/
 	memmove(parentb->child + parent.idx + 1, parentb->child + parent.idx + 2,
 		sizeof *parentb->child * (parent.node->size - parent.idx - 1));
-	/*printf(" ***FREE %s\n", orcify(sibling.more));*/
+	printf(" ***FREE %s\n", orcify(sibling.more));
 	free(sibling.more);
 	goto ascend;
 ascend:
