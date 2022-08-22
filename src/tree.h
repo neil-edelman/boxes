@@ -409,7 +409,7 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
 }
 /** Finds (one?) exact `key` in non-empty `tree`. This is what not settling on
  a definition of a tree gets you. */
-static struct PB_(ref) PB_(find)(struct PB_(tree) *const tree,
+static struct PB_(ref) PB_(find)(const struct PB_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) i;
 	for(TREE_FORTREE(i)) {
@@ -574,12 +574,23 @@ static void PB_(print)(const struct B_(tree) *const tree)
 	{ (void)tree, printf("not printable\n"); }
 #endif
 
+#ifndef TREE_VALUE /* <!-- set */
 /** Contains. */
-static int B_(tree_contains)(struct B_(tree) *const tree, const PB_(key) x) {
-	assert(tree);
-	return tree->root.node && tree->root.height != UINT_MAX
+static int B_(tree_contains)(const struct B_(tree) *const tree,
+	const PB_(key) x) {
+	return tree && tree->root.node && tree->root.height != UINT_MAX
 		&& PB_(find)(&tree->root, x).node ? 1 : 0;
 }
+#else /* set --><!-- map */
+/** Get. */
+static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
+	const PB_(key) x) {
+	struct PB_(ref) ref;
+	if(!tree || !tree->root.node || tree->root.height == UINT_MAX
+		|| !(ref = PB_(find)(&tree->root, x)).node) return 0;
+	return ref.node->value + ref.idx;
+}
+#endif /* map --> */
 
 #ifdef TREE_VALUE /* <!-- map */
 /** TREE_ERROR should be set if it's not >= high. */

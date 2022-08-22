@@ -35,6 +35,7 @@ static void int_to_string(const unsigned *x, char (*const z)[12])
 #include "../src/tree.h"
 
 #define TREE_NAME redblack
+#define TREE_VALUE unsigned
 #define TREE_TEST &int_filler
 #define TREE_ORDER 4
 #define TREE_EXPECT_TRAIT
@@ -477,7 +478,7 @@ finally:
 
 static void redblack(void) {
 	struct redblack_tree tree = redblack_tree();
-	unsigned i, n;
+	unsigned i, n, *value;
 	struct { unsigned x; int in; } rnd[100];
 	const unsigned rnd_size = sizeof rnd / sizeof *rnd;
 	const size_t redblack_order
@@ -490,11 +491,12 @@ static void redblack(void) {
 
 	/* In tree. */
 	for(n = 0, i = 0; i < rnd_size; i++) {
-		switch(redblack_tree_add(&tree, rnd[i].x)) {
+		switch(redblack_tree_add(&tree, rnd[i].x, &value)) {
 		case TREE_ERROR: goto catch;
 		case TREE_YIELD: printf("%u already in tree\n", rnd[i].x); break;
 		case TREE_UNIQUE: rnd[i].in = 1; n++; break;
 		}
+		*value = rnd[i].x; /* The same key/value. */
 		if(!(i & (i + 1)) || i == rnd_size - 1) {
 			char fn[64];
 			sprintf(fn, "graph/rb-rnd-%u.gv", (unsigned)i);
@@ -530,8 +532,8 @@ static void redblack(void) {
 			assert(n == count);
 		}
 		for(i = 0; i <= n; i++) {
-			int cont = redblack_tree_contains(&tree, rnd[i].x);
-			assert(cont == rnd[i].in);
+			value = redblack_tree_get(&tree, rnd[i].x);
+			assert(!!value == rnd[i].in && (!value || *value == rnd[i].x));
 		}
 	}
 	assert(tree.root.height == UINT_MAX);
