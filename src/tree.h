@@ -1224,7 +1224,7 @@ balance_less: {
 		B_(cover).balance_less = 1;
 	}
 	rm.node->size += transfer;
-	sibling.less->size = (unsigned char)promote;
+	sibling.less->size = promote;
 	goto end;
 } balance_more: {
 	const unsigned combined = rm.node->size + sibling.more->size;
@@ -1459,7 +1459,7 @@ static int PB_(nodes_r)(struct PB_(tree) tree, struct tree_count *const no) {
 		if(no->leaves + tree.node->size + 1 < no->leaves) return 0;
 		no->leaves += tree.node->size + 1;
 	} else {
-		unsigned char i;
+		unsigned i;
 		for(i = 0; i <= tree.node->size; i++) {
 			struct PB_(tree) child;
 			child.node = PB_(as_branch)(tree.node)->child[i];
