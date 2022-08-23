@@ -197,8 +197,8 @@ struct B_(tree) { struct PB_(tree) root; };
 #ifdef TREE_VALUE /* <!-- value */
 
 /** On `TREE_VALUE`, creates a map from pointer-to-<typedef:<PB>key> to
- pointer-to-<typedef:<PB>value>. The reason `value` is a pointer is because it
- is not connected in memory. */
+ pointer-to-<typedef:<PB>value>. The reason these are pointers is because it
+ is not contiguous in memory. */
 struct B_(tree_entry) { PB_(key) *key; PB_(value) *value; };
 struct B_(tree_entry_c) { PB_(key_c) *key; PB_(value_c) *value; };
 /** On `TREE_VALUE`, otherwise it's just an alias for
@@ -233,9 +233,6 @@ static PB_(value) *PB_(ref_to_value)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->key + ref.idx : 0; }
 
 #endif /* !value --> */
-
-#include "../test/orcish.h"
-static void (*PB_(to_string))(PB_(entry_c), char (*)[12]);
 
 /** @return If `ref` in `tree` has a predecessor, then it decrements. */
 static int PB_(to_predecessor)(struct PB_(tree) tree,
@@ -291,7 +288,7 @@ static int PB_(to_successor_c)(struct PB_(tree) tree, \
 		ref->node = PB_(as_branch_c)(ref->node)->child[ref->idx], ref->idx = 0; \
 	if(ref->idx < ref->node->size) return 1; /* Likely. */ \
 	if(!ref->node->size) return 0; /* When bulk-loading. */ \
-{	/* Re-descend; pick the minimum height node that has a next key. */ \
+{ /* Re-descend; pick the minimum height node that has a next key. */ \
 	struct PB_(ref_c) next; \
 	unsigned a0; \
 	PB_(key) x; \
@@ -349,7 +346,7 @@ static int PB_(is_element)(const PB_(entry) e) {
 /* @implements `iterator` */
 struct PB_(iterator) { struct PB_(tree) *root; struct PB_(ref) i; int seen; };
 /** @return Iterator to null in `tree`. @implements `iterator` */
-static struct PB_(iterator) PB_(iterator)(struct B_(tree) *const tree) {
+static struct PB_(iterator) PB_(begin)(struct B_(tree) *const tree) {
 	struct PB_(iterator) it;
 	it.root = tree ? &tree->root : 0, it.i.node = 0, it.seen = 0;
 	return it;
@@ -376,7 +373,8 @@ static PB_(entry) PB_(previous)(struct PB_(iterator) *const it) {
 	return PB_(leaf_to_entry)(it->i.node, it->i.idx);
 }
 
-/* Want to find slightly different things; code re-use is bad. Confusing. */
+/* Want to find slightly different things; code re-use is bad. Confusing.
+ This is the lower-bound version. */
 #define TREE_FORTREE(i) i.node = tree->node, i.height = tree->height; ; \
 	i.node = PB_(as_branch_c)(i.node)->child[i.idx], i.height--
 #define TREE_START(i) unsigned hi = i.node->size; i.idx = 0;
@@ -402,8 +400,7 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
 		TREE_FORNODE(i)
 		if(i.idx < i.node->size) {
 			lo = i;
-			/* Might be useful expanding this to multi-keys. */
-			if(TREE_FLIPPED(i)) break;
+			if(TREE_FLIPPED(i)) break; /* Multi-keys go here. */
 		}
 		if(!i.height) break;
 	}
@@ -468,8 +465,7 @@ static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
 #undef TREE_FORNODE
 #undef TREE_FLIPPED
 
-/** @param[tree] Can be null. @return Lower bound of `x` in `tree`.
- @order \O(\log |`tree`|) */
+/** @return Lower bound of `x` in `tree`. @order \O(\log |`tree`|) */
 static struct PB_(ref) PB_(lower)(struct PB_(tree) tree, const PB_(key) x) {
 	if(!tree.node || tree.height == UINT_MAX) {
 		struct PB_(ref) ref; ref.node = 0; return ref;
@@ -496,7 +492,26 @@ static void PB_(clear_r)(struct PB_(tree) tree, struct PB_(node) **const keep) {
 		free(PB_(as_branch)(tree.node));
 	}
 }
-/** `tree` can be null. */
+
+
+/* Box override information. */
+#define BOX_ PB_
+#define BOX struct B_(tree)
+
+
+/** Adding, deleting, or changes in the topology of the tree invalidate it. */
+struct B_(tree_iterator);
+struct B_(tree_iterator) { struct PB_(iterator) _; };
+
+/** Zeroed data (not all-bits-zero) is initialized. @return An idle tree.
+ @order \Theta(1) @allow */
+static struct B_(tree) B_(tree)(void) {
+	struct B_(tree) tree;
+	tree.root.node = 0; tree.root.height = 0;
+	return tree;
+}
+
+/** Private: `tree` can be null. */
 static void PB_(clear)(struct B_(tree) *tree) {
 	struct PB_(node) *one = 0;
 	/* Already not there/idle/empty. */
@@ -507,18 +522,6 @@ static void PB_(clear)(struct B_(tree) *tree) {
 	tree->root.node = one;
 	tree->root.height = UINT_MAX;
 }
-
-/* Box override information. */
-#define BOX_ PB_
-#define BOX struct B_(tree)
-
-/** @return Initializes `tree` to idle. @order \Theta(1) @allow */
-static struct B_(tree) B_(tree)(void) {
-	struct B_(tree) tree;
-	tree.root.node = 0; tree.root.height = 0;
-	return tree;
-}
-
 /** Returns an initialized `tree` to idle, `tree` can be null. @allow */
 static void B_(tree_)(struct B_(tree) *const tree) {
 	if(!tree) return; /* Null. */
@@ -532,17 +535,18 @@ static void B_(tree_)(struct B_(tree) *const tree) {
 	*tree = B_(tree)();
 }
 
-/** Stores an iteration in a tree. Generally, changes in the topology of the
- tree invalidate it. (Future: have insert and delete with iterators.) */
-struct B_(tree_iterator) { struct PB_(iterator) _; };
 /** @return An iterator before the first element of `tree`. Can be null.
  @allow */
-static struct B_(tree_iterator) B_(tree_iterator)(struct B_(tree) *const tree)
-	{ struct B_(tree_iterator) it; it._ = PB_(iterator)(tree); return it; }
+static struct B_(tree_iterator) B_(tree_begin)(struct B_(tree) *const tree)
+	{ struct B_(tree_iterator) it; it._ = PB_(begin)(tree); return it; }
 /** Advances `it` to the next element. @return A pointer to the current
  element or null. @allow */
 static PB_(entry) B_(tree_next)(struct B_(tree_iterator) *const it)
 	{ return PB_(next)(&it->_); }
+/** Reverses `it` to the previous element. @return A pointer to the current
+ element or null. @allow */
+static PB_(entry) B_(tree_previous)(struct B_(tree_iterator) *const it)
+	{ return PB_(previous)(&it->_); }
 
 /** @param[tree] Can be null. @return Finds the smallest entry in `tree` that
  is at the lower bound of `x`. If `x` is higher than any of `tree`, it will be
@@ -1647,7 +1651,8 @@ static void PB_(unused_base)(void) {
 	PB_(key) k;
 	memset(&k, 0, sizeof k);
 	PB_(is_element_c); PB_(forward); PB_(next_c); PB_(is_element);
-	B_(tree)(); B_(tree_)(0); B_(tree_iterator)(0); B_(tree_next)(0);
+	B_(tree)(); B_(tree_)(0);
+
 	B_(tree_clear)(0);
 	B_(tree_lower_iterator)(0, k); B_(tree_lower_value)(0, k);
 #ifdef TREE_VALUE
@@ -1656,6 +1661,8 @@ static void PB_(unused_base)(void) {
 	B_(tree_contains)(0, k); B_(tree_bulk_add)(0, k); B_(tree_add)(0, k);
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
+	B_(tree_begin)(0); B_(tree_previous)(0); B_(tree_next)(0);
+	/*B_(tree_iterator_remove)(0);*/
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
