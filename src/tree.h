@@ -108,10 +108,10 @@ struct tree_count { size_t branches, leaves; };
 
 
 #ifndef TREE_ORDER
-#define TREE_ORDER 3 /* Maximum degree, (branching factor.) */
+#define TREE_ORDER 16 /* Maximum degree, (branching factor.) */
 #endif
-#if TREE_ORDER < 3 || TREE_ORDER > UCHAR_MAX + 1
-#error TREE_ORDER parameter range `[3, UCHAR_MAX+1]`.
+#if TREE_ORDER < 3 || TREE_ORDER > UINT_MAX + 1
+#error TREE_ORDER parameter range `[3, UINT_MAX+1]`.
 #endif
 #ifndef TREE_KEY
 #define TREE_KEY unsigned
