@@ -87,7 +87,6 @@
  <Johnson, Shasha, 1993, Free-at-Empty>, show good results; this has been
  chosen to provide hysteresis. (Except `TREE_MAX 2`, it's fixed.) */
 #define TREE_MIN (TREE_MAX / 3 ? TREE_MAX / 3 : 1)
-/* FIXME: Is this good? */
 #define TREE_SPLIT (TREE_ORDER / 2) /* Split index: even order left-leaning. */
 #define TREE_RESULT X(ERROR), X(UNIQUE), X(YIELD)
 #define X(n) TREE_##n
@@ -100,7 +99,7 @@ enum tree_result { TREE_RESULT };
 static const char *const tree_result_str[] = { TREE_RESULT };
 #undef X
 #undef TREE_RESULT
-struct tree_count { size_t branches, leaves; };
+struct tree_node_count { size_t branches, leaves; };
 #endif /* idempotent --> */
 
 
@@ -108,7 +107,7 @@ struct tree_count { size_t branches, leaves; };
 
 
 #ifndef TREE_ORDER
-#define TREE_ORDER 33 /* Maximum degree, (branching factor.) fixme: experiment. */
+#define TREE_ORDER 33 /* Maximum branching factor. fixme: experiment. */
 #endif
 #if TREE_ORDER < 3 || TREE_ORDER > UINT_MAX + 1
 #error TREE_ORDER parameter range `[3, UINT_MAX+1]`.
@@ -122,7 +121,8 @@ typedef TREE_KEY PB_(key);
 typedef const TREE_KEY PB_(key_c);
 
 #ifdef TREE_VALUE
-/** On `TREE_VALUE`, otherwise just a set of <typedef:<PB>key>. */
+/** On `TREE_VALUE`, this creates a map, otherwise a set of
+ <typedef:<PB>key>. */
 typedef TREE_VALUE PB_(value);
 typedef const TREE_VALUE PB_(value_c);
 #endif
@@ -181,12 +181,14 @@ static struct PB_(branch) *PB_(as_branch)(struct PB_(node) *const as_leaf)
 static const struct PB_(branch) *PB_(as_branch_c)(const struct PB_(node) *
 	const as_node) { return (const struct PB_(branch) *)(const void *)
 	((const char *)as_node - offsetof(struct PB_(branch), base)); }
-/* Address specific entry. */
+/* Address of a specific key by node. There is a need for node plus index
+ without height, but we'll just let height be unused. */
 struct PB_(ref) { struct PB_(node) *node; unsigned height, idx; };
 struct PB_(ref_c) { const struct PB_(node) *node; unsigned height, idx; };
+/* Node plus height is a sub-tree. A <tag:<B>tree> is a sub-tree of the tree. */
 struct PB_(tree) { struct PB_(node) *node; unsigned height; };
-/** To initialize it to an idle state, see <fn:<B>tree>, `TRIE_IDLE`, `{0}`
- (`C99`), or being `static`.
+/** To initialize it to an idle state, see <fn:<B>tree>, `{0}` (`C99`), or
+ being `static`.
 
  ![States.](../doc/states.png) */
 struct B_(tree);
@@ -195,8 +197,8 @@ struct B_(tree) { struct PB_(tree) root; };
 #ifdef TREE_VALUE /* <!-- value */
 
 /** On `TREE_VALUE`, creates a map from pointer-to-<typedef:<PB>key> to
- pointer-to-<typedef:<PB>value>. The reason these are pointers is because it
- is not connected in memory. (Does `key` still have to be?) */
+ pointer-to-<typedef:<PB>value>. The reason `value` is a pointer is because it
+ is not connected in memory. */
 struct B_(tree_entry) { PB_(key) *key; PB_(value) *value; };
 struct B_(tree_entry_c) { PB_(key_c) *key; PB_(value_c) *value; };
 /** On `TREE_VALUE`, otherwise it's just an alias for
@@ -1446,12 +1448,12 @@ static size_t B_(tree_count)(const struct B_(tree) *const tree) {
 /* All these are used in clone; it's convenient to use `\O(\log size)` stack
  space. [existing branches][new branches][existing leaves][new leaves] no */
 struct PB_(scaffold) {
-	struct tree_count victim, source;
+	struct tree_node_count victim, source;
 	size_t no;
 	struct PB_(node) **data;
 	struct { struct PB_(node) **head, **fresh, **cursor; } branch, leaf;
 };
-static int PB_(nodes_r)(struct PB_(tree) tree, struct tree_count *const no) {
+static int PB_(nodes_r)(struct PB_(tree) tree, struct tree_node_count *const no) {
 	assert(tree.node && tree.height);
 	if(!++no->branches) return 0;
 	if(tree.height == 1) {
@@ -1470,7 +1472,7 @@ static int PB_(nodes_r)(struct PB_(tree) tree, struct tree_count *const no) {
 	return 1;
 }
 static int PB_(nodes)(const struct B_(tree) *const tree,
-	struct tree_count *const no) {
+	struct tree_node_count *const no) {
 	assert(tree && no);
 	no->branches = no->leaves = 0;
 	if(!tree->root.node) { /* Idle. */
@@ -1561,7 +1563,7 @@ static struct PB_(tree) PB_(clone)(const struct PB_(tree) *const src,
  it continues to be.
  @return Success, otherwise `tree` is not modified.
  @throws[malloc] @throws[EDOM] `tree` is null. @throws[ERANGE] The size of
- `source` doesn't fit into `size_t`. @allow */
+ `source` nodes doesn't fit into `size_t`. @allow */
 static int B_(tree_clone)(struct B_(tree) *const tree,
 	const struct B_(tree) *const source) {
 	struct PB_(scaffold) sc;
@@ -1583,7 +1585,7 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 		for(i = 0; i < sc.no; i++) sc.data[i] = 0;
 	}
 	{ /* Ready scaffold. */
-		struct tree_count need;
+		struct tree_node_count need;
 		need.leaves = sc.source.leaves > sc.victim.leaves
 			? sc.source.leaves - sc.victim.leaves : 0;
 		need.branches = sc.source.branches > sc.victim.branches
@@ -1649,9 +1651,9 @@ static void PB_(unused_base)(void) {
 	B_(tree_clear)(0);
 	B_(tree_lower_iterator)(0, k); B_(tree_lower_value)(0, k);
 #ifdef TREE_VALUE
-	B_(tree_bulk_add)(0, k, 0); B_(tree_add)(0, k, 0);
+	B_(tree_get)(0, k); B_(tree_bulk_add)(0, k, 0); B_(tree_add)(0, k, 0);
 #else
-	B_(tree_bulk_add)(0, k); B_(tree_add)(0, k);
+	B_(tree_contains)(0, k); B_(tree_bulk_add)(0, k); B_(tree_add)(0, k);
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
 	PB_(unused_base_coda)();
