@@ -1389,55 +1389,6 @@ end:
 	return 1;
 }
 
-
-
-
-
-/* Box override information. */
-#define BOX_ PB_
-#define BOX struct B_(tree)
-
-
-/** Adding, deleting, or changes in the topology of the tree invalidate it. */
-struct B_(tree_iterator);
-struct B_(tree_iterator) { struct PB_(iterator) _; };
-
-
-/** @return An iterator before the first element of `tree`. Can be null.
- @allow */
-static struct B_(tree_iterator) B_(tree_begin)(struct B_(tree) *const tree)
-	{ struct B_(tree_iterator) it; it._ = PB_(begin)(tree); return it; }
-/** @param[tree] Can be null. @return Finds the smallest entry in `tree` that
- is at the lower bound of `x`. If `x` is higher than any of `tree`, it will be
- placed just passed the end. @order \O(\log |`tree`|) @allow */
-static struct B_(tree_iterator) B_(tree_lower_iterator)
-	(struct B_(tree) *const tree, const PB_(key) x) {
-	struct B_(tree_iterator) it;
-	if(!tree) return it._.root = 0, it;
-	it._.i = PB_(lower)(tree->root, x);
-	it._.root = &tree->root;
-	it._.seen = 0;
-	return it;
-}
-/** Advances `it` to the next element. @return A pointer to the current
- element or null. @allow */
-static PB_(entry) B_(tree_next)(struct B_(tree_iterator) *const it)
-	{ return PB_(next)(&it->_); }
-/** Reverses `it` to the previous element. @return A pointer to the current
- element or null. @allow */
-static PB_(entry) B_(tree_previous)(struct B_(tree_iterator) *const it)
-	{ return PB_(previous)(&it->_); }
-
-
-
-
-
-
-
-
-
-/****************************/
-
 /* All these are used in clone; it's convenient to use `\O(\log size)` stack
  space. [existing branches][new branches][existing leaves][new leaves] no */
 struct PB_(scaffold) {
@@ -1446,7 +1397,8 @@ struct PB_(scaffold) {
 	struct PB_(node) **data;
 	struct { struct PB_(node) **head, **fresh, **cursor; } branch, leaf;
 };
-static int PB_(nodes_r)(struct PB_(tree) tree, struct tree_node_count *const no) {
+static int PB_(nodes_r)(struct PB_(tree) tree,
+	struct tree_node_count *const no) {
 	assert(tree.node && tree.height);
 	if(!++no->branches) return 0;
 	if(tree.height == 1) {
@@ -1567,9 +1519,9 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 	if(!PB_(nodes)(tree, &sc.victim) || !PB_(nodes)(source, &sc.source)
 		|| (sc.no = sc.source.branches + sc.source.leaves) < sc.source.branches)
 		{ errno = ERANGE; goto catch; } /* Overflow. */
-	printf("<B>tree_clone: victim.branches %zu; victim.leaves %zu; "
+	/*printf("<B>tree_clone: victim.branches %zu; victim.leaves %zu; "
 		"source.branches %zu; source.leaves %zu.\n", sc.victim.branches,
-		sc.victim.leaves, sc.source.branches, sc.source.leaves);
+		sc.victim.leaves, sc.source.branches, sc.source.leaves);*/
 	if(!sc.no) { PB_(clear)(tree); goto finally; } /* No need to allocate. */
 	if(!(sc.data = malloc(sizeof *sc.data * sc.no)))
 		{ if(!errno) errno = ERANGE; goto catch; }
@@ -1627,6 +1579,42 @@ finally:
 	free(sc.data); /* Temporary memory. */
 	return success;
 }
+
+
+/* Box override information. */
+#define BOX_ PB_
+#define BOX struct B_(tree)
+
+
+/** Adding, deleting, or changes in the topology of the tree invalidate it. */
+struct B_(tree_iterator);
+struct B_(tree_iterator) { struct PB_(iterator) _; };
+
+
+/** @return An iterator before the first element of `tree`. Can be null.
+ @allow */
+static struct B_(tree_iterator) B_(tree_begin)(struct B_(tree) *const tree)
+	{ struct B_(tree_iterator) it; it._ = PB_(begin)(tree); return it; }
+/** @param[tree] Can be null. @return Finds the smallest entry in `tree` that
+ is at the lower bound of `x`. If `x` is higher than any of `tree`, it will be
+ placed just passed the end. @order \O(\log |`tree`|) @allow */
+static struct B_(tree_iterator) B_(tree_lower_iterator)
+	(struct B_(tree) *const tree, const PB_(key) x) {
+	struct B_(tree_iterator) it;
+	if(!tree) return it._.root = 0, it;
+	it._.i = PB_(lower)(tree->root, x);
+	it._.root = &tree->root;
+	it._.seen = 0;
+	return it;
+}
+/** Advances `it` to the next element. @return A pointer to the current
+ element or null. @allow */
+static PB_(entry) B_(tree_next)(struct B_(tree_iterator) *const it)
+	{ return PB_(next)(&it->_); }
+/** Reverses `it` to the previous element. @return A pointer to the current
+ element or null. @allow */
+static PB_(entry) B_(tree_previous)(struct B_(tree_iterator) *const it)
+	{ return PB_(previous)(&it->_); }
 
 #ifdef TREE_TEST /* <!-- test */
 /* Forward-declare. */
