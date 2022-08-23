@@ -530,6 +530,27 @@ static void B_(tree_)(struct B_(tree) *const tree) {
  full, it remains active. */
 static void B_(tree_clear)(struct B_(tree) *const tree) { PB_(clear)(tree); }
 
+/** Private: counts a sub-tree, `tree`. */
+static size_t PB_(count_r)(const struct PB_(tree) tree) {
+	size_t c = tree.node->size;
+	if(tree.height) {
+		const struct PB_(branch) *const branch = PB_(as_branch)(tree.node);
+		struct PB_(tree) sub;
+		sub.height = tree.height - 1;
+		size_t i;
+		for(i = 0; i <= tree.node->size; i++) {
+			sub.node = branch->child[i];
+			c += PB_(count_r)(sub);
+		}
+	}
+	return c;
+}
+/** Counts all the keys on `tree`, which can be null. @order \O(`size`) */
+static size_t B_(tree_count)(const struct B_(tree) *const tree) {
+	return tree && tree->root.height != UINT_MAX
+		? PB_(count_r)(tree->root) : 0;
+}
+
 /** For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`,
  `x = 11 -> null`.
  @return Lower-bound value match for `x` in `tree` or null if `x` is greater
@@ -980,11 +1001,11 @@ grow: /* Leaf is full. */ {
 }
 #endif
 
-static struct B_(cover) { int lookup_fail, branch_pred, branch_succ,
+/*static struct B_(cover) { int lookup_fail, branch_pred, branch_succ,
 	upward, balance_less, balance_less_height, balance_more,
 	balance_more_height, merge_less, merge_less_height, merge_more,
 	merge_more_height, ascend, ascend_height, ascend_no_height, space,
-	space_free, space_empty; } B_(cover);
+	space_free, space_empty; } B_(cover);*/
 
 /** Tries to remove `key` from `tree`. @return Success. */
 static int B_(tree_remove)(struct B_(tree) *const tree,
@@ -1003,8 +1024,7 @@ static int B_(tree_remove)(struct B_(tree) *const tree,
 	 minimum key nodes. */
 	if(!tree->root.node || tree->root.height == UINT_MAX
 		|| !(rm = PB_(lookup_remove)(&tree->root, key, &parent.node)).node)
-		{ /*printf(" didn't match any nodes.\n");*/
-			B_(cover).lookup_fail = 1; return 0; }
+		return 0;
 	/* Important when `rm = parent`; `find_idx` later. */
 	parent.height = rm.height + 1;
 	assert(rm.idx < rm.node->size);
@@ -1016,8 +1036,7 @@ branch: {
 	struct { struct PB_(ref) leaf; struct PB_(node) *parent; unsigned top; }
 		pred, succ, chosen;
 	assert(rm.height);
-	printf("<branch> %s\n"/*replace by successor or predecessor.\n"*/,
-		orcify(rm.node));
+	//printf("<branch> %s\n"/*replace by successor or predecessor.\n"*/, orcify(rm.node));
 	/* Predecessor leaf. */
 	pred.leaf = rm, pred.top = UINT_MAX;
 	do {
@@ -1058,29 +1077,29 @@ no_succ:
 	/* Choose the predecessor or successor. */
 	if(!pred.leaf.node) {
 		assert(succ.leaf.node);
-		printf(" succ, pred null\n");
-		B_(cover).branch_succ = 1;
+		//printf(" succ, pred null\n");
+		//B_(cover).branch_succ = 1;
 		chosen = succ;
 	} else if(!succ.leaf.node) {
 		assert(pred.leaf.node);
-		printf(" pred, succ null\n");
-		B_(cover).branch_pred = 1;
+		//printf(" pred, succ null\n");
+		//B_(cover).branch_pred = 1;
 		chosen = pred;
 	} else if(pred.leaf.node->size < succ.leaf.node->size) {
-		printf(" succ, has more keys\n");
-		B_(cover).branch_succ = 1;
+		//printf(" succ, has more keys\n");
+		//B_(cover).branch_succ = 1;
 		chosen = succ;
 	} else if(pred.leaf.node->size > succ.leaf.node->size) {
-		printf(" pred, has more keys\n");
-		B_(cover).branch_pred = 1;
+		//printf(" pred, has more keys\n");
+		//B_(cover).branch_pred = 1;
 		chosen = pred;
 	} else if(pred.top > succ.top) {
-		printf(" succ, less iterations\n");
-		B_(cover).branch_succ = 1;
+		//printf(" succ, less iterations\n");
+		//B_(cover).branch_succ = 1;
 		chosen = succ;
 	} else {
-		printf(" pred, less or equal iterations\n");
-		B_(cover).branch_pred = 1;
+		//printf(" pred, less or equal iterations\n");
+		//B_(cover).branch_pred = 1;
 		chosen = pred;
 	}
 	/* Replace `rm` with the predecessor or the successor leaf. */
@@ -1095,10 +1114,9 @@ no_succ:
 	goto upward;
 } upward: /* The first iteration, this will be a leaf. */
 	assert(rm.node);
-	printf("<upward> %s\n"/*; parent %s\n"*/,
-		orcify(rm.node)/*, orcify(parent.node)*/);
+	//printf("<upward> %s\n"/*; parent %s\n"*/, orcify(rm.node)/*, orcify(parent.node)*/);
 	if(!parent.node) goto space;
-	B_(cover).upward = 1;
+	//B_(cover).upward = 1;
 	assert(rm.node->size <= TREE_MIN); /* Or else it would not have a parent. */
 	/* Retrieve forgot information about the index in parent. (This is not as
 	 fast at it could be, but holding parent data in minimum keys allows it to
@@ -1123,8 +1141,7 @@ no_succ:
 balance_less: {
 	const unsigned combined = rm.node->size + sibling.less->size;
 	unsigned promote, more, transfer;
-	printf("<balance_less> %s"/*; less %s; combined %u\n"*/,
-		orcify(rm.node)/*, orcify(sibling.less), combined*/);
+	//printf("<balance_less> %s"/*; less %s; combined %u\n"*/, orcify(rm.node)/*, orcify(sibling.less), combined*/);
 	assert(parent.idx);
 	if(combined < 2 * TREE_MIN + 1) goto merge_less; /* Don't have enough. */
 	assert(sibling.less->size > TREE_MIN); /* Since `rm.size <= TREE_MIN`. */
@@ -1175,9 +1192,9 @@ balance_less: {
 			sizeof *rmb->child * (rm.node->size + 1 - 1));
 		memcpy(rmb->child, lessb->child + promote + 1,
 			sizeof *lessb->child * transferb);
-		B_(cover).balance_less_height = 1;
+		/*B_(cover).balance_less_height = 1;
 	} else {
-		B_(cover).balance_less = 1;
+		B_(cover).balance_less = 1;*/
 	}
 	rm.node->size += transfer;
 	sibling.less->size = promote;
@@ -1185,8 +1202,7 @@ balance_less: {
 } balance_more: {
 	const unsigned combined = rm.node->size + sibling.more->size;
 	unsigned promote;
-	printf("<balance_more> %s\n"/*; more %s; combined %u\n"*/,
-		orcify(rm.node)/*, orcify(sibling.more), combined*/);
+	//printf("<balance_more> %s\n"/*; more %s; combined %u\n"*/, orcify(rm.node)/*, orcify(sibling.more), combined*/);
 	assert(rm.node->size);
 	if(combined < 2 * TREE_MIN + 1) goto merge_more; /* Don't have enough. */
 	assert(sibling.more->size > TREE_MIN); /* Since `rm.size <= TREE_MIN`. */
@@ -1233,17 +1249,15 @@ balance_less: {
 			moreb->base.size + 1 - transferb, transferb);*/
 		memmove(moreb->child, moreb->child + transferb,
 			sizeof *rmb->child * (moreb->base.size + 1 - transferb));
-		B_(cover).balance_more_height = 1;
+		/*B_(cover).balance_more_height = 1;
 	} else {
-		B_(cover).balance_more = 1;
+		B_(cover).balance_more = 1;*/
 	}
 	rm.node->size += promote;
 	sibling.more->size -= promote + 1;
 	goto end;
 } merge_less:
-	printf("<merge_less> (%s, %s) through %s with %u\n"/* keys <%d>\n"*/,
-		orcify(sibling.less), orcify(rm.node), orcify(parent.node),
-		parent.node->size/*, parent.node->key[parent.idx - 1]*/);
+	//printf("<merge_less> (%s, %s) through %s with %u\n"/* keys <%d>\n"*/, orcify(sibling.less), orcify(rm.node), orcify(parent.node), parent.node->size/*, parent.node->key[parent.idx - 1]*/);
 	assert(parent.idx && parent.idx <= parent.node->size && parent.node->size
 		&& rm.idx < rm.node->size && rm.node->size == TREE_MIN
 		&& sibling.less->size == TREE_MIN
@@ -1273,9 +1287,9 @@ balance_less: {
 			*const rmb = PB_(as_branch)(rm.node);
 		memcpy(lessb->child + sibling.less->size + 1, rmb->child,
 			sizeof *rmb->child * rm.node->size); /* _Sic_. */
-		B_(cover).merge_less_height = 1;
+		/*B_(cover).merge_less_height = 1;
 	} else {
-		B_(cover).merge_less = 1;
+		B_(cover).merge_less = 1;*/
 	}
 	sibling.less->size += rm.node->size;
 	/* Remove references to `rm` from `parent`. The parent will have one less
@@ -1287,9 +1301,7 @@ balance_less: {
 	free(rm.node);
 	goto ascend;
 merge_more:
-	printf("<merge_more> (%s, %s) through %s with %u\n"/* keys <%d>\n"*/,
-		orcify(rm.node), orcify(sibling.more), orcify(parent.node),
-		parent.node->size/*, parent.node->key[parent.idx]*/);
+	//printf("<merge_more> (%s, %s) through %s with %u\n"/* keys <%d>\n"*/, orcify(rm.node), orcify(sibling.more), orcify(parent.node), parent.node->size/*, parent.node->key[parent.idx]*/);
 	assert(parent.idx < parent.node->size && parent.node->size
 		&& rm.idx < rm.node->size && rm.node->size == TREE_MIN
 		&& sibling.more->size == TREE_MIN
@@ -1314,9 +1326,9 @@ merge_more:
 			*const moreb = PB_(as_branch)(sibling.more);
 		memcpy(rmb->child + rm.node->size, moreb->child,
 			sizeof *moreb->child * (sibling.more->size + 1));
-		B_(cover).merge_more_height = 1;
+		/*B_(cover).merge_more_height = 1;
 	} else {
-		B_(cover).merge_more = 1;
+		B_(cover).merge_more = 1;*/
 	}
 	rm.node->size += sibling.more->size;
 	/* Remove references to `more` from `parent`. The parent will have one less
@@ -1334,18 +1346,18 @@ ascend:
 	if(rm.node->size <= TREE_MIN) {
 		if(!(parent.node = PB_(as_branch)(rm.node)->child[TREE_MAX])) {
 			assert(tree->root.height == rm.height);
-			B_(cover).ascend_no_height = 1;
+			//B_(cover).ascend_no_height = 1;
 		} else {
 			parent.height++;
-			B_(cover).ascend_height = 1;
+			//B_(cover).ascend_height = 1;
 		}
 	} else {
 		parent.node = 0;
-		B_(cover).ascend = 1;
+		//B_(cover).ascend = 1;
 	}
 	goto upward;
 space: /* Node is root or has more than `TREE_MIN`; branches taken care of. */
-	printf("<space> %s\n", orcify(rm.node));
+	//printf("<space> %s\n", orcify(rm.node));
 	assert(rm.node);
 	assert(rm.idx < rm.node->size);
 	assert(rm.node->size > TREE_MIN || rm.node == tree->root.node);
@@ -1362,15 +1374,15 @@ space: /* Node is root or has more than `TREE_MIN`; branches taken care of. */
 			tree->root.height--;
 			/*printf(" ***freeing branch %s\n", orcify(rm.node));*/
 			free(PB_(as_branch)(rm.node));
-			B_(cover).space_free = 1;
+			//B_(cover).space_free = 1;
 		} else { /* Just deleted the last one. Set flag for zero container. */
 			/*printf(" empty %s\n", orcify(rm.node));*/
 			tree->root.height = UINT_MAX;
-			B_(cover).space_empty = 1;
+			//B_(cover).space_empty = 1;
 		}
-	} else {
+	}/* else {
 		B_(cover).space = 1;
-	}
+	}*/
 	goto end;
 end:
 	/*printf("<end>\n");*/
@@ -1422,24 +1434,6 @@ static PB_(entry) B_(tree_previous)(struct B_(tree_iterator) *const it)
 
 
 
-static size_t PB_(count_r)(const struct PB_(tree) tree) {
-	size_t c = tree.node->size;
-	if(tree.height) {
-		const struct PB_(branch) *const branch = PB_(as_branch)(tree.node);
-		struct PB_(tree) sub;
-		sub.height = tree.height - 1;
-		size_t i;
-		for(i = 0; i <= tree.node->size; i++) {
-			sub.node = branch->child[i];
-			c += PB_(count_r)(sub);
-		}
-	}
-	return c;
-}
-static size_t B_(tree_count)(const struct B_(tree) *const tree) {
-	return tree && tree->root.height != UINT_MAX
-		? PB_(count_r)(tree->root) : 0;
-}
 
 
 /****************************/
@@ -1646,18 +1640,16 @@ static void PB_(unused_base)(void) {
 	PB_(key) k;
 	memset(&k, 0, sizeof k);
 	PB_(is_element_c); PB_(forward); PB_(next_c); PB_(is_element);
-	B_(tree)(); B_(tree_)(0);
-
-	B_(tree_clear)(0);
-	B_(tree_lower_iterator)(0, k); B_(tree_lower_value)(0, k);
+	B_(tree)(); B_(tree_)(0); B_(tree_clear)(0); B_(tree_count)(0);
+	B_(tree_lower_value)(0, k);
 #ifdef TREE_VALUE
 	B_(tree_get)(0, k); B_(tree_bulk_add)(0, k, 0); B_(tree_add)(0, k, 0);
 #else
 	B_(tree_contains)(0, k); B_(tree_bulk_add)(0, k); B_(tree_add)(0, k);
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
-	B_(tree_begin)(0); B_(tree_previous)(0); B_(tree_next)(0);
-	/*B_(tree_iterator_remove)(0);*/
+	B_(tree_begin)(0); B_(tree_lower_iterator)(0, k); B_(tree_previous)(0);
+	B_(tree_next)(0); /*B_(tree_iterator_remove)(0);*/
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }

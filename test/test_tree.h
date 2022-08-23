@@ -152,11 +152,11 @@ static void PB_(subgraph_usual)(const struct PB_(tree) *const sub, FILE *fp) {
 
 /** Draw a graph of `tree` to `fn` in Graphviz format, the usual way, but too
  large for many labels. */
-static void PB_(graph_usual)(const struct B_(tree) *const tree,
+static void PB_(graph_horiz)(const struct B_(tree) *const tree,
 	const char *const fn) {
 	FILE *fp;
 	assert(tree && fn);
-	printf("***(usual) %s.\n\n", fn);
+	printf("***(horizontal) %s.\n\n", fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
 		"\tgraph [truecolor=true, bgcolor=transparent,"
@@ -173,7 +173,7 @@ static void PB_(graph_usual)(const struct B_(tree) *const tree,
 	fclose(fp);
 }
 
-static void PB_(print_r)(const struct PB_(tree) sub) {
+/*static void PB_(print_r)(const struct PB_(tree) sub) {
 	struct PB_(tree) child = { 0, 0 };
 	const struct PB_(branch) *branch = 0;
 	unsigned i;
@@ -207,7 +207,7 @@ static void PB_(print)(const struct B_(tree) *const tree) {
 		PB_(print_r)(tree->root);
 	}
 	printf("\n");
-}
+}*/
 
 /** Makes sure the `trie` is in a valid state. */
 static void PB_(valid)(const struct B_(tree) *const tree) {
@@ -415,6 +415,7 @@ static void B_(tree_test)(void) {
 		" testing:\n");
 	PB_(test)();
 	fprintf(stderr, "Done tests of <" QUOTE(TREE_NAME) ">trie.\n\n");
+	(void)PB_(graph_horiz);
 }
 
 #undef QUOTE
