@@ -546,10 +546,7 @@ static void redblack(void) {
 		}
 		for(i = 0; i <= n; i++) {
 			value = redblack_tree_get(&tree, rnd[i].x);
-			assert(!!value == rnd[i].in);
-			if(!value) continue;
-			printf("** %u: %u->%u\n", i, rnd[i].x, *value);
-			assert(*value == rnd[i].x);
+			assert(!!value == rnd[i].in && (!value || *value == rnd[i].x));
 		}
 	}
 	assert(tree.root.height == UINT_MAX);
@@ -771,7 +768,7 @@ finally:
 
 
 int main(void) {
-	unsigned seed = 788609/*(unsigned)clock()*/;
+	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	order3();
 	redblack();

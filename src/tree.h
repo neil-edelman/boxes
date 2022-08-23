@@ -1102,33 +1102,36 @@ no_succ:
 	/* Choose the predecessor or successor. */
 	if(!pred.leaf.node) {
 		assert(succ.leaf.node);
-		/*printf(" succ, pred null\n");*/
+		printf(" succ, pred null\n");
 		B_(cover).branch_succ = 1;
 		chosen = succ;
 	} else if(!succ.leaf.node) {
 		assert(pred.leaf.node);
-		/*printf(" pred, succ null\n");*/
+		printf(" pred, succ null\n");
 		B_(cover).branch_pred = 1;
 		chosen = pred;
 	} else if(pred.leaf.node->size < succ.leaf.node->size) {
-		/*printf(" succ, has more keys\n");*/
+		printf(" succ, has more keys\n");
 		B_(cover).branch_succ = 1;
 		chosen = succ;
 	} else if(pred.leaf.node->size > succ.leaf.node->size) {
-		/*printf(" pred, has more keys\n");*/
+		printf(" pred, has more keys\n");
 		B_(cover).branch_pred = 1;
 		chosen = pred;
 	} else if(pred.top > succ.top) {
-		/*printf(" succ, less iterations\n");*/
+		printf(" succ, less iterations\n");
 		B_(cover).branch_succ = 1;
 		chosen = succ;
 	} else {
-		/*printf(" pred, less or equal iterations\n");*/
+		printf(" pred, less or equal iterations\n");
 		B_(cover).branch_pred = 1;
 		chosen = pred;
 	}
 	/* Replace `rm` with the predecessor or the successor leaf. */
 	quasi_key = rm.node->key[rm.idx] = chosen.leaf.node->key[chosen.leaf.idx];
+#ifdef TREE_VALUE
+	rm.node->value[rm.idx] = chosen.leaf.node->value[chosen.leaf.idx];
+#endif
 	rm = chosen.leaf;
 	if(chosen.leaf.node->size <= TREE_MIN) parent.node = chosen.parent;
 	parent.height = 1;
@@ -1371,7 +1374,6 @@ merge_more:
 ascend:
 	/*printf("<ascend>\n");*/
 	/* Fix the hole by moving it up the tree. */
-	/*PB_(graph_usual)(tree, "graph/work1.gv");*/
 	rm = parent;
 	if(rm.node->size <= TREE_MIN) {
 		if(!(parent.node = PB_(as_branch)(rm.node)->child[TREE_MAX])) {
