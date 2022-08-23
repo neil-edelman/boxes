@@ -34,14 +34,28 @@ static void int_to_string(const unsigned *x, char (*const z)[12])
 #define TREE_TO_STRING &int_to_string
 #include "../src/tree.h"
 
+/* Unsigned numbers: testing framework. */
+struct redblack_tree_test;
+static void redblack_filler(struct redblack_tree_test *);
+struct redblack_tree_entry_c;
+static void redblack_to_string(const struct redblack_tree_entry_c,
+	char (*)[12]);
+
 #define TREE_NAME redblack
 #define TREE_VALUE unsigned
-#define TREE_TEST &int_filler
+#define TREE_TEST &redblack_filler
 #define TREE_ORDER 4
 #define TREE_EXPECT_TRAIT
 #include "../src/tree.h"
-#define TREE_TO_STRING &int_to_string
+#define TREE_TO_STRING &redblack_to_string
 #include "../src/tree.h"
+/** @implements <typedef:<PB>action_fn> */
+static void redblack_filler(struct redblack_tree_test *x) {
+	x->key = (unsigned)rand() / (RAND_MAX / 1000 + 1); }
+/** @implements <typedef:<PSZ>to_string_fn> */
+static void redblack_to_string(const struct redblack_tree_entry_c x,
+	char (*const z)[12])
+	{ /*assert(*x < 10000000000),*/ sprintf(*z, "%u", *x.key); }
 
 
 /* Unsigned numbers and values. Prototype a value. */
@@ -500,7 +514,7 @@ static void redblack(void) {
 		if(!(i & (i + 1)) || i == rnd_size - 1) {
 			char fn[64];
 			sprintf(fn, "graph/rb-rnd-%u.gv", (unsigned)i);
-			tree_redblack_graph_usual(&tree, fn);
+			tree_redblack_graph(&tree, fn);
 		}
 	}
 	printf("Redblack tree %u/%u: %s.\n",
@@ -520,7 +534,7 @@ static void redblack(void) {
 			if(!(n & (n + 1)) || n == rnd_size - 1) {
 				char fn[64];
 				sprintf(fn, "graph/rb-rnd-rm-%u.gv", (unsigned)i);
-				tree_redblack_graph_usual(&tree, fn);
+				tree_redblack_graph(&tree, fn);
 			}
 			n--;
 			if(i != n) rnd[i] = rnd[n];
@@ -533,7 +547,10 @@ static void redblack(void) {
 		}
 		for(i = 0; i <= n; i++) {
 			value = redblack_tree_get(&tree, rnd[i].x);
-			assert(!!value == rnd[i].in && (!value || *value == rnd[i].x));
+			assert(!!value == rnd[i].in);
+			if(!value) continue;
+			printf("%u: %u->%u\n", i, rnd[i].x, *value);
+			assert(*value == rnd[i].x);
 		}
 	}
 	assert(tree.root.height == UINT_MAX);
