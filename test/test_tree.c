@@ -185,8 +185,8 @@ static void entry_to_string(const struct entry_tree_entry_c entry,
 		entry.key->d.year % 10000, entry.key->d.month, entry.key->d.day);
 }
 
-
-static void manual(void) {
+/** Order 3 integer tree set; it's hard to make a simpler example. */
+static void order3(void) {
 	struct o23_tree between = o23_tree(),
 		rnd = o23_tree(),
 		even = o23_tree(), even_clone = o23_tree(),
@@ -490,10 +490,11 @@ finally:
 	o23_tree_(&copy);
 }
 
+/** This tests the order 4 tree map. */
 static void redblack(void) {
 	struct redblack_tree tree = redblack_tree();
-	unsigned i, n, *value;
-	struct { unsigned x; int in; } rnd[100];
+	unsigned i, n, *value, calc_size;
+	struct { unsigned x; int in; } rnd[10];
 	const unsigned rnd_size = sizeof rnd / sizeof *rnd;
 	const size_t redblack_order
 		= sizeof tree.root.node->key / sizeof *tree.root.node->key + 1;
@@ -519,21 +520,19 @@ static void redblack(void) {
 	}
 	printf("Redblack tree %u/%u: %s.\n",
 		n, rnd_size, redblack_tree_to_string(&tree));
-	{
-		size_t ver = redblack_tree_count(&tree);
-		assert(ver == n);
-	}
+	calc_size = (unsigned)redblack_tree_count(&tree);
+	assert(calc_size == n);
 	while(n) {
 		assert(tree.root.height != UINT_MAX);
 		i = (unsigned)rand() / (RAND_MAX / n + 1);
-		printf("drew %u -> %u which is %sin.\n",
+		printf("Drew %u -> %u which is %sin.\n",
 			i, rnd[i].x, rnd[i].in ? "" : "not ");
 		if(redblack_tree_remove(&tree, rnd[i].x)) {
 			assert(rnd[i].in);
 			rnd[i].in = 0;
-			if(!(n & (n + 1)) || n == rnd_size - 1) {
+			if(/*!(n & (n + 1)) || n == rnd_size - 1*/1) {
 				char fn[64];
-				sprintf(fn, "graph/rb-rnd-rm-%u.gv", (unsigned)i);
+				sprintf(fn, "graph/rb-rnd-rm-%u.gv", calc_size - n);
 				tree_redblack_graph(&tree, fn);
 			}
 			n--;
@@ -549,7 +548,7 @@ static void redblack(void) {
 			value = redblack_tree_get(&tree, rnd[i].x);
 			assert(!!value == rnd[i].in);
 			if(!value) continue;
-			printf("%u: %u->%u\n", i, rnd[i].x, *value);
+			printf("** %u: %u->%u\n", i, rnd[i].x, *value);
 			assert(*value == rnd[i].x);
 		}
 	}
@@ -774,7 +773,7 @@ finally:
 int main(void) {
 	unsigned seed = 788609/*(unsigned)clock()*/;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	manual();
+	order3();
 	redblack();
 	o23_tree_test();
 	redblack_tree_test();
