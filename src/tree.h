@@ -448,7 +448,7 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
 		}
 		if(!i.height) {
 			//printf("--at end %s:%u\n", orcify(i.node), i.idx);
-			if(!i.node) lo = i; /* Want one-off-end if last. */
+			if(!lo.node) lo = i; /* Want one-off-end if last. */
 			break;
 		}
 	}
