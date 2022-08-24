@@ -256,7 +256,7 @@ static PB_(entry_c) PB_(to_const)(const PB_(entry) e) {
 
 static void PB_(test)(void) {
 	struct B_(tree) tree = B_(tree)(), empty = B_(tree)();
-	struct B_(tree_iterator) it;
+	struct B_(tree_cursor) it;
 	PB_(entry_test) n[80];
 	const size_t n_size = sizeof n / sizeof *n;
 	PB_(entry) entry;
@@ -375,7 +375,7 @@ static void PB_(test)(void) {
 		(unsigned long)n_unique, (unsigned long)n_size);
 
 	/* Iteration; checksum. No. We can not do this because deletion invalidates
-	 the iterator. */
+	 the cursor. */
 	i = 0;
 	while(it = B_(tree_begin)(&tree),
 		entry = B_(tree_next)(&it),

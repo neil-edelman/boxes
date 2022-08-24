@@ -128,7 +128,7 @@ typedef const char *const_str;
 #define TREE_NAME star
 #define TREE_KEY double
 /*#define TREE_MULTIPLE_KEY work in progress; do I want to have extra stuff in
- the tree, or the iterator? Both do not sound fun. */ /* Different stars can
+ the tree, or the cursor? Both do not sound fun. */ /* Different stars can
  have the same distance. */
 #define TREE_VALUE const_str
 #define TREE_TEST &star_filler
@@ -195,7 +195,7 @@ static void order3(void) {
 		copy = o23_tree();
 	unsigned i;
 	const unsigned size_rnd = 100;
-	struct o23_tree_iterator it;
+	struct o23_tree_cursor it;
 	unsigned *v;
 	int ret;
 	const size_t o23_order
@@ -221,23 +221,43 @@ static void order3(void) {
 	ret = o23_tree_bulk_finish(&between);
 	assert(ret);
 	tree_o23_graph_horiz(&between, "graph/between.gv");
+
 	it = o23_tree_begin_at(&between, 50);
-	printf("step: 50: %s:%u.\n", orcify(it._.i.node), it._.i.idx);
+	printf("between(50) %s:%u %sseen.\n",
+		orcify(it._.i.node), it._.i.idx, it._.seen ? "" : "not ");
 	v = o23_tree_next(&it), assert(v && *v == 100);
-	printf("It's %u.\n", *v);
+	printf("next %u.\n", *v);
+	it = o23_tree_begin_at(&between, 50);
+	v = o23_tree_previous(&it), assert(!v);
+	printf("previous dne.\n");
+
 	it = o23_tree_begin_at(&between, 150);
-	printf("step: 150: %s:%u\n", orcify(it._.i.node), it._.i.idx);
+	printf("between(150) %s:%u %sseen.\n",
+		orcify(it._.i.node), it._.i.idx, it._.seen ? "" : "not ");
 	v = o23_tree_next(&it), assert(v && *v == 200);
-	printf("It's %u.\n", *v);
+	printf("next %u.\n", *v);
+	it = o23_tree_begin_at(&between, 150);
+	v = o23_tree_previous(&it), assert(v && *v == 100);
+	printf("previous %u.\n", *v);
+
 	it = o23_tree_begin_at(&between, 250);
-	printf("step: 250: %s:%u\n", orcify(it._.i.node), it._.i.idx);
+	printf("between(250) %s:%u %sseen.\n", orcify(it._.i.node), it._.i.idx, it._.seen ? "" : "not ");
 	v = o23_tree_next(&it), assert(v && *v == 300);
-	printf("It's %u.\n", *v);
+	printf("next %u.\n", *v);
+	it = o23_tree_begin_at(&between, 250);
+	v = o23_tree_previous(&it), assert(v && *v == 200);
+	printf("previous %u.\n", *v);
+
 	it = o23_tree_begin_at(&between, 350);
-	printf("step: 350: %s:%u\n", orcify(it._.i.node), it._.i.idx);
-	assert(!it._.i.node);
-	v = o23_tree_next(&it), /*assert(!v) not ideal*/ assert(v && *v == 100);
-	/* The value of the iterator. */
+	printf("between(350) %s:%u %sseen\n",
+		orcify(it._.i.node), it._.i.idx, it._.seen ? "" : "not ");
+	v = o23_tree_next(&it), assert(!v);
+	printf("next dne.\n");
+	it = o23_tree_begin_at(&between, 350);
+	v = o23_tree_previous(&it), assert(v && *v == 300);
+	printf("previous %u.\n", *v);
+
+	/* The value of the cursor. */
 	v = o23_tree_lower_value(&between, 50), assert(v && *v == 100);
 	v = o23_tree_lower_value(&between, 150), assert(v && *v == 200);
 	v = o23_tree_lower_value(&between, 250), assert(v && *v == 300);
