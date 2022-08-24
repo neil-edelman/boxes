@@ -1595,11 +1595,11 @@ struct B_(tree_iterator) { struct PB_(iterator) _; };
  @allow */
 static struct B_(tree_iterator) B_(tree_begin)(struct B_(tree) *const tree)
 	{ struct B_(tree_iterator) it; it._ = PB_(begin)(tree); return it; }
-/** @param[tree] Can be null. @return Finds the smallest entry in `tree` that
- is at the lower bound of `x`. If `x` is higher than any of `tree`, it will be
- placed just passed the end. @order \O(\log |`tree`|) @allow */
-static struct B_(tree_iterator) B_(tree_lower_iterator)
-	(struct B_(tree) *const tree, const PB_(key) x) {
+/** @param[tree] Can be null. @return An iterator in `tree` at the smallest
+ key that is not smaller than `x`, (as _per_ <typedef:<PB>compare_fn>.)
+ @order \O(\log |`tree`|) @allow */
+static struct B_(tree_iterator) B_(tree_begin_at)(struct B_(tree) *const tree,
+	const PB_(key) x) {
 	struct B_(tree_iterator) it;
 	if(!tree) return it._.root = 0, it;
 	it._.i = PB_(lower)(tree->root, x);
@@ -1636,7 +1636,7 @@ static void PB_(unused_base)(void) {
 	B_(tree_contains)(0, k); B_(tree_bulk_add)(0, k); B_(tree_add)(0, k);
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
-	B_(tree_begin)(0); B_(tree_lower_iterator)(0, k); B_(tree_previous)(0);
+	B_(tree_begin)(0); B_(tree_begin_at)(0, k); B_(tree_previous)(0);
 	B_(tree_next)(0); /*B_(tree_iterator_remove)(0);*/
 	PB_(unused_base_coda)();
 }
