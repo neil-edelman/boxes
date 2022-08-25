@@ -349,33 +349,29 @@ static int PB_(is_element)(const PB_(entry) e) {
 /* @implements `cursor` */
 struct PB_(cursor) { struct PB_(tree) *root; struct PB_(ref) i; int seen; };
 
-/** @return Fills `it` and returns if `tree` has contents, (which will need
- more filling.) */
-static int PB_(cursor_fill)(struct PB_(cursor) *const it,
+/** @return Fills `it` and returns if `tree` has contents, in which case, `idx`
+ is uninitialized. */
+static int PB_(cursor_fill_part)(struct PB_(cursor) *const it,
 	struct B_(tree) *const tree) {
-	int r = 0;
 	assert(it);
-	if(!(it->root = tree ? &tree->root : 0)) goto no_node;
-	if(!(it->i.node = tree->root.node)) goto no_height;
-	if((it->i.height = tree->root.height) == UINT_MAX) goto no_idx;
-	r = 1;
-	goto no_seen;
-no_node:
-	it->i.node = 0;
-no_height:
-	it->i.height = 0;
-no_idx:
-	it->i.idx = 0;
-no_seen:
 	it->seen = 0;
-	return r;
+	if(!(it->root = tree ? &tree->root : 0)
+		|| !(it->i.node = tree->root.node)
+		|| (it->i.height = tree->root.height) == UINT_MAX) {
+		it->i.node = 0;
+		it->i.height = 0;
+		it->i.idx = 0;
+		return 0;
+	}
+	return 1;
 }
 /** @return Before the start of `tree`, (can be null.) @implements `begin` */
 static struct PB_(cursor) PB_(begin)(struct B_(tree) *const tree) {
 	struct PB_(cursor) it;
-	if(PB_(cursor_fill)(&it, tree)) {
+	if(PB_(cursor_fill_part)(&it, tree)) {
 		for(it.i.node = tree->root.node; it.i.height;
 			it.i.node = PB_(as_branch)(it.i.node)->child[0], it.i.height--);
+		it.i.idx = 0;
 	}
 	return it;
 }
@@ -384,10 +380,11 @@ static struct PB_(cursor) PB_(begin)(struct B_(tree) *const tree) {
 // fixme: TEST!
 static struct PB_(cursor) PB_(end)(struct B_(tree) *const tree) {
 	struct PB_(cursor) it;
-	if(PB_(cursor_fill)(&it, tree)) {
+	if(PB_(cursor_fill_part)(&it, tree)) {
 		for(it.i.node = tree->root.node; it.i.height;
 			it.i.node = PB_(as_branch)(it.i.node)->child[it.i.node->size],
 			it.i.height--);
+		it.i.idx = it.i.node->size ? it.i.node->size - 1 : 0;
 	}
 	return it;
 }
