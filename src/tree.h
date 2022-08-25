@@ -229,9 +229,8 @@ static PB_(entry) PB_(leaf_to_entry)(struct PB_(node) *const leaf,
 	const unsigned i) { return leaf->key + i; }
 static PB_(entry_c) PB_(leaf_to_entry_c)(const struct PB_(node) *const leaf,
 	const unsigned i) { return leaf->key + i; }
-static PB_(value) *PB_(ref_to_value)(const struct PB_(ref) ref) {
-	return ref.node && ref.idx < ref.node->size ? ref.node->key + ref.idx : 0;
-}
+static PB_(value) *PB_(ref_to_value)(const struct PB_(ref) ref)
+	{ return ref.node ? ref.node->key + ref.idx : 0; }
 
 #endif /* !value --> */
 
@@ -602,8 +601,12 @@ static size_t B_(tree_count)(const struct B_(tree) *const tree) {
  @return Lower-bound value match for `x` in `tree` or null if `x` is greater
  than all in `tree`. @order \O(\log |`tree`|) @allow */
 static PB_(value) *B_(tree_lower_value)(struct B_(tree) *const tree,
-	const PB_(key) x)
-	{ return tree ? PB_(ref_to_value)(PB_(lower)(tree->root, x)) : 0; }
+	const PB_(key) x) {
+	struct PB_(ref) ref;
+	if(!tree) return 0;
+	ref = PB_(lower)(tree->root, x);
+	return ref.node && ref.idx < ref.node->size ? PB_(ref_to_value)(ref) : 0;
+}
 
 #ifndef TREE_VALUE /* <!-- set */
 /** Contains. */
@@ -660,23 +663,23 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 		struct PB_(node) *tail = 0, *last = 0;
 		struct PB_(branch) *pretail = 0;
 		struct PB_(tree) scout;
-		PB_(key) i;
+		PB_(key) max;
 		//printf("bulk: tree...\n"), PB_(print)(tree);
+		/* Right side bottom: `last` node with any keys, `unfull` not full. */
 		for(scout = tree->root; ; scout.node = PB_(as_branch)(scout.node)
 			->child[scout.node->size], scout.height--) {
 			if(scout.node->size < TREE_MAX) unfull = scout;
 			if(scout.node->size) last = scout.node;
 			if(!scout.height) break;
 		}
-		assert(last), i = last->key[last->size - 1];
-		/* Verify that the argument is not smaller than the largest. */
-		if(PB_(compare)(i, key) > 0) return errno = EDOM, TREE_ERROR;
-		if(PB_(compare)(key, i) <= 0) {
+		assert(last), max = last->key[last->size - 1];
+		if(PB_(compare)(max, key) > 0) return errno = EDOM, TREE_ERROR;
+		if(PB_(compare)(key, max) <= 0) {
 #ifdef TREE_VALUE
-			if(value) { /* Last value in the last node. */
-				struct PB_(ref) ref;
-				ref.node = last, ref.idx = last->size - 1;
-				*value = PB_(ref_to_value)(ref);
+			if(value) {
+				struct PB_(ref) max_ref;
+				max_ref.node = last, max_ref.idx = last->size - 1;
+				*value = PB_(ref_to_value)(max_ref);
 			}
 #endif
 			return TREE_YIELD;
@@ -726,9 +729,9 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 	node->key[node->size] = key;
 #ifdef TREE_VALUE
 	if(value) {
-		struct PB_(ref) ref;
-		ref.node = node, ref.idx = node->size;
-		*value = PB_(ref_to_value)(ref);
+		struct PB_(ref) max_ref;
+		max_ref.node = node, max_ref.idx = node->size;
+		*value = PB_(ref_to_value)(max_ref);
 	}
 #endif
 	node->size++;
@@ -1303,9 +1306,6 @@ balance_less: {
 	sibling.more->size -= promote + 1;
 	goto end;
 } merge_less:
-
-// fixme: make sure we are not merging a branch where a leaf is required.
-
 	//printf("<merge_less> (%s, %s) through %s with %u\n"/* keys <%d>\n"*/, orcify(sibling.less), orcify(rm.node), orcify(parent.node), parent.node->size/*, parent.node->key[parent.idx - 1]*/);
 	assert(parent.idx && parent.idx <= parent.node->size && parent.node->size
 		&& rm.idx < rm.node->size && rm.node->size == TREE_MIN
@@ -1346,8 +1346,9 @@ balance_less: {
 	/*printf(" %u<-%u(%u)\n", parent.idx + 1, parent.idx + 2, parent.node->size - parent.idx - 1);*/
 	memmove(parentb->child + parent.idx + 1, parentb->child + parent.idx + 2,
 		sizeof *parentb->child * (parent.node->size - parent.idx - 1));
+	/* This is the same pointer, but future-proof. */
 	/*printf(" ***FREE %s\n", orcify(rm.node));*/
-	free(rm.node);
+	if(rm.height) free(PB_(as_branch)(rm.node)); else free(rm.node);
 	goto ascend;
 merge_more:
 	//printf("<merge_more> (%s, %s) through %s with %u\n"/* keys <%d>\n"*/, orcify(rm.node), orcify(sibling.more), orcify(parent.node), parent.node->size/*, parent.node->key[parent.idx]*/);
@@ -1385,8 +1386,9 @@ merge_more:
 	/*printf(" %u<-%u(%u)\n", parent.idx + 1, parent.idx + 2, parent.node->size - parent.idx - 1);*/
 	memmove(parentb->child + parent.idx + 1, parentb->child + parent.idx + 2,
 		sizeof *parentb->child * (parent.node->size - parent.idx - 1));
+	/* This is the same pointer, but future-proof. */
 	/*printf(" ***FREE %s\n", orcify(sibling.more));*/
-	free(sibling.more);
+	if(rm.height) free(PB_(as_branch)(sibling.more)); else free(sibling.more);
 	goto ascend;
 ascend:
 	/*printf("<ascend>\n");*/
