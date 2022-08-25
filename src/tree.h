@@ -229,8 +229,9 @@ static PB_(entry) PB_(leaf_to_entry)(struct PB_(node) *const leaf,
 	const unsigned i) { return leaf->key + i; }
 static PB_(entry_c) PB_(leaf_to_entry_c)(const struct PB_(node) *const leaf,
 	const unsigned i) { return leaf->key + i; }
-static PB_(value) *PB_(ref_to_value)(const struct PB_(ref) ref)
-	{ return ref.node ? ref.node->key + ref.idx : 0; }
+static PB_(value) *PB_(ref_to_value)(const struct PB_(ref) ref) {
+	return ref.node && ref.idx < ref.node->size ? ref.node->key + ref.idx : 0;
+}
 
 #endif /* !value --> */
 
@@ -381,11 +382,13 @@ static struct PB_(cursor) PB_(begin)(struct B_(tree) *const tree) {
 }
 /** @return Iterator after the end of `tree`, (can be null.)
  @implements `end` */
+// fixme: TEST!
 static struct PB_(cursor) PB_(end)(struct B_(tree) *const tree) {
 	struct PB_(cursor) it;
 	if(PB_(cursor_fill)(&it, tree)) {
 		for(it.i.node = tree->root.node; it.i.height;
-			it.i.node = PB_(as_branch)(it.i.node)->child[it.i.node->size], it.i.height--);
+			it.i.node = PB_(as_branch)(it.i.node)->child[it.i.node->size],
+			it.i.height--);
 	}
 	return it;
 }
@@ -440,14 +443,11 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
 		TREE_START(i)
 		if(!hi) continue;
 		TREE_FORNODE(i)
-		/*lo = i; _Want_ one-off-end. */
 		if(i.idx < i.node->size) {
-			//printf("--descending stuck %s:%u\n", orcify(i.node), i.idx);
-			lo = i; /*<- This would be don't want one-off-end, return null. */
+			lo = i;
 			if(TREE_FLIPPED(i)) break; /* Multi-keys go here. */
 		}
 		if(!i.height) {
-			//printf("--at end %s:%u\n", orcify(i.node), i.idx);
 			if(!lo.node) lo = i; /* Want one-off-end if last. */
 			break;
 		}

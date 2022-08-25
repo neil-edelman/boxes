@@ -47,19 +47,22 @@ static void PB_(subgraph)(const struct PB_(tree) *const sub, FILE *fp) {
 	unsigned i;
 	assert(sub->node && fp);
 	fprintf(fp, "\ttrunk%p [label = <\n"
-		"<table border=\"1\" cellspacing=\"0\" bgcolor=\"Grey95\">\n"
+		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td border=\"0\" port=\"0\">"
 		"<font color=\"Gray75\">%s</font></td></tr>\n",
 		(const void *)sub->node, orcify(sub->node));
+	if(sub->node->size) fprintf(fp, "\t<hr/>\n");
 	for(i = 0; i < sub->node->size; i++) {
-		const char *const bgc = i & 1 ? "" : " bgcolor=\"Gray90\"";
+		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
 		char z[12];
 		PB_(entry_c) e = PB_(leaf_to_entry_c)(sub->node, i);
 		PB_(to_string)(e, &z);
 		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
 			" port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
 	}
-	fprintf(fp, "</table>>];\n");
+	fprintf(fp, "\t<hr/>\n"
+		"\t<tr><td></td></tr>\n"
+		"</table>>];\n");
 #ifdef TREE_MULTIPLE_KEY
 	if(sub->node->parent) {
 		fprintf(fp, "\ttrunk%p -> trunk%p [dir=back];\n",
@@ -415,7 +418,7 @@ static void B_(tree_test)(void) {
 		" testing:\n");
 	PB_(test)();
 	fprintf(stderr, "Done tests of <" QUOTE(TREE_NAME) ">trie.\n\n");
-	(void)PB_(graph_horiz);
+	(void)PB_(graph_horiz); /* Not used in general. */
 }
 
 #undef QUOTE

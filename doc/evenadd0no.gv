@@ -1,0 +1,143 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans", splines=false];
+	node [shape=none, fontname="Bitstream Vera Sans"];
+
+	trunk0x1007042d0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Uukdurb</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">18</td>
+	<td border="0" align="center" port="1">36</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x1007042d0:0:sw -> trunk0x100704270;
+	trunk0x1007042d0:0:se -> trunk0x1007042a0;
+	trunk0x1007042d0:1:se -> trunk0x10054cf80;
+	trunk0x100704270 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Annum</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">6</td>
+	<td border="0" align="center" port="1">12</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x100704270:0:sw -> trunk0x10073d740;
+	trunk0x100704270:0:se -> trunk0x10073b990;
+	trunk0x100704270:1:se -> trunk0x100739610;
+	trunk0x10073d740 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Luthshar</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">2</td>
+	<td border="0" align="center" port="1">4</td>
+	</tr>
+</table>>];
+	trunk0x10073b990 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Umurgash</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">8</td>
+	<td border="0" align="center" port="1">10</td>
+	</tr>
+</table>>];
+	trunk0x100739610 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Ufthar</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">14</td>
+	<td border="0" align="center" port="1">16</td>
+	</tr>
+</table>>];
+	trunk0x1007042a0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Athuuk</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">24</td>
+	<td border="0" align="center" port="1">30</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x1007042a0:0:sw -> trunk0x100737420;
+	trunk0x1007042a0:0:se -> trunk0x100736310;
+	trunk0x1007042a0:1:se -> trunk0x100734f40;
+	trunk0x100737420 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Aznya</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">20</td>
+	<td border="0" align="center" port="1">22</td>
+	</tr>
+</table>>];
+	trunk0x100736310 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Haiakhbad</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">26</td>
+	<td border="0" align="center" port="1">28</td>
+	</tr>
+</table>>];
+	trunk0x100734f40 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Rut-hai</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">32</td>
+	<td border="0" align="center" port="1">34</td>
+	</tr>
+</table>>];
+	trunk0x10054cf80 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Nakth</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">42</td>
+	<td border="0" align="center" port="1">48</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10054cf80:0:sw -> trunk0x100538d20;
+	trunk0x10054cf80:0:se -> trunk0x100604430;
+	trunk0x10054cf80:1:se -> trunk0x100604440;
+	trunk0x100538d20 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Akhoveull</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">38</td>
+	<td border="0" align="center" port="1">40</td>
+	</tr>
+</table>>];
+	trunk0x100604430 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Umsha-hai</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">44</td>
+	<td border="0" align="center" port="1">46</td>
+	</tr>
+</table>>];
+	trunk0x100604440 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Shaum</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">50</td>
+	<td border="0" align="center" port="1">52</td>
+	</tr>
+</table>>];
+	node [color="Red"];
+}

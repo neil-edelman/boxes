@@ -1,0 +1,34 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans", splines=false];
+	node [shape=none, fontname="Bitstream Vera Sans"];
+
+	trunk0x10060fea0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Ashshai</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">2</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	trunk0x10060fea0:0:sw -> trunk0x100511770;
+	trunk0x10060fea0:0:se -> trunk0x1006525d0;
+	trunk0x100511770 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Ukukbag</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">1</td>
+	</tr>
+</table>>];
+	trunk0x1006525d0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="1"><font color="Gray75">Ronkdurb</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">3</td>
+	</tr>
+</table>>];
+	node [color="Red"];
+}
