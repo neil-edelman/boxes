@@ -1303,6 +1303,9 @@ balance_less: {
 	sibling.more->size -= promote + 1;
 	goto end;
 } merge_less:
+
+// fixme: make sure we are not merging a branch where a leaf is required.
+
 	//printf("<merge_less> (%s, %s) through %s with %u\n"/* keys <%d>\n"*/, orcify(sibling.less), orcify(rm.node), orcify(parent.node), parent.node->size/*, parent.node->key[parent.idx - 1]*/);
 	assert(parent.idx && parent.idx <= parent.node->size && parent.node->size
 		&& rm.idx < rm.node->size && rm.node->size == TREE_MIN
