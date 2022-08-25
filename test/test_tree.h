@@ -325,6 +325,7 @@ static void PB_(test)(void) {
 	/* Iteration; checksum. */
 	memset(&last, 0, sizeof last);
 	it = B_(tree_begin)(&tree), i = 0;
+	/* fixme: iteration is screwed up. */
 	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
 		char z[12];
 		PB_(to_string)(PB_(to_const)(entry), &z);
