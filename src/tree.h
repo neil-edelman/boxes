@@ -1575,7 +1575,8 @@ static PB_(entry) B_(tree_previous)(struct B_(tree_cursor) *const cur)
 	{ return PB_(previous)(&cur->_); }
 /** Removes the last entry returned by a valid `cur`. All other cursors on the
  same object are invalidated, but `cur` is now between on the removed node.
- @return Success, otherwise `cur` is not at a valid element. */
+ @return Success, otherwise `cur` is not at a valid element.
+ @order \O(\log `items`) */
 static int B_(tree_cursor_remove)(struct B_(tree_cursor) *const cur) {
 	PB_(key) remove;
 	if(!cur || !cur->_.seen || !cur->_.root || !cur->_.i.node
