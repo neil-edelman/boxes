@@ -85,6 +85,17 @@ and private names for the trait labeled `X`. With these definitions,
 	<tr><td>typedef const BOX_CONTENT &lt;PX&gt;element_c</td></tr>
 </table>
 
+`struct <BOX>input` is an input iterator, started with
+`struct <BOX>input <BOX>input(const <PX>box *)`. It consumes elements
+with `<PX>element_c <BOX>next_input(<BOX>input *)` until
+`int is_content_c(const <PX>element_c)` is false. Generally, this iterator is
+invalidated when topological (structural) changes to the box are made.
+
+`struct <BOX>cursor` is a more general-purpose iterator and inserter, started
+with `struct <BOX>cursor <BOX>begin(const <PX>box *)` or
+`struct <BOX>cursor <BOX>end(const <PX>box *)`; this will start
+the cursor just before the beginning or just after the ending.
+
 possible interfaces include, (not all used,)
 
 <table><tr>
