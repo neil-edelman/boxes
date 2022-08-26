@@ -240,6 +240,7 @@ static void PB_(sort)(PB_(entry_test) *a, const size_t size) {
 	}
 }
 
+/** fixme: this is stupid; find a way past it. */
 static int PB_(contents)(const PB_(entry) *const e) {
 #ifdef TREE_VALUE
 	return !!e->key;
@@ -325,13 +326,26 @@ static void PB_(test)(void) {
 	/* Iteration; checksum. */
 	memset(&last, 0, sizeof last);
 	it = B_(tree_begin)(&tree), i = 0;
-	/* fixme: iteration is screwed up. */
 	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
 		char z[12];
 		PB_(to_string)(PB_(to_const)(entry), &z);
 		printf("<%s>\n", z);
 		if(i) {
 			const int cmp = PB_(compare)(PB_(entry_to_key)(entry), last);
+			assert(cmp > 0);
+		}
+		last = PB_(entry_to_key)(entry);
+		if(++i > n_size) assert(0); /* Avoids loops. */
+	}
+	assert(i == n_unique);
+	printf("\n");
+	it = B_(tree_end)(&tree), i = 0;
+	while(entry = B_(tree_previous)(&it), PB_(contents)(&entry)) {
+		char z[12];
+		PB_(to_string)(PB_(to_const)(entry), &z);
+		printf("<%s>\n", z);
+		if(i) {
+			const int cmp = PB_(compare)(last, PB_(entry_to_key)(entry));
 			assert(cmp > 0);
 		}
 		last = PB_(entry_to_key)(entry);

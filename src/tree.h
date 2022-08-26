@@ -270,7 +270,7 @@ static int PB_(to_predecessor)(struct PB_(tree) tree,
 		if(a0)
 			prev.node = tree.node, prev.height = tree.height, prev.idx = a0 - 1;
 	}
-	if(!prev.node) return 0; /* Off the left. */
+	if(!prev.node) return 0; /* Off left. */
 	*ref = prev;
 }	return 1; /* Jumped nodes. */
 }
@@ -303,7 +303,7 @@ static int PB_(to_successor_c)(struct PB_(tree) tree, \
 		if(a0 < tree.node->size) \
 			next.node = tree.node, next.height = tree.height, next.idx = a0; \
 	} \
-	if(!next.node) {printf("off right\n");return 0;} /* Off the right. */ \
+	if(!next.node) return 0; /* Off right. */ \
 	*ref = next; \
 }	return 1; /* Jumped nodes. */ \
 }
@@ -377,32 +377,28 @@ static struct PB_(cursor) PB_(begin)(struct B_(tree) *const tree) {
 }
 /** @return Iterator after the end of `tree`, (can be null.)
  @implements `end` */
-// fixme: TEST!
 static struct PB_(cursor) PB_(end)(struct B_(tree) *const tree) {
 	struct PB_(cursor) it;
 	if(PB_(cursor_fill_part)(&it, tree)) {
 		for(it.i.node = tree->root.node; it.i.height;
 			it.i.node = PB_(as_branch)(it.i.node)->child[it.i.node->size],
 			it.i.height--);
-		it.i.idx = it.i.node->size ? it.i.node->size - 1 : 0;
+		it.i.idx = it.i.node->size;
 	}
 	return it;
 }
 
-#include "orcish.h"
 /** Advances `it`. @return Element or null. @implements `next` */
 static PB_(entry) PB_(next)(struct PB_(cursor) *const it) {
 	assert(it);
-	printf("****<PB>next %s(%u):[%u]\n",
-		orcify(it->i.node), it->i.height, it->i.idx);
 	if(!it->root
-		|| (it->seen || !it->i.node) && (printf(" succ %s:%u\n", orcify(it->i.node), it->i.idx), !PB_(to_successor)(*it->root, &it->i)))
-		return printf(" null\n"), it->i.node = 0, it->seen = 0, PB_(null_entry)();
+		|| (it->seen || !it->i.node) && !PB_(to_successor)(*it->root, &it->i))
+		return it->i.node = 0, it->seen = 0, PB_(null_entry)();
 	assert(it->i.node);
-	if(it->i.idx >= it->i.node->size) return printf(" over...rrrrr\n"), it->seen = 0, PB_(null_entry)();
-	return printf(" to_entry %s[%u]\n", orcify(it->i.node), it->i.idx),
-		it->seen = 1, PB_(leaf_to_entry)(it->i.node, it->i.idx);
+	if(it->i.idx >= it->i.node->size) return it->seen = 0, PB_(null_entry)();
+	return it->seen = 1, PB_(leaf_to_entry)(it->i.node, it->i.idx);
 }
+#include "orcish.h"
 /** Move to previous `it`. @return Element or null. @implements `previous` */
 static PB_(entry) PB_(previous)(struct PB_(cursor) *const it) {
 	assert(it);
@@ -594,7 +590,7 @@ static size_t B_(tree_count)(const struct B_(tree) *const tree) {
 }
 
 /** For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`,
- `x = 11 -> null`.
+ `x = 11 -> null`. (There is no upper value.)
  @return Lower-bound value match for `x` in `tree` or null if `x` is greater
  than all in `tree`. @order \O(\log |`tree`|) @allow */
 static PB_(value) *B_(tree_lower_value)(struct B_(tree) *const tree,
@@ -605,15 +601,16 @@ static PB_(value) *B_(tree_lower_value)(struct B_(tree) *const tree,
 	return ref.node && ref.idx < ref.node->size ? PB_(ref_to_value)(ref) : 0;
 }
 
-#ifndef TREE_VALUE /* <!-- set */
-/** Contains. */
+/** @return Is `x` in `tree`? @order \O(\log `items`) */
 static int B_(tree_contains)(const struct B_(tree) *const tree,
 	const PB_(key) x) {
 	return tree && tree->root.node && tree->root.height != UINT_MAX
 		&& PB_(find)(&tree->root, x).node ? 1 : 0;
 }
-#else /* set --><!-- map */
-/** Get. */
+
+#ifdef TREE_VALUE /* <!-- map */
+/** Only if `TREE_VALUE`. @return Get the value of `x` in `tree`, or if no `x`,
+ null. @order \O(\log `items`) */
 static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct PB_(ref) ref;
@@ -1639,8 +1636,7 @@ struct B_(tree_cursor);
 struct B_(tree_cursor) { struct PB_(cursor) _; };
 
 
-/** @return An cursor before the first element of `tree`. Can be null.
- @allow */
+/** @return Cursor before the first element of `tree`. Can be null. @allow */
 static struct B_(tree_cursor) B_(tree_begin)(struct B_(tree) *const tree)
 	{ struct B_(tree_cursor) it; it._ = PB_(begin)(tree); return it; }
 /** @param[tree] Can be null. @return An cursor in `tree` at the smallest
@@ -1655,6 +1651,9 @@ static struct B_(tree_cursor) B_(tree_begin_at)(struct B_(tree) *const tree,
 	it._.seen = 0;
 	return it;
 }
+/** @return Cursor after the last element of `tree`. Can be null. @allow */
+static struct B_(tree_cursor) B_(tree_end)(struct B_(tree) *const tree)
+	{ struct B_(tree_cursor) it; it._ = PB_(end)(tree); return it; }
 /** Advances `it` to the next element. @return A pointer to the current
  element or null. @allow */
 static PB_(entry) B_(tree_next)(struct B_(tree_cursor) *const it)
@@ -1684,8 +1683,8 @@ static void PB_(unused_base)(void) {
 	B_(tree_contains)(0, k); B_(tree_bulk_add)(0, k); B_(tree_add)(0, k);
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
-	B_(tree_begin)(0); B_(tree_begin_at)(0, k); B_(tree_previous)(0);
-	B_(tree_next)(0); /*B_(tree_cursor_remove)(0);*/
+	B_(tree_begin)(0); B_(tree_begin_at)(0, k); B_(tree_end)(0);
+	B_(tree_previous)(0); B_(tree_next)(0); /*B_(tree_cursor_remove)(0);*/
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
