@@ -398,7 +398,6 @@ static PB_(entry) PB_(next)(struct PB_(cursor) *const it) {
 	if(it->i.idx >= it->i.node->size) return it->seen = 0, PB_(null_entry)();
 	return it->seen = 1, PB_(leaf_to_entry)(it->i.node, it->i.idx);
 }
-#include "orcish.h"
 /** Move to previous `it`. @return Element or null. @implements `previous` */
 static PB_(entry) PB_(previous)(struct PB_(cursor) *const it) {
 	assert(it);
@@ -406,7 +405,6 @@ static PB_(entry) PB_(previous)(struct PB_(cursor) *const it) {
 		return it->i.node = 0, it->seen = 0, PB_(null_entry)();
 	return it->seen = 1, PB_(leaf_to_entry)(it->i.node, it->i.idx);
 }
-/* fixme: `cursor_remove`! */
 
 /* Want to find slightly different things; code re-use is bad. Confusing.
  This is the lower-bound. */
@@ -588,6 +586,13 @@ static size_t B_(tree_count)(const struct B_(tree) *const tree) {
 	return tree && tree->root.height != UINT_MAX
 		? PB_(count_r)(tree->root) : 0;
 }
+
+/* fixme: all read functions can be amalgamated into
+ `int <B>tree_get(*tree, x[, *value])` and
+ `int <B>tree_at(*tree, x[, *value])` and
+ maybe . . .
+ `int <B>tree_key(*tree, x, key)`.
+ `int <B>tree_replace(*tree, )` would these be very useful? */
 
 /** For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`,
  `x = 11 -> null`. (There is no upper value.)
@@ -1050,36 +1055,27 @@ grow: /* Leaf is full. */ {
 	merge_more_height, ascend, ascend_height, ascend_no_height, space,
 	space_free, space_empty; } B_(cover);*/
 
-/** Tries to remove `key` from `tree`. @return Success. */
-static int B_(tree_remove)(struct B_(tree) *const tree,
-	const PB_(key) key) {
+/** Removes `x` from `tree` which must have contents. */
+static int PB_(remove)(struct B_(tree) *const tree, const PB_(key) x) {
 	struct PB_(ref) rm, parent /* Only if `key.size <= TREE_MIN`. */;
 	struct PB_(branch) *parentb;
 	struct { struct PB_(node) *less, *more; } sibling;
 	/* You know, the essential key of the leaf when a branch. What is it
 	 called? Feel free to refactor and say what my aphasic brain means. */
-	PB_(key) quasi_key = key;
+	PB_(key) quasi_x = x;
 	parent.node = 0;
-	assert(tree);
-	/*printf("<remove> MIN %u, MAX %u, ORDER %u\n",
-		TREE_MIN, TREE_MAX, TREE_ORDER);*/
+	assert(tree && tree->root.node && tree->root.height != UINT_MAX);
 	/* Traverse down the tree until `key`, leaving breadcrumbs for parents of
 	 minimum key nodes. */
-	if(!tree->root.node || tree->root.height == UINT_MAX
-		|| !(rm = PB_(lookup_remove)(&tree->root, key, &parent.node)).node)
-		return 0;
+	if(!(rm = PB_(lookup_remove)(&tree->root, x, &parent.node)).node) return 0;
 	/* Important when `rm = parent`; `find_idx` later. */
 	parent.height = rm.height + 1;
 	assert(rm.idx < rm.node->size);
-	/*printf(" %s(%u):%u <%u>; parent %s(%u)\n",
-		orcify(rm.node), rm.height, rm.idx, rm.node->key[rm.idx],
-		orcify(parent.node), parent.height);*/
 	if(rm.height) goto branch; else goto upward;
 branch: {
 	struct { struct PB_(ref) leaf; struct PB_(node) *parent; unsigned top; }
 		pred, succ, chosen;
 	assert(rm.height);
-	//printf("<branch> %s\n"/*replace by successor or predecessor.\n"*/, orcify(rm.node));
 	/* Predecessor leaf. */
 	pred.leaf = rm, pred.top = UINT_MAX;
 	do {
@@ -1095,8 +1091,6 @@ branch: {
 		else pred.parent = up;
 	} while(pred.leaf.height);
 	pred.leaf.idx--;
-	/*printf(" pred %s(%u):%u\n",
-		orcify(pred.leaf.node), pred.leaf.height, pred.leaf.idx);*/
 no_pred:
 	/* Successor leaf. */
 	succ.leaf = rm, succ.top = UINT_MAX;
@@ -1113,70 +1107,48 @@ no_pred:
 			PB_(as_branch)(succ.leaf.node)->child[TREE_MAX] = up;
 		else succ.parent = up;
 	} while(succ.leaf.height);
-	/*printf(" succ %s(%u):%u\n",
-		orcify(succ.leaf.node), succ.leaf.height, succ.leaf.idx);*/
 no_succ:
-	/*printf(" iterations pred %u, succ %u\n", pred.top, succ.top);*/
 	/* Choose the predecessor or successor. */
 	if(!pred.leaf.node) {
 		assert(succ.leaf.node);
-		//printf(" succ, pred null\n");
-		//B_(cover).branch_succ = 1;
 		chosen = succ;
 	} else if(!succ.leaf.node) {
 		assert(pred.leaf.node);
-		//printf(" pred, succ null\n");
-		//B_(cover).branch_pred = 1;
 		chosen = pred;
 	} else if(pred.leaf.node->size < succ.leaf.node->size) {
-		//printf(" succ, has more keys\n");
-		//B_(cover).branch_succ = 1;
 		chosen = succ;
 	} else if(pred.leaf.node->size > succ.leaf.node->size) {
-		//printf(" pred, has more keys\n");
-		//B_(cover).branch_pred = 1;
 		chosen = pred;
 	} else if(pred.top > succ.top) {
-		//printf(" succ, less iterations\n");
-		//B_(cover).branch_succ = 1;
 		chosen = succ;
 	} else {
-		//printf(" pred, less or equal iterations\n");
-		//B_(cover).branch_pred = 1;
 		chosen = pred;
 	}
 	/* Replace `rm` with the predecessor or the successor leaf. */
-	quasi_key = rm.node->key[rm.idx] = chosen.leaf.node->key[chosen.leaf.idx];
+	quasi_x = rm.node->key[rm.idx] = chosen.leaf.node->key[chosen.leaf.idx];
 #ifdef TREE_VALUE
 	rm.node->value[rm.idx] = chosen.leaf.node->value[chosen.leaf.idx];
 #endif
 	rm = chosen.leaf;
 	if(chosen.leaf.node->size <= TREE_MIN) parent.node = chosen.parent;
 	parent.height = 1;
-	/*printf(" quasi-key %u replaces %u\n", quasi_key, key);*/
 	goto upward;
 } upward: /* The first iteration, this will be a leaf. */
 	assert(rm.node);
-	//printf("<upward> %s\n"/*; parent %s\n"*/, orcify(rm.node)/*, orcify(parent.node)*/);
 	if(!parent.node) goto space;
-	//B_(cover).upward = 1;
-	assert(rm.node->size <= TREE_MIN); /* Or else it would not have a parent. */
-	/* Retrieve forgot information about the index in parent. (This is not as
-	 fast at it could be, but holding parent data in minimum keys allows it to
-	 be in place.) */
-	PB_(find_idx)(&parent, quasi_key);
+	assert(rm.node->size <= TREE_MIN); /* Condition on `parent.node`. */
+	/* Retrieve forgotten information about the index in parent. (This is not
+	 as fast at it could be, but holding parent data in minimum keys allows it
+	 to be in place, if a hack. We could go down, but new problems arise.) */
+	PB_(find_idx)(&parent, quasi_x);
 	parentb = PB_(as_branch)(parent.node);
-	assert(parent.idx <= parent.node->size);
-	assert(parentb->child[parent.idx] == rm.node);
+	assert(parent.idx <= parent.node->size
+		&& parentb->child[parent.idx] == rm.node);
 	/* Sibling edges. */
 	sibling.less = parent.idx ? parentb->child[parent.idx - 1] : 0;
 	sibling.more = parent.idx < parent.node->size
 		? parentb->child[parent.idx + 1] : 0;
 	assert(sibling.less || sibling.more);
-	/*printf(" parent %s:%u, siblings %s (size %u) and %s (size %u).\n",
-		orcify(parent.node), parent.idx,
-		orcify(sibling.less), sibling.less ? sibling.less->size : 0,
-		orcify(sibling.more), sibling.more ? sibling.more->size : 0);*/
 	/* It's not clear which of `{ <, <= }` would be better. */
 	if((sibling.more ? sibling.more->size : 0)
 		> (sibling.less ? sibling.less->size : 0)) goto balance_more;
@@ -1184,34 +1156,20 @@ no_succ:
 balance_less: {
 	const unsigned combined = rm.node->size + sibling.less->size;
 	unsigned promote, more, transfer;
-	//printf("<balance_less> %s"/*; less %s; combined %u\n"*/, orcify(rm.node)/*, orcify(sibling.less), combined*/);
 	assert(parent.idx);
 	if(combined < 2 * TREE_MIN + 1) goto merge_less; /* Don't have enough. */
 	assert(sibling.less->size > TREE_MIN); /* Since `rm.size <= TREE_MIN`. */
 	promote = (combined - 1 + 1) / 2, more = promote + 1;
 	transfer = sibling.less->size - more;
 	assert(transfer < TREE_MAX && rm.node->size <= TREE_MAX - transfer);
-	/*printf(" promote %u, more %u, transfer %u\n", promote, more, transfer);*/
 	/* Make way for the keys from the less. */
-	/*printf(" rm %s from %u keys %u -> %u\n", orcify(rm.node), rm.idx + 1,
-		rm.node->size - rm.idx - 1, rm.idx + 1 + transfer);*/
 	memmove(rm.node->key + rm.idx + 1 + transfer, rm.node->key + rm.idx + 1,
 		sizeof *rm.node->key * (rm.node->size - rm.idx - 1));
-	/*printf(" rm %s from 0 keys %u -> %u\n", orcify(rm.node), rm.idx,
-		transfer + 1);*/
 	memmove(rm.node->key + transfer + 1, rm.node->key,
 		sizeof *rm.node->key * rm.idx);
-	/*printf(" parent %s from %u one key <%u> -> %s:%u\n",
-		orcify(parent.node), parent.idx - 1,
-		parent.node->key[parent.idx - 1], orcify(rm.node), transfer);*/
 	rm.node->key[transfer] = parent.node->key[parent.idx - 1];
-	/*printf(" less %s from %u keys %u -> %s:%u\n",
-		orcify(sibling.less), more, transfer, orcify(rm.node), 0);*/
 	memcpy(rm.node->key, sibling.less->key + more,
 		sizeof *sibling.less->key * transfer);
-	/*printf(" less %s from %u one key <%u> -> %s:%u\n",
-		orcify(sibling.less), promote, sibling.less->key[promote],
-		orcify(parent.node), parent.idx - 1);*/
 	parent.node->key[parent.idx - 1] = sibling.less->key[promote];
 #ifdef TREE_VALUE
 	memmove(rm.node->value + rm.idx + 1 + transfer, rm.node->value + rm.idx + 1,
@@ -1227,17 +1185,11 @@ balance_less: {
 		struct PB_(branch) *const lessb = PB_(as_branch)(sibling.less),
 			*const rmb = PB_(as_branch)(rm.node);
 		unsigned transferb = transfer + 1;
-		/*printf(" transferring %u branches from less %s(%u) -> rm %s(%u).\n",
-			transferb, orcify(lessb), sibling.less->size, orcify(rmb),
-			rm.node->size);*/
 		/* This is already moved; inefficient. */
 		memmove(rmb->child + transferb, rmb->child,
 			sizeof *rmb->child * (rm.node->size + 1 - 1));
 		memcpy(rmb->child, lessb->child + promote + 1,
 			sizeof *lessb->child * transferb);
-		/*B_(cover).balance_less_height = 1;
-	} else {
-		B_(cover).balance_less = 1;*/
 	}
 	rm.node->size += transfer;
 	sibling.less->size = promote;
@@ -1245,20 +1197,15 @@ balance_less: {
 } balance_more: {
 	const unsigned combined = rm.node->size + sibling.more->size;
 	unsigned promote;
-	//printf("<balance_more> %s\n"/*; more %s; combined %u\n"*/, orcify(rm.node)/*, orcify(sibling.more), combined*/);
 	assert(rm.node->size);
 	if(combined < 2 * TREE_MIN + 1) goto merge_more; /* Don't have enough. */
 	assert(sibling.more->size > TREE_MIN); /* Since `rm.size <= TREE_MIN`. */
 	promote = (combined - 1) / 2 - rm.node->size; /* In `more`. Could be +1. */
 	assert(promote < TREE_MAX && rm.node->size <= TREE_MAX - promote);
-	/*printf(" promote %u from more\n", promote);*/
 	/* Delete key. */
 	memmove(rm.node->key + rm.idx, rm.node->key + rm.idx + 1,
 		sizeof *rm.node->key * (rm.node->size - rm.idx - 1));
 	/* Demote into hole. */
-	/*printf(" parent %s from %u one key <%u> -> rm %s %u\n", orcify(parent.node),
-		parent.idx, parent.node->key[parent.idx],
-		orcify(rm.node), rm.node->size);*/
 	rm.node->key[rm.node->size - 1] = parent.node->key[parent.idx];
 	/* Transfer some keys from more to child. */
 	memcpy(rm.node->key + rm.node->size, sibling.more->key,
@@ -1282,25 +1229,16 @@ balance_less: {
 		struct PB_(branch) *const moreb = PB_(as_branch)(sibling.more),
 			*const rmb = PB_(as_branch)(rm.node);
 		unsigned transferb = promote + 1;
-		/*printf(" transferring %u branches from more %s(%u) -> rm %s(%u).\n",
-			transferb, orcify(moreb), sibling.more->size, orcify(rmb),
-			rm.node->size);*/
 		/* This is already moved; inefficient. */
 		memcpy(rmb->child + rm.node->size, moreb->child,
 			sizeof *moreb->child * transferb);
-		/*printf(" more %s transfering size %u, %u back\n", orcify(sibling.more),
-			moreb->base.size + 1 - transferb, transferb);*/
 		memmove(moreb->child, moreb->child + transferb,
 			sizeof *rmb->child * (moreb->base.size + 1 - transferb));
-		/*B_(cover).balance_more_height = 1;
-	} else {
-		B_(cover).balance_more = 1;*/
 	}
 	rm.node->size += promote;
 	sibling.more->size -= promote + 1;
 	goto end;
 } merge_less:
-	//printf("<merge_less> (%s, %s) through %s with %u\n"/* keys <%d>\n"*/, orcify(sibling.less), orcify(rm.node), orcify(parent.node), parent.node->size/*, parent.node->key[parent.idx - 1]*/);
 	assert(parent.idx && parent.idx <= parent.node->size && parent.node->size
 		&& rm.idx < rm.node->size && rm.node->size == TREE_MIN
 		&& sibling.less->size == TREE_MIN
@@ -1309,14 +1247,12 @@ balance_less: {
 	parent.idx--;
 	/* Bring down key from `parent` to append to `less`. */
 	sibling.less->key[sibling.less->size] = parent.node->key[parent.idx];
-	/*printf(" ori %u\n", sibling.less->key[sibling.less->size]);*/
 	/* Copy the keys, leaving out deleted. */
 	memcpy(sibling.less->key + sibling.less->size + 1, rm.node->key,
 		sizeof *rm.node->key * rm.idx);
 	memcpy(sibling.less->key + sibling.less->size + 1 + rm.idx,
 		rm.node->key + rm.idx + 1,
 		sizeof *rm.node->key * (rm.node->size - rm.idx - 1));
-	/*printf(" now %u\n", sibling.less->key[sibling.less->size]);*/
 #ifdef TREE_VALUE
 	sibling.less->value[sibling.less->size] = parent.node->value[parent.idx];
 	memcpy(sibling.less->value + sibling.less->size + 1, rm.node->value,
@@ -1330,22 +1266,16 @@ balance_less: {
 			*const rmb = PB_(as_branch)(rm.node);
 		memcpy(lessb->child + sibling.less->size + 1, rmb->child,
 			sizeof *rmb->child * rm.node->size); /* _Sic_. */
-		/*B_(cover).merge_less_height = 1;
-	} else {
-		B_(cover).merge_less = 1;*/
 	}
 	sibling.less->size += rm.node->size;
 	/* Remove references to `rm` from `parent`. The parent will have one less
-	 link than key (_ie_, an equal number.) This is good. */
-	/*printf(" %u<-%u(%u)\n", parent.idx + 1, parent.idx + 2, parent.node->size - parent.idx - 1);*/
+	 link than key (_ie_, an equal number.) This is by design. */
 	memmove(parentb->child + parent.idx + 1, parentb->child + parent.idx + 2,
 		sizeof *parentb->child * (parent.node->size - parent.idx - 1));
 	/* This is the same pointer, but future-proof. */
-	/*printf(" ***FREE %s\n", orcify(rm.node));*/
 	if(rm.height) free(PB_(as_branch)(rm.node)); else free(rm.node);
 	goto ascend;
 merge_more:
-	//printf("<merge_more> (%s, %s) through %s with %u\n"/* keys <%d>\n"*/, orcify(rm.node), orcify(sibling.more), orcify(parent.node), parent.node->size/*, parent.node->key[parent.idx]*/);
 	assert(parent.idx < parent.node->size && parent.node->size
 		&& rm.idx < rm.node->size && rm.node->size == TREE_MIN
 		&& sibling.more->size == TREE_MIN
@@ -1370,39 +1300,29 @@ merge_more:
 			*const moreb = PB_(as_branch)(sibling.more);
 		memcpy(rmb->child + rm.node->size, moreb->child,
 			sizeof *moreb->child * (sibling.more->size + 1));
-		/*B_(cover).merge_more_height = 1;
-	} else {
-		B_(cover).merge_more = 1;*/
 	}
 	rm.node->size += sibling.more->size;
 	/* Remove references to `more` from `parent`. The parent will have one less
-	 link than key (_ie_, an equal number.) This is good. */
-	/*printf(" %u<-%u(%u)\n", parent.idx + 1, parent.idx + 2, parent.node->size - parent.idx - 1);*/
+	 link than key (_ie_, an equal number.) This is by design. */
 	memmove(parentb->child + parent.idx + 1, parentb->child + parent.idx + 2,
 		sizeof *parentb->child * (parent.node->size - parent.idx - 1));
 	/* This is the same pointer, but future-proof. */
-	/*printf(" ***FREE %s\n", orcify(sibling.more));*/
 	if(rm.height) free(PB_(as_branch)(sibling.more)); else free(sibling.more);
 	goto ascend;
 ascend:
-	/*printf("<ascend>\n");*/
 	/* Fix the hole by moving it up the tree. */
 	rm = parent;
 	if(rm.node->size <= TREE_MIN) {
 		if(!(parent.node = PB_(as_branch)(rm.node)->child[TREE_MAX])) {
 			assert(tree->root.height == rm.height);
-			//B_(cover).ascend_no_height = 1;
 		} else {
 			parent.height++;
-			//B_(cover).ascend_height = 1;
 		}
 	} else {
 		parent.node = 0;
-		//B_(cover).ascend = 1;
 	}
 	goto upward;
 space: /* Node is root or has more than `TREE_MIN`; branches taken care of. */
-	//printf("<space> %s\n", orcify(rm.node));
 	assert(rm.node);
 	assert(rm.idx < rm.node->size);
 	assert(rm.node->size > TREE_MIN || rm.node == tree->root.node);
@@ -1417,22 +1337,20 @@ space: /* Node is root or has more than `TREE_MIN`; branches taken care of. */
 		if(tree->root.height) {
 			tree->root.node = PB_(as_branch)(rm.node)->child[0];
 			tree->root.height--;
-			/*printf(" ***freeing branch %s\n", orcify(rm.node));*/
 			free(PB_(as_branch)(rm.node));
-			//B_(cover).space_free = 1;
 		} else { /* Just deleted the last one. Set flag for zero container. */
-			/*printf(" empty %s\n", orcify(rm.node));*/
 			tree->root.height = UINT_MAX;
-			//B_(cover).space_empty = 1;
 		}
-	}/* else {
-		B_(cover).space = 1;
-	}*/
+	}
 	goto end;
 end:
-	/*printf("<end>\n");*/
 	return 1;
 }
+
+/** Tries to remove `key` from `tree`. @return Success. */
+static int B_(tree_remove)(struct B_(tree) *const tree,
+	const PB_(key) key) { return !!tree && !!tree->root.node
+	&& tree->root.height != UINT_MAX && PB_(remove)(tree, key); }
 
 /* All these are used in clone; it's convenient to use `\O(\log size)` stack
  space. [existing branches][new branches][existing leaves][new leaves] no */
@@ -1638,30 +1556,43 @@ struct B_(tree_cursor) { struct PB_(cursor) _; };
 
 /** @return Cursor before the first element of `tree`. Can be null. @allow */
 static struct B_(tree_cursor) B_(tree_begin)(struct B_(tree) *const tree)
-	{ struct B_(tree_cursor) it; it._ = PB_(begin)(tree); return it; }
-/** @param[tree] Can be null. @return An cursor in `tree` at the smallest
- key that is not smaller than `x`, (as _per_ <typedef:<PB>compare_fn>.)
- @order \O(\log |`tree`|) @allow */
+	{ struct B_(tree_cursor) cur; cur._ = PB_(begin)(tree); return cur; }
+/** @param[tree] Can be null. @return Cursor in `tree` between elements, such
+ that if <fn:<B>tree_next> is called, it will be smallest key that is not
+ smaller than `x`, (which could be <fn:<B>tree_end>; as _per_
+ <typedef:<PB>compare_fn>.) @order \O(\log |`tree`|) @allow */
 static struct B_(tree_cursor) B_(tree_begin_at)(struct B_(tree) *const tree,
 	const PB_(key) x) {
-	struct B_(tree_cursor) it;
-	if(!tree) return it._.root = 0, it;
-	it._.i = PB_(lower)(tree->root, x);
-	it._.root = &tree->root;
-	it._.seen = 0;
-	return it;
+	struct B_(tree_cursor) cur;
+	if(!tree) return cur._.root = 0, cur;
+	cur._.i = PB_(lower)(tree->root, x);
+	cur._.root = &tree->root;
+	cur._.seen = 0;
+	return cur;
 }
 /** @return Cursor after the last element of `tree`. Can be null. @allow */
 static struct B_(tree_cursor) B_(tree_end)(struct B_(tree) *const tree)
-	{ struct B_(tree_cursor) it; it._ = PB_(end)(tree); return it; }
-/** Advances `it` to the next element. @return A pointer to the current
- element or null. @allow */
-static PB_(entry) B_(tree_next)(struct B_(tree_cursor) *const it)
-	{ return PB_(next)(&it->_); }
-/** Reverses `it` to the previous element. @return A pointer to the current
- element or null. @allow */
-static PB_(entry) B_(tree_previous)(struct B_(tree_cursor) *const it)
-	{ return PB_(previous)(&it->_); }
+	{ struct B_(tree_cursor) cur; cur._ = PB_(end)(tree); return cur; }
+/** Advances `cur` to the next element. @return A pointer to the current
+ element, or null if it ran out of elements. @allow */
+static PB_(entry) B_(tree_next)(struct B_(tree_cursor) *const cur)
+	{ return PB_(next)(&cur->_); }
+/** Reverses `cur` to the previous element. @return A pointer to the previous
+ element, or null if it ran out of elements. @allow */
+static PB_(entry) B_(tree_previous)(struct B_(tree_cursor) *const cur)
+	{ return PB_(previous)(&cur->_); }
+/** Removes the last entry returned by a valid `cur`. All other cursors on the
+ same object are invalidated, but `cur` is now between on the removed node.
+ @return Success, otherwise `cur` is not at a valid element. */
+static int B_(tree_remove_cursor)(struct B_(tree_cursor) *const cur) {
+	PB_(key) remove;
+	if(!cur || !cur->_.seen || !cur->_.root || !cur->_.i.node
+		|| cur->_.root->height == UINT_MAX
+		|| cur->_.i.idx >= cur->_.i.node->size) return 0;
+	remove = cur->_.i.node->key[cur->_.i.idx];
+	PB_(remove)(cur->_.root, remove);
+	return 0;
+}
 
 #ifdef TREE_TEST /* <!-- test */
 /* Forward-declare. */
@@ -1684,7 +1615,7 @@ static void PB_(unused_base)(void) {
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
 	B_(tree_begin)(0); B_(tree_begin_at)(0, k); B_(tree_end)(0);
-	B_(tree_previous)(0); B_(tree_next)(0); /*B_(tree_cursor_remove)(0);*/
+	B_(tree_previous)(0); B_(tree_next)(0); B_(tree_remove_cursor)(0);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
