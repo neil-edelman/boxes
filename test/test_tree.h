@@ -352,6 +352,17 @@ static void PB_(test)(void) {
 		if(++i > n_size) assert(0); /* Avoids loops. */
 	}
 	assert(i == n_unique);
+	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
+		char z[12];
+		int succ;
+		PB_(to_string)(PB_(to_const)(entry), &z);
+		printf("removing <%s>\n", z);
+		succ = B_(tree_cursor_remove)(&it);
+		assert(succ);
+		succ = B_(tree_cursor_remove)(&it);
+		assert(!succ);
+	}
+	assert(tree.root.height == UINT_MAX);
 
 	/* Clear. */
 	B_(tree_clear)(0);

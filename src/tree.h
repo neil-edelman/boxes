@@ -1049,25 +1049,17 @@ grow: /* Leaf is full. */ {
 }
 #endif
 
-/*static struct B_(cover) { int lookup_fail, branch_pred, branch_succ,
-	upward, balance_less, balance_less_height, balance_more,
-	balance_more_height, merge_less, merge_less_height, merge_more,
-	merge_more_height, ascend, ascend_height, ascend_no_height, space,
-	space_free, space_empty; } B_(cover);*/
-
 /** Removes `x` from `tree` which must have contents. */
-static int PB_(remove)(struct B_(tree) *const tree, const PB_(key) x) {
+static int PB_(remove)(struct PB_(tree) *const tree, const PB_(key) x) {
 	struct PB_(ref) rm, parent /* Only if `key.size <= TREE_MIN`. */;
 	struct PB_(branch) *parentb;
 	struct { struct PB_(node) *less, *more; } sibling;
-	/* You know, the essential key of the leaf when a branch. What is it
-	 called? Feel free to refactor and say what my aphasic brain means. */
 	PB_(key) quasi_x = x;
 	parent.node = 0;
-	assert(tree && tree->root.node && tree->root.height != UINT_MAX);
+	assert(tree && tree->node && tree->height != UINT_MAX);
 	/* Traverse down the tree until `key`, leaving breadcrumbs for parents of
 	 minimum key nodes. */
-	if(!(rm = PB_(lookup_remove)(&tree->root, x, &parent.node)).node) return 0;
+	if(!(rm = PB_(lookup_remove)(tree, x, &parent.node)).node) return 0;
 	/* Important when `rm = parent`; `find_idx` later. */
 	parent.height = rm.height + 1;
 	assert(rm.idx < rm.node->size);
@@ -1314,7 +1306,7 @@ ascend:
 	rm = parent;
 	if(rm.node->size <= TREE_MIN) {
 		if(!(parent.node = PB_(as_branch)(rm.node)->child[TREE_MAX])) {
-			assert(tree->root.height == rm.height);
+			assert(tree->height == rm.height);
 		} else {
 			parent.height++;
 		}
@@ -1325,7 +1317,7 @@ ascend:
 space: /* Node is root or has more than `TREE_MIN`; branches taken care of. */
 	assert(rm.node);
 	assert(rm.idx < rm.node->size);
-	assert(rm.node->size > TREE_MIN || rm.node == tree->root.node);
+	assert(rm.node->size > TREE_MIN || rm.node == tree->node);
 	memmove(rm.node->key + rm.idx, rm.node->key + rm.idx + 1,
 		sizeof *rm.node->key * (rm.node->size - rm.idx - 1));
 #ifdef TREE_VALUE
@@ -1333,13 +1325,13 @@ space: /* Node is root or has more than `TREE_MIN`; branches taken care of. */
 		sizeof *rm.node->value * (rm.node->size - rm.idx - 1));
 #endif
 	if(!--rm.node->size) {
-		assert(rm.node == tree->root.node);
-		if(tree->root.height) {
-			tree->root.node = PB_(as_branch)(rm.node)->child[0];
-			tree->root.height--;
+		assert(rm.node == tree->node);
+		if(tree->height) {
+			tree->node = PB_(as_branch)(rm.node)->child[0];
+			tree->height--;
 			free(PB_(as_branch)(rm.node));
 		} else { /* Just deleted the last one. Set flag for zero container. */
-			tree->root.height = UINT_MAX;
+			tree->height = UINT_MAX;
 		}
 	}
 	goto end;
@@ -1350,7 +1342,7 @@ end:
 /** Tries to remove `key` from `tree`. @return Success. */
 static int B_(tree_remove)(struct B_(tree) *const tree,
 	const PB_(key) key) { return !!tree && !!tree->root.node
-	&& tree->root.height != UINT_MAX && PB_(remove)(tree, key); }
+	&& tree->root.height != UINT_MAX && PB_(remove)(&tree->root, key); }
 
 /* All these are used in clone; it's convenient to use `\O(\log size)` stack
  space. [existing branches][new branches][existing leaves][new leaves] no */
@@ -1584,14 +1576,17 @@ static PB_(entry) B_(tree_previous)(struct B_(tree_cursor) *const cur)
 /** Removes the last entry returned by a valid `cur`. All other cursors on the
  same object are invalidated, but `cur` is now between on the removed node.
  @return Success, otherwise `cur` is not at a valid element. */
-static int B_(tree_remove_cursor)(struct B_(tree_cursor) *const cur) {
+static int B_(tree_cursor_remove)(struct B_(tree_cursor) *const cur) {
 	PB_(key) remove;
 	if(!cur || !cur->_.seen || !cur->_.root || !cur->_.i.node
 		|| cur->_.root->height == UINT_MAX
-		|| cur->_.i.idx >= cur->_.i.node->size) return 0;
-	remove = cur->_.i.node->key[cur->_.i.idx];
-	PB_(remove)(cur->_.root, remove);
-	return 0;
+		|| cur->_.i.idx >= cur->_.i.node->size
+		|| (remove = cur->_.i.node->key[cur->_.i.idx],
+		!PB_(remove)(cur->_.root, remove))) return 0;
+	/* <fn:<B>tree_begin_at>. */
+	cur->_.i = PB_(lower)(*cur->_.root, remove);
+	cur->_.seen = 0;
+	return 1;
 }
 
 #ifdef TREE_TEST /* <!-- test */
@@ -1615,7 +1610,7 @@ static void PB_(unused_base)(void) {
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
 	B_(tree_begin)(0); B_(tree_begin_at)(0, k); B_(tree_end)(0);
-	B_(tree_previous)(0); B_(tree_next)(0); B_(tree_remove_cursor)(0);
+	B_(tree_previous)(0); B_(tree_next)(0); B_(tree_cursor_remove)(0);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
