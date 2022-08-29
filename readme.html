@@ -35,12 +35,12 @@
 
 <p>Stand-alone header <a href = "src/tree.h">src/tree.h</a>; examples <a href = "test/test_tree.c">test/test_tree.c</a>. On a compatible workstation, <code>make</code> creates the test suite of the examples.</p>
 
-<h2>Ordered key-tree</h2>
+<h2>Ordered tree</h2>
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
 	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PB>key">&lt;PB&gt;key</a>, <a href = "#typedef:<PB>value">&lt;PB&gt;value</a>, <a href = "#typedef:<PB>compare_fn">&lt;PB&gt;compare_fn</a>, <a href = "#typedef:<PB>entry">&lt;PB&gt;entry</a>, <a href = "#typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:tree_result">tree_result</a>, <a href = "#tag:<B>tree">&lt;B&gt;tree</a>, <a href = "#tag:<B>tree_entry">&lt;B&gt;tree_entry</a>, <a href = "#tag:<B>tree_iterator">&lt;B&gt;tree_iterator</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:tree_result">tree_result</a>, <a href = "#tag:<B>tree">&lt;B&gt;tree</a>, <a href = "#tag:<B>tree_entry">&lt;B&gt;tree_entry</a>, <a href = "#tag:<B>tree_cursor">&lt;B&gt;tree_cursor</a></li>
 	<li><a href = "#data:">General Declarations</a>: <a href = "#data:e">e</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -60,6 +60,8 @@
 	<dd><code>TRIE_VALUE</code> is an optional payload to go with the type, <a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a>. The makes it a map of <a href = "#tag:&lt;B&gt;tree_entry">&lt;B&gt;tree_entry</a> instead of a set.</dd>
 	<dt>Parameter: TREE_COMPARE</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PB&gt;compare_fn">&lt;PB&gt;compare_fn</a>. Defaults to ascending order. Required if <code>TREE_KEY</code> is changed to an incomparable type.</dd>
+	<dt>Parameter: TREE_ORDER</dt>
+	<dd>Sets the branching factor, or order as <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3">Knuth, 1998 Art 3</a>, to the range <code>[3, UCHAR_MAX+1]</code>. Default is most likely fine except when specific constraints have to be met. (That is, setting <code>TREE_ORDER</code> to 4 is an isomorphism to red-black trees.)</dd>
 	<dt>Parameter: TREE_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
 	<dt>Parameter: TREE_TO_STRING_NAME, TREE_TO_STRING</dt>
@@ -90,7 +92,7 @@
 
 <p><code>typedef TREE_VALUE <strong>&lt;PB&gt;value</strong>;</code></p>
 
-<p>On <code>TREE_VALUE</code>, otherwise just a set of <a href = "#typedef:&lt;PB&gt;key">&lt;PB&gt;key</a>.</p>
+<p>On <code>TREE_VALUE</code>, this creates a map, otherwise a set of <a href = "#typedef:&lt;PB&gt;key">&lt;PB&gt;key</a>.</p>
 
 </div>
 
@@ -142,7 +144,7 @@
 
 <p><code>struct <strong>&lt;B&gt;tree</strong>;</code></p>
 
-<p>To initialize it to an idle state, see <a href = "#fn:&lt;B&gt;tree">&lt;B&gt;tree</a>, <code>TRIE_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
+<p>To initialize it to an idle state, see <a href = "#fn:&lt;B&gt;tree">&lt;B&gt;tree</a>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
 
 <p><img alt = "States." src = "../doc/states.png"></p>
 
@@ -154,17 +156,17 @@
 
 <p><code>struct <strong>&lt;B&gt;tree_entry</strong> { &lt;PB&gt;key *key; &lt;PB&gt;value *value; };</code></p>
 
-<p>On <code>TREE_VALUE</code>, creates a map from pointer-to-<a href = "#typedef:&lt;PB&gt;key">&lt;PB&gt;key</a> to pointer-to-<a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a>. The reason these are pointers is because it is not connected in memory. (Does <code>key</code> still have to be?)</p>
+<p>On <code>TREE_VALUE</code>, creates a map from pointer-to-<a href = "#typedef:&lt;PB&gt;key">&lt;PB&gt;key</a> to pointer-to-<a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a>. The reason these are pointers is because it is not contiguous in memory.</p>
 
 </div>
 
 <div>
 
-<h3><a id = "tag:<B>tree_iterator" name = "tag:<B>tree_iterator">&lt;B&gt;tree_iterator</a></h3>
+<h3><a id = "tag:<B>tree_cursor" name = "tag:<B>tree_cursor">&lt;B&gt;tree_cursor</a></h3>
 
-<p><code>struct <strong>&lt;B&gt;tree_iterator</strong> { struct &lt;PB&gt;iterator _; };</code></p>
+<p><code>struct <strong>&lt;B&gt;tree_cursor</strong>;</code></p>
 
-<p>Stores an iteration in a tree. Generally, changes in the topology of the tree invalidate it. (Future: have insert and delete with iterators.)</p>
+<p>Adding, deleting, or changes in the topology of the tree invalidate it.</p>
 
 </div>
 
@@ -197,15 +199,19 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<B>tree_">&lt;B&gt;tree_</a></td><td>tree</td></tr>
 
-<tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#fn:<B>tree_iterator">&lt;B&gt;tree_iterator</a></td><td>tree</td></tr>
-
-<tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#fn:<B>tree_next">&lt;B&gt;tree_next</a></td><td>it</td></tr>
-
-<tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#fn:<B>tree_lower_iterator">&lt;B&gt;tree_lower_iterator</a></td><td>tree, x</td></tr>
-
 <tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#fn:<B>tree_lower_value">&lt;B&gt;tree_lower_value</a></td><td>tree, x</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<B>tree_clone">&lt;B&gt;tree_clone</a></td><td>tree, source</td></tr>
+
+<tr><td align = right>static struct &lt;B&gt;tree_cursor</td><td><a href = "#fn:<B>tree_begin">&lt;B&gt;tree_begin</a></td><td>tree</td></tr>
+
+<tr><td align = right>static struct &lt;B&gt;tree_cursor</td><td><a href = "#fn:<B>tree_begin_at">&lt;B&gt;tree_begin_at</a></td><td>tree, x</td></tr>
+
+<tr><td align = right>static struct &lt;B&gt;tree_cursor</td><td><a href = "#fn:<B>tree_end">&lt;B&gt;tree_end</a></td><td>tree</td></tr>
+
+<tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#fn:<B>tree_next">&lt;B&gt;tree_next</a></td><td>cur</td></tr>
+
+<tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#fn:<B>tree_previous">&lt;B&gt;tree_previous</a></td><td>cur</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<STR>to_string">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
@@ -223,9 +229,11 @@
 
 <p><code>static struct &lt;B&gt;tree <strong>&lt;B&gt;tree</strong>(void)</code></p>
 
+<p>Zeroed data (not all-bits-zero) is initialized.</p>
+
 <dl>
 	<dt>Return:</dt>
-	<dd>Initializes <code>tree</code> to idle.</dd>
+	<dd>An idle tree.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
 </dl>
@@ -244,56 +252,11 @@
 
 <div>
 
-<h3><a id = "fn:<B>tree_iterator" name = "fn:<B>tree_iterator">&lt;B&gt;tree_iterator</a></h3>
-
-<p><code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_iterator</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code></p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>An iterator before the first element of <code>tree</code>. Can be null.</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<B>tree_next" name = "fn:<B>tree_next">&lt;B&gt;tree_next</a></h3>
-
-<p><code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_next</strong>(struct &lt;B&gt;tree_iterator *const <em>it</em>)</code></p>
-
-<p>Advances <code>it</code> to the next element.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>A pointer to the current element or null.</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<B>tree_lower_iterator" name = "fn:<B>tree_lower_iterator">&lt;B&gt;tree_lower_iterator</a></h3>
-
-<p><code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_lower_iterator</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
-
-<dl>
-	<dt>Parameter: <em>tree</em></dt>
-	<dd>Can be null.</dd>
-	<dt>Return:</dt>
-	<dd>Finds the smallest entry in <code>tree</code> that is at the lower bound of <code>x</code>. If <code>x</code> is higher than any of <code>tree</code>, it will be placed just passed the end.</dd>
-	<dt>Order:</dt>
-	<dd>&#927;(\log |<code>tree</code>|)</dd>
-</dl>
-
-</div>
-
-<div>
-
 <h3><a id = "fn:<B>tree_lower_value" name = "fn:<B>tree_lower_value">&lt;B&gt;tree_lower_value</a></h3>
 
 <p><code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_lower_value</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
 
-<p>For example, <code>tree = { 10 }</code>, <code>x = 5 -&gt; 10</code>, <code>x = 10 -&gt; 10</code>, <code>x = 11 -&gt; null</code>.</p>
+<p>For example, <code>tree = { 10 }</code>, <code>x = 5 -&gt; 10</code>, <code>x = 10 -&gt; 10</code>, <code>x = 11 -&gt; null</code>. (There is no upper value.)</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -321,7 +284,90 @@
 	<dt>Exceptional return: EDOM</dt>
 	<dd><code>tree</code> is null.</dd>
 	<dt>Exceptional return: ERANGE</dt>
-	<dd>The size of <code>source</code> doesn't fit into <code>size_t</code>.</dd>
+	<dd>The size of <code>source</code> nodes doesn't fit into <code>size_t</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>source</code>| + |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_begin" name = "fn:<B>tree_begin">&lt;B&gt;tree_begin</a></h3>
+
+<p><code>static struct &lt;B&gt;tree_cursor <strong>&lt;B&gt;tree_begin</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Cursor before the first element of <code>tree</code>. Can be null.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(\log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_begin_at" name = "fn:<B>tree_begin_at">&lt;B&gt;tree_begin_at</a></h3>
+
+<p><code>static struct &lt;B&gt;tree_cursor <strong>&lt;B&gt;tree_begin_at</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
+
+<dl>
+	<dt>Parameter: <em>tree</em></dt>
+	<dd>Can be null.</dd>
+	<dt>Return:</dt>
+	<dd>Cursor in <code>tree</code> between elements, such that if <a href = "#fn:&lt;B&gt;tree_next">&lt;B&gt;tree_next</a> is called, it will be smallest key that is not smaller than <code>x</code>, (which could be <a href = "#fn:&lt;B&gt;tree_end">&lt;B&gt;tree_end</a>; as <em>per</em> <a href = "#typedef:&lt;PB&gt;compare_fn">&lt;PB&gt;compare_fn</a>.)</dd>
+	<dt>Order:</dt>
+	<dd> &#920;(\log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_end" name = "fn:<B>tree_end">&lt;B&gt;tree_end</a></h3>
+
+<p><code>static struct &lt;B&gt;tree_cursor <strong>&lt;B&gt;tree_end</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Cursor after the last element of <code>tree</code>. Can be null.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(\log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_next" name = "fn:<B>tree_next">&lt;B&gt;tree_next</a></h3>
+
+<p><code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_next</strong>(struct &lt;B&gt;tree_cursor *const <em>cur</em>)</code></p>
+
+<p>Advances <code>cur</code> to the next element.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>A pointer to the current element, or null if it ran out of elements.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(\log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_previous" name = "fn:<B>tree_previous">&lt;B&gt;tree_previous</a></h3>
+
+<p><code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_previous</strong>(struct &lt;B&gt;tree_cursor *const <em>cur</em>)</code></p>
+
+<p>Reverses <code>cur</code> to the previous element.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>A pointer to the previous element, or null if it ran out of elements.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(\log |<code>tree</code>|)</dd>
 </dl>
 
 </div>

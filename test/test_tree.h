@@ -283,7 +283,7 @@ static void PB_(test)(void) {
 	it = B_(tree_begin_at)(0, PB_(test_to_key)(n + 0)), assert(!it._.root);
 	value = B_(tree_lower_value)(0, PB_(test_to_key)(n + 0)), assert(!value);
 	it = B_(tree_begin_at)(&tree, PB_(test_to_key)(n + 0)),
-		assert(!it._.i.node);
+		assert(!it._.ref.node);
 	value = B_(tree_lower_value)(&tree, PB_(test_to_key)(n + 0)),
 		assert(!value);
 
@@ -303,7 +303,7 @@ static void PB_(test)(void) {
 #endif
 			){
 		case TREE_ERROR: perror("What?"); assert(0); break;
-		case TREE_YIELD: printf("Key <%s> is already in tree.\n", z); break;
+		case TREE_TAKEN: printf("Key <%s> is already in tree.\n", z); break;
 		case TREE_UNIQUE:
 			n_unique++;
 #ifdef TREE_VALUE
@@ -383,13 +383,13 @@ static void PB_(test)(void) {
 		PB_(to_string)(ent, &z);
 		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);
 #ifdef TREE_VALUE
-		switch(B_(tree_add)(&tree, e->key, &value))
+		switch(B_(tree_assign)(&tree, e->key, &value))
 #else
-		switch(B_(tree_add)(&tree, *e))
+		switch(B_(tree_assign)(&tree, *e))
 #endif
 		{
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
-		case TREE_YIELD: printf("<%s> already in tree\n", z); break;
+		case TREE_TAKEN: printf("<%s> already in tree\n", z); break;
 		case TREE_UNIQUE: printf("<%s> added\n", z); n_unique++; break;
 		}
 #ifdef TREE_VALUE
