@@ -39,7 +39,7 @@
  that satisfies `C` naming conventions when mangled and function implementing
  <typedef:<PSTR>to_string_fn>.
 
- @fixme multi-key; implementation of order statistic tree?
+ @fixme multi-key; implementation of order statistic tree? no, too many ifdefs.
  @fixme merge, difference
 
  @std C89 */
