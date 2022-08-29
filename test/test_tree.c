@@ -284,7 +284,7 @@ static void order3(void) {
 	for(i = 0; i < size_rnd; i++) {
 		unsigned x = rand() & 65535;
 		printf("__%u) add random value %u__\n", (unsigned)i, x);
-		switch(order3_tree_assign(&rnd, x)) {
+		switch(order3_tree_try(&rnd, x)) {
 		case TREE_ERROR: goto catch;
 		case TREE_TAKEN: printf("%u already in tree\n", x); break;
 		case TREE_UNIQUE: printf("%u added\n", x); break;
@@ -308,7 +308,7 @@ static void order3(void) {
 			if(!order3_tree_clone(&even_clone, &even)) goto catch;
 			if(i == 4)
 				tree_order3_graph_horiz(&even_clone, "graph/even-clone-9-pre.gv");
-			if(!order3_tree_assign(&even_clone, (unsigned)i * 2 + 1)) goto catch;
+			if(!order3_tree_try(&even_clone, (unsigned)i * 2 + 1)) goto catch;
 			sprintf(fn, "graph/even-clone-%u.gv", (unsigned)i * 2 + 1);
 			tree_order3_graph_horiz(&even_clone, fn);
 		}
@@ -482,7 +482,7 @@ static void order3(void) {
 		for(i = 0; i < size; i++) {
 			unsigned x = (unsigned)i + 1;
 			printf("__%u) Going to add consecutive %u__\n", (unsigned)i, x);
-			switch(order3_tree_assign(&consecutive, x)) {
+			switch(order3_tree_try(&consecutive, x)) {
 			case TREE_ERROR: goto catch;
 			case TREE_TAKEN: printf("%u already in tree\n", x); break;
 			case TREE_UNIQUE: printf("%u added\n", x); break;
@@ -528,7 +528,7 @@ static void redblack(void) {
 
 	/* In tree. */
 	for(n = 0, i = 0; i < rnd_size; i++) {
-		switch(redblack_tree_assign(&tree, rnd[i].x, &value)) {
+		switch(redblack_tree_try(&tree, rnd[i].x, &value)) {
 		case TREE_ERROR: goto catch;
 		case TREE_TAKEN: printf("%u already in tree\n", rnd[i].x); break;
 		case TREE_UNIQUE: rnd[i].in = 1; n++; break;

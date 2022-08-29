@@ -383,9 +383,9 @@ static void PB_(test)(void) {
 		PB_(to_string)(ent, &z);
 		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);
 #ifdef TREE_VALUE
-		switch(B_(tree_assign)(&tree, e->key, &value))
+		switch(B_(tree_try)(&tree, e->key, &value))
 #else
-		switch(B_(tree_assign)(&tree, *e))
+		switch(B_(tree_try)(&tree, *e))
 #endif
 		{
 		case TREE_ERROR: perror("unexpected"); assert(0); return;

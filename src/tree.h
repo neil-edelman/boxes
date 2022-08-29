@@ -814,12 +814,16 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 }
 
 #ifdef TREE_VALUE /* <!-- map */
-/** Adds `key` and returns `value` to `tree`. */
+/** Adds or updates `key` in `tree`.
+ @return `TREE_UNIQUE`: if non-null, `value` gets written with an uninitialized
+ pointer. `TREE_TAKEN`: `key` is already in `tree`, `value`, if non-null, is
+ associated with `key`. `TREE_ERROR`: memory error, the `tree` is not touched,
+ and `errno` will be set. */
 static enum tree_result PB_(update)(struct PB_(tree) *const root,
-	int replace, PB_(key) key, PB_(value) **const value) {
+	PB_(key) key, PB_(key) *const eject, PB_(value) **const value) {
 #else /* map --><!-- set */
 static enum tree_result PB_(update)(struct PB_(tree) *const root,
-	int replace, PB_(key) key) {
+	PB_(key) key, PB_(key) *const eject) {
 #endif /* set --> */
 	struct PB_(node) *new_head = 0;
 	struct PB_(ref) add, hole, cursor;
@@ -845,7 +849,10 @@ descend: /* Record last node that has space. */
 		int is_equal = 0;
 		add = PB_(lookup_insert)(root, key, &hole, &is_equal);
 		if(is_equal) {
-			if(replace) add.node->key[add.idx] = key;
+			if(eject) {
+				*eject = add.node->key[add.idx];
+				add.node->key[add.idx] = key;
+			}
 #ifdef TREE_VALUE
 			if(value) *value = PB_(ref_to_value)(add);
 #endif
@@ -1029,35 +1036,34 @@ grow: /* Leaf is full. */ {
  key. @throws[malloc] @order \Theta(|`tree`|) @allow */
 static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
 	const PB_(key) key, PB_(value) **const value)
-	{ return assert(tree), PB_(update)(&tree->root, 0, key, value); }
+	{ return assert(tree), PB_(update)(&tree->root, key, 0, value); }
 #else /* map --><!-- set */
 /** Adds `key` to `tree` but in a set. */
 static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
 	const PB_(key) key)
-	{ return assert(tree), PB_(update)(&tree->root, 0, key); }
+	{ return assert(tree), PB_(update)(&tree->root, key, 0); }
 #endif /* set --> */
 
 
 
 #ifdef TREE_VALUE /* <!-- map */
-/** Adds or updates `key` in `tree`. If `key` is already in `tree`, uses the
- new value, _vs_ <fn:<B>tree_try>. (This is only significant in trees with
- distinguishable keys.)
- @param[value] If this parameter is non-null and a return value other then
- `TREE_ERROR`, this receives the address of the value associated with the key.
- Only present if `TREE_VALUE` (map) was specified.
- @return Either `TREE_ERROR` (false) and doesn't touch `tree`, `TREE_UNIQUE`
- and adds a new key with `key`, or `TREE_TAKEN` there was already an existing
- key, which is updated.
- @throws[malloc] @order \Theta(|`tree`|) @allow */
+/** Adds or updates `key` in `tree`.
+ @param[eject] If this parameter is non-null and a return value of
+ `TREE_TAKEN`, the old key is stored in `eject`, replaced by `key`. A null
+ value indicates that on conflict, the new key yields to the old key, as <fn:<B>tree_try>. This is only significant in trees with distinguishable keys.
+ @param[value] Only present if `TREE_VALUE` (map) was specified. If this
+ parameter is non-null and a return value other then `TREE_ERROR`, this
+ receives the address of the value associated with the key.
+ @return Either `TREE_ERROR` (false,) `errno` is set and doesn't touch `tree`;
+ `TREE_UNIQUE`, adds a new key; or `TREE_TAKEN`, there was already an existing key. @throws[malloc] @order \Theta(|`tree`|) @allow */
 static enum tree_result B_(tree_assign)(struct B_(tree) *const tree,
-	const PB_(key) key, PB_(value) **const value)
-	{ return assert(tree), PB_(update)(&tree->root, 1, key, value); }
+	const PB_(key) key, PB_(key) *const eject, PB_(value) **const value)
+	{ return assert(tree), PB_(update)(&tree->root, key, eject, value); }
 #else /* map --><!-- set */
-/** Adds `key` to `tree` but in a set. */
+/** Replaces `eject` by `key` or adds `key` in `tree`, but in a set. */
 static enum tree_result B_(tree_assign)(struct B_(tree) *const tree,
-	const PB_(key) key)
-	{ return assert(tree), PB_(update)(&tree->root, 1, key); }
+	const PB_(key) key, PB_(key) *const eject)
+	{ return assert(tree), PB_(update)(&tree->root, key, eject); }
 #endif /* set --> */
 
 /** Removes `x` from `tree` which must have contents. */
@@ -1595,10 +1601,10 @@ static PB_(entry) B_(tree_previous)(struct B_(tree_cursor) *const cur)
 
 #ifdef TREE_VALUE /* <!-- map */
 /** Adds `key` and returns `value` to `tree`. */
-static enum tree_result B_(tree_cursor_assign)(struct B_(tree_cursor) *const
+static enum tree_result B_(tree_cursor_try)(struct B_(tree_cursor) *const
 	cur, const PB_(key) key, PB_(value) **const value) {
 #else /* map --><!-- set */
-static enum tree_result B_(tree_cursor_assign)(struct B_(tree_cursor) *const
+static enum tree_result B_(tree_cursor_try)(struct B_(tree_cursor) *const
 	cur, const PB_(key) key) {
 #endif /* set --> */
 	enum { START, MIDDLE, END } where;
@@ -1613,9 +1619,9 @@ static enum tree_result B_(tree_cursor_assign)(struct B_(tree_cursor) *const
 	if(where == MIDDLE) anchor = cur->_.ref.node->key[cur->_.ref.idx];
 	if(where == START || where == END) cur->_.seen = 0; /* Should be already. */
 #ifdef TREE_VALUE
-	if(!PB_(update)(cur->_.root, 0, key, value)) return 0;
+	if(!PB_(update)(cur->_.root, key, 0, value)) return 0;
 #else
-	if(!PB_(update)(cur->_.root, 0, key)) return 0;
+	if(!PB_(update)(cur->_.root, key, 0)) return 0;
 #endif
 	assert(cur->_.root->height != UINT_MAX); /* Can't be empty. */
 	switch(where) {
@@ -1667,11 +1673,11 @@ static void PB_(unused_base)(void) {
 	B_(tree)(); B_(tree_)(0); B_(tree_clear)(0); B_(tree_count)(0);
 	B_(tree_lower_value)(0, k);
 #ifdef TREE_VALUE
-	B_(tree_get)(0, k); B_(tree_bulk_add)(0, k, 0); B_(tree_assign)(0, k, 0);
-	B_(tree_cursor_assign)(0, k, 0);
+	B_(tree_get)(0, k); B_(tree_bulk_add)(0, k, 0); B_(tree_try)(0, k, 0);
+	B_(tree_assign)(0, k, 0, 0); B_(tree_cursor_try)(0, k, 0);
 #else
-	B_(tree_contains)(0, k); B_(tree_bulk_add)(0, k); B_(tree_assign)(0, k);
-	B_(tree_cursor_assign)(0, k);
+	B_(tree_contains)(0, k); B_(tree_bulk_add)(0, k); B_(tree_try)(0, k);
+	B_(tree_assign)(0, k, 0); B_(tree_cursor_try)(0, k);
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
 	B_(tree_begin)(0); B_(tree_begin_at)(0, k); B_(tree_end)(0);
