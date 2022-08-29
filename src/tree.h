@@ -1031,24 +1031,52 @@ grow: /* Leaf is full. */ {
 }
 #endif
 
+
+
 #ifdef TREE_VALUE /* <!-- map */
-/** @param[value] If this parameter is non-null and a return value other then
+/** Adds or updates `key` in `tree`. If `key` is already in `tree`, uses the
+ old value, _vs_ <fn:<B>tree_assign>. (This is only significant in trees with
+ distinguishable keys.)
+ @param[value] Only present if `TREE_VALUE` (map) was specified. If this
+ parameter is non-null and a return value other then `TREE_ERROR`, this
+ receives the address of the value associated with the `key`. This pointer is
+ only guaranteed to be valid only while the `tree` doesn't undergo
+ structural changes, (such as calling <fn:<B>tree_try> with `TREE_UNIQUE`
+ again.)
+ @return Either `TREE_ERROR` (false) and doesn't touch `tree`, `TREE_UNIQUE`
+ and adds a new key with `key`, or `TREE_TAKEN` there was already an existing
+ key. @throws[malloc] @order \Theta(|`tree`|) @allow */
+static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
+	const PB_(key) key, PB_(value) **const value)
+	{ return assert(tree), PB_(update)(&tree->root, 0, key, value); }
+#else /* map --><!-- set */
+/** Adds `key` to `tree` but in a set. */
+static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
+	const PB_(key) key)
+	{ return assert(tree), PB_(update)(&tree->root, 0, key); }
+#endif /* set --> */
+
+
+
+#ifdef TREE_VALUE /* <!-- map */
+/** Adds or updates `key` in `tree`. If `key` is already in `tree`, uses the
+ new value, _vs_ <fn:<B>tree_try>. (This is only significant in trees with
+ distinguishable keys.)
+ @param[value] If this parameter is non-null and a return value other then
  `TREE_ERROR`, this receives the address of the value associated with the key.
  Only present if `TREE_VALUE` (map) was specified.
  @return Either `TREE_ERROR` (false) and doesn't touch `tree`, `TREE_UNIQUE`
  and adds a new key with `key`, or `TREE_TAKEN` there was already an existing
- key, which is not touched.
+ key, which is updated.
  @throws[malloc] @order \Theta(|`tree`|) @allow */
 static enum tree_result B_(tree_assign)(struct B_(tree) *const tree,
-	const PB_(key) key, PB_(value) **const value) {
-	return assert(tree), PB_(update)(&tree->root, 0, key, value);
-}
+	const PB_(key) key, PB_(value) **const value)
+	{ return assert(tree), PB_(update)(&tree->root, 0, key, value); }
 #else /* map --><!-- set */
 /** Adds `key` to `tree` but in a set. */
 static enum tree_result B_(tree_assign)(struct B_(tree) *const tree,
-	const PB_(key) key) {
-	return assert(tree), PB_(update)(&tree->root, 0, key);
-}
+	const PB_(key) key)
+	{ return assert(tree), PB_(update)(&tree->root, 0, key); }
 #endif /* set --> */
 
 /** Removes `x` from `tree` which must have contents. */
@@ -1340,9 +1368,8 @@ space: /* Node is root or has more than `TREE_MIN`; branches taken care of. */
 end:
 	return 1;
 }
-
 /** Tries to remove `key` from `tree`. @return Success, otherwise it was not in
- `tree`. @order \Theta(|`tree`|) */
+ `tree`. @order \Theta(|`tree`|) @allow */
 static int B_(tree_remove)(struct B_(tree) *const tree,
 	const PB_(key) key) { return !!tree && !!tree->root.node
 	&& tree->root.height != UINT_MAX && PB_(remove)(&tree->root, key); }
@@ -1484,9 +1511,6 @@ static int B_(tree_clone)(struct B_(tree) *const tree,
 	if(!PB_(nodes)(tree, &sc.victim) || !PB_(nodes)(source, &sc.source)
 		|| (sc.no = sc.source.branches + sc.source.leaves) < sc.source.branches)
 		{ errno = ERANGE; goto catch; } /* Overflow. */
-	/*printf("<B>tree_clone: victim.branches %zu; victim.leaves %zu; "
-		"source.branches %zu; source.leaves %zu.\n", sc.victim.branches,
-		sc.victim.leaves, sc.source.branches, sc.source.leaves);*/
 	if(!sc.no) { PB_(clear)(tree); goto finally; } /* No need to allocate. */
 	if(!(sc.data = malloc(sizeof *sc.data * sc.no)))
 		{ if(!errno) errno = ERANGE; goto catch; }
