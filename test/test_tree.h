@@ -55,7 +55,7 @@ static void PB_(subgraph)(const struct PB_(tree) *const sub, FILE *fp) {
 	for(i = 0; i < sub->node->size; i++) {
 		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
 		char z[12];
-		PB_(entry_c) e = PB_(leaf_to_entry_c)(sub->node, i);
+		PB_(entry_c) e = PB_(cons_entry_c)(sub->node, i);
 		PB_(to_string)(e, &z);
 		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
 			" port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
@@ -127,7 +127,7 @@ static void PB_(subgraph_usual)(const struct PB_(tree) *const sub, FILE *fp) {
 		sub->node->size ? sub->node->size : 1, orcify(sub->node));
 	for(i = 0; i < sub->node->size; i++) {
 		char z[12];
-		PB_(entry_c) e = PB_(leaf_to_entry_c)(sub->node, i);
+		PB_(entry_c) e = PB_(cons_entry_c)(sub->node, i);
 		PB_(to_string)(e, &z);
 		fprintf(fp, "\t<td border=\"0\" align=\"center\""
 			" port=\"%u\">%s</td>\n", i, z);

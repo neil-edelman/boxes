@@ -209,12 +209,12 @@ static PB_(entry) PB_(null_entry)(void)
 	{ const PB_(entry) e = { 0, 0 }; return e; }
 static PB_(entry_c) PB_(null_entry_c)(void)
 	{ const PB_(entry_c) e = { 0, 0 }; return e; }
-static PB_(entry) PB_(leaf_to_entry)(struct PB_(node) *const leaf,
+static PB_(entry) PB_(cons_entry)(struct PB_(node) *const node,
 	const unsigned i) { PB_(entry) e;
-	e.key = leaf->key + i, e.value = leaf->value + i; return e; }
-static PB_(entry_c) PB_(leaf_to_entry_c)(const struct PB_(node) *const leaf,
+	e.key = node->key + i, e.value = node->value + i; return e; }
+static PB_(entry_c) PB_(cons_entry_c)(const struct PB_(node) *const node,
 	const unsigned i) { PB_(entry_c) e;
-	e.key = leaf->key + i, e.value = leaf->value + i; return e; }
+	e.key = node->key + i, e.value = node->value + i; return e; }
 static PB_(value) *PB_(ref_to_value)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->value + ref.idx : 0; }
 
@@ -225,9 +225,9 @@ typedef PB_(key) *PB_(entry);
 typedef PB_(key_c) *PB_(entry_c);
 static PB_(entry_c) PB_(null_entry_c)(void) { return 0; }
 static PB_(entry) PB_(null_entry)(void) { return 0; }
-static PB_(entry) PB_(leaf_to_entry)(struct PB_(node) *const leaf,
+static PB_(entry) PB_(cons_entry)(struct PB_(node) *const leaf,
 	const unsigned i) { return leaf->key + i; }
-static PB_(entry_c) PB_(leaf_to_entry_c)(const struct PB_(node) *const leaf,
+static PB_(entry_c) PB_(cons_entry_c)(const struct PB_(node) *const leaf,
 	const unsigned i) { return leaf->key + i; }
 static PB_(value) *PB_(ref_to_value)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->key + ref.idx : 0; }
@@ -333,7 +333,7 @@ static struct PB_(forward) PB_(forward)(const struct B_(tree) *const tree) {
 /** Move to next `it`. @return Element or null. @implements `next_c` */
 static PB_(entry_c) PB_(next_c)(struct PB_(forward) *const it) {
 	return assert(it), PB_(to_successor_c)(*it->root, &it->next) ?
-		PB_(leaf_to_entry_c)(it->next.node, it->next.idx) : PB_(null_entry_c)();
+		PB_(cons_entry_c)(it->next.node, it->next.idx) : PB_(null_entry_c)();
 }
 
 #define BOX_ITERATOR PB_(entry)
@@ -396,15 +396,16 @@ static PB_(entry) PB_(next)(struct PB_(cursor) *const it) {
 		|| (it->seen || !it->ref.node) && !PB_(to_successor)(*it->root, &it->ref))
 		return it->ref.node = 0, it->seen = 0, PB_(null_entry)();
 	assert(it->ref.node);
-	if(it->ref.idx >= it->ref.node->size) return it->seen = 0, PB_(null_entry)();
-	return it->seen = 1, PB_(leaf_to_entry)(it->ref.node, it->ref.idx);
+	return it->ref.idx < it->ref.node->size
+		? (it->seen = 1, PB_(cons_entry)(it->ref.node, it->ref.idx))
+		: (it->seen = 0, PB_(null_entry)());
 }
 /** Move to previous `it`. @return Element or null. @implements `previous` */
 static PB_(entry) PB_(previous)(struct PB_(cursor) *const it) {
 	assert(it);
 	if(!it->root || !PB_(to_predecessor)(*it->root, &it->ref))
 		return it->ref.node = 0, it->seen = 0, PB_(null_entry)();
-	return it->seen = 1, PB_(leaf_to_entry)(it->ref.node, it->ref.idx);
+	return it->seen = 1, PB_(cons_entry)(it->ref.node, it->ref.idx);
 }
 
 /* Want to find slightly different things; code re-use is bad. Confusing.
@@ -863,6 +864,7 @@ descend: /* Record last node that has space. */
 		int is_equal = 0;
 		add = PB_(lookup_insert)(root, key, &hole, &is_equal);
 		if(is_equal) {
+			if(replace) add.node->key[add.idx] = key;
 #ifdef TREE_VALUE
 			if(value) *value = PB_(ref_to_value)(add);
 #endif
