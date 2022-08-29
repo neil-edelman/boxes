@@ -617,7 +617,7 @@ static int B_(tree_contains)(const struct B_(tree) *const tree,
 
 #ifdef TREE_VALUE /* <!-- map */
 /** Only if `TREE_VALUE`. @return Get the value of `x` in `tree`, or if no `x`,
- null. @order \O(\log `items`) */
+ null. @order \O(\log `items`) @allow */
 static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct PB_(ref) ref;
@@ -637,7 +637,8 @@ static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
  @return One of <tag:tree_result>: `TREE_ERROR` and `errno` will be set,
  `TREE_TAKEN` if the key is already (the highest) in the tree, and
  `TREE_UNIQUE`, added, the `value` (if applicable) is uninitialized.
- @throws[EDOM] `x` is smaller than the largest key in `tree`. @throws[malloc] */
+ @throws[EDOM] `x` is smaller than the largest key in `tree`. @throws[malloc]
+ @allow */
 static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 	PB_(key) key, PB_(value) **const value) {
 #else /* map --><!-- set */
@@ -745,12 +746,10 @@ catch: /* Didn't work. Reset. */
  of <fn:<B>tree_bulk_add>, it will be consistent with the minimum number of
  keys in a node. @return The re-distribution was a success and all nodes are
  within rules. When intermixing bulk and regular operations, the function may
- return false. @order \O(\log `size`) */
+ return false. @order \O(\log `size`) @allow */
 static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 	struct PB_(tree) s;
 	struct PB_(node) *right;
-	/*printf("tree_bulk_finish(%s) number of nodes [%u, %u]\n",
-		orcify(tree), TREE_MIN, TREE_MAX);*/
 	if(!tree || !tree->root.node || tree->root.height == UINT_MAX) return 1;
 	for(s = tree->root; s.height; s.node = right, s.height--) {
 		unsigned distribute, right_want, right_move, take_sibling;
@@ -758,10 +757,8 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 		struct PB_(node) *sibling = (assert(parent->base.size),
 			parent->child[parent->base.size - 1]);
 		right = parent->child[parent->base.size];
-		/*printf("initial parent node %s:%u with %u size, children %s and %s.\n",
-			orcify(s.node), s.height, s.node->size,
-			orcify(sibling), orcify(right));*/
-		/* FIXME: This should be increased to max/2 instead of max/3. */
+		/* Should this be increased to max/2 instead of max/3 to make a more
+		 balanced tree? Otoh, why? */
 		if(TREE_MIN <= right->size) continue; /* Has enough. */
 		distribute = sibling->size + right->size;
 		/* Should have at least `TREE_MAX` on left. */
@@ -769,23 +766,17 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 		right_want = distribute / 2;
 		right_move = right_want - right->size;
 		take_sibling = right_move - 1;
-		/*printf("distributing %u, of which the right wants %u and will"
-			" be move %u and take %u from sibling.\n", distribute, right_want,
-			right_move, take_sibling);*/
 		/* Either the right has met the properties of a B-tree node, (covered
 		 above,) or the left sibling is full from bulk-loading (relaxed.) */
 		assert(right->size < right_want && right_want >= TREE_MIN
 			&& sibling->size - take_sibling >= TREE_MIN + 1);
 		/* Move the right node to accept more keys. */
-		/*printf("right (%u) -> right at %u\n",
-			right->size, right_move);*/
 		memmove(right->key + right_move, right->key,
 			sizeof *right->key * right->size);
 #ifdef TREE_VALUE
 		memmove(right->value + right_move, right->value,
 			sizeof *right->value * right->size);
 #endif
-		/*printf("height %u\n", s.height);*/
 		if(s.height > 1) { /* (Parent height.) */
 			struct PB_(branch) *rbranch = PB_(as_branch)(right),
 				*sbranch = PB_(as_branch)(sibling);
@@ -796,8 +787,6 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 		}
 		right->size += right_move;
 		/* Move one node from the parent. */
-		/*printf("right:%u <- parent:%u (1)\n",
-			take_sibling, parent->base.size - 1);*/
 		memcpy(right->key + take_sibling,
 			parent->base.key + parent->base.size - 1, sizeof *right->key);
 #ifdef TREE_VALUE
@@ -805,8 +794,6 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 			parent->base.value + parent->base.size - 1, sizeof *right->value);
 #endif
 		/* Move the others from the sibling. */
-		/*printf("right <- sibling(%u) down to %u\n",
-			sibling->size, take_sibling);*/
 		memcpy(right->key, sibling->key + sibling->size - take_sibling,
 			sizeof *right->key * take_sibling);
 #ifdef TREE_VALUE
@@ -815,8 +802,6 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 #endif
 		sibling->size -= take_sibling;
 		/* Sibling's key is now the parent's. */
-		/*printf("parent:%u <- sibling:%u (1)\n",
-			parent->base.size - 1, sibling->size - 1);*/
 		memcpy(parent->base.key + parent->base.size - 1,
 			sibling->key + sibling->size - 1, sizeof *right->key);
 #ifdef TREE_VALUE
@@ -824,10 +809,6 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 			sibling->value + sibling->size - 1, sizeof *right->value);
 #endif
 		sibling->size--;
-		/* fixme: Also take the children. This is backwards in right. */
-		/*printf("redistributed, %s:%u, %s:%u, %s:%u\n", orcify(s.node),
-			parent->base.size, orcify(right), right->size, orcify(sibling),
-			sibling->size);*/
 	}
 	return 1;
 }
@@ -1034,7 +1015,7 @@ grow: /* Leaf is full. */ {
 
 
 #ifdef TREE_VALUE /* <!-- map */
-/** Adds or updates `key` in `tree`. If `key` is already in `tree`, uses the
+/** Adds or gets `key` in `tree`. If `key` is already in `tree`, uses the
  old value, _vs_ <fn:<B>tree_assign>. (This is only significant in trees with
  distinguishable keys.)
  @param[value] Only present if `TREE_VALUE` (map) was specified. If this
@@ -1071,12 +1052,12 @@ static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
  @throws[malloc] @order \Theta(|`tree`|) @allow */
 static enum tree_result B_(tree_assign)(struct B_(tree) *const tree,
 	const PB_(key) key, PB_(value) **const value)
-	{ return assert(tree), PB_(update)(&tree->root, 0, key, value); }
+	{ return assert(tree), PB_(update)(&tree->root, 1, key, value); }
 #else /* map --><!-- set */
 /** Adds `key` to `tree` but in a set. */
 static enum tree_result B_(tree_assign)(struct B_(tree) *const tree,
 	const PB_(key) key)
-	{ return assert(tree), PB_(update)(&tree->root, 0, key); }
+	{ return assert(tree), PB_(update)(&tree->root, 1, key); }
 #endif /* set --> */
 
 /** Removes `x` from `tree` which must have contents. */
