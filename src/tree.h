@@ -573,8 +573,8 @@ static size_t PB_(count_r)(const struct PB_(tree) tree) {
 	if(tree.height) {
 		const struct PB_(branch) *const branch = PB_(as_branch)(tree.node);
 		struct PB_(tree) sub;
-		sub.height = tree.height - 1;
 		size_t i;
+		sub.height = tree.height - 1;
 		for(i = 0; i <= tree.node->size; i++) {
 			sub.node = branch->child[i];
 			c += PB_(count_r)(sub);
