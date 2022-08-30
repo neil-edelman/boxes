@@ -30,7 +30,7 @@ A [&lt;B&gt;tree](#user-content-tag-a36433e3) is an ordered set or map contained
  * Standard:  
    C89
  * Caveat:  
-   multi\-key; implementation of order statistic tree? no, too many ifdefs\. merge, difference
+   merge, difference
 
 
 
@@ -127,11 +127,11 @@ Adding, deleting, or changes in the topology of the tree invalidate it\.
 
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b1ccf3ab">&lt;B&gt;tree_count</a></td><td>tree</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#user-content-fn-867e2fe3">&lt;B&gt;tree_lower_value</a></td><td>tree, x</td></tr>
-
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-2acb2ed">&lt;B&gt;tree_contains</a></td><td>tree, x</td></tr>
 
 <tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#user-content-fn-2e61c7b0">&lt;B&gt;tree_get</a></td><td>tree, x</td></tr>
+
+<tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#user-content-fn-4284d921">&lt;B&gt;tree_at</a></td><td>tree, x</td></tr>
 
 <tr><td align = right>static enum tree_result</td><td><a href = "#user-content-fn-f0e6123c">&lt;B&gt;tree_bulk_add</a></td><td>tree, key, value</td></tr>
 
@@ -213,20 +213,6 @@ Counts all the keys on `tree`, which can be null\.
 
 
 
-### <a id = "user-content-fn-867e2fe3" name = "user-content-fn-867e2fe3">&lt;B&gt;tree_lower_value</a> ###
-
-<code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_lower_value</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code>
-
-For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`, `x = 11 -> null`\. \(There is no upper value\.\)
-
- * Return:  
-   Lower\-bound value match for `x` in `tree` or null if `x` is greater than all in `tree`\.
- * Order:  
-   &#927;\(log |`tree`|\)
-
-
-
-
 ### <a id = "user-content-fn-2acb2ed" name = "user-content-fn-2acb2ed">&lt;B&gt;tree_contains</a> ###
 
 <code>static int <strong>&lt;B&gt;tree_contains</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code>
@@ -243,10 +229,22 @@ For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`, `x = 11 -> null`\. 
 
 <code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code>
 
-Only if `TREE_VALUE`\.
-
  * Return:  
    Get the value of `x` in `tree`, or if no `x`, null\.
+ * Order:  
+   &#927;\(log |`tree`|\)
+
+
+
+
+### <a id = "user-content-fn-4284d921" name = "user-content-fn-4284d921">&lt;B&gt;tree_at</a> ###
+
+<code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_at</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code>
+
+For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`, `x = 11 -> null`\. \(There is no upper value\.\)
+
+ * Return:  
+   Lower\-bound value match for `x` in `tree` or null if `x` is greater than all in `tree`\.
  * Order:  
    &#927;\(log |`tree`|\)
 

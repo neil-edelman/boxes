@@ -68,7 +68,7 @@
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>Caveat:</dt>
-	<dd>multi-key; implementation of order statistic tree? no, too many ifdefs. merge, difference</dd>
+	<dd>merge, difference</dd>
 </dl>
 
 </div>
@@ -185,11 +185,11 @@
 
 <tr><td align = right>static size_t</td><td><a href = "#fn:<B>tree_count">&lt;B&gt;tree_count</a></td><td>tree</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#fn:<B>tree_lower_value">&lt;B&gt;tree_lower_value</a></td><td>tree, x</td></tr>
-
 <tr><td align = right>static int</td><td><a href = "#fn:<B>tree_contains">&lt;B&gt;tree_contains</a></td><td>tree, x</td></tr>
 
 <tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#fn:<B>tree_get">&lt;B&gt;tree_get</a></td><td>tree, x</td></tr>
+
+<tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#fn:<B>tree_at">&lt;B&gt;tree_at</a></td><td>tree, x</td></tr>
 
 <tr><td align = right>static enum tree_result</td><td><a href = "#fn:<B>tree_bulk_add">&lt;B&gt;tree_bulk_add</a></td><td>tree, key, value</td></tr>
 
@@ -287,23 +287,6 @@
 
 <div>
 
-<h3><a id = "fn:<B>tree_lower_value" name = "fn:<B>tree_lower_value">&lt;B&gt;tree_lower_value</a></h3>
-
-<p><code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_lower_value</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
-
-<p>For example, <code>tree = { 10 }</code>, <code>x = 5 -&gt; 10</code>, <code>x = 10 -&gt; 10</code>, <code>x = 11 -&gt; null</code>. (There is no upper value.)</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>Lower-bound value match for <code>x</code> in <code>tree</code> or null if <code>x</code> is greater than all in <code>tree</code>.</dd>
-	<dt>Order:</dt>
-	<dd>&#927;(log |<code>tree</code>|)</dd>
-</dl>
-
-</div>
-
-<div>
-
 <h3><a id = "fn:<B>tree_contains" name = "fn:<B>tree_contains">&lt;B&gt;tree_contains</a></h3>
 
 <p><code>static int <strong>&lt;B&gt;tree_contains</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
@@ -323,11 +306,26 @@
 
 <p><code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
 
-<p>Only if <code>TREE_VALUE</code>.</p>
-
 <dl>
 	<dt>Return:</dt>
 	<dd>Get the value of <code>x</code> in <code>tree</code>, or if no <code>x</code>, null.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_at" name = "fn:<B>tree_at">&lt;B&gt;tree_at</a></h3>
+
+<p><code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_at</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
+
+<p>For example, <code>tree = { 10 }</code>, <code>x = 5 -&gt; 10</code>, <code>x = 10 -&gt; 10</code>, <code>x = 11 -&gt; null</code>. (There is no upper value.)</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Lower-bound value match for <code>x</code> in <code>tree</code> or null if <code>x</code> is greater than all in <code>tree</code>.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(log |<code>tree</code>|)</dd>
 </dl>

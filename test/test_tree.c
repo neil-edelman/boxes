@@ -259,11 +259,11 @@ static void order3(void) {
 	printf("previous %u.\n", *v);
 
 	/* The value of the cursor. */
-	v = order3_tree_lower_value(&between, 50), assert(v && *v == 100);
-	v = order3_tree_lower_value(&between, 150), assert(v && *v == 200);
-	v = order3_tree_lower_value(&between, 250), assert(v && *v == 300);
-	v = order3_tree_lower_value(&between, 300), assert(v && *v == 300);
-	v = order3_tree_lower_value(&between, 350), assert(!v);
+	v = order3_tree_at(&between, 50), assert(v && *v == 100);
+	v = order3_tree_at(&between, 150), assert(v && *v == 200);
+	v = order3_tree_at(&between, 250), assert(v && *v == 300);
+	v = order3_tree_at(&between, 300), assert(v && *v == 300);
+	v = order3_tree_at(&between, 350), assert(!v);
 
 	/* For the paper. */
 	order3_tree_clear(&between);

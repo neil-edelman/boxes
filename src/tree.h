@@ -40,7 +40,6 @@
  that satisfies `C` naming conventions when mangled and function implementing
  <typedef:<PSTR>to_string_fn>.
 
- @fixme multi-key; implementation of order statistic tree? no, too many ifdefs.
  @fixme merge, difference
 
  @std C89 */
@@ -553,7 +552,8 @@ static void PB_(clear)(struct B_(tree) *tree) {
 	if(!tree || !tree->root.node || tree->root.height == UINT_MAX) return;
 	PB_(clear_r)(tree->root, &one), assert(one);
 	/* This is a special state where the tree has one leaf, but it is empty.
-	 This state exists because it gives hysteresis to 0 -- 1 transition. */
+	 This state exists because it gives hysteresis to 0 -- 1 transition because
+	 we have no advanced memory management. */
 	tree->root.node = one;
 	tree->root.height = UINT_MAX;
 }
@@ -597,26 +597,6 @@ static size_t B_(tree_count)(const struct B_(tree) *const tree) {
 		? PB_(count_r)(tree->root) : 0;
 }
 
-/* fixme: all read functions can be amalgamated into
- `int <B>tree_get(*tree, x[, *value])` and
- `int <B>tree_at(*tree, x[, *value])` and
- maybe . . .
- `int <B>tree_key(*tree, x, key)`.
- `int <B>tree_replace(*tree, )` would these be very useful? */
-/* Mismatch in braces probably bad for auto-doc. */
-
-/** For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`,
- `x = 11 -> null`. (There is no upper value.)
- @return Lower-bound value match for `x` in `tree` or null if `x` is greater
- than all in `tree`. @order \O(\log |`tree`|) @allow */
-static PB_(value) *B_(tree_lower_value)(struct B_(tree) *const tree,
-	const PB_(key) x) {
-	struct PB_(ref) ref;
-	if(!tree) return 0;
-	ref = PB_(lower)(tree->root, x);
-	return ref.node && ref.idx < ref.node->size ? PB_(ref_to_value)(ref) : 0;
-}
-
 /** @return Is `x` in `tree`? @order \O(\log |`tree`|) @allow */
 static int B_(tree_contains)(const struct B_(tree) *const tree,
 	const PB_(key) x) {
@@ -624,17 +604,27 @@ static int B_(tree_contains)(const struct B_(tree) *const tree,
 		&& PB_(find)(&tree->root, x).node ? 1 : 0;
 }
 
-#ifdef TREE_VALUE /* <!-- map */
-/** Only if `TREE_VALUE`. @return Get the value of `x` in `tree`, or if no `x`,
- null. @order \O(\log |`tree`|) @allow */
+/** @return Get the value of `x` in `tree`, or if no `x`, null.
+ @order \O(\log |`tree`|) @allow */
 static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct PB_(ref) ref;
 	if(!tree || !tree->root.node || tree->root.height == UINT_MAX
 		|| !(ref = PB_(find)(&tree->root, x)).node) return 0;
-	return ref.node->value + ref.idx;
+	return PB_(ref_to_value)(ref);
 }
-#endif /* map --> */
+
+/** For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`,
+ `x = 11 -> null`. (There is no upper value.)
+ @return Lower-bound value match for `x` in `tree` or null if `x` is greater
+ than all in `tree`. @order \O(\log |`tree`|) @allow */
+static PB_(value) *B_(tree_at)(struct B_(tree) *const tree,
+	const PB_(key) x) {
+	struct PB_(ref) ref;
+	if(!tree) return 0;
+	ref = PB_(lower)(tree->root, x);
+	return ref.node && ref.idx < ref.node->size ? PB_(ref_to_value)(ref) : 0;
+}
 
 #ifdef TREE_VALUE /* <!-- map */
 /** Packs `key` on the right side of `tree` without doing the usual
@@ -1048,8 +1038,6 @@ static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
 	const PB_(key) key)
 	{ return assert(tree), PB_(update)(&tree->root, key, 0); }
 #endif /* set --> */
-
-
 
 #ifdef TREE_VALUE /* <!-- map */
 /** Adds or updates `key` in `tree`.
@@ -1680,12 +1668,12 @@ static void PB_(unused_base)(void) {
 	memset(&k, 0, sizeof k);
 	PB_(is_element_c); PB_(forward); PB_(next_c); PB_(is_element);
 	B_(tree)(); B_(tree_)(0); B_(tree_clear)(0); B_(tree_count)(0);
-	B_(tree_lower_value)(0, k);
+	B_(tree_contains)(0, k); B_(tree_get)(0, k); B_(tree_at)(0, k);
 #ifdef TREE_VALUE
-	B_(tree_get)(0, k); B_(tree_bulk_add)(0, k, 0); B_(tree_try)(0, k, 0);
+	B_(tree_bulk_add)(0, k, 0); B_(tree_try)(0, k, 0);
 	B_(tree_assign)(0, k, 0, 0); B_(tree_cursor_try)(0, k, 0);
 #else
-	B_(tree_contains)(0, k); B_(tree_bulk_add)(0, k); B_(tree_try)(0, k);
+	B_(tree_bulk_add)(0, k); B_(tree_try)(0, k);
 	B_(tree_assign)(0, k, 0); B_(tree_cursor_try)(0, k);
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
