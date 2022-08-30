@@ -123,7 +123,13 @@ Adding, deleting, or changes in the topology of the tree invalidate it\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-f2bd70f4">&lt;B&gt;tree_</a></td><td>tree</td></tr>
 
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-de2a8ae9">&lt;B&gt;tree_clear</a></td><td>tree</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b1ccf3ab">&lt;B&gt;tree_count</a></td><td>tree</td></tr>
+
 <tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#user-content-fn-867e2fe3">&lt;B&gt;tree_lower_value</a></td><td>tree, x</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-2acb2ed">&lt;B&gt;tree_contains</a></td><td>tree, x</td></tr>
 
 <tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#user-content-fn-2e61c7b0">&lt;B&gt;tree_get</a></td><td>tree, x</td></tr>
 
@@ -177,6 +183,34 @@ Zeroed data \(not all\-bits\-zero\) is initialized\.
 
 Returns an initialized `tree` to idle, `tree` can be null\.
 
+ * Order:  
+   &#927;\(|`tree`|\)
+
+
+
+
+### <a id = "user-content-fn-de2a8ae9" name = "user-content-fn-de2a8ae9">&lt;B&gt;tree_clear</a> ###
+
+<code>static void <strong>&lt;B&gt;tree_clear</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code>
+
+Clears `tree`, which can be null, idle, empty, or full\. If it is empty or full, it remains active\.
+
+ * Order:  
+   &#927;\(|`tree`|\)
+
+
+
+
+### <a id = "user-content-fn-b1ccf3ab" name = "user-content-fn-b1ccf3ab">&lt;B&gt;tree_count</a> ###
+
+<code>static size_t <strong>&lt;B&gt;tree_count</strong>(const struct &lt;B&gt;tree *const <em>tree</em>)</code>
+
+Counts all the keys on `tree`, which can be null\.
+
+ * Order:  
+   &#927;\(|`tree`|\)
+
+
 
 
 ### <a id = "user-content-fn-867e2fe3" name = "user-content-fn-867e2fe3">&lt;B&gt;tree_lower_value</a> ###
@@ -193,6 +227,18 @@ For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`, `x = 11 -> null`\. 
 
 
 
+### <a id = "user-content-fn-2acb2ed" name = "user-content-fn-2acb2ed">&lt;B&gt;tree_contains</a> ###
+
+<code>static int <strong>&lt;B&gt;tree_contains</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code>
+
+ * Return:  
+   Is `x` in `tree`?
+ * Order:  
+   &#927;\(log |`tree`|\)
+
+
+
+
 ### <a id = "user-content-fn-2e61c7b0" name = "user-content-fn-2e61c7b0">&lt;B&gt;tree_get</a> ###
 
 <code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code>
@@ -202,7 +248,7 @@ Only if `TREE_VALUE`\.
  * Return:  
    Get the value of `x` in `tree`, or if no `x`, null\.
  * Order:  
-   &#927;\(log `items`\)
+   &#927;\(log |`tree`|\)
 
 
 
@@ -220,6 +266,8 @@ Packs `key` on the right side of `tree` without doing the usual restructuring\. 
  * Exceptional return: EDOM  
    `x` is smaller than the largest key in `tree`\.
  * Exceptional return: malloc  
+ * Order:  
+   &#927;\(log |`tree`|\)
 
 
 
@@ -231,9 +279,9 @@ Packs `key` on the right side of `tree` without doing the usual restructuring\. 
 Distributes `tree` \(can be null\) on the right side so that, after a series of [&lt;B&gt;tree_bulk_add](#user-content-fn-f0e6123c), it will be consistent with the minimum number of keys in a node\.
 
  * Return:  
-   The re\-distribution was a success and all nodes are within rules\. When intermixing bulk and regular operations, the function may return false\.
+   The re\-distribution was a success and all nodes are within rules\. \(Only when intermixing bulk and regular operations, can the function return false\.\)
  * Order:  
-   &#927;\(log `size`\)
+   &#927;\(log |`tree`|\)
 
 
 
@@ -250,7 +298,7 @@ Adds or gets `key` in `tree`\. If `key` is already in `tree`, uses the old value
    Either `TREE_ERROR` \(false\) and doesn't touch `tree`, `TREE_UNIQUE` and adds a new key with `key`, or `TREE_PRESENT` there was already an existing key\.
  * Exceptional return: malloc  
  * Order:  
-   &#920;\(|`tree`|\)
+   &#920;\(log |`tree`|\)
 
 
 
@@ -269,7 +317,7 @@ Adds or updates `key` in `tree`\.
    Either `TREE_ERROR` \(false,\) `errno` is set and doesn't touch `tree`; `TREE_UNIQUE`, adds a new key; or `TREE_PRESENT`, there was already an existing key\.
  * Exceptional return: malloc  
  * Order:  
-   &#920;\(|`tree`|\)
+   &#920;\(log |`tree`|\)
 
 
 
@@ -283,7 +331,7 @@ Tries to remove `key` from `tree`\.
  * Return:  
    Success, otherwise it was not in `tree`\.
  * Order:  
-   &#920;\(|`tree`|\)
+   &#920;\(log |`tree`|\)
 
 
 

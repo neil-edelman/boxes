@@ -557,7 +557,8 @@ static void PB_(clear)(struct B_(tree) *tree) {
 	tree->root.node = one;
 	tree->root.height = UINT_MAX;
 }
-/** Returns an initialized `tree` to idle, `tree` can be null. @allow */
+/** Returns an initialized `tree` to idle, `tree` can be null.
+ @order \O(|`tree`|) @allow */
 static void B_(tree_)(struct B_(tree) *const tree) {
 	if(!tree) return; /* Null. */
 	if(!tree->root.node) { /* Idle. */
@@ -571,7 +572,7 @@ static void B_(tree_)(struct B_(tree) *const tree) {
 }
 
 /** Clears `tree`, which can be null, idle, empty, or full. If it is empty or
- full, it remains active. */
+ full, it remains active. @order \O(|`tree`|) @allow */
 static void B_(tree_clear)(struct B_(tree) *const tree) { PB_(clear)(tree); }
 
 /** Private: counts a sub-tree, `tree`. */
@@ -589,7 +590,8 @@ static size_t PB_(count_r)(const struct PB_(tree) tree) {
 	}
 	return c;
 }
-/** Counts all the keys on `tree`, which can be null. @order \O(`size`) */
+/** Counts all the keys on `tree`, which can be null.
+ @order \O(|`tree`|) @allow */
 static size_t B_(tree_count)(const struct B_(tree) *const tree) {
 	return tree && tree->root.height != UINT_MAX
 		? PB_(count_r)(tree->root) : 0;
@@ -615,7 +617,7 @@ static PB_(value) *B_(tree_lower_value)(struct B_(tree) *const tree,
 	return ref.node && ref.idx < ref.node->size ? PB_(ref_to_value)(ref) : 0;
 }
 
-/** @return Is `x` in `tree`? @order \O(\log `items`) */
+/** @return Is `x` in `tree`? @order \O(\log |`tree`|) @allow */
 static int B_(tree_contains)(const struct B_(tree) *const tree,
 	const PB_(key) x) {
 	return tree && tree->root.node && tree->root.height != UINT_MAX
@@ -624,7 +626,7 @@ static int B_(tree_contains)(const struct B_(tree) *const tree,
 
 #ifdef TREE_VALUE /* <!-- map */
 /** Only if `TREE_VALUE`. @return Get the value of `x` in `tree`, or if no `x`,
- null. @order \O(\log `items`) @allow */
+ null. @order \O(\log |`tree`|) @allow */
 static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct PB_(ref) ref;
@@ -645,7 +647,7 @@ static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
  `TREE_PRESENT` if the key is already (the highest) in the tree, and
  `TREE_UNIQUE`, added, the `value` (if applicable) is uninitialized.
  @throws[EDOM] `x` is smaller than the largest key in `tree`. @throws[malloc]
- @allow */
+ @order \O(\log |`tree`|) @allow */
 static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 	PB_(key) key, PB_(value) **const value) {
 #else /* map --><!-- set */
@@ -752,8 +754,8 @@ catch: /* Didn't work. Reset. */
 /** Distributes `tree` (can be null) on the right side so that, after a series
  of <fn:<B>tree_bulk_add>, it will be consistent with the minimum number of
  keys in a node. @return The re-distribution was a success and all nodes are
- within rules. When intermixing bulk and regular operations, the function may
- return false. @order \O(\log `size`) @allow */
+ within rules. (Only when intermixing bulk and regular operations, can the
+ function return false.) @order \O(\log |`tree`|) @allow */
 static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 	struct PB_(tree) s;
 	struct PB_(node) *right;
@@ -823,7 +825,7 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 #ifdef TREE_VALUE /* <!-- map */
 /** Adds or updates `key` in `root`. If not-null, `eject` will be the replaced
  key, otherwise don't replace. If `value` is not-null, sticks the associated
- value. @return Result. */
+ value. */
 static enum tree_result PB_(update)(struct PB_(tree) *const root,
 	PB_(key) key, PB_(key) *const eject, PB_(value) **const value) {
 #else /* map --><!-- set */
@@ -1036,7 +1038,7 @@ grow: /* Leaf is full. */ {
  again.)
  @return Either `TREE_ERROR` (false) and doesn't touch `tree`, `TREE_UNIQUE`
  and adds a new key with `key`, or `TREE_PRESENT` there was already an existing
- key. @throws[malloc] @order \Theta(|`tree`|) @allow */
+ key. @throws[malloc] @order \Theta(\log |`tree`|) @allow */
 static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
 	const PB_(key) key, PB_(value) **const value)
 	{ return assert(tree), PB_(update)(&tree->root, key, 0, value); }
@@ -1058,7 +1060,7 @@ static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
  parameter is non-null and a return value other then `TREE_ERROR`, this
  receives the address of the value associated with the key.
  @return Either `TREE_ERROR` (false,) `errno` is set and doesn't touch `tree`;
- `TREE_UNIQUE`, adds a new key; or `TREE_PRESENT`, there was already an existing key. @throws[malloc] @order \Theta(|`tree`|) @allow */
+ `TREE_UNIQUE`, adds a new key; or `TREE_PRESENT`, there was already an existing key. @throws[malloc] @order \Theta(\log |`tree`|) @allow */
 static enum tree_result B_(tree_assign)(struct B_(tree) *const tree,
 	const PB_(key) key, PB_(key) *const eject, PB_(value) **const value)
 	{ return assert(tree), PB_(update)(&tree->root, key, eject, value); }
@@ -1359,7 +1361,7 @@ end:
 	return 1;
 }
 /** Tries to remove `key` from `tree`. @return Success, otherwise it was not in
- `tree`. @order \Theta(|`tree`|) @allow */
+ `tree`. @order \Theta(\log |`tree`|) @allow */
 static int B_(tree_remove)(struct B_(tree) *const tree,
 	const PB_(key) key) { return !!tree && !!tree->root.node
 	&& tree->root.height != UINT_MAX && PB_(remove)(&tree->root, key); }
@@ -1603,7 +1605,8 @@ static PB_(entry) B_(tree_previous)(struct B_(tree_cursor) *const cur)
 	{ return PB_(previous)(&cur->_); }
 
 #ifdef TREE_VALUE /* <!-- map */
-/** Adds `key` and returns `value` to tree with cursor `cur`. */
+/** Adds `key` and returns `value` to tree in cursor `cur`. See
+ <fn:<B>tree_try>. @return Success. `cur` will be between keys. */
 static enum tree_result B_(tree_cursor_try)(struct B_(tree_cursor) *const
 	cur, const PB_(key) key, PB_(value) **const value) {
 #else /* map --><!-- set */

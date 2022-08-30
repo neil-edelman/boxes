@@ -181,7 +181,13 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<B>tree_">&lt;B&gt;tree_</a></td><td>tree</td></tr>
 
+<tr><td align = right>static void</td><td><a href = "#fn:<B>tree_clear">&lt;B&gt;tree_clear</a></td><td>tree</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#fn:<B>tree_count">&lt;B&gt;tree_count</a></td><td>tree</td></tr>
+
 <tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#fn:<B>tree_lower_value">&lt;B&gt;tree_lower_value</a></td><td>tree, x</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<B>tree_contains">&lt;B&gt;tree_contains</a></td><td>tree, x</td></tr>
 
 <tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#fn:<B>tree_get">&lt;B&gt;tree_get</a></td><td>tree, x</td></tr>
 
@@ -242,6 +248,41 @@
 
 <p>Returns an initialized <code>tree</code> to idle, <code>tree</code> can be null.</p>
 
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_clear" name = "fn:<B>tree_clear">&lt;B&gt;tree_clear</a></h3>
+
+<p><code>static void <strong>&lt;B&gt;tree_clear</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code></p>
+
+<p>Clears <code>tree</code>, which can be null, idle, empty, or full. If it is empty or full, it remains active.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_count" name = "fn:<B>tree_count">&lt;B&gt;tree_count</a></h3>
+
+<p><code>static size_t <strong>&lt;B&gt;tree_count</strong>(const struct &lt;B&gt;tree *const <em>tree</em>)</code></p>
+
+<p>Counts all the keys on <code>tree</code>, which can be null.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>tree</code>|)</dd>
+</dl>
+
 </div>
 
 <div>
@@ -263,6 +304,21 @@
 
 <div>
 
+<h3><a id = "fn:<B>tree_contains" name = "fn:<B>tree_contains">&lt;B&gt;tree_contains</a></h3>
+
+<p><code>static int <strong>&lt;B&gt;tree_contains</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Is <code>x</code> in <code>tree</code>?</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
 <h3><a id = "fn:<B>tree_get" name = "fn:<B>tree_get">&lt;B&gt;tree_get</a></h3>
 
 <p><code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
@@ -273,7 +329,7 @@
 	<dt>Return:</dt>
 	<dd>Get the value of <code>x</code> in <code>tree</code>, or if no <code>x</code>, null.</dd>
 	<dt>Order:</dt>
-	<dd>&#927;(log <code>items</code>)</dd>
+	<dd>&#927;(log |<code>tree</code>|)</dd>
 </dl>
 
 </div>
@@ -294,6 +350,8 @@
 	<dt>Exceptional return: EDOM</dt>
 	<dd><code>x</code> is smaller than the largest key in <code>tree</code>.</dd>
 	<dt>Exceptional return: malloc</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>tree</code>|)</dd>
 </dl>
 
 </div>
@@ -308,9 +366,9 @@
 
 <dl>
 	<dt>Return:</dt>
-	<dd>The re-distribution was a success and all nodes are within rules. When intermixing bulk and regular operations, the function may return false.</dd>
+	<dd>The re-distribution was a success and all nodes are within rules. (Only when intermixing bulk and regular operations, can the function return false.)</dd>
 	<dt>Order:</dt>
-	<dd>&#927;(log <code>size</code>)</dd>
+	<dd>&#927;(log |<code>tree</code>|)</dd>
 </dl>
 
 </div>
@@ -330,7 +388,7 @@
 	<dd>Either <code>TREE_ERROR</code> (false) and doesn't touch <code>tree</code>, <code>TREE_UNIQUE</code> and adds a new key with <code>key</code>, or <code>TREE_PRESENT</code> there was already an existing key.</dd>
 	<dt>Exceptional return: malloc</dt>
 	<dt>Order:</dt>
-	<dd>&#920;(|<code>tree</code>|)</dd>
+	<dd>&#920;(log |<code>tree</code>|)</dd>
 </dl>
 
 </div>
@@ -352,7 +410,7 @@
 	<dd>Either <code>TREE_ERROR</code> (false,) <code>errno</code> is set and doesn't touch <code>tree</code>; <code>TREE_UNIQUE</code>, adds a new key; or <code>TREE_PRESENT</code>, there was already an existing key.</dd>
 	<dt>Exceptional return: malloc</dt>
 	<dt>Order:</dt>
-	<dd>&#920;(|<code>tree</code>|)</dd>
+	<dd>&#920;(log |<code>tree</code>|)</dd>
 </dl>
 
 </div>
@@ -369,7 +427,7 @@
 	<dt>Return:</dt>
 	<dd>Success, otherwise it was not in <code>tree</code>.</dd>
 	<dt>Order:</dt>
-	<dd>&#920;(|<code>tree</code>|)</dd>
+	<dd>&#920;(log |<code>tree</code>|)</dd>
 </dl>
 
 </div>
