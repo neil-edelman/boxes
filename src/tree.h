@@ -1,8 +1,9 @@
 /** @license 2022 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Stand-alone header <src/tree.h>; examples <test/test_tree.c>. On a
- compatible workstation, `make` creates the test suite of the examples.
+ @abstract Stand-alone header <src/tree.h>; examples <test/test_tree.c>;
+ article <doc/tree.pdf>. On a compatible workstation, `make` creates the test
+ suite of the examples.
 
  @subtitle Ordered tree
 
@@ -26,9 +27,9 @@
 
  @param[TREE_ORDER]
  Sets the branching factor, or order as <Knuth, 1998 Art 3>, to the range
- `[3, UCHAR_MAX+1]`. Default is most likely fine except when specific
- constraints have to be met. (That is, setting `TREE_ORDER` to 4 is an
- isomorphism to red-black trees.)
+ `[3, UINT_MAX+1]`. Default is most likely fine except when specific
+ constraints have to be met; for example, an isomorphism to red-black trees
+ sets `TREE_ORDER` to 4.
 
  @param[TREE_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized
@@ -88,7 +89,7 @@
  chosen to provide hysteresis. (Except `TREE_MAX 2`, it's fixed.) */
 #define TREE_MIN (TREE_MAX / 3 ? TREE_MAX / 3 : 1)
 #define TREE_SPLIT (TREE_ORDER / 2) /* Split index: even order left-leaning. */
-#define TREE_RESULT X(ERROR), X(UNIQUE), X(TAKEN)
+#define TREE_RESULT X(ERROR), X(UNIQUE), X(PRESENT)
 #define X(n) TREE_##n
 /** A result of modifying the tree, of which `TREE_ERROR` is false.
  ![A diagram of the result states.](../doc/put.png) */
@@ -209,12 +210,15 @@ static PB_(entry) PB_(null_entry)(void)
 	{ const PB_(entry) e = { 0, 0 }; return e; }
 static PB_(entry_c) PB_(null_entry_c)(void)
 	{ const PB_(entry_c) e = { 0, 0 }; return e; }
+/** Constructs entry from `node` and `i`. */
 static PB_(entry) PB_(cons_entry)(struct PB_(node) *const node,
 	const unsigned i) { PB_(entry) e;
 	e.key = node->key + i, e.value = node->value + i; return e; }
+/** Constructs entry from `node` and `i`. */
 static PB_(entry_c) PB_(cons_entry_c)(const struct PB_(node) *const node,
 	const unsigned i) { PB_(entry_c) e;
 	e.key = node->key + i, e.value = node->value + i; return e; }
+/** Gets the value of `ref`. */
 static PB_(value) *PB_(ref_to_value)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->value + ref.idx : 0; }
 
@@ -225,10 +229,13 @@ typedef PB_(key) *PB_(entry);
 typedef PB_(key_c) *PB_(entry_c);
 static PB_(entry_c) PB_(null_entry_c)(void) { return 0; }
 static PB_(entry) PB_(null_entry)(void) { return 0; }
-static PB_(entry) PB_(cons_entry)(struct PB_(node) *const leaf,
-	const unsigned i) { return leaf->key + i; }
-static PB_(entry_c) PB_(cons_entry_c)(const struct PB_(node) *const leaf,
-	const unsigned i) { return leaf->key + i; }
+/** Constructs entry from `node` and `i`. */
+static PB_(entry) PB_(cons_entry)(struct PB_(node) *const node,
+	const unsigned i) { return node->key + i; }
+/** Constructs entry from `node` and `i`. */
+static PB_(entry_c) PB_(cons_entry_c)(const struct PB_(node) *const node,
+	const unsigned i) { return node->key + i; }
+/** Gets the value of `ref`. */
 static PB_(value) *PB_(ref_to_value)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->key + ref.idx : 0; }
 
@@ -337,7 +344,7 @@ static PB_(entry_c) PB_(next_c)(struct PB_(forward) *const it) {
 }
 
 #define BOX_ITERATOR PB_(entry)
-/** Is `x` not null? @implements `is_element` */
+/** Is `e` not null? @implements `is_element` */
 static int PB_(is_element)(const PB_(entry) e) {
 #ifdef TREE_VALUE
 	return !!e.key;
@@ -523,7 +530,7 @@ static struct B_(tree) B_(tree)(void) {
 
 /** Private: frees non-empty `tree` and it's children recursively, but doesn't
  put it to idle or clear pointers.
- @param[one] If `one` is valid, tries to keep one leaf. Set to null before. */
+ @param[keep] Tries to keep one leaf if non-null. Set to null before. */
 static void PB_(clear_r)(struct PB_(tree) tree, struct PB_(node) **const keep) {
 	assert(tree.node);
 	if(!tree.height) {
@@ -635,7 +642,7 @@ static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
  returning true. A null pointer in this parameter causes the value to go
  uninitialized. This parameter is not there if one didn't specify `TREE_VALUE`.
  @return One of <tag:tree_result>: `TREE_ERROR` and `errno` will be set,
- `TREE_TAKEN` if the key is already (the highest) in the tree, and
+ `TREE_PRESENT` if the key is already (the highest) in the tree, and
  `TREE_UNIQUE`, added, the `value` (if applicable) is uninitialized.
  @throws[EDOM] `x` is smaller than the largest key in `tree`. @throws[malloc]
  @allow */
@@ -680,7 +687,7 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 				*value = PB_(ref_to_value)(max_ref);
 			}
 #endif
-			return TREE_TAKEN;
+			return TREE_PRESENT;
 		}
 
 		/* One leaf, and the rest branches. */
@@ -814,11 +821,9 @@ static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 }
 
 #ifdef TREE_VALUE /* <!-- map */
-/** Adds or updates `key` in `tree`.
- @return `TREE_UNIQUE`: if non-null, `value` gets written with an uninitialized
- pointer. `TREE_TAKEN`: `key` is already in `tree`, `value`, if non-null, is
- associated with `key`. `TREE_ERROR`: memory error, the `tree` is not touched,
- and `errno` will be set. */
+/** Adds or updates `key` in `root`. If not-null, `eject` will be the replaced
+ key, otherwise don't replace. If `value` is not-null, sticks the associated
+ value. @return Result. */
 static enum tree_result PB_(update)(struct PB_(tree) *const root,
 	PB_(key) key, PB_(key) *const eject, PB_(value) **const value) {
 #else /* map --><!-- set */
@@ -856,7 +861,7 @@ descend: /* Record last node that has space. */
 #ifdef TREE_VALUE
 			if(value) *value = PB_(ref_to_value)(add);
 #endif
-			return TREE_TAKEN;
+			return TREE_PRESENT;
 		}
 	}
 	if(hole.node == add.node) goto insert; else goto grow;
@@ -1030,7 +1035,7 @@ grow: /* Leaf is full. */ {
  structural changes, (such as calling <fn:<B>tree_try> with `TREE_UNIQUE`
  again.)
  @return Either `TREE_ERROR` (false) and doesn't touch `tree`, `TREE_UNIQUE`
- and adds a new key with `key`, or `TREE_TAKEN` there was already an existing
+ and adds a new key with `key`, or `TREE_PRESENT` there was already an existing
  key. @throws[malloc] @order \Theta(|`tree`|) @allow */
 static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
 	const PB_(key) key, PB_(value) **const value)
@@ -1047,13 +1052,13 @@ static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
 #ifdef TREE_VALUE /* <!-- map */
 /** Adds or updates `key` in `tree`.
  @param[eject] If this parameter is non-null and a return value of
- `TREE_TAKEN`, the old key is stored in `eject`, replaced by `key`. A null
+ `TREE_PRESENT`, the old key is stored in `eject`, replaced by `key`. A null
  value indicates that on conflict, the new key yields to the old key, as <fn:<B>tree_try>. This is only significant in trees with distinguishable keys.
  @param[value] Only present if `TREE_VALUE` (map) was specified. If this
  parameter is non-null and a return value other then `TREE_ERROR`, this
  receives the address of the value associated with the key.
  @return Either `TREE_ERROR` (false,) `errno` is set and doesn't touch `tree`;
- `TREE_UNIQUE`, adds a new key; or `TREE_TAKEN`, there was already an existing key. @throws[malloc] @order \Theta(|`tree`|) @allow */
+ `TREE_UNIQUE`, adds a new key; or `TREE_PRESENT`, there was already an existing key. @throws[malloc] @order \Theta(|`tree`|) @allow */
 static enum tree_result B_(tree_assign)(struct B_(tree) *const tree,
 	const PB_(key) key, PB_(key) *const eject, PB_(value) **const value)
 	{ return assert(tree), PB_(update)(&tree->root, key, eject, value); }
@@ -1572,7 +1577,7 @@ static struct B_(tree_cursor) B_(tree_begin)(struct B_(tree) *const tree)
 /** @param[tree] Can be null. @return Cursor in `tree` between elements, such
  that if <fn:<B>tree_next> is called, it will be smallest key that is not
  smaller than `x`, (which could be <fn:<B>tree_end>; as _per_
- <typedef:<PB>compare_fn>.) @order @order \Theta(\log |`tree`|) @allow */
+ <typedef:<PB>compare_fn>.) @order \Theta(\log |`tree`|) @allow */
 static struct B_(tree_cursor) B_(tree_begin_at)(struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct B_(tree_cursor) cur;
@@ -1598,7 +1603,7 @@ static PB_(entry) B_(tree_previous)(struct B_(tree_cursor) *const cur)
 	{ return PB_(previous)(&cur->_); }
 
 #ifdef TREE_VALUE /* <!-- map */
-/** Adds `key` and returns `value` to `tree`. */
+/** Adds `key` and returns `value` to tree with cursor `cur`. */
 static enum tree_result B_(tree_cursor_try)(struct B_(tree_cursor) *const
 	cur, const PB_(key) key, PB_(value) **const value) {
 #else /* map --><!-- set */

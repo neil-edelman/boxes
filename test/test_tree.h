@@ -303,7 +303,7 @@ static void PB_(test)(void) {
 #endif
 			){
 		case TREE_ERROR: perror("What?"); assert(0); break;
-		case TREE_TAKEN: printf("Key <%s> is already in tree.\n", z); break;
+		case TREE_PRESENT: printf("Key <%s> is already in tree.\n", z); break;
 		case TREE_UNIQUE:
 			n_unique++;
 #ifdef TREE_VALUE
@@ -389,7 +389,7 @@ static void PB_(test)(void) {
 #endif
 		{
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
-		case TREE_TAKEN: printf("<%s> already in tree\n", z); break;
+		case TREE_PRESENT: printf("<%s> already in tree\n", z); break;
 		case TREE_UNIQUE: printf("<%s> added\n", z); n_unique++; break;
 		}
 #ifdef TREE_VALUE

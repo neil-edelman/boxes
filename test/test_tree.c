@@ -286,7 +286,7 @@ static void order3(void) {
 		printf("__%u) add random value %u__\n", (unsigned)i, x);
 		switch(order3_tree_try(&rnd, x)) {
 		case TREE_ERROR: goto catch;
-		case TREE_TAKEN: printf("%u already in tree\n", x); break;
+		case TREE_PRESENT: printf("%u already in tree\n", x); break;
 		case TREE_UNIQUE: printf("%u added\n", x); break;
 		}
 		if(!(i & (i + 1)) || i == size_rnd - 1) {
@@ -484,7 +484,7 @@ static void order3(void) {
 			printf("__%u) Going to add consecutive %u__\n", (unsigned)i, x);
 			switch(order3_tree_try(&consecutive, x)) {
 			case TREE_ERROR: goto catch;
-			case TREE_TAKEN: printf("%u already in tree\n", x); break;
+			case TREE_PRESENT: printf("%u already in tree\n", x); break;
 			case TREE_UNIQUE: printf("%u added\n", x); break;
 			}
 			sprintf(fn, "graph/consecutive-%u.gv", (unsigned)i);
@@ -530,7 +530,7 @@ static void redblack(void) {
 	for(n = 0, i = 0; i < rnd_size; i++) {
 		switch(redblack_tree_try(&tree, rnd[i].x, &value)) {
 		case TREE_ERROR: goto catch;
-		case TREE_TAKEN: printf("%u already in tree\n", rnd[i].x); break;
+		case TREE_PRESENT: printf("%u already in tree\n", rnd[i].x); break;
 		case TREE_UNIQUE: rnd[i].in = 1; n++; break;
 		}
 		*value = rnd[i].x; /* The same key/value. */

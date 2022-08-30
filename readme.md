@@ -1,13 +1,12 @@
 # tree\.h #
 
-Stand\-alone header [src/tree\.h](src/tree.h); examples [test/test\_tree\.c](test/test_tree.c)\. On a compatible workstation, `make` creates the test suite of the examples\.
+Stand\-alone header [src/tree\.h](src/tree.h); examples [test/test\_tree\.c](test/test_tree.c); article [doc/tree\.pdf](doc/tree.pdf)\. On a compatible workstation, `make` creates the test suite of the examples\.
 
 ## Ordered tree ##
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PB&gt;key](#user-content-typedef-9d1494bc), [&lt;PB&gt;value](#user-content-typedef-1740653a), [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31), [&lt;PB&gt;entry](#user-content-typedef-8e330c63), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [tree_result](#user-content-tag-9c3f99d7), [&lt;B&gt;tree](#user-content-tag-a36433e3), [&lt;B&gt;tree_entry](#user-content-tag-9e3caf18), [&lt;B&gt;tree_cursor](#user-content-tag-1718ca86)
- * [General Declarations](#user-content-data): [e](#user-content-data-e00c22e0)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -23,7 +22,7 @@ A [&lt;B&gt;tree](#user-content-tag-a36433e3) is an ordered set or map contained
  * Parameter: TREE\_COMPARE  
    A function satisfying [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31)\. Defaults to ascending order\. Required if `TREE_KEY` is changed to an incomparable type\.
  * Parameter: TREE\_ORDER  
-   Sets the branching factor, or order as [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3), to the range `[3, UCHAR_MAX+1]`\. Default is most likely fine except when specific constraints have to be met\. \(That is, setting `TREE_ORDER` to 4 is an isomorphism to red\-black trees\.\)
+   Sets the branching factor, or order as [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3), to the range `[3, UINT_MAX+1]`\. Default is most likely fine except when specific constraints have to be met; for example, an isomorphism to red\-black trees sets `TREE_ORDER` to 4\.
  * Parameter: TREE\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
  * Parameter: TREE\_TO\_STRING\_NAME, TREE\_TO\_STRING  
@@ -114,20 +113,6 @@ Adding, deleting, or changes in the topology of the tree invalidate it\.
 
 
 
-## <a id = "user-content-data" name = "user-content-data">General Declarations</a> ##
-
-### <a id = "user-content-data-e00c22e0" name = "user-content-data-e00c22e0">e</a> ###
-
-<code>TREE_TO_SUCCESSOR(to_successor, ref)TREE_TO_SUCCESSOR(to_successor_c, ref_c)static int &lt;PB&gt;is_element_c(&lt;PB&gt;entry_c <strong>e</strong>){ return !!e .key; return !!e; } struct &lt;PB&gt;forward { const struct &lt;PB&gt;tree *root; struct &lt;PB&gt;ref_c next; };</code>
-
-Is `e` not null?
-
- * Implements:  
-   `is_element_c`
-
-
-
-
 ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##
 
 <table>
@@ -203,7 +188,7 @@ For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`, `x = 11 -> null`\. 
  * Return:  
    Lower\-bound value match for `x` in `tree` or null if `x` is greater than all in `tree`\.
  * Order:  
-   &#927;\(\\log |`tree`|\)
+   &#927;\(log |`tree`|\)
 
 
 
@@ -217,7 +202,7 @@ Only if `TREE_VALUE`\.
  * Return:  
    Get the value of `x` in `tree`, or if no `x`, null\.
  * Order:  
-   &#927;\(\\log `items`\)
+   &#927;\(log `items`\)
 
 
 
@@ -231,7 +216,7 @@ Packs `key` on the right side of `tree` without doing the usual restructuring\. 
  * Parameter: _value_  
    A pointer to the key's value which is set by the function on returning true\. A null pointer in this parameter causes the value to go uninitialized\. This parameter is not there if one didn't specify `TREE_VALUE`\.
  * Return:  
-   One of [tree_result](#user-content-tag-9c3f99d7): `TREE_ERROR` and `errno` will be set, `TREE_TAKEN` if the key is already \(the highest\) in the tree, and `TREE_UNIQUE`, added, the `value` \(if applicable\) is uninitialized\.
+   One of [tree_result](#user-content-tag-9c3f99d7): `TREE_ERROR` and `errno` will be set, `TREE_PRESENT` if the key is already \(the highest\) in the tree, and `TREE_UNIQUE`, added, the `value` \(if applicable\) is uninitialized\.
  * Exceptional return: EDOM  
    `x` is smaller than the largest key in `tree`\.
  * Exceptional return: malloc  
@@ -248,7 +233,7 @@ Distributes `tree` \(can be null\) on the right side so that, after a series of 
  * Return:  
    The re\-distribution was a success and all nodes are within rules\. When intermixing bulk and regular operations, the function may return false\.
  * Order:  
-   &#927;\(\\log `size`\)
+   &#927;\(log `size`\)
 
 
 
@@ -262,7 +247,7 @@ Adds or gets `key` in `tree`\. If `key` is already in `tree`, uses the old value
  * Parameter: _value_  
    Only present if `TREE_VALUE` \(map\) was specified\. If this parameter is non\-null and a return value other then `TREE_ERROR`, this receives the address of the value associated with the `key`\. This pointer is only guaranteed to be valid only while the `tree` doesn't undergo structural changes, \(such as calling [&lt;B&gt;tree_try](#user-content-fn-2c43561d) with `TREE_UNIQUE` again\.\)
  * Return:  
-   Either `TREE_ERROR` \(false\) and doesn't touch `tree`, `TREE_UNIQUE` and adds a new key with `key`, or `TREE_TAKEN` there was already an existing key\.
+   Either `TREE_ERROR` \(false\) and doesn't touch `tree`, `TREE_UNIQUE` and adds a new key with `key`, or `TREE_PRESENT` there was already an existing key\.
  * Exceptional return: malloc  
  * Order:  
    &#920;\(|`tree`|\)
@@ -277,11 +262,11 @@ Adds or gets `key` in `tree`\. If `key` is already in `tree`, uses the old value
 Adds or updates `key` in `tree`\.
 
  * Parameter: _eject_  
-   If this parameter is non\-null and a return value of `TREE_TAKEN`, the old key is stored in `eject`, replaced by `key`\. A null value indicates that on conflict, the new key yields to the old key, as [&lt;B&gt;tree_try](#user-content-fn-2c43561d)\. This is only significant in trees with distinguishable keys\.
+   If this parameter is non\-null and a return value of `TREE_PRESENT`, the old key is stored in `eject`, replaced by `key`\. A null value indicates that on conflict, the new key yields to the old key, as [&lt;B&gt;tree_try](#user-content-fn-2c43561d)\. This is only significant in trees with distinguishable keys\.
  * Parameter: _value_  
    Only present if `TREE_VALUE` \(map\) was specified\. If this parameter is non\-null and a return value other then `TREE_ERROR`, this receives the address of the value associated with the key\.
  * Return:  
-   Either `TREE_ERROR` \(false,\) `errno` is set and doesn't touch `tree`; `TREE_UNIQUE`, adds a new key; or `TREE_TAKEN`, there was already an existing key\.
+   Either `TREE_ERROR` \(false,\) `errno` is set and doesn't touch `tree`; `TREE_UNIQUE`, adds a new key; or `TREE_PRESENT`, there was already an existing key\.
  * Exceptional return: malloc  
  * Order:  
    &#920;\(|`tree`|\)
@@ -331,7 +316,7 @@ Tries to remove `key` from `tree`\.
  * Return:  
    Cursor before the first element of `tree`\. Can be null\.
  * Order:  
-   &#920;\(\\log |`tree`|\)
+   &#920;\(log |`tree`|\)
 
 
 
@@ -345,7 +330,7 @@ Tries to remove `key` from `tree`\.
  * Return:  
    Cursor in `tree` between elements, such that if [&lt;B&gt;tree_next](#user-content-fn-6828a06d) is called, it will be smallest key that is not smaller than `x`, \(which could be [&lt;B&gt;tree_end](#user-content-fn-6b449fc9); as _per_ [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31)\.\)
  * Order:  
-    &#920;\(\\log |`tree`|\)
+   &#920;\(log |`tree`|\)
 
 
 
@@ -357,7 +342,7 @@ Tries to remove `key` from `tree`\.
  * Return:  
    Cursor after the last element of `tree`\. Can be null\.
  * Order:  
-   &#920;\(\\log |`tree`|\)
+   &#920;\(log |`tree`|\)
 
 
 
@@ -371,7 +356,7 @@ Advances `cur` to the next element\.
  * Return:  
    A pointer to the current element, or null if it ran out of elements\.
  * Order:  
-   &#927;\(\\log |`tree`|\)
+   &#927;\(log |`tree`|\)
 
 
 
@@ -385,7 +370,7 @@ Reverses `cur` to the previous element\.
  * Return:  
    A pointer to the previous element, or null if it ran out of elements\.
  * Order:  
-   &#927;\(\\log |`tree`|\)
+   &#927;\(log |`tree`|\)
 
 
 

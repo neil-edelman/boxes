@@ -33,7 +33,7 @@
 
 <h1>tree.h</h1>
 
-<p>Stand-alone header <a href = "src/tree.h">src/tree.h</a>; examples <a href = "test/test_tree.c">test/test_tree.c</a>. On a compatible workstation, <code>make</code> creates the test suite of the examples.</p>
+<p>Stand-alone header <a href = "src/tree.h">src/tree.h</a>; examples <a href = "test/test_tree.c">test/test_tree.c</a>; article <a href = "doc/tree.pdf">doc/tree.pdf</a>. On a compatible workstation, <code>make</code> creates the test suite of the examples.</p>
 
 <h2>Ordered tree</h2>
 
@@ -41,7 +41,6 @@
 	<li><a href = "#preamble:">Description</a></li>
 	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PB>key">&lt;PB&gt;key</a>, <a href = "#typedef:<PB>value">&lt;PB&gt;value</a>, <a href = "#typedef:<PB>compare_fn">&lt;PB&gt;compare_fn</a>, <a href = "#typedef:<PB>entry">&lt;PB&gt;entry</a>, <a href = "#typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:tree_result">tree_result</a>, <a href = "#tag:<B>tree">&lt;B&gt;tree</a>, <a href = "#tag:<B>tree_entry">&lt;B&gt;tree_entry</a>, <a href = "#tag:<B>tree_cursor">&lt;B&gt;tree_cursor</a></li>
-	<li><a href = "#data:">General Declarations</a>: <a href = "#data:e">e</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -61,7 +60,7 @@
 	<dt>Parameter: TREE_COMPARE</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PB&gt;compare_fn">&lt;PB&gt;compare_fn</a>. Defaults to ascending order. Required if <code>TREE_KEY</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: TREE_ORDER</dt>
-	<dd>Sets the branching factor, or order as <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3">Knuth, 1998 Art 3</a>, to the range <code>[3, UCHAR_MAX+1]</code>. Default is most likely fine except when specific constraints have to be met. (That is, setting <code>TREE_ORDER</code> to 4 is an isomorphism to red-black trees.)</dd>
+	<dd>Sets the branching factor, or order as <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3">Knuth, 1998 Art 3</a>, to the range <code>[3, UINT_MAX+1]</code>. Default is most likely fine except when specific constraints have to be met; for example, an isomorphism to red-black trees sets <code>TREE_ORDER</code> to 4.</dd>
 	<dt>Parameter: TREE_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
 	<dt>Parameter: TREE_TO_STRING_NAME, TREE_TO_STRING</dt>
@@ -170,23 +169,6 @@
 
 </div>
 
-<h2><a id = "data:" name = "data:">General Declarations</a></h2>
-
-<div>
-
-<h3><a id = "data:e" name = "data:e">e</a></h3>
-
-<p><code>TREE_TO_SUCCESSOR(to_successor, ref)TREE_TO_SUCCESSOR(to_successor_c, ref_c)static int &lt;PB&gt;is_element_c(&lt;PB&gt;entry_c <strong>e</strong>){ return !!e .key; return !!e; } struct &lt;PB&gt;forward { const struct &lt;PB&gt;tree *root; struct &lt;PB&gt;ref_c next; };</code></p>
-
-<p>Is <code>e</code> not null?</p>
-
-<dl>
-	<dt>Implements:</dt>
-	<dd><code>is_element_c</code></dd>
-</dl>
-
-</div>
-
 <div>
 
 <h2><a id = "summary:" name = "summary:">Function Summary</a></h2>
@@ -274,7 +256,7 @@
 	<dt>Return:</dt>
 	<dd>Lower-bound value match for <code>x</code> in <code>tree</code> or null if <code>x</code> is greater than all in <code>tree</code>.</dd>
 	<dt>Order:</dt>
-	<dd>&#927;(\log |<code>tree</code>|)</dd>
+	<dd>&#927;(log |<code>tree</code>|)</dd>
 </dl>
 
 </div>
@@ -291,7 +273,7 @@
 	<dt>Return:</dt>
 	<dd>Get the value of <code>x</code> in <code>tree</code>, or if no <code>x</code>, null.</dd>
 	<dt>Order:</dt>
-	<dd>&#927;(\log <code>items</code>)</dd>
+	<dd>&#927;(log <code>items</code>)</dd>
 </dl>
 
 </div>
@@ -308,7 +290,7 @@
 	<dt>Parameter: <em>value</em></dt>
 	<dd>A pointer to the key's value which is set by the function on returning true. A null pointer in this parameter causes the value to go uninitialized. This parameter is not there if one didn't specify <code>TREE_VALUE</code>.</dd>
 	<dt>Return:</dt>
-	<dd>One of <a href = "#tag:tree_result">tree_result</a>: <code>TREE_ERROR</code> and <code>errno</code> will be set, <code>TREE_TAKEN</code> if the key is already (the highest) in the tree, and <code>TREE_UNIQUE</code>, added, the <code>value</code> (if applicable) is uninitialized.</dd>
+	<dd>One of <a href = "#tag:tree_result">tree_result</a>: <code>TREE_ERROR</code> and <code>errno</code> will be set, <code>TREE_PRESENT</code> if the key is already (the highest) in the tree, and <code>TREE_UNIQUE</code>, added, the <code>value</code> (if applicable) is uninitialized.</dd>
 	<dt>Exceptional return: EDOM</dt>
 	<dd><code>x</code> is smaller than the largest key in <code>tree</code>.</dd>
 	<dt>Exceptional return: malloc</dt>
@@ -328,7 +310,7 @@
 	<dt>Return:</dt>
 	<dd>The re-distribution was a success and all nodes are within rules. When intermixing bulk and regular operations, the function may return false.</dd>
 	<dt>Order:</dt>
-	<dd>&#927;(\log <code>size</code>)</dd>
+	<dd>&#927;(log <code>size</code>)</dd>
 </dl>
 
 </div>
@@ -345,7 +327,7 @@
 	<dt>Parameter: <em>value</em></dt>
 	<dd>Only present if <code>TREE_VALUE</code> (map) was specified. If this parameter is non-null and a return value other then <code>TREE_ERROR</code>, this receives the address of the value associated with the <code>key</code>. This pointer is only guaranteed to be valid only while the <code>tree</code> doesn't undergo structural changes, (such as calling <a href = "#fn:&lt;B&gt;tree_try">&lt;B&gt;tree_try</a> with <code>TREE_UNIQUE</code> again.)</dd>
 	<dt>Return:</dt>
-	<dd>Either <code>TREE_ERROR</code> (false) and doesn't touch <code>tree</code>, <code>TREE_UNIQUE</code> and adds a new key with <code>key</code>, or <code>TREE_TAKEN</code> there was already an existing key.</dd>
+	<dd>Either <code>TREE_ERROR</code> (false) and doesn't touch <code>tree</code>, <code>TREE_UNIQUE</code> and adds a new key with <code>key</code>, or <code>TREE_PRESENT</code> there was already an existing key.</dd>
 	<dt>Exceptional return: malloc</dt>
 	<dt>Order:</dt>
 	<dd>&#920;(|<code>tree</code>|)</dd>
@@ -363,11 +345,11 @@
 
 <dl>
 	<dt>Parameter: <em>eject</em></dt>
-	<dd>If this parameter is non-null and a return value of <code>TREE_TAKEN</code>, the old key is stored in <code>eject</code>, replaced by <code>key</code>. A null value indicates that on conflict, the new key yields to the old key, as <a href = "#fn:&lt;B&gt;tree_try">&lt;B&gt;tree_try</a>. This is only significant in trees with distinguishable keys.</dd>
+	<dd>If this parameter is non-null and a return value of <code>TREE_PRESENT</code>, the old key is stored in <code>eject</code>, replaced by <code>key</code>. A null value indicates that on conflict, the new key yields to the old key, as <a href = "#fn:&lt;B&gt;tree_try">&lt;B&gt;tree_try</a>. This is only significant in trees with distinguishable keys.</dd>
 	<dt>Parameter: <em>value</em></dt>
 	<dd>Only present if <code>TREE_VALUE</code> (map) was specified. If this parameter is non-null and a return value other then <code>TREE_ERROR</code>, this receives the address of the value associated with the key.</dd>
 	<dt>Return:</dt>
-	<dd>Either <code>TREE_ERROR</code> (false,) <code>errno</code> is set and doesn't touch <code>tree</code>; <code>TREE_UNIQUE</code>, adds a new key; or <code>TREE_TAKEN</code>, there was already an existing key.</dd>
+	<dd>Either <code>TREE_ERROR</code> (false,) <code>errno</code> is set and doesn't touch <code>tree</code>; <code>TREE_UNIQUE</code>, adds a new key; or <code>TREE_PRESENT</code>, there was already an existing key.</dd>
 	<dt>Exceptional return: malloc</dt>
 	<dt>Order:</dt>
 	<dd>&#920;(|<code>tree</code>|)</dd>
@@ -426,7 +408,7 @@
 	<dt>Return:</dt>
 	<dd>Cursor before the first element of <code>tree</code>. Can be null.</dd>
 	<dt>Order:</dt>
-	<dd>&#920;(\log |<code>tree</code>|)</dd>
+	<dd>&#920;(log |<code>tree</code>|)</dd>
 </dl>
 
 </div>
@@ -443,7 +425,7 @@
 	<dt>Return:</dt>
 	<dd>Cursor in <code>tree</code> between elements, such that if <a href = "#fn:&lt;B&gt;tree_next">&lt;B&gt;tree_next</a> is called, it will be smallest key that is not smaller than <code>x</code>, (which could be <a href = "#fn:&lt;B&gt;tree_end">&lt;B&gt;tree_end</a>; as <em>per</em> <a href = "#typedef:&lt;PB&gt;compare_fn">&lt;PB&gt;compare_fn</a>.)</dd>
 	<dt>Order:</dt>
-	<dd> &#920;(\log |<code>tree</code>|)</dd>
+	<dd>&#920;(log |<code>tree</code>|)</dd>
 </dl>
 
 </div>
@@ -458,7 +440,7 @@
 	<dt>Return:</dt>
 	<dd>Cursor after the last element of <code>tree</code>. Can be null.</dd>
 	<dt>Order:</dt>
-	<dd>&#920;(\log |<code>tree</code>|)</dd>
+	<dd>&#920;(log |<code>tree</code>|)</dd>
 </dl>
 
 </div>
@@ -475,7 +457,7 @@
 	<dt>Return:</dt>
 	<dd>A pointer to the current element, or null if it ran out of elements.</dd>
 	<dt>Order:</dt>
-	<dd>&#927;(\log |<code>tree</code>|)</dd>
+	<dd>&#927;(log |<code>tree</code>|)</dd>
 </dl>
 
 </div>
@@ -492,7 +474,7 @@
 	<dt>Return:</dt>
 	<dd>A pointer to the previous element, or null if it ran out of elements.</dd>
 	<dt>Order:</dt>
-	<dd>&#927;(\log |<code>tree</code>|)</dd>
+	<dd>&#927;(log |<code>tree</code>|)</dd>
 </dl>
 
 </div>
