@@ -1566,8 +1566,8 @@ static struct B_(tree_cursor) B_(tree_begin)(struct B_(tree) *const tree)
 	{ struct B_(tree_cursor) cur; cur._ = PB_(begin)(tree); return cur; }
 /** @param[tree] Can be null. @return Cursor in `tree` between elements, such
  that if <fn:<B>tree_next> is called, it will be smallest key that is not
- smaller than `x`, (which could be <fn:<B>tree_end>; as _per_
- <typedef:<PB>compare_fn>.) @order \Theta(\log |`tree`|) @allow */
+ smaller than `x`, or, <fn:<B>tree_end> if `x` is greater than all in `tree`.
+ @order \Theta(\log |`tree`|) @allow */
 static struct B_(tree_cursor) B_(tree_begin_at)(struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct B_(tree_cursor) cur;
@@ -1594,7 +1594,8 @@ static PB_(entry) B_(tree_previous)(struct B_(tree_cursor) *const cur)
 
 #ifdef TREE_VALUE /* <!-- map */
 /** Adds `key` and returns `value` to tree in cursor `cur`. See
- <fn:<B>tree_try>. @return Success. `cur` will be between keys. */
+ <fn:<B>tree_try>. @return If `cur` is not pointing at a valid tree, returns
+ `TREE_ERROR` and doesn't set `errno`, otherwise the same. */
 static enum tree_result B_(tree_cursor_try)(struct B_(tree_cursor) *const
 	cur, const PB_(key) key, PB_(value) **const value) {
 #else /* map --><!-- set */
@@ -1603,8 +1604,9 @@ static enum tree_result B_(tree_cursor_try)(struct B_(tree_cursor) *const
 #endif /* set --> */
 	enum { START, MIDDLE, END } where;
 	PB_(key) anchor;
+	enum tree_result ret;
 	memset(&anchor, 0, sizeof anchor); /* Silence warnings. */
-	if(!cur || cur->_.root) return 0; /* No tree. */
+	if(!cur || !cur->_.root) return printf("no?\n"), TREE_ERROR; /* No tree. */
 	if(cur->_.ref.node && cur->_.root->height != UINT_MAX) {
 		where = (cur->_.ref.idx < cur->_.ref.node->size) ? MIDDLE : END;
 	} else {
@@ -1613,10 +1615,11 @@ static enum tree_result B_(tree_cursor_try)(struct B_(tree_cursor) *const
 	if(where == MIDDLE) anchor = cur->_.ref.node->key[cur->_.ref.idx];
 	if(where == START || where == END) cur->_.seen = 0; /* Should be already. */
 #ifdef TREE_VALUE
-	if(!PB_(update)(cur->_.root, key, 0, value)) return 0;
+	ret = PB_(update)(cur->_.root, key, 0, value);
 #else
-	if(!PB_(update)(cur->_.root, key, 0)) return 0;
+	ret = PB_(update)(cur->_.root, key, 0);
 #endif
+	if(ret == TREE_ERROR) return TREE_ERROR;
 	assert(cur->_.root->height != UINT_MAX); /* Can't be empty. */
 	switch(where) {
 	case START: cur->_.root = 0; break;
@@ -1631,7 +1634,7 @@ static enum tree_result B_(tree_cursor_try)(struct B_(tree_cursor) *const
 		}
 		break; }
 	}
-	return 1;
+	return ret;
 #ifdef TREE_VALUE
 }
 #else
@@ -1662,12 +1665,13 @@ static const char *(*PB_(tree_to_string))(const struct B_(tree) *);
 #include "../test/test_tree.h"
 #endif /* test --> */
 
+
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
 	PB_(key) k;
 	memset(&k, 0, sizeof k);
 	PB_(is_element_c); PB_(forward); PB_(next_c); PB_(is_element);
-	B_(tree)(); B_(tree_)(0); B_(tree_clear)(0); B_(tree_count)(0);
+	B_(tree)(); B_(tree_)(0); /*B_(tree_clear)(0); B_(tree_count)(0);
 	B_(tree_contains)(0, k); B_(tree_get)(0, k); B_(tree_at)(0, k);
 #ifdef TREE_VALUE
 	B_(tree_bulk_add)(0, k, 0); B_(tree_try)(0, k, 0);
@@ -1679,7 +1683,7 @@ static void PB_(unused_base)(void) {
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
 	B_(tree_begin)(0); B_(tree_begin_at)(0, k); B_(tree_end)(0);
 	B_(tree_previous)(0); B_(tree_next)(0);
-	B_(tree_cursor_remove)(0);
+	B_(tree_cursor_remove)(0);*/
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
