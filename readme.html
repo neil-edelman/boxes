@@ -69,7 +69,7 @@
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>Caveat:</dt>
-	<dd>multi-key; implementation of order statistic tree? merge, difference</dd>
+	<dd>multi-key; implementation of order statistic tree? no, too many ifdefs. merge, difference</dd>
 </dl>
 
 </div>
@@ -201,6 +201,18 @@
 
 <tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#fn:<B>tree_lower_value">&lt;B&gt;tree_lower_value</a></td><td>tree, x</td></tr>
 
+<tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#fn:<B>tree_get">&lt;B&gt;tree_get</a></td><td>tree, x</td></tr>
+
+<tr><td align = right>static enum tree_result</td><td><a href = "#fn:<B>tree_bulk_add">&lt;B&gt;tree_bulk_add</a></td><td>tree, key, value</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<B>tree_bulk_finish">&lt;B&gt;tree_bulk_finish</a></td><td>tree</td></tr>
+
+<tr><td align = right>static enum tree_result</td><td><a href = "#fn:<B>tree_try">&lt;B&gt;tree_try</a></td><td>tree, key, value</td></tr>
+
+<tr><td align = right>static enum tree_result</td><td><a href = "#fn:<B>tree_assign">&lt;B&gt;tree_assign</a></td><td>tree, key, eject, value</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<B>tree_remove">&lt;B&gt;tree_remove</a></td><td>tree, key</td></tr>
+
 <tr><td align = right>static int</td><td><a href = "#fn:<B>tree_clone">&lt;B&gt;tree_clone</a></td><td>tree, source</td></tr>
 
 <tr><td align = right>static struct &lt;B&gt;tree_cursor</td><td><a href = "#fn:<B>tree_begin">&lt;B&gt;tree_begin</a></td><td>tree</td></tr>
@@ -263,6 +275,119 @@
 	<dd>Lower-bound value match for <code>x</code> in <code>tree</code> or null if <code>x</code> is greater than all in <code>tree</code>.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(\log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_get" name = "fn:<B>tree_get">&lt;B&gt;tree_get</a></h3>
+
+<p><code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
+
+<p>Only if <code>TREE_VALUE</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Get the value of <code>x</code> in <code>tree</code>, or if no <code>x</code>, null.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(\log <code>items</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_bulk_add" name = "fn:<B>tree_bulk_add">&lt;B&gt;tree_bulk_add</a></h3>
+
+<p><code>static enum tree_result <strong>&lt;B&gt;tree_bulk_add</strong>(struct &lt;B&gt;tree *const <em>tree</em>, &lt;PB&gt;key <em>key</em>, &lt;PB&gt;value **const <em>value</em>)</code></p>
+
+<p>Packs <code>key</code> on the right side of <code>tree</code> without doing the usual restructuring. All other topology modification functions should be avoided until followed by <a href = "#fn:&lt;B&gt;tree_bulk_finish">&lt;B&gt;tree_bulk_finish</a>.</p>
+
+<dl>
+	<dt>Parameter: <em>value</em></dt>
+	<dd>A pointer to the key's value which is set by the function on returning true. A null pointer in this parameter causes the value to go uninitialized. This parameter is not there if one didn't specify <code>TREE_VALUE</code>.</dd>
+	<dt>Return:</dt>
+	<dd>One of <a href = "#tag:tree_result">tree_result</a>: <code>TREE_ERROR</code> and <code>errno</code> will be set, <code>TREE_TAKEN</code> if the key is already (the highest) in the tree, and <code>TREE_UNIQUE</code>, added, the <code>value</code> (if applicable) is uninitialized.</dd>
+	<dt>Exceptional return: EDOM</dt>
+	<dd><code>x</code> is smaller than the largest key in <code>tree</code>.</dd>
+	<dt>Exceptional return: malloc</dt>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_bulk_finish" name = "fn:<B>tree_bulk_finish">&lt;B&gt;tree_bulk_finish</a></h3>
+
+<p><code>static int <strong>&lt;B&gt;tree_bulk_finish</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code></p>
+
+<p>Distributes <code>tree</code> (can be null) on the right side so that, after a series of <a href = "#fn:&lt;B&gt;tree_bulk_add">&lt;B&gt;tree_bulk_add</a>, it will be consistent with the minimum number of keys in a node.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The re-distribution was a success and all nodes are within rules. When intermixing bulk and regular operations, the function may return false.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(\log <code>size</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_try" name = "fn:<B>tree_try">&lt;B&gt;tree_try</a></h3>
+
+<p><code>static enum tree_result <strong>&lt;B&gt;tree_try</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>, &lt;PB&gt;value **const <em>value</em>)</code></p>
+
+<p>Adds or gets <code>key</code> in <code>tree</code>. If <code>key</code> is already in <code>tree</code>, uses the old value, <em>vs</em> <a href = "#fn:&lt;B&gt;tree_assign">&lt;B&gt;tree_assign</a>. (This is only significant in trees with distinguishable keys.)</p>
+
+<dl>
+	<dt>Parameter: <em>value</em></dt>
+	<dd>Only present if <code>TREE_VALUE</code> (map) was specified. If this parameter is non-null and a return value other then <code>TREE_ERROR</code>, this receives the address of the value associated with the <code>key</code>. This pointer is only guaranteed to be valid only while the <code>tree</code> doesn't undergo structural changes, (such as calling <a href = "#fn:&lt;B&gt;tree_try">&lt;B&gt;tree_try</a> with <code>TREE_UNIQUE</code> again.)</dd>
+	<dt>Return:</dt>
+	<dd>Either <code>TREE_ERROR</code> (false) and doesn't touch <code>tree</code>, <code>TREE_UNIQUE</code> and adds a new key with <code>key</code>, or <code>TREE_TAKEN</code> there was already an existing key.</dd>
+	<dt>Exceptional return: malloc</dt>
+	<dt>Order:</dt>
+	<dd>&#920;(|<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_assign" name = "fn:<B>tree_assign">&lt;B&gt;tree_assign</a></h3>
+
+<p><code>static enum tree_result <strong>&lt;B&gt;tree_assign</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>, &lt;PB&gt;key *const <em>eject</em>, &lt;PB&gt;value **const <em>value</em>)</code></p>
+
+<p>Adds or updates <code>key</code> in <code>tree</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>eject</em></dt>
+	<dd>If this parameter is non-null and a return value of <code>TREE_TAKEN</code>, the old key is stored in <code>eject</code>, replaced by <code>key</code>. A null value indicates that on conflict, the new key yields to the old key, as <a href = "#fn:&lt;B&gt;tree_try">&lt;B&gt;tree_try</a>. This is only significant in trees with distinguishable keys.</dd>
+	<dt>Parameter: <em>value</em></dt>
+	<dd>Only present if <code>TREE_VALUE</code> (map) was specified. If this parameter is non-null and a return value other then <code>TREE_ERROR</code>, this receives the address of the value associated with the key.</dd>
+	<dt>Return:</dt>
+	<dd>Either <code>TREE_ERROR</code> (false,) <code>errno</code> is set and doesn't touch <code>tree</code>; <code>TREE_UNIQUE</code>, adds a new key; or <code>TREE_TAKEN</code>, there was already an existing key.</dd>
+	<dt>Exceptional return: malloc</dt>
+	<dt>Order:</dt>
+	<dd>&#920;(|<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_remove" name = "fn:<B>tree_remove">&lt;B&gt;tree_remove</a></h3>
+
+<p><code>static int <strong>&lt;B&gt;tree_remove</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>)</code></p>
+
+<p>Tries to remove <code>key</code> from <code>tree</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success, otherwise it was not in <code>tree</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(|<code>tree</code>|)</dd>
 </dl>
 
 </div>

@@ -307,7 +307,7 @@ static int PB_(to_successor_c)(struct PB_(tree) tree, \
 	*ref = next; \
 }	return 1; /* Jumped nodes. */ \
 }
-TREE_TO_SUCCESSOR(to_successor, ref)
+TREE_TO_SUCCESSOR(to_successor, ref) /* For cursor. */
 TREE_TO_SUCCESSOR(to_successor_c, ref_c) /* For forward iteration. */
 #undef TREE_TO_SUCCESSOR
 
@@ -1019,8 +1019,6 @@ grow: /* Leaf is full. */ {
 }
 #endif
 
-
-
 #ifdef TREE_VALUE /* <!-- map */
 /** Adds or gets `key` in `tree`. If `key` is already in `tree`, uses the
  old value, _vs_ <fn:<B>tree_assign>. (This is only significant in trees with
@@ -1638,8 +1636,11 @@ static enum tree_result B_(tree_cursor_try)(struct B_(tree_cursor) *const
 		break; }
 	}
 	return 1;
-
+#ifdef TREE_VALUE
 }
+#else
+}
+#endif
 
 /** Removes the last entry returned by a valid `cur`. All other cursors on the
  same object are invalidated, but `cur` is now between on the removed node.
