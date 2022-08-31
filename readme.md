@@ -400,7 +400,7 @@ Tries to remove `key` from `tree`\.
 Advances `cur` to the next element\.
 
  * Return:  
-   A pointer to the current element, or null if it ran out of elements\.
+   A pointer to the current element, or null if it ran out of elements\. The type is either a set pointer\-to\-key or a map [&lt;B&gt;tree_entry](#user-content-tag-9e3caf18) \(with `TREE_VALUE`, both fields are null if null\)\.
  * Order:  
    &#927;\(log |`tree`|\)
 
@@ -414,7 +414,7 @@ Advances `cur` to the next element\.
 Reverses `cur` to the previous element\.
 
  * Return:  
-   A pointer to the previous element, or null if it ran out of elements\.
+   A pointer to the previous element, or null if it ran out of elements\. The type is either a set pointer\-to\-key or a map [&lt;B&gt;tree_entry](#user-content-tag-9e3caf18) \(with `TREE_VALUE`, both fields are null if null\)\.
  * Order:  
    &#927;\(log |`tree`|\)
 

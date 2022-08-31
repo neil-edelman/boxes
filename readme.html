@@ -511,7 +511,7 @@
 
 <dl>
 	<dt>Return:</dt>
-	<dd>A pointer to the current element, or null if it ran out of elements.</dd>
+	<dd>A pointer to the current element, or null if it ran out of elements. The type is either a set pointer-to-key or a map <a href = "#tag:&lt;B&gt;tree_entry">&lt;B&gt;tree_entry</a> (with <code>TREE_VALUE</code>, both fields are null if null).</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(log |<code>tree</code>|)</dd>
 </dl>
@@ -528,7 +528,7 @@
 
 <dl>
 	<dt>Return:</dt>
-	<dd>A pointer to the previous element, or null if it ran out of elements.</dd>
+	<dd>A pointer to the previous element, or null if it ran out of elements. The type is either a set pointer-to-key or a map <a href = "#tag:&lt;B&gt;tree_entry">&lt;B&gt;tree_entry</a> (with <code>TREE_VALUE</code>, both fields are null if null).</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(log |<code>tree</code>|)</dd>
 </dl>

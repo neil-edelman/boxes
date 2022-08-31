@@ -1581,13 +1581,15 @@ static struct B_(tree_cursor) B_(tree_begin_at)(struct B_(tree) *const tree,
 static struct B_(tree_cursor) B_(tree_end)(struct B_(tree) *const tree)
 	{ struct B_(tree_cursor) cur; cur._ = PB_(end)(tree); return cur; }
 /** Advances `cur` to the next element. @return A pointer to the current
- element, or null if it ran out of elements.
- @order \O(\log |`tree`|) @allow */
+ element, or null if it ran out of elements. The type is either a set
+ pointer-to-key or a map <tag:<B>tree_entry> (with `TREE_VALUE`, both fields
+ are null if null). @order \O(\log |`tree`|) @allow */
 static PB_(entry) B_(tree_next)(struct B_(tree_cursor) *const cur)
 	{ return PB_(next)(&cur->_); }
 /** Reverses `cur` to the previous element. @return A pointer to the previous
- element, or null if it ran out of elements.
- @order \O(\log |`tree`|) @allow */
+ element, or null if it ran out of elements. The type is either a set
+ pointer-to-key or a map <tag:<B>tree_entry> (with `TREE_VALUE`, both fields
+ are null if null). @order \O(\log |`tree`|) @allow */
 static PB_(entry) B_(tree_previous)(struct B_(tree_cursor) *const cur)
 	{ return PB_(previous)(&cur->_); }
 
