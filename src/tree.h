@@ -35,7 +35,7 @@
  trait.
 
  @param[TREE_TO_STRING_NAME, TREE_TO_STRING]
- To string trait contained in <to_string.h>; an optional unique `<SZ>`
+ To string trait contained in <src/to_string.h>; an optional unique `<SZ>`
  that satisfies `C` naming conventions when mangled and function implementing
  <typedef:<PSTR>to_string_fn>.
 

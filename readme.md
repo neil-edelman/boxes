@@ -26,7 +26,7 @@ A [&lt;B&gt;tree](#user-content-tag-a36433e3) is an ordered set or map contained
  * Parameter: TREE\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
  * Parameter: TREE\_TO\_STRING\_NAME, TREE\_TO\_STRING  
-   To string trait contained in [to\_string\.h](to_string.h); an optional unique `<SZ>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
+   To string trait contained in [src/to\_string\.h](src/to_string.h); an optional unique `<SZ>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
  * Standard:  
    C89
  * Caveat:  
