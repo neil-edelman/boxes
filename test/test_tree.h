@@ -260,14 +260,13 @@ static PB_(entry_c) PB_(to_const)(const PB_(entry) e) {
 
 static void PB_(test)(void) {
 	struct B_(tree) tree = B_(tree)(), empty = B_(tree)();
-	struct B_(tree_cursor) it;
+	struct B_(tree_cursor) cur;
 	PB_(entry_test) n[80];
 	const size_t n_size = sizeof n / sizeof *n;
 	PB_(entry) entry;
 	PB_(value) *value;
 	PB_(key) k;
 	size_t i, n_unique = 0, n_unique2 = 0;
-	struct B_(tree_cursor) cur;
 	char fn[64];
 
 	errno = 0;
@@ -281,10 +280,10 @@ static void PB_(test)(void) {
 	PB_(valid)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
-	it = B_(tree_begin_at)(0, PB_(test_to_key)(n + 0)), assert(!it._.root);
+	cur = B_(tree_begin_at)(0, PB_(test_to_key)(n + 0)), assert(!cur._.root);
 	value = B_(tree_at)(0, PB_(test_to_key)(n + 0)), assert(!value);
-	it = B_(tree_begin_at)(&tree, PB_(test_to_key)(n + 0)),
-		assert(!it._.ref.node);
+	cur = B_(tree_begin_at)(&tree, PB_(test_to_key)(n + 0)),
+		assert(!cur._.ref.node);
 	value = B_(tree_at)(&tree, PB_(test_to_key)(n + 0)),
 		assert(!value);
 
@@ -338,8 +337,8 @@ static void PB_(test)(void) {
 
 	/* Iteration; checksum. */
 	memset(&k, 0, sizeof k);
-	it = B_(tree_begin)(&tree), i = 0;
-	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
+	cur = B_(tree_begin)(&tree), i = 0;
+	while(entry = B_(tree_next)(&cur), PB_(contents)(&entry)) {
 		char z[12];
 		PB_(to_string)(PB_(to_const)(entry), &z);
 		printf("<%s>\n", z);
@@ -352,8 +351,8 @@ static void PB_(test)(void) {
 	}
 	assert(i == n_unique);
 	printf("\n");
-	it = B_(tree_end)(&tree), i = 0;
-	while(entry = B_(tree_previous)(&it), PB_(contents)(&entry)) {
+	cur = B_(tree_end)(&tree), i = 0;
+	while(entry = B_(tree_previous)(&cur), PB_(contents)(&entry)) {
 		char z[12];
 		PB_(to_string)(PB_(to_const)(entry), &z);
 		printf("<%s>\n", z);
@@ -365,14 +364,14 @@ static void PB_(test)(void) {
 		if(++i > n_size) assert(0); /* Avoids loops. */
 	}
 	assert(i == n_unique);
-	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
+	while(entry = B_(tree_next)(&cur), PB_(contents)(&entry)) {
 		char z[12];
 		int succ;
 		PB_(to_string)(PB_(to_const)(entry), &z);
 		printf("removing <%s>\n", z);
-		succ = B_(tree_cursor_remove)(&it);
+		succ = B_(tree_cursor_remove)(&cur);
 		assert(succ);
-		succ = B_(tree_cursor_remove)(&it);
+		succ = B_(tree_cursor_remove)(&cur);
 		assert(!succ);
 	}
 	assert(tree.root.height == UINT_MAX);
@@ -419,8 +418,8 @@ static void PB_(test)(void) {
 	/* Iteration; checksum. No. We can not do this because deletion invalidates
 	 the cursor. */
 	i = 0;
-	while(it = B_(tree_begin)(&tree),
-		entry = B_(tree_next)(&it),
+	while(cur = B_(tree_begin)(&tree),
+		entry = B_(tree_next)(&cur),
 		PB_(contents)(&entry)) {
 		char z[12];
 		PB_(to_string)(PB_(to_const)(entry), &z);
@@ -441,12 +440,19 @@ static void PB_(test)(void) {
 	}
 	assert(i == n_unique);
 
-	/* Clear. */
+	/* Using a cursor and building the tree. */
 	n_unique2 = 0;
-	cur = B_(tree_begin)(&tree);
 	for(i = 0; i < n_size; i++) {
 		PB_(entry_test) *const t = n + i;
 		char z[12];
+		if(i % 3 == 0) {
+			cur = B_(tree_begin)(&tree);
+		} else if(i % 3 == 1) {
+			cur = B_(tree_end)(&tree);
+		} else {
+			cur = B_(tree_begin)(&tree);
+			B_(tree_next)(&cur);
+		}
 #ifdef TREE_VALUE
 		switch(B_(tree_cursor_try)(&cur, t->key, &value))
 #else
@@ -454,8 +460,8 @@ static void PB_(test)(void) {
 #endif
 		{
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
-		case TREE_PRESENT: printf("present\n"); break;
-		case TREE_UNIQUE: printf("unique\n"); n_unique2++; break;
+		case TREE_PRESENT: break;
+		case TREE_UNIQUE: n_unique2++; break;
 		}
 #ifdef TREE_VALUE
 		*value = t->value;
@@ -467,6 +473,15 @@ static void PB_(test)(void) {
 	printf("tree count: %lu; add count: %lu\n",
 		(unsigned long)i, (unsigned long)n_unique2);
 	assert(i == n_unique);
+
+	/* Remove every 2nd. */
+	for(cur = B_(tree_begin)(&tree); B_(tree_next)(&cur),
+		entry = B_(tree_next)(&cur), PB_(contents)(&entry); )
+		B_(tree_cursor_remove)(&cur), n_unique--;
+	i = B_(tree_count)(&tree);
+	printf("remove every 2nd: %lu\n", (unsigned long)i);
+	assert(i == n_unique);
+
 	printf("clear, destroy\n");
 	B_(tree_clear)(&tree);
 	assert(tree.root.height == UINT_MAX && tree.root.node);

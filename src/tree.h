@@ -398,8 +398,8 @@ static struct PB_(cursor) PB_(end)(struct B_(tree) *const tree) {
 /** Advances `it`. @return Element or null. @implements `next` */
 static PB_(entry) PB_(next)(struct PB_(cursor) *const it) {
 	assert(it);
-	if(!it->root
-		|| (it->seen || !it->ref.node) && !PB_(to_successor)(*it->root, &it->ref))
+	if(!it->root || (it->seen || !it->ref.node)
+		&& !PB_(to_successor)(*it->root, &it->ref))
 		return it->ref.node = 0, it->seen = 0, PB_(null_entry)();
 	assert(it->ref.node);
 	return it->ref.idx < it->ref.node->size
@@ -1602,18 +1602,18 @@ static enum tree_result B_(tree_cursor_try)(struct B_(tree_cursor) *const
 static enum tree_result B_(tree_cursor_try)(struct B_(tree_cursor) *const
 	cur, const PB_(key) key) {
 #endif /* set --> */
-	enum { START, MIDDLE, END } where;
+	enum { NONODE, ITERATING, END } where;
 	PB_(key) anchor;
 	enum tree_result ret;
 	memset(&anchor, 0, sizeof anchor); /* Silence warnings. */
-	if(!cur || !cur->_.root) return printf("no?\n"), TREE_ERROR; /* No tree. */
+	if(!cur || !cur->_.root) return TREE_ERROR; /* No tree. */
 	if(cur->_.ref.node && cur->_.root->height != UINT_MAX) {
-		where = (cur->_.ref.idx < cur->_.ref.node->size) ? MIDDLE : END;
+		where = (cur->_.ref.idx < cur->_.ref.node->size) ? ITERATING : END;
 	} else {
-		where = START;
+		where = NONODE;
 	}
-	if(where == MIDDLE) anchor = cur->_.ref.node->key[cur->_.ref.idx];
-	if(where == START || where == END) cur->_.seen = 0; /* Should be already. */
+	if(where == ITERATING) anchor = cur->_.ref.node->key[cur->_.ref.idx];
+	if(where == NONODE || where == END) cur->_.seen = 0; /* Should be already. */
 #ifdef TREE_VALUE
 	ret = PB_(update)(cur->_.root, key, 0, value);
 #else
@@ -1622,17 +1622,21 @@ static enum tree_result B_(tree_cursor_try)(struct B_(tree_cursor) *const
 	if(ret == TREE_ERROR) return TREE_ERROR;
 	assert(cur->_.root->height != UINT_MAX); /* Can't be empty. */
 	switch(where) {
-	case START: cur->_.root = 0; break;
-	case MIDDLE: cur->_.ref = PB_(lower)(*cur->_.root, anchor); break;
-	case END: { struct PB_(ref) end;
-		end.node = cur->_.root->node;
-		end.height = cur->_.root->height;
-		end.idx = cur->_.root->node->size;
-		while(end.height) {
-			end.node = PB_(as_branch_c)(end.node)->child[end.idx];
-			end.idx = end.node->size;
+	case NONODE: cur->_.ref.node = 0; cur->_.seen = 0; break;
+	case ITERATING: cur->_.ref = PB_(lower)(*cur->_.root, anchor); break;
+	case END:
+		assert(cur->_.root->node);
+		cur->_.ref.node = cur->_.root->node;
+		cur->_.ref.height = cur->_.root->height;
+		cur->_.ref.idx = cur->_.root->node->size;
+		while(cur->_.ref.height) {
+			cur->_.ref.node
+				= PB_(as_branch_c)(cur->_.ref.node)->child[cur->_.ref.idx];
+			cur->_.ref.idx = cur->_.ref.node->size;
+			cur->_.ref.height--;
 		}
-		break; }
+		cur->_.seen = 0;
+		break;
 	}
 	return ret;
 #ifdef TREE_VALUE

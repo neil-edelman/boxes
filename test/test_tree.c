@@ -149,7 +149,7 @@ static void star_to_string(const struct star_tree_entry_c x,
 /* §6.7.2.1/P11 implementation defined; hopefully it will work. This is so
  convenient, but completely unspecified; the other option is to manually
  mask-off the bits for every value, and use a union name, which is painful. */
-#include <stdint.h> /* C99 */
+#include <stdint.h> /* C99 -- Augh! mixing the standards. */
 union date32 {
 	uint32_t u32;
 	struct { unsigned day : 5, month : 4, year : 23; } d; /* Usually works. */
@@ -184,6 +184,7 @@ static void entry_to_string(const struct entry_tree_entry_c entry,
 	sprintf(*z, "%u-%2.2u-%2.2u",
 		entry.key->d.year % 10000, entry.key->d.month, entry.key->d.day);
 }
+
 
 /** Order 3 integer tree set; it's hard to make a simpler example. */
 static void order3(void) {
@@ -579,6 +580,21 @@ catch:
 finally:
 	redblack_tree_(&tree);
 }
+
+/* Has distinguishable keys going to the same key value. This may be useful,
+ for example, if one allocates keys. */
+
+/** @implements <typedef:<PB>action_fn> */
+static void loop_filler(unsigned *x)
+	{ *x = (unsigned)rand() / (RAND_MAX / 100000 + 1); }
+
+#define TREE_NAME loop
+#define TREE_TEST &loop_filler
+#define TREE_EXPECT_TRAIT
+#include "../src/tree.h"
+#define TREE_TO_STRING &int_to_string
+#include "../src/tree.h"
+
 
 /* fixme: (unsigned)->(void *) typical use case and time the results for
  different orders. */
