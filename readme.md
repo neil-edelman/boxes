@@ -374,7 +374,7 @@ Tries to remove `key` from `tree`\.
  * Parameter: _tree_  
    Can be null\.
  * Return:  
-   Cursor in `tree` between elements, such that if [&lt;B&gt;tree_next](#user-content-fn-6828a06d) is called, it will be smallest key that is not smaller than `x`, \(which could be [&lt;B&gt;tree_end](#user-content-fn-6b449fc9); as _per_ [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31)\.\)
+   Cursor in `tree` between elements, such that if [&lt;B&gt;tree_next](#user-content-fn-6828a06d) is called, it will be smallest key that is not smaller than `x`, or, [&lt;B&gt;tree_end](#user-content-fn-6b449fc9) if `x` is greater than all in `tree`\.
  * Order:  
    &#920;\(log |`tree`|\)
 

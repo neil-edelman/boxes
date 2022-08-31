@@ -479,7 +479,7 @@
 	<dt>Parameter: <em>tree</em></dt>
 	<dd>Can be null.</dd>
 	<dt>Return:</dt>
-	<dd>Cursor in <code>tree</code> between elements, such that if <a href = "#fn:&lt;B&gt;tree_next">&lt;B&gt;tree_next</a> is called, it will be smallest key that is not smaller than <code>x</code>, (which could be <a href = "#fn:&lt;B&gt;tree_end">&lt;B&gt;tree_end</a>; as <em>per</em> <a href = "#typedef:&lt;PB&gt;compare_fn">&lt;PB&gt;compare_fn</a>.)</dd>
+	<dd>Cursor in <code>tree</code> between elements, such that if <a href = "#fn:&lt;B&gt;tree_next">&lt;B&gt;tree_next</a> is called, it will be smallest key that is not smaller than <code>x</code>, or, <a href = "#fn:&lt;B&gt;tree_end">&lt;B&gt;tree_end</a> if <code>x</code> is greater than all in <code>tree</code>.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(log |<code>tree</code>|)</dd>
 </dl>

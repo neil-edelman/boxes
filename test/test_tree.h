@@ -240,7 +240,9 @@ static void PB_(sort)(PB_(entry_test) *a, const size_t size) {
 	}
 }
 
-/** fixme: this is stupid; find a way past it. */
+/** Is `e` pointing at a valid thing? Either directly or with entry. The reason
+ we don't define `struct entry` is because we don't want to have to reference
+ key in set. It makes the set unbearable. */
 static int PB_(contents)(const PB_(entry) *const e) {
 #ifdef TREE_VALUE
 	return !!e->key;
@@ -286,6 +288,8 @@ static void PB_(test)(void) {
 		assert(!cur._.ref.node);
 	value = B_(tree_at)(&tree, PB_(test_to_key)(n + 0)),
 		assert(!value);
+
+	/* fixme: too many graphs! */
 
 	/* Bulk, (simple.) */
 	for(i = 0; i < n_size; i++) {
@@ -444,7 +448,6 @@ static void PB_(test)(void) {
 	n_unique2 = 0;
 	for(i = 0; i < n_size; i++) {
 		PB_(entry_test) *const t = n + i;
-		char z[12];
 		if(i % 3 == 0) {
 			cur = B_(tree_begin)(&tree);
 		} else if(i % 3 == 1) {

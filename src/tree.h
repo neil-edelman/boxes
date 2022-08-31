@@ -62,7 +62,7 @@
 
 #ifndef TREE_H /* <!-- idempotent */
 #define TREE_H
-#include <stddef.h> /* fixme: stdlib, string should do it; what is going on? */
+#include <stddef.h> /* That's weird. */
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
@@ -135,7 +135,7 @@ typedef int (*PB_(compare_fn))(PB_(key_c) a, PB_(key_c) b);
 
 #ifndef TREE_COMPARE /* <!-- !cmp */
 /** The default `TREE_COMPARE` on `a` and `b` is integer comparison that
- results in ascending order. @implements <typedef:<PB>compare_fn> */
+ results in ascending order, `a > b`. @implements <typedef:<PB>compare_fn> */
 static int PB_(default_compare)(PB_(key_c) a, PB_(key_c) b)
 	{ return a > b; }
 #define TREE_COMPARE &PB_(default_compare)
@@ -187,6 +187,7 @@ struct PB_(ref) { struct PB_(node) *node; unsigned height, idx; };
 struct PB_(ref_c) { const struct PB_(node) *node; unsigned height, idx; };
 /* Node plus height is a sub-tree. A <tag:<B>tree> is a sub-tree of the tree. */
 struct PB_(tree) { struct PB_(node) *node; unsigned height; };
+/* fixme: states doesn't exist yet. */
 /** To initialize it to an idle state, see <fn:<B>tree>, `{0}` (`C99`), or
  being `static`.
 
@@ -266,8 +267,7 @@ static int PB_(to_predecessor)(struct PB_(tree) tree,
 	PB_(key) x;
 	for(prev.node = 0, x = ref->node->key[0]; tree.height;
 		tree.node = PB_(as_branch_c)(tree.node)->child[a0], tree.height--) {
-		/* fixme: This is repeated. */
-		unsigned a1 = tree.node->size;
+		unsigned a1 = tree.node->size; /* This is repeated code; sigh. */
 		a0 = 0;
 		while(a0 < a1) {
 			const unsigned m = (a0 + a1) / 2;
@@ -1675,7 +1675,7 @@ static void PB_(unused_base)(void) {
 	PB_(key) k;
 	memset(&k, 0, sizeof k);
 	PB_(is_element_c); PB_(forward); PB_(next_c); PB_(is_element);
-	B_(tree)(); B_(tree_)(0); /*B_(tree_clear)(0); B_(tree_count)(0);
+	B_(tree)(); B_(tree_)(0); B_(tree_clear)(0); B_(tree_count)(0);
 	B_(tree_contains)(0, k); B_(tree_get)(0, k); B_(tree_at)(0, k);
 #ifdef TREE_VALUE
 	B_(tree_bulk_add)(0, k, 0); B_(tree_try)(0, k, 0);
@@ -1687,7 +1687,7 @@ static void PB_(unused_base)(void) {
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
 	B_(tree_begin)(0); B_(tree_begin_at)(0, k); B_(tree_end)(0);
 	B_(tree_previous)(0); B_(tree_next)(0);
-	B_(tree_cursor_remove)(0);*/
+	B_(tree_cursor_remove)(0);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }

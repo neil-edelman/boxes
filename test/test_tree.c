@@ -587,13 +587,22 @@ finally:
 /** @implements <typedef:<PB>action_fn> */
 static void loop_filler(unsigned *x)
 	{ *x = (unsigned)rand() / (RAND_MAX / 100000 + 1); }
+static int loop_compare(unsigned a, unsigned b)
+	{ return (a % 100) > (b % 100); }
 
 #define TREE_NAME loop
 #define TREE_TEST &loop_filler
+#define TREE_COMPARE &loop_compare
 #define TREE_EXPECT_TRAIT
 #include "../src/tree.h"
 #define TREE_TO_STRING &int_to_string
 #include "../src/tree.h"
+
+
+/** Tests try and assign. */
+static void loop(void) {
+	/* fixme try assign */
+}
 
 
 /* fixme: (unsigned)->(void *) typical use case and time the results for
@@ -604,9 +613,11 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	order3();
 	redblack();
+	loop();
 	order3_tree_test();
 	redblack_tree_test();
 	int_tree_test();
+	loop_tree_test();
 	pair_tree_test();
 	star_tree_test();
 	entry_tree_test();
