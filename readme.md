@@ -230,7 +230,7 @@ Counts all the keys on `tree`, which can be null\.
 <code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code>
 
  * Return:  
-   Get the value of `x` in `tree`, or if no `x`, null\.
+   Get the value of `x` in `tree`, or if no `x`, null\. The map type is a pointer to `TREE_VALUE` and the set type is a pointer to `TREE_KEY`\.
  * Order:  
    &#927;\(log |`tree`|\)
 
@@ -244,7 +244,7 @@ Counts all the keys on `tree`, which can be null\.
 For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`, `x = 11 -> null`\. \(There is no upper value\.\)
 
  * Return:  
-   Lower\-bound value match for `x` in `tree` or null if `x` is greater than all in `tree`\.
+   Lower\-bound value match for `x` in `tree` or null if `x` is greater than all in `tree`\. The map type is a pointer to `TREE_VALUE` and the set type is a pointer to `TREE_KEY`\.
  * Order:  
    &#927;\(log |`tree`|\)
 

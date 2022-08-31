@@ -603,7 +603,8 @@ static int B_(tree_contains)(const struct B_(tree) *const tree,
 		&& PB_(find)(&tree->root, x).node ? 1 : 0;
 }
 
-/** @return Get the value of `x` in `tree`, or if no `x`, null.
+/** @return Get the value of `x` in `tree`, or if no `x`, null. The map type is
+ a pointer to `TREE_VALUE` and the set type is a pointer to `TREE_KEY`.
  @order \O(\log |`tree`|) @allow */
 static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
 	const PB_(key) x) {
@@ -616,7 +617,8 @@ static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
 /** For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`,
  `x = 11 -> null`. (There is no upper value.)
  @return Lower-bound value match for `x` in `tree` or null if `x` is greater
- than all in `tree`. @order \O(\log |`tree`|) @allow */
+ than all in `tree`.  The map type is a pointer to `TREE_VALUE` and the set
+ type is a pointer to `TREE_KEY`. @order \O(\log |`tree`|) @allow */
 static PB_(value) *B_(tree_at)(struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct PB_(ref) ref;
