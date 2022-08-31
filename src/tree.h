@@ -13,9 +13,8 @@
 
  @param[TREE_NAME, TREE_KEY]
  `<B>` that satisfies `C` naming conventions when mangled, required, and
- `TREE_KEY`, a comparable type, <typedef:<PB>key>, whose default is
- `unsigned int`. `<PB>` is private, whose names are prefixed in a manner to
- avoid collisions.
+ `TREE_KEY`, a type, <typedef:<PB>key>, whose default is `unsigned int`.
+ `<PB>` is private, whose names are prefixed in a manner to avoid collisions.
 
  @param[TREE_VALUE]
  `TRIE_VALUE` is an optional payload to go with the type, <typedef:<PB>value>.
@@ -116,7 +115,7 @@ struct tree_node_count { size_t branches, leaves; };
 #define TREE_KEY unsigned
 #endif
 
-/** A comparable type, defaults to `unsigned`. */
+/** Ordered type used by <typedef:<PB>compare_fn>; defaults to `unsigned`. */
 typedef TREE_KEY PB_(key);
 typedef const TREE_KEY PB_(key_c);
 
