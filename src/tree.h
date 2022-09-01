@@ -189,7 +189,6 @@ struct PB_(ref) { struct PB_(node) *node; unsigned height, idx; };
 struct PB_(ref_c) { const struct PB_(node) *node; unsigned height, idx; };
 /* Node plus height is a sub-tree. A <tag:<B>tree> is a sub-tree of the tree. */
 struct PB_(tree) { struct PB_(node) *node; unsigned height; };
-/* fixme: states doesn't exist yet. */
 /** To initialize it to an idle state, see <fn:<B>tree>, `{0}` (`C99`), or
  being `static`.
 

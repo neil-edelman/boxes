@@ -289,8 +289,6 @@ static void PB_(test)(void) {
 	value = B_(tree_at)(&tree, PB_(test_to_key)(n + 0)),
 		assert(!value);
 
-	/* fixme: too many graphs! */
-
 	/* Bulk, (simple.) */
 	for(i = 0; i < n_size; i++) {
 		PB_(entry_c) e;
@@ -336,7 +334,7 @@ static void PB_(test)(void) {
 	B_(tree_bulk_finish)(&tree);
 	printf("Finalize again. This should be idempotent.\n");
 	B_(tree_bulk_finish)(&tree);
-	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-bulk-finalized.gv");
+	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-bulk-finish.gv");
 	printf("Tree: %s.\n", PB_(tree_to_string)(&tree));
 
 	/* Iteration; checksum. */
@@ -437,7 +435,7 @@ static void PB_(test)(void) {
 		assert(B_(tree_contains)(&tree, k));
 		B_(tree_remove)(&tree, k);
 		assert(!B_(tree_contains)(&tree, k));
-		{
+		if(!(i & (i + 1)) || i == n_size - 1) {
 			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-rm-%lu.gv", i);
 			PB_(graph)(&tree, fn);
 		}
