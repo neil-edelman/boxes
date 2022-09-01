@@ -165,6 +165,7 @@ static void entry_to_string(struct entry_tree_entry_c, char (*)[12]);
 #define TREE_COMPARE &entry_compare
 #define TREE_VALUE int
 #define TREE_TEST &entry_filler
+#define TREE_ORDER 7
 #define TREE_EXPECT_TRAIT
 #include "../src/tree.h"
 #define TREE_TO_STRING &entry_to_string
@@ -580,6 +581,7 @@ catch:
 finally:
 	redblack_tree_(&tree);
 }
+
 
 /* Has distinguishable keys going to the same key value. This may be useful,
  for example, if one allocates keys. */

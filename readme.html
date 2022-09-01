@@ -50,7 +50,11 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
+<p><img alt = "Example of Tree" src = "doc/tree.png" width = 1089 height = 301></p>
+
 <p>A <a href = "#tag:&lt;B&gt;tree">&lt;B&gt;tree</a> is an ordered set or map contained in a tree. For memory locality, this is implemented B-tree, described in <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972%2C+Large">Bayer, McCreight, 1972, Large</a>.</p>
+
+</div>
 
 <dl>
 	<dt>Parameter: TREE_NAME, TREE_KEY</dt>
@@ -70,8 +74,6 @@
 	<dt>Caveat:</dt>
 	<dd>merge, difference</dd>
 </dl>
-
-</div>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
 
@@ -133,7 +135,9 @@
 
 <p><code>enum <strong>tree_result</strong> { TREE_RESULT };</code></p>
 
-<p>A result of modifying the tree, of which <code>TREE_ERROR</code> is false. <img alt = "A diagram of the result states." src = "../doc/put.png"></p>
+<p>A result of modifying the tree, of which <code>TREE_ERROR</code> is false.</p>
+
+<p><img alt = "A diagram of the result states." src = "doc/put.png" width = 608 height = 288></p>
 
 </div>
 
@@ -145,7 +149,7 @@
 
 <p>To initialize it to an idle state, see <a href = "#fn:&lt;B&gt;tree">&lt;B&gt;tree</a>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
 
-<p><img alt = "States." src = "../doc/states.png"></p>
+<p><img alt = "States." src = "doc/states.png" width = 1237 height = 223></p>
 
 </div>
 

@@ -1,0 +1,18 @@
+digraph {
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans"];
+	node [shape=record, style=filled, fillcolor="Grey95", fontname="Bitstream Vera Sans"];
+	edge [fontname="Bitstream Vera Sans"];
+	null [label = "uninitialized\l|no dynamic memory;\lundetermined state\l", fillcolor = pink];
+	static [label = "idle\l|no dynamic memory;\l\{0\} or ARRAY_IDLE\l"];
+	dynamic [label = "active\l|memory allocated;\lcould have size zero\l"];
+	bulk [label = "bulk loading\l"]
+	null -> static [label = "<B>tree"];
+	static -> dynamic [label = "<B>tree_try\n<B>tree_assign\n..."];
+	static -> bulk [label = "<B>tree_bulk_add"];
+	dynamic -> bulk [label = "<B>tree_bulk_add"];
+	bulk -> bulk [label = "<B>tree_bulk_add"];
+	bulk -> dynamic [label = "<B>tree_bulk_finish"];
+	dynamic -> static [label = "<B>tree_"];
+	static -> static [label = "<B>tree_clear"]
+	dynamic -> dynamic [label = "<B>tree_try\l<B>tree_clear\l...\n"]
+}

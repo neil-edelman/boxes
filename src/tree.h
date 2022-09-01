@@ -7,6 +7,8 @@
 
  @subtitle Ordered tree
 
+ ![Example of Tree](../doc/tree.png)
+
  A <tag:<B>tree> is an ordered set or map contained in a tree. For memory
  locality, this is implemented B-tree, described in
  <Bayer, McCreight, 1972, Large>.
@@ -90,6 +92,7 @@
 #define TREE_RESULT X(ERROR), X(UNIQUE), X(PRESENT)
 #define X(n) TREE_##n
 /** A result of modifying the tree, of which `TREE_ERROR` is false.
+
  ![A diagram of the result states.](../doc/put.png) */
 enum tree_result { TREE_RESULT };
 #undef X
