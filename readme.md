@@ -37,17 +37,17 @@
 	<td>array, heap</td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/table">table</a></td>
-	<td>set or map (associative array)</td>
+	<td>hash table implementing set or map</td>
 	<td>iterate, to_string</td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/tree">tree</a></td>
-	<td>B-tree</td>
-	<td>under active development</td>
+	<td>B-tree implementing set or map</td>
+	<td>cursor, to_string</td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/trie">trie</a></td>
-	<td>prefix tree</td>
+	<td>prefix tree implementing string set or map</td>
 	<td>under active development</td>
 	<td></td>
 </tr><tr>
@@ -84,17 +84,6 @@ and private names for the trait labeled `X`. With these definitions,
 	<tr><td>typedef BOX_CONTENT &lt;PX&gt;element</td></tr>
 	<tr><td>typedef const BOX_CONTENT &lt;PX&gt;element_c</td></tr>
 </table>
-
-`struct <BOX>input` is an input iterator, started with
-`struct <BOX>input <BOX>input(const <PX>box *)`. It consumes elements
-with `<PX>element_c <BOX>next_input(<BOX>input *)` until
-`int is_content_c(const <PX>element_c)` is false. Generally, this iterator is
-invalidated when topological (structural) changes to the box are made.
-
-`struct <BOX>cursor` is a more general-purpose iterator and inserter, started
-with `struct <BOX>cursor <BOX>begin(const <PX>box *)` or
-`struct <BOX>cursor <BOX>end(const <PX>box *)`; this will start
-the cursor just before the beginning or just after the ending.
 
 possible interfaces include, (not all used,)
 
