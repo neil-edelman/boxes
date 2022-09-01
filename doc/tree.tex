@@ -101,7 +101,7 @@ A tree is used as an ordered set or map. For memory locality, this is implemente
 
 \subsection{Branching factor}
 
-The branching factor, or order as \cite{knuth1998sorting}, is a fixed value between $[3,\text{UCHAR\_MAX}+1]$. The implementation has no buffering or middle-memory management. Thus, a high-order means greater memory allocation granularity, leading to asymptotically desirable trees. Small values produce much more compact trees. Four produces an isomorphism with left-leaning red-black trees\cite{sedgewick2008left}. In general, it is left-leaning where convenient because keys on the right side are faster to move because of the array configuration of the nodes.
+The branching factor, or order as \cite{knuth1998sorting}, is a fixed value between $[3,\text{UINT\_MAX}+1]$. The implementation has no buffering or middle-memory management. Thus, a high-order means greater memory allocation granularity, leading to asymptotically desirable trees. Small values produce much more compact trees. Four produces an isomorphism with left-leaning red-black trees\cite{sedgewick2008left}. In general, it is left-leaning where convenient because keys on the right side are faster to move because of the array configuration of the nodes.
 
 \subsection{Minimum and maximum keys}
 
@@ -292,14 +292,14 @@ Initially, this will efficiently produce a more compact tree. For example, Figur
 	error [label="ERROR", shape=none, style=none];
 	error2 [label="ERROR", shape=none, style=none];
 	unique [label="UNIQUE", shape=none, style=none];
-	yield [label="YIELD", shape=none, style=none];
+	present [label="PRESENT", shape=none, style=none];
 	idle -> error;
 	add -> idle [label="root dne"];
 	add -> empty [label="root empty"];
 	add -> descend;
 	idle -> empty;
 	empty -> insert;
-	descend -> yield [label="equal"];
+	descend -> present [label="equal"];
 	descend -> insert [label="hole=add"];
 	descend -> grow;
 	grow -> split;
@@ -316,7 +316,7 @@ In \cite{bayer1972organization, knuth1998sorting, comer1979ubiquitous}, insertio
 
 It is advantageous, then, to flip the insertion and keep track of the hole, getting rid of the temporary size overload and moving the intermediate keys only once. A potential state machine is shown schematically in Figure~\ref{add}. \code{idle} is no dynamic memory; \code{empty} contains an unused node. \code{ERROR} from \code{idle} and \code{grow} is a memory error; the state of the tree remains unchanged.
 
-The \code{descend} path is taken by any non-empty tree, and descends to find the space in the leaf that it will go. It stops with \code{YIELD} if it finds an already present match. When it completes finding a new key in a leaf node, the \code{hole} will be the lowest-height node that has free space in the path from the root to that leaf.
+The \code{descend} path is taken by any non-empty tree, and descends to find the space in the leaf that it will go. It stops with \code{PRESENT} if it finds an already present match. When it completes finding a new key in a leaf node, the \code{hole} will be the lowest-height node that has free space in the path from the root to that leaf.
 
 A non-empty leaf node results in the \code{insert} path, and a single time down the tree. Specifying a high-order makes taking this path more likely than having to repeat the \code{grow} path.
 
@@ -1251,6 +1251,8 @@ In Figure~\ref{even}, the path from before \ref{even:work1} to \ref{even:insert}
 \end{figure}%
 
 Figure~\ref{remove} shows a schematic diagram of removal of one key . . .
+
+intrim? provisional!
 
 
 

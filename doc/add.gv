@@ -7,7 +7,7 @@ digraph {
 
 	error [label="ERROR", shape=none, style=none];
 	unique [label="UNIQUE", shape=none, style=none];
-	yield [label="YIELD", shape=none, style=none];
+	present [label="PRESENT", shape=none, style=none];
 	descend [label="descend: add, hole"];
 
 	idle -> error;
@@ -16,7 +16,7 @@ digraph {
 	add -> descend;
 	idle -> empty;
 	empty -> insert;
-	descend -> yield [label="equal"];
+	descend -> present [label="equal"];
 	descend -> insert [label="hole=add"];
 	descend -> grow;
 	grow -> split;

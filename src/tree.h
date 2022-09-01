@@ -1067,7 +1067,7 @@ static int PB_(remove)(struct PB_(tree) *const tree, const PB_(key) x) {
 	struct PB_(ref) rm, parent /* Only if `key.size <= TREE_MIN`. */;
 	struct PB_(branch) *parentb;
 	struct { struct PB_(node) *less, *more; } sibling;
-	PB_(key) quasi_x = x;
+	PB_(key) provisional_x = x;
 	parent.node = 0;
 	assert(tree && tree->node && tree->height != UINT_MAX);
 	/* Traverse down the tree until `key`, leaving breadcrumbs for parents of
@@ -1130,7 +1130,8 @@ no_succ:
 		chosen = pred;
 	}
 	/* Replace `rm` with the predecessor or the successor leaf. */
-	quasi_x = rm.node->key[rm.idx] = chosen.leaf.node->key[chosen.leaf.idx];
+	provisional_x = rm.node->key[rm.idx]
+		= chosen.leaf.node->key[chosen.leaf.idx];
 #ifdef TREE_VALUE
 	rm.node->value[rm.idx] = chosen.leaf.node->value[chosen.leaf.idx];
 #endif
@@ -1145,7 +1146,7 @@ no_succ:
 	/* Retrieve forgotten information about the index in parent. (This is not
 	 as fast at it could be, but holding parent data in minimum keys allows it
 	 to be in place, if a hack. We could go down, but new problems arise.) */
-	PB_(find_idx)(&parent, quasi_x);
+	PB_(find_idx)(&parent, provisional_x);
 	parentb = PB_(as_branch)(parent.node);
 	assert(parent.idx <= parent.node->size
 		&& parentb->child[parent.idx] == rm.node);
