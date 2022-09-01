@@ -483,18 +483,18 @@ static void order3(void) {
 		char fn[64];
 		for(i = 0; i < size; i++) {
 			unsigned x = (unsigned)i + 1;
-			printf("__%u) Going to add consecutive %u__\n", (unsigned)i, x);
+			/*printf("__%u) Going to add consecutive %u__\n", (unsigned)i, x);*/
 			switch(order3_tree_try(&consecutive, x)) {
 			case TREE_ERROR: goto catch;
-			case TREE_PRESENT: printf("%u already in tree\n", x); break;
-			case TREE_UNIQUE: printf("%u added\n", x); break;
+			case TREE_PRESENT: /*printf("%u already in tree\n", x);*/ break;
+			case TREE_UNIQUE: /*printf("%u added\n", x);*/ break;
 			}
 			sprintf(fn, "graph/consecutive-%u.gv", (unsigned)i);
 			tree_order3_graph(&consecutive, fn);
 		}
 		for(i = 0; i < size; i++) {
 			unsigned x = (unsigned)i + 1;
-			printf("__%u) Going to remove %u__\n", (unsigned)i, x);
+			/*printf("__%u) Going to remove %u__\n", (unsigned)i, x);*/
 			if(!order3_tree_remove(&consecutive, x)) assert(0);
 			sprintf(fn, "graph/consecutive-rm-%u.gv", (unsigned)x);
 			tree_order3_graph(&consecutive, fn);
@@ -585,13 +585,11 @@ finally:
 
 /* Has distinguishable keys going to the same key value. This may be useful,
  for example, if one allocates keys. */
-
 /** @implements <typedef:<PB>action_fn> */
 static void loop_filler(unsigned *x)
 	{ *x = (unsigned)rand() / (RAND_MAX / 100000 + 1); }
 static int loop_compare(unsigned a, unsigned b)
 	{ return (a % 100) > (b % 100); }
-
 #define TREE_NAME loop
 #define TREE_TEST &loop_filler
 #define TREE_COMPARE &loop_compare
@@ -599,16 +597,24 @@ static int loop_compare(unsigned a, unsigned b)
 #include "../src/tree.h"
 #define TREE_TO_STRING &int_to_string
 #include "../src/tree.h"
-
-
 /** Tests try and assign. */
 static void loop(void) {
-	/* fixme try assign */
+	struct loop_tree tree = loop_tree();
+	enum tree_result status;
+	unsigned *ret, eject;
+	status = loop_tree_try(&tree, 1), assert(status == TREE_UNIQUE);
+	status = loop_tree_try(&tree, 2), assert(status == TREE_UNIQUE);
+	status = loop_tree_try(&tree, 3), assert(status == TREE_UNIQUE);
+	status = loop_tree_try(&tree, 101), assert(status == TREE_PRESENT);
+	ret = loop_tree_get(&tree, 1), assert(ret && *ret == 1);
+	tree_loop_graph_horiz(&tree, "graph/loop1.gv");
+	status = loop_tree_assign(&tree, 101, &eject);
+	assert(status == TREE_PRESENT && eject == 1);
+	ret = loop_tree_get(&tree, 1), assert(ret && *ret == 101);
+	tree_loop_graph_horiz(&tree, "graph/loop2.gv");
+	loop_tree_(&tree);
 }
 
-
-/* fixme: (unsigned)->(void *) typical use case and time the results for
- different orders. */
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
