@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-/* C++ is a mess. */
 extern "C" {
 #include "orcish.h"
 }
@@ -12,6 +11,11 @@ struct typical_value { int a, b; };
 
 #define TREE_NAME o3
 #define TREE_ORDER 3
+#define TREE_VALUE struct typical_value *
+#include "tree.hpp"
+
+#define TREE_NAME o4
+#define TREE_ORDER 4
 #define TREE_VALUE struct typical_value *
 #include "tree.hpp"
 
@@ -54,6 +58,7 @@ static double m_stddev(const struct measure *const m)
 #define EXPS \
 	X(STD, std), \
 	X(O3, o3), \
+	X(O4, o4), \
 	X(O128, o128), \
 	X(O257, o257), \
 	X(O2049, o2049)
@@ -70,6 +75,7 @@ int main(void) {
 		exp[] = { EXPS };
 	const size_t exp_size = sizeof exp / sizeof *exp;
 #undef X
+	int ret = EXIT_SUCCESS;
 	/* Open all graphs for writing. */
 	for(e = 0; e < exp_size; e++) {
 		char fn[64];
@@ -80,13 +86,14 @@ int main(void) {
 			exp[e].name, replicas);
 	}
 	/* Do experiment. */
-	for(n = 1; n < 100000000; n <<= 1) {
+	for(n = 1; n < /*10*/5000000/*0*/; n <<= 1) {
 		clock_t t_total;
 		size_t r;
 		for(e = 0; e < exp_size; e++) m_reset(&exp[e].m);
 		for(r = 0; r < replicas; r++) {
 			std::map<unsigned, struct typical_value *> std;
 			struct o3_tree o3 = o3_tree();
+			struct o4_tree o4 = o4_tree();
 			struct o129_tree o129 = o129_tree();
 			struct o257_tree o257 = o257_tree();
 			struct o2049_tree o2049 = o2049_tree();
@@ -96,12 +103,11 @@ int main(void) {
 			printf("Replica %lu/%lu.\n", r + 1, replicas);
 
 			t = clock();
-			for(i = 0; i < n; i++) std.insert({(unsigned)rand(),0});
+			for(i = 0; i < n; i++) //std.emplace((unsigned)rand(),0);
+			std.insert(std::map<unsigned, struct typical_value *>::value_type((unsigned)rand(), 0));
 			m_add(&exp[STD].m, diff_us(t));
 			printf("std::set size %zu.\n", std.size());
 
-
-			/* Set, (closed hash set.) (Don't put I/O in the test.) */
 			t = clock();
 			for(i = 0; i < n; i++) {
 				if(!o3_tree_try(&o3, (unsigned)rand(), &v)) assert(0), exit(1);
@@ -109,6 +115,14 @@ int main(void) {
 			}
 			m_add(&exp[O3].m, diff_us(t));
 			printf("Order 3 tree size %zu.\n", o3_tree_count(&o3));
+
+			t = clock();
+			for(i = 0; i < n; i++) {
+				if(!o4_tree_try(&o4, (unsigned)rand(), &v)) assert(0), exit(1);
+				*v = 0;
+			}
+			m_add(&exp[O4].m, diff_us(t));
+			printf("Order 4 tree size %zu.\n", o4_tree_count(&o4));
 
 			t = clock();
 			for(i = 0; i < n; i++) {
@@ -152,7 +166,7 @@ int main(void) {
 	}
 	goto finally;
 catch_:
-	perror("timing"), assert(0);
+	perror("timing"), ret = EXIT_FAILURE, assert(0);
 finally:
 	for(e = 0; e < exp_size; e++)
 		if(exp[e].fp && fclose(exp[e].fp)) perror(exp[e].name);

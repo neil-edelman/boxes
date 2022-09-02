@@ -28,13 +28,15 @@ rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) \
 $(filter $(subst *,%,$2),$d))
 
 java_srcs    := $(call rwildcard, $(src), *.java)
-all_c_srcs   := $(call rwildcard, $(src), *.c) $(call rwildcard, $(src), *.cpp)
+all_c_srcs   := $(call rwildcard, $(src), *.c)
 c_re_srcs    := $(call rwildcard, $(src), *.re.c)
 c_rec_srcs   := $(call rwildcard, $(src), *.re_c.c)
 c_gperf_srcs := $(call rwildcard, $(src), *.gperf.c)
 c_srcs       := $(filter-out $(c_re_srcs) $(c_rec_srcs) $(c_gperf_srcs), $(all_c_srcs))
 h_srcs       := $(call rwildcard, $(src), *.h)
 y_srcs       := $(call rwildcard, $(src), *.y)
+cpp_srcs     := $(call rwildcard, $(src), *.cpp)
+hpp_srcs     := $(call rwildcard, $(src), *.hpp)
 all_c_tests  := $(call rwildcard, $(test), *.c)
 c_re_tests   := $(call rwildcard, $(test), *.re.c)
 c_rec_tests  := $(call rwildcard, $(test), *.re_c.c)
@@ -43,13 +45,14 @@ h_tests      := $(call rwildcard, $(test), *.h)
 icons        := $(call rwildcard, $(media), *.ico)
 
 # combinations
-all_h      := $(h_srcs) $(h_tests)
-all_srcs   := $(java_srcs) $(all_c_srcs) $(y_srcs)
+all_h      := $(h_srcs) $(h_tests) $(hpp_srcs)
+all_srcs   := $(java_srcs) $(all_c_srcs) $(y_srcs) $(cpp_srcs)
 all_tests  := $(all_c_tests)
 all_icons  := $(icons)
 
 java_class := $(patsubst $(src)/%.java, $(build)/%.class, $(java_srcs))
 c_objs     := $(patsubst $(src)/%.c, $(build)/%.o, $(c_srcs))
+cpp_objs     := $(patsubst $(src)/%.cpp, $(build)/%.o, $(cpp_srcs))
 # must not conflict, eg, foo.c.re and foo.c would go to the same thing
 c_re_builds := $(patsubst $(src)/%.re.c, $(build)/%.c, $(c_re_srcs))
 c_re_test_builds := $(patsubst $(test)/%.re.c, $(build)/$(test)/%.c, $(c_re_tests))
@@ -74,7 +77,7 @@ gperf := gperf
 
 target    := # -mwindows
 optimize  := -ffast-math
-warnbasic := -Wall -pedantic -ansi # -std=c99
+warnbasic := -Wall #-std=c++14 -stdlib=libc++ #-pedantic -ansi # -std=c99
 # Some stuff is really new.
 warnclang := -Wextra \
 -Weverything \
@@ -129,16 +132,21 @@ default: $(bin)/$(project)
 docs: $(html_docs)
 
 # linking
-$(bin)/$(project): $(c_objs) $(c_other_objs) $(test_c_objs)
+$(bin)/$(project): $(c_objs) $(cpp_objs) $(c_other_objs) $(test_c_objs)
 	# linking rule
 	@$(mkdir) $(bin)
-	$(CC) $(OF) -o $@ $^
+	clang++ $(OF) -o $@ $^
 
 # compiling
 #$(lemon)/$(bin)/$(lem): $(lemon)/$(src)/lemon.c
 #	# compiling lemon
 #	@$(mkdir) $(lemon)/$(bin)
 #	$(CC) $(CF) -o $@ $<
+
+$(cpp_objs): $(build)/%.o: $(src)/%.cpp $(all_h)
+	# c_objs rule
+	@$(mkdir) $(build)
+	clang++ $(CF) -c -Wno-zero-as-null-pointer-constant -Wno-old-style-cast -o $@ $<
 
 $(c_objs): $(build)/%.o: $(src)/%.c $(all_h)
 	# c_objs rule
