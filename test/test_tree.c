@@ -616,6 +616,25 @@ static void loop(void) {
 }
 
 
+struct typical_tree_test;
+static void typical_filler(struct typical_tree_test *);
+struct typical_tree_entry_c;
+static void typical_to_string(const struct typical_tree_entry_c, char (*)[12]);
+
+#define TREE_NAME typical
+#define TREE_TEST &typical_filler
+#define TREE_VALUE void *
+#define TREE_EXPECT_TRAIT
+#include "../src/tree.h"
+#define TREE_TO_STRING &typical_to_string
+#include "../src/tree.h"
+
+static void typical_filler(struct typical_tree_test *t)
+	{ int_filler(&t->key); t->value = 0; }
+static void typical_to_string(const struct typical_tree_entry_c e,
+	char (*const z)[12]) { sprintf(*z, "%u", *e.key); }
+
+
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
@@ -629,5 +648,6 @@ int main(void) {
 	pair_tree_test();
 	star_tree_test();
 	entry_tree_test();
+	typical_tree_test();
 	return EXIT_SUCCESS;
 }
