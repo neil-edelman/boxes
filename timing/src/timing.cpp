@@ -79,14 +79,14 @@ int main(void) {
 	/* Open all graphs for writing. */
 	for(e = 0; e < exp_size; e++) {
 		char fn[64];
-		if(sprintf(fn, "graph/%s.tsv", exp[e].name) < 0
+		if(sprintf(fn, "graph/%s-%s.tsv", name, exp[e].name) < 0
 			|| !(exp[e].fp = fopen(fn, "w"))) goto catch_;
 		fprintf(exp[e].fp, "# %s\n"
 			"# <items>\t<t (ms)>\t<sample error on t with %zu replicas>\n",
 			exp[e].name, replicas);
 	}
 	/* Do experiment. */
-	for(n = 1; n < /*10*/5000000/*0*/; n <<= 1) {
+	for(n = 1; n < 50000000; n <<= 1) {
 		clock_t t_total;
 		size_t r;
 		for(e = 0; e < exp_size; e++) m_reset(&exp[e].m);
@@ -191,9 +191,9 @@ finally:
 			"set log x\n"
 			"plot", name);
 		for(e = 0; e < exp_size; e++) fprintf(gnu,
-			"%s \\\n\"graph/%s.tsv\" using 1:($2/$1*1000):($3/$1*1000) "
+			"%s \\\n\"graph/%s-%s.tsv\" using 1:($2/$1*1000):($3/$1*1000) "
 			"with errorlines title \"%s\" ls %d", e ? "," : "",
-			exp[e].name, exp[e].name, (int)e + 1);
+			name, exp[e].name, exp[e].name, (int)e + 1);
 		fprintf(gnu, "\n");
 	}
 	if(gnu && fclose(gnu)) goto catch2; gnu = 0;

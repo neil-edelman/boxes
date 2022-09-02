@@ -101,7 +101,7 @@ A tree is used as an ordered set or map. For memory locality, this is implemente
 
 \subsection{Branching factor}
 
-The branching factor, or order as \cite{knuth1998sorting}, is a fixed value between $[3,\text{UINT\_MAX}+1]$. The implementation has no buffering or middle-memory management. Thus, a high-order means greater memory allocation granularity, leading to asymptotically desirable trees. Small values produce much more compact trees. Four produces an isomorphism with left-leaning red-black trees\cite{sedgewick2008left}. In general, it is left-leaning where convenient because keys on the right side are faster to move because of the array configuration of the nodes.
+The branching factor, or order as \cite{knuth1998sorting}, is a fixed value between $[3,\text{UINT\_MAX}+1]$. The implementation has no buffering or middle-memory management. Thus, a high-order means greater memory allocation granularity, leading to asymptotically desirable trees. Small values produce much more compact trees. In general, it is left-leaning where convenient because keys on the right side are faster to move because of the array configuration of the nodes.
 
 \subsection{Minimum and maximum keys}
 
@@ -1265,7 +1265,40 @@ When the tree set has an extra value {\it per} key that is not associated with t
 
 \subsection{Performance}
 
+\begin{figure}%
+\centering%
+\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
+set style line 1 lt 5 lw 2 lc rgb '#0072bd' pointtype 1 pointsize 0.5
+set style line 2 lt 5 lw 2 lc rgb '#ff0000' pointtype 2 pointsize 0.5
+set style line 3 lt 5 lw 2 lc rgb '#00ac33' pointtype 5 pointsize 0.5
+set style line 4 lt 5 lw 2 lc rgb '#19d3f5' pointtype 5 pointsize 0.5
+set grid
+set xlabel "elements"
+set ylabel "time per element, t (ns)"
+set yrange [0:2000]
+set log x
+set format x '\tiny %g'
+set format y '\tiny %g'
+set for [i=1:8] linetype i dashtype i
+plot \
+"timing-std.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "std$\:\:$map" ls 1, \
+"timing-o3.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "o3" ls 2, \
+"timing-o4.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "o4" ls 3, \
+"timing-o128.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "o128" ls 4, \
+"timing-o257.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "o257" ls 5, \
+"timing-o2049.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "o2049" ls 6
+\end{gnuplot}
+\caption{A comparison different orders and \code{std::map} in $C^{++}$ benchmark, with a log-$x$ scale.}%
+\label{timing}%
+\end{figure}%
 
+Figure~\ref{timing} shows the common case where one has an ordered map of \code{int} to pointer. It is of straight insertion of random elements, (not in any order.)
+
+\code{std::map} is a red-black tree in \code{C++}. Though order~4 produces an isomorphism with left-leaning red-black trees\cite{sedgewick2008left}, it is very close in performance to an order-3 tree. This is probably because of the importance of caching: locality-of-reference in order-3 trees, which have up to 2 elements grouped together is very similar to having single elements.
+
+Higher orders are generally more cache-friendly, but it gets to the point where all the data is in one node. This node is essentially an ordered array. Order~2049 is an example; with more data to be transferred every insertion, the performance goes down. The more the size in bytes of the individual keys (and values, if applicable,) the more large the nodes become, and this negative effect is exacerbated.
+
+When choosing a default fixed order, it is useful to pick a fixed number of elements from Figure~\ref{timing} . . .
 
 \section{Conclusion}
 

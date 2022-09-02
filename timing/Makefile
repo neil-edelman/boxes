@@ -209,7 +209,7 @@ $(html_docs): $(doc)/%.html: $(src)/%.c $(src)/%.h
 
 clean:
 	-rm -f $(c_objs) $(test_c_objs) $(c_other_objs) $(c_re_builds) \
-$(c_rec_builds) $(html_docs)
+$(c_rec_builds) $(cpp_objs) $(html_docs)
 	-rm -rf $(bin)/$(test)
 
 backup:
