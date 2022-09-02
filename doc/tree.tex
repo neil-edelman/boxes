@@ -1254,7 +1254,7 @@ Figure~\ref{remove} shows a schematic diagram of removal of one key . . .
 
 intrim? provisional!
 
-
+More work is needed to determine the optimal way of removing keys.
 
 
 \section{Characteristics}
@@ -1292,7 +1292,7 @@ plot \
 \label{timing}%
 \end{figure}%
 
-Figure~\ref{timing} shows the common case where one has an ordered map of \code{int} to pointer. It is of straight insertion of random elements, (not in any order.)
+Figure~\ref{timing} shows the common case where one has an ordered map of \code{int} to pointer. It is of straight insertion of random elements, (not in any order.) The keys are drawn from \code{rand} in $[0, 2\,147\,483\,647]$. This causes some probability of collision, which is much faster than insertion.
 
 \code{std::map} is a red-black tree in \code{C++}. Though order~4 produces an isomorphism with left-leaning red-black trees\cite{sedgewick2008left}, it is very close in performance to an order-3 tree. This is probably because of the importance of caching: locality-of-reference in order-3 trees, which have up to 2 elements grouped together is very similar to having single elements.
 
