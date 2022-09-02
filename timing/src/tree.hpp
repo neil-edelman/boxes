@@ -202,7 +202,7 @@ struct B_(tree) { struct PB_(tree) root; };
  pointer-to-<typedef:<PB>value>. The reason these are pointers is because it
  is not contiguous in memory. */
 struct B_(tree_entry) { PB_(key) *key; PB_(value) *value; };
-struct B_(tree_entry_c) { PB_(key_c) *key; PB_(value_c) *value; };
+struct B_(tree_entry_c) { PB_(key_c) *key; const PB_(value) *value; };
 /** On `TREE_VALUE`, otherwise it's just an alias for
  pointer-to-<typedef:<PB>key>. */
 typedef struct B_(tree_entry) PB_(entry);

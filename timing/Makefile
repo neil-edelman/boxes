@@ -28,7 +28,7 @@ rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) \
 $(filter $(subst *,%,$2),$d))
 
 java_srcs    := $(call rwildcard, $(src), *.java)
-all_c_srcs   := $(call rwildcard, $(src), *.c)
+all_c_srcs   := $(call rwildcard, $(src), *.c) $(call rwildcard, $(src), *.cpp)
 c_re_srcs    := $(call rwildcard, $(src), *.re.c)
 c_rec_srcs   := $(call rwildcard, $(src), *.re_c.c)
 c_gperf_srcs := $(call rwildcard, $(src), *.gperf.c)

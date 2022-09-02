@@ -1,5 +1,4 @@
 #include <unordered_set>
-#include <set>
 #include <map>
 #include <stdlib.h>
 #include <stdio.h>
@@ -9,27 +8,26 @@ extern "C" {
 #include "orcish.h"
 }
 
-/** @implements <typedef:<int>action_fn> */
-static void int_filler(unsigned *x)
-	{ *x = (unsigned)rand() / (RAND_MAX / 1000 + 1); }
-/** @implements <typedef:<int>to_string_fn> */
-static void int_to_string(const unsigned *x, char (*const z)[12])
-	{ /*assert(*x < 10000000000),*/ sprintf(*z, "%u", *x); }
+struct typical_value { int a, b; };
 
 #define TREE_NAME o3
 #define TREE_ORDER 3
+#define TREE_VALUE struct typical_value *
 #include "tree.hpp"
 
 #define TREE_NAME o129
 #define TREE_ORDER 129
+#define TREE_VALUE struct typical_value *
 #include "tree.hpp"
 
 #define TREE_NAME o257
 #define TREE_ORDER 257
+#define TREE_VALUE struct typical_value *
 #include "tree.hpp"
 
 #define TREE_NAME o2049
 #define TREE_ORDER 2049
+#define TREE_VALUE struct typical_value *
 #include "tree.hpp"
 
 #include <time.h>
@@ -87,47 +85,52 @@ int main(void) {
 		size_t r;
 		for(e = 0; e < exp_size; e++) m_reset(&exp[e].m);
 		for(r = 0; r < replicas; r++) {
-			std::set<unsigned/*, void **/> std;
+			std::map<unsigned, struct typical_value *> std;
 			struct o3_tree o3 = o3_tree();
 			struct o129_tree o129 = o129_tree();
 			struct o257_tree o257 = o257_tree();
 			struct o2049_tree o2049 = o2049_tree();
+			struct typical_value **v;
 			clock_t t;
 			t_total = clock();
 			printf("Replica %lu/%lu.\n", r + 1, replicas);
 
 			t = clock();
-			for(i = 0; i < n; i++) std.insert((unsigned)rand());
+			for(i = 0; i < n; i++) std.insert({(unsigned)rand(),0});
 			m_add(&exp[STD].m, diff_us(t));
 			printf("std::set size %zu.\n", std.size());
 
 
 			/* Set, (closed hash set.) (Don't put I/O in the test.) */
 			t = clock();
-			for(i = 0; i < n; i++)
-				if(!o3_tree_try(&o3, (unsigned)rand())) assert(0), exit(1);
+			for(i = 0; i < n; i++) {
+				if(!o3_tree_try(&o3, (unsigned)rand(), &v)) assert(0), exit(1);
+				*v = 0;
+			}
 			m_add(&exp[O3].m, diff_us(t));
-			/*printf("Tree size %zu: %s.\n",
-				o3_tree_count(&o3), o3_tree_to_string(&o3));*/
 			printf("Order 3 tree size %zu.\n", o3_tree_count(&o3));
 
 			t = clock();
-			for(i = 0; i < n; i++)
-				if(!o129_tree_try(&o129, (unsigned)rand())) assert(0), exit(1);
+			for(i = 0; i < n; i++) {
+				if(!o129_tree_try(&o129, (unsigned)rand(), &v)) assert(0), exit(1);
+				*v = 0;
+			}
 			m_add(&exp[O128].m, diff_us(t));
-			/*printf("Tree size %zu: %s.\n",
-				o3_tree_count(&o3), o3_tree_to_string(&o3));*/
 			printf("Order 129 tree size %zu.\n", o129_tree_count(&o129));
 
 			t = clock();
-			for(i = 0; i < n; i++)
-				if(!o257_tree_try(&o257, (unsigned)rand())) assert(0), exit(1);
+			for(i = 0; i < n; i++) {
+				if(!o257_tree_try(&o257, (unsigned)rand(), &v)) assert(0), exit(1);
+				*v = 0;
+			}
 			m_add(&exp[O257].m, diff_us(t));
 			printf("Order 257 tree size %zu.\n", o257_tree_count(&o257));
 
 			t = clock();
-			for(i = 0; i < n; i++)
-				if(!o2049_tree_try(&o2049, (unsigned)rand())) assert(0), exit(1);
+			for(i = 0; i < n; i++) {
+				if(!o2049_tree_try(&o2049, (unsigned)rand(), &v)) assert(0), exit(1);
+				*v = 0;
+			}
 			m_add(&exp[O2049].m, diff_us(t));
 			printf("Order 2049 tree size %zu.\n", o2049_tree_count(&o2049));
 
@@ -136,18 +139,6 @@ int main(void) {
 				&& 10.0 * (clock() - t_total) / CLOCKS_PER_SEC > 1.0 * replicas)
 				replicas--;
 
-			/* Cut a slice to see if it's actually working. */
-			/*if(n == 1024) {
-				char fn[64];
-				sprintf(fn, "graph/%s.gv", exp[0].name);
-				set_closed_graph(&closed, fn);
-				sprintf(fn, "graph/%s.gv", exp[1].name);
-				table_string_graph(&os, fn);
-			}*/
-			/*closed_set_clear(&closed);
-			string_table_clear(&os);*/
-			/*closed_set_(&cs);
-			string_table_(&os);*/
 			o3_tree_(&o3);
 			o129_tree_(&o129);
 			o257_tree_(&o257);

@@ -220,7 +220,7 @@ static PB_(entry_c) PB_(cons_entry_c)(const struct PB_(node) *const node,
 	const unsigned i) { PB_(entry_c) e;
 	e.key = node->key + i, e.value = node->value + i; return e; }
 /** Gets the value of `ref`. */
-static PB_(value) *PB_(ref_to_value)(const struct PB_(ref) ref)
+static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->value + ref.idx : 0; }
 
 #else /* value --><!-- !value */
@@ -237,7 +237,7 @@ static PB_(entry) PB_(cons_entry)(struct PB_(node) *const node,
 static PB_(entry_c) PB_(cons_entry_c)(const struct PB_(node) *const node,
 	const unsigned i) { return node->key + i; }
 /** Gets the value of `ref`. */
-static PB_(value) *PB_(ref_to_value)(const struct PB_(ref) ref)
+static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->key + ref.idx : 0; }
 
 #endif /* !value --> */
@@ -613,7 +613,7 @@ static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
 	struct PB_(ref) ref;
 	if(!tree || !tree->root.node || tree->root.height == UINT_MAX
 		|| !(ref = PB_(find)(&tree->root, x)).node) return 0;
-	return PB_(ref_to_value)(ref);
+	return PB_(ref_to_valuep)(ref);
 }
 
 /** For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`,
@@ -626,7 +626,7 @@ static PB_(value) *B_(tree_at)(struct B_(tree) *const tree,
 	struct PB_(ref) ref;
 	if(!tree) return 0;
 	ref = PB_(lower)(tree->root, x);
-	return ref.node && ref.idx < ref.node->size ? PB_(ref_to_value)(ref) : 0;
+	return ref.node && ref.idx < ref.node->size ? PB_(ref_to_valuep)(ref) : 0;
 }
 
 #ifdef TREE_VALUE /* <!-- map */
@@ -679,7 +679,7 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 			if(value) {
 				struct PB_(ref) max_ref;
 				max_ref.node = last, max_ref.idx = last->size - 1;
-				*value = PB_(ref_to_value)(max_ref);
+				*value = PB_(ref_to_valuep)(max_ref);
 			}
 #endif
 			return TREE_PRESENT;
@@ -724,7 +724,7 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 	if(value) {
 		struct PB_(ref) max_ref;
 		max_ref.node = node, max_ref.idx = node->size;
-		*value = PB_(ref_to_value)(max_ref);
+		*value = PB_(ref_to_valuep)(max_ref);
 	}
 #endif
 	node->size++;
@@ -854,7 +854,7 @@ descend: /* Record last node that has space. */
 				add.node->key[add.idx] = key;
 			}
 #ifdef TREE_VALUE
-			if(value) *value = PB_(ref_to_value)(add);
+			if(value) *value = PB_(ref_to_valuep)(add);
 #endif
 			return TREE_PRESENT;
 		}
@@ -872,7 +872,7 @@ insert: /* Leaf has space to spare; usually end up here. */
 	add.node->size++;
 	add.node->key[add.idx] = key;
 #ifdef TREE_VALUE
-	if(value) *value = PB_(ref_to_value)(add);
+	if(value) *value = PB_(ref_to_valuep)(add);
 #endif
 	return TREE_UNIQUE;
 grow: /* Leaf is full. */ {
@@ -1001,7 +1001,7 @@ grow: /* Leaf is full. */ {
 	if(cursor.height) goto split; /* Loop max `\log_{TREE_MIN} size`. */
 	hole.node->key[hole.idx] = key;
 #ifdef TREE_VALUE
-	if(value) *value = PB_(ref_to_value)(hole);
+	if(value) *value = PB_(ref_to_valuep)(hole);
 #endif
 	assert(!new_head);
 	return TREE_UNIQUE;
@@ -1033,8 +1033,8 @@ grow: /* Leaf is full. */ {
  and adds a new key with `key`, or `TREE_PRESENT` there was already an existing
  key. @throws[malloc] @order \Theta(\log |`tree`|) @allow */
 static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
-	const PB_(key) key, PB_(value) **const value)
-	{ return assert(tree), PB_(update)(&tree->root, key, 0, value); }
+	const PB_(key) key, PB_(value) **const valuep)
+	{ return assert(tree), PB_(update)(&tree->root, key, 0, valuep); }
 #else /* map --><!-- set */
 /** Adds `key` to `tree` but in a set. */
 static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
