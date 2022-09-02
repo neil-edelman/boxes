@@ -827,7 +827,6 @@ static enum tree_result PB_(update)(struct PB_(tree) *const root,
 #endif /* set --> */
 	struct PB_(node) *new_head = 0;
 	struct PB_(ref) add, hole, cursor;
-	int is_growing = 0;
 	assert(root);
 	if(!(add.node = root->node)) goto idle;
 	else if(root->height == UINT_MAX) goto empty;
@@ -861,8 +860,7 @@ descend: /* Record last node that has space. */
 	}
 	if(hole.node == add.node) goto insert; else goto grow;
 insert: /* Leaf has space to spare; usually end up here. */
-	assert(add.node && add.idx <= add.node->size && add.node->size < TREE_MAX
-		&& (!add.height || is_growing));
+	assert(add.node && add.idx <= add.node->size && add.node->size < TREE_MAX);
 	memmove(add.node->key + add.idx + 1, add.node->key + add.idx,
 		sizeof *add.node->key * (add.node->size - add.idx));
 #ifdef TREE_VALUE

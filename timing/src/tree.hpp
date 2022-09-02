@@ -860,8 +860,7 @@ descend: /* Record last node that has space. */
 	}
 	if(hole.node == add.node) goto insert; else goto grow;
 insert: /* Leaf has space to spare; usually end up here. */
-	assert(add.node && add.idx <= add.node->size && add.node->size < TREE_MAX
-		&& (!add.height || is_growing));
+	assert(add.node && add.idx <= add.node->size && add.node->size < TREE_MAX);
 	memmove(add.node->key + add.idx + 1, add.node->key + add.idx,
 		sizeof *add.node->key * (add.node->size - add.idx));
 #ifdef TREE_VALUE
