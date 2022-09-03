@@ -1021,7 +1021,7 @@ grow: /* Leaf is full. */ {
 /** Adds or gets `key` in `tree`. If `key` is already in `tree`, uses the
  old value, _vs_ <fn:<B>tree_assign>. (This is only significant in trees with
  distinguishable keys.)
- @param[value] Only present if `TREE_VALUE` (map) was specified. If this
+ @param[valuep] Only present if `TREE_VALUE` (map) was specified. If this
  parameter is non-null and a return value other then `TREE_ERROR`, this
  receives the address of the value associated with the `key`. This pointer is
  only guaranteed to be valid only while the `tree` doesn't undergo
@@ -1482,7 +1482,7 @@ static struct PB_(tree) PB_(clone)(const struct PB_(tree) *const src,
  @return Success, otherwise `tree` is not modified.
  @throws[malloc] @throws[EDOM] `tree` is null. @throws[ERANGE] The size of
  `source` nodes doesn't fit into `size_t`.
- @order \O(|`source`| + |`tree`|) @allow */
+ @order \O(|`source`| + |`tree`|) time and temporary space. @allow */
 static int B_(tree_clone)(struct B_(tree) *const tree,
 	const struct B_(tree) *const source) {
 	struct PB_(scaffold) sc;

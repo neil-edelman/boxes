@@ -141,7 +141,7 @@ Adding, deleting, or changes in the topology of the tree invalidate it\.
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-1a5f2d8a">&lt;B&gt;tree_bulk_finish</a></td><td>tree</td></tr>
 
-<tr><td align = right>static enum tree_result</td><td><a href = "#user-content-fn-2c43561d">&lt;B&gt;tree_try</a></td><td>tree, key, value</td></tr>
+<tr><td align = right>static enum tree_result</td><td><a href = "#user-content-fn-2c43561d">&lt;B&gt;tree_try</a></td><td>tree, key, valuep</td></tr>
 
 <tr><td align = right>static enum tree_result</td><td><a href = "#user-content-fn-4b04ca55">&lt;B&gt;tree_assign</a></td><td>tree, key, eject, value</td></tr>
 
@@ -290,11 +290,11 @@ Distributes `tree` \(can be null\) on the right side so that, after a series of 
 
 ### <a id = "user-content-fn-2c43561d" name = "user-content-fn-2c43561d">&lt;B&gt;tree_try</a> ###
 
-<code>static enum tree_result <strong>&lt;B&gt;tree_try</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>, &lt;PB&gt;value **const <em>value</em>)</code>
+<code>static enum tree_result <strong>&lt;B&gt;tree_try</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>, &lt;PB&gt;value **const <em>valuep</em>)</code>
 
 Adds or gets `key` in `tree`\. If `key` is already in `tree`, uses the old value, _vs_ [&lt;B&gt;tree_assign](#user-content-fn-4b04ca55)\. \(This is only significant in trees with distinguishable keys\.\)
 
- * Parameter: _value_  
+ * Parameter: _valuep_  
    Only present if `TREE_VALUE` \(map\) was specified\. If this parameter is non\-null and a return value other then `TREE_ERROR`, this receives the address of the value associated with the `key`\. This pointer is only guaranteed to be valid only while the `tree` doesn't undergo structural changes, \(such as calling [&lt;B&gt;tree_try](#user-content-fn-2c43561d) with `TREE_UNIQUE` again\.\)
  * Return:  
    Either `TREE_ERROR` \(false\) and doesn't touch `tree`, `TREE_UNIQUE` and adds a new key with `key`, or `TREE_PRESENT` there was already an existing key\.
@@ -354,7 +354,7 @@ Tries to remove `key` from `tree`\.
  * Exceptional return: ERANGE  
    The size of `source` nodes doesn't fit into `size_t`\.
  * Order:  
-   &#927;\(|`source`| \+ |`tree`|\)
+   &#927;\(|`source`| \+ |`tree`|\) time and temporary space\.
 
 
 

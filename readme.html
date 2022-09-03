@@ -199,7 +199,7 @@
 
 <tr><td align = right>static int</td><td><a href = "#fn:<B>tree_bulk_finish">&lt;B&gt;tree_bulk_finish</a></td><td>tree</td></tr>
 
-<tr><td align = right>static enum tree_result</td><td><a href = "#fn:<B>tree_try">&lt;B&gt;tree_try</a></td><td>tree, key, value</td></tr>
+<tr><td align = right>static enum tree_result</td><td><a href = "#fn:<B>tree_try">&lt;B&gt;tree_try</a></td><td>tree, key, valuep</td></tr>
 
 <tr><td align = right>static enum tree_result</td><td><a href = "#fn:<B>tree_assign">&lt;B&gt;tree_assign</a></td><td>tree, key, eject, value</td></tr>
 
@@ -379,12 +379,12 @@
 
 <h3><a id = "fn:<B>tree_try" name = "fn:<B>tree_try">&lt;B&gt;tree_try</a></h3>
 
-<p><code>static enum tree_result <strong>&lt;B&gt;tree_try</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>, &lt;PB&gt;value **const <em>value</em>)</code></p>
+<p><code>static enum tree_result <strong>&lt;B&gt;tree_try</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>, &lt;PB&gt;value **const <em>valuep</em>)</code></p>
 
 <p>Adds or gets <code>key</code> in <code>tree</code>. If <code>key</code> is already in <code>tree</code>, uses the old value, <em>vs</em> <a href = "#fn:&lt;B&gt;tree_assign">&lt;B&gt;tree_assign</a>. (This is only significant in trees with distinguishable keys.)</p>
 
 <dl>
-	<dt>Parameter: <em>value</em></dt>
+	<dt>Parameter: <em>valuep</em></dt>
 	<dd>Only present if <code>TREE_VALUE</code> (map) was specified. If this parameter is non-null and a return value other then <code>TREE_ERROR</code>, this receives the address of the value associated with the <code>key</code>. This pointer is only guaranteed to be valid only while the <code>tree</code> doesn't undergo structural changes, (such as calling <a href = "#fn:&lt;B&gt;tree_try">&lt;B&gt;tree_try</a> with <code>TREE_UNIQUE</code> again.)</dd>
 	<dt>Return:</dt>
 	<dd>Either <code>TREE_ERROR</code> (false) and doesn't touch <code>tree</code>, <code>TREE_UNIQUE</code> and adds a new key with <code>key</code>, or <code>TREE_PRESENT</code> there was already an existing key.</dd>
@@ -453,7 +453,7 @@
 	<dt>Exceptional return: ERANGE</dt>
 	<dd>The size of <code>source</code> nodes doesn't fit into <code>size_t</code>.</dd>
 	<dt>Order:</dt>
-	<dd>&#927;(|<code>source</code>| + |<code>tree</code>|)</dd>
+	<dd>&#927;(|<code>source</code>| + |<code>tree</code>|) time and temporary space.</dd>
 </dl>
 
 </div>
