@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-extern "C" {
-#include "orcish.h"
-}
 
 struct typical_value { int a, b; };
 
