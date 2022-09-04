@@ -39,7 +39,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>value">&lt;PT&gt;value</a>, <a href = "#typedef:<PT>entry">&lt;PT&gt;entry</a>, <a href = "#typedef:<PT>key_fn">&lt;PT&gt;key_fn</a>, <a href = "#typedef:<PT>replace_fn">&lt;PT&gt;replace_fn</a>, <a href = "#typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a>, <a href = "#typedef:<PT>action_fn">&lt;PT&gt;action_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>value">&lt;PT&gt;value</a>, <a href = "#typedef:<PT>entry">&lt;PT&gt;entry</a>, <a href = "#typedef:<PT>key_fn">&lt;PT&gt;key_fn</a>, <a href = "#typedef:<PT>replace_fn">&lt;PT&gt;replace_fn</a>, <a href = "#typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a>, <a href = "#typedef:<PT>action_fn">&lt;PT&gt;action_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:trie_result">trie_result</a>, <a href = "#tag:<T>trie_entry">&lt;T&gt;trie_entry</a>, <a href = "#tag:<T>trie">&lt;T&gt;trie</a></li>
 	<li><a href = "#data:">General Declarations</a>: <a href = "#data:it">it</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
@@ -53,7 +53,7 @@
 
 <p><img alt = "Example of trie." src = "doc/trie.png" width = 880 height = 402></p>
 
-<p>A <a href = "#tag:&lt;T&gt;trie">&lt;T&gt;trie</a> is a prefix-tree, digital-tree, or trie: an ordered set or map of immutable key strings allowing easy prefix queries. The strings used here are any encoding with a byte null-terminator, including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>.</p>
+<p>A <a href = "#tag:&lt;T&gt;trie">&lt;T&gt;trie</a> is a prefix-tree, digital-tree, or trie: an ordered set or map of immutable key strings allowing efficient prefix queries. The strings used here are any encoding with a byte null-terminator, including <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>.</p>
 
 <p>The implementation is as <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a>, only storing the where the key bits are different. It uses some B-tree techniques described in <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large">Bayer, McCreight, 1972 Large</a> for grouping the nodes in a compact, cache-friendly manner.</p>
 
@@ -63,7 +63,7 @@
 	<dt>Parameter: TRIE_NAME</dt>
 	<dd><code>&lt;T&gt;</code> that satisfies <code>C</code> naming conventions when mangled; required. <code>&lt;PT&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: TRIE_VALUE, TRIE_KEY_IN_VALUE</dt>
-	<dd><code>TRIE_VALUE</code> is an optional payload type to go with the string key. <code>TRIE_KEY_IN_VALUE</code> is an optional <a href = "#typedef:&lt;PT&gt;key_fn">&lt;PT&gt;key_fn</a> that picks out the key from the of value, otherwise it is an associative array <a href = "#tag:&lt;PT&gt;entry">&lt;PT&gt;entry</a>.</dd>
+	<dd><code>TRIE_VALUE</code> is an optional payload type to go with the string key. <code>TRIE_KEY_IN_VALUE</code> is an optional <a href = "#typedef:&lt;PT&gt;key_fn">&lt;PT&gt;key_fn</a> that picks out the key from the of value, otherwise it is an associative array from a string key to value, <a href = "#tag:&lt;PT&gt;entry">&lt;PT&gt;entry</a>.</dd>
 	<dt>Parameter: TRIE_TO_STRING</dt>
 	<dd>Defining this includes <a href = "to_string.h">to_string.h</a>, with the keys as the string.</dd>
 	<dt>Standard:</dt>
@@ -116,11 +116,11 @@
 
 <div>
 
-<h3><a id = "typedef:<PSZ>to_string_fn" name = "typedef:<PSZ>to_string_fn">&lt;PSZ&gt;to_string_fn</a></h3>
+<h3><a id = "typedef:<PSTR>to_string_fn" name = "typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(&lt;PSTR&gt;element_c, char(*)[12]);</code></p>
 
-<p><a href = "to_string.h">to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string. <code>&lt;PSZ&gt;type</code> is contracted to be an internal iteration type of the box.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string.</p>
 
 </div>
 
@@ -178,6 +178,11 @@
 
 <p>Advances <code>it</code>. Frees <code>tr</code> at <code>h</code> and it's children recursively. Stores any one outer tree in <code>one</code>. <code>height</code> is the node height, (height plus one.) Stores an iteration range in a trie. Any changes in the topology of the trie invalidate it.</p>
 
+<dl>
+	<dt>Implements:</dt>
+	<dd>next</dd>
+</dl>
+
 </div>
 
 <div>
@@ -210,7 +215,7 @@
 
 <tr><td align = right>static size_t</td><td><a href = "#fn:<T>trie_size">&lt;T&gt;trie_size</a></td><td>it</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#fn:<SZ>to_string">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#fn:<STR>to_string">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<T>trie_test">&lt;T&gt;trie_test</a></td><td></td></tr>
 
@@ -407,11 +412,11 @@
 
 <div>
 
-<h3><a id = "fn:<SZ>to_string" name = "fn:<SZ>to_string">&lt;SZ&gt;to_string</a></h3>
+<h3><a id = "fn:<STR>to_string" name = "fn:<STR>to_string">&lt;STR&gt;to_string</a></h3>
 
-<p><code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code></p>
+<p><code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;PSZ&gt;box</code> is contracted to be the box itself. <code>&lt;SZ&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;STR&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
 
 <dl>
 	<dt>Return:</dt>

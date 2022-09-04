@@ -10,8 +10,8 @@
  ![Example of trie.](../doc/trie.png)
 
  A <tag:<T>trie> is a prefix-tree, digital-tree, or trie: an ordered set or map
- of immutable key strings allowing easy prefix queries. The strings used here
- are any encoding with a byte null-terminator, including
+ of immutable key strings allowing efficient prefix queries. The strings used
+ here are any encoding with a byte null-terminator, including
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
 
  The implementation is as <Morrison, 1968 PATRICiA>: a compact
@@ -27,12 +27,13 @@
  @param[TRIE_VALUE, TRIE_KEY_IN_VALUE]
  `TRIE_VALUE` is an optional payload type to go with the string key.
  `TRIE_KEY_IN_VALUE` is an optional <typedef:<PT>key_fn> that picks out the key
- from the of value, otherwise it is an associative array <tag:<PT>entry>.
+ from the of value, otherwise it is an associative array from a string key to
+ value, <tag:<PT>entry>.
 
  @param[TRIE_TO_STRING]
  Defining this includes <to_string.h>, with the keys as the string.
 
- @std C89 */
+ @std C89 (Technically ISO/IEC 9899/AMD1:1995 because it uses EILSEQ.) */
 
 #ifndef TRIE_NAME
 #error Name TRIE_NAME undefined.
@@ -68,7 +69,7 @@
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-branches-left root (`{A, a, b, ...}`). Parameter sets the
  maximum tree size. Prefer alignment `4n - 2`; cache `32n - 2`. */
-#define TRIE_MAX_LEFT 3/*6*//*254*/
+#define TRIE_MAX_LEFT /*3*/6/*254*/
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX
 #error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX]`.
 #endif
@@ -218,8 +219,8 @@ static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
 /** @return Exact match for `key` in `trie` or null. */
 static PT_(entry) PT_(get)(const struct T_(trie) *const trie,
 	const char *const key) {
-	printf("get \"%s\"\n", key);
 	PT_(entry) *const x = PT_(match)(trie, key);
+	printf("get \"%s\"\n", key);
 	/*printf("get \"%s\" -> \n", key);
 	printf("\"%s\"\n", x ? PT_(to_key)(x) : "(null)");*/
 	printf("get \"%s\" -> \"%s\"\n", key, x ? PT_(to_key)(*x) : "(null)");
@@ -879,7 +880,7 @@ struct T_(trie_iterator) { struct PT_(iterator) i; };
 
 /** Initializes `trie` to idle. @order \Theta(1) @allow */
 static void T_(trie)(struct T_(trie) *const trie)
-	{ assert(trie); trie->root = 0; }
+	{ assert(trie); trie->root = 0; trie->node_height = 0; }
 
 /** Returns an initialized `trie` to idle. @allow */
 static void T_(trie_)(struct T_(trie) *const trie) {

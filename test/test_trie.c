@@ -165,9 +165,23 @@ static void contrived_str_test(void) {
 	str_trie_(&strs);
 }
 
+static void test_test(void) {
+	const char *words[] = { "foo", "bar", "baz", "quxx" };
+	size_t i;
+	struct str_trie t;
+	str_trie(&t);
+	for(i = 0; i < sizeof words / sizeof *words; i++) {
+		printf("word: %s\n", words[i]);
+		if(!str_trie_try(&t, words[i])) assert(0);
+	}
+	trie_str_graph(&t, "graph/foo-one.gv");
+	str_trie_(&t);
+}
+
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
+	test_test();
 	contrived_str_test();
 	/*colour_trie_test();
 	star_trie_test();

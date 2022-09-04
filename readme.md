@@ -5,7 +5,7 @@ Stand\-alone header [src/trie\.h](src/trie.h); examples [test/test\_trie\.c](tes
 ## Prefix tree ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;value](#user-content-typedef-cc753b30), [&lt;PT&gt;entry](#user-content-typedef-41052ced), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PT&gt;replace_fn](#user-content-typedef-246bd5da), [&lt;PSZ&gt;to_string_fn](#user-content-typedef-8b890812), [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;value](#user-content-typedef-cc753b30), [&lt;PT&gt;entry](#user-content-typedef-41052ced), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PT&gt;replace_fn](#user-content-typedef-246bd5da), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca), [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [trie_result](#user-content-tag-eb9850a3), [&lt;T&gt;trie_entry](#user-content-tag-1422bb56), [&lt;T&gt;trie](#user-content-tag-754a10a5)
  * [General Declarations](#user-content-data): [it](#user-content-data-47388410)
  * [Function Summary](#user-content-summary)
@@ -16,7 +16,7 @@ Stand\-alone header [src/trie\.h](src/trie.h); examples [test/test\_trie\.c](tes
 
 ![Example of trie.](doc/trie.png)
 
-A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, or trie: an ordered set or map of immutable key strings allowing easy prefix queries\. The strings used here are any encoding with a byte null\-terminator, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
+A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, or trie: an ordered set or map of immutable key strings allowing efficient prefix queries\. The strings used here are any encoding with a byte null\-terminator, including [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\.
 
 The implementation is as [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree), only storing the where the key bits are different\. It uses some B\-tree techniques described in [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large) for grouping the nodes in a compact, cache\-friendly manner\.
 
@@ -25,7 +25,7 @@ The implementation is as [Morrison, 1968 PATRICiA](https://scholar.google.ca/sch
  * Parameter: TRIE\_NAME  
    `<T>` that satisfies `C` naming conventions when mangled; required\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: TRIE\_VALUE, TRIE\_KEY\_IN\_VALUE  
-   `TRIE_VALUE` is an optional payload type to go with the string key\. `TRIE_KEY_IN_VALUE` is an optional [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f) that picks out the key from the of value, otherwise it is an associative array [&lt;PT&gt;entry](#user-content-tag-41052ced)\.
+   `TRIE_VALUE` is an optional payload type to go with the string key\. `TRIE_KEY_IN_VALUE` is an optional [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f) that picks out the key from the of value, otherwise it is an associative array from a string key to value, [&lt;PT&gt;entry](#user-content-tag-41052ced)\.
  * Parameter: TRIE\_TO\_STRING  
    Defining this includes [to\_string\.h](to_string.h), with the keys as the string\.
  * Standard:  
@@ -68,11 +68,11 @@ A bi\-predicate; returns true if the `replace` replaces the `original`; used in 
 
 
 
-### <a id = "user-content-typedef-8b890812" name = "user-content-typedef-8b890812">&lt;PSZ&gt;to_string_fn</a> ###
+### <a id = "user-content-typedef-8a8349ca" name = "user-content-typedef-8a8349ca">&lt;PSTR&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSZ&gt;to_string_fn</strong>)(const &lt;PSZ&gt;type *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(&lt;PSTR&gt;element_c, char(*)[12]);</code>
 
-[to\_string\.h](to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\. `<PSZ>type` is contracted to be an internal iteration type of the box\.
+[src/to\_string\.h](src/to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\.
 
 
 
@@ -120,6 +120,10 @@ To initialize it to an idle state, see [&lt;T&gt;trie](#user-content-fn-754a10a5
 
 Advances `it`\. Frees `tr` at `h` and it's children recursively\. Stores any one outer tree in `one`\. `height` is the node height, \(height plus one\.\) Stores an iteration range in a trie\. Any changes in the topology of the trie invalidate it\.
 
+ * Implements:  
+   next
+
+
 
 
 ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##
@@ -150,7 +154,7 @@ Advances `it`\. Frees `tr` at `h` and it's children recursively\. Stores any one
 
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a></td><td>it</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-b11709d3">&lt;SZ&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-ae9d3396">&lt;T&gt;trie_test</a></td><td></td></tr>
 
@@ -311,11 +315,11 @@ Counts the of the items in initialized `it`\.
 
 
 
-### <a id = "user-content-fn-b11709d3" name = "user-content-fn-b11709d3">&lt;SZ&gt;to_string</a> ###
+### <a id = "user-content-fn-751c6337" name = "user-content-fn-751c6337">&lt;STR&gt;to_string</a> ###
 
-<code>static const char *<strong>&lt;SZ&gt;to_string</strong>(const &lt;PSZ&gt;box *const <em>box</em>)</code>
+<code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<PSZ>box` is contracted to be the box itself\. `<SZ>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<STR>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
 
  * Return:  
    Address of the static buffer\.
