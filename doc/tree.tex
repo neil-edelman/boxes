@@ -82,26 +82,26 @@
 }
 
 \author{Neil A. Edelman}
-\title{Practical In-Memory B-tree design}
+\title{Practical in-memory B-tree design}
 \date{2022-08-05}
 
 \begin{document}
 
 \maketitle
 
-\abstract{Several design decisions for a minimal in-memory B-tree are discussed, covering bulk-loading, insertion, and deletion. Any allocations are fail-fast before modifying the tree so that it remains in a valid state. Concurrency not considered.}
-
-
+\abstract{Several design decisions for a minimal in-memory B-tree are discussed, covering bulk-loading, insertion, and deletion. Experimentally, a default order of 65 was reached based on insertions.}
 
 
 
 \section{Design}
 
-A tree is used as an ordered set or map. For memory locality, this is implemented B-tree\cite{bayer1972organization}. In an implementation for C, we would expect memory usage to be low, performance to be high, and simplicity over complexity. Practically, this means that B$^+$-trees and B$^*$-trees are less attractive, along with an added layer of order statistic tree. The nodes are linked one-way and iteration is very simple. This precludes multi-maps. The use-case has no concurrency and places importance on modification with operations being as lazy as is reasonably possible.
+A tree is used as an ordered set or map. For memory locality, this is implemented B-tree\cite{bayer1972organization}. In an implementation for C, we would expect memory usage to be low, performance to be high, and simplicity over complexity. Practically, this means that B$^+$-trees and B$^*$-trees are less attractive, along with an added layer of order statistic tree. The nodes are linked one-way and iteration is very simple. This precludes multi-maps. The use-case has no concurrency and places importance on modification with operations being as lazy as is reasonably possible. Any allocations are fail-fast before modifying the tree so that it remains in a valid state. Concurrency not considered.
 
 \subsection{Branching factor}
 
-The branching factor, or order as \cite{knuth1998sorting}, is a fixed value between $[3,\text{UINT\_MAX}+1]$. The implementation has no buffering or middle-memory management. Thus, a high-order means greater memory allocation granularity, leading to asymptotically desirable trees. Small values produce much more compact trees. In general, it is left-leaning where convenient because keys on the right side are faster to move because of the array configuration of the nodes.
+The branching factor, or order as \cite{knuth1998sorting}, is a fixed value between $[3,\text{UINT\_MAX}+1]$. The implementation has no buffering or middle-memory management. Thus, a high-order means greater memory allocation granularity, leading to asymptotically desirable caching. Small values produce much more compact trees. The default order is 65, a value arrived at experimentally in Section~\ref{default}.
+
+In general, it is left-leaning where convenient because keys on the right side are faster to move because of the array configuration of the nodes.
 
 \subsection{Minimum and maximum keys}
 
@@ -268,7 +268,7 @@ In a sense, it is the opposite of a B$^*$-tree\cite{knuth1998sorting, comer1979u
 	\label{bulk}%
 \end{figure}%
 
-Bulk loading buffers, as described in \cite{graefe2011modern}, is too complex for our purposes. Here, the user must supply the keys in order. Such that, a key undergoing bulk-add is packed to the lowest height on the right side, ignoring the rules for splitting. A key recruits zero-key nodes below as needed. When the tree is full, the height increases.
+Bulk loading buffers, as described in \cite{graefe2011modern}, are too complex for our purposes. However, bulk loading is useful when the initial keys are in order. A key undergoing bulk-add is packed to the lowest height on the right side, ignoring the rules for splitting, and recruiting zero-key nodes below as needed. When the tree is full, the height increases.
 
 Because the B-tree rule for the minimum number of keys may be violated on bulk-add, it's important to finalize the tree. This balances and restores the B-tree invariants on the right side of the tree, under the root.
 
@@ -1250,11 +1250,11 @@ In Figure~\ref{even}, the path from before \ref{even:work1} to \ref{even:insert}
 	\label{remove}%
 \end{figure}%
 
-Figure~\ref{remove} shows a schematic diagram of removal of one key . . .
+Figure~\ref{remove} shows a schematic diagram of removal of one key. This has been done directly, working up the tree. Since nodes necessarily have the minimum amount of keys by \code{ascend}, we can write the a temporary pointer to the parent node of those that have the minimum number of keys (or less) in \code{lookup rm} and \code{branch} in the unused space for child nodes.
 
-intrim? provisional!
+We require a leaf node for removal. In the event that the key is in a branch, we move the predecessor or successor, which is in a leaf, to the current spot and delete the leaf key. We must be careful to replace the provisional upwards-bubbling key with the predecessor or successor.
 
-More work is needed to determine the optimal way of removing keys.
+This is relying on being the only process which modifies the tree during deletion. A potentially more robust way would be from the top-down, like insertion. However, it is not clear what the starting point is, and one would probably have to queue two temporary nodes. More work is needed to determine the optimal way of removing keys.
 
 
 \section{Performance}
@@ -1301,7 +1301,7 @@ Figure~\ref{timing} shows the common case where one has an ordered map of \code{
 
 Higher orders are generally more cache-friendly, but it gets to the point where all the data is in one node. This node is essentially an ordered array. Order~2049 in Figure~\ref{timing} is an example; with more data to be transferred every insertion, the lower the performance. The more the size in bytes of the individual keys (and values, if applicable,) the more large the nodes become, and this negative effect is exacerbated.
 
-\subsection{Default order}
+\subsection{Default order}\label{default}
 
 \begin{figure}%
 \centering%
@@ -1325,6 +1325,8 @@ From Figure~\ref{timing}, we see that it resembles a level curve after the varia
 We expect that this is on the low-end of size in use-cases. We would also expect an entry of twice the size to behave performance-wise under rotations as if it has twice the order. This means that it is best to choose on the low-side. Thus, experimentally and heuristically, a reasonable default is 65. This means the leaves are allocated to hold 64 entries, and the branches an extra 65 pointers for the maximum branching factor.
 
 \section{Conclusion}
+
+A B-tree can be superior to a one key node-based approach used in red-black or AVL trees used by many languages to implement ordered sets or maps. It is not without cost, since this is now not a stable data-structure. However, we expect that the majority of use-cases do not require it to be stable.
 
 \bibliography{tree}
 
