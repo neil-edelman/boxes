@@ -109,7 +109,7 @@ struct tree_node_count { size_t branches, leaves; };
 
 
 #ifndef TREE_ORDER
-#define TREE_ORDER 33 /* Maximum branching factor. fixme: experiment. */
+#define TREE_ORDER 65 /* Maximum branching factor. This sets the granularity. */
 #endif
 #if TREE_ORDER < 3 || TREE_ORDER > UINT_MAX + 1
 #error TREE_ORDER parameter range `[3, UINT_MAX+1]`.

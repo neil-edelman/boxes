@@ -82,7 +82,7 @@
 }
 
 \author{Neil A. Edelman}
-\title{Practical B-tree design}
+\title{Practical In-Memory B-tree design}
 \date{2022-08-05}
 
 \begin{document}
@@ -1257,13 +1257,15 @@ intrim? provisional!
 More work is needed to determine the optimal way of removing keys.
 
 
-\section{Characteristics}
+\section{Performance}
 
 \subsection{Map}
 
-When the tree set has an extra value {\it per} key that is not associated with the tree operations, it becomes a map. To facilitate cache performance, these values are not interspersed with the keys. On lookup, only the key's value is ever accessed or iterated over.
+When the tree set has an extra value {\it per} key that is not associated with the tree operations, it becomes a map. To facilitate cache performance, these values are not interspersed with the keys. That is, only packed keys are ever accessed on lookup. The disadvantage of this approach is the mapped key and value are not in contiguous memory; on rotation of the tree, we must move two parts in tandem.
 
-\subsection{Performance}
+We expect some kind of map from an integral type to some kind of pointer to be the most common use-case. This covers polymorphic types. Figure~\ref{timing} and Figure~\ref{order} are using a map from \code{unsigned int} to pointer.
+
+\subsection{Compared with $std::map$}
 
 \begin{figure}%
 \centering%
@@ -1274,31 +1276,53 @@ set style line 3 lt 5 lw 2 lc rgb '#00ac33' pointtype 5 pointsize 0.5
 set style line 4 lt 5 lw 2 lc rgb '#19d3f5' pointtype 5 pointsize 0.5
 set grid
 set xlabel "elements"
-set ylabel "time per element, t (ns)"
+set ylabel "amortized time $per$ element, $t$ (ns)"
 set yrange [0:2000]
 set log x
 set format x '\tiny %g'
 set format y '\tiny %g'
+set key font ",15"
 set for [i=1:8] linetype i dashtype i
 plot \
 "timing-std.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "std$\:\:$map" ls 1, \
-"timing-o3.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "o3" ls 2, \
-"timing-o4.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "o4" ls 3, \
-"timing-o128.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "o128" ls 4, \
-"timing-o257.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "o257" ls 5, \
-"timing-o2049.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "o2049" ls 6
+"timing-o3.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "order 3" ls 2, \
+"timing-o4.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "order 4" ls 3, \
+"timing-o128.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "order 128" ls 4, \
+"timing-o257.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "order 257" ls 5, \
+"timing-o2049.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "order 2049" ls 6
 \end{gnuplot}
-\caption{A comparison different orders and \code{std::map} in $C^{++}$ benchmark, with a log-$x$ scale.}%
+\caption{A comparison different orders and \code{std::map} in $C^{++}$ benchmark, with a log-$x$ scale. Lower $t$ numbers are better performing.}%
 \label{timing}%
 \end{figure}%
 
-Figure~\ref{timing} shows the common case where one has an ordered map of \code{int} to pointer. It is of straight insertion of random elements, (not in any order.) The keys are drawn from \code{rand} in $[0, 2\,147\,483\,647]$. This causes some probability of collision, which is much faster than insertion.
+Figure~\ref{timing} shows the common case where one has an ordered map of \code{unsigned int} to pointer. It is of straight insertion of random elements, (not in any order.) The keys are drawn from \code{rand} in $[0, 2\,147\,483\,647]$. This causes some probability of collision, which can be much faster than insertion.
 
-\code{std::map} is a red-black tree in \code{C++}. Though order~4 produces an isomorphism with left-leaning red-black trees\cite{sedgewick2008left}, it is very close in performance to an order-3 tree. This is probably because of the importance of caching: locality-of-reference in order-3 trees, which have up to 2 elements grouped together is very similar to having single elements.
+\code{std::map} is a red-black tree in \code{C++}. Though order~4 produces an isomorphism with left-leaning red-black trees\cite{sedgewick2008left}, it is very close in performance to an order-3 tree. This is probably because of the importance of caching: locality-of-reference in order-3 trees, which have up to 2 elements grouped together is very similar to having single, stable, elements.
 
-Higher orders are generally more cache-friendly, but it gets to the point where all the data is in one node. This node is essentially an ordered array. Order~2049 is an example; with more data to be transferred every insertion, the performance goes down. The more the size in bytes of the individual keys (and values, if applicable,) the more large the nodes become, and this negative effect is exacerbated.
+Higher orders are generally more cache-friendly, but it gets to the point where all the data is in one node. This node is essentially an ordered array. Order~2049 in Figure~\ref{timing} is an example; with more data to be transferred every insertion, the lower the performance. The more the size in bytes of the individual keys (and values, if applicable,) the more large the nodes become, and this negative effect is exacerbated.
 
-When choosing a default fixed order, it is useful to pick a fixed number of elements from Figure~\ref{timing} . . .
+\subsection{Default order}
+
+\begin{figure}%
+\centering%
+\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
+set style line 1 lt 1 lw 2 lc rgb '#0072bd'
+set grid
+set xlabel "order"
+set ylabel "time to add 100000 elements, $t$ (ns)"
+set xrange [0:500]
+set yrange [15:25]
+set xtics 50
+unset key
+plot "order.tsv" using 1:($2/1000):($3/1000) with errorlines title "order" ls 1
+\end{gnuplot}
+\caption{Different orders benchmark for an addition of 100\,000 elements. Note that this is zoomed in on the region of interest. Especially, $t$ does not extend to zero; thus, the differences are more apparent.}%
+\label{order}%
+\end{figure}%
+
+From Figure~\ref{timing}, we see that it resembles a level curve after the variance {\it per} element settles. This is what we would expect. When choosing a default fixed order, it is therefore appropriate to pick a fixed number of elements. Figure~\ref{order} is a cut at 100\,000 elements. This suggests that the default order be from 20 to 200.
+
+We expect that this is on the low-end of size in use-cases. We would also expect an entry of twice the size to behave performance-wise under rotations as if it has twice the order. This means that it is best to choose on the low-side. Thus, experimentally and heuristically, a reasonable default is 65. This means the leaves are allocated to hold 64 entries, and the branches an extra 65 pointers for the maximum branching factor.
 
 \section{Conclusion}
 
