@@ -119,6 +119,8 @@ static const char *keyval_key(const struct keyval *const kv)
 
 #endif /* 0 */
 
+
+
 /** Manual testing for default string trie, that is, no associated information,
  just a set of `char *`. */
 static void contrived_str_test(void) {
