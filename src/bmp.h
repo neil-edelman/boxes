@@ -34,6 +34,7 @@
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #define BMP_CAT_(n, m) n ## _ ## m
 #define BMP_CAT(n, m) BMP_CAT_(n, m)
+/* FIXME: <B> is <B>tree! */
 #define B_(n) BMP_CAT(BMP_NAME, n)
 #define PB_(n) BMP_CAT(bmp, B_(n))
 /** The underlying array type. */
