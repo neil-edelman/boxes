@@ -358,6 +358,8 @@ The data has been engineered for maximum effectiveness of the cache in reading a
 
 \subsection{Running Time}
 
+\cite{shannon1948mathematical} $\log n == m$.
+
 The `\O(log n)` running time is only when the trie has bounds on strings that are placed there. Worst-case $\{ a, aa, aaa, aaaa, ... \}$. The case where the trie has strings that are bounded, as the tree grows, we can guarantee . . .
 
 Tries are a fairly succinct encoding at low numbers, but at high numbers, the internal trees add up. In the limit, with bounded strings, we need $n \log_{\text{order}} n$ to store $n$ items? However, practically, if one sets the order high enough, this is not an issue?
