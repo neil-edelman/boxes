@@ -488,7 +488,7 @@ HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if `predicate` i
 [src/compare\.h](src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`, \(which has a high\-context\-switching cost, but is easy\.\)
 
  * Order:  
-   &#927;\(|`box`| \\log |`box`|\)
+   &#927;\(|`box`| log |`box`|\)
 
 
 
@@ -500,7 +500,7 @@ HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if `predicate` i
 [src/compare\.h](src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` in reverse by `qsort`\.
 
  * Order:  
-   &#927;\(|`box`| \\log |`box`|\)
+   &#927;\(|`box`| log |`box`|\)
 
 
 
