@@ -22,7 +22,7 @@ A [&lt;B&gt;tree](#user-content-tag-a36433e3) is an ordered set or map contained
  * Parameter: TREE\_NAME, TREE\_KEY  
    `<B>` that satisfies `C` naming conventions when mangled, required, and `TREE_KEY`, a type, [&lt;PB&gt;key](#user-content-typedef-9d1494bc), whose default is `unsigned int`\. `<PB>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: TREE\_VALUE  
-   `TRIE_VALUE` is an optional payload to go with the type, [&lt;PB&gt;value](#user-content-typedef-1740653a)\. The makes it a map of [&lt;B&gt;tree_entry](#user-content-tag-9e3caf18) instead of a set\.
+   Optional payload to go with the type, [&lt;PB&gt;value](#user-content-typedef-1740653a)\. The makes it a map of [&lt;B&gt;tree_entry](#user-content-tag-9e3caf18) instead of a set\.
  * Parameter: TREE\_COMPARE  
    A function satisfying [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31)\. Defaults to ascending order\. Required if `TREE_KEY` is changed to an incomparable type\.
  * Parameter: TREE\_ORDER  

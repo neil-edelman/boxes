@@ -212,7 +212,7 @@ static void PB_(print)(const struct B_(tree) *const tree) {
 	printf("\n");
 }*/
 
-/** Makes sure the `trie` is in a valid state. */
+/** Makes sure the `tree` is in a valid state. */
 static void PB_(valid)(const struct B_(tree) *const tree) {
 	if(!tree) return; /* Null. */
 	if(!tree->root.node)
@@ -492,19 +492,19 @@ static void PB_(test)(void) {
 	assert(!errno);
 }
 
-/** Will be tested on stdout. Requires `TRIE_TEST`, and not `NDEBUG` while
+/** Will be tested on stdout. Requires `TREE_TEST`, and not `NDEBUG` while
  defining `assert`. @allow */
 static void B_(tree_test)(void) {
-	printf("<" QUOTE(TREE_NAME) ">trie"
+	printf("<" QUOTE(TREE_NAME) ">tree"
 		" of type <" QUOTE(TREE_KEY) ">"
 		" was created using:"
 #ifdef TREE_VALUE
 		" TREE_VALUE<" QUOTE(TREE_VALUE) ">;"
 #endif
-		" TRIE_TEST <" QUOTE(TREE_TEST) ">;"
+		" TREE_TEST <" QUOTE(TREE_TEST) ">;"
 		" testing:\n");
 	PB_(test)();
-	fprintf(stderr, "Done tests of <" QUOTE(TREE_NAME) ">trie.\n\n");
+	fprintf(stderr, "Done tests of <" QUOTE(TREE_NAME) ">tree.\n\n");
 	(void)PB_(graph_horiz); /* Not used in general. */
 }
 

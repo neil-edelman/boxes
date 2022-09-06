@@ -1,5 +1,3 @@
-/* Test Trie. */
-
 #include <stdlib.h> /* EXIT malloc free rand */
 #include <stdio.h>  /* *printf */
 #include <assert.h> /* assert */

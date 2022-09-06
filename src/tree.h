@@ -19,8 +19,8 @@
  `<PB>` is private, whose names are prefixed in a manner to avoid collisions.
 
  @param[TREE_VALUE]
- `TRIE_VALUE` is an optional payload to go with the type, <typedef:<PB>value>.
- The makes it a map of <tag:<B>tree_entry> instead of a set.
+ Optional payload to go with the type, <typedef:<PB>value>. The makes it a map
+ of <tag:<B>tree_entry> instead of a set.
 
  @param[TREE_COMPARE]
  A function satisfying <typedef:<PB>compare_fn>. Defaults to ascending order.
@@ -529,7 +529,7 @@ static struct B_(tree) B_(tree)(void) {
 
 /** Private: frees non-empty `tree` and it's children recursively, but doesn't
  put it to idle or clear pointers.
- @param[keep] Tries to keep one leaf if non-null. Set to null before. */
+ @param[keep] Keep one leaf if non-null. Set to null before. */
 static void PB_(clear_r)(struct PB_(tree) tree, struct PB_(node) **const keep) {
 	assert(tree.node);
 	if(!tree.height) {
