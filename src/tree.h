@@ -7,7 +7,7 @@
 
  @subtitle Ordered tree
 
- ![Example of Tree](../doc/tree.png)
+ ![Example of tree.](../doc/tree.png)
 
  A <tag:<B>tree> is an ordered set or map contained in a tree. For memory
  locality, this is implemented B-tree, described in
@@ -70,8 +70,7 @@
 #include <assert.h>
 #include <limits.h>
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(TREE_CAT_) || defined(TREE_CAT) || defined(B_) || defined(PB_) \
-	|| defined(TREE_IDLE)
+#if defined(TREE_CAT_) || defined(TREE_CAT) || defined(B_) || defined(PB_)
 #error Unexpected defines.
 #endif
 #define TREE_CAT_(n, m) n ## _ ## m
@@ -331,7 +330,7 @@ static int PB_(is_element_c)(PB_(entry_c) e) {
 /* @implements `forward` */
 struct PB_(forward) { const struct PB_(tree) *root; struct PB_(ref_c) next; };
 
-/** @return Before `tree`. @implements `forward` */
+/** @return Before `tree`, (can be null.) @implements `forward` */
 static struct PB_(forward) PB_(forward)(const struct B_(tree) *const tree) {
 	struct PB_(forward) it;
 	it.root = tree ? &tree->root : 0, it.next.node = 0;
