@@ -648,9 +648,5 @@ int main(void) {
 	star_tree_test();
 	entry_tree_test();
 	typical_tree_test();
-	struct typical_tree typ = typical_tree();
-	struct typical_value **v;
-	typical_tree_try(&typ, 42, &v);
-	*v = 0;
 	return EXIT_SUCCESS;
 }
