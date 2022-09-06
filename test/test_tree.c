@@ -178,7 +178,7 @@ static void entry_filler(struct entry_tree_test *test) {
 static void entry_to_string(const struct entry_tree_entry_c entry,
 	char (*const z)[12]) {
 	assert(entry.key->d.year < 10000 && entry.key->d.month
-		&& entry.key->d.month <= 31
+		&& entry.key->d.month <= 12
 		&& entry.key->d.day && entry.key->d.day <= 31);
 	sprintf(*z, "%u-%2.2u-%2.2u",
 		entry.key->d.year % 10000, entry.key->d.month, entry.key->d.day);
