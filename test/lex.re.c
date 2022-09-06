@@ -3,7 +3,7 @@
 #include "../../test/lex.h"
 
 int lex_dict(struct lex_state *lex) {
-	unsigned char *YYCURSOR = (unsigned char *)lex->cursor, *s0, *s1;
+	unsigned char *YYCURSOR = (unsigned char *)lex->cursor, *s0;
 	int success = 0;
 	/*!stags:re2c format = 'unsigned char *@@;\n'; */
 start:
@@ -20,7 +20,7 @@ start:
 
 	"\x00" { goto finally; }
 	"\n" { lex->line++; goto start; }
-	@s0 words+ @s1 {
+	@s0 words+ {
 		success = 1;
 		lex->word = (char *)s0;
 		switch(*YYCURSOR) {

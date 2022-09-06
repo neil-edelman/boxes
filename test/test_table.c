@@ -314,7 +314,6 @@ struct boat_record { int best_time, points; };
 static void boat_club(void) {
 	struct boat_table boats = boat_table();
 	size_t i;
-	int success = 0;
 	printf("Boat club races:\n");
 	for(i = 0; i < 1000; i++) {
 		/* Pigeon-hole principle ensures collisions. */
@@ -348,7 +347,7 @@ static void boat_club(void) {
 		while(boat_table_next(&it, &e))
 			printf("%d\t%d\t%d\n", e.key, e.value.best_time, e.value.points);
 	}
-	{ success = 1; goto finally; }
+	{ goto finally; }
 catch:
 	perror("boats"), assert(0);
 finally:
