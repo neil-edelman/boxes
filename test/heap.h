@@ -203,10 +203,10 @@ static void PH_(sift_down)(struct H_(heap) *const heap) {
 			PH_(get_priority)(n0 + c + 1)) > 0) c++;
 		child = n0 + c;
 		if(PH_(compare)(down_p, PH_(get_priority)(child)) <= 0) break;
-		n0[i] = *child; /*PH_(copy)(child, n0 + i);*/
+		n0[i] = *child;
 		i = c;
 	}
-	n0[i] = *down;/*PH_(copy)(down, n0 + i);*/
+	n0[i] = *down;
 }
 
 /** Restore the `heap` by permuting the elements so `i` is in the proper place.
