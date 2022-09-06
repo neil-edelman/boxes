@@ -5,6 +5,7 @@
 int lex_dict(struct lex_state *lex) {
 	unsigned char *YYCURSOR = (unsigned char *)lex->cursor, *YYMARKER, *s0, *s1;
 	int success = 0;
+	(void *)s1; /* May be never used? */
 	/*!stags:re2c format = 'unsigned char *@@;\n'; */
 start:
 	/*!re2c

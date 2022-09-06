@@ -575,7 +575,7 @@ static const struct PN_(bucket) *PN_(next_c)(struct PN_(forward) *const
 
 #define BOX_ITERATOR struct PN_(bucket) *
 /* More complex iterator that supports write. @implements `iterator` */
-struct PN_(iterator) { struct N_(table) *table; PN_(uint) cur; PN_(uint) prev;};
+struct PN_(iterator) { struct N_(table) *table; PN_(uint) cur, prev; };
 /** Helper to skip the buckets of `it` that are not there.
  @return Whether it found another index. */
 static int PN_(skip)(struct PN_(iterator) *const it) {

@@ -81,7 +81,6 @@ warnclang := -Wextra \
 -Wno-comma \
 -Wno-logical-op-parentheses \
 -Wno-parentheses \
--Wno-poison-system-directories \
 -Wno-documentation-unknown-command \
 -Wno-documentation \
 -Wno-shift-op-parentheses \
@@ -89,6 +88,13 @@ warnclang := -Wextra \
 -Wno-padded \
 -Wno-switch-enum \
 -Wno-missing-noreturn
+
+# https://stackoverflow.com/a/12099167
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+	warnclang += -Wno-poison-system-directories
+endif
+
 warn := $(warnbasic) $(warnclang)
 
 CC   := clang # gcc
