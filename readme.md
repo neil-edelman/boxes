@@ -209,7 +209,7 @@ Only defined when [&lt;H&gt;heap_size](#user-content-fn-2f5a4cc1) returns true\.
  * Return:  
    The value of the lowest element in `heap`\.
  * Order:  
-   &#927;\(\\log `size`\)
+   &#927;\(log `size`\)
 
 
 
