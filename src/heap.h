@@ -238,7 +238,7 @@ static void PH_(sift_down_i)(struct H_(heap) *const heap, size_t i) {
 				PH_(get_priority)(child)) <= 0) break;
 			temp = n0[i], temp_valid = 1;
 		}
-		n0[i] = *child;;
+		n0[i] = *child;
 		i = c;
 	}
 	if(temp_valid) n0[i] = temp;
