@@ -92,7 +92,7 @@ This is a slab memory\-manager and free\-heap for slab zero\. A zeroed pool is a
 Destroys `pool` and returns it to idle\.
 
  * Order:  
-   &#927;\(\\log `data`\)
+   &#927;\(log `data`\)
 
 
 
@@ -134,7 +134,7 @@ Deletes `data` from `pool`\. Do not remove data that is not in `pool`\.
  * Return:  
    Success\.
  * Order:  
-   &#927;\(\\log \\log `items`\)
+   &#927;\(log log `items`\)
 
 
 
@@ -146,7 +146,7 @@ Deletes `data` from `pool`\. Do not remove data that is not in `pool`\.
 Removes all from `pool`, but keeps it's active state, only freeing the smaller blocks\.
 
  * Order:  
-   &#927;\(\\log `items`\)
+   &#927;\(log `items`\)
 
 
 

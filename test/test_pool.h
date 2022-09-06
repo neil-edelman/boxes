@@ -111,7 +111,7 @@ no_free0:
 		}
 		/* Primary buffer: print rows. */
 		if(!(bmp = calloc(slot->size, sizeof *bmp)))
-			{ perror("temp bitmap"); assert(0); exit(EXIT_FAILURE); };
+			{ perror("temp bitmap"); assert(0); exit(EXIT_FAILURE); }
 		for(j = 0; j < pool->free0._.size; j++) {
 			size_t *f0p = pool->free0._.data + j;
 			assert(f0p && *f0p < slot->size);
