@@ -115,9 +115,10 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size_t)(b - buffer)
-			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1)
+			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1) {
 			if(BOX_(is_element_c)(BOX_(next_c)(&it))) goto ellipsis;
 			else break;
+		}
 	}
 	if(is_sep) b -= 2;
 	*b++ = right;
