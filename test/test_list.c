@@ -483,7 +483,8 @@ static void skips_tests(void) {
 	struct skip_pool skips = skip_pool();
 	struct skip_list s;
 	skip_clear(&s);
-	assert(RAND_MAX / 16 > i_lim);
+	/*assert(RAND_MAX / 16 > i_lim);
+	 Ugh, -Wtautological-value-range-compare; I want that. Wtv. */
 	for(i = 0; i < i_lim; i++) {
 		/* Add random data. */
 		struct skip *const skip = skip_pool_new(&skips);
@@ -1012,10 +1013,10 @@ static int animals_tests(void) {
 	animal();
 	do {
 		struct id_listlink *id = 0, *prev_id = 0;
-		struct bear *w, *n;
+		struct bear *b;
 		const unsigned animal_no = 100/*0000*/;
 		unsigned i;
-		n = bear(1, "Napoleon");
+		b = bear(1, "Napoleon"), assert(b);
 		for(i = 0; i < animal_no; i++) {
 			float r = (float)(rand() / ((double)RAND_MAX + 1));
 			if(r < 0.25f) {
@@ -1031,7 +1032,7 @@ static int animals_tests(void) {
 			}
 		}
 		if(i != animal_no) break;
-		w = bear(0, "Winnie");
+		b = bear(0, "Winnie"), assert(b);
 		for(id = id_list_head(&animals.list); id; id = id_list_next(id)) {
 			if(prev_id && !ride(id_upcast(prev_id), id_upcast(id)))
 				ride(id_upcast(id), id_upcast(prev_id));
