@@ -502,7 +502,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 [src/compare\.h](src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`, \(which has a high\-context\-switching cost, but is easy\.\)
 
  * Order:  
-   &#927;\(|`box`| \\log |`box`|\)
+   &#927;\(|`box`| log |`box`|\)
 
 
 
@@ -514,7 +514,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 [src/compare\.h](src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` in reverse by `qsort`\.
 
  * Order:  
-   &#927;\(|`box`| \\log |`box`|\)
+   &#927;\(|`box`| log |`box`|\)
 
 
 
