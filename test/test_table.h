@@ -47,10 +47,10 @@ static void PN_(rehash)(void) {
 }
 /** Update one sample point of `value`. */
 static void PN_(update)(const size_t value) {
-	double d, v = value;
+	double d, v = (double)value;
 	if(PN_(stats).max < value) PN_(stats).max = value;
 	d = v - PN_(stats).mean;
-	PN_(stats).mean += d / ++PN_(stats).n;
+	PN_(stats).mean += d / (double)++PN_(stats).n;
 	PN_(stats).ssdm += d * (v - PN_(stats).mean);
 }
 /** Collect stats on `hash`. */
@@ -351,22 +351,24 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 		const PN_(key) key = PN_(entry_key)(s->entry);
 		PN_(entry) result;
 		PN_(value) value;
-		const PN_(value) *array_value;
-		int /*cmp, */is;
+		const PN_(value) *sample_value;
+		int /*cmp,*/ is;
 		is = N_(table_is)(&table, key);
 		assert(is);
 		is = N_(table_query)(&table, key, &result);
 		assert(is && PN_(eq_en)(s->entry, result));
 		value = N_(table_get_or)(&table, key, def);
 #ifdef TABLE_VALUE
-		array_value = &s->entry.value;
+		sample_value = &s->entry.value;
 #else
-		array_value = &s->entry;
+		sample_value = &s->entry;
 #endif
+		/* Any unused bytes will possibly be different. Can't do this. */
 		/*cmp = memcmp(&value, array_value, sizeof value);
-		printf("sizeof %ul\n", sizeof value);
-		printf("%u, %u\n", (unsigned *)value, (unsigned *)*array_value);
-		assert(!cmp);*/ /* <- not doing what I think */
+		printf("sizeof %lu\n", sizeof value);
+		printf("%u, %u\n", (unsigned)value, (unsigned)*array_value);
+		assert(!cmp);*/ /* <- not doing what I think in vect4 */
+		(void)value, (void)sample_value;
 	}}
 	printf("Remove:\n");
 	{

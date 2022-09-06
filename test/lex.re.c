@@ -3,14 +3,13 @@
 #include "../../test/lex.h"
 
 int lex_dict(struct lex_state *lex) {
-	unsigned char *YYCURSOR = (unsigned char *)lex->cursor, *YYMARKER, *s0, *s1 = 0;
+	unsigned char *YYCURSOR = (unsigned char *)lex->cursor, *s0, *s1;
 	int success = 0;
 	/*!stags:re2c format = 'unsigned char *@@;\n'; */
 start:
 	/*!re2c
 	re2c:yyfill:enable = 0;
 	re2c:define:YYCTYPE = 'unsigned char';
-	//re2c:tags = 1; ???
 
 	utf8s = [^\x00-\x7f];
 	numbers = [0-9];
