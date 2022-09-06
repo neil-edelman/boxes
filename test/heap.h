@@ -184,10 +184,10 @@ static void PH_(sift_up)(struct H_(heap) *const heap, PH_(node) *const node) {
 		do { /* Note: don't change the `<=`; it's a queue. */
 			i_up = (i - 1) >> 1;
 			if(PH_(compare)(PH_(get_priority)(n0 + i_up), p) <= 0) break;
-			n0[i] = n0[i_up]; /*PH_(copy)(n0 + i_up, n0 + i);*/
+			n0[i] = n0[i_up];
 		} while((i = i_up));
 	}
-	n0[i] = *node; /*PH_(copy)(node, n0 + i);*/
+	n0[i] = *node;
 }
 
 /** Pop the head of `heap` and restore the heap by sifting down the last
@@ -206,10 +206,10 @@ static void PH_(sift_down)(struct H_(heap) *const heap) {
 			PH_(get_priority)(n0 + c + 1)) > 0) c++;
 		child = n0 + c;
 		if(PH_(compare)(down_p, PH_(get_priority)(child)) <= 0) break;
-		n0[i] = *child; /*PH_(copy)(child, n0 + i);*/
+		n0[i] = *child;
 		i = c;
 	}
-	n0[i] = *down;/*PH_(copy)(down, n0 + i);*/
+	n0[i] = *down;
 }
 
 /** Restore the `heap` by permuting the elements so `i` is in the proper place.
@@ -236,12 +236,12 @@ static void PH_(sift_down_i)(struct H_(heap) *const heap, size_t i) {
 			 position. */
 			if(PH_(compare)(PH_(get_priority)(n0 + i),
 				PH_(get_priority)(child)) <= 0) break;
-			temp = n0[i]/*PH_(copy)(n0 + i, &temp)*/, temp_valid = 1;
+			temp = n0[i], temp_valid = 1;
 		}
-		n0[i] = *child;/*PH_(copy)(child, n0 + i)*/;
+		n0[i] = *child;;
 		i = c;
 	}
-	if(temp_valid) n0[i] = temp/*PH_(copy)(&temp, n0 + i)*/;
+	if(temp_valid) n0[i] = temp;
 }
 
 /** Create a `heap` from an array. @order \O(`heap.size`) */
