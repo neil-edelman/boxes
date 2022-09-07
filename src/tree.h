@@ -179,7 +179,7 @@ static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
    `!root || height == UINT_MAX`.
  * Bulk-loading always is on the right side. */
 struct PB_(node) {
-	unsigned size; /* `[0, TREE_MAX]`. */
+	unsigned size;
 	PB_(key) key[TREE_MAX]; /* Cache-friendly lookup. */
 #ifdef TREE_VALUE
 	PB_(value) value[TREE_MAX];
