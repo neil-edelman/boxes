@@ -133,7 +133,7 @@ Adding, deleting, or changes in the topology of the tree invalidate it\.
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-2acb2ed">&lt;B&gt;tree_contains</a></td><td>tree, x</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#user-content-fn-2e61c7b0">&lt;B&gt;tree_get</a></td><td>tree, x</td></tr>
+<tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#user-content-fn-e460356c">&lt;B&gt;tree_get_or</a></td><td>tree, key, default_value</td></tr>
 
 <tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#user-content-fn-4284d921">&lt;B&gt;tree_at</a></td><td>tree, x</td></tr>
 
@@ -229,12 +229,12 @@ Counts all the keys on `tree`, which can be null\.
 
 
 
-### <a id = "user-content-fn-2e61c7b0" name = "user-content-fn-2e61c7b0">&lt;B&gt;tree_get</a> ###
+### <a id = "user-content-fn-e460356c" name = "user-content-fn-e460356c">&lt;B&gt;tree_get_or</a> ###
 
-<code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code>
+<code>static &lt;PB&gt;value <strong>&lt;B&gt;tree_get_or</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>, &lt;PB&gt;value <em>default_value</em>)</code>
 
  * Return:  
-   Get the value of `x` in `tree`, or if no `x`, null\. The map type is a pointer to `TREE_VALUE` and the set type is a pointer to `TREE_KEY`\.
+   Get the value of `key` in `tree`, or if no key, `default_value`\.
  * Order:  
    &#927;\(log |`tree`|\)
 

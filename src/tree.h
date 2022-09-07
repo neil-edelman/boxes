@@ -604,15 +604,25 @@ static int B_(tree_contains)(const struct B_(tree) *const tree,
 		&& PB_(find)(&tree->root, x).node ? 1 : 0;
 }
 
-/** @return Get the value of `x` in `tree`, or if no `x`, null. The map type is
+/* @return Get the value of `x` in `tree`, or if no `x`, null. The map type is
  a pointer to `TREE_VALUE` and the set type is a pointer to `TREE_KEY`.
  @order \O(\log |`tree`|) @allow */
-static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
+/*static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct PB_(ref) ref;
 	if(!tree || !tree->root.node || tree->root.height == UINT_MAX
 		|| !(ref = PB_(find)(&tree->root, x)).node) return 0;
 	return PB_(ref_to_valuep)(ref);
+}*/
+
+/** @return Get the value of `key` in `tree`, or if no key, `default_value`.
+ @order \O(\log |`tree`|) @allow */
+static PB_(value) B_(tree_get_or)(const struct B_(tree) *const tree,
+	const PB_(key) key, PB_(value) default_value) {
+	struct PB_(ref) ref;
+	if(!tree || !tree->root.node || tree->root.height == UINT_MAX
+		|| !(ref = PB_(find)(&tree->root, key)).node) return default_value;
+	return *PB_(ref_to_valuep)(ref);
 }
 
 /** For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`,
@@ -1675,11 +1685,10 @@ static const char *(*PB_(tree_to_string))(const struct B_(tree) *);
 
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
-	PB_(key) k;
-	memset(&k, 0, sizeof k);
+	PB_(key) k; PB_(value) v; memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
 	PB_(is_element_c); PB_(forward); PB_(next_c); PB_(is_element);
 	B_(tree)(); B_(tree_)(0); B_(tree_clear)(0); B_(tree_count)(0);
-	B_(tree_contains)(0, k); B_(tree_get)(0, k); B_(tree_at)(0, k);
+	B_(tree_contains)(0, k); B_(tree_get_or)(0, k, v); B_(tree_at)(0, k);
 #ifdef TREE_VALUE
 	B_(tree_bulk_add)(0, k, 0); B_(tree_try)(0, k, 0);
 	B_(tree_assign)(0, k, 0, 0); B_(tree_cursor_try)(0, k, 0);

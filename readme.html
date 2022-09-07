@@ -191,7 +191,7 @@
 
 <tr><td align = right>static int</td><td><a href = "#fn:<B>tree_contains">&lt;B&gt;tree_contains</a></td><td>tree, x</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#fn:<B>tree_get">&lt;B&gt;tree_get</a></td><td>tree, x</td></tr>
+<tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#fn:<B>tree_get_or">&lt;B&gt;tree_get_or</a></td><td>tree, key, default_value</td></tr>
 
 <tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#fn:<B>tree_at">&lt;B&gt;tree_at</a></td><td>tree, x</td></tr>
 
@@ -306,13 +306,13 @@
 
 <div>
 
-<h3><a id = "fn:<B>tree_get" name = "fn:<B>tree_get">&lt;B&gt;tree_get</a></h3>
+<h3><a id = "fn:<B>tree_get_or" name = "fn:<B>tree_get_or">&lt;B&gt;tree_get_or</a></h3>
 
-<p><code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
+<p><code>static &lt;PB&gt;value <strong>&lt;B&gt;tree_get_or</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>, &lt;PB&gt;value <em>default_value</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Get the value of <code>x</code> in <code>tree</code>, or if no <code>x</code>, null. The map type is a pointer to <code>TREE_VALUE</code> and the set type is a pointer to <code>TREE_KEY</code>.</dd>
+	<dd>Get the value of <code>key</code> in <code>tree</code>, or if no key, <code>default_value</code>.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(log |<code>tree</code>|)</dd>
 </dl>

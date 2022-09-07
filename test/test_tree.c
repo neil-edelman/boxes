@@ -33,8 +33,7 @@ static void int_to_string(const unsigned *x, char (*const z)[12])
 #include "../src/tree.h"
 
 /* Unsigned numbers: testing framework. */
-struct redblack_tree_test;
-static void redblack_filler(struct redblack_tree_test *);
+static void redblack_filler(unsigned *, unsigned *);
 struct redblack_tree_entry_c;
 static void redblack_to_string(const struct redblack_tree_entry_c,
 	char (*)[12]);
@@ -48,8 +47,8 @@ static void redblack_to_string(const struct redblack_tree_entry_c,
 #define TREE_TO_STRING &redblack_to_string
 #include "../src/tree.h"
 /** @implements <typedef:<PB>action_fn> */
-static void redblack_filler(struct redblack_tree_test *x) {
-	x->key = (unsigned)rand() / (RAND_MAX / 1000 + 1); }
+static void redblack_filler(unsigned *const x, unsigned *const y) {
+	*x = *y = (unsigned)rand() / (RAND_MAX / 1000 + 1); }
 /** @implements <typedef:<PSZ>to_string_fn> */
 static void redblack_to_string(const struct redblack_tree_entry_c x,
 	char (*const z)[12])
@@ -57,8 +56,7 @@ static void redblack_to_string(const struct redblack_tree_entry_c x,
 
 
 /* Unsigned numbers and values. Prototype a value. */
-struct pair_tree_test;
-static void pair_filler(struct pair_tree_test *);
+static void pair_filler(unsigned *x, unsigned *y);
 struct pair_tree_entry_c;
 static void pair_to_string(const struct pair_tree_entry_c, char (*)[12]);
 #define TREE_NAME pair
@@ -69,9 +67,9 @@ static void pair_to_string(const struct pair_tree_entry_c, char (*)[12]);
 #define TREE_TO_STRING &pair_to_string
 #include "../src/tree.h"
 /** @implements <typedef:<PB>action_fn> */
-static void pair_filler(struct pair_tree_test *x) {
-	int_filler(&x->key);
-	int_filler(&x->value), x->value += 10000;
+static void pair_filler(unsigned *const x, unsigned *const y) {
+	int_filler(x);
+	int_filler(y), *y += 10000;
 	/*printf("generated %u->%u\n", x->key, x->value);*/
 }
 /** @implements <typedef:<PSZ>to_string_fn> */
@@ -115,8 +113,7 @@ static const char *star_names[] = { STARS };
 static double star_distances[] = { STARS };
 #undef X
 static size_t star_size = sizeof star_names / sizeof *star_names;
-struct star_tree_test;
-static void star_filler(struct star_tree_test *);
+static void star_filler(double *x, const char **y);
 struct star_tree_entry_c;
 static void star_to_string(struct star_tree_entry_c, char (*)[12]);
 /* It is impossible to have a `const char *` without getting warnings about
@@ -135,9 +132,9 @@ typedef const char *const_str;
 #define TREE_TO_STRING &star_to_string
 #include "../src/tree.h"
 /** @implements <typedef:<PB>action_fn> */
-static void star_filler(struct star_tree_test *x) {
+static void star_filler(double *x, const char **y) {
 	const unsigned i = (unsigned)rand() / (RAND_MAX / star_size + 1);
-	x->key = star_distances[i], x->value = star_names[i];
+	*x = star_distances[i], *y = star_names[i];
 }
 /** @implements <typedef:<PSZ>to_string_fn> */
 static void star_to_string(const struct star_tree_entry_c x,
@@ -154,8 +151,7 @@ union date32 {
 };
 static int entry_compare(const union date32 a, const union date32 b)
 	{ return a.u32 > b.u32; }
-struct entry_tree_test;
-static void entry_filler(struct entry_tree_test *);
+static void entry_filler(union date32 *, int *);
 struct entry_tree_entry_c;
 static void entry_to_string(struct entry_tree_entry_c, char (*)[12]);
 #define TREE_NAME entry
@@ -168,12 +164,12 @@ static void entry_to_string(struct entry_tree_entry_c, char (*)[12]);
 #include "../src/tree.h"
 #define TREE_TO_STRING &entry_to_string
 #include "../src/tree.h"
-static void entry_filler(struct entry_tree_test *test) {
-	test->key.u32 = (uint32_t)rand();
-	test->key.d.year %= 10000;
-	test->key.d.month = test->key.d.month % 12 + 1;
-	test->key.d.day = test->key.d.day % 31 + 1;
-	test->value = 42;
+static void entry_filler(union date32 *const x, int *const y) {
+	x->u32 = (uint32_t)rand();
+	x->d.year %= 10000;
+	x->d.month = x->d.month % 12 + 1;
+	x->d.day = x->d.day % 31 + 1;
+	*y = 42;
 }
 static void entry_to_string(const struct entry_tree_entry_c entry,
 	char (*const z)[12]) {
@@ -525,20 +521,26 @@ static void redblack(void) {
 
 	/* Random. */
 	for(i = 0; i < rnd_size; i++) rnd[i].x = rand() & 65535, rnd[i].in = 0;
+	{
+		unsigned v = redblack_tree_get_or(&tree, 0, 42);
+		assert(v == 42);
+	}
 
 	/* In tree. */
 	for(n = 0, i = 0; i < rnd_size; i++) {
+		unsigned v;
 		switch(redblack_tree_try(&tree, rnd[i].x, &value)) {
 		case TREE_ERROR: goto catch;
 		case TREE_PRESENT: printf("%u already in tree\n", rnd[i].x); break;
-		case TREE_UNIQUE: rnd[i].in = 1; n++; break;
+		case TREE_UNIQUE: *value = rnd[i].x; rnd[i].in = 1; n++; break;
 		}
-		*value = rnd[i].x; /* The same key/value. */
 		if(!(i & (i + 1)) || i == rnd_size - 1) {
 			char fn[64];
 			sprintf(fn, "graph/rb-rnd-%u.gv", (unsigned)i);
 			tree_redblack_graph(&tree, fn);
 		}
+		v = redblack_tree_get_or(&tree, rnd[i].x, 0);
+		assert(v == *value && v == rnd[i].x);
 	}
 	printf("Redblack tree %u/%u: %s.\n",
 		n, rnd_size, redblack_tree_to_string(&tree));
@@ -567,8 +569,8 @@ static void redblack(void) {
 			assert(n == count);
 		}
 		for(i = 0; i <= n; i++) {
-			value = redblack_tree_get(&tree, rnd[i].x);
-			assert(!!value == rnd[i].in && (!value || *value == rnd[i].x));
+			unsigned v = redblack_tree_get_or(&tree, rnd[i].x, 0);
+			assert(!rnd[i].in || rnd[i].x == v);
 		}
 	}
 	assert(tree.root.height == UINT_MAX);
@@ -584,9 +586,9 @@ finally:
 /* Has distinguishable keys going to the same key value. This may be useful,
  for example, if one allocates keys. */
 /** @implements <typedef:<PB>action_fn> */
-static void loop_filler(unsigned *x)
+static void loop_filler(unsigned *const x)
 	{ *x = (unsigned)rand() / (RAND_MAX / 100000 + 1); }
-static int loop_compare(unsigned a, unsigned b)
+static int loop_compare(const unsigned a, const unsigned b)
 	{ return (a % 100) > (b % 100); }
 #define TREE_NAME loop
 #define TREE_TEST &loop_filler
@@ -599,24 +601,23 @@ static int loop_compare(unsigned a, unsigned b)
 static void loop(void) {
 	struct loop_tree tree = loop_tree();
 	enum tree_result status;
-	unsigned *ret, eject;
+	unsigned ret, eject;
 	status = loop_tree_try(&tree, 1), assert(status == TREE_UNIQUE);
 	status = loop_tree_try(&tree, 2), assert(status == TREE_UNIQUE);
 	status = loop_tree_try(&tree, 3), assert(status == TREE_UNIQUE);
 	status = loop_tree_try(&tree, 101), assert(status == TREE_PRESENT);
-	ret = loop_tree_get(&tree, 1), assert(ret && *ret == 1);
+	ret = loop_tree_get_or(&tree, 1, 0), assert(ret == 1);
 	tree_loop_graph_horiz(&tree, "graph/loop1.gv");
 	status = loop_tree_assign(&tree, 101, &eject);
 	assert(status == TREE_PRESENT && eject == 1);
-	ret = loop_tree_get(&tree, 1), assert(ret && *ret == 101);
+	ret = loop_tree_get_or(&tree, 1, 0), assert(ret == 101);
 	tree_loop_graph_horiz(&tree, "graph/loop2.gv");
 	loop_tree_(&tree);
 }
 
 
 struct typical_value { int a, b; };
-struct typical_tree_test;
-static void typical_filler(struct typical_tree_test *);
+static void typical_filler(unsigned *const x, struct typical_value **y);
 struct typical_tree_entry_c;
 static void typical_to_string(const struct typical_tree_entry_c, char (*)[12]);
 
@@ -628,8 +629,8 @@ static void typical_to_string(const struct typical_tree_entry_c, char (*)[12]);
 #define TREE_TO_STRING &typical_to_string
 #include "../src/tree.h"
 
-static void typical_filler(struct typical_tree_test *t)
-	{ int_filler(&t->key); /*t->value = 0;*/ }
+static void typical_filler(unsigned *const x, struct typical_value **y)
+	{ int_filler(x); *y = 0; }
 static void typical_to_string(const struct typical_tree_entry_c e,
 	char (*const z)[12]) { sprintf(*z, "%u", *e.key); }
 
