@@ -192,7 +192,7 @@ static void order3(void) {
 	unsigned i;
 	const unsigned size_rnd = 100;
 	struct order3_tree_cursor it;
-	unsigned *v;
+	unsigned *val, v;
 	int ret;
 	const size_t order3_order
 		= sizeof rnd.root.node->key / sizeof *rnd.root.node->key + 1;
@@ -221,45 +221,45 @@ static void order3(void) {
 	it = order3_tree_begin_at(&between, 50);
 	printf("between(50) %s:%u %sseen.\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
-	v = order3_tree_next(&it), assert(v && *v == 100);
-	printf("next %u.\n", *v);
+	val = order3_tree_next(&it), assert(val && *val == 100);
+	printf("next %u.\n", *val);
 	it = order3_tree_begin_at(&between, 50);
-	v = order3_tree_previous(&it), assert(!v);
+	val = order3_tree_previous(&it), assert(!val);
 	printf("previous dne.\n");
 
 	it = order3_tree_begin_at(&between, 150);
 	printf("between(150) %s:%u %sseen.\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
-	v = order3_tree_next(&it), assert(v && *v == 200);
-	printf("next %u.\n", *v);
+	val = order3_tree_next(&it), assert(val && *val == 200);
+	printf("next %u.\n", *val);
 	it = order3_tree_begin_at(&between, 150);
-	v = order3_tree_previous(&it), assert(v && *v == 100);
-	printf("previous %u.\n", *v);
+	val = order3_tree_previous(&it), assert(val && *val == 100);
+	printf("previous %u.\n", *val);
 
 	it = order3_tree_begin_at(&between, 250);
 	printf("between(250) %s:%u %sseen.\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
-	v = order3_tree_next(&it), assert(v && *v == 300);
-	printf("next %u.\n", *v);
+	val = order3_tree_next(&it), assert(val && *val == 300);
+	printf("next %u.\n", *val);
 	it = order3_tree_begin_at(&between, 250);
-	v = order3_tree_previous(&it), assert(v && *v == 200);
-	printf("previous %u.\n", *v);
+	val = order3_tree_previous(&it), assert(val && *val == 200);
+	printf("previous %u.\n", *val);
 
 	it = order3_tree_begin_at(&between, 350);
 	printf("between(350) %s:%u %sseen\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
-	v = order3_tree_next(&it), assert(!v);
+	val = order3_tree_next(&it), assert(!val);
 	printf("next dne.\n");
 	it = order3_tree_begin_at(&between, 350);
-	v = order3_tree_previous(&it), assert(v && *v == 300);
-	printf("previous %u.\n", *v);
+	val = order3_tree_previous(&it), assert(val && *val == 300);
+	printf("previous %u.\n", *val);
 
 	/* The value of the cursor. */
-	v = order3_tree_at(&between, 50), assert(v && *v == 100);
-	v = order3_tree_at(&between, 150), assert(v && *v == 200);
-	v = order3_tree_at(&between, 250), assert(v && *v == 300);
-	v = order3_tree_at(&between, 300), assert(v && *v == 300);
-	v = order3_tree_at(&between, 350), assert(!v);
+	v = order3_tree_at_or(&between, 50, 0), assert(v == 100);
+	v = order3_tree_at_or(&between, 150, 0), assert(v == 200);
+	v = order3_tree_at_or(&between, 250, 0), assert(v == 300);
+	v = order3_tree_at_or(&between, 300, 0), assert(v == 300);
+	v = order3_tree_at_or(&between, 350, 0), assert(!v);
 
 	/* For the paper. */
 	order3_tree_clear(&between);
@@ -625,6 +625,10 @@ static void loop(void) {
 	ret = loop_tree_get(&tree, 4), assert(ret == 0);
 	ret = loop_tree_meaning_get(&tree, 3), assert(ret == 3);
 	ret = loop_tree_meaning_get(&tree, 0), assert(ret == 42);
+	ret = loop_tree_at(&tree, 0), assert(ret == 101);
+	ret = loop_tree_at(&tree, 4), assert(ret == 0);
+	ret = loop_tree_meaning_at(&tree, 0), assert(ret == 101);
+	ret = loop_tree_meaning_at(&tree, 4), assert(ret == 42);
 	loop_tree_(&tree);
 }
 

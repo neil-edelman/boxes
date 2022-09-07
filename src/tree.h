@@ -629,9 +629,10 @@ static int B_(tree_contains)(const struct B_(tree) *const tree,
 }*/
 
 /** @return Get the value of `key` in `tree`, or if no key, `default_value`.
+ The map type is `TREE_VALUE` and the set type is `TREE_KEY`.
  @order \O(\log |`tree`|) @allow */
 static PB_(value) B_(tree_get_or)(const struct B_(tree) *const tree,
-	const PB_(key) key, PB_(value) default_value) {
+	const PB_(key) key, const PB_(value) default_value) {
 	struct PB_(ref) ref;
 	return tree && tree->root.node && tree->root.height != UINT_MAX
 		&& (ref = PB_(find)(&tree->root, key)).node
@@ -640,15 +641,14 @@ static PB_(value) B_(tree_get_or)(const struct B_(tree) *const tree,
 
 /** For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`,
  `x = 11 -> null`. (There is no upper value.)
- @return Lower-bound value match for `x` in `tree` or null if `x` is greater
- than all in `tree`.  The map type is a pointer to `TREE_VALUE` and the set
- type is a pointer to `TREE_KEY`. @order \O(\log |`tree`|) @allow */
-static PB_(value) *B_(tree_at)(struct B_(tree) *const tree,
-	const PB_(key) x) {
+ @return Lower-bound value match for `key` in `tree` or `default_value` if
+ `key` is greater than all in `tree`. The map type is `TREE_VALUE` and the set
+ type is `TREE_KEY`. @order \O(\log |`tree`|) @allow */
+static PB_(value) B_(tree_at_or)(const struct B_(tree) *const tree,
+	const PB_(key) key, const PB_(value) default_value) {
 	struct PB_(ref) ref;
-	if(!tree) return 0;
-	ref = PB_(lower)(tree->root, x);
-	return ref.node && ref.idx < ref.node->size ? PB_(ref_to_valuep)(ref) : 0;
+	return tree && (ref = PB_(lower)(tree->root, key)).node
+		&& ref.idx < ref.node->size ? *PB_(ref_to_valuep)(ref) : default_value;
 }
 
 #ifdef TREE_VALUE /* <!-- map */
@@ -1701,7 +1701,7 @@ static void PB_(unused_base)(void) {
 	PB_(key) k; PB_(value) v; memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
 	PB_(is_element_c); PB_(forward); PB_(next_c); PB_(is_element);
 	B_(tree)(); B_(tree_)(0); B_(tree_clear)(0); B_(tree_count)(0);
-	B_(tree_contains)(0, k); B_(tree_get_or)(0, k, v); B_(tree_at)(0, k);
+	B_(tree_contains)(0, k); B_(tree_get_or)(0, k, v); B_(tree_at_or)(0, k, v);
 #ifdef TREE_VALUE
 	B_(tree_bulk_add)(0, k, 0); B_(tree_try)(0, k, 0);
 	B_(tree_assign)(0, k, 0, 0); B_(tree_cursor_try)(0, k, 0);
@@ -1746,9 +1746,25 @@ static PB_(value) B_D_(tree, get)(const struct B_(tree) *const tree,
 		? *PB_(ref_to_valuep)(ref) : PB_D_(default, value);
 }
 
+/** This is functionally identical to <fn:<B>tree_at_or>, but a with a trait
+ specifying a constant default value.
+ @return The value associated with `key` in `tree`, (which can be null.) If
+ no such value exists, the `TREE_DEFAULT` is returned.
+ @order \O(\log |`tree`|). @allow */
+static PB_(value) B_D_(tree, at)(const struct B_(tree) *const tree,
+	const PB_(key) key) {
+	struct PB_(ref) ref;
+	return tree && (ref = PB_(lower)(tree->root, key)).node
+		&& ref.idx < ref.node->size
+		? *PB_(ref_to_valuep)(ref) : PB_D_(default, value);
+}
+
 static void PB_D_(unused, default_coda)(void);
-static void PB_D_(unused, default)(void) { PB_(key) k; memset(&k, 0, sizeof k);
-	B_D_(tree, get)(0, k); PB_D_(unused, default_coda)(); }
+static void PB_D_(unused, default)(void) {
+	PB_(key) k; memset(&k, 0, sizeof k);
+	B_D_(tree, get)(0, k); B_D_(tree, at)(0, k);
+	PB_D_(unused, default_coda)();
+}
 static void PB_D_(unused, default_coda)(void) { PB_D_(unused, default)(); }
 
 #undef B_D_

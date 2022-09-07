@@ -195,7 +195,7 @@
 
 <tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#fn:<B>tree_get_or">&lt;B&gt;tree_get_or</a></td><td>tree, key, default_value</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#fn:<B>tree_at">&lt;B&gt;tree_at</a></td><td>tree, x</td></tr>
+<tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#fn:<B>tree_at_or">&lt;B&gt;tree_at_or</a></td><td>tree, key, default_value</td></tr>
 
 <tr><td align = right>static enum tree_result</td><td><a href = "#fn:<B>tree_bulk_add">&lt;B&gt;tree_bulk_add</a></td><td>tree, key, value</td></tr>
 
@@ -220,6 +220,8 @@
 <tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#fn:<B>tree_previous">&lt;B&gt;tree_previous</a></td><td>cur</td></tr>
 
 <tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#fn:<B>tree<D>get">&lt;B&gt;tree&lt;D&gt;get</a></td><td>tree, key</td></tr>
+
+<tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#fn:<B>tree<D>at">&lt;B&gt;tree&lt;D&gt;at</a></td><td>tree, key</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<STR>to_string">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
@@ -312,11 +314,11 @@
 
 <h3><a id = "fn:<B>tree_get_or" name = "fn:<B>tree_get_or">&lt;B&gt;tree_get_or</a></h3>
 
-<p><code>static &lt;PB&gt;value <strong>&lt;B&gt;tree_get_or</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>, &lt;PB&gt;value <em>default_value</em>)</code></p>
+<p><code>static &lt;PB&gt;value <strong>&lt;B&gt;tree_get_or</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>, const &lt;PB&gt;value <em>default_value</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Get the value of <code>key</code> in <code>tree</code>, or if no key, <code>default_value</code>.</dd>
+	<dd>Get the value of <code>key</code> in <code>tree</code>, or if no key, <code>default_value</code>. The map type is <code>TREE_VALUE</code> and the set type is <code>TREE_KEY</code>.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(log |<code>tree</code>|)</dd>
 </dl>
@@ -325,15 +327,15 @@
 
 <div>
 
-<h3><a id = "fn:<B>tree_at" name = "fn:<B>tree_at">&lt;B&gt;tree_at</a></h3>
+<h3><a id = "fn:<B>tree_at_or" name = "fn:<B>tree_at_or">&lt;B&gt;tree_at_or</a></h3>
 
-<p><code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_at</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
+<p><code>static &lt;PB&gt;value <strong>&lt;B&gt;tree_at_or</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>, const &lt;PB&gt;value <em>default_value</em>)</code></p>
 
 <p>For example, <code>tree = { 10 }</code>, <code>x = 5 -&gt; 10</code>, <code>x = 10 -&gt; 10</code>, <code>x = 11 -&gt; null</code>. (There is no upper value.)</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Lower-bound value match for <code>x</code> in <code>tree</code> or null if <code>x</code> is greater than all in <code>tree</code>. The map type is a pointer to <code>TREE_VALUE</code> and the set type is a pointer to <code>TREE_KEY</code>.</dd>
+	<dd>Lower-bound value match for <code>key</code> in <code>tree</code> or <code>default_value</code> if <code>key</code> is greater than all in <code>tree</code>. The map type is <code>TREE_VALUE</code> and the set type is <code>TREE_KEY</code>.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(log |<code>tree</code>|)</dd>
 </dl>
@@ -550,6 +552,23 @@
 <p><code>static &lt;PB&gt;value <strong>&lt;B&gt;tree&lt;D&gt;get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>)</code></p>
 
 <p>This is functionally identical to <a href = "#fn:&lt;B&gt;tree_get_or">&lt;B&gt;tree_get_or</a>, but a with a trait specifying a constant default value.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The value associated with <code>key</code> in <code>tree</code>, (which can be null.) If no such value exists, the <code>TREE_DEFAULT</code> is returned.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>tree</code>|).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree<D>at" name = "fn:<B>tree<D>at">&lt;B&gt;tree&lt;D&gt;at</a></h3>
+
+<p><code>static &lt;PB&gt;value <strong>&lt;B&gt;tree&lt;D&gt;at</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>)</code></p>
+
+<p>This is functionally identical to <a href = "#fn:&lt;B&gt;tree_at_or">&lt;B&gt;tree_at_or</a>, but a with a trait specifying a constant default value.</p>
 
 <dl>
 	<dt>Return:</dt>

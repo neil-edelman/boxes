@@ -276,8 +276,10 @@ static void PB_(test)(void) {
 	struct B_(tree_cursor) cur;
 	struct PB_(tree_test) n[80];
 	const size_t n_size = sizeof n / sizeof *n;
-	PB_(entry) entry;
+#ifdef TREE_VALUE
 	PB_(value) *value;
+#endif
+	PB_(entry) entry;
 	PB_(key) k;
 	size_t i, n_unique = 0, n_unique2 = 0;
 	char fn[64];
@@ -302,9 +304,7 @@ static void PB_(test)(void) {
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
 	cur = B_(tree_begin_at)(0, n[0].key), assert(!cur._.root);
-	value = B_(tree_at)(0, n[0].key), assert(!value);
 	cur = B_(tree_begin_at)(&tree, n[0].key), assert(!cur._.ref.node);
-	value = B_(tree_at)(&tree, n[0].key), assert(!value);
 
 	/* Bulk, (simple.) */
 	for(i = 0; i < n_size; i++) {
