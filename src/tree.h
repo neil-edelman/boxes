@@ -627,6 +627,8 @@ static int B_(tree_contains)(const struct B_(tree) *const tree,
 		|| !(ref = PB_(find)(&tree->root, x)).node) return 0;
 	return PB_(ref_to_valuep)(ref);
 }*/
+/* fixme: entry <B>tree_query -- there is no functionality that returns the
+ key. */
 
 /** @return Get the value of `key` in `tree`, or if no key, `default_value`.
  The map type is `TREE_VALUE` and the set type is `TREE_KEY`.
