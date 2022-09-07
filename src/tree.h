@@ -1071,12 +1071,14 @@ static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
 /** Adds or updates `key` in `tree`.
  @param[eject] If this parameter is non-null and a return value of
  `TREE_PRESENT`, the old key is stored in `eject`, replaced by `key`. A null
- value indicates that on conflict, the new key yields to the old key, as <fn:<B>tree_try>. This is only significant in trees with distinguishable keys.
+ value indicates that on conflict, the new key yields to the old key, as
+ <fn:<B>tree_try>. This is only significant in trees with distinguishable keys.
  @param[value] Only present if `TREE_VALUE` (map) was specified. If this
  parameter is non-null and a return value other then `TREE_ERROR`, this
  receives the address of the value associated with the key.
  @return Either `TREE_ERROR` (false,) `errno` is set and doesn't touch `tree`;
- `TREE_UNIQUE`, adds a new key; or `TREE_PRESENT`, there was already an existing key. @throws[malloc] @order \Theta(\log |`tree`|) @allow */
+ `TREE_UNIQUE`, adds a new key; or `TREE_PRESENT`, there was already an
+ existing key. @throws[malloc] @order \Theta(\log |`tree`|) @allow */
 static enum tree_result B_(tree_assign)(struct B_(tree) *const tree,
 	const PB_(key) key, PB_(key) *const eject, PB_(value) **const value)
 	{ return assert(tree), PB_(update)(&tree->root, key, eject, value); }
