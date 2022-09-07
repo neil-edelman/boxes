@@ -159,7 +159,6 @@ static void entry_to_string(struct entry_tree_entry_c, char (*)[12]);
 #define TREE_COMPARE &entry_compare
 #define TREE_VALUE int
 #define TREE_TEST &entry_filler
-#define TREE_ORDER 7
 #define TREE_EXPECT_TRAIT
 #include "../src/tree.h"
 #define TREE_TO_STRING &entry_to_string
@@ -302,8 +301,8 @@ static void order3(void) {
 		for(i = 0; i <= size; i++) {
 			char fn[64];
 			if(!order3_tree_clone(&even_clone, &even)) goto catch;
-			if(i == 4)
-				tree_order3_graph_horiz(&even_clone, "graph/even-clone-9-pre.gv");
+			if(i == 4) tree_order3_graph_horiz(&even_clone,
+				"graph/even-clone-9-pre.gv");
 			if(!order3_tree_try(&even_clone, (unsigned)i * 2 + 1)) goto catch;
 			sprintf(fn, "graph/even-clone-%u.gv", (unsigned)i * 2 + 1);
 			tree_order3_graph_horiz(&even_clone, fn);
@@ -593,6 +592,7 @@ static int loop_compare(const unsigned a, const unsigned b)
 #define TREE_NAME loop
 #define TREE_TEST &loop_filler
 #define TREE_COMPARE &loop_compare
+#define TREE_ORDER 5
 #define TREE_EXPECT_TRAIT
 #include "../src/tree.h"
 #define TREE_DEFAULT_NAME meaning
@@ -629,6 +629,30 @@ static void loop(void) {
 	ret = loop_tree_at(&tree, 4), assert(ret == 0);
 	ret = loop_tree_meaning_at(&tree, 0), assert(ret == 101);
 	ret = loop_tree_meaning_at(&tree, 4), assert(ret == 42);
+	loop_tree_(&tree);
+	if(!loop_tree_try(&tree, 8)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 4)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 16)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 10)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 2)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 6)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 14)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 12)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 7)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 3)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 15)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 9)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 1)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 5)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 13)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 11)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 17)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 18)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 19)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 20)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 21)) { assert(0); return; }
+	if(!loop_tree_try(&tree, 22)) { assert(0); return; }
+	tree_loop_graph_horiz(&tree, "graph/loop3.gv"); /* For title. */
 	loop_tree_(&tree);
 }
 

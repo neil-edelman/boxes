@@ -7,7 +7,7 @@
 
  @subtitle Ordered tree
 
- ![Example of tree.](../doc/tree.png)
+ ![Example of an order-3 tree.](../doc/tree.png)
 
  A <tag:<B>tree> is an ordered set or map contained in a tree. For memory
  locality, this is implemented B-tree, described in
@@ -28,9 +28,9 @@
 
  @param[TREE_ORDER]
  Sets the branching factor, or order as <Knuth, 1998 Art 3>, to the range
- `[3, UINT_MAX+1]`. Default is most likely fine except when specific
- constraints have to be met; for example, an isomorphism to red-black trees
- sets `TREE_ORDER` to 4.
+ `[3, UINT_MAX+1]`. Default 65 is tuned to an integer to pointer map, and
+ should be okay for most variations. 4 is isomorphic to left-leaning red-black
+ tree, <Sedgewick, 2008, LLRB>. The above illustration is 5.
 
  @param[TREE_EXPECT_TRAIT]
  Do not un-define certain variables for subsequent inclusion in a parameterized

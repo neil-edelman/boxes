@@ -50,7 +50,7 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of tree." src = "doc/tree.png" width = 1089 height = 301></p>
+<p><img alt = "Example of an order-3 tree." src = "doc/tree.png" width = 900 height = 301></p>
 
 <p>A <a href = "#tag:&lt;B&gt;tree">&lt;B&gt;tree</a> is an ordered set or map contained in a tree. For memory locality, this is implemented B-tree, described in <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972%2C+Large">Bayer, McCreight, 1972, Large</a>.</p>
 
@@ -64,7 +64,7 @@
 	<dt>Parameter: TREE_COMPARE</dt>
 	<dd>A function satisfying <a href = "#typedef:&lt;PB&gt;compare_fn">&lt;PB&gt;compare_fn</a>. Defaults to ascending order. Required if <code>TREE_KEY</code> is changed to an incomparable type.</dd>
 	<dt>Parameter: TREE_ORDER</dt>
-	<dd>Sets the branching factor, or order as <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3">Knuth, 1998 Art 3</a>, to the range <code>[3, UINT_MAX+1]</code>. Default is most likely fine except when specific constraints have to be met; for example, an isomorphism to red-black trees sets <code>TREE_ORDER</code> to 4.</dd>
+	<dd>Sets the branching factor, or order as <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3">Knuth, 1998 Art 3</a>, to the range <code>[3, UINT_MAX+1]</code>. Default 65 is tuned to an integer to pointer map, and should be okay for most variations. 4 is isomorphic to left-leaning red-black tree, <a href = "https://scholar.google.ca/scholar?q=Sedgewick%2C+2008%2C+LLRB">Sedgewick, 2008, LLRB</a>. The above illustration is 5.</dd>
 	<dt>Parameter: TREE_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
 	<dt>Parameter: TREE_DEFAULT_NAME, TREE_DEFAULT</dt>
