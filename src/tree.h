@@ -36,6 +36,11 @@
  Do not un-define certain variables for subsequent inclusion in a parameterized
  trait.
 
+ @param[TREE_DEFAULT_NAME, TREE_DEFAULT]
+ Default trait; a name that satisfies `C` naming conventions when mangled and a
+ <typedef:<PB>value> used in <fn:<B>tree<D>get>. There can be multiple
+ defaults, but only one can omit `TREE_DEFAULT_NAME`.
+
  @param[TREE_TO_STRING_NAME, TREE_TO_STRING]
  To string trait contained in <src/to_string.h>; an optional unique `<SZ>`
  that satisfies `C` naming conventions when mangled and function implementing
@@ -48,14 +53,22 @@
 #if !defined(TREE_NAME)
 #error Name TREE_NAME undefined.
 #endif
+#if defined(TREE_DEFAULT_NAME) || defined(TREE_DEFAULT)
+#define TREE_DEFAULT_TRAIT 1
+#else
+#define TREE_DEFAULT_TRAIT 0
+#endif
 #if defined(TREE_TO_STRING_NAME) || defined(TREE_TO_STRING)
 #define TREE_TO_STRING_TRAIT 1
 #else
 #define TREE_TO_STRING_TRAIT 0
 #endif
-#define TREE_TRAITS TREE_TO_STRING_TRAIT
+#define TREE_TRAITS TREE_DEFAULT_TRAIT + TREE_TO_STRING_TRAIT
 #if TREE_TRAITS > 1
 #error Only one trait per include is allowed; use TREE_EXPECT_TRAIT.
+#endif
+#if defined(TREE_DEFAULT_NAME) && !defined(TREE_DEFAULT)
+#error TREE_DEFAULT_NAME requires TREE_DEFAULT.
 #endif
 #if defined(TREE_TO_STRING_NAME) && !defined(TREE_TO_STRING)
 #error TREE_TO_STRING_NAME requires TREE_TO_STRING.
@@ -620,9 +633,9 @@ static int B_(tree_contains)(const struct B_(tree) *const tree,
 static PB_(value) B_(tree_get_or)(const struct B_(tree) *const tree,
 	const PB_(key) key, PB_(value) default_value) {
 	struct PB_(ref) ref;
-	if(!tree || !tree->root.node || tree->root.height == UINT_MAX
-		|| !(ref = PB_(find)(&tree->root, key)).node) return default_value;
-	return *PB_(ref_to_valuep)(ref);
+	return tree && tree->root.node && tree->root.height != UINT_MAX
+		&& (ref = PB_(find)(&tree->root, key)).node
+		? *PB_(ref_to_valuep)(ref) : default_value;
 }
 
 /** For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`,
@@ -1705,7 +1718,48 @@ static void PB_(unused_base)(void) {
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 
 
-#elif defined(TREE_TO_STRING) /* base code --><!-- to string trait */
+#elif defined(TREE_DEFAULT) /* base code --><!-- default */
+
+
+#ifdef TREE_DEFAULT_NAME
+#define B_D_(n, m) TREE_CAT(B_(n), TREE_CAT(TREE_DEFAULT_NAME, m))
+#define PB_D_(n, m) TREE_CAT(tree, B_D_(n, m))
+#else
+#define B_D_(n, m) TREE_CAT(B_(n), m)
+#define PB_D_(n, m) TREE_CAT(tree, B_D_(n, m))
+#endif
+
+/* Check that `TREE_DEFAULT` is a valid <tag:<PB>value> and that only one
+ `TREE_DEFAULT_NAME` is omitted. */
+static const PB_(value) PB_D_(default, value) = (TREE_DEFAULT);
+
+/** This is functionally identical to <fn:<B>tree_get_or>, but a with a trait
+ specifying a constant default value.
+ @return The value associated with `key` in `tree`, (which can be null.) If
+ no such value exists, the `TREE_DEFAULT` is returned.
+ @order \O(\log |`tree`|). @allow */
+static PB_(value) B_D_(tree, get)(const struct B_(tree) *const tree,
+	const PB_(key) key) {
+	struct PB_(ref) ref;
+	return tree && tree->root.node && tree->root.height != UINT_MAX
+		&& (ref = PB_(find)(&tree->root, key)).node
+		? *PB_(ref_to_valuep)(ref) : PB_D_(default, value);
+}
+
+static void PB_D_(unused, default_coda)(void);
+static void PB_D_(unused, default)(void) { PB_(key) k; memset(&k, 0, sizeof k);
+	B_D_(tree, get)(0, k); PB_D_(unused, default_coda)(); }
+static void PB_D_(unused, default_coda)(void) { PB_D_(unused, default)(); }
+
+#undef B_D_
+#undef PB_D_
+#undef TREE_DEFAULT
+#ifdef TREE_DEFAULT_NAME
+#undef TREE_DEFAULT_NAME
+#endif
+
+
+#elif defined(TREE_TO_STRING) /* default --><!-- to string trait */
 
 
 #ifdef TREE_TO_STRING_NAME
@@ -1754,5 +1808,6 @@ static const char *(*PB_(tree_to_string))(const struct B_(tree) *)
 #undef BOX_CONTENT
 #undef BOX_ITERATOR
 #endif /* !trait --> */
+#undef TREE_DEFAULT_TRAIT
 #undef TREE_TO_STRING_TRAIT
 #undef TREE_TRAITS

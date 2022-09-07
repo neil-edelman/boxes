@@ -29,6 +29,8 @@ A [&lt;B&gt;tree](#user-content-tag-a36433e3) is an ordered set or map contained
    Sets the branching factor, or order as [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3), to the range `[3, UINT_MAX+1]`\. Default is most likely fine except when specific constraints have to be met; for example, an isomorphism to red\-black trees sets `TREE_ORDER` to 4\.
  * Parameter: TREE\_EXPECT\_TRAIT  
    Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
+ * Parameter: TREE\_DEFAULT\_NAME, TREE\_DEFAULT  
+   Default trait; a name that satisfies `C` naming conventions when mangled and a [&lt;PB&gt;value](#user-content-typedef-1740653a) used in [&lt;B&gt;tree&lt;D&gt;get](#user-content-fn-16ee74a9)\. There can be multiple defaults, but only one can omit `TREE_DEFAULT_NAME`\.
  * Parameter: TREE\_TO\_STRING\_NAME, TREE\_TO\_STRING  
    To string trait contained in [src/to\_string\.h](src/to_string.h); an optional unique `<SZ>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
  * Standard:  
@@ -158,6 +160,8 @@ Adding, deleting, or changes in the topology of the tree invalidate it\.
 <tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#user-content-fn-6828a06d">&lt;B&gt;tree_next</a></td><td>cur</td></tr>
 
 <tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#user-content-fn-30771909">&lt;B&gt;tree_previous</a></td><td>cur</td></tr>
+
+<tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#user-content-fn-16ee74a9">&lt;B&gt;tree&lt;D&gt;get</a></td><td>tree, key</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
@@ -421,6 +425,20 @@ Reverses `cur` to the previous element\.
    A pointer to the previous element, or null if it ran out of elements\. The type is either a set pointer\-to\-key or a map [&lt;B&gt;tree_entry](#user-content-tag-9e3caf18) \(with `TREE_VALUE`, both fields are null if null\)\.
  * Order:  
    &#927;\(log |`tree`|\)
+
+
+
+
+### <a id = "user-content-fn-16ee74a9" name = "user-content-fn-16ee74a9">&lt;B&gt;tree&lt;D&gt;get</a> ###
+
+<code>static &lt;PB&gt;value <strong>&lt;B&gt;tree&lt;D&gt;get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>)</code>
+
+This is functionally identical to [&lt;B&gt;tree_get_or](#user-content-fn-e460356c), but a with a trait specifying a constant default value\.
+
+ * Return:  
+   The value associated with `key` in `tree`, \(which can be null\.\) If no such value exists, the `TREE_DEFAULT` is returned\.
+ * Order:  
+   &#927;\(log |`tree`|\)\.
 
 
 

@@ -584,7 +584,7 @@ finally:
 
 
 /* Has distinguishable keys going to the same key value. This may be useful,
- for example, if one allocates keys. */
+ for example, if one allocates keys. Also has default values. */
 /** @implements <typedef:<PB>action_fn> */
 static void loop_filler(unsigned *const x)
 	{ *x = (unsigned)rand() / (RAND_MAX / 100000 + 1); }
@@ -593,6 +593,13 @@ static int loop_compare(const unsigned a, const unsigned b)
 #define TREE_NAME loop
 #define TREE_TEST &loop_filler
 #define TREE_COMPARE &loop_compare
+#define TREE_EXPECT_TRAIT
+#include "../src/tree.h"
+#define TREE_DEFAULT_NAME meaning
+#define TREE_DEFAULT 42
+#define TREE_EXPECT_TRAIT
+#include "../src/tree.h"
+#define TREE_DEFAULT 0
 #define TREE_EXPECT_TRAIT
 #include "../src/tree.h"
 #define TREE_TO_STRING &int_to_string
@@ -612,6 +619,12 @@ static void loop(void) {
 	assert(status == TREE_PRESENT && eject == 1);
 	ret = loop_tree_get_or(&tree, 1, 0), assert(ret == 101);
 	tree_loop_graph_horiz(&tree, "graph/loop2.gv");
+	ret = loop_tree_get_or(&tree, 3, 0), assert(ret == 3);
+	ret = loop_tree_get_or(&tree, 4, 0), assert(ret == 0);
+	ret = loop_tree_get(&tree, 3), assert(ret == 3);
+	ret = loop_tree_get(&tree, 4), assert(ret == 0);
+	ret = loop_tree_meaning_get(&tree, 3), assert(ret == 3);
+	ret = loop_tree_meaning_get(&tree, 0), assert(ret == 42);
 	loop_tree_(&tree);
 }
 

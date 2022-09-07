@@ -67,6 +67,8 @@
 	<dd>Sets the branching factor, or order as <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3">Knuth, 1998 Art 3</a>, to the range <code>[3, UINT_MAX+1]</code>. Default is most likely fine except when specific constraints have to be met; for example, an isomorphism to red-black trees sets <code>TREE_ORDER</code> to 4.</dd>
 	<dt>Parameter: TREE_EXPECT_TRAIT</dt>
 	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
+	<dt>Parameter: TREE_DEFAULT_NAME, TREE_DEFAULT</dt>
+	<dd>Default trait; a name that satisfies <code>C</code> naming conventions when mangled and a <a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a> used in <a href = "#fn:&lt;B&gt;tree&lt;D&gt;get">&lt;B&gt;tree&lt;D&gt;get</a>. There can be multiple defaults, but only one can omit <code>TREE_DEFAULT_NAME</code>.</dd>
 	<dt>Parameter: TREE_TO_STRING_NAME, TREE_TO_STRING</dt>
 	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>; an optional unique <code>&lt;SZ&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</dd>
 	<dt>Standard:</dt>
@@ -216,6 +218,8 @@
 <tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#fn:<B>tree_next">&lt;B&gt;tree_next</a></td><td>cur</td></tr>
 
 <tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#fn:<B>tree_previous">&lt;B&gt;tree_previous</a></td><td>cur</td></tr>
+
+<tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#fn:<B>tree<D>get">&lt;B&gt;tree&lt;D&gt;get</a></td><td>tree, key</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<STR>to_string">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
@@ -535,6 +539,23 @@
 	<dd>A pointer to the previous element, or null if it ran out of elements. The type is either a set pointer-to-key or a map <a href = "#tag:&lt;B&gt;tree_entry">&lt;B&gt;tree_entry</a> (with <code>TREE_VALUE</code>, both fields are null if null).</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree<D>get" name = "fn:<B>tree<D>get">&lt;B&gt;tree&lt;D&gt;get</a></h3>
+
+<p><code>static &lt;PB&gt;value <strong>&lt;B&gt;tree&lt;D&gt;get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>)</code></p>
+
+<p>This is functionally identical to <a href = "#fn:&lt;B&gt;tree_get_or">&lt;B&gt;tree_get_or</a>, but a with a trait specifying a constant default value.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The value associated with <code>key</code> in <code>tree</code>, (which can be null.) If no such value exists, the <code>TREE_DEFAULT</code> is returned.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>tree</code>|).</dd>
 </dl>
 
 </div>
