@@ -87,7 +87,8 @@ warnclang := -Wextra \
 -Wno-empty-body \
 -Wno-padded \
 -Wno-switch-enum \
--Wno-missing-noreturn
+-Wno-missing-noreturn \
+-Wno-implicit-fallthrough
 
 # https://stackoverflow.com/a/12099167
 UNAME_S := $(shell uname -s)

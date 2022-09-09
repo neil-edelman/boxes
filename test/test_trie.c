@@ -7,17 +7,48 @@
 #include <time.h>   /* clock time */
 #include "orcish.h"
 
-/** Manually tested. This will not, and can not work, leaving the strings
- uninitialized. Do _not_ call <fn:str_trie_test>. */
-static void str_filler(const char *c) { assert(c != 0); }
-/* A set of strings. `TRIE_TO_STRING` and `TRIE_TEST` are for graphing; one
- doesn't need them otherwise. */
+/** For testing -- have a pool of random names. */
+struct str32 { char str[32]; };
+#define POOL_NAME str32
+#define POOL_TYPE struct str32
+#include "pool.h"
+
+static struct str32_pool global_pool;
+
+/** Generate a random name and assign it to `pointer`. */
+static void str32_filler(const char **const pointer) {
+	struct str32 *s32 = str32_pool_new(&global_pool);
+	assert(s32 && pointer);
+	orcish(s32->str, sizeof s32->str);
+	*pointer = s32->str;
+}
+
+/* A set of strings. */
 #define TRIE_NAME str
 #define TRIE_TO_STRING
+#define TRIE_TEST &str32_filler
+#include "../src/trie.h"
+
+static void str_filler(const char *c, ) { assert(c != 0); }
+
+
+
+
+#if 0
+
+#define TRIE_NAME dict
+#define TRIE_VALUE int
 #define TRIE_TEST &str_filler
 #include "../src/trie.h"
 
-#if 0
+struct form { const char *str; int whatever; };
+
+#define TRIE_NAME form
+#define TRIE_VALUE struct form
+#define TRIE_TEST &str_filler
+#include "../src/trie.h"
+
+
 
 /* You can have an `enum` in a `trie`, pointing to a fixed set of strings. */
 #define PARAM(A) A
