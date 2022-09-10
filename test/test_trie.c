@@ -29,7 +29,7 @@ static void str32_filler(const char **const pointer) {
 #define TRIE_TEST &str32_filler
 #include "../src/trie.h"
 
-static void str_filler(const char *c, ) { assert(c != 0); }
+static void str_filler(const char **c) { assert(c != 0); }
 
 
 
@@ -155,7 +155,7 @@ static const char *keyval_key(const struct keyval *const kv)
 /** Manual testing for default string trie, that is, no associated information,
  just a set of `char *`. */
 static void contrived_str_test(void) {
-	struct str_trie strs = TRIE_IDLE;
+	struct str_trie strs = str_trie();
 	size_t i, j;
 	int show;
 	const char *str_array[] = { "a", "b", "c", "ba", "bb", "", "A", "Z", "z",
@@ -179,6 +179,7 @@ static void contrived_str_test(void) {
 			assert(sz == str_array[j]);
 		}
 	}
+#if 0
 	for( ; i; i--) {
 		int is;
 		show = 1/*!(i & (i - 1))*/;
@@ -195,19 +196,21 @@ static void contrived_str_test(void) {
 			assert(!(want_to_get ^ (get == str_array[j])));
 		}
 	}
+#endif
 	str_trie_(&strs);
 }
 
 static void test_test(void) {
 	const char *words[] = { "foo", "bar", "baz", "quxx" };
 	size_t i;
-	struct str_trie t;
-	str_trie(&t);
+	struct str_trie t = str_trie();
+	char fn[64];
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
 		printf("word: %s\n", words[i]);
 		if(!str_trie_try(&t, words[i])) assert(0);
+		sprintf(fn, "graph/test-%lu.gv", (unsigned long)i);
+		trie_str_graph(&t, fn);
 	}
-	trie_str_graph(&t, "graph/foo-one.gv");
 	str_trie_(&t);
 }
 
@@ -215,8 +218,8 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	test_test();
-	contrived_str_test();
-	/*colour_trie_test();
+	/*contrived_str_test();
+	colour_trie_test();
 	star_trie_test();
 	str4_trie_test();
 	keyval_trie_test();*/
