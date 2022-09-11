@@ -395,7 +395,6 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	/* Should be the same as the first descent. */
 	if(is_right = !!TRIE_QUERY(key, diff_bit)) lf += br1 - br0 + 1;
 
-	/************************ also promote the root? ****************/
 	/* Expand the tree to include one more leaf and branch. */
 	assert(lf <= tree->bsize + 1);
 	leaf = tree->leaf + lf;
@@ -409,6 +408,7 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	branch->left = is_right ? (unsigned char)(br1 - br0) : 0;
 	branch->skip = (unsigned char)(diff_bit - tree_bit);
 	tree->bsize++;
+	/* FIXME: also move bits. */
 	return leaf;
 }
 
