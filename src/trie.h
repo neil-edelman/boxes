@@ -419,6 +419,7 @@ static struct PT_(entry) *PT_(add_unique)(struct T_(trie) *const trie,
 	struct { size_t cur, next; } byte;
 	unsigned br0, br1, lf;
 	const char *sample;
+	union PT_(leaf) *leaf;
 	assert(trie && key);
 
 	printf("unique: adding \"%s\".\n", key);
@@ -472,7 +473,9 @@ found:
 	if(tree->bsize == TRIE_BRANCHES) { /* Split. */
 		assert(0);
 	}
-	return PT_(tree_open)(tree, tree_bit, key, bit);
+	leaf = PT_(tree_open)(tree, tree_bit, key, bit);
+	leaf->as_entry.key = key;
+	return &leaf->as_entry;
 catch:
 	if(!errno) errno = ERANGE;
 	return 0;
@@ -543,8 +546,9 @@ static struct PT_(entry) *T_(trie_get)(const struct T_(trie) *const trie,
 static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	const char *const key) {
 	assert(trie && key);
-	return PT_(get)(trie, key) ? TRIE_PRESENT :
-		PT_(add_unique)(trie, key) ? TRIE_UNIQUE : TRIE_ERROR;
+	printf("try: %s\n", key);
+	return PT_(get)(trie, key) ? (printf("present\n"), TRIE_PRESENT) :
+		PT_(add_unique)(trie, key) ? (TRIE_UNIQUE) : TRIE_ERROR;
 }
 
 #if 0
