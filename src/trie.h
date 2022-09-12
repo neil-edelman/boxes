@@ -41,7 +41,7 @@
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-branches-left root (`{a, aa, aaa, ...}`). Parameter sets the
  maximum tree size. Prefer alignment `4n - 2`; cache `32n - 2`. */
-#define TRIE_MAX_LEFT /*3*/6/*254*/
+#define TRIE_MAX_LEFT 3/*6*//*254*/
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX - 1
 #error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX - 1]`.
 #endif
@@ -345,10 +345,9 @@ static size_t PT_(trunk_diff)(const struct T_(trie) *trie,
 #endif
 
 /** @throws[malloc] */
-static struct PT_(tree) *PT_(split)(struct PT_(tree) *const tree) {
-	unsigned br0 = 0, br1 = tree->bsize, lf = 0;
+static int PT_(split)(struct PT_(tree) *const tree) {
+	unsigned br0, br1, lf;
 	struct PT_(tree) *kid;
-	unsigned sub;
 	assert(tree && tree->bsize == TRIE_BRANCHES);
 
 	/* Mitosis; more info added on error in <fn:<PT>add_unique>. */
@@ -357,22 +356,41 @@ static struct PT_(tree) *PT_(split)(struct PT_(tree) *const tree) {
 
 	/* Where should we split it? <https://cs.stackexchange.com/q/144928> */
 	printf("starting at root, order %u, split %u\n", TRIE_ORDER, TRIE_SPLIT);
+	br0 = 0, br1 = tree->bsize, lf = 0;
 	do {
 		const struct trie_branch *const branch = tree->branch + br0;
-		const unsigned left = branch->left,
-			right = br1 - br0 - 1 - branch->left;
+		const unsigned right = br1 - br0 - 1 - branch->left;
 		assert(br0 < br1);
-		printf("l %u; r %u: ", left, right);
-		if(left > right) /* Prefer right; it's less work. */
-			br1 = ++br0 + branch->left, sub = left, printf("left\n");
+		if(branch->left > right) /* Prefer right; it's less work copying. */
+			br1 = ++br0 + branch->left, printf("left\n");
 		else
-			br0 += branch->left + 1, lf += branch->left + 1, sub = right, printf("right\n");
-	} while(2 * sub + 1 > TRIE_SPLIT);
+			br0 += branch->left + 1, lf += branch->left + 1, printf("right\n");
+	} while(2 * (br1 - br0) + 1 > TRIE_SPLIT);
 	printf("cut at [%u..%u:%u]\n", br0, br1, lf);
-
-	/* Extract and put it in `kid`. */
-	assert(0);
-	return 0;
+	/* Copy data rooted at the current node. */
+	kid->bsize = (unsigned char)(br1 - br0);
+	memcpy(kid->branch, tree->branch + br0, sizeof *tree->branch * kid->bsize);
+	memcpy(kid->leaf, tree->leaf + lf, sizeof *tree->leaf * (kid->bsize + 1));
+	/* fixme: trie_bmp_move? */
+	/* Subtract `tree` left branches; (right branches are implicit.) */
+	br0 = 0, br1 = tree->bsize, lf = 0;
+	do {
+		struct trie_branch *const branch = tree->branch + br0;
+		const unsigned right = br1 - br0 - 1 - branch->left;
+		assert(br0 < br1);
+		if(branch->left > right)
+			br1 = ++br0 + branch->left, branch->left -= kid->bsize, printf("left\n");
+		else
+			br0 += branch->left + 1, lf += branch->left + 1, printf("right\n");
+	} while(2 * (br1 - br0) + 1 > TRIE_SPLIT);
+	memmove(tree->branch + br0, tree->branch + br1,
+		sizeof *tree->branch * (tree->bsize - br1));
+	memmove(tree->leaf + lf + 1, tree->leaf + lf + kid->bsize + 1,
+		sizeof *tree->leaf * (tree->bsize + 1 - lf - kid->bsize - 1));
+	trie_bmp_set(&tree->bmp, lf);
+	tree->leaf[lf].as_link = kid;
+	tree->bsize -= kid->bsize;
+	return 1;
 }
 
 
@@ -442,6 +460,9 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	return leaf;
 }
 
+static void PT_(graph)(const struct T_(trie) *const trie,
+					   const char *const fn);
+
 static struct PT_(entry) *PT_(add_unique)(struct T_(trie) *const trie,
 	const char *const key) {
 	struct PT_(tree) *tree;
@@ -505,8 +526,8 @@ found:
 	 key that we are going to put in. Having `TREE_ORDER` be more makes this
 	 matter less. */
 	if(tree->bsize == TRIE_BRANCHES) {
-		struct PT_(tree) *split = PT_(split)(tree);
-		if(!split) goto catch;
+		if(!PT_(split)(tree)) goto catch;
+		PT_(graph)(trie, "graph/interm-42.gv");
 		/* Start again from the top of the first tree. It probably would be
 		 faster to calculate the changes in the parameters, but that seems
 		 error-prone, hard, and why would one need something that's faster then
