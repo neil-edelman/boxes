@@ -41,7 +41,7 @@
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-branches-left root (`{a, aa, aaa, ...}`). Parameter sets the
  maximum tree size. Prefer alignment `4n - 2`; cache `32n - 2`. */
-#define TRIE_MAX_LEFT /*3*/4/*254*/
+#define TRIE_MAX_LEFT /*3*/6/*254*/
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX - 1
 #error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX - 1]`.
 #endif
@@ -344,6 +344,7 @@ static size_t PT_(trunk_diff)(const struct T_(trie) *trie,
 }
 #endif
 
+/** @throws[malloc] */
 static struct PT_(tree) *PT_(split)(struct PT_(tree) *const tree) {
 	unsigned br0 = 0, br1 = tree->bsize, lf = 0;
 	struct PT_(tree) *kid;
@@ -360,13 +361,15 @@ static struct PT_(tree) *PT_(split)(struct PT_(tree) *const tree) {
 		const struct trie_branch *const branch = tree->branch + br0;
 		const unsigned left = branch->left,
 			right = br1 - br0 - 1 - branch->left;
+		assert(br0 < br1);
 		printf("l %u; r %u: ", left, right);
 		if(left > right) /* Prefer right; it's less work. */
 			br1 = ++br0 + branch->left, sub = left, printf("left\n");
 		else
 			br0 += branch->left + 1, lf += branch->left + 1, sub = right, printf("right\n");
-		assert(br0 < br1);
 	} while(2 * sub + 1 > TRIE_SPLIT);
+
+	/* Extract and put it in `kid`. */
 	assert(0);
 	return 0;
 }
