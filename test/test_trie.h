@@ -93,8 +93,8 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tr,
 		fprintf(fp, "\t<tr>\n"
 			"\t\t<td ALIGN=\"LEFT\" BORDER=\"0\""
 			" PORT=\"%u\">%s%s%s⊔</FONT></TD>\n",
-			i, is_link ? "↓<FONT COLOR=\"Gray85\">" : "", key,
-			is_link ? "" : "<FONT COLOR=\"Gray85\">");
+			i, is_link ? "↓<FONT COLOR=\"Grey75\">" : "", key,
+			is_link ? "" : "<FONT COLOR=\"Grey75\">");
 		in_tree.br0 = 0, in_tree.br1 = tr->bsize;
 		for(b = 0; in_tree.br0 < in_tree.br1; b++) {
 			const unsigned bit = !!TRIE_QUERY(key, b);
@@ -157,24 +157,25 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tr,
 	fprintf(fp, "\ttree%pbranch0 [label = <\n"
 		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td colspan=\"3\" align=\"left\">"
-		"<font color=\"Gray85\">%s</font></td></tr>\n"
-		/*"\t<hr/>\n"*/
+		"<font color=\"Grey75\">%s</font></td></tr>\n"
+		"\t<hr/>\n"
 		"\t<tr><td colspan=\"3\" align=\"left\">start bit %lu"
 		"</td></tr>\n"
 		"\t<tr>\n"
-		"\t\t<td><FONT FACE=\"Times-Italic\">left</FONT></td>\n"
-		"\t\t<td><FONT FACE=\"Times-Italic\">skip</FONT></td>\n"
-		"\t\t<td><FONT FACE=\"Times-Italic\">leaves</FONT></td>\n"
-		"\t</tr>\n", (const void *)tr, orcify(tr), (unsigned long)treebit);
+		"\t\t<td><font face=\"Times-Italic\">left</font></td>\n"
+		"\t\t<td><font face=\"Times-Italic\">skip</font></td>\n"
+		"\t\t<td><font face=\"Times-Italic\">leaves</font></td>\n"
+		"\t</tr>\n"
+		"\t<hr/>\n", (const void *)tr, orcify(tr), (unsigned long)treebit);
 	for(i = 0; i <= tr->bsize; i++) {
-		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
+		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
 		const char *key = PT_(sample)(tr, i);
 		const unsigned is_link = trie_bmp_test(&tr->bmp, i);
 		if(i < tr->bsize) {
 			branch = tr->branch + i;
 			fprintf(fp, "\t<tr>\n"
-				"\t\t<td ALIGN=\"RIGHT\"%s>%u</td>\n"
-				"\t\t<td ALIGN=\"RIGHT\"%s>%u</td>\n",
+				"\t\t<td align=\"right\"%s>%u</td>\n"
+				"\t\t<td align=\"right\"%s>%u</td>\n",
 				bgc, branch->left,
 				bgc, branch->skip);
 		} else {
@@ -182,14 +183,16 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tr,
 				"\t\t<td>&#8205;</td>"
 				"\t\t<td>&#8205;</td>");
 		}
-		fprintf(fp, "\t\t<td ALIGN=\"LEFT\" PORT=\"%u\"%s>"
-			"%s%s%s⊔</FONT></td>\n"
+		fprintf(fp, "\t\t<td align=\"left\" port=\"%u\"%s>"
+			"%s%s%s⊔</font></td>\n"
 			"\t</tr>\n",
-			i, bgc, is_link ? "↓<FONT COLOR=\"Gray85\">" : "", key,
-			is_link ? "" : "<FONT COLOR=\"Gray85\">");
+			i, bgc, is_link ? "↓<font color=\"Grey75\">" : "", key,
+			is_link ? "" : "<font color=\"Grey75\">");
 			/* Should really escape it . . . don't have weird characters. */
 	}
-	fprintf(fp, "</table>>];\n");
+	fprintf(fp, "\t<hr/>\n"
+		"\t<tr><td></td></tr>\n"
+		"</table>>];\n");
 	/* Draw the lines between trees. */
 	for(i = 0; i <= tr->bsize; i++) if(trie_bmp_test(&tr->bmp, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
