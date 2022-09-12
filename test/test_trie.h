@@ -77,8 +77,7 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tr,
 	const size_t treebit, FILE *const fp) {
 	unsigned b, i;
 	assert(tr && fp);
-	fprintf(fp, "\ttree%pbranch0 [shape = box, style = filled, "
-		"fillcolor=\"Grey95\" label = <\n"
+	fprintf(fp, "\ttree%pbranch0 [label = <\n"
 		"<table border=\"0\" cellspacing=\"0\">\n", (const void *)tr);
 	/*"<table BORDER=\"0\" CELLBORDER=\"0\">\n"*/
 	for(i = 0; i <= tr->bsize; i++) {
@@ -91,10 +90,9 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tr,
 		/* 0-width joiner "&#8288;": GraphViz gets upset when tag closed
 		 immediately. */
 		fprintf(fp, "\t<tr>\n"
-			"\t\t<td ALIGN=\"LEFT\" BORDER=\"0\""
-			" PORT=\"%u\">%s%s%s⊔</FONT></TD>\n",
-			i, is_link ? "↓<FONT COLOR=\"Grey75\">" : "", key,
-			is_link ? "" : "<FONT COLOR=\"Grey75\">");
+			"\t\t<td align=\"left\" port=\"%u\">%s%s%s⊔</font></td>\n",
+			i, is_link ? "↓<font color=\"Grey75\">" : "", key,
+			is_link ? "" : "<font color=\"Grey75\">");
 		in_tree.br0 = 0, in_tree.br1 = tr->bsize;
 		for(b = 0; in_tree.br0 < in_tree.br1; b++) {
 			const unsigned bit = !!TRIE_QUERY(key, b);
@@ -104,22 +102,22 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tr,
 			} else {
 				if(!bit) {
 					in_tree.br1 = ++in_tree.br0 + branch->left;
-					params = " BGCOLOR=\"White\" BORDER=\"1\"";
+					params = " bgcolor=\"Grey95\" border=\"1\"";
 					start = "", end = "";
 				} else {
 					in_tree.br0 += branch->left + 1;
 					params
-						= " BGCOLOR=\"Black\" COLOR=\"White\" BORDER=\"1\"";
-					start = "<FONT COLOR=\"White\">", end = "</FONT>";
+						= " bgcolor=\"Black\" color=\"White\" border=\"1\"";
+					start = "<font color=\"White\">", end = "</font>";
 				}
 				next_branch = (branch = tr->branch + in_tree.br0)->skip;
 			}
-			if(b && !(b & 7)) fprintf(fp, "\t\t<td BORDER=\"0\">&nbsp;</TD>\n");
+			if(b && !(b & 7)) fprintf(fp, "\t\t<td>&nbsp;</td>\n");
 			fprintf(fp, "\t\t<td%s>%s%u%s</td>\n", params, start, bit, end);
 		}
 		fprintf(fp, "\t</tr>\n");
 	}
-	fprintf(fp, "</TABLE>>];\n");
+	fprintf(fp, "</table>>];\n");
 	/* Draw the lines between trees. */
 	for(i = 0; i <= tr->bsize; i++) if(trie_bmp_test(&tr->bmp, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
