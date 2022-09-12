@@ -103,8 +103,8 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
 		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
-		" fontname=\"Bitstream Vera Sans\", splines=false];\n"
-		"\tnode [shape=none, fontname=\"Bitstream Vera Sans\"];\n"
+		" fontname=modern, splines=false];\n"
+		"\tnode [shape=none, fontname=modern];\n"
 		"\n");
 	if(!tree->root.node)
 		fprintf(fp, "\tidle [shape=plaintext];\n");
@@ -174,7 +174,7 @@ static void PB_(graph_horiz)(const struct B_(tree) *const tree,
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
 		"\tgraph [truecolor=true, bgcolor=transparent,"
-		" fontname=\"Bitstream Vera Sans\", splines=false];\n"
+		" fontname=modern, splines=false];\n"
 		"\tnode [shape=none, fontname=\"Bitstream Vera Sans\"];\n"
 		"\n");
 	if(!tree->root.node)
