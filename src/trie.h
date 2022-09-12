@@ -347,6 +347,7 @@ static size_t PT_(trunk_diff)(const struct T_(trie) *trie,
 static struct PT_(tree) *PT_(split)(struct PT_(tree) *const tree) {
 	unsigned br0 = 0, br1 = tree->bsize, lf = 0;
 	struct PT_(tree) *kid;
+	unsigned sub;
 	assert(tree && tree->bsize == TRIE_BRANCHES);
 
 	/* Allocate new tree to hold the split information. */
@@ -355,30 +356,17 @@ static struct PT_(tree) *PT_(split)(struct PT_(tree) *const tree) {
 
 	/* Where should we split it? <https://cs.stackexchange.com/q/144928> */
 	printf("starting at root, order %u, split %u\n", TRIE_ORDER, TRIE_SPLIT);
-	for( ; ; ) {
+	do {
 		const struct trie_branch *const branch = tree->branch + br0;
 		const unsigned left = branch->left,
 			right = br1 - br0 - 1 - branch->left;
-		printf("l %u; r %u\n", left, right);
-		if(left > right) { /* Prefer right; it's less work. */
-			printf("left tree has more nodes\n");
-			if(2 * left + 1 <= TRIE_SPLIT) {
-				printf("cut\n");
-				goto left;
-			}
-			br1 = ++br0 + branch->left;
-		} else {
-			printf("right tree has more nodes\n");
-			if(2 * right + 1 <= TRIE_SPLIT) {
-				printf("cut\n");
-				goto right;
-			}
-			br0 += branch->left + 1, lf += branch->left + 1;
-		}
+		printf("l %u; r %u: ", left, right);
+		if(left > right) /* Prefer right; it's less work. */
+			br1 = ++br0 + branch->left, sub = left, printf("left\n");
+		else
+			br0 += branch->left + 1, lf += branch->left + 1, sub = right, printf("right\n");
 		assert(br0 < br1);
-	}
-left:
-right:
+	} while(2 * sub + 1 > TRIE_SPLIT);
 	assert(0);
 	return 0;
 }
