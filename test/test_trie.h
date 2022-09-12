@@ -289,9 +289,8 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
-		"\tgraph [truecolor=true, bgcolor=transparent];\n"
-		"\tfontface=modern;\n"
-		"\tnode [shape=none];\n"
+		"\tgraph [truecolor=true, bgcolor=transparent, fontname=modern];\n"
+		"\tnode [shape=none, fontname=modern];\n"
 		"\n");
 	/*"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"*/
 	if(!trie->root) fprintf(fp, "\tidle;\n");

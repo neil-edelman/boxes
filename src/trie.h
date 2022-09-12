@@ -368,6 +368,7 @@ static struct PT_(tree) *PT_(split)(struct PT_(tree) *const tree) {
 		else
 			br0 += branch->left + 1, lf += branch->left + 1, sub = right, printf("right\n");
 	} while(2 * sub + 1 > TRIE_SPLIT);
+	printf("cut at [%u..%u:%u]\n", br0, br1, lf);
 
 	/* Extract and put it in `kid`. */
 	assert(0);
@@ -395,15 +396,11 @@ static struct PT_(tree) *PT_(split)(struct PT_(tree) *const tree) {
 		sizeof *left->leaf * (left->trunk.bsize + 2));
 }
 #endif
-/** Open up a spot in the tree. Used in <fn:<PT>add_unique>. This is no longer
- well-defined if any parameters are off.
- @param[key] New <fn:<PT>to_key>.
- @param[diff] Calculated bit where the difference occurs. Has to be zero on
- `type = TRIE_INNER`.
- @param[trunk] Tree-trunk in which the difference occurs. Cannot be full.
- @param[bit0] Tree start bit.
- @param[type] Inner (link) or outer (leaf) type of the `trunk`.
- @return The uninitialized leaf/link. */
+
+/** Open up a spot in a non-full `tree`. Used in <fn:<PT>add_unique>.
+ @param[tree, tree_bit] The start of the tree.
+ @param[key, diff_bit] New key and where the new key differs from the tree.
+ @return The uninitialized leaf as data. */
 static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	size_t tree_bit, const char *const key, size_t diff_bit) {
 	unsigned br0, br1, lf;
@@ -411,7 +408,7 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	union PT_(leaf) *leaf;
 	size_t bit1;
 	unsigned is_right;
-	assert(key && tree && tree->bsize < TRIE_BRANCHES);
+	assert(key && tree && tree->bsize < TRIE_BRANCHES && tree_bit < diff_bit);
 	/* Modify the tree's left branches to account for the new leaf. */
 	br0 = 0, br1 = tree->bsize, lf = 0;
 	while(br0 < br1) {
@@ -491,7 +488,7 @@ static struct PT_(entry) *PT_(add_unique)(struct T_(trie) *const trie,
 		/* Got to a leaf without getting a difference. */
 		if(!trie_bmp_test(&tree->bmp, lf)) {
 			const size_t limit = bit + UCHAR_MAX;
-			/* Too much similarity, (~32 characters.) */
+			/* Too much similarity to fit in a byte, (~32 characters.) */
 			while(!TRIE_DIFF(key, sample, bit))
 				if(++bit > limit) { errno = EILSEQ; return 0; }
 			break;
