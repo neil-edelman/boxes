@@ -351,8 +351,8 @@ static struct PT_(tree) *PT_(split)(struct PT_(tree) *const tree) {
 	unsigned sub;
 	assert(tree && tree->bsize == TRIE_BRANCHES);
 
-	/* Allocate new tree to hold the split information. */
-	if(!(kid = malloc(sizeof *kid))) { if(!errno) errno = ERANGE; return 0; }
+	/* Mitosis; more info added on error in <fn:<PT>add_unique>. */
+	if(!(kid = malloc(sizeof *kid))) return 0;
 	trie_bmp_clear_all(&kid->bmp);
 
 	/* Where should we split it? <https://cs.stackexchange.com/q/144928> */
@@ -503,9 +503,17 @@ found:
 	if(!!TRIE_QUERY(key, bit)) lf += br1 - br0 + 1;
 
 	assert(tree->bsize <= TRIE_BRANCHES);
-	if(tree->bsize == TRIE_BRANCHES) { /* Split. */
+	/* Split. This is inefficient in that it moves data one time for split and
+	 a subset of the data a second time for insert. It also is agnostic of the
+	 key that we are going to put in. Having `TREE_ORDER` be more makes this
+	 matter less. */
+	if(tree->bsize == TRIE_BRANCHES) {
 		struct PT_(tree) *split = PT_(split)(tree);
-		if(!split) { assert(0); return 0; }
+		if(!split) goto catch;
+		/* Start again from the top of the first tree. It probably would be
+		 faster to calculate the changes in the parameters, but that seems
+		 error-prone, hard, and why would one need something that's faster then
+		 look-up? */
 		assert(0);
 	}
 	leaf = PT_(tree_open)(tree, tree_bit, key, bit);
