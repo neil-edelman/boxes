@@ -152,14 +152,13 @@ static const char *keyval_key(const struct keyval *const kv)
 
 
 
+#if 0
 /** Manual testing for default string trie, that is, no associated information,
  just a set of `char *`. */
 static void contrived_str_test(void) {
 	struct str_trie strs = str_trie();
 	size_t i, j;
 	int show;
-	const char *str_array[] = { "a", "b", "c", "ba", "bb", "", "A", "Z", "z",
-		"â", "foobar", "foo", "dictionary", "dictionaries" };
 	size_t str_array_size = sizeof str_array / sizeof *str_array;
 	printf("Contrived manual test of string set trie.\n");
 	trie_str_no = 0;
@@ -199,17 +198,38 @@ static void contrived_str_test(void) {
 #endif
 	str_trie_(&strs);
 }
+#endif
 
 static void test_test(void) {
 	const char *words[] = { "foo", "bar", "baz", "quxx" };
-	size_t i;
+	const char *words2[] = { "a", "b", "c", "ba", "bb", "", "A", "Z", "z",
+		"a", "b", "â", "foobar", "foo", "dictionary", "dictionaries" };
+	unsigned i;
 	struct str_trie t = str_trie();
 	char fn[64];
+	printf("Small:\n");
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
 		printf("word: %s\n", words[i]);
 		if(!str_trie_try(&t, words[i])) assert(0);
-		sprintf(fn, "graph/test-%lu.gv", (unsigned long)i);
+		sprintf(fn, "graph/test-%u.gv", i);
 		trie_str_graph(&t, fn);
+	}
+	str_trie_clear(&t);
+	printf("More complex:\n");
+	for(i = 0; i < sizeof words2 / sizeof *words2; i++) {
+		printf("word: %s\n", words2[i]);
+		switch(str_trie_try(&t, words2[i])) {
+		case TRIE_ERROR: assert(0); break;
+		case TRIE_UNIQUE: break;
+		case TRIE_PRESENT: printf("\"%s\" already there.\n", words2[i]);
+			continue;
+		}
+		sprintf(fn, "graph/test2-%u.gv", i);
+		trie_str_graph(&t, fn);
+	}
+	for(i = 0; i < sizeof words2 / sizeof *words2; i++) {
+		const char *get = str_trie_get(&t, words2[i]);
+		printf("get: %s\n", get);
 	}
 	str_trie_(&t);
 }

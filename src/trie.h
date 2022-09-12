@@ -39,14 +39,16 @@
 #define TRIE_QUERY(a, n) ((a)[TRIE_SLOT(n)] & TRIE_MASK(n))
 #define TRIE_DIFF(a, b, n) \
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
-/* Worst-case all-branches-left root (`{A, a, b, ...}`). Parameter sets the
+/* Worst-case all-branches-left root (`{a, aa, aaa, ...}`). Parameter sets the
  maximum tree size. Prefer alignment `4n - 2`; cache `32n - 2`. */
-#define TRIE_MAX_LEFT /*3*/6/*254*/
-#if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX
-#error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX]`.
+#define TRIE_MAX_LEFT /*3*/4/*254*/
+#if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX - 1
+#error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX - 1]`.
 #endif
 #define TRIE_BRANCHES (TRIE_MAX_LEFT + 1) /* Maximum branches. */
 #define TRIE_ORDER (TRIE_BRANCHES + 1) /* Maximum branching factor/leaves. */
+/* `⌈(2n-1)/3⌉` nodes. */
+#define TRIE_SPLIT ((2 * (TRIE_ORDER + TRIE_BRANCHES) - 1 + 2) / 3)
 #define TRIE_RESULT X(ERROR), X(UNIQUE), X(PRESENT)
 #define X(n) TRIE_##n
 /** A result of modifying the table, of which `TRIE_ERROR` is false.
@@ -282,14 +284,16 @@ const static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
 
 
 /** @return Exact match for `key` in `trie` or null. */
-static struct PT_(entry) *PT_(get)(const struct T_(trie) *const trie,
+static const char *PT_(get)(const struct T_(trie) *const trie,
 	const char *const key) {
-	struct PT_(entry) *x;
+	struct PT_(entry) *e;
+	const char *ekey;
 	printf("get \"%s\"?\n", key);
-	if(!trie || !key || !trie->root || trie->root->bsize != UCHAR_MAX) return 0;
-	x = PT_(match)(trie->root, key);
-	printf("\t-> \"%s\"\n", x ? PT_(entry_key)(x) : "(null)");
-	return x && !strcmp(PT_(entry_key)(x), key) ? x : 0;
+	if(!trie || !key || !trie->root || trie->root->bsize != UCHAR_MAX
+		|| !(e = PT_(match)(trie->root, key))) return 0;
+	ekey = PT_(entry_key)(e);
+	printf("\t-> \"%s\"?\n", ekey);
+	return !strcmp(ekey, key) ? ekey : 0;
 }
 
 #if 0
@@ -340,11 +344,50 @@ static size_t PT_(trunk_diff)(const struct T_(trie) *trie,
 }
 #endif
 
+static struct PT_(tree) *PT_(split)(struct PT_(tree) *const tree) {
+	unsigned br0 = 0, br1 = tree->bsize, lf = 0;
+	struct PT_(tree) *kid;
+	assert(tree && tree->bsize == TRIE_BRANCHES);
+
+	/* Allocate new tree to hold the split information. */
+	if(!(kid = malloc(sizeof *kid))) { if(!errno) errno = ERANGE; return 0; }
+	trie_bmp_clear_all(&kid->bmp);
+
+	/* Where should we split it? <https://cs.stackexchange.com/q/144928> */
+	printf("starting at root, order %u, split %u\n", TRIE_ORDER, TRIE_SPLIT);
+	for( ; ; ) {
+		const struct trie_branch *const branch = tree->branch + br0;
+		const unsigned left = branch->left,
+			right = br1 - br0 - 1 - branch->left;
+		printf("l %u; r %u\n", left, right);
+		if(left > right) { /* Prefer right; it's less work. */
+			printf("left tree has more nodes\n");
+			if(2 * left + 1 <= TRIE_SPLIT) {
+				printf("cut\n");
+				goto left;
+			}
+			br1 = ++br0 + branch->left;
+		} else {
+			printf("right tree has more nodes\n");
+			if(2 * right + 1 <= TRIE_SPLIT) {
+				printf("cut\n");
+				goto right;
+			}
+			br0 += branch->left + 1, lf += branch->left + 1;
+		}
+		assert(br0 < br1);
+	}
+left:
+right:
+	assert(0);
+	return 0;
+}
+
+
 #if 0
 /** Right side of `left`, which must be full, moves to `right`, (which is
  clobbered.) The root of `left` is also clobbered. */
-static void PT_(split)(struct PT_(outer_tree) *const left,
-	struct PT_(outer_tree) *const right, enum trie_tree_type type) {
+static struct PT_(tree) *PT_(split)(struct PT_(tree) *const tree) {
 	unsigned char leaves_split = left->trunk.branch[0].left + 1;;
 	assert(left && right && left->trunk.bsize == TRIE_BRANCHES);
 	right->trunk.bsize = left->trunk.bsize - leaves_split;
@@ -394,7 +437,6 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	assert(tree_bit <= diff_bit && diff_bit - tree_bit <= UCHAR_MAX);
 	/* Should be the same as the first descent. */
 	if(is_right = !!TRIE_QUERY(key, diff_bit)) lf += br1 - br0 + 1;
-
 	/* Expand the tree to include one more leaf and branch. */
 	assert(lf <= tree->bsize + 1);
 	leaf = tree->leaf + lf;
@@ -471,6 +513,8 @@ found:
 
 	assert(tree->bsize <= TRIE_BRANCHES);
 	if(tree->bsize == TRIE_BRANCHES) { /* Split. */
+		struct PT_(tree) *split = PT_(split)(tree);
+		if(!split) { assert(0); return 0; }
 		assert(0);
 	}
 	leaf = PT_(tree_open)(tree, tree_bit, key, bit);
@@ -481,6 +525,15 @@ catch:
 	return 0;
 }
 
+/** Destroys `tree`'s children and sets invalid state.
+ @order \O(|`tree`|) both time and space. */
+static void PT_(clear_r)(struct PT_(tree) *const tree) {
+	unsigned i;
+	assert(tree && tree->bsize != UCHAR_MAX);
+	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->bmp, i))
+		PT_(clear_r)(tree->leaf[i].as_link), free(tree->leaf[i].as_link);
+}
+
 
 
 /** Zeroed data (not all-bits-zero) is initialized. @return An idle tree.
@@ -488,31 +541,27 @@ catch:
 static struct T_(trie) T_(trie)(void)
 	{ struct T_(trie) trie = { 0 }; return trie; }
 
-/** Returns an initialized `trie` to idle. @allow */
+/** Returns any initialized `trie` (can be null) to idle.
+ @order \O(|`trie`|) @allow */
 static void T_(trie_)(struct T_(trie) *const trie) {
 	if(!trie || !trie->root) return; /* Null or idle. */
-	if(trie->root->bsize == UCHAR_MAX) {
-		free(trie->root); /* Empty. */
-	} else {
-		/*PT_(clear_r)(tree->root, 0);*/ assert(0);
-	}
+	if(trie->root->bsize != UCHAR_MAX) PT_(clear_r)(trie->root); /* Contents. */
+	free(trie->root); /* Empty. */
 	*trie = T_(trie)();
 }
 
+/** Clears every entry in a valid `trie`, but it continues to be active if it
+ is not idle. @order \O(|`trie`|) @allow */
+static void T_(trie_clear)(struct T_(trie) *const trie) {
+	if(!trie || !trie->root) return; /* Null or idle. */
+	if(trie->root->bsize != UCHAR_MAX) PT_(clear_r)(trie->root); /* Contents. */
+	trie->root->bsize = UCHAR_MAX; /* Hysteresis. */
+}
 
 
 
 
 #if 0
-/** Clears every entry in a valid `trie`, but it continues to be active if it
- is not idle. */
-static void T_(trie_clear)(struct T_(trie) *const trie) {
-	struct PT_(outer_tree) *will_be_root = 0;
-	assert(trie);
-	PT_(clear_r)(trie->root, trie->node_height, &will_be_root);
-	T_(trie)(trie);
-	trie->root = &will_be_root->trunk; /* Hysteresis. */
-}
 /** Initializes `trie` from an `array` of pointers-to-`<T>` of `array_size`.
  @return Success. @throws[realloc] @order \O(`array_size`) @allow
  @fixme Write this function, somehow. */
@@ -522,12 +571,6 @@ static int T_(trie_from_array)(struct T_(trie) *const trie,
 		PT_(init)(trie, array, array_size);
 }
 #endif
-
-/** @return Whether `key` is in `trie`; in case either one is null, returns
- false. @order \O(|`key`|) */
-static int T_(trie_contains)(const struct T_(trie) *const trie,
-	const char *const key)
-	{ return trie && key && PT_(get)(trie, key); }
 
 /** @return Looks at only the index of `trie` for potential `key` matches,
  but will ignore the values of the bits that are not in the index.
@@ -539,10 +582,11 @@ static struct PT_(entry) *T_(trie_match)(const struct T_(trie) *const trie,
 /** @return Exact match for `key` in `trie` or null no such item exists. If
  either is null, returns a null entry, that is, key or key in value, null,
  entry both are null. @order \O(|`key`|), <Thareja 2011, Data>. @allow */
-static struct PT_(entry) *T_(trie_get)(const struct T_(trie) *const trie,
+static const char *T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const key)
 	{ return trie && key ? PT_(get)(trie, key) : 0; }
 
+/** @order \O(max(|`key`|, |`trie.keys`|)) */
 static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	const char *const key) {
 	assert(trie && key);
