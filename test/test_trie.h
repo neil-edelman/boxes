@@ -79,7 +79,8 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tr,
 	assert(tr && fp);
 	fprintf(fp, "\ttree%pbranch0 [shape = box, style = filled, "
 		"fillcolor=\"Grey95\" label = <\n"
-		"<TABLE BORDER=\"0\" CELLBORDER=\"0\">\n", (const void *)tr);
+		"<table border=\"0\" cellspacing=\"0\">\n", (const void *)tr);
+	/*"<table BORDER=\"0\" CELLBORDER=\"0\">\n"*/
 	for(i = 0; i <= tr->bsize; i++) {
 		const char *key = PT_(sample)(tr, i);
 		const struct trie_branch *branch = tr->branch;
@@ -89,8 +90,8 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tr,
 		const unsigned is_link = trie_bmp_test(&tr->bmp, i);
 		/* 0-width joiner "&#8288;": GraphViz gets upset when tag closed
 		 immediately. */
-		fprintf(fp, "\t<TR>\n"
-			"\t\t<TD ALIGN=\"LEFT\" BORDER=\"0\""
+		fprintf(fp, "\t<tr>\n"
+			"\t\t<td ALIGN=\"LEFT\" BORDER=\"0\""
 			" PORT=\"%u\">%s%s%s⊔</FONT></TD>\n",
 			i, is_link ? "↓<FONT COLOR=\"Gray85\">" : "", key,
 			is_link ? "" : "<FONT COLOR=\"Gray85\">");
@@ -113,10 +114,10 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tr,
 				}
 				next_branch = (branch = tr->branch + in_tree.br0)->skip;
 			}
-			if(b && !(b & 7)) fprintf(fp, "\t\t<TD BORDER=\"0\">&nbsp;</TD>\n");
-			fprintf(fp, "\t\t<TD%s>%s%u%s</TD>\n", params, start, bit, end);
+			if(b && !(b & 7)) fprintf(fp, "\t\t<td BORDER=\"0\">&nbsp;</TD>\n");
+			fprintf(fp, "\t\t<td%s>%s%u%s</td>\n", params, start, bit, end);
 		}
-		fprintf(fp, "\t</TR>\n");
+		fprintf(fp, "\t</tr>\n");
 	}
 	fprintf(fp, "</TABLE>>];\n");
 	/* Draw the lines between trees. */
@@ -153,42 +154,42 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tr,
 	assert(tr && fp);
 	/* Tree is one record node in memory -- GraphViz says html is
 	 case-insensitive, but no. */
-	fprintf(fp, "\ttree%pbranch0 [shape = box, "
-		"style = filled, fillcolor = Gray95, label = <\n"
-		"<TABLE BORDER=\"0\">\n"
-		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">"
-		"<FONT COLOR=\"Gray85\">%s</FONT></TD></TR>\n"
-		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">start bit %lu"
-		"</TD></TR>\n"
-		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">left</FONT></TD>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">skip</FONT></TD>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">leaves</FONT></TD>\n"
-		"\t</TR>\n", (const void *)tr, orcify(tr), (unsigned long)treebit);
+	fprintf(fp, "\ttree%pbranch0 [label = <\n"
+		"<table border=\"0\" cellspacing=\"0\">\n"
+		"\t<tr><td colspan=\"3\" align=\"left\">"
+		"<font color=\"Gray85\">%s</font></td></tr>\n"
+		/*"\t<hr/>\n"*/
+		"\t<tr><td colspan=\"3\" align=\"left\">start bit %lu"
+		"</td></tr>\n"
+		"\t<tr>\n"
+		"\t\t<td><FONT FACE=\"Times-Italic\">left</FONT></td>\n"
+		"\t\t<td><FONT FACE=\"Times-Italic\">skip</FONT></td>\n"
+		"\t\t<td><FONT FACE=\"Times-Italic\">leaves</FONT></td>\n"
+		"\t</tr>\n", (const void *)tr, orcify(tr), (unsigned long)treebit);
 	for(i = 0; i <= tr->bsize; i++) {
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
 		const char *key = PT_(sample)(tr, i);
 		const unsigned is_link = trie_bmp_test(&tr->bmp, i);
 		if(i < tr->bsize) {
 			branch = tr->branch + i;
-			fprintf(fp, "\t<TR>\n"
-				"\t\t<TD ALIGN=\"RIGHT\"%s>%u</TD>\n"
-				"\t\t<TD ALIGN=\"RIGHT\"%s>%u</TD>\n",
+			fprintf(fp, "\t<tr>\n"
+				"\t\t<td ALIGN=\"RIGHT\"%s>%u</td>\n"
+				"\t\t<td ALIGN=\"RIGHT\"%s>%u</td>\n",
 				bgc, branch->left,
 				bgc, branch->skip);
 		} else {
-			fprintf(fp, "\t<TR>\n"
-				"\t\t<TD>&#8205;</TD>"
-				"\t\t<TD>&#8205;</TD>");
+			fprintf(fp, "\t<tr>\n"
+				"\t\t<td>&#8205;</td>"
+				"\t\t<td>&#8205;</td>");
 		}
-		fprintf(fp, "\t\t<TD ALIGN=\"LEFT\" PORT=\"%u\"%s>"
-			"%s%s%s⊔</FONT></TD>\n"
-			"\t</TR>\n",
+		fprintf(fp, "\t\t<td ALIGN=\"LEFT\" PORT=\"%u\"%s>"
+			"%s%s%s⊔</FONT></td>\n"
+			"\t</tr>\n",
 			i, bgc, is_link ? "↓<FONT COLOR=\"Gray85\">" : "", key,
 			is_link ? "" : "<FONT COLOR=\"Gray85\">");
 			/* Should really escape it . . . don't have weird characters. */
 	}
-	fprintf(fp, "</TABLE>>];\n");
+	fprintf(fp, "</table>>];\n");
 	/* Draw the lines between trees. */
 	for(i = 0; i <= tr->bsize; i++) if(trie_bmp_test(&tr->bmp, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
@@ -227,33 +228,33 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tr,
 		for(b = 0; b < tr->bsize; b++) { /* Branches. */
 			branch = tr->branch + b;
 			left = branch->left, right = PT_(right)(tr, b);
-			fprintf(fp, "\ttree%pbranch%u [label = \"%u\", shape = circle, "
-				"style = filled, fillcolor = Grey95];\n"
+			fprintf(fp, "\ttree%pbranch%u [label=\"%u\", shape=circle,"
+				" style=filled, fillcolor=Grey95];\n"
 				"\ttree%pbranch%u -> ", (const void *)tr, b, branch->skip,
 				(const void *)tr, b);
 			if(left) {
-				fprintf(fp, "tree%pbranch%u [arrowhead = rnormal];\n",
+				fprintf(fp, "tree%pbranch%u [arrowhead=rnormal];\n",
 					(const void *)tr, b + 1);
 			} else {
 				unsigned leaf = PT_(left_leaf)(tr, b);
 				if(trie_bmp_test(&tr->bmp, b)) fprintf(fp,
-					"tree%pbranch0 [style = dashed, arrowhead = rnormal];\n",
+					"tree%pbranch0 [style=dashed, arrowhead=rnormal];\n",
 					(const void *)tr->leaf[leaf].as_link);
 				else fprintf(fp,
-					"tree%pleaf%u [color = Gray85, arrowhead = rnormal];\n",
+					"tree%pleaf%u [color=Gray75, arrowhead=rnormal];\n",
 					(const void *)tr, leaf);
 			}
 			fprintf(fp, "\ttree%pbranch%u -> ", (const void *)tr, b);
 			if(right) {
-				fprintf(fp, "tree%pbranch%u [arrowhead = lnormal];\n",
+				fprintf(fp, "tree%pbranch%u [arrowhead=lnormal];\n",
 					(const void *)tr, b + left + 1);
 			} else {
 				unsigned leaf = PT_(left_leaf)(tr, b) + left + 1;
 				if(trie_bmp_test(&tr->bmp, b)) fprintf(fp,
-					"tree%pbranch0 [style = dashed, arrowhead = lnormal];\n",
+					"tree%pbranch0 [style=dashed, arrowhead=lnormal];\n",
 					(const void *)tr->leaf[leaf].as_link);
 				else fprintf(fp,
-					"tree%pleaf%u [color = Gray85, arrowhead = lnormal];\n",
+					"tree%pleaf%u [color=Gray75, arrowhead=lnormal];\n",
 					(const void *)tr, leaf);
 			}
 		}
@@ -262,13 +263,11 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tr,
 	fprintf(fp, "\t// leaves\n");
 
 	for(i = 0; i <= tr->bsize; i++) if(!trie_bmp_test(&tr->bmp, i)) fprintf(fp,
-		"\ttree%pleaf%u [label = <%s<FONT COLOR=\"Gray85\">⊔</FONT>>];\n",
+		"\ttree%pleaf%u [label = <%s<font color=\"Gray75\">⊔</font>>];\n",
 		(const void *)tr, i, PT_(entry_key)(&tr->leaf[i].as_entry));
-	fprintf(fp, "\n");
 
 	for(i = 0; i <= tr->bsize; i++) if(trie_bmp_test(&tr->bmp, i))
 		PT_(graph_tree_logic)(tr->leaf[i].as_link, 0, fp);
-	fprintf(fp, "\n");
 
 		/* Lazy hack: just call this a branch, even though it's a leaf, so that
 		 others may reference it. We will see if this is even allowed as we go
@@ -281,23 +280,21 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tr,
 		/* I'm not sure what I should do with this, size zero tree. */
 }
 
-/** Draw a graph of `trie` to `fn` in Graphviz format with `tf` as it's
+/** Draw a graph of `trie` to `fn` in Graphviz format with `callback` as it's
  tree-drawing output. */
 static void PT_(graph_choose)(const struct T_(trie) *const trie,
-	const char *const fn, const PT_(tree_file_fn) tf) {
+	const char *const fn, const PT_(tree_file_fn) callback) {
 	FILE *fp;
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
 		"\tgraph [truecolor=true, bgcolor=transparent, fontname=modern];\n"
-		"\tnode [shape=none, fontname=modern];\n"
-		"\n");
+		"\tnode [shape=none, fontname=modern];\n");
 	/*"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"*/
 	if(!trie->root) fprintf(fp, "\tidle;\n");
 	else if(trie->root->bsize == UCHAR_MAX) fprintf(fp, "\tempty;\n");
-	else tf(trie->root, 0, fp);
-	fprintf(fp, "\tnode [color = \"Red\"];\n"
-		"}\n");
+	else callback(trie->root, 0, fp);
+	fprintf(fp, "}\n");
 	fclose(fp);
 }
 
