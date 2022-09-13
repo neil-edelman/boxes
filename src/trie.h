@@ -352,10 +352,11 @@ static int PT_(split)(struct PT_(tree) *const tree) {
 
 	/* Mitosis; more info added on error in <fn:<PT>add_unique>. */
 	if(!(kid = malloc(sizeof *kid))) return 0;
-	trie_bmp_clear_all(&kid->bmp);
 
 	/* Where should we split it? <https://cs.stackexchange.com/q/144928> */
-	printf("starting at root, order %u, split %u\n", TRIE_ORDER, TRIE_SPLIT);
+	printf("split at root, order %u, split %u\n", TRIE_ORDER, TRIE_SPLIT);
+	for(lf = 0; lf <= tree->bsize; lf++)
+		if(trie_bmp_test(&tree->bmp, lf)) printf("leaf %u is a link\n", lf);
 	br0 = 0, br1 = tree->bsize, lf = 0;
 	do {
 		const struct trie_branch *const branch = tree->branch + br0;
@@ -371,7 +372,6 @@ static int PT_(split)(struct PT_(tree) *const tree) {
 	kid->bsize = (unsigned char)(br1 - br0);
 	memcpy(kid->branch, tree->branch + br0, sizeof *tree->branch * kid->bsize);
 	memcpy(kid->leaf, tree->leaf + lf, sizeof *tree->leaf * (kid->bsize + 1));
-	/* fixme: trie_bmp_move? */
 	/* Subtract `tree` left branches; (right branches are implicit.) */
 	br0 = 0, br1 = tree->bsize, lf = 0;
 	do {
@@ -383,10 +383,20 @@ static int PT_(split)(struct PT_(tree) *const tree) {
 		else
 			br0 += branch->left + 1, lf += branch->left + 1, printf("right\n");
 	} while(2 * (br1 - br0) + 1 > TRIE_SPLIT);
+	/* Delete from `tree`. */
 	memmove(tree->branch + br0, tree->branch + br1,
 		sizeof *tree->branch * (tree->bsize - br1));
 	memmove(tree->leaf + lf + 1, tree->leaf + lf + kid->bsize + 1,
 		sizeof *tree->leaf * (tree->bsize + 1 - lf - kid->bsize - 1));
+	/* Move the bits. */
+	memcpy(&kid->bmp, &tree->bmp, sizeof tree->bmp);
+	printf("there were %u leaves.\n", tree->bsize + 1);
+	printf("moving %u leaves starting at %u leaving %u.\n",
+		kid->bsize + 1, lf, tree->bsize - lf - kid->bsize);
+	trie_bmp_remove(&kid->bmp, 0, lf);
+	trie_bmp_remove(&kid->bmp, kid->bsize + 1,
+		tree->bsize - lf - kid->bsize);
+	trie_bmp_remove(&tree->bmp, lf + 1, kid->bsize);
 	trie_bmp_set(&tree->bmp, lf);
 	tree->leaf[lf].as_link = kid;
 	tree->bsize -= kid->bsize;
@@ -456,7 +466,7 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	branch->left = is_right ? (unsigned char)(br1 - br0) : 0;
 	branch->skip = (unsigned char)(diff_bit - tree_bit);
 	tree->bsize++;
-	/* FIXME: also move bits. */
+	trie_bmp_insert(&tree->bmp, lf, 1);
 	return leaf;
 }
 
@@ -538,6 +548,8 @@ found:
 	}
 	leaf = PT_(tree_open)(tree, tree_bit, key, bit);
 	leaf->as_entry.key = key;
+	printf("return from add_unique, tree %s [%u..%u:%u].\n",
+		orcify(tree), br0, br1, lf);
 	return &leaf->as_entry;
 catch:
 	if(!errno) errno = ERANGE;
