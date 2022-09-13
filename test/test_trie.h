@@ -238,7 +238,7 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tr,
 					(const void *)tr, b + 1);
 			} else {
 				unsigned leaf = PT_(left_leaf)(tr, b);
-				if(trie_bmp_test(&tr->bmp, b)) fprintf(fp,
+				if(trie_bmp_test(&tr->bmp, leaf)) fprintf(fp,
 					"tree%pbranch0 [style=dashed, arrowhead=rnormal];\n",
 					(const void *)tr->leaf[leaf].as_link);
 				else fprintf(fp,
@@ -251,7 +251,7 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tr,
 					(const void *)tr, b + left + 1);
 			} else {
 				unsigned leaf = PT_(left_leaf)(tr, b) + left + 1;
-				if(trie_bmp_test(&tr->bmp, b)) fprintf(fp,
+				if(trie_bmp_test(&tr->bmp, leaf)) fprintf(fp,
 					"tree%pbranch0 [style=dashed, arrowhead=lnormal];\n",
 					(const void *)tr->leaf[leaf].as_link);
 				else fprintf(fp,

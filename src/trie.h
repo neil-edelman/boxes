@@ -488,7 +488,9 @@ static struct PT_(entry) *PT_(add_unique)(struct T_(trie) *const trie,
 		return &tree->leaf[0].as_entry;
 	}
 	/* Find the first bit not in the tree. */
-	for(tree_bit = 0, bit = 0, byte.cur = 0; ; ) {
+	for(tree_bit = 0, bit = 0, byte.cur = 0; ;
+		tree = tree->leaf[lf].as_link, tree_bit = bit) {
+tree:
 		br0 = 0, br1 = tree->bsize, lf = 0;
 		sample = PT_(sample)(tree, 0);
 		printf("add: find, tree %s:%lu, sample %s.\n",
@@ -507,14 +509,12 @@ static struct PT_(entry) *PT_(add_unique)(struct T_(trie) *const trie,
 			bit++;
 		}
 		/* Got to a leaf without getting a difference. */
-		if(!trie_bmp_test(&tree->bmp, lf)) {
-			const size_t limit = bit + UCHAR_MAX;
-			/* Too much similarity to fit in a byte, (~32 characters.) */
-			while(!TRIE_DIFF(key, sample, bit))
-				if(++bit > limit) { errno = EILSEQ; return 0; }
-			break;
-		}
-		tree = tree->leaf[lf].as_link, tree_bit = bit;
+		if(!trie_bmp_test(&tree->bmp, lf)) break;
+	}
+	{ /* Too much similarity to fit in a byte, (~32 characters.) */
+		const size_t limit = bit + UCHAR_MAX;
+		while(!TRIE_DIFF(key, sample, bit))
+			if(++bit > limit) { errno = EILSEQ; return 0; }
 	}
 found:
 	/* Account for choosing the right leaf. */
@@ -532,7 +532,9 @@ found:
 		 faster to calculate the changes in the parameters, but that seems
 		 error-prone, hard, and why would one need something that's faster then
 		 look-up? */
-		assert(0);
+		bit = tree_bit;
+		printf("backtrack to tree!!!\n");
+		goto tree;
 	}
 	leaf = PT_(tree_open)(tree, tree_bit, key, bit);
 	leaf->as_entry.key = key;
