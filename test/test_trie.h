@@ -269,16 +269,6 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tr,
 
 	for(i = 0; i <= tr->bsize; i++) if(trie_bmp_test(&tr->bmp, i))
 		PT_(graph_tree_logic)(tr->leaf[i].as_link, 0, fp);
-
-		/* Lazy hack: just call this a branch, even though it's a leaf, so that
-		 others may reference it. We will see if this is even allowed as we go
-		 forward. */
-		/* if(!tr->bsize) fprintf(fp, "\ttree%pbranch0 [label = \"\","
-			" shape = circle, style = filled, fillcolor = Grey95];\n"
-			"\ttree%pbranch0 -> tree%pbranch0 [style = dashed];\n",
-			(const void *)tr, (const void *)tr,
-			(const void *)inner->leaf[0].link); */
-		/* I'm not sure what I should do with this, size zero tree. */
 }
 
 /** Draw a graph of `trie` to `fn` in Graphviz format with `callback` as it's
@@ -302,7 +292,7 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 /** Graphs logical `trie` output to `fn`. */
 static void PT_(graph)(const struct T_(trie) *const trie,
 	const char *const fn) {
-	const char logic[] = "-logic", mem[] = "-mem", bits[] = "-bits";
+	const char logic[] = "-tree", mem[] = "-mem", bits[] = "-bits";
 	char name[128], *dash, *dot;
 	size_t fn_len = strlen(fn), i, i_fn, i_name;
 	/* Whatever we're going to add to the string. */
@@ -330,8 +320,6 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 	PT_(graph_choose)(trie, name, &PT_(graph_tree_bits));
 }
 
-#if 0
-
 /** Prints `tree` to `stdout`. */
 static void PT_(print)(const struct PT_(tree) *const tree) {
 	const struct trie_branch *branch;
@@ -348,12 +336,11 @@ static void PT_(print)(const struct PT_(tree) *const tree) {
 	printf("\n"
 		"leaves ");
 	for(i = 0; i <= tree->bsize; i++)
-		printf("%s%s", i ? ", " : "", trie_bmp_test(&tree->is_child, i)
-			? orcify(tree->leaf[i].child) : PT_(to_key)(tree->leaf[i].data));
+		printf("%s%s", i ? ", " : "", trie_bmp_test(&tree->bmp, i)
+			? orcify(tree->leaf[i].as_link)
+			: PT_(entry_key)(&tree->leaf[i].as_entry));
 	printf("\n");
 }
-
-#endif
 
 #ifndef TRIE_DEFAULT_TEST /* <!-- !set: a set of strings is not testable in the
  automatic framework, but convenient to have graphs for manual tests. */

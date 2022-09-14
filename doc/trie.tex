@@ -76,6 +76,12 @@
 
 \abstract{A data structure based on a compact radix trees is introduced, with an index on key strings bits stored semi-implicitly. B-tree methods are used to group data in a sequential conglomeration, called a tree in a trie-forest. This increases cache-coherence, and presents an efficient ordered string set or map with prefix-matching capabilities. Tests comparing it to a hash map show the structure performs for . . .}
 
+After `exp(order)` the trie becomes saturated with `n-1` links?
+
+only left and skip are descended in a binary search pattern, the leaf is the result. \code{skip} depends on the keys we are presented, but the maximum size is ideally \code{SIZE_MAX * CHAR_BITS - 1} to fit all strings that C uses. \code{left} is maximal at a graph of all left nodes, where it has `order - 2` value.
+
+thus, being cache-conscious means making left and skip really small.
+
 \section{Introduction}
 
 A trie is, ``a multiway tree structure that stores sets of strings by successively partitioning them [de la Briandais 1959; Fredkin 1960; Jacquet and Szpankowski 1991],''\cite{askitis2011redesigning} so that, ``INSTEAD OF BASING a search method on comparisons between keys, we can make use of their representation as a sequence of digits or alphabetic characters.''\cite{knuth1997sorting} It is ordered, and allows prefix range queries.

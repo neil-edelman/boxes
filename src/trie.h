@@ -289,7 +289,7 @@ static const char *PT_(get)(const struct T_(trie) *const trie,
 	struct PT_(entry) *e;
 	const char *ekey;
 	printf("get \"%s\"?\n", key);
-	if(!trie || !key || !trie->root || trie->root->bsize != UCHAR_MAX
+	if(!trie || !key || !trie->root || trie->root->bsize == UCHAR_MAX
 		|| !(e = PT_(match)(trie->root, key))) return 0;
 	ekey = PT_(entry_key)(e);
 	printf("\t-> \"%s\"?\n", ekey);
@@ -403,29 +403,10 @@ static int PT_(split)(struct PT_(tree) *const tree) {
 	return 1;
 }
 
+static void PT_(print)(const struct PT_(tree) *const tree);
 
-#if 0
-/** Right side of `left`, which must be full, moves to `right`, (which is
- clobbered.) The root of `left` is also clobbered. */
-static struct PT_(tree) *PT_(split)(struct PT_(tree) *const tree) {
-	unsigned char leaves_split = left->trunk.branch[0].left + 1;;
-	assert(left && right && left->trunk.bsize == TRIE_BRANCHES);
-	right->trunk.bsize = left->trunk.bsize - leaves_split;
-	right->trunk.skip = left->trunk.skip; /* Maybe? */
-	memcpy(right->trunk.branch, left->trunk.branch + leaves_split,
-		sizeof *left->trunk.branch * right->trunk.bsize);
-	memcpy(right->leaf, left->leaf + leaves_split,
-		sizeof *left->leaf * (right->trunk.bsize + 1));
-	/* Move back the branches of the left to account for the promotion. */
-	left->trunk.bsize = leaves_split - 1;
-	memmove(left->trunk.branch, left->trunk.branch + 1,
-		sizeof *left->trunk.branch * (left->trunk.bsize + 1));
-	memmove(left->leaf, left->leaf + 1,
-		sizeof *left->leaf * (left->trunk.bsize + 2));
-}
-#endif
-
-/** Open up a spot in a non-full `tree`. Used in <fn:<PT>add_unique>.
+/** Open up an uninitialized spot in a non-full `tree`. Used in
+ <fn:<PT>add_unique>.
  @param[tree, tree_bit] The start of the tree.
  @param[key, diff_bit] New key and where the new key differs from the tree.
  @return The uninitialized leaf as data. */
@@ -436,10 +417,11 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	union PT_(leaf) *leaf;
 	size_t bit1;
 	unsigned is_right;
-	assert(key && tree && tree->bsize < TRIE_BRANCHES && tree_bit < diff_bit);
+	assert(key && tree && tree->bsize < TRIE_BRANCHES);
 	/* Modify the tree's left branches to account for the new leaf. */
 	br0 = 0, br1 = tree->bsize, lf = 0;
 	while(br0 < br1) {
+		printf("descending [%u..%u;%u]\n", br0, br1, lf);
 		branch = tree->branch + br0;
 		bit1 = tree_bit + branch->skip;
 		/* Decision bits can never be the site of a difference. */
@@ -453,12 +435,16 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	assert(tree_bit <= diff_bit && diff_bit - tree_bit <= UCHAR_MAX);
 	/* Should be the same as the first descent. */
 	if(is_right = !!TRIE_QUERY(key, diff_bit)) lf += br1 - br0 + 1;
-	/* Expand the tree to include one more leaf and branch. */
+	printf("Open redesend %s [%u..%u:%u].\n", orcify(tree), br0, br1, lf);
+	/* Make room in leaves. */
 	assert(lf <= tree->bsize + 1);
 	leaf = tree->leaf + lf;
 	memmove(leaf + 1, leaf, sizeof *leaf * ((tree->bsize + 1) - lf));
+	trie_bmp_insert(&tree->bmp, lf, 1);
+	/* Add a branch. */
 	branch = tree->branch + br0;
 	if(br0 != br1) { /* Split with existing branch. */
+		printf("Split with existing.\n");
 		assert(br0 < br1 && diff_bit + 1 <= tree_bit + branch->skip);
 		branch->skip -= diff_bit - tree_bit + 1;
 	}
@@ -466,7 +452,10 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	branch->left = is_right ? (unsigned char)(br1 - br0) : 0;
 	branch->skip = (unsigned char)(diff_bit - tree_bit);
 	tree->bsize++;
-	trie_bmp_insert(&tree->bmp, lf, 1);
+	printf("Now bsize %s is %u, returning [%u]\n",
+		orcify(tree), tree->bsize, lf);
+	leaf->as_entry.key = "uninitialized";
+	PT_(print)(tree);
 	return leaf;
 }
 
@@ -492,7 +481,7 @@ static struct PT_(entry) *PT_(add_unique)(struct T_(trie) *const trie,
 	}
 	if(tree->bsize == UCHAR_MAX) { /* Empty. */
 		tree->bsize = 0;
-		trie_bmp_clear_all(&trie->root->bmp);
+		trie_bmp_clear_all(&trie->root->bmp); /* Technically only need 1 bit. */
 		tree->leaf[0].as_entry.key = key;
 		printf("fill empty %s with \"%s\".\n", orcify(tree), key);
 		return &tree->leaf[0].as_entry;
@@ -524,7 +513,7 @@ tree:
 	{ /* Too much similarity to fit in a byte, (~32 characters.) */
 		const size_t limit = bit + UCHAR_MAX;
 		while(!TRIE_DIFF(key, sample, bit))
-			if(++bit > limit) { errno = EILSEQ; return 0; }
+			if(++bit > limit) { printf("similar\n"), errno = EILSEQ; return 0; }
 	}
 found:
 	/* Account for choosing the right leaf. */
@@ -546,12 +535,15 @@ found:
 		printf("backtrack to tree!!!\n");
 		goto tree;
 	}
+	printf("Before open tree %s(bit %lu) [%u..%u:%u].\n",
+		orcify(tree), (unsigned long)tree_bit, br0, br1, lf);
 	leaf = PT_(tree_open)(tree, tree_bit, key, bit);
 	leaf->as_entry.key = key;
 	printf("return from add_unique, tree %s [%u..%u:%u].\n",
 		orcify(tree), br0, br1, lf);
 	return &leaf->as_entry;
 catch:
+	printf("add_unique catch\n");
 	if(!errno) errno = ERANGE;
 	return 0;
 }
@@ -622,8 +614,10 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	const char *const key) {
 	assert(trie && key);
 	printf("try: %s\n", key);
+	/* fixme: This could be combined; worth it? a string could be getting into
+	 the null. */
 	return PT_(get)(trie, key) ? (printf("present\n"), TRIE_PRESENT) :
-		PT_(add_unique)(trie, key) ? (TRIE_UNIQUE) : TRIE_ERROR;
+		(printf("not there\n"), PT_(add_unique)(trie, key)) ? TRIE_UNIQUE : TRIE_ERROR;
 }
 
 #if 0
