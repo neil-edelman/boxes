@@ -215,7 +215,6 @@ static void contrived_test(void) {
 	unsigned i;
 	struct str_trie t = str_trie();
 	struct str_trie_cursor cur;
-	char fn[64];
 	printf("Contrived:\n");
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
 		printf("word: %s\n", words[i]);
