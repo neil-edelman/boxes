@@ -296,19 +296,16 @@ static const char *PT_(get)(const struct T_(trie) *const trie,
 	return !strcmp(ekey, key) ? ekey : 0;
 }
 
-#if 0
 /** Stores all `prefix` matches in `trie` in `it`. @order \O(|`prefix`|) */
 static void PT_(prefix)(struct T_(trie) *const trie,
-	const char *const prefix, struct PT_(iterator) *it) {
-	assert(trie && prefix && it);
-	PT_(match_prefix)(trie, prefix, it);
+	const char *const prefix, struct PT_(cursor) *cur) {
+	assert(trie && prefix && cur);
+	PT_(match_prefix)(trie, prefix, cur);
 	/* Make sure actually a prefix. */
-	if(it->trie && !trie_is_prefix(prefix,
-		PT_(to_key)(it->current->leaf[it->leaf]))) it->current = 0;
+	if(cur->trie && !trie_is_prefix(prefix,
+		PT_(entry_key)(&cur->tree.t0->leaf[cur->leaf.lf0].as_entry)))
+		cur->tree.t0 = 0;
 }
-#endif /*0*/
-
-
 
 /** @return The leftmost key `lf` of `tree`. */
 static const char *PT_(sample)(const struct PT_(tree) *tree, unsigned lf) {
@@ -559,6 +556,8 @@ static void PT_(clear_r)(struct PT_(tree) *const tree) {
 
 
 
+struct T_(trie_cursor) { struct PT_(cursor) _; };
+
 /** Zeroed data (not all-bits-zero) is initialized. @return An idle tree.
  @order \Theta(1) @allow */
 static struct T_(trie) T_(trie)(void)
@@ -644,6 +643,7 @@ static int T_(trie_policy)(struct T_(trie) *const trie, const PT_(entry) x,
 /** Tries to remove `key` from `trie`. @return Success. */
 static int T_(trie_remove)(struct T_(trie) *const trie,
 	const char *const key) { return PT_(remove)(trie, key); }
+#endif
 
 /** Fills `it` with iteration parameters that find values of keys that start
  with `prefix` in `trie`.
@@ -652,17 +652,22 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
  topological change to `trie`. Calling <fn:<T>trie_next> will iterate them in
  order. @order \O(\log `trie.size`) or \O(|`prefix`|) @allow */
 static void T_(trie_prefix)(struct T_(trie) *const trie,
-	const char *const prefix, struct T_(trie_iterator) *const it)
-	{ assert(it); PT_(prefix)(trie, prefix, &it->i); }
+	const char *const prefix, struct T_(trie_cursor) *const cur)
+	{ assert(cur); PT_(prefix)(trie, prefix, &cur->_); }
 
+#if 0
 /** Advances `it`. @return The previous value or null. @allow */
 static const PT_(entry) *T_(trie_next)(struct T_(trie_iterator) *const it)
 	{ return PT_(next)(&it->i); }
+#endif
+
+static size_t PT_(size_r)(const struct PT_(cursor) *const cur) {
+	return cur->leaf.lf1 - cur->leaf.lf0; /* Fixme. */
+}
 
 /** Counts the of the items in initialized `it`. @order \O(|`it`|) @allow */
-static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
-	{ return assert(it), PT_(size_r)(&it->i); }
-#endif
+static size_t T_(trie_size)(const struct T_(trie_cursor) *const cur)
+	{ return assert(cur), PT_(size_r)(&cur->_); }
 
 
 /* Box override information. */

@@ -206,6 +206,7 @@ static void test_test(void) {
 		"a", "b", "â", "foobar", "foo", "dictionary", "dictionaries" };
 	unsigned i;
 	struct str_trie t = str_trie();
+	struct str_trie_cursor cur;
 	char fn[64];
 	printf("Small:\n");
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
@@ -231,6 +232,14 @@ static void test_test(void) {
 		const char *get = str_trie_get(&t, words2[i]);
 		printf("get: %s\n", get);
 	}
+	str_trie_prefix(&t, "b", &cur);
+	printf("b: %lu\n", str_trie_size(&cur));
+	str_trie_prefix(&t, "d", &cur);
+	printf("d: %lu\n", str_trie_size(&cur));
+	str_trie_prefix(&t, "f", &cur);
+	printf("f: %lu\n", str_trie_size(&cur));
+	str_trie_prefix(&t, "q", &cur);
+	printf("q: %lu\n", str_trie_size(&cur));
 	str_trie_(&t);
 }
 
