@@ -10,7 +10,6 @@
 
 /** Works by side-effects, _ie_ fills the type with data. */
 typedef void (*PT_(action_fn))(const char **);
-/* Used in <fn:<PT>graph_choose>. */
 typedef void (*PT_(tree_file_fn))(const struct PT_(tree) *, size_t, FILE *);
 
 #ifndef TRIE_SET /* <!-- !set: Don't bother trying to test it automatically. */
@@ -19,9 +18,6 @@ typedef void (*PT_(tree_file_fn))(const struct PT_(tree) *, size_t, FILE *);
 static const PT_(action_fn) PT_(filler) = (TRIE_TEST);
 
 #endif /* set --> */
-
-/* Debug number, which is the number printed next to the graphs, _etc_. */
-static unsigned PT_(no);
 
 /** Outputs a direction string for `lf` in `tr`, `{ "", "r", "l" }`. */
 static const char *PT_(leaf_to_dir)(const struct PT_(tree) *const tr,
@@ -281,7 +277,6 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 	fprintf(fp, "digraph {\n"
 		"\tgraph [truecolor=true, bgcolor=transparent, fontname=modern];\n"
 		"\tnode [shape=none, fontname=modern];\n");
-	/*"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"*/
 	if(!trie->root) fprintf(fp, "\tidle;\n");
 	else if(trie->root->bsize == UCHAR_MAX) fprintf(fp, "\tempty;\n");
 	else callback(trie->root, 0, fp);
@@ -291,33 +286,31 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 
 /** Graphs logical `trie` output to `fn`. */
 static void PT_(graph)(const struct T_(trie) *const trie,
-	const char *const fn) {
+	const char *const fn, const size_t no) {
 	const char logic[] = "-tree", mem[] = "-mem", bits[] = "-bits";
-	char name[128], *dash, *dot;
-	size_t fn_len = strlen(fn), i, i_fn, i_name;
-	/* Whatever we're going to add to the string. */
-	if(fn_len > sizeof name - 30 - 1
-		|| !(dash = strchr(fn, '-')) || !(dot = strchr(dash, '.'))) {
-		fprintf(stderr, "Too long or doesn't '-' and then '.': <%s>.\n", fn);
+	char copy[128], *dot;
+	size_t fn_len = strlen(fn), i, i_copy;
+	if(fn_len > sizeof copy - 30/*SIZE_MAX*/ - 1 || !(dot = strrchr(fn, '.'))) {
+		fprintf(stderr, "Too long or doesn't have extension: <%s>.\n", fn);
 		assert(0);
 		return;
 	}
-	printf("graph.%u: base %s.\n", PT_(no), fn);
-	i = (size_t)(dash - fn), memcpy(name, fn, i_name = i_fn = i);
-	name[i_name++] = '-';
-	sprintf(name + i_name, "%u", PT_(no)), i_name += strlen(name + i_name);
-	i = (size_t)(dot - fn) - i_fn, memcpy(name + i_name, fn + i_fn, i),
-		i_name += i, i_fn += i;
+	printf("graph: \"%s\" %lu.\n", fn, (unsigned long)no);
+	/* Insert number. */
+	i = (size_t)(dot - fn), memcpy(copy, fn, i_copy = i);
+	copy[i_copy++] = '-';
+	sprintf(copy + i_copy, "%lu", (unsigned long)no),
+		i_copy += strlen(copy + i_copy);
 
-	memcpy(name + i_name, logic, sizeof logic - 1);
-	memcpy(name + i_name + sizeof logic - 1, fn + i_fn, fn_len - i_fn + 1);
-	PT_(graph_choose)(trie, name, &PT_(graph_tree_logic));
-	memcpy(name + i_name, mem, sizeof mem - 1);
-	memcpy(name + i_name + sizeof mem - 1, fn + i_fn, fn_len - i_fn + 1);
-	PT_(graph_choose)(trie, name, &PT_(graph_tree_mem));
-	memcpy(name + i_name, bits, sizeof bits - 1);
-	memcpy(name + i_name + sizeof bits - 1, fn + i_fn, fn_len - i_fn + 1);
-	PT_(graph_choose)(trie, name, &PT_(graph_tree_bits));
+	memcpy(copy + i_copy, bits, sizeof bits - 1);
+	memcpy(copy + i_copy + sizeof bits - 1, fn + i, fn_len - i + 1);
+	PT_(graph_choose)(trie, copy, &PT_(graph_tree_bits));
+	memcpy(copy + i_copy, logic, sizeof logic - 1);
+	memcpy(copy + i_copy + sizeof logic - 1, fn + i, fn_len - i + 1);
+	PT_(graph_choose)(trie, copy, &PT_(graph_tree_logic));
+	memcpy(copy + i_copy, mem, sizeof mem - 1);
+	memcpy(copy + i_copy + sizeof mem - 1, fn + i, fn_len - i + 1);
+	PT_(graph_choose)(trie, copy, &PT_(graph_tree_mem));
 }
 
 /** Prints `tree` to `stdout`. */
@@ -373,57 +366,57 @@ static void PT_(valid)(const struct T_(trie) *const trie) {
 
 static void PT_(test)(void) {
 	struct T_(trie) trie = T_(trie)();
-	/*struct T_(trie_cursor) it;*/
-	size_t n;
+	/*struct T_(trie_cursor) cur;*/
+	size_t n, n_unique;
 	struct { struct PT_(entry) data;
-		int is_in; } es[2000], *e;
+		int is_in; } es[2000], *es_end, *e;
 	const size_t es_size = sizeof es / sizeof *es;
 	struct PT_(entry) *data;
 
 	/* Idle. */
 	PT_(valid)(0);
 	PT_(valid)(&trie);
-	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-idle.gv");
+	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-idle.gv", 0);
 	T_(trie_)(&trie), PT_(valid)(&trie);
 	data = T_(trie_match)(&trie, ""), assert(!data);
-	data = T_(trie_get)(&trie, ""), assert(!data);
+	data = T_(trie_get)(&trie, ""), assert(!data); /* fixme */
 
 	/* Make random data. */
-	for(n = 0; n < es_size; n++) {
-		e = es + n;
+	for(e = es, es_end = e + es_size; e < es_end; e++) {
 		PT_(filler)(&e->data.key); /* FIXME */
 		e->is_in = 0;
 	}
 
-#if 0
 	/* Adding. */
-	PT_(no) = 0;
-	count = 0;
+	n_unique = 0;
 	errno = 0;
 	for(n = 0; n < es_size; n++) {
-		show = !((n + 1) & n) || n + 1 == es_size;
-		if(show) PT_(no)++;
+		int show = !((n + 1) & n) || n + 1 == es_size;
+		const char *key;
+		size_t m;
+		e = es + n;
+		key = PT_(entry_key)(&e->data);
 		if(show) printf("%lu: adding %s.\n",
-			(unsigned long)n, PT_(to_key)(es[n].data));
-		es[n].is_in = T_(trie_try)(&trie, es[n].data);
-		if(show) PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-sample.gv");
-		assert(!errno);
-		if(!es[n].is_in) {
-			if(show) printf("%lu: duplicate value.\n", (unsigned long)n);
-			continue;
+			(unsigned long)n, PT_(entry_key)(&e->data));
+		switch(T_(trie_try)(&trie, key)) {
+		case TRIE_ERROR: assert(0); return;
+		case TRIE_UNIQUE: e->is_in = 1; n_unique++; break;
+		case TRIE_PRESENT: printf("Key %s is in trie already.\n", key); break;
 		}
-		count++;
+		if(show) PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-insert.gv", n);
+		assert(!errno);
 		for(m = 0; m <= n; m++) {
 			if(!es[m].is_in) continue;
-			data = T_(trie_get)(&trie, PT_(to_key)(&es[m].data));
+			/*data = T_(trie_get)(&trie, PT_(entry_key)(&es[m].data));*/
 			/* This is O(n^2) spam.
 			printf("%lu: test get(%s) = %s\n", (unsigned long)n,
 				PT_(to_key)(&es[m].data),
 				data ? PT_(to_key)(data) : "<didn't find>");*/
-			assert(data == &es[m].data);
+			/*assert(data == &es[m].data);*/
 		}
 	}
 
+#if 0
 	/* Test prefix and size. */
 	{
 		size_t sum = !!T_(trie_get)(&trie, "");

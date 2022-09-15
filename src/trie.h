@@ -99,8 +99,8 @@ struct PT_(tree) {
 struct T_(trie) { struct PT_(tree) *root; };
 
 
-static struct PT_(entry) PT_(cons_entry)(const struct PT_(ref) ref)
-	{ return ref.tree->leaf[ref.idx].as_entry; }
+/*static struct PT_(entry) PT_(cons_entry)(const struct PT_(ref) ref)
+	{ return ref.tree->leaf[ref.idx].as_entry; }*/
 
 
 /** @return A candidate match for `key`, non-null, in `tree`, which is the
@@ -457,7 +457,7 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 }
 
 static void PT_(graph)(const struct T_(trie) *const trie,
-					   const char *const fn);
+					   const char *const fn, const size_t no);
 
 static struct PT_(entry) *PT_(add_unique)(struct T_(trie) *const trie,
 	const char *const key) {
@@ -523,11 +523,7 @@ found:
 	 matter less. */
 	if(tree->bsize == TRIE_BRANCHES) {
 		if(!PT_(split)(tree)) goto catch;
-		PT_(graph)(trie, "graph/interm-42.gv");
-		/* Start again from the top of the first tree. It probably would be
-		 faster to calculate the changes in the parameters, but that seems
-		 error-prone, hard, and why would one need something that's faster then
-		 look-up? */
+		/* Start again from the top of the first tree. */
 		bit = tree_bit;
 		printf("backtrack to tree!!!\n");
 		goto tree;
@@ -599,7 +595,7 @@ static int T_(trie_from_array)(struct T_(trie) *const trie,
  @order \O(|`key`|) @allow */
 static struct PT_(entry) *T_(trie_match)(const struct T_(trie) *const trie,
 	const char *const key)
-	{ return trie && key ? PT_(match)(trie->root, key) : 0; }
+	{ return trie && trie->root && key ? PT_(match)(trie->root, key) : 0; }
 
 /** @return Exact match for `key` in `trie` or null no such item exists. If
  either is null, returns a null entry, that is, key or key in value, null,

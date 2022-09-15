@@ -226,7 +226,7 @@ static void contrived_test(void) {
 			continue;
 		}
 		sprintf(fn, "graph/contrived-insert-%u.gv", i);
-		trie_str_graph(&t, fn);
+		trie_str_graph(&t, fn, i);
 	}
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
 		const char *get = str_trie_get(&t, words[i]);
@@ -246,7 +246,9 @@ static void contrived_test(void) {
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	contrived_test();
+	errno = 0;
+	contrived_test(), str32_pool_clear(&global_pool);
+	str_trie_test(), str32_pool_clear(&global_pool);
 	/*colour_trie_test();
 	star_trie_test();
 	str4_trie_test();
