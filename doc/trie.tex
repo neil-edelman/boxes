@@ -76,17 +76,27 @@
 
 \abstract{A data structure based on a compact radix trees is introduced, with an index on key strings bits stored semi-implicitly. B-tree methods are used to group data in a sequential conglomeration, called a tree in a trie-forest. This increases cache-coherence, and presents an efficient ordered string set or map with prefix-matching capabilities. Tests comparing it to a hash map show the structure performs for . . .}
 
-After `exp(order)` the trie becomes saturated with `n-1` links?
-
-only left and skip are descended in a binary search pattern, the leaf is the result. \code{skip} depends on the keys we are presented, but the maximum size is ideally \code{SIZE_MAX * CHAR_BITS - 1} to fit all strings that C uses. \code{left} is maximal at a graph of all left nodes, where it has `order - 2` value.
-
-thus, being cache-conscious means making left and skip really small.
-
 \section{Introduction}
 
-A trie is, ``a multiway tree structure that stores sets of strings by successively partitioning them [de la Briandais 1959; Fredkin 1960; Jacquet and Szpankowski 1991],''\cite{askitis2011redesigning} so that, ``INSTEAD OF BASING a search method on comparisons between keys, we can make use of their representation as a sequence of digits or alphabetic characters.''\cite{knuth1997sorting} It is ordered, and allows prefix range queries.
+A trie is a tree that stores partitioned sets of strings\cite{de1959file, fredkin1960trie, jacquet1991analysis, askitis2011redesigning} so that, ``instead of basing a search method on comparisons between keys, we can make use of their representation as a sequence of digits or alphabetic characters [directly].\cite{knuth1997sorting}'' It is necessarily ordered, and allows prefix range queries.
 
-In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{fredkin1960trie}(but not really). For proper ordering, we traverse with most-significant bit first and the sentinel should be less-than the other numeric value of all the other characters. We use null-terminated, Modified~\mbox{UTF-8} strings, like in Figure~\ref{star-3:bits}. Keys are sorted in lexicographic order, but not by any collation algorithm. show a diagram
+Often, only parts of the key string are important; a radix trie (compact prefix tree) skips past the parts that are not important, as \cite{askitis2007hat}. If a candidate key match is found, a full match can be made with one index from the trie.
+
+For most applications, a 256-ary trie is space-intensive; the index contains many spaces for keys that are unused. Various compression schemes are available, such as re-using a pool of memory\cite{de1959file}, reducing our encoding alphabet, or take smaller than 8-bit chunks\cite{fredkin1960trie}.
+
+We use a combination binary radix trie, first described in \cite{morrison1968patricia} as the PATRICIA automaton. Rather than being sparse, a Patricia-tree is a packed index; a full binary tree with $order - 1$ branches, (corresponding to choices of zero or one in a bit position) for $order$ leaves.
+
+In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{morrison1968patricia}. In C, a NUL-terminated string automatically has this property and is ordered correctly.
+
+Keys are sorted in lexicographic order by numerical value, not by any collation algorithm. Thus, any strings with NUL-terminated encoding with byte quanta will be suitable, most notably ASCII and Modified UTF-8.
+
+\subsection{Locality}
+
+After `exp(order)` the trie becomes saturated with `n-1` links? no, every branch could be a link.
+
+only left and skip are descended in a binary search pattern, the leaf is the result. \code{skip} depends on the keys we are presented, but the maximum size is ideally \code{SIZE\_MAX * CHAR\_BITS - 1} to fit all strings that C uses. \code{left} is maximal at a graph of all left nodes, where it has `order - 2` value.
+
+thus, being cache-conscious means making left and skip really small.
 
 % star-3
 %\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
@@ -342,6 +352,8 @@ In practice, we talk about a string always terminated by a sentinel; this is an 
 
 A compact representation is a Patrica trie\cite{morrison1968patricia}: that is, a binary radix tree and skip values when bits offer no difference. In Figure~\ref{star-3:logic}, the branches indicate a \code{do not care} for all the skipped bits before, corresponding to Figure~\ref{star-3:bits} that offer no delineation. If a query might have a difference in the skipped values, one could also check the final result of a query for agreement with the found value.
 
+The leaves are lexicographically in-order, but the branches are better served pre-order. That is, reading from low to high, one must test if the current bit is zero or one, and that corresponds directly to the branch going left or right, respectively. An accumulator, $leaf$, is incremented based on this decision until end of the tree.
+
 instead of adding in one big trie, where the data type presents a limit of how big it is, we have pointers to sub-blocks. This is seen in ... This allows us to shrink the data-type significantly; for a non-empty complete binary tree that has `n` leaves (order `n`), it has `n - 1` the internal nodes, or branches. The maximum that the left branch count can be is when the right node of the root is a leaf, that is `n - 2`. If we set this left-branch maximum to the maximum of the data type, we can use all the range. Practically, we set it to 254 instead of 255; the branches take up 255, and the branch size number is 1, for alignment.
 
 This is a fixed-maximum size trie within a B-tree. Because of overlapping terminology, some care must be used in describing the structure. We use the notion that a trie is a forest of trees. In B-tree terminology, nodes, are now trees, such that a complete path through the forest always visits the same number of trees. However, since it's always the root instead of the middle item, we are not guaranteed fullness. Depending on the implementation, a complete path might be truncated; for example, \code{Sol} might require less than \code{Betelgeuse}, because it's shorter.[ref b-tree]
@@ -389,7 +401,7 @@ or
 leaf tree: bsize, ?, branch[o-1], leaf[o] { 32:skip, 32:height, 64:root / 64:data }
 $
 
-ASCII and other encodings don't prioritize splitting the glyphs evenly between bits, therefore with a uniform distribution of strings, it's very unlikely that the trie will be balanced. On our trie, this results in wasted space.
+ASCII and other encodings don't prioritize splitting the glyphs evenly between bits, therefore with a uniform distribution of strings, it's very unlikely that the trie will be balanced. On our trie, this results in wasted space. <- now doesn't
 
 \bibliography{trie}
 

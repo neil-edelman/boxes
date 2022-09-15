@@ -238,8 +238,8 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	test_test();
-	/*contrived_str_test();
-	colour_trie_test();
+	/*contrived_str_test();*/
+	/*colour_trie_test();
 	star_trie_test();
 	str4_trie_test();
 	keyval_trie_test();*/

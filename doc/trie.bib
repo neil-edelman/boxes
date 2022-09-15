@@ -1,23 +1,4 @@
-@article{shannon1948mathematical,
-  title={A mathematical theory of communication},
-  author={Shannon, Claude Elwood},
-  journal={The Bell system technical journal},
-  volume={27},
-  number={3},
-  pages={379--423},
-  year={1948},
-  publisher={Nokia Bell Labs}
-}
-@article{fredkin1960trie,
-  title={Trie memory},
-  author={Fredkin, Edward},
-  journal={Communications of the ACM},
-  volume={3},
-  number={9},
-  pages={490--499},
-  year={1960},
-  publisher={ACM New York, NY, USA}
-}
+% uses automaton for a truly horrific encoding (CDC 3600 computer and UNIVAC 1108)
 @article{morrison1968patricia,
   title={PATRICIA—practical algorithm to retrieve information coded in alphanumeric},
   author={Morrison, Donald R},
@@ -28,12 +9,84 @@
   year={1968},
   publisher={ACM New York, NY, USA}
 }
+% this uses two stupid encodings that compete, used in Fortran
+@inproceedings{de1959file,
+  title={File searching using variable length keys},
+  author={De La Briandais, Rene},
+  booktitle={Papers presented at the the March 3-5, 1959, western joint computer conference},
+  pages={295--298},
+  year={1959}
+}
+% this also uses tables, but introduces binary
+% "Since the smallest usable number is two, binary trie's
+% occupy a fundamental position." Uses non-standard encoding
+% instead of skip to save space (binary non-radix tree)
+@article{fredkin1960trie,
+  title={Trie memory},
+  author={Fredkin, Edward},
+  journal={Communications of the ACM},
+  volume={3},
+  number={9},
+  pages={490--499},
+  year={1960},
+  publisher={ACM New York, NY, USA}
+}
+% inscutable math (not this)
+@article{szpankowski1991suffix,
+  title={Suffix trees revisited:(un) expected asymptotic behaviors},
+  author={Szpankowski, Wojciech},
+  year={1991}
+}
+% this: Markov tends toward normal
+@article{jacquet1991analysis,
+  title={Analysis of digital tries with Markovian dependency},
+  author={Jacquet, Philippe and Szpankowski, Wojciech},
+  journal={IEEE Transactions on Information Theory},
+  volume={37},
+  number={5},
+  pages={1470--1475},
+  year={1991},
+  publisher={IEEE}
+}
+% a multiway tree structure that stores sets of strings by successively partitioning them [de la Briandais 1959; Fredkin 1960; Jacquet and Szpankowski 1991]. Burst-trees.
+@article{askitis2011redesigning,
+  title={Redesigning the string hash table, burst trie, and bst to exploit cache},
+  author={Askitis, Nikolas and Zobel, Justin},
+  journal={Journal of Experimental Algorithmics (JEA)},
+  volume={15},
+  pages={1--1},
+  year={2011},
+  publisher={ACM New York, NY, USA}
+}
+% log n
+@article{shannon1948mathematical,
+  title={A mathematical theory of communication},
+  author={Shannon, Claude Elwood},
+  journal={The Bell system technical journal},
+  volume={27},
+  number={3},
+  pages={379--423},
+  year={1948},
+  publisher={Nokia Bell Labs}
+}
+% INSTEAD OF BASING a search method on comparisons between keys, we can make use of their representation as a sequence of digits or alphabetic characters.
 @misc{knuth1997sorting,
   title={Sorting and Searching. Third edn. Volume 3 of The art of computer programming},
   author={Knuth, DE},
   year={1997},
   publisher={Addison-Wesley, Reading, Massachusetts}
 }
+% hat-trie
+@inproceedings{askitis2007hat,
+  title={HAT-trie: a cache-conscious trie-based data structure for strings},
+  author={Askitis, Nikolas and Sinha, Ranjan},
+  booktitle={Proceedings of the thirtieth Australasian conference on Computer science-Volume 62},
+  pages={97--105},
+  year={2007}
+}
+
+
+
 @misc{crochemore2009trie,
   title={Trie},
   author={Crochemore, Maxime and Lecroq, Thierry},
@@ -58,15 +111,6 @@
   pages={695--721},
   year={1992},
   publisher={Wiley Online Library}
-}
-@article{askitis2011redesigning,
-  title={Redesigning the string hash table, burst trie, and bst to exploit cache},
-  author={Askitis, Nikolas and Zobel, Justin},
-  journal={Journal of Experimental Algorithmics (JEA)},
-  volume={15},
-  pages={1--1},
-  year={2011},
-  publisher={ACM New York, NY, USA}
 }
 @inproceedings{litwin1981trie,
   title={Trie hashing},
