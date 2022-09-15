@@ -29,7 +29,12 @@ static void str32_filler(const char **const pointer) {
 #define TRIE_TEST &str32_filler
 #include "../src/trie.h"
 
-static void str_filler(const char **c) { assert(c != 0); }
+static void str_filler(const char **str_p) {
+	struct str32 *const backing = str32_pool_new(&global_pool);
+	assert(backing); /* <- Oy. */
+	orcish(backing->str, sizeof backing->str);
+	*str_p = backing->str;
+}
 
 
 
@@ -200,36 +205,31 @@ static void contrived_str_test(void) {
 }
 #endif
 
-static void test_test(void) {
-	const char *words[] = { "foo", "bar", "baz", "quxx" };
-	const char *words2[] = { "a", "b", "c", "ba", "bb", "", "A", "Z", "z",
-		"a", "b", "â", "foobar", "foo", "dictionary", "dictionaries" };
+static void contrived_test(void) {
+	const char *words[] = {
+		"foo", "bar", "baz", "quxx",
+		"a", "b", "c", "ba", "bb", "", "A", "Z", "z",
+		"a", "b", "â",
+		"foobar", "foo", "dictionary", "dictionaries"
+	};
 	unsigned i;
 	struct str_trie t = str_trie();
 	struct str_trie_cursor cur;
 	char fn[64];
-	printf("Small:\n");
+	printf("Contrived:\n");
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
 		printf("word: %s\n", words[i]);
-		if(!str_trie_try(&t, words[i])) assert(0);
-		sprintf(fn, "graph/test-%u.gv", i);
-		trie_str_graph(&t, fn);
-	}
-	str_trie_clear(&t);
-	printf("More complex:\n");
-	for(i = 0; i < sizeof words2 / sizeof *words2; i++) {
-		printf("word: %s\n", words2[i]);
-		switch(str_trie_try(&t, words2[i])) {
+		switch(str_trie_try(&t, words[i])) {
 		case TRIE_ERROR: assert(0); break;
 		case TRIE_UNIQUE: break;
-		case TRIE_PRESENT: printf("\"%s\" already there.\n", words2[i]);
+		case TRIE_PRESENT: printf("\"%s\" already there.\n", words[i]);
 			continue;
 		}
-		sprintf(fn, "graph/test2-%u.gv", i);
+		sprintf(fn, "graph/contrived-insert-%u.gv", i);
 		trie_str_graph(&t, fn);
 	}
-	for(i = 0; i < sizeof words2 / sizeof *words2; i++) {
-		const char *get = str_trie_get(&t, words2[i]);
+	for(i = 0; i < sizeof words / sizeof *words; i++) {
+		const char *get = str_trie_get(&t, words[i]);
 		printf("get: %s\n", get);
 	}
 	str_trie_prefix(&t, "b", &cur);
@@ -246,11 +246,11 @@ static void test_test(void) {
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	test_test();
-	/*contrived_str_test();*/
+	contrived_test();
 	/*colour_trie_test();
 	star_trie_test();
 	str4_trie_test();
 	keyval_trie_test();*/
+	str32_pool_(&global_pool);
 	return EXIT_SUCCESS;
 }

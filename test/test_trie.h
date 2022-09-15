@@ -353,19 +353,16 @@ static void PT_(valid_tree)(const struct PT_(tree) *const tree) {
 	assert(tree && tree->bsize <= TRIE_BRANCHES);
 	for(i = 0; i < tree->bsize; i++)
 		assert(tree->branch[i].left < tree->bsize - 1 - i);
-#if 0
 	for(i = 0; i <= tree->bsize; i++) {
-		if(trie_bmp_test(&tree->is_child, i)) {
-			PT_(valid_tree)(tree->leaf[i].child);
+		if(trie_bmp_test(&tree->bmp, i)) {
+			PT_(valid_tree)(tree->leaf[i].as_link);
 		} else {
 			const char *str2;
-			assert(tree->leaf[i].data);
-			str2 = PT_(to_key)(tree->leaf[i].data);
+			str2 = PT_(entry_key)(&tree->leaf[i].as_entry);
 			if(str1) cmp = strcmp(str1, str2), assert(cmp < 0);
 			str1 = str2;
 		}
 	}
-#endif
 }
 
 /** Makes sure the `trie` is in a valid state. */

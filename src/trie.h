@@ -615,8 +615,8 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	printf("try: %s\n", key);
 	/* fixme: This could be combined; worth it? a string could be getting into
 	 the null. */
-	return PT_(get)(trie, key) ? (printf("present\n"), TRIE_PRESENT) :
-		(printf("not there\n"), PT_(add_unique)(trie, key)) ? TRIE_UNIQUE : TRIE_ERROR;
+	return PT_(get)(trie, key) ? TRIE_PRESENT : PT_(add_unique)(trie, key)
+		? TRIE_UNIQUE : TRIE_ERROR;
 }
 
 #if 0
@@ -637,7 +637,7 @@ static int T_(trie_put)(struct T_(trie) *const trie, const PT_(entry) x,
  returns true. If null, it is semantically equivalent to <fn:<T>trie_put>.
  @return Success. @throws[realloc, ERANGE] @order \O(|`key`|) @allow */
 static int T_(trie_policy)(struct T_(trie) *const trie, const PT_(entry) x,
-	PT_(entry) */*const*/ eject, const PT_(replace_fn) replace)
+	PT_(entry) *eject, const PT_(replace_fn) replace)
 	{ return assert(trie && x), PT_(put)(trie, x, &eject, replace); }
 
 /** Tries to remove `key` from `trie`. @return Success. */
