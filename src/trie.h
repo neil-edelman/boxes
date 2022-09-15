@@ -418,7 +418,6 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	/* Modify the tree's left branches to account for the new leaf. */
 	br0 = 0, br1 = tree->bsize, lf = 0;
 	while(br0 < br1) {
-		printf("descending [%u..%u;%u]\n", br0, br1, lf);
 		branch = tree->branch + br0;
 		bit1 = tree_bit + branch->skip;
 		/* Decision bits can never be the site of a difference. */
@@ -432,7 +431,6 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	assert(tree_bit <= diff_bit && diff_bit - tree_bit <= UCHAR_MAX);
 	/* Should be the same as the first descent. */
 	if(is_right = !!TRIE_QUERY(key, diff_bit)) lf += br1 - br0 + 1;
-	printf("Open redesend %s [%u..%u:%u].\n", orcify(tree), br0, br1, lf);
 	/* Make room in leaves. */
 	assert(lf <= tree->bsize + 1);
 	leaf = tree->leaf + lf;
@@ -441,7 +439,6 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	/* Add a branch. */
 	branch = tree->branch + br0;
 	if(br0 != br1) { /* Split with existing branch. */
-		printf("Split with existing.\n");
 		assert(br0 < br1 && diff_bit + 1 <= tree_bit + branch->skip);
 		branch->skip -= diff_bit - tree_bit + 1;
 	}
@@ -449,15 +446,10 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	branch->left = is_right ? (unsigned char)(br1 - br0) : 0;
 	branch->skip = (unsigned char)(diff_bit - tree_bit);
 	tree->bsize++;
-	printf("Now bsize %s is %u, returning [%u]\n",
-		orcify(tree), tree->bsize, lf);
 	leaf->as_entry.key = "uninitialized";
 	PT_(print)(tree);
 	return leaf;
 }
-
-static void PT_(graph)(const struct T_(trie) *const trie,
-					   const char *const fn, const size_t no);
 
 static struct PT_(entry) *PT_(add_unique)(struct T_(trie) *const trie,
 	const char *const key) {
@@ -469,18 +461,15 @@ static struct PT_(entry) *PT_(add_unique)(struct T_(trie) *const trie,
 	union PT_(leaf) *leaf;
 	assert(trie && key);
 
-	printf("unique: adding \"%s\".\n", key);
 	if(!(tree = trie->root)) { /* Idle. */
 		if(!(tree = malloc(sizeof *tree))) goto catch;
 		tree->bsize = UCHAR_MAX;
 		trie->root = tree;
-		printf("add empty tree %s.\n", orcify(tree));
 	}
 	if(tree->bsize == UCHAR_MAX) { /* Empty. */
 		tree->bsize = 0;
 		trie_bmp_clear_all(&trie->root->bmp); /* Technically only need 1 bit. */
 		tree->leaf[0].as_entry.key = key;
-		printf("fill empty %s with \"%s\".\n", orcify(tree), key);
 		return &tree->leaf[0].as_entry;
 	}
 	/* Find the first bit not in the tree. */
@@ -489,8 +478,6 @@ static struct PT_(entry) *PT_(add_unique)(struct T_(trie) *const trie,
 tree:
 		br0 = 0, br1 = tree->bsize, lf = 0;
 		sample = PT_(sample)(tree, 0);
-		printf("add: find, tree %s:%lu, sample %s.\n",
-			orcify(tree), tree_bit, sample);
 		while(br0 < br1) {
 			const struct trie_branch *const branch = tree->branch + br0;
 			const size_t branch_bit = bit + branch->skip;
@@ -510,7 +497,7 @@ tree:
 	{ /* Too much similarity to fit in a byte, (~32 characters.) */
 		const size_t limit = bit + UCHAR_MAX;
 		while(!TRIE_DIFF(key, sample, bit))
-			if(++bit > limit) { printf("similar\n"), errno = EILSEQ; return 0; }
+			if(++bit > limit) { errno = EILSEQ; return 0; }
 	}
 found:
 	/* Account for choosing the right leaf. */
@@ -525,15 +512,10 @@ found:
 		if(!PT_(split)(tree)) goto catch;
 		/* Start again from the top of the first tree. */
 		bit = tree_bit;
-		printf("backtrack to tree!!!\n");
 		goto tree;
 	}
-	printf("Before open tree %s(bit %lu) [%u..%u:%u].\n",
-		orcify(tree), (unsigned long)tree_bit, br0, br1, lf);
 	leaf = PT_(tree_open)(tree, tree_bit, key, bit);
 	leaf->as_entry.key = key;
-	printf("return from add_unique, tree %s [%u..%u:%u].\n",
-		orcify(tree), br0, br1, lf);
 	return &leaf->as_entry;
 catch:
 	printf("add_unique catch\n");

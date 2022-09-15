@@ -225,8 +225,7 @@ static void contrived_test(void) {
 		case TRIE_PRESENT: printf("\"%s\" already there.\n", words[i]);
 			continue;
 		}
-		sprintf(fn, "graph/contrived-insert-%u.gv", i);
-		trie_str_graph(&t, fn, i);
+		trie_str_graph(&t, "graph/contrived-insert.gv", i);
 	}
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
 		const char *get = str_trie_get(&t, words[i]);
