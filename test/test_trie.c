@@ -37,13 +37,17 @@ static void int_filler(const char **const pointer, unsigned *const value) {
 	assert(value);
 	*value = 42;
 }
-/* An int value associated with string. */
+/* An unsigned value associated with string as a map. */
 #define TRIE_NAME int
 #define TRIE_VALUE unsigned
 #define TRIE_TO_STRING
 #define TRIE_TEST &int_filler
 #include "../src/trie.h"
 
+
+/* A structure including a string that's used as the key. */
+
+/* A structure pointer that has a string in it that is used as the key. */
 
 #if 0
 
@@ -252,8 +256,8 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	contrived_test(), str32_pool_clear(&global_pool);
-	str_trie_test(), str32_pool_clear(&global_pool);
-	int_trie_test(), str32_pool_clear(&global_pool);
+	str_trie_test(), str32_pool_clear(&global_pool); /* key set */
+	int_trie_test(), str32_pool_clear(&global_pool); /* key map */
 	/*colour_trie_test();
 	star_trie_test();
 	str4_trie_test();
