@@ -47,7 +47,10 @@ static void int_filler(const char **const pointer, unsigned *const value) {
 
 /* A structure including a string that's used as the key. */
 
-/* A structure pointer that has a string in it that is used as the key. */
+/* A structure pointer that has a string copy that is used as the key. Almost
+ always `TRIE_KEY_SIZE` probably want a pointer `TRIE_VALUE` to avoid excessive
+ copying and wasted space for links because the key is part of the value, not
+ pointed-to. */
 
 #if 0
 
