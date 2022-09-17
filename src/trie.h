@@ -80,10 +80,33 @@ static int trie_is_prefix(const char *a, const char *b) {
 #if TRIE_TRAITS == 0 /* <!-- base trie */
 
 
-struct PT_(entry) { const char *key; };
+#ifndef TRIE_VALUE /* <!-- key set */
 
+struct PT_(entry) { const char *key; };
 static const char *PT_(entry_key)(const struct PT_(entry) *const e)
 	{ return e->key; }
+
+#elif !defined(TRIE_KEY_IN_VALUE) /* ket set --><!-- key map */
+
+/** On `TRIE_VALUE`. */
+typedef TRIE_VALUE PT_(value);
+struct PT_(entry) { const char *key; PT_(value) value; };
+static const char *PT_(entry_key)(const struct PT_(entry) *const e)
+	{ return e->key; }
+
+#else /* key map --><!-- custom */
+
+typedef TRIE_VALUE PT_(value);
+/** If `TRIE_KEY_IN_VALUE`, extracts the key from a `TRIE_VALUE`. */
+typedef const char *(*PT_(key_fn))(const PT_(value));
+/* Verify `TRIE_KEY_IN_VALUE` is a function satisfying <typedef:<PT>key_fn>. */
+static PT_(key_fn) PT_(to_key) = (TRIE_KEY_IN_VALUE);
+struct PT_(entry) { PT_(value) value; };
+static const char *PT_(entry_key)(const struct PT_(entry) *const e)
+	{ return PT_(to_key)(e->value); }
+
+#endif /* custom --> */
+
 
 
 struct PT_(tree);
@@ -400,9 +423,7 @@ static int PT_(split)(struct PT_(tree) *const tree) {
 	return 1;
 }
 
-static void PT_(print)(const struct PT_(tree) *const tree);
-
-/** Open up an uninitialized spot in a non-full `tree`. Used in
+/** Open up an uninitialized space in a non-full `tree`. Used in
  <fn:<PT>add_unique>.
  @param[tree, tree_bit] The start of the tree.
  @param[key, diff_bit] New key and where the new key differs from the tree.
@@ -446,8 +467,7 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	branch->left = is_right ? (unsigned char)(br1 - br0) : 0;
 	branch->skip = (unsigned char)(diff_bit - tree_bit);
 	tree->bsize++;
-	leaf->as_entry.key = "uninitialized";
-	PT_(print)(tree);
+	/* leaf->as_entry.key = "uninitialized"; */
 	return leaf;
 }
 
@@ -460,17 +480,16 @@ static struct PT_(entry) *PT_(add_unique)(struct T_(trie) *const trie,
 	const char *sample;
 	union PT_(leaf) *leaf;
 	assert(trie && key);
-
 	if(!(tree = trie->root)) { /* Idle. */
 		if(!(tree = malloc(sizeof *tree))) goto catch;
 		tree->bsize = UCHAR_MAX;
 		trie->root = tree;
-	}
+	} /* Fall-through. */
 	if(tree->bsize == UCHAR_MAX) { /* Empty. */
 		tree->bsize = 0;
 		trie_bmp_clear_all(&trie->root->bmp); /* Technically only need 1 bit. */
-		tree->leaf[0].as_entry.key = key;
-		return &tree->leaf[0].as_entry;
+		leaf = tree->leaf + 0;
+		goto assign;
 	}
 	/* Find the first bit not in the tree. */
 	for(tree_bit = 0, bit = 0, byte.cur = 0; ;
@@ -502,23 +521,21 @@ tree:
 found:
 	/* Account for choosing the right leaf. */
 	if(!!TRIE_QUERY(key, bit)) lf += br1 - br0 + 1;
-
-	assert(tree->bsize <= TRIE_BRANCHES);
 	/* Split. This is inefficient in that it moves data one time for split and
 	 a subset of the data a second time for insert. It also is agnostic of the
 	 key that we are going to put in. Having `TREE_ORDER` be more makes this
 	 matter less. */
+	assert(tree->bsize <= TRIE_BRANCHES);
 	if(tree->bsize == TRIE_BRANCHES) {
 		if(!PT_(split)(tree)) goto catch;
-		/* Start again from the top of the first tree. */
 		bit = tree_bit;
-		goto tree;
+		goto tree; /* Start again from the top of the first tree. */
 	}
-	leaf = PT_(tree_open)(tree, tree_bit, key, bit);
+	leaf = PT_(tree_open)(tree, tree_bit, key, bit); /* Tree is not full. */
+assign:
 	leaf->as_entry.key = key;
 	return &leaf->as_entry;
 catch:
-	printf("add_unique catch\n");
 	if(!errno) errno = ERANGE;
 	return 0;
 }
