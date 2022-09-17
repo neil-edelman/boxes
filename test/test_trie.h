@@ -8,8 +8,15 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
+#ifndef TRIE_VALUE /* <!-- key set */
 /** Works by side-effects, _ie_ fills the type with data. */
 typedef void (*PT_(action_fn))(const char **);
+#elif !defined(TRIE_KEY_IN_VALUE) /* ket set --><!-- key map */
+typedef void (*PT_(action_fn))(const char **, PT_(value) *);
+#else /* key map --><!-- custom */
+#error
+#endif /* custom --> */
+
 typedef void (*PT_(tree_file_fn))(const struct PT_(tree) *, size_t, FILE *);
 
 #ifndef TRIE_SET /* <!-- !set: Don't bother trying to test it automatically. */
@@ -313,6 +320,7 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 	PT_(graph_choose)(trie, copy, &PT_(graph_tree_mem));
 }
 
+#if 0
 /** Prints `tree` to `stdout`. */
 static void PT_(print)(const struct PT_(tree) *const tree) {
 	const struct trie_branch *branch;
@@ -334,6 +342,7 @@ static void PT_(print)(const struct PT_(tree) *const tree) {
 			: PT_(entry_key)(&tree->leaf[i].as_entry));
 	printf("\n");
 }
+#endif
 
 #ifndef TRIE_DEFAULT_TEST /* <!-- !set: a set of strings is not testable in the
  automatic framework, but convenient to have graphs for manual tests. */
@@ -383,7 +392,13 @@ static void PT_(test)(void) {
 
 	/* Make random data. */
 	for(e = es, es_end = e + es_size; e < es_end; e++) {
-		PT_(filler)(&e->data.key); /* FIXME */
+#ifndef TRIE_VALUE /* <!-- key set */
+		PT_(filler)(&e->data.key);
+#elif !defined(TRIE_KEY_IN_VALUE) /* ket set --><!-- key map */
+		PT_(filler)(&e->data.key, &e->data.value);
+#else /* key map --><!-- custom */
+#error
+#endif /* custom --> */
 		e->is_in = 0;
 	}
 
@@ -414,6 +429,19 @@ static void PT_(test)(void) {
 				data ? PT_(to_key)(data) : "<didn't find>");*/
 			/*assert(data == &es[m].data);*/
 		}
+	}
+
+	{
+		/* Not implemented yet . . . again.
+		size_t before, after;
+		struct T_(trie_cursor) cur = T_(trie_cursor)(&trie);
+		before = T_(trie_size)(&trie);*/
+		assert(trie.root && trie.root->bsize != UCHAR_MAX);
+		T_(trie_clear)(&trie);
+		assert(trie.root->bsize == UCHAR_MAX);
+		/*after = str_trie_size(&trie);
+		printf("Testing clear: %lu -> %lu.\n", before, after);
+		assert(!after);*/
 	}
 
 #if 0

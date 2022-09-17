@@ -7,6 +7,7 @@
 #include <time.h>   /* clock time */
 #include "orcish.h"
 
+
 /** For testing -- have a pool of random names. */
 struct str32 { char str[32]; };
 #define POOL_NAME str32
@@ -15,28 +16,33 @@ struct str32 { char str[32]; };
 
 static struct str32_pool global_pool;
 
+
 /** Generate a random name and assign it to `pointer`. */
 static void str32_filler(const char **const pointer) {
-	struct str32 *s32 = str32_pool_new(&global_pool);
-	assert(s32 && pointer);
-	orcish(s32->str, sizeof s32->str);
-	*pointer = s32->str;
+	struct str32 *backing = str32_pool_new(&global_pool);
+	assert(backing && pointer);
+	orcish(backing->str, sizeof backing->str);
+	*pointer = backing->str;
 }
-
-/* A set of strings. */
+/* A set of strings. Really don't have any parameters here. */
 #define TRIE_NAME str
 #define TRIE_TO_STRING
 #define TRIE_TEST &str32_filler
 #include "../src/trie.h"
 
-static void str_filler(const char **str_p) {
-	struct str32 *const backing = str32_pool_new(&global_pool);
-	assert(backing); /* <- Oy. */
-	orcish(backing->str, sizeof backing->str);
-	*str_p = backing->str;
+
+/** Generate a `pointer` and `value`. */
+static void int_filler(const char **const pointer, unsigned *const value) {
+	str32_filler(pointer);
+	assert(value);
+	*value = 42;
 }
-
-
+/* An int value associated with string. */
+#define TRIE_NAME int
+#define TRIE_VALUE unsigned
+#define TRIE_TO_STRING
+#define TRIE_TEST &int_filler
+#include "../src/trie.h"
 
 
 #if 0
@@ -247,6 +253,7 @@ int main(void) {
 	errno = 0;
 	contrived_test(), str32_pool_clear(&global_pool);
 	str_trie_test(), str32_pool_clear(&global_pool);
+	int_trie_test(), str32_pool_clear(&global_pool);
 	/*colour_trie_test();
 	star_trie_test();
 	str4_trie_test();

@@ -85,6 +85,8 @@ static int trie_is_prefix(const char *a, const char *b) {
 struct PT_(entry) { const char *key; };
 static const char *PT_(entry_key)(const struct PT_(entry) *const e)
 	{ return e->key; }
+static int PT_(assign_key)(struct PT_(entry) *const e,
+	const char *const key) { return e->key = key, 1; }
 
 #elif !defined(TRIE_KEY_IN_VALUE) /* ket set --><!-- key map */
 
@@ -93,6 +95,8 @@ typedef TRIE_VALUE PT_(value);
 struct PT_(entry) { const char *key; PT_(value) value; };
 static const char *PT_(entry_key)(const struct PT_(entry) *const e)
 	{ return e->key; }
+static int PT_(assign_key)(struct PT_(entry) *const e,
+	const char *const key) { return e->key = key, 1; }
 
 #else /* key map --><!-- custom */
 
@@ -104,6 +108,15 @@ static PT_(key_fn) PT_(to_key) = (TRIE_KEY_IN_VALUE);
 struct PT_(entry) { PT_(value) value; };
 static const char *PT_(entry_key)(const struct PT_(entry) *const e)
 	{ return PT_(to_key)(e->value); }
+#ifndef TRIE_KEY_SIZE /* <!-- !array */
+static int PT_(assign_key)(struct PT_(entry) *const e,
+	const char *const key) {
+	const char *const internal = PT_(to_key)(e->value);
+	return e->key = key, 1; }
+#else /* !array --><!-- array */
+static int PT_(assign_key)(struct PT_(entry) *const e,
+	const char *const key) { assert(0); }
+#endif /* array --> */
 
 #endif /* custom --> */
 
@@ -670,6 +683,13 @@ static size_t T_(trie_size)(const struct T_(trie_cursor) *const cur)
 #define BOX struct T_(trie)
 
 
+/* cursor... */
+
+
+#ifdef TRIE_TEST /* <!-- test */
+#include "../test/test_trie.h" /** \include */
+#endif /* test --> */
+
 #ifdef TRIE_TO_STRING /* <!-- str: _sic_, have a natural string. */
 #define STR_(n) TRIE_CAT(T_(trie), n)
 /** Uses the natural `a` -> `z` that is defined by `TRIE_KEY_IN_VALUE`.
@@ -681,13 +701,12 @@ static void PT_(to_string)(const struct PT_(entry) *const e,
 #define TO_STRING_LEFT '{'
 #define TO_STRING_RIGHT '}'
 #include "to_string.h" /** \include */
+#ifdef TRIE_TEST /* <!-- expect: nothing is forward-declared. */
+#undef TRIE_TEST
+#endif /* expect --> */
 #undef STR_
 #undef TRIE_TO_STRING
 #endif /* str --> */
-
-#ifdef TRIE_TEST /* <!-- test */
-#include "../test/test_trie.h" /** \include */
-#endif /* test --> */
 
 /*static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
@@ -711,16 +730,21 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }*/
 #endif /* traits --> */
 
 
-
 #ifdef TRIE_EXPECT_TRAIT /* <!-- trait */
 #undef TRIE_EXPECT_TRAIT
 #else /* trait --><!-- !trait */
+#ifdef TRIE_TEST
+#error No TRIE_TO_STRING trait defined for TRIE_TEST.
+#endif
 #undef TRIE_NAME
 #ifdef TRIE_VALUE
 #undef TRIE_VALUE
 #endif
 #ifdef TRIE_KEY_IN_VALUE
 #undef TRIE_KEY_IN_VALUE
+#endif
+#ifdef TRIE_KEY_SIZE
+#undef TRIE_KEY_SIZE
 #endif
 #undef BOX_
 #undef BOX
