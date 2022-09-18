@@ -1,3 +1,14 @@
+/**
+ TRIE_NAME: required part of keyword
+ TRIE_VALUE: optional, makes it a map from const char * -> <PT>value
+ TRIE_TO_STRING: optional no arguments, uses keys
+ TRIE_DEFAULT_NAME, TRIE_DEFAULT: get or default set default
+ TRIE_KEY_IN_VALUE: optional function that chooses key from <PT>value; now key
+ is not there; requires TRIE_VALUE
+ TRIE_KEY_SIZE: size of array; instead of pointer storage, this copies up to
+ the size in characters (including the null-byte) to TRIE_KEY_IN_VALUE.
+ (Instead of a `struct` containing `const char *key`, it contains,
+ `char key[TRIE_KEY_IN_VALUE]`.) */
 #ifndef TRIE_NAME
 #error Name TRIE_NAME undefined.
 #endif
@@ -16,7 +27,12 @@
 #if defined(TRIE_TEST) && !defined(TRIE_TO_STRING)
 #error TRIE_TEST requires TRIE_TO_STRING.
 #endif
-
+#if defined(TRIE_KEY_IN_VALUE) && !defined(TRIE_VALUE)
+#error TRIE_KEY_IN_VALUE requires TRIE_VALUE.
+#endif
+#if defined(TRIE_KEY_SIZE) && !defined(TRIE_KEY_IN_VALUE)
+#error TRIE_KEY_SIZE requires TRIE_KEY_IN_VALUE.
+#endif
 
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
@@ -101,21 +117,23 @@ static int PT_(assign_key)(struct PT_(entry) *const e,
 #else /* key map --><!-- custom */
 
 typedef TRIE_VALUE PT_(value);
-/** If `TRIE_KEY_IN_VALUE`, extracts the key from a `TRIE_VALUE`. */
-typedef const char *(*PT_(key_fn))(const PT_(value));
+#ifndef TRIE_KEY_SIZE /* <!-- !array */
+/** Extracts the key from a `TRIE_VALUE`. */
+typedef const char *(*PT_(key_fn))(const PT_(value) *);
 /* Verify `TRIE_KEY_IN_VALUE` is a function satisfying <typedef:<PT>key_fn>. */
-static PT_(key_fn) PT_(to_key) = (TRIE_KEY_IN_VALUE);
+static PT_(key_fn) PT_(key_in_value) = (TRIE_KEY_IN_VALUE);
+/** If `TRIE_KEY_IN_VALUE` but not `TRIE_KEY_SIZE`, extracts the offset of the
+ key from a `TRIE_VALUE`. */
+typedef const char **(*PT_(key_offset_fn))(PT_(value) *);
+/* Verify `TRIE_KEY_IN_VALUE` is a function satisfying <typedef:<PT>key_fn>. */
+static PT_(key_offset_fn) PT_(key_in_value) = (TRIE_KEY_IN_VALUE);
 struct PT_(entry) { PT_(value) value; };
 static const char *PT_(entry_key)(const struct PT_(entry) *const e)
-	{ return PT_(to_key)(e->value); }
-#ifndef TRIE_KEY_SIZE /* <!-- !array */
+	{ return *PT_(key_in_value)(&e->value); }
 static int PT_(assign_key)(struct PT_(entry) *const e,
-	const char *const key) {
-	const char *const internal = PT_(to_key)(e->value);
-	return e->key = key, 1; }
+	const char *const key) { return *PT_(key_in_value)(&e->value) = key, 1; }
 #else /* !array --><!-- array */
-static int PT_(assign_key)(struct PT_(entry) *const e,
-	const char *const key) { assert(0); }
+#error Implementation
 #endif /* array --> */
 
 #endif /* custom --> */
@@ -546,7 +564,8 @@ found:
 	}
 	leaf = PT_(tree_open)(tree, tree_bit, key, bit); /* Tree is not full. */
 assign:
-	leaf->as_entry.key = key;
+	PT_(assign_key)(&leaf->as_entry, key);
+	//leaf->as_entry.key = key;
 	return &leaf->as_entry;
 catch:
 	if(!errno) errno = ERANGE;

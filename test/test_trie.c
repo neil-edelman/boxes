@@ -45,27 +45,23 @@ static void int_filler(const char **const pointer, unsigned *const value) {
 #include "../src/trie.h"
 
 
-/* A structure including a string that's used as the key. */
-
-/* A structure pointer that has a string copy that is used as the key. Almost
- always `TRIE_KEY_SIZE` probably want a pointer `TRIE_VALUE` to avoid excessive
- copying and wasted space for links because the key is part of the value, not
- pointed-to. */
-
 #if 0
-
-#define TRIE_NAME dict
-#define TRIE_VALUE int
-#define TRIE_TEST &str_filler
+/* This is hard. */
+struct foo { int foo; const char *key; };
+static const char **foo_key(struct foo *const foo) { return &foo->key; }
+static void foo_filler(struct foo *const foo)
+	{ foo->foo = 42; str32_filler(&foo->key); }
+/* A structure including a string that's used as the key. */
+#define TRIE_NAME foo
+#define TRIE_VALUE struct foo
+#define TRIE_KEY_IN_VALUE &foo_key
+#define TRIE_TO_STRING
+#define TRIE_TEST &foo_filler
 #include "../src/trie.h"
 
-struct form { const char *str; int whatever; };
-
-#define TRIE_NAME form
-#define TRIE_VALUE struct form
-#define TRIE_TEST &str_filler
-#include "../src/trie.h"
-
+/* FIXME A structure pointer that has a string copy that is used as the key. Almost
+ always including `TRIE_KEY_SIZE` characters and whatever data, probably want a
+ pointer `TRIE_VALUE` to avoid excessive copying and wasted space for links. */
 
 
 /* You can have an `enum` in a `trie`, pointing to a fixed set of strings. */
