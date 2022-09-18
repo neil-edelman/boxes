@@ -395,7 +395,7 @@ static void PT_(test)(void) {
 #elif !defined(TRIE_KEY_IN_VALUE) /* ket set --><!-- key map */
 		PT_(filler)(&e->data.key, &e->data.value);
 #else /* key map --><!-- custom */
-#error
+		PT_(filler)(&e->data.value);
 #endif /* custom --> */
 		e->is_in = 0;
 	}

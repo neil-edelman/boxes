@@ -45,7 +45,6 @@ static void int_filler(const char **const pointer, unsigned *const value) {
 #include "../src/trie.h"
 
 
-#if 0
 /* This is hard. */
 struct foo { int foo; const char *key; };
 static const char **foo_key(struct foo *const foo) { return &foo->key; }
@@ -59,6 +58,7 @@ static void foo_filler(struct foo *const foo)
 #define TRIE_TEST &foo_filler
 #include "../src/trie.h"
 
+#if 0
 /* FIXME A structure pointer that has a string copy that is used as the key. Almost
  always including `TRIE_KEY_SIZE` characters and whatever data, probably want a
  pointer `TRIE_VALUE` to avoid excessive copying and wasted space for links. */
@@ -257,6 +257,7 @@ int main(void) {
 	contrived_test(), str32_pool_clear(&global_pool);
 	str_trie_test(), str32_pool_clear(&global_pool); /* key set */
 	int_trie_test(), str32_pool_clear(&global_pool); /* key map */
+	foo_trie_test(), str32_pool_clear(&global_pool); /* custom with pointers */
 	/*colour_trie_test();
 	star_trie_test();
 	str4_trie_test();

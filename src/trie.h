@@ -118,18 +118,21 @@ static int PT_(assign_key)(struct PT_(entry) *const e,
 
 typedef TRIE_VALUE PT_(value);
 #ifndef TRIE_KEY_SIZE /* <!-- !array */
-/** Extracts the key from a `TRIE_VALUE`. */
-typedef const char *(*PT_(key_fn))(const PT_(value) *);
+/** If `TRIE_KEY_IN_VALUE` but not `TRIE_KEY_SIZE`, extracts the offset of the
+ key from a pointer to `TRIE_VALUE`. */
+typedef const char **(*PT_(key_fn))(PT_(value) *);
 /* Verify `TRIE_KEY_IN_VALUE` is a function satisfying <typedef:<PT>key_fn>. */
 static PT_(key_fn) PT_(key_in_value) = (TRIE_KEY_IN_VALUE);
-/** If `TRIE_KEY_IN_VALUE` but not `TRIE_KEY_SIZE`, extracts the offset of the
- key from a `TRIE_VALUE`. */
-typedef const char **(*PT_(key_offset_fn))(PT_(value) *);
-/* Verify `TRIE_KEY_IN_VALUE` is a function satisfying <typedef:<PT>key_fn>. */
-static PT_(key_offset_fn) PT_(key_in_value) = (TRIE_KEY_IN_VALUE);
+/** I'm _not_ going to make the user specify _two_ projection functions
+ for the same `value`, that's insane. The reason it's not a constant in the
+ first place is so we can write on it, (it's used for input/output.) */
+static const char *PT_(key_in_value_out)(const PT_(value) *const value) {
+	PT_(value) *nonconst; memcpy(&nonconst, &value, sizeof value);
+	return *PT_(key_in_value)(nonconst);
+}
 struct PT_(entry) { PT_(value) value; };
 static const char *PT_(entry_key)(const struct PT_(entry) *const e)
-	{ return *PT_(key_in_value)(&e->value); }
+	{ return PT_(key_in_value_out)(&e->value); }
 static int PT_(assign_key)(struct PT_(entry) *const e,
 	const char *const key) { return *PT_(key_in_value)(&e->value) = key, 1; }
 #else /* !array --><!-- array */
