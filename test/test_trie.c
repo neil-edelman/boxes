@@ -45,7 +45,7 @@ static void int_filler(const char **const pointer, unsigned *const value) {
 #include "../src/trie.h"
 
 
-/* This is hard. */
+#if 0
 struct foo { int foo; const char *key; };
 static const char **foo_key(struct foo *const foo) { return &foo->key; }
 static void foo_filler(struct foo *const foo)
@@ -57,35 +57,50 @@ static void foo_filler(struct foo *const foo)
 #define TRIE_TO_STRING
 #define TRIE_TEST &foo_filler
 #include "../src/trie.h"
+#endif
 
-#if 0
-/* FIXME A structure pointer that has a string copy that is used as the key. Almost
+
+/* FIXME
+ A structure pointer that has a string copy that is used as the key. Almost
  always including `TRIE_KEY_SIZE` characters and whatever data, probably want a
  pointer `TRIE_VALUE` to avoid excessive copying and wasted space for links. */
 
-
-/* You can have an `enum` in a `trie`, pointing to a fixed set of strings. */
-#define PARAM(A) A
-#define STRINGIZE(A) #A
-#define COLOUR(X) \
+#if 0
+/* You can have an `enum` in a `trie`, pointing to a fixed set of strings.
+ This is a custom key. */
+#define COLOUR \
 	X(White), X(Silver), X(Gray), X(Black), X(Red), X(Maroon), X(Bisque), \
 	X(Wheat), X(Tan), X(Sienna), X(Brown), X(Yellow), X(Khaki), X(Gold), \
 	X(Olive), X(Lime), X(Green), X(Aqua), X(Cyan), X(Teal), X(Salmon), \
 	X(Orange), X(Powder), X(Sky), X(Steel), X(Royal), X(Blue), X(Navy), \
 	X(Fuchsia), X(Pink), X(Purple)
-enum colour { COLOUR(PARAM) };
-static const char *const colours[] = { COLOUR(STRINGIZE) };
+#define X(n) n
+enum colour { COLOUR };
+#undef X
+#define X(n) #n
+static const char *const colours[] = { COLOUR };
+#undef X
+#undef COLOUR
 static const size_t colour_size = sizeof colours / sizeof *colours;
 static void colour_filler(enum colour *const c)
 	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
-static const char *colour_key(const enum colour *const c)
-	{ return colours[*c]; }
+static const char *colour_key(const enum colour c)
+	{ return colours[c]; }
+static int colour_assign(enum colour *in_trie, const enum colour c)
+	{ return *in_trie = c, 1; }
 #define TRIE_NAME colour
 #define TRIE_VALUE enum colour
-#define TRIE_KEY_IN_VALUE &colour_key
+#define TRIE_KEY_READ &colour_key
+#define TRIE_KEY_WRITE &colour_assign
 #define TRIE_TEST &colour_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
+#endif
+
+
+
+
+#if 0
 
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
  Sol. This is just a little bit more complex than colours, storing a pointer to
@@ -153,8 +168,8 @@ struct keyval { char key[12]; int value; };
 static void keyval_filler(struct keyval *const kv)
 	{ kv->value = rand() / (RAND_MAX / 1098 + 1) - 99;
 	orcish(kv->key, sizeof kv->key); }
-static const char *keyval_key(const struct keyval *const kv)
-	{ return kv->key; }
+static const char **keyval_key(const struct keyval *const kv)
+	{ return &kv->key; }
 #define TRIE_NAME keyval
 #define TRIE_VALUE struct keyval
 #define TRIE_KEY_IN_VALUE &keyval_key
@@ -256,8 +271,8 @@ int main(void) {
 	errno = 0;
 	contrived_test(), str32_pool_clear(&global_pool);
 	str_trie_test(), str32_pool_clear(&global_pool); /* key set */
-	int_trie_test(), str32_pool_clear(&global_pool); /* key map */
-	foo_trie_test(), str32_pool_clear(&global_pool); /* custom with pointers */
+	int_trie_test(), str32_pool_clear(&global_pool); /* key -> int map */
+	//foo_trie_test(), str32_pool_clear(&global_pool); /* custom with pointers */
 	/*colour_trie_test();
 	star_trie_test();
 	str4_trie_test();

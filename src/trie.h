@@ -5,10 +5,7 @@
  TRIE_DEFAULT_NAME, TRIE_DEFAULT: get or default set default
  TRIE_KEY_IN_VALUE: optional function that chooses key from <PT>value; now key
  is not there; requires TRIE_VALUE
- TRIE_KEY_SIZE: size of array; instead of pointer storage, this copies up to
- the size in characters (including the null-byte) to TRIE_KEY_IN_VALUE.
- (Instead of a `struct` containing `const char *key`, it contains,
- `char key[TRIE_KEY_IN_VALUE]`.) */
+ TRIE_KEY_ASSIGN: if TRIE_KEY_IN_VALUE, this function is called on new */
 #ifndef TRIE_NAME
 #error Name TRIE_NAME undefined.
 #endif
@@ -30,8 +27,8 @@
 #if defined(TRIE_KEY_IN_VALUE) && !defined(TRIE_VALUE)
 #error TRIE_KEY_IN_VALUE requires TRIE_VALUE.
 #endif
-#if defined(TRIE_KEY_SIZE) && !defined(TRIE_KEY_IN_VALUE)
-#error TRIE_KEY_SIZE requires TRIE_KEY_IN_VALUE.
+#if defined(TRIE_KEY_ASSIGN) ^ defined(TRIE_KEY_IN_VALUE)
+#error TRIE_KEY_ASSIGN and TRIE_KEY_IN_VALUE have to be mutually defined.
 #endif
 
 #ifndef TRIE_H /* <!-- idempotent */
@@ -104,7 +101,7 @@ static const char *PT_(entry_key)(const struct PT_(entry) *const e)
 static int PT_(assign_key)(struct PT_(entry) *const e,
 	const char *const key) { return e->key = key, 1; }
 
-#elif !defined(TRIE_KEY_IN_VALUE) /* ket set --><!-- key map */
+#elif !defined(TRIE_KEY_READ) /* ket set --><!-- key map */
 
 /** On `TRIE_VALUE`. */
 typedef TRIE_VALUE PT_(value);
@@ -117,27 +114,21 @@ static int PT_(assign_key)(struct PT_(entry) *const e,
 #else /* key map --><!-- custom */
 
 typedef TRIE_VALUE PT_(value);
-#ifndef TRIE_KEY_SIZE /* <!-- !array */
-/** If `TRIE_KEY_IN_VALUE` but not `TRIE_KEY_SIZE`, extracts the offset of the
- key from a pointer to `TRIE_VALUE`. */
-typedef const char **(*PT_(key_fn))(PT_(value) *);
-/* Verify `TRIE_KEY_IN_VALUE` is a function satisfying <typedef:<PT>key_fn>. */
-static PT_(key_fn) PT_(key_in_value) = (TRIE_KEY_IN_VALUE);
-/** I'm _not_ going to make the user specify _two_ projection functions
- for the same `value`, that's insane. The reason it's not a constant in the
- first place is so we can write on it, (it's used for input/output.) */
-static const char *PT_(key_in_value_out)(const PT_(value) *const value) {
-	PT_(value) *nonconst; memcpy(&nonconst, &value, sizeof value);
-	return *PT_(key_in_value)(nonconst);
-}
+/** If `TRIE_KEY_IN_VALUE`, extracts the key from `TRIE_VALUE`. */
+typedef const char *(*PT_(key_read_fn))(const PT_(value));
+/* Verify `TRIE_KEY_IN_VALUE` is a function satisfying
+ <typedef:<PT>key_read_fn>. */
+static PT_(key_read_fn) PT_(key_read_value) = (TRIE_KEY_READ);
+/** If `TRIE_KEY_IN_VALUE`, writes to ...? */
+typedef int (*PT_(key_write_fn))(PT_(value) *, const PT_(value));
+static PT_(key_write_fn) PT_(key_write_value) = (TRIE_KEY_WRITE);
 struct PT_(entry) { PT_(value) value; };
 static const char *PT_(entry_key)(const struct PT_(entry) *const e)
-	{ return PT_(key_in_value_out)(&e->value); }
+	{ return PT_(key_read_value)(e->value); }
 static int PT_(assign_key)(struct PT_(entry) *const e,
-	const char *const key) { return *PT_(key_in_value)(&e->value) = key, 1; }
-#else /* !array --><!-- array */
-#error Implementation
-#endif /* array --> */
+	const PT_(value) value) {
+	return PT_(key_write_value)(&e->value, value);
+}
 
 #endif /* custom --> */
 
@@ -567,7 +558,10 @@ found:
 	}
 	leaf = PT_(tree_open)(tree, tree_bit, key, bit); /* Tree is not full. */
 assign:
-	PT_(assign_key)(&leaf->as_entry, key);
+	{
+		int success = PT_(assign_key)(&leaf->as_entry, key);
+		assert(success);
+	}
 	//leaf->as_entry.key = key;
 	return &leaf->as_entry;
 catch:
@@ -765,8 +759,8 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }*/
 #ifdef TRIE_KEY_IN_VALUE
 #undef TRIE_KEY_IN_VALUE
 #endif
-#ifdef TRIE_KEY_SIZE
-#undef TRIE_KEY_SIZE
+#ifdef TRIE_KEY_ASSIGN
+#undef TRIE_KEY_ASSIGN
 #endif
 #undef BOX_
 #undef BOX
