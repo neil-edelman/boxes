@@ -18,11 +18,11 @@ static struct str32_pool global_pool;
 
 
 /** Generate a random name and assign it to `pointer`. */
-static void str32_filler(const char **const pointer) {
+static void str32_filler(const char **const key_p) {
 	struct str32 *backing = str32_pool_new(&global_pool);
-	assert(backing && pointer);
+	assert(backing && key_p);
 	orcish(backing->str, sizeof backing->str);
-	*pointer = backing->str;
+	*key_p = backing->str;
 }
 /* A set of strings. Really don't have any parameters here. */
 #define TRIE_NAME str
@@ -31,11 +31,10 @@ static void str32_filler(const char **const pointer) {
 #include "../src/trie.h"
 
 
-/** Generate a `pointer` and `value`. */
-static void int_filler(const char **const pointer, unsigned *const value) {
-	str32_filler(pointer);
-	assert(value);
-	*value = 42;
+/** Generate a `key_p` and `value` from `global_pool`. */
+static void int_filler(const char **const key_p, unsigned *const value) {
+	assert(key_p), str32_filler(key_p);
+	assert(value), *value = 42;
 }
 /* An unsigned value associated with string as a map. */
 #define TRIE_NAME int
@@ -65,9 +64,8 @@ static void foo_filler(struct foo *const foo)
  always including `TRIE_KEY_SIZE` characters and whatever data, probably want a
  pointer `TRIE_VALUE` to avoid excessive copying and wasted space for links. */
 
-#if 0
 /* You can have an `enum` in a `trie`, pointing to a fixed set of strings.
- This is a custom key. */
+ This is a custom key that uses `TRIE_KEY` and `TRIE_KEY_TO_STRING`. */
 #define COLOUR \
 	X(White), X(Silver), X(Gray), X(Black), X(Red), X(Maroon), X(Bisque), \
 	X(Wheat), X(Tan), X(Sienna), X(Brown), X(Yellow), X(Khaki), X(Gold), \
@@ -84,18 +82,14 @@ static const char *const colours[] = { COLOUR };
 static const size_t colour_size = sizeof colours / sizeof *colours;
 static void colour_filler(enum colour *const c)
 	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
-static const char *colour_key(const enum colour c)
+static const char *colour_string(const enum colour c)
 	{ return colours[c]; }
-static int colour_assign(enum colour *in_trie, const enum colour c)
-	{ return *in_trie = c, 1; }
 #define TRIE_NAME colour
-#define TRIE_VALUE enum colour
-#define TRIE_KEY_READ &colour_key
-#define TRIE_KEY_WRITE &colour_assign
+#define TRIE_KEY enum colour
+#define TRIE_KEY_TO_STRING &colour_string
 #define TRIE_TEST &colour_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
-#endif
 
 
 
@@ -273,8 +267,8 @@ int main(void) {
 	str_trie_test(), str32_pool_clear(&global_pool); /* key set */
 	int_trie_test(), str32_pool_clear(&global_pool); /* key -> int map */
 	//foo_trie_test(), str32_pool_clear(&global_pool); /* custom with pointers */
-	/*colour_trie_test();
-	star_trie_test();
+	colour_trie_test();
+	/*star_trie_test();
 	str4_trie_test();
 	keyval_trie_test();*/
 	str32_pool_(&global_pool);

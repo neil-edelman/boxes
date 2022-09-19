@@ -266,7 +266,8 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tr,
 
 	for(i = 0; i <= tr->bsize; i++) if(!trie_bmp_test(&tr->bmp, i)) fprintf(fp,
 		"\ttree%pleaf%u [label = <%s<font color=\"Gray75\">⊔</font>>];\n",
-		(const void *)tr, i, PT_(entry_key)(&tr->leaf[i].as_entry));
+		(const void *)tr, i,
+		PT_(key_string)(PT_(entry_key)(&tr->leaf[i].as_entry)));
 
 	for(i = 0; i <= tr->bsize; i++) if(trie_bmp_test(&tr->bmp, i))
 		PT_(graph_tree_logic)(tr->leaf[i].as_link, 0, fp);
@@ -405,16 +406,18 @@ static void PT_(test)(void) {
 	errno = 0;
 	for(n = 0; n < es_size; n++) {
 		int show = !((n + 1) & n) || n + 1 == es_size;
-		const char *key;
+		/*const char *string;*/
+		PT_(key) key;
 		size_t m;
 		e = es + n;
 		key = PT_(entry_key)(&e->data);
 		if(show) printf("%lu: adding %s.\n",
-			(unsigned long)n, PT_(entry_key)(&e->data));
+			(unsigned long)n, PT_(key_string)(key));
 		switch(T_(trie_try)(&trie, key)) {
 		case TRIE_ERROR: assert(0); return;
 		case TRIE_UNIQUE: e->is_in = 1; n_unique++; break;
-		case TRIE_PRESENT: printf("Key %s is in trie already.\n", key); break;
+		case TRIE_PRESENT: printf("Key %s is in trie already.\n",
+			PT_(key_string)(key)); break;
 		}
 		if(show) PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-insert.gv", n);
 		assert(!errno);
