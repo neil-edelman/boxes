@@ -51,14 +51,13 @@ static void colour_filler(enum colour *const c)
 static const char *colour_string(const enum colour c)
 	{ return colours[c]; }
 #define TRIE_NAME colour
-#define TRIE_KEY enum colour
-#define TRIE_KEY_TO_STRING &colour_string
+#define TRIE_KEY enum colour /* A union: can't get less than a pointer. */
+#define TRIE_KEY_TO_STRING &colour_string /* This must be mutually set. */
 #define TRIE_TEST &colour_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
 
-#if 0
 /** Generate a `key_p` and `value` from `global_pool`. */
 static void mapint_filler(const char **const key_p, unsigned *const value) {
 	assert(key_p), str32_filler(key_p);
@@ -70,7 +69,6 @@ static void mapint_filler(const char **const key_p, unsigned *const value) {
 #define TRIE_TO_STRING
 #define TRIE_TEST &mapint_filler
 #include "../src/trie.h"
-#endif
 
 
 #if 0
@@ -95,8 +93,7 @@ static void foo_filler(struct foo *const foo)
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
  Sol. This is just a little bit more complex than colours, storing a pointer to
  a static name and the distance in a struct. */
-#define PARAM2(A, B) { #A, B }
-#define STARS(X) \
+#define STARS \
 	X(Sol, 0), X(Sirius, 8.6), X(Canopus, 310), X(Rigil Kentaurus, 4.4), \
 	X(Toliman, 4.4), X(Arcturus, 37), X(Vega, 25), X(Capella, 43), \
 	X(Rigel, 860), X(Procyon, 11), X(Achernar, 139), X(Betelgeuse, 700), \
@@ -121,9 +118,10 @@ static void foo_filler(struct foo *const foo)
 	X(Merak, 79), X(Ankaa, 77), X(Girtab, 460), X(Enif, 670), X(Scheat, 200), \
 	X(Sabik, 88), X(Phecda, 84), X(Aludra, 2000), X(Markeb, 540), \
 	X(Navi, 610), X(Markab, 140), X(Aljanah, 72), X(Acrab, 404)
-/* Tau Ceti? */
 struct star { char *name; double distance; };
-static const struct star stars[] = { STARS(PARAM2) };
+#define X(A, B) { #A, B }
+static const struct star stars[] = { STARS };
+#undef X
 static const size_t stars_size = sizeof stars / sizeof *stars;
 static void star_filler(struct star *const s) {
 	const struct star *r = stars
@@ -179,7 +177,6 @@ static void contrived_str_test(void) {
 	size_t i, j;
 	int show;
 	size_t str_array_size = sizeof str_array / sizeof *str_array;
-	printf("Contrived manual test of string set trie.\n");
 	trie_str_no = 0;
 	for(i = 0; i < sizeof str_array / sizeof *str_array; i++) {
 		show = 1;//!((i + 1) & i) || i + 1 == str_array_size;
@@ -229,9 +226,9 @@ static void contrived_test(void) {
 	unsigned i;
 	struct str_trie t = str_trie();
 	struct str_trie_cursor cur;
-	printf("Contrived:\n");
+	printf("Contrived manual test of set <str>trie.\n");
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
-		printf("word: %s\n", words[i]);
+		/* printf("word: %s\n", words[i]); */
 		switch(str_trie_try(&t, words[i])) {
 		case TRIE_ERROR: assert(0); break;
 		case TRIE_UNIQUE: break;
@@ -262,14 +259,14 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	contrived_test(), str32_pool_clear(&global_pool);
-	str_trie_test(), str32_pool_clear(&global_pool); /* key set */
-	colour_trie_test(); /* custom key set */
+	str_trie_test(), str32_pool_clear(&global_pool); /* Key set. */
+	colour_trie_test(); /* Custom key set with enum string backing. */
+	mapint_trie_test(), str32_pool_clear(&global_pool); /* `string -> int`. */
 
-	//int_trie_test(), str32_pool_clear(&global_pool); /* key -> int map */
 	//foo_trie_test(), str32_pool_clear(&global_pool); /* custom with pointers */
 	/*star_trie_test();
 	str4_trie_test();
 	keyval_trie_test();*/
-	str32_pool_(&global_pool);
+	str32_pool_(&global_pool); /* Destroy global string pool. */
 	return EXIT_SUCCESS;
 }

@@ -1,6 +1,10 @@
 /**
  TRIE_NAME: required part of keyword
- TRIE_VALUE: optional, makes it a map from const char * -> <PT>value
+ TRIE_KEY, TRIE_KEY_TO_STRING: must both be defined or not; the type
+ <typedef:<PT>key> and function <typedef:<PT>key_to_string_fn> that creates an
+ indirect key that maps to `const char *`, (such as an `enum` prefix map.)
+ TRIE_VALUE: optional, makes it a map from <typedef:<PT>key> to
+ <typedef:<PT>value>; prefer small size.
  TRIE_TO_STRING: optional no arguments, uses keys
  TRIE_DEFAULT_NAME, TRIE_DEFAULT: get or default set default
  TRIE_KEY_IN_VALUE: optional function that chooses key from <PT>value; now key
@@ -130,13 +134,11 @@ static int PT_(assign_key)(PT_(key) *const pkey, PT_(key) key)
 
 #elif !defined(TRIE_KEY_READ) /* ket set --><!-- key map */
 
-#error
 typedef TRIE_VALUE PT_(value);
-/** Defines an entry on `KEY_VALUE`. */
+/** On `KEY_VALUE` but not `KEY_KEY_*`, defines an entry. */
 struct T_(trie_entry) { PT_(key) key; PT_(value) value; };
 typedef struct T_(trie_entry) PT_(entry);
-static PT_(key) PT_(entry_key)(const struct T_(trie_entry) *const e)
-	{ return e->key; }
+static PT_(key) PT_(entry_key)(const struct T_(trie_entry) e) { return e.key; }
 static int PT_(assign_key)(struct T_(trie_entry) *const e, PT_(key) key)
 	{ return e->key = key, 1; }
 
@@ -176,9 +178,6 @@ struct PT_(tree) {
 };
 struct T_(trie) { struct PT_(tree) *root; };
 
-
-/*static struct PT_(entry) PT_(cons_entry)(const struct PT_(ref) ref)
-	{ return ref.tree->leaf[ref.idx].as_entry; }*/
 
 
 /** @return A candidate match for `key`, non-null, in `tree`, which is the
@@ -824,6 +823,11 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }*/
 #ifdef TRIE_VALUE
 #undef TRIE_VALUE
 #endif
+#ifdef TRIE_KEY
+#undef TRIE_KEY
+#undef TRIE_KEY_TO_STRING
+#endif
+
 #ifdef TRIE_KEY_IN_VALUE
 #undef TRIE_KEY_IN_VALUE
 #endif
