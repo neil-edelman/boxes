@@ -214,7 +214,7 @@ struct B_(tree) { struct PB_(tree) root; };
  pointer-to-<typedef:<PB>value>. The reason these are pointers is because it
  is not contiguous in memory. */
 struct B_(tree_entry) { PB_(key) *key; PB_(value) *value; };
-/* FIXME: are you sure that this doesn't allow you to movify keys? we do not
+/* FIXME: are you sure that this doesn't allow you to modify keys? we do not
  want modification of keys (right?? otoh, it is the *placement* not the actual
  value that is fixed.) */
 struct B_(tree_entry_c) { PB_(key_c) *key; const PB_(value) *value; };
