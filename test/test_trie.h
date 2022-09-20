@@ -10,9 +10,9 @@
 
 #ifndef TRIE_VALUE /* <!-- key set */
 /** Works by side-effects, _ie_ fills the type with data. */
-typedef void (*PT_(action_fn))(const char **);
+typedef void (*PT_(action_fn))(PT_(key) *);
 #elif !defined(TRIE_KEY_IN_VALUE) /* ket set --><!-- key map */
-typedef void (*PT_(action_fn))(const char **, PT_(value) *);
+typedef void (*PT_(action_fn))(PT_(key) *, PT_(value) *);
 #else /* key map --><!-- custom */
 typedef void (*PT_(action_fn))(PT_(value) *);
 #endif /* custom --> */
@@ -267,7 +267,7 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tr,
 	for(i = 0; i <= tr->bsize; i++) if(!trie_bmp_test(&tr->bmp, i)) fprintf(fp,
 		"\ttree%pleaf%u [label = <%s<font color=\"Gray75\">⊔</font>>];\n",
 		(const void *)tr, i,
-		PT_(key_string)(PT_(entry_key)(&tr->leaf[i].as_entry)));
+		PT_(key_string)(PT_(entry_key)(tr->leaf[i].as_entry)));
 
 	for(i = 0; i <= tr->bsize; i++) if(trie_bmp_test(&tr->bmp, i))
 		PT_(graph_tree_logic)(tr->leaf[i].as_link, 0, fp);
@@ -359,7 +359,7 @@ static void PT_(valid_tree)(const struct PT_(tree) *const tree) {
 			PT_(valid_tree)(tree->leaf[i].as_link);
 		} else {
 			const char *str2;
-			str2 = PT_(entry_key)(&tree->leaf[i].as_entry);
+			str2 = PT_(key_string)(PT_(entry_key)(tree->leaf[i].as_entry));
 			if(str1) cmp = strcmp(str1, str2), assert(cmp < 0);
 			str1 = str2;
 		}
@@ -376,23 +376,23 @@ static void PT_(test)(void) {
 	struct T_(trie) trie = T_(trie)();
 	/*struct T_(trie_cursor) cur;*/
 	size_t n, n_unique;
-	struct { struct PT_(entry) data;
+	struct { PT_(entry) data;
 		int is_in; } es[2000], *es_end, *e;
 	const size_t es_size = sizeof es / sizeof *es;
-	struct PT_(entry) *data;
+	PT_(entry) data;
 
 	/* Idle. */
 	PT_(valid)(0);
 	PT_(valid)(&trie);
 	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-idle.gv", 0);
 	T_(trie_)(&trie), PT_(valid)(&trie);
-	data = T_(trie_match)(&trie, ""), assert(!data);
+	data = T_(trie_match)(&trie, ""), assert(!data); /* fixme */
 	/*data = T_(trie_get)(&trie, ""), assert(!data);*/ /* fixme */
 
 	/* Make random data. */
 	for(e = es, es_end = e + es_size; e < es_end; e++) {
 #ifndef TRIE_VALUE /* <!-- key set */
-		PT_(filler)(&e->data.key);
+		PT_(filler)(&e->data);
 #elif !defined(TRIE_KEY_IN_VALUE) /* ket set --><!-- key map */
 		PT_(filler)(&e->data.key, &e->data.value);
 #else /* key map --><!-- custom */
@@ -410,7 +410,7 @@ static void PT_(test)(void) {
 		PT_(key) key;
 		size_t m;
 		e = es + n;
-		key = PT_(entry_key)(&e->data);
+		key = PT_(entry_key)(e->data);
 		if(show) printf("%lu: adding %s.\n",
 			(unsigned long)n, PT_(key_string)(key));
 		switch(T_(trie_try)(&trie, key)) {

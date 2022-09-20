@@ -31,17 +31,19 @@ static void str32_filler(const char **const key_p) {
 #include "../src/trie.h"
 
 
+#if 0
 /** Generate a `key_p` and `value` from `global_pool`. */
-static void int_filler(const char **const key_p, unsigned *const value) {
+static void mapint_filler(const char **const key_p, unsigned *const value) {
 	assert(key_p), str32_filler(key_p);
 	assert(value), *value = 42;
 }
 /* An unsigned value associated with string as a map. */
-#define TRIE_NAME int
+#define TRIE_NAME mapint
 #define TRIE_VALUE unsigned
 #define TRIE_TO_STRING
-#define TRIE_TEST &int_filler
+#define TRIE_TEST &mapint_filler
 #include "../src/trie.h"
+#endif
 
 
 #if 0
@@ -58,14 +60,8 @@ static void foo_filler(struct foo *const foo)
 #include "../src/trie.h"
 #endif
 
-
-/* FIXME
- A structure pointer that has a string copy that is used as the key. Almost
- always including `TRIE_KEY_SIZE` characters and whatever data, probably want a
- pointer `TRIE_VALUE` to avoid excessive copying and wasted space for links. */
-
-/* You can have an `enum` in a `trie`, pointing to a fixed set of strings.
- This is a custom key that uses `TRIE_KEY` and `TRIE_KEY_TO_STRING`. */
+#if 0
+/* This is a custom key that uses `TRIE_KEY` and `TRIE_KEY_TO_STRING`. */
 #define COLOUR \
 	X(White), X(Silver), X(Gray), X(Black), X(Red), X(Maroon), X(Bisque), \
 	X(Wheat), X(Tan), X(Sienna), X(Brown), X(Yellow), X(Khaki), X(Gold), \
@@ -90,7 +86,7 @@ static const char *colour_string(const enum colour c)
 #define TRIE_TEST &colour_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
-
+#endif
 
 
 
@@ -245,7 +241,9 @@ static void contrived_test(void) {
 		trie_str_graph(&t, "graph/contrived-insert.gv", i);
 	}
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
-		const char *get = str_trie_get(&t, words[i]);
+		const char *get;
+		int success = str_trie_query(&t, words[i], &get);
+		assert(success);
 		printf("get: %s\n", get);
 	}
 	str_trie_prefix(&t, "b", &cur);
@@ -265,9 +263,9 @@ int main(void) {
 	errno = 0;
 	contrived_test(), str32_pool_clear(&global_pool);
 	str_trie_test(), str32_pool_clear(&global_pool); /* key set */
-	int_trie_test(), str32_pool_clear(&global_pool); /* key -> int map */
+	//int_trie_test(), str32_pool_clear(&global_pool); /* key -> int map */
 	//foo_trie_test(), str32_pool_clear(&global_pool); /* custom with pointers */
-	colour_trie_test();
+	//colour_trie_test();
 	/*star_trie_test();
 	str4_trie_test();
 	keyval_trie_test();*/
