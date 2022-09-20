@@ -183,11 +183,11 @@ struct T_(trie) { struct PT_(tree) *root; };
 
 /** @return A candidate match for `key`, non-null, in `tree`, which is the
  valid root, or null, if `key` is definitely not in the trie. */
-static PT_(entry) PT_(match)(struct PT_(tree) *tree,
-	const char *const key) {
+static int PT_(match)(struct PT_(tree) *tree,
+	const char *const key, PT_(entry) *const match) {
 	size_t bit; /* In bits of `key`. */
 	struct { size_t cur, next; } byte; /* `key` null checks. */
-	assert(tree && key);
+	assert(tree && key && match);
 	for(bit = 0, byte.cur = 0; ; ) {
 		unsigned br0 = 0, br1 = tree->bsize, lf = 0;
 		while(br0 < br1) {
@@ -201,7 +201,8 @@ static PT_(entry) PT_(match)(struct PT_(tree) *tree,
 				br0 += branch->left + 1, lf += branch->left + 1;
 			bit++;
 		}
-		if(!trie_bmp_test(&tree->bmp, lf)) return tree->leaf[lf].as_entry;
+		if(!trie_bmp_test(&tree->bmp, lf))
+			return *match = tree->leaf[lf].as_entry, 1;
 		tree = tree->leaf[lf].as_link; /* Jumped trees. */
 	}
 }
@@ -365,11 +366,11 @@ const static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
  @return Success; `result` holds entry if not null. */
 static int PT_(query)(const struct T_(trie) *const trie,
 	const char *const string, PT_(entry) *result) {
-	PT_(entry) e;
+	PT_(entry) entry;
 	if(trie && string && trie->root && trie->root->bsize != UCHAR_MAX
-		&& (e = PT_(match)(trie->root, string))
-		&& !strcmp(PT_(key_string)(PT_(entry_key)(e)), string)) {
-		if(result) *result = e;
+		&& PT_(match)(trie->root, string, &entry)
+		&& !strcmp(PT_(key_string)(PT_(entry_key)(entry)), string)) {
+		if(result) *result = entry;
 		return 1;
 	} else {
 		return 0;
@@ -529,6 +530,7 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	return leaf;
 }
 
+static void PT_(print)(const struct PT_(tree) *const tree);
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(key) key,
 	PT_(entry) **const entry) {
 	struct PT_(tree) *tree;
@@ -575,7 +577,7 @@ tree:
 	{ /* Too much similarity to fit in a byte, (~32 characters.) */
 		const size_t limit = bit + UCHAR_MAX;
 		while(!TRIE_DIFF(key_string, sample, bit))
-			if(++bit > limit) { errno = EILSEQ; return 0; }
+			if(++bit > limit) { errno = EILSEQ; goto catch; }
 	}
 found:
 	/* Account for choosing the right leaf. */
@@ -602,6 +604,7 @@ assign:
 	return 1;
 catch:
 	printf("*** add_unique catch ***\n");
+	PT_(print)(tree);
 	if(!errno) errno = ERANGE;
 	return 0;
 }
@@ -653,8 +656,6 @@ static int T_(trie_from_array)(struct T_(trie) *const trie,
 	return assert(trie && array && array_size),
 		PT_(init)(trie, array, array_size);
 }
-#endif
-
 /** @return Looks at only the index of `trie` for potential `key` matches,
  but will ignore the values of the bits that are not in the index.
  @order \O(|`key`|) @allow */
@@ -662,6 +663,7 @@ static PT_(entry) T_(trie_match)(const struct T_(trie) *const trie,
 	const char *const string)
 	{ return trie && trie->root && string
 		? PT_(match)(trie->root, string) : 0; }
+#endif
 
 /** @return Exact match for `key` in `trie` or null no such item exists. If
  either is null, returns a null entry, that is, key or key in value, null,
