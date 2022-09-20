@@ -405,7 +405,6 @@ static void PT_(test)(void) {
 	errno = 0;
 	for(n = 0; n < es_size; n++) {
 		int show = !((n + 1) & n) || n + 1 == es_size;
-		/*const char *string;*/
 		PT_(key) key;
 		size_t m;
 		e = es + n;

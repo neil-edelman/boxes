@@ -1,5 +1,3 @@
-/* Test Trie. */
-
 #include <stdlib.h> /* EXIT malloc free rand */
 #include <stdio.h>  /* *printf */
 #include <assert.h> /* assert */
@@ -13,27 +11,30 @@ struct str32 { char str[32]; };
 #define POOL_NAME str32
 #define POOL_TYPE struct str32
 #include "pool.h"
-
 static struct str32_pool global_pool;
 
 
-/** Generate a random name and assign it to `pointer`. */
+/* A set of strings stored somewhere else; one must keep the storage for the
+ duration of the trie*. Good if one needs a prefix-tree with string literals.
+ *Unless one only wants to use <fn:<T>trie_match>, which only looks at the
+ index and not the keys themselves; the key strings are not accessed, then. */
+/** Generate a random name from `global_pool` and assign it to `key`. */
 static void str32_filler(const char **const key) {
 	struct str32 *backing = str32_pool_new(&global_pool);
 	assert(backing && key);
 	orcish(backing->str, sizeof backing->str);
 	*key = backing->str;
 }
-/* A set of strings stored somewhere else; one must keep the storage for the
- duration of the trie unless one only wants to use <fn:<T>trie_match>, which
- only looks at the index and not the keys themselves. */
 #define TRIE_NAME str
-#define TRIE_TO_STRING
+#define TRIE_TO_STRING /* Uses the keys as strings. For test. */
 #define TRIE_TEST &str32_filler
 #include "../src/trie.h"
 
 
-/* This is a custom key that uses `TRIE_KEY` and `TRIE_KEY_TO_STRING`. */
+/* This is a custom key; uses `TRIE_KEY` and `TRIE_KEY_TO_STRING` to forward
+ the keys to `colours`. Internally, a trie is a collection of fixed trees that
+ have `union` leaves with a pointer-to-tree; there therefore is no optimization
+ to shrinking the size of the data past a pointer. */
 #define COLOUR \
 	X(White), X(Silver), X(Gray), X(Black), X(Red), X(Maroon), X(Bisque), \
 	X(Wheat), X(Tan), X(Sienna), X(Brown), X(Yellow), X(Khaki), X(Gold), \
@@ -48,24 +49,26 @@ static const char *const colours[] = { COLOUR };
 #undef X
 #undef COLOUR
 static const size_t colour_size = sizeof colours / sizeof *colours;
-static void colour_filler(enum colour *const c)
-	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
 static const char *colour_string(const enum colour c)
 	{ return colours[c]; }
+static void colour_filler(enum colour *const c)
+	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
 #define TRIE_NAME colour
-#define TRIE_KEY enum colour /* A union: can't get less than a pointer. */
-#define TRIE_KEY_TO_STRING &colour_string /* This must be mutually set. */
+#define TRIE_KEY enum colour /* This and . . . */
+#define TRIE_KEY_TO_STRING &colour_string /* this must be mutually set. */
 #define TRIE_TEST &colour_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
 
-/** Generate a `key_p` and `value` from `global_pool`. */
+/* An unsigned value associated with an external string as a map. This is a
+ convenience that defines `mapint_trie_entry` with key and value already there.
+ We expect it to be slightly slower on update because the entry is larger. */
+/** Generate a `key` (from `global_pool`) and `value`. */
 static void mapint_filler(const char **const key, unsigned *const value) {
 	assert(key), str32_filler(key);
 	assert(value), *value = 42;
 }
-/* An unsigned value associated with string as a map. */
 #define TRIE_NAME mapint
 #define TRIE_VALUE unsigned
 #define TRIE_TO_STRING
@@ -73,19 +76,21 @@ static void mapint_filler(const char **const key, unsigned *const value) {
 #include "../src/trie.h"
 
 
-#if 0
-/* Stores a value in the leaf itself. This structure is sensitive to the size
- of the leaves; optimally, would be a pointer's length. */
+#if 1
+/* Stores a value in the leaf itself and not externally. This structure is
+ sensitive to the size of the leaves; optimally, would be a pointer's length,
+ which it is on 64-byte machines. */
 struct key8 { char key[8]; };
 static void key8_filler(struct key8 *const k)
 	{ orcish(k->key, sizeof k->key); }
-/* Hmmmm... */
-static const char *key8_read_key(const struct key8 k) { return k.key; }
-static const int key8_write_key() {}
-#define TRIE_NAME str4
-#define TRIE_VALUE struct str4
-#define TRIE_KEY_IN_VALUE &str4_key
-#define TRIE_TEST &str4_filler
+static const char *key8_read_key(const struct key8 *const k) { return k->key; }
+static int key8_write_key(struct key8 *const k, const char *string)
+	{ return strcpy(k->key, string), 1; }
+#define TRIE_NAME key8
+#define TRIE_VALUE struct key8
+#define TRIE_READ_KEY &key8_read_key
+#define TRIE_WRITE_KEY &key8_write_key
+#define TRIE_TEST &key8_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 #endif
@@ -243,10 +248,10 @@ int main(void) {
 	str_trie_test(), str32_pool_clear(&global_pool); /* Key set. */
 	colour_trie_test(); /* Custom key set with enum string backing. */
 	mapint_trie_test(), str32_pool_clear(&global_pool); /* `string -> int`. */
+	key8_trie_test(); /* Key set with no dependancy on outside keys. */
 
 	//foo_trie_test(), str32_pool_clear(&global_pool); /* custom with pointers */
 	/*star_trie_test();
-	str4_trie_test();
 	keyval_trie_test();*/
 	str32_pool_(&global_pool); /* Destroy global string pool. */
 	return EXIT_SUCCESS;
