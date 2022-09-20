@@ -271,8 +271,8 @@ static int PT_(to_successor_c)(const struct PT_(tree) *const root,
 }
 
 
-#define BOX_CONTENT PT_(entry)
-static int PT_(is_element_c)(const PT_(entry) e) { return !!e; }
+#define BOX_CONTENT const PT_(entry) *
+static int PT_(is_element_c)(const PT_(entry) *const e) { return !!e; }
 
 struct PT_(forward) { const struct PT_(tree) *root; struct PT_(ref_c) next; };
 
@@ -281,9 +281,9 @@ static struct PT_(forward) PT_(forward)(const struct T_(trie) *const trie) {
 	it.root = trie ? trie->root : 0, it.next.tree = 0;
 	return it;
 }
-static PT_(entry) PT_(next_c)(struct PT_(forward) *const it) {
+static const PT_(entry) *PT_(next_c)(struct PT_(forward) *const it) {
 	return assert(it), PT_(to_successor_c)(it->root, &it->next)
-		? it->next.tree->leaf[it->next.idx].as_entry : 0;
+		? &it->next.tree->leaf[it->next.idx].as_entry : 0;
 }
 
 
@@ -779,9 +779,9 @@ static size_t T_(trie_size)(const struct T_(trie_cursor) *const cur)
 #define STR_(n) TRIE_CAT(T_(trie), n)
 /** Uses the natural `a` -> `z` that is defined by `TRIE_KEY_IN_VALUE`.
  @fixme `sprintf` is large and cumbersome when a case statement will do. */
-static void PT_(to_string)(const PT_(entry) e,
+static void PT_(to_string)(const PT_(entry) *const e,
 	char (*const z)[12]) {
-	assert(e && z), sprintf(*z, "%.11s", PT_(key_string(PT_(entry_key)(e))));
+	assert(e && z), sprintf(*z, "%.11s", PT_(key_string(PT_(entry_key)(*e))));
 }
 #define TO_STRING &PT_(to_string)
 #define TO_STRING_LEFT '{'
