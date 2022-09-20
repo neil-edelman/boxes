@@ -319,6 +319,7 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 	PT_(graph_choose)(trie, copy, &PT_(graph_tree_mem));
 }
 
+#if 0
 /** Prints `tree` to `stdout`. */
 static void PT_(print)(const struct PT_(tree) *const tree) {
 	const struct trie_branch *branch;
@@ -340,6 +341,7 @@ static void PT_(print)(const struct PT_(tree) *const tree) {
 			: PT_(key_string)(PT_(entry_key)(tree->leaf[i].as_entry)));
 	printf("\n");
 }
+#endif
 
 #ifndef TRIE_DEFAULT_TEST /* <!-- !set: a set of strings is not testable in the
  automatic framework, but convenient to have graphs for manual tests. */

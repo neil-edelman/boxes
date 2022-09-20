@@ -530,7 +530,6 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	return leaf;
 }
 
-static void PT_(print)(const struct PT_(tree) *const tree);
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(key) key,
 	PT_(entry) **const entry) {
 	struct PT_(tree) *tree;
@@ -604,7 +603,6 @@ assign:
 	return 1;
 catch:
 	printf("*** add_unique catch ***\n");
-	PT_(print)(tree);
 	if(!errno) errno = ERANGE;
 	return 0;
 }
