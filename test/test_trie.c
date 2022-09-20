@@ -18,13 +18,15 @@ static struct str32_pool global_pool;
 
 
 /** Generate a random name and assign it to `pointer`. */
-static void str32_filler(const char **const key_p) {
+static void str32_filler(const char **const key) {
 	struct str32 *backing = str32_pool_new(&global_pool);
-	assert(backing && key_p);
+	assert(backing && key);
 	orcish(backing->str, sizeof backing->str);
-	*key_p = backing->str;
+	*key = backing->str;
 }
-/* A set of strings. Really don't have any parameters here. */
+/* A set of strings stored somewhere else; one must keep the storage for the
+ duration of the trie unless one only wants to use <fn:<T>trie_match>, which
+ only looks at the index and not the keys themselves. */
 #define TRIE_NAME str
 #define TRIE_TO_STRING
 #define TRIE_TEST &str32_filler
@@ -59,8 +61,8 @@ static const char *colour_string(const enum colour c)
 
 
 /** Generate a `key_p` and `value` from `global_pool`. */
-static void mapint_filler(const char **const key_p, unsigned *const value) {
-	assert(key_p), str32_filler(key_p);
+static void mapint_filler(const char **const key, unsigned *const value) {
+	assert(key), str32_filler(key);
 	assert(value), *value = 42;
 }
 /* An unsigned value associated with string as a map. */
@@ -69,6 +71,25 @@ static void mapint_filler(const char **const key_p, unsigned *const value) {
 #define TRIE_TO_STRING
 #define TRIE_TEST &mapint_filler
 #include "../src/trie.h"
+
+
+#if 0
+/* Stores a value in the leaf itself. This structure is sensitive to the size
+ of the leaves; optimally, would be a pointer's length. */
+struct key8 { char key[8]; };
+static void key8_filler(struct key8 *const k)
+	{ orcish(k->key, sizeof k->key); }
+/* Hmmmm... */
+static const char *key8_read_key(const struct key8 k) { return k.key; }
+static const int key8_write_key() {}
+#define TRIE_NAME str4
+#define TRIE_VALUE struct str4
+#define TRIE_KEY_IN_VALUE &str4_key
+#define TRIE_TEST &str4_filler
+#define TRIE_TO_STRING
+#include "../src/trie.h"
+#endif
+
 
 
 #if 0
@@ -138,25 +159,13 @@ static const char *star_key(const struct star *const star)
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
-/* Stores a value in the item itself. If the string changes while in the trie,
- the trie is now undefined, don't do that. */
-struct str4 { char value[4]; };
-static void str4_filler(struct str4 *const s)
-	{ orcish(s->value, sizeof s->value); }
-static const char *str4_key(const struct str4 *const s) { return s->value; }
-#define TRIE_NAME str4
-#define TRIE_VALUE struct str4
-#define TRIE_KEY_IN_VALUE &str4_key
-#define TRIE_TEST &str4_filler
-#define TRIE_TO_STRING
-#include "../src/trie.h"
 
 /* This is organized, alphabetized, and supports range-queries by key. */
 struct keyval { char key[12]; int value; };
 static void keyval_filler(struct keyval *const kv)
 	{ kv->value = rand() / (RAND_MAX / 1098 + 1) - 99;
 	orcish(kv->key, sizeof kv->key); }
-static const char **keyval_key(const struct keyval *const kv)
+static const char *keyval_key(const struct keyval *const kv)
 	{ return &kv->key; }
 #define TRIE_NAME keyval
 #define TRIE_VALUE struct keyval
@@ -169,31 +178,6 @@ static const char **keyval_key(const struct keyval *const kv)
 
 
 
-#if 0
-/** Manual testing for default string trie, that is, no associated information,
- just a set of `char *`. */
-static void contrived_str_test(void) {
-	struct str_trie strs = str_trie();
-	size_t i, j;
-	int show;
-	size_t str_array_size = sizeof str_array / sizeof *str_array;
-	trie_str_no = 0;
-	for(i = 0; i < sizeof str_array / sizeof *str_array; i++) {
-		show = 1;//!((i + 1) & i) || i + 1 == str_array_size;
-		if(show) trie_str_no++;
-		if(show) printf("%lu: adding \"%s\".\n",
-			(unsigned long)i, str_array[i]);
-		if(!str_trie_try(&strs, str_array[i]))
-			{ printf("%lu: %s not unique?\n", (unsigned long)i, str_array[i]);
-			assert(0); continue; }
-		if(show) trie_str_graph(&strs, "graph/str-add.gv");
-		for(j = 0; j <= i; j++) {
-			const char *sz = str_trie_get(&strs, str_array[j]);
-			/*printf("Test get(\"%s\") = \"%s\".\n",
-				str_array[j], sz ? sz : "<didn't find>");*/
-			assert(sz == str_array[j]);
-		}
-	}
 #if 0
 	for( ; i; i--) {
 		int is;
@@ -211,9 +195,6 @@ static void contrived_str_test(void) {
 			assert(!(want_to_get ^ (get == str_array[j])));
 		}
 	}
-#endif
-	str_trie_(&strs);
-}
 #endif
 
 static void contrived_test(void) {
