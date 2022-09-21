@@ -11,7 +11,7 @@
 #ifndef TRIE_VALUE /* <!-- key set */
 /** Works by side-effects, _ie_ fills the type with data. */
 typedef void (*PT_(action_fn))(PT_(key) *);
-#elif !defined(TRIE_KEY_IN_VALUE) /* ket set --><!-- key map */
+#elif !defined(TRIE_READ_KEY) /* ket set --><!-- key map */
 typedef void (*PT_(action_fn))(PT_(key) *, PT_(value) *);
 #else /* key map --><!-- custom */
 typedef void (*PT_(action_fn))(PT_(value) *);
@@ -392,10 +392,10 @@ static void PT_(test)(void) {
 	for(e = es, es_end = e + es_size; e < es_end; e++) {
 #ifndef TRIE_VALUE /* <!-- key set */
 		PT_(filler)(&e->data);
-#elif !defined(TRIE_KEY_IN_VALUE) /* ket set --><!-- key map */
+#elif !defined(TRIE_READ_KEY) /* ket set --><!-- key map */
 		PT_(filler)(&e->data.key, &e->data.value);
 #else /* key map --><!-- custom */
-		PT_(filler)(&e->data.value);
+		PT_(filler)(&e->data);
 #endif /* custom --> */
 		e->is_in = 0;
 	}
@@ -514,7 +514,7 @@ static void PT_(test)(void) {
 static void T_(trie_test)(void) {
 	printf("<" QUOTE(TRIE_NAME) ">trie"
 		" of type <" QUOTE(TRIE_VALUE) ">"
-		" was created using: TREE_KEY<" QUOTE(TRIE_KEY_IN_VALUE) ">;"
+		" was created using: TREE_KEY<" QUOTE(TRIE_READ_KEY) ">;"
 		" TRIE_TEST <" QUOTE(TRIE_TEST) ">;"
 		" testing:\n");
 	PT_(test)();

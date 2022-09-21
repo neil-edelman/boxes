@@ -1,15 +1,14 @@
 /**
- TRIE_NAME: required part of keyword
+ TRIE_NAME: required prefix name
  TRIE_KEY, TRIE_KEY_TO_STRING: must both be defined or not; the type
  <typedef:<PT>key> and function <typedef:<PT>key_to_string_fn> that creates an
  indirect key that maps to `const char *`, (such as an `enum` prefix map.)
  TRIE_VALUE: optional, makes it a map from <typedef:<PT>key> to
  <typedef:<PT>value>; prefer small size.
- TRIE_TO_STRING: optional no arguments, uses keys
- TRIE_DEFAULT_NAME, TRIE_DEFAULT: get or default set default
- TRIE_KEY_IN_VALUE: optional function that chooses key from <PT>value; now key
- is not there; requires TRIE_VALUE
- TRIE_KEY_ASSIGN: if TRIE_KEY_IN_VALUE, this function is called on new */
+ TRIE_READ_KEY, TRIE_WRITE_KEY: requires TRIE_VALUE, both must be defined or
+ not. Function that chooses key from <PT>value
+ TRIE_TO_STRING: optional no arguments, uses keys and <to_string.h>
+ TRIE_DEFAULT_NAME, TRIE_DEFAULT: get or default set default */
 #ifndef TRIE_NAME
 #error Name TRIE_NAME undefined.
 #endif
@@ -25,17 +24,17 @@
 #if defined(TRIE_KEY) ^ defined(TRIE_KEY_TO_STRING)
 #error TRIE_KEY and TRIE_KEY_TO_STRING have to be mutually defined.
 #endif
+#if defined(TRIE_READ_KEY) && !defined(TRIE_VALUE)
+#error TRIE_READ_KEY requires TRIE_VALUE.
+#endif
+#if defined(TRIE_READ_KEY) ^ defined(TRIE_WRITE_KEY)
+#error TRIE_READ_KEY and TRIE_WRITE_KEY have to be mutually defined.
+#endif
 #if defined(TRIE_DEFAULT_NAME) && !defined(TRIE_DEFAULT)
 #error TRIE_DEFAULT_NAME requires TRIE_DEFAULT.
 #endif
 #if defined(TRIE_TEST) && !defined(TRIE_TO_STRING)
 #error TRIE_TEST requires TRIE_TO_STRING.
-#endif
-#if defined(TRIE_KEY_IN_VALUE) && !defined(TRIE_VALUE)
-#error TRIE_KEY_IN_VALUE requires TRIE_VALUE.
-#endif
-#if defined(TRIE_KEY_ASSIGN) ^ defined(TRIE_KEY_IN_VALUE)
-#error TRIE_KEY_ASSIGN and TRIE_KEY_IN_VALUE have to be mutually defined.
 #endif
 
 #ifndef TRIE_H /* <!-- idempotent */
@@ -100,7 +99,6 @@ static int trie_is_prefix(const char *a, const char *b) {
 #if TRIE_TRAITS == 0 /* <!-- base trie */
 
 
-
 #ifdef TRIE_KEY /* <!-- key */
 /** The default is `const char *`. (Any type that decays to this will be fine
  to use the default, but once in the trie, it must not change.) If one sets
@@ -116,13 +114,11 @@ typedef const char *(*PT_(key_to_string_fn))(PT_(key));
 /* Valid <typedef:<PT>key_to_string_fn>. */
 static PT_(key_to_string_fn) PT_(key_string) = (TRIE_KEY_TO_STRING);
 #else /* key --><!-- !key */
-/** The string of `key` is itself. @implements `<PT>key_to_string_fn` */
+/** The string of `key` is itself by default.
+ @implements `<PT>key_to_string_fn` */
 static const char *PT_(string_to_string)(const char *const key) { return key; }
 static PT_(key_to_string_fn) PT_(key_string) = &PT_(string_to_string);
 #endif /* !key --> */
-
-
-
 
 
 #ifndef TRIE_VALUE /* <!-- key set */
@@ -132,7 +128,7 @@ static PT_(key) PT_(entry_key)(const PT_(key) key) { return key; }
 static int PT_(assign_key)(PT_(key) *const pkey, PT_(key) key)
 	{ return *pkey = key, 1; }
 
-#elif !defined(TRIE_KEY_READ) /* ket set --><!-- key map */
+#elif !defined(TRIE_READ_KEY) /* ket set --><!-- key map */
 
 typedef TRIE_VALUE PT_(value);
 /** On `KEY_VALUE` but not `KEY_KEY_*`, defines an entry. */
@@ -144,26 +140,26 @@ static int PT_(assign_key)(struct T_(trie_entry) *const e, PT_(key) key)
 
 #else /* key map --><!-- custom */
 
-#error
+/* The entry is the value. */
 typedef TRIE_VALUE PT_(value);
-/** If `TRIE_KEY_IN_VALUE`, extracts the key from `TRIE_VALUE`. */
-typedef const char *(*PT_(key_read_fn))(const PT_(value));
-/* Verify `TRIE_KEY_IN_VALUE` is a function satisfying
+typedef PT_(value) *PT_(entry);
+/** If `TRIE_READ_KEY`, extracts the key from `TRIE_VALUE`. */
+typedef PT_(key) (*PT_(key_read_fn))(const PT_(value) *);
+/* Verify `TRIE_READ_KEY` is a function satisfying
  <typedef:<PT>key_read_fn>. */
-static PT_(key_read_fn) PT_(key_read_value) = (TRIE_KEY_READ);
-/** If `TRIE_KEY_IN_VALUE`, writes to ...? */
-typedef int (*PT_(key_write_fn))(PT_(value) *, const PT_(value));
-static PT_(key_write_fn) PT_(key_write_value) = (TRIE_KEY_WRITE);
+static PT_(key_read_fn) PT_(read_key) = (TRIE_READ_KEY);
+/** If `TRIE_READ_KEY`, writes to the key in the value. */
+typedef int (*PT_(key_write_fn))(PT_(value) *, PT_(key));
+/* Verify `TRIE_READ_KEY` is a function satisfying
+ <typedef:<PT>key_write_fn>. */
+static PT_(key_write_fn) PT_(write_key) = (TRIE_WRITE_KEY);
 struct PT_(entry) { PT_(value) value; };
-static const char *PT_(entry_key)(const struct PT_(entry) *const e)
-	{ return PT_(key_read_value)(e->value); }
-static int PT_(assign_key)(struct PT_(entry) *const e,
-	const PT_(value) value) {
-	return PT_(key_write_value)(&e->value, value);
-}
+static const char *PT_(entry_key)(const PT_(value) *const v)
+	{ return PT_(read_key)(v); }
+static int PT_(assign_key)(PT_(value) *const v,
+	const PT_(key) key) { return PT_(write_key)(v, key); }
 
 #endif /* custom --> */
-
 
 
 struct PT_(tree);
@@ -183,18 +179,18 @@ struct T_(trie) { struct PT_(tree) *root; };
 /** @return A candidate match for `key`, non-null, in `tree`, which is the
  valid root, or null, if `key` is definitely not in the trie. */
 static int PT_(match)(struct PT_(tree) *tree,
-	const char *const key, PT_(entry) *const match) {
+	const char *const string, PT_(entry) *const match) {
 	size_t bit; /* In bits of `key`. */
 	struct { size_t cur, next; } byte; /* `key` null checks. */
-	assert(tree && key && match);
+	assert(tree && string && match);
 	for(bit = 0, byte.cur = 0; ; ) {
 		unsigned br0 = 0, br1 = tree->bsize, lf = 0;
 		while(br0 < br1) {
 			const struct trie_branch *const branch = tree->branch + br0;
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
-				if(key[byte.cur] == '\0') return 0; /* `key` too short. */
-			if(!TRIE_QUERY(key, bit))
+				if(string[byte.cur] == '\0') return 0; /* `key` too short. */
+			if(!TRIE_QUERY(string, bit))
 				br1 = ++br0 + branch->left;
 			else
 				br0 += branch->left + 1, lf += branch->left + 1;
@@ -774,7 +770,7 @@ static size_t T_(trie_size)(const struct T_(trie_cursor) *const cur)
 
 #ifdef TRIE_TO_STRING /* <!-- str: _sic_, have a natural string. */
 #define STR_(n) TRIE_CAT(T_(trie), n)
-/** Uses the natural `a` -> `z` that is defined by `TRIE_KEY_IN_VALUE`.
+/** Uses the natural `a` -> `z` that is defined by `TRIE_READ_KEY`.
  @fixme `sprintf` is large and cumbersome when a case statement will do. */
 static void PT_(to_string)(const PT_(entry) *const e,
 	char (*const z)[12]) {
@@ -828,8 +824,8 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }*/
 #undef TRIE_KEY_TO_STRING
 #endif
 
-#ifdef TRIE_KEY_IN_VALUE
-#undef TRIE_KEY_IN_VALUE
+#ifdef TRIE_READ_KEY
+#undef TRIE_READ_KEY
 #endif
 #ifdef TRIE_KEY_ASSIGN
 #undef TRIE_KEY_ASSIGN

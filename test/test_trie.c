@@ -1,3 +1,8 @@
+/* Case-insensitive insert compare ignore on
+ bit == 2
+ && 0xC0 & key[i] == 0x40 ('@')
+ && sample branch's key is not <\0\7F@`^~_>? */
+
 #include <stdlib.h> /* EXIT malloc free rand */
 #include <stdio.h>  /* *printf */
 #include <assert.h> /* assert */
@@ -76,16 +81,16 @@ static void mapint_filler(const char **const key, unsigned *const value) {
 #include "../src/trie.h"
 
 
-#if 1
 /* Stores a value in the leaf itself and not externally. This structure is
  sensitive to the size of the leaves; optimally, would be a pointer's length,
  which it is on 64-byte machines. */
 struct key8 { char key[8]; };
-static void key8_filler(struct key8 *const k)
-	{ orcish(k->key, sizeof k->key); }
 static const char *key8_read_key(const struct key8 *const k) { return k->key; }
 static int key8_write_key(struct key8 *const k, const char *string)
-	{ return strcpy(k->key, string), 1; }
+{ printf("--strcpy %s\n", string);
+		return strcpy(k->key, string), 1; }
+static void key8_filler(struct key8 *const k)
+	{ orcish(k->key, sizeof k->key); }
 #define TRIE_NAME key8
 #define TRIE_VALUE struct key8
 #define TRIE_READ_KEY &key8_read_key
@@ -93,7 +98,6 @@ static int key8_write_key(struct key8 *const k, const char *string)
 #define TRIE_TEST &key8_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
-#endif
 
 
 
@@ -105,7 +109,7 @@ static void foo_filler(struct foo *const foo)
 /* A structure including a string that's used as the key. */
 #define TRIE_NAME foo
 #define TRIE_VALUE struct foo
-#define TRIE_KEY_IN_VALUE &foo_key
+#define TRIE_READ_KEY &foo_key
 #define TRIE_TO_STRING
 #define TRIE_TEST &foo_filler
 #include "../src/trie.h"
@@ -159,7 +163,7 @@ static const char *star_key(const struct star *const star)
 	{ return star->name; }
 #define TRIE_NAME star
 #define TRIE_VALUE struct star
-#define TRIE_KEY_IN_VALUE &star_key
+#define TRIE_READ_KEY &star_key
 #define TRIE_TEST &star_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
@@ -174,7 +178,7 @@ static const char *keyval_key(const struct keyval *const kv)
 	{ return &kv->key; }
 #define TRIE_NAME keyval
 #define TRIE_VALUE struct keyval
-#define TRIE_KEY_IN_VALUE &keyval_key
+#define TRIE_READ_KEY &keyval_key
 #define TRIE_TEST &keyval_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
