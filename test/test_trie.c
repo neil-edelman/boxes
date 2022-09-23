@@ -81,14 +81,39 @@ static void mapint_filler(const char **const key, unsigned *const value) {
 #include "../src/trie.h"
 
 
+/** This is functionally very similar to a map, except there is only one
+ pointer. The key is now part of the value, so one has to define projection
+ functions. */
+struct foo { int foo; const char *key; };
+static const char *foo_read_key(const struct foo *const foo)
+	{ return foo->key; }
+static int foo_write_key(struct foo *const foo, const char *string)
+	{ return foo->key = string, 1; }
+static void foo_filler(struct foo *const foo)
+	{ foo->foo = 42; str32_filler(&foo->key); }
+#define TRIE_NAME foo
+#define TRIE_VALUE struct foo
+#define TRIE_READ_KEY &foo_read_key
+#define TRIE_WRITE_KEY &foo_write_key
+#define TRIE_TO_STRING
+#define TRIE_TEST &foo_filler
+#include "../src/trie.h"
+
+
 /* Stores a value in the leaf itself and not externally. This structure is
  sensitive to the size of the leaves; optimally, would be a pointer's length,
- which it is on 64-byte machines. */
+ (which this example is on 64-byte machines.) The attraction of this is not
+ that it is faster, but it's convenient to not store keys somewhere else,
+ (somewhere bigger.) */
 struct str8 { char str[8]; };
-static const char *str8_read_key(const struct str8 *const k) { return k->str; }
-static int str8_write_key(struct str8 *const s, const char *string)
-{ printf("--strcpy %s\n", string);
-		return strcpy(s->str, string), 1; }
+static const char *str8_read_key(const struct str8 *const s) { return s->str; }
+/** If one were really careful about calling it with strings of length < 8, it
+ would be a `strcpy()`. */
+static int str8_write_key(struct str8 *const s, const char *string) {
+	unsigned i;
+	for(i = 0; ; i++) { if(string[i] == '\0') break; if(i == 7) return 0; }
+	return memcpy(s->str, string, i), 1;
+}
 static void str8_filler(struct str8 *const s)
 	{ orcish(s->str, sizeof s->str); }
 #define TRIE_NAME str8
@@ -100,20 +125,6 @@ static void str8_filler(struct str8 *const s)
 #include "../src/trie.h"
 
 
-
-#if 0
-struct foo { int foo; const char *key; };
-static const char **foo_key(struct foo *const foo) { return &foo->key; }
-static void foo_filler(struct foo *const foo)
-	{ foo->foo = 42; str32_filler(&foo->key); }
-/* A structure including a string that's used as the key. */
-#define TRIE_NAME foo
-#define TRIE_VALUE struct foo
-#define TRIE_READ_KEY &foo_key
-#define TRIE_TO_STRING
-#define TRIE_TEST &foo_filler
-#include "../src/trie.h"
-#endif
 
 
 
@@ -252,6 +263,7 @@ int main(void) {
 	str_trie_test(), str32_pool_clear(&global_pool); /* Key set. */
 	colour_trie_test(); /* Custom key set with enum string backing. */
 	mapint_trie_test(), str32_pool_clear(&global_pool); /* `string -> int`. */
+	foo_trie_test(), str32_pool_clear(&global_pool); /* Custom value. */
 	str8_trie_test(); /* Key set with no dependancy on outside keys. */
 
 	//foo_trie_test(), str32_pool_clear(&global_pool); /* custom with pointers */

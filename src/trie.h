@@ -823,12 +823,9 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }*/
 #undef TRIE_KEY
 #undef TRIE_KEY_TO_STRING
 #endif
-
 #ifdef TRIE_READ_KEY
 #undef TRIE_READ_KEY
-#endif
-#ifdef TRIE_KEY_ASSIGN
-#undef TRIE_KEY_ASSIGN
+#undef TRIE_WRITE_KEY
 #endif
 #undef BOX_
 #undef BOX
