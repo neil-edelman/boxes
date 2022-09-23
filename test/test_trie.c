@@ -177,7 +177,8 @@ static void star_filler(struct star *const star) {
 #include "../src/trie.h"
 
 
-/** This is an external pointer; the trie is just an index. */
+/** This is an external pointer; the trie is just an index. We will be
+ responsible for assigning keys. */
 struct keyval { char key[12]; int value; };
 #define POOL_NAME keyval
 #define POOL_TYPE struct keyval
@@ -186,17 +187,6 @@ static struct keyval_pool kv_pool;
 static const char *keyval_read_key(/*fixme! If possible? const*/
 	struct keyval *const*const kv_ptr)
 	{ return (*kv_ptr)->key; }
-static int keyval_write_key(struct keyval **const kv_ptr,
-	const char *const string) {
-	struct keyval *const kv = *kv_ptr;
-	char *str = kv->key;
-	unsigned i;
-	assert(kv);
-	for(i = 0; string[i] != '\0'; i++) /* Count and validate. */
-		if(i == sizeof kv->key - 1) return 0;
-	str[0] = string[0];
-	return memcpy(kv->key, string, i), 1;
-}
 static void keyval_filler(struct keyval **const kv_ptr) {
 	struct keyval *kv = keyval_pool_new(&kv_pool);
 	assert(kv); /* Not testing malloc. */
@@ -207,7 +197,6 @@ static void keyval_filler(struct keyval **const kv_ptr) {
 #define TRIE_NAME keyval
 #define TRIE_VALUE struct keyval *
 #define TRIE_READ_KEY &keyval_read_key
-#define TRIE_WRITE_KEY &keyval_write_key
 #define TRIE_TEST &keyval_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"

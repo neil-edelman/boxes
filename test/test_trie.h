@@ -406,14 +406,30 @@ static void PT_(test)(void) {
 	for(n = 0; n < es_size; n++) {
 		int show = !((n + 1) & n) || n + 1 == es_size;
 		PT_(key) key;
+#ifdef TRIE_VALUE
+		PT_(value) *value;
+#endif
 		size_t m;
 		e = es + n;
 		key = PT_(entry_key)(&e->data);
 		if(show) printf("%lu: adding %s.\n",
 			(unsigned long)n, PT_(key_string)(key));
-		switch(T_(trie_try)(&trie, key)) {
+		switch(
+#ifndef TRIE_VALUE /* <!-- key set */
+		T_(trie_try)(&trie, key)
+#else /* key set --><!-- map */
+		T_(trie_try)(&trie, key, &value)
+#endif /* map --> */
+		) {
 		case TRIE_ERROR: assert(0); return;
-		case TRIE_UNIQUE: e->is_in = 1; n_unique++; break;
+		case TRIE_UNIQUE: e->is_in = 1; n_unique++;
+#ifndef TRIE_VALUE /* <!-- set */
+#elif !defined(TRIE_READ_KEY) /* set --><!-- map */
+			*value = e->data.value;
+#else /* map --><!-- custom */
+			*value = e->data;
+#endif /* custom --> */
+			break;
 		case TRIE_PRESENT: printf("Key %s is in trie already.\n",
 			PT_(key_string)(key)); break;
 		}

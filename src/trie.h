@@ -5,8 +5,10 @@
  indirect key that maps to `const char *`, (such as an `enum` prefix map.)
  TRIE_VALUE: optional, makes it a map from <typedef:<PT>key> to
  <typedef:<PT>value>; prefer small size.
- TRIE_READ_KEY, TRIE_WRITE_KEY: requires TRIE_VALUE, both must be defined or
- not. Function that chooses key from <PT>value
+ TRIE_READ_KEY, TRIE_WRITE_KEY: requires TRIE_VALUE. Function that chooses key
+ from <PT>value, and function that writes key to <PT>value. TRIE_WRITE_KEY is
+ optional, but `TRIE_READ_KEY` and not `TRIE_WRITE_KEY` means the trie is in an
+ undefined state until the key is written.
  TRIE_TO_STRING: optional no arguments, uses keys and <to_string.h>
  TRIE_DEFAULT_NAME, TRIE_DEFAULT: get or default set default */
 #ifndef TRIE_NAME
@@ -27,8 +29,8 @@
 #if defined(TRIE_READ_KEY) && !defined(TRIE_VALUE)
 #error TRIE_READ_KEY requires TRIE_VALUE.
 #endif
-#if defined(TRIE_READ_KEY) ^ defined(TRIE_WRITE_KEY)
-#error TRIE_READ_KEY and TRIE_WRITE_KEY have to be mutually defined.
+#if defined(TRIE_WRITE_KEY) && !defined(TRIE_READ_KEY)
+#error TRIE_WRITE_KEY needs TRIE_READ_KEY.
 #endif
 #if defined(TRIE_DEFAULT_NAME) && !defined(TRIE_DEFAULT)
 #error TRIE_DEFAULT_NAME requires TRIE_DEFAULT.
@@ -149,16 +151,20 @@ typedef PT_(key) (*PT_(key_read_fn))(const PT_(value) *);
 /* Verify `TRIE_READ_KEY` is a function satisfying
  <typedef:<PT>key_read_fn>. */
 static PT_(key_read_fn) PT_(read_key) = (TRIE_READ_KEY);
-/** If `TRIE_READ_KEY`, writes to the key in the value. */
-typedef int (*PT_(key_write_fn))(PT_(value) *, PT_(key));
-/* Verify `TRIE_READ_KEY` is a function satisfying
- <typedef:<PT>key_write_fn>. */
-static PT_(key_write_fn) PT_(write_key) = (TRIE_WRITE_KEY);
 static const char *PT_(entry_key)(const PT_(value) *const v)
 	{ return PT_(read_key)(v); }
+#ifdef TRIE_WRITE_KEY /* <!-- write */
+/** If `TRIE_WRITE_KEY`, writes to the key in the value. */
+typedef int (*PT_(key_write_fn))(PT_(value) *, PT_(key));
+/* Verify `TRIE_WRITE_KEY` is a function satisfying
+ <typedef:<PT>key_write_fn>. */
+static PT_(key_write_fn) PT_(write_key) = (TRIE_WRITE_KEY);
 static int PT_(assign_key)(PT_(value) *const v,
 	const PT_(key) key) { return PT_(write_key)(v, key); }
-
+#else /* write --><!-- !write */
+static int PT_(assign_key)(PT_(value) *const v, const PT_(key) key)
+	{ return (void)v, (void)key, 1; /* The user has the responsibility! */ }
+#endif /* !write --> */
 #endif /* custom --> */
 
 
@@ -693,6 +699,15 @@ static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
 #endif /* set --> */
 #endif /* taken from tree */
 
+
+
+
+
+
+
+
+#ifndef TRIE_VALUE /* <!-- key set */
+
 /** @order \O(max(|`key`|, |`trie.keys`|)) */
 static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	const PT_(key) key) {
@@ -704,6 +719,35 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	return PT_(query)(trie, PT_(key_string)(key), 0) ? TRIE_PRESENT
 		: (PT_(add_unique)(trie, key, &e) ? TRIE_UNIQUE : (printf("wtf?\n"), TRIE_ERROR));
 }
+
+#else /* key set --><!-- map */
+
+/**  */
+static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
+	const PT_(key) key, PT_(value) **const value) {
+	PT_(entry) *e;
+	assert(trie && PT_(key_string)(key));
+	printf("try: %s\n", PT_(key_string)(key));
+	if(PT_(query)(trie, PT_(key_string)(key), 0)) return TRIE_PRESENT;
+	if(!PT_(add_unique)(trie, key, &e)) return TRIE_ERROR;
+#ifndef TRIE_READ_KEY /* <!-- key map */
+	if(value) *value = &e->value;
+#else /* key map --><!-- custom */
+#ifndef TRIE_WRITE_KEY /* <!-- write */
+	/* This is essential; must have pointer to copy string somehow. */
+	assert(value);
+	*value = e;
+#else
+	if(value) *value = e;
+#endif /* write --> */
+#endif /* custom --> */
+	return TRIE_UNIQUE;
+}
+
+#endif /* map --> */
+
+
+
 
 #if 0
 /** Updates or adds a pointer to `x` into `trie`.
