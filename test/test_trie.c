@@ -26,6 +26,7 @@ static struct str32_pool global_pool;
 /** Generate a random name from `global_pool` and assign it to `key`. */
 static void str32_filler(const char **const key) {
 	struct str32 *backing = str32_pool_new(&global_pool);
+	/* Unlikely to fail, but for tests, we don't have recourse to back out. */
 	assert(backing && key);
 	orcish(backing->str, sizeof backing->str);
 	*key = backing->str;
@@ -125,15 +126,8 @@ static void str8_filler(struct str8 *const s)
 #include "../src/trie.h"
 
 
-
-
-
-
-#if 0
-
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
- Sol. This is just a little bit more complex than colours, storing a pointer to
- a static name and the distance in a struct. */
+ Sol. */
 #define STARS \
 	X(Sol, 0), X(Sirius, 8.6), X(Canopus, 310), X(Rigil Kentaurus, 4.4), \
 	X(Toliman, 4.4), X(Arcturus, 37), X(Vega, 25), X(Capella, 43), \
@@ -159,43 +153,64 @@ static void str8_filler(struct str8 *const s)
 	X(Merak, 79), X(Ankaa, 77), X(Girtab, 460), X(Enif, 670), X(Scheat, 200), \
 	X(Sabik, 88), X(Phecda, 84), X(Aludra, 2000), X(Markeb, 540), \
 	X(Navi, 610), X(Markab, 140), X(Aljanah, 72), X(Acrab, 404)
-struct star { char *name; double distance; };
+struct star { const char *name; double distance; };
 #define X(A, B) { #A, B }
 static const struct star stars[] = { STARS };
 #undef X
 static const size_t stars_size = sizeof stars / sizeof *stars;
-static void star_filler(struct star *const s) {
-	const struct star *r = stars
-		+ (unsigned)rand() / (RAND_MAX / stars_size + 1);
-	s->name = r->name;
-	s->distance = r->distance;
-}
-static const char *star_key(const struct star *const star)
+static const char *star_read_key(const struct star *const star)
 	{ return star->name; }
+static int star_write_key(struct star *const s, const char *string)
+	{ return s->name = string, 1; }
+static void star_filler(struct star *const star) {
+	const struct star *table = stars
+		+ (unsigned)rand() / (RAND_MAX / stars_size + 1);
+	star->name = table->name;
+	star->distance = table->distance;
+}
 #define TRIE_NAME star
 #define TRIE_VALUE struct star
-#define TRIE_READ_KEY &star_key
+#define TRIE_READ_KEY &star_read_key
+#define TRIE_WRITE_KEY &star_write_key
 #define TRIE_TEST &star_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
 
-/* This is organized, alphabetized, and supports range-queries by key. */
+/** This is an external pointer; the trie is just an index. */
 struct keyval { char key[12]; int value; };
-static void keyval_filler(struct keyval *const kv)
-	{ kv->value = rand() / (RAND_MAX / 1098 + 1) - 99;
-	orcish(kv->key, sizeof kv->key); }
-static const char *keyval_key(const struct keyval *const kv)
-	{ return &kv->key; }
+#define POOL_NAME keyval
+#define POOL_TYPE struct keyval
+#include "pool.h"
+static struct keyval_pool kv_pool;
+static const char *keyval_read_key(/*fixme! If possible? const*/
+	struct keyval *const*const kv_ptr)
+	{ return (*kv_ptr)->key; }
+static int keyval_write_key(struct keyval **const kv_ptr,
+	const char *const string) {
+	struct keyval *const kv = *kv_ptr;
+	char *str = kv->key;
+	unsigned i;
+	assert(kv);
+	for(i = 0; string[i] != '\0'; i++) /* Count and validate. */
+		if(i == sizeof kv->key - 1) return 0;
+	str[0] = string[0];
+	return memcpy(kv->key, string, i), 1;
+}
+static void keyval_filler(struct keyval **const kv_ptr) {
+	struct keyval *kv = keyval_pool_new(&kv_pool);
+	assert(kv); /* Not testing malloc. */
+	kv->value = rand() / (RAND_MAX / 1098 + 1) - 99;
+	orcish(kv->key, sizeof kv->key);
+	*kv_ptr = kv;
+}
 #define TRIE_NAME keyval
-#define TRIE_VALUE struct keyval
-#define TRIE_READ_KEY &keyval_key
+#define TRIE_VALUE struct keyval *
+#define TRIE_READ_KEY &keyval_read_key
+#define TRIE_WRITE_KEY &keyval_write_key
 #define TRIE_TEST &keyval_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
-
-#endif /* 0 */
-
 
 
 #if 0
@@ -264,11 +279,9 @@ int main(void) {
 	colour_trie_test(); /* Custom key set with enum string backing. */
 	mapint_trie_test(), str32_pool_clear(&global_pool); /* `string -> int`. */
 	foo_trie_test(), str32_pool_clear(&global_pool); /* Custom value. */
-	str8_trie_test(); /* Key set with no dependancy on outside keys. */
-
-	//foo_trie_test(), str32_pool_clear(&global_pool); /* custom with pointers */
-	/*star_trie_test();
-	keyval_trie_test();*/
+	str8_trie_test(); /* Small key set with no dependancy on outside keys. */
+	star_trie_test(); /* Custom value with enum strings backing. */
+	keyval_trie_test(); /*  */
 	str32_pool_(&global_pool); /* Destroy global string pool. */
 	return EXIT_SUCCESS;
 }
