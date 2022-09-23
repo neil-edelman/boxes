@@ -267,7 +267,7 @@ static void PT_(graph_tree_logic)(const struct PT_(tree) *const tr,
 	for(i = 0; i <= tr->bsize; i++) if(!trie_bmp_test(&tr->bmp, i)) fprintf(fp,
 		"\ttree%pleaf%u [label = <%s<font color=\"Gray75\">⊔</font>>];\n",
 		(const void *)tr, i,
-		PT_(key_string)(PT_(entry_key)(tr->leaf[i].as_entry)));
+		PT_(key_string)(PT_(entry_key)(&tr->leaf[i].as_entry)));
 
 	for(i = 0; i <= tr->bsize; i++) if(trie_bmp_test(&tr->bmp, i))
 		PT_(graph_tree_logic)(tr->leaf[i].as_link, 0, fp);
@@ -359,7 +359,7 @@ static void PT_(valid_tree)(const struct PT_(tree) *const tree) {
 			PT_(valid_tree)(tree->leaf[i].as_link);
 		} else {
 			const char *str2;
-			str2 = PT_(key_string)(PT_(entry_key)(tree->leaf[i].as_entry));
+			str2 = PT_(key_string)(PT_(entry_key)(&tree->leaf[i].as_entry));
 			if(str1) cmp = strcmp(str1, str2), assert(cmp < 0);
 			str1 = str2;
 		}
@@ -408,7 +408,7 @@ static void PT_(test)(void) {
 		PT_(key) key;
 		size_t m;
 		e = es + n;
-		key = PT_(entry_key)(e->data);
+		key = PT_(entry_key)(&e->data);
 		if(show) printf("%lu: adding %s.\n",
 			(unsigned long)n, PT_(key_string)(key));
 		switch(T_(trie_try)(&trie, key)) {

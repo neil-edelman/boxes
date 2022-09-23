@@ -99,7 +99,7 @@ static int trie_is_prefix(const char *a, const char *b) {
 #if TRIE_TRAITS == 0 /* <!-- base trie */
 
 
-#ifdef TRIE_KEY /* <!-- key */
+#ifdef TRIE_KEY /* <!-- key: Custom key. */
 /** The default is `const char *`. (Any type that decays to this will be fine
  to use the default, but once in the trie, it must not change.) If one sets
  `TRIE_KEY`, then one must also set <typedef:<PT>key_to_string_fn> by
@@ -116,7 +116,7 @@ static PT_(key_to_string_fn) PT_(key_string) = (TRIE_KEY_TO_STRING);
 #else /* key --><!-- !key */
 /** The string of `key` is itself by default.
  @implements `<PT>key_to_string_fn` */
-static const char *PT_(string_to_string)(const char *const key) { return key; }
+static const char *PT_(string_to_string)(const char *const s) { return s; }
 static PT_(key_to_string_fn) PT_(key_string) = &PT_(string_to_string);
 #endif /* !key --> */
 
@@ -124,7 +124,7 @@ static PT_(key_to_string_fn) PT_(key_string) = &PT_(string_to_string);
 #ifndef TRIE_VALUE /* <!-- key set */
 
 typedef PT_(key) PT_(entry);
-static PT_(key) PT_(entry_key)(const PT_(key) key) { return key; }
+static PT_(key) PT_(entry_key)(const PT_(key) *const key) { return *key; }
 static int PT_(assign_key)(PT_(key) *const pkey, PT_(key) key)
 	{ return *pkey = key, 1; }
 
@@ -134,7 +134,8 @@ typedef TRIE_VALUE PT_(value);
 /** On `KEY_VALUE` but not `KEY_KEY_*`, defines an entry. */
 struct T_(trie_entry) { PT_(key) key; PT_(value) value; };
 typedef struct T_(trie_entry) PT_(entry);
-static PT_(key) PT_(entry_key)(const struct T_(trie_entry) e) { return e.key; }
+static PT_(key) PT_(entry_key)(const struct T_(trie_entry) *const e)
+	{ return e->key; }
 static int PT_(assign_key)(struct T_(trie_entry) *const e, PT_(key) key)
 	{ return e->key = key, 1; }
 
@@ -142,7 +143,7 @@ static int PT_(assign_key)(struct T_(trie_entry) *const e, PT_(key) key)
 
 /* The entry is the value. */
 typedef TRIE_VALUE PT_(value);
-typedef PT_(value) *PT_(entry);
+typedef PT_(value) PT_(entry);
 /** If `TRIE_READ_KEY`, extracts the key from `TRIE_VALUE`. */
 typedef PT_(key) (*PT_(key_read_fn))(const PT_(value) *);
 /* Verify `TRIE_READ_KEY` is a function satisfying
@@ -153,7 +154,6 @@ typedef int (*PT_(key_write_fn))(PT_(value) *, PT_(key));
 /* Verify `TRIE_READ_KEY` is a function satisfying
  <typedef:<PT>key_write_fn>. */
 static PT_(key_write_fn) PT_(write_key) = (TRIE_WRITE_KEY);
-struct PT_(entry) { PT_(value) value; };
 static const char *PT_(entry_key)(const PT_(value) *const v)
 	{ return PT_(read_key)(v); }
 static int PT_(assign_key)(PT_(value) *const v,
@@ -258,7 +258,7 @@ static int PT_(to_successor_c)(const struct PT_(tree) *const root,
 		return 1;
 	}
 	assert(ref->idx <= ref->tree->bsize); /* Concurrent modification? */
-	x = PT_(entry_key)(ref->tree->leaf[ref->idx].as_entry); /* Might need. */
+	//x = PT_(entry_key)(ref->tree->leaf[ref->idx].as_entry); /* Might need. */
 	if(++ref->idx <= ref->tree->bsize) return 1; /* All good. */
 	/* Off the edge. Restart. */
 	assert(0);
@@ -364,7 +364,7 @@ static int PT_(query)(const struct T_(trie) *const trie,
 	PT_(entry) entry;
 	if(trie && string && trie->root && trie->root->bsize != UCHAR_MAX
 		&& PT_(match)(trie->root, string, &entry)
-		&& !strcmp(PT_(key_string)(PT_(entry_key)(entry)), string)) {
+		&& !strcmp(PT_(key_string)(PT_(entry_key)(&entry)), string)) {
 		if(result) *result = entry;
 		return 1;
 	} else {
@@ -380,14 +380,14 @@ static void PT_(prefix)(struct T_(trie) *const trie,
 	/* Make sure actually a prefix. */
 	if(cur->trie && !trie_is_prefix(prefix,
 		PT_(key_string)(PT_(entry_key)(
-		cur->tree.t0->leaf[cur->leaf.lf0].as_entry))))
+		&cur->tree.t0->leaf[cur->leaf.lf0].as_entry))))
 		cur->tree.t0 = 0;
 }
 
 /** @return The leftmost key `lf` of `tree`. */
 static const char *PT_(sample)(const struct PT_(tree) *tree, unsigned lf) {
 	while(trie_bmp_test(&tree->bmp, lf)) tree = tree->leaf[lf].as_link, lf = 0;
-	return PT_(key_string)(PT_(entry_key)(tree->leaf[lf].as_entry));
+	return PT_(key_string)(PT_(entry_key)(&tree->leaf[lf].as_entry));
 }
 
 #if 0
@@ -774,7 +774,7 @@ static size_t T_(trie_size)(const struct T_(trie_cursor) *const cur)
  @fixme `sprintf` is large and cumbersome when a case statement will do. */
 static void PT_(to_string)(const PT_(entry) *const e,
 	char (*const z)[12]) {
-	assert(e && z), sprintf(*z, "%.11s", PT_(key_string(PT_(entry_key)(*e))));
+	assert(e && z), sprintf(*z, "%.11s", PT_(key_string(PT_(entry_key)(e))));
 }
 #define TO_STRING &PT_(to_string)
 #define TO_STRING_LEFT '{'

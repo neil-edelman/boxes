@@ -84,18 +84,18 @@ static void mapint_filler(const char **const key, unsigned *const value) {
 /* Stores a value in the leaf itself and not externally. This structure is
  sensitive to the size of the leaves; optimally, would be a pointer's length,
  which it is on 64-byte machines. */
-struct key8 { char key[8]; };
-static const char *key8_read_key(const struct key8 *const k) { return k->key; }
-static int key8_write_key(struct key8 *const k, const char *string)
+struct str8 { char str[8]; };
+static const char *str8_read_key(const struct str8 *const k) { return k->str; }
+static int str8_write_key(struct str8 *const s, const char *string)
 { printf("--strcpy %s\n", string);
-		return strcpy(k->key, string), 1; }
-static void key8_filler(struct key8 *const k)
-	{ orcish(k->key, sizeof k->key); }
-#define TRIE_NAME key8
-#define TRIE_VALUE struct key8
-#define TRIE_READ_KEY &key8_read_key
-#define TRIE_WRITE_KEY &key8_write_key
-#define TRIE_TEST &key8_filler
+		return strcpy(s->str, string), 1; }
+static void str8_filler(struct str8 *const s)
+	{ orcish(s->str, sizeof s->str); }
+#define TRIE_NAME str8
+#define TRIE_VALUE struct str8
+#define TRIE_READ_KEY &str8_read_key
+#define TRIE_WRITE_KEY &str8_write_key
+#define TRIE_TEST &str8_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
@@ -252,7 +252,7 @@ int main(void) {
 	str_trie_test(), str32_pool_clear(&global_pool); /* Key set. */
 	colour_trie_test(); /* Custom key set with enum string backing. */
 	mapint_trie_test(), str32_pool_clear(&global_pool); /* `string -> int`. */
-	key8_trie_test(); /* Key set with no dependancy on outside keys. */
+	str8_trie_test(); /* Key set with no dependancy on outside keys. */
 
 	//foo_trie_test(), str32_pool_clear(&global_pool); /* custom with pointers */
 	/*star_trie_test();
