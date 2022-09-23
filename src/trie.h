@@ -62,7 +62,7 @@
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-branches-left root (`{a, aa, aaa, ...}`). Parameter sets the
  maximum tree size. Prefer alignment `4n - 2`; cache `32n - 2`. */
-#define TRIE_MAX_LEFT 3/*6*//*254*/
+#define TRIE_MAX_LEFT /*3*//*6*/254
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX - 1
 #error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX - 1]`.
 #endif

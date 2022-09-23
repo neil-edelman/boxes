@@ -115,8 +115,20 @@ static int str8_write_key(struct str8 *const s, const char *string) {
 	for(i = 0; ; i++) { if(string[i] == '\0') break; if(i == 7) return 0; }
 	return memcpy(s->str, string, i), 1;
 }
-static void str8_filler(struct str8 *const s)
-	{ orcish(s->str, sizeof s->str); }
+static void str8_filler(struct str8 *const s) {
+#if 0
+	/* This is not enough range. */
+	orcish(s->str, sizeof s->str);
+#else
+	static const char alphabet[] = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		"abcdefghijklmnopqrstuvwxyz~";
+	/* Assumes ASCII. */
+	unsigned i;
+	for(i = 0; i < 7; i++) s->str[i]
+		= alphabet[rand() / (RAND_MAX / ((int)sizeof alphabet - 1) + 1)];
+	s->str[i] = '\0';
+#endif
+}
 #define TRIE_NAME str8
 #define TRIE_VALUE struct str8
 #define TRIE_READ_KEY &str8_read_key
