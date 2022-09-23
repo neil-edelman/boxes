@@ -409,7 +409,6 @@ static void PT_(test)(void) {
 #ifdef TRIE_VALUE
 		PT_(value) *value;
 #endif
-		size_t m;
 		e = es + n;
 		key = PT_(entry_key)(&e->data);
 		if(show) printf("%lu: adding %s.\n",
@@ -435,8 +434,23 @@ static void PT_(test)(void) {
 		}
 		if(show) PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-insert.gv", n);
 		assert(!errno);
+		{
+			struct PT_(forward) it;
+			size_t count = 0;
+			it = PT_(forward)(&trie);
+			const PT_(entry) *x;
+			while(PT_(is_element_c)(x = PT_(next_c)(&it))) count++;
+			/*count = T_(trie_size)(T_(trie_cursor)(&cur));*/
+			printf("Counted %lu elements, checksum %lu.\n", count, n_unique);
+			assert(count == n_unique);
+		}
+#if 0
 		for(m = 0; m <= n; m++) {
+			PT_(entry) result;
+			int present;
 			if(!es[m].is_in) continue;
+			key = PT_(entry_key)(&es[m].data);
+			present = T_(trie_query)(&trie, key, &result);
 			/*data = T_(trie_get)(&trie, PT_(entry_key)(&es[m].data));*/
 			/* This is O(n^2) spam.
 			printf("%lu: test get(%s) = %s\n", (unsigned long)n,
@@ -444,6 +458,7 @@ static void PT_(test)(void) {
 				data ? PT_(to_key)(data) : "<didn't find>");*/
 			/*assert(data == &es[m].data);*/
 		}
+#endif
 	}
 
 	{

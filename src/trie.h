@@ -597,13 +597,12 @@ found:
 assign:
 	{
 		int success = PT_(assign_key)(&leaf->as_entry, key);
-		assert(success);
+		assert(success); /* FIXME */
 	}
-	//leaf->as_entry.key = key;
 	*entry = &leaf->as_entry;
 	return 1;
 catch:
-	printf("*** add_unique catch ***\n");
+	/* `malloc` doesn't have to set it according to `C89`. */
 	if(!errno) errno = ERANGE;
 	return 0;
 }
