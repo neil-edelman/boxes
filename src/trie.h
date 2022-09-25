@@ -62,7 +62,7 @@
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-branches-left root (`{a, aa, aaa, ...}`). Parameter sets the
  maximum tree size. Prefer alignment `4n - 2`; cache `32n - 2`. */
-#define TRIE_MAX_LEFT /*3*//*6*/254
+#define TRIE_MAX_LEFT 3/*6*//*254*/
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX - 1
 #error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX - 1]`.
 #endif
@@ -253,22 +253,42 @@ finally:
 
 static int PT_(to_successor_c)(const struct PT_(tree) *const root,
 	struct PT_(ref_c) *const ref) {
-	PT_(key) x;
-	/*struct PT_(ref_c) next;*/
 	assert(ref);
-	if(!root || root->bsize == UCHAR_MAX) return 0;
-	if(!ref->tree) { /* Start. */
-		ref->tree = root, ref->idx = 0;
-		while(trie_bmp_test(&ref->tree->bmp, 0))
-			ref->tree = ref->tree->leaf[ref->idx].as_link;
-		return 1;
+	printf("_next_\n");
+	if(!root || root->bsize == UCHAR_MAX) return 0; /* Empty. */
+	if(!ref->tree) { ref->tree = root, ref->idx = 0; } /* Start. */
+	else if(++ref->idx > ref->tree->bsize) { /* Gone off the end. */
+		const struct PT_(tree) *const old = ref->tree;
+		const char *const sample =
+			PT_(key_string)(PT_(entry_key)(&old->leaf[ref->idx - 1].as_entry));
+		const struct PT_(tree) *tree = root;
+		size_t bit = 0;
+		printf("sample %s\n", sample);
+		for(ref->tree = 0, ref->idx = 0; tree != old; ) {
+			unsigned br0 = 0, br1 = tree->bsize, lf = 0;
+			while(br0 < br1) {
+				const struct trie_branch *const branch = tree->branch + br0;
+				bit += branch->skip;
+				if(!TRIE_QUERY(sample, bit))
+					br1 = ++br0 + branch->left;
+				else
+					br0 += branch->left + 1, lf += branch->left + 1;
+				bit++;
+			}
+			if(lf < tree->bsize) ref->tree = tree, ref->idx = lf + 1,
+				printf("next: continues in tree %s, leaf %u.\n",
+				orcify(ref->tree), ref->idx);
+			assert(trie_bmp_test(&tree->bmp, lf));
+			tree = tree->leaf[lf].as_link;
+		}
+		if(!ref->tree) return 0; /* End of iteration. */
 	}
-	assert(ref->idx <= ref->tree->bsize); /* Concurrent modification? */
-	//x = PT_(entry_key)(ref->tree->leaf[ref->idx].as_entry); /* Might need. */
-	if(++ref->idx <= ref->tree->bsize) return 1; /* All good. */
-	/* Off the edge. Restart. */
-	assert(0);
-	return 0;
+	/* Fall through until hit data. */
+	while(trie_bmp_test(&ref->tree->bmp, ref->idx))
+		ref->tree = ref->tree->leaf[ref->idx].as_link, ref->idx = 0;
+	printf("-->%s\n",
+		PT_(key_string)(PT_(entry_key)(&ref->tree->leaf[ref->idx].as_entry)));
+	return 1;
 }
 
 
@@ -299,63 +319,6 @@ static void PT_(begin)(struct PT_(iterator) *const it,
 }
 /** Advances `it`. @return The previous value or null. @implements next */
 const static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
-	assert(it);
-	printf("_next_\n");
-	if(!it->trie) return 0;
-	assert(it->current && it->end);
-	if(&it->current->trunk == it->end) {
-		/* Only dealing with one tree. */
-		if(it->leaf > it->leaf_end || it->leaf > it->current->trunk.bsize)
-			{ it->trie = 0; return 0; }
-	} else if(it->leaf > it->current->trunk.bsize) {
-		/* Off the end of the tree; keep track of the next branch when doing a
-		 look-up of the last entry when the end is past. */
-		const char *key
-			= PT_(to_key)(it->current->leaf[it->current->trunk.bsize]);
-		const struct trie_trunk *trunk1 = &it->current->trunk;
-		struct trie_trunk *trunk2, *next = 0;
-		size_t h2 = it->trie->node_height, bit2;
-		struct { unsigned br0, br1, lf; } t2;
-		int is_past_end = !it->end; /* Or else go through the entire trie. */
-		assert(key);
-		printf("next: %s is the last one on the tree.\n", key);
-		for(it->current = 0, trunk2 = it->trie->root, assert(trunk2), bit2 = 0;
-			; trunk2 = trie_inner(trunk2)->leaf[t2.lf].link) {
-			int is_considering = 0;
-			if(trunk2 == trunk1) break; /* Reached the tree. */
-			assert(trunk2->skip < h2), h2 -= 1 + trunk2->skip;
-			if(!h2) { printf("next: bailing.\n"); break; } /* Concurrent modification? */
-			t2.br0 = 0, t2.br1 = trunk2->bsize, t2.lf = 0;
-			while(t2.br0 < t2.br1) {
-				const struct trie_branch *const branch2
-					= trunk2->branch + t2.br0;
-				bit2 += branch2->skip;
-				if(!TRIE_QUERY(key, bit2))
-					t2.br1 = ++t2.br0 + branch2->left;
-				else
-					t2.br0 += branch2->left + 1,
-					t2.lf += branch2->left + 1;
-				bit2++;
-			}
-			/* Past the end? */
-			if(is_past_end) {
-				is_considering = 1;
-			} else if(trunk2 == it->end) {
-				is_past_end = 1;
-				if(t2.lf < it->leaf_end) is_considering = 1;
-			}
-			/* Set it to the next value. */
-			if(is_considering && t2.lf < trunk2->bsize)
-				next = trunk2, it->leaf = t2.lf + 1,
-				printf("next: continues in tree %s, leaf %u.\n",
-				orcify(trunk2), it->leaf);
-		}
-		if(!next) { printf("next: fin\n"); it->trie = 0; return 0; } /* No more. */
-		while(h2) trunk2 = trie_inner_c(trunk2)->leaf[it->leaf].link,
-			it->leaf = 0, assert(trunk2->skip < h2), h2 -= 1 + trunk2->skip;
-		it->current = PT_(outer)(trunk2);
-	}
-	return it->current->leaf + it->leaf++;
 }
 #endif /* 0 */
 
@@ -429,10 +392,8 @@ static int PT_(split)(struct PT_(tree) *const tree) {
 	unsigned br0, br1, lf;
 	struct PT_(tree) *kid;
 	assert(tree && tree->bsize == TRIE_BRANCHES);
-
 	/* Mitosis; more info added on error in <fn:<PT>add_unique>. */
 	if(!(kid = malloc(sizeof *kid))) return 0;
-
 	/* Where should we split it? <https://cs.stackexchange.com/q/144928> */
 	printf("split at root, order %u, split %u\n", TRIE_ORDER, TRIE_SPLIT);
 	for(lf = 0; lf <= tree->bsize; lf++)
@@ -615,8 +576,6 @@ static void PT_(clear_r)(struct PT_(tree) *const tree) {
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->bmp, i))
 		PT_(clear_r)(tree->leaf[i].as_link), free(tree->leaf[i].as_link);
 }
-
-
 
 struct T_(trie_cursor) { struct PT_(cursor) _; };
 

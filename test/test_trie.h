@@ -301,7 +301,7 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 		assert(0);
 		return;
 	}
-	printf("graph: \"%s\" %lu.\n", fn, (unsigned long)no);
+	printf(" *** graph: \"%s\" %lu.\n", fn, (unsigned long)no);
 	/* Insert number. */
 	i = (size_t)(dot - fn), memcpy(copy, fn, i_copy = i);
 	copy[i_copy++] = '-';
