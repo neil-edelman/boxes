@@ -62,7 +62,7 @@
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-branches-left root (`{a, aa, aaa, ...}`). Parameter sets the
  maximum tree size. Prefer alignment `4n - 2`; cache `32n - 2`. */
-#define TRIE_MAX_LEFT 3/*6*//*254*/
+#define TRIE_MAX_LEFT /*3*//*6*/254
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX - 1
 #error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX - 1]`.
 #endif
@@ -181,7 +181,6 @@ struct PT_(tree) {
 struct T_(trie) { struct PT_(tree) *root; };
 
 
-
 /** @return A candidate match for `key`, non-null, in `tree`, which is the
  valid root, or null, if `key` is definitely not in the trie. */
 static int PT_(match)(struct PT_(tree) *tree,
@@ -254,7 +253,6 @@ finally:
 static int PT_(to_successor_c)(const struct PT_(tree) *const root,
 	struct PT_(ref_c) *const ref) {
 	assert(ref);
-	printf("_next_\n");
 	if(!root || root->bsize == UCHAR_MAX) return 0; /* Empty. */
 	if(!ref->tree) { ref->tree = root, ref->idx = 0; } /* Start. */
 	else if(++ref->idx > ref->tree->bsize) { /* Gone off the end. */
@@ -263,7 +261,6 @@ static int PT_(to_successor_c)(const struct PT_(tree) *const root,
 			PT_(key_string)(PT_(entry_key)(&old->leaf[ref->idx - 1].as_entry));
 		const struct PT_(tree) *tree = root;
 		size_t bit = 0;
-		printf("sample %s\n", sample);
 		for(ref->tree = 0, ref->idx = 0; tree != old; ) {
 			unsigned br0 = 0, br1 = tree->bsize, lf = 0;
 			while(br0 < br1) {
@@ -275,9 +272,7 @@ static int PT_(to_successor_c)(const struct PT_(tree) *const root,
 					br0 += branch->left + 1, lf += branch->left + 1;
 				bit++;
 			}
-			if(lf < tree->bsize) ref->tree = tree, ref->idx = lf + 1,
-				printf("next: continues in tree %s, leaf %u.\n",
-				orcify(ref->tree), ref->idx);
+			if(lf < tree->bsize) ref->tree = tree, ref->idx = lf + 1;
 			assert(trie_bmp_test(&tree->bmp, lf));
 			tree = tree->leaf[lf].as_link;
 		}
@@ -286,11 +281,8 @@ static int PT_(to_successor_c)(const struct PT_(tree) *const root,
 	/* Fall through until hit data. */
 	while(trie_bmp_test(&ref->tree->bmp, ref->idx))
 		ref->tree = ref->tree->leaf[ref->idx].as_link, ref->idx = 0;
-	printf("-->%s\n",
-		PT_(key_string)(PT_(entry_key)(&ref->tree->leaf[ref->idx].as_entry)));
 	return 1;
 }
-
 
 #define BOX_CONTENT const PT_(entry) *
 static int PT_(is_element_c)(const PT_(entry) *const e) { return !!e; }

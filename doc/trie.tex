@@ -86,6 +86,8 @@ For most applications, a 256-ary trie is space-intensive; the index contains man
 
 We use a combination binary radix trie, first described in \cite{morrison1968patricia} as the PATRICIA automaton. Rather than being sparse, a Patricia-tree is a packed index; a full binary tree with $order - 1$ branches, (corresponding to choices of zero or one in a bit position) for $order$ leaves.
 
+This trie asks: what is the minimum number of bits, and the closest to the start, to distinguish the string keys? Then it encodes that information in two bytes {\it per} entry in a complete binary tree; the tree is therefore an index to the data.
+
 In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{morrison1968patricia}. In C, a NUL-terminated string automatically has this property and is ordered correctly.
 
 Keys are sorted in lexicographic order by numerical value, not by any collation algorithm. Thus, any strings with NUL-terminated encoding with byte quanta will be suitable, most notably ASCII and Modified UTF-8.
