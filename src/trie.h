@@ -220,36 +220,34 @@ static int PT_(is_element)(const PT_(entry) *const e) { return !!e; }
 /* A range of words from `[t0:lf0, t1:lf1)`. */
 struct PT_(cursor) {
 	const struct T_(trie) *trie; /* Valid, rest must be, too, or ignore rest. */
-	/*struct PT_(ref_c) start, end; <- this would be better */
-	struct { const struct PT_(tree) *t0, *t1; } tree;
-	struct { unsigned lf0, lf1; } leaf;
+	struct PT_(ref_c) cur, end;
 };
 /** Loads the first element of `trie` (can be null) into `it`.
  @implements begin */
-static void PT_(begin)(struct PT_(cursor) *const cur,
+static void PT_(begin)(struct PT_(cursor) *const it,
 	const struct T_(trie) *const trie) {
 	/* This is exactly what is happening, but we can shorten it.
-	 PT_(match_prefix)(trie, "", cur);*/
-	if(cur->trie = trie) {
-		if(cur->tree.t0 = trie->root) {
-			cur->leaf.lf0 = 0;
-			PT_(fall_through_to_entry)();
+	 PT_(match_prefix)(trie, "", cur); (not code, file size.) */
+	if(it->trie = trie) {
+		if(it->cur.tree = it->end.tree = trie->root) {
+			it->cur.idx = 0, it->end.idx = trie->root->bsize + 1;
+			PT_(fall_through_to_entry)(&it->cur);
 		}
 	} else {
-		cur->tree.t0 = 0;
+		it->cur.tree = 0;
 	}
-	cur->tree.t1 = 0;
 }
 /** Advances `it`. @return The previous value or null. @implements next */
-const static PT_(entry) *PT_(next)(struct PT_(cursor) *const cur) {
+const static PT_(entry) *PT_(next)(struct PT_(cursor) *const it) {
 	struct PT_(ref_c) maybe;
-	assert(cur);
-	if(!cur->trie) return 0;
-	maybe.tree = cur->tree.t0, maybe.idx = cur->leaf.lf0;
-	if(!PT_(to_successor_c)(cur->trie->root, &maybe)
-		|| maybe.tree == cur->tree.t1 && maybe.idx <= cur->leaf.lf1) return 0;
-	return &(cur->tree.t0 = maybe.tree)
-		->leaf[cur->leaf.lf0 = maybe.idx].as_entry;
+	assert(it);
+	if(!it->trie) return 0;
+	maybe = it->cur;
+	/* fixme: No. First do thing +1; hmm. hmmmmm. */
+	if(!PT_(to_successor_c)(it->trie->root, &maybe)
+		|| maybe.tree == it->end.tree && maybe.idx <= it->end.idx) return 0;
+	return &(it->cur.tree = maybe.tree)
+		->leaf[it->cur.idx = maybe.idx].as_entry;
 }
 
 
@@ -258,12 +256,12 @@ const static PT_(entry) *PT_(next)(struct PT_(cursor) *const cur) {
 /** Looks at only the index of `trie` (which can be null) for potential
  `prefix` matches, and stores them in `cur` as `[key1, key2)`. */
 static void PT_(match_prefix)(const struct T_(trie) *const trie,
-	const char *const prefix, struct PT_(cursor) *cur) {
+	const char *const prefix, struct PT_(cursor) *it) {
 	struct PT_(tree) *tree;
 	size_t bit;
 	struct { size_t cur, next; } byte;
-	assert(trie && prefix && cur);
-	cur->trie = 0;
+	assert(trie && prefix && it);
+	it->trie = 0;
 	if(!(tree = trie->root)) return;
 	for(bit = 0, byte.cur = 0; ; ) {
 		unsigned br0 = 0, br1 = tree->bsize, lf = 0;
@@ -283,29 +281,29 @@ static void PT_(match_prefix)(const struct T_(trie) *const trie,
 			{ tree = tree->leaf[lf].as_link; continue; } /* Link. */
 finally:
 		assert(br0 <= br1 && lf - br0 + br1 <= tree->bsize);
-		cur->trie = trie;
-		cur->tree.t0 = cur->tree.t1 = tree;
-		cur->leaf.lf0 = lf;
-		cur->leaf.lf1 = lf + br1 - br0 + 1;
+		it->trie = trie;
+		it->cur.tree = it->end.tree = tree;
+		it->cur.idx = lf;
+		it->end.idx = lf + br1 - br0 + 1;
 		break;
 	}
 	printf("<%s>.match_prefix: [%s:%u<%s>..%s:%u)\n", prefix,
-		orcify(cur->tree.t0), cur->leaf.lf0,
+		orcify(it->cur.tree), it->cur.idx,
 		PT_(key_string)(PT_(entry_key)(
-		&cur->tree.t0->leaf[cur->leaf.lf0].as_entry)),
-		orcify(cur->tree.t1), cur->leaf.lf1);
+		&it->cur.tree->leaf[it->cur.idx].as_entry)),
+		orcify(it->end.tree), it->end.idx);
 	/* fixme: I'm not convinced that leaf will always be an entry . . . */
 	/* We need another fn to fall-trough. */
 }
 /** Stores all `prefix` matches in `trie` in `it`. @order \O(|`prefix`|) */
 static void PT_(prefix)(struct T_(trie) *const trie,
-	const char *const prefix, struct PT_(cursor) *cur) {
-	assert(trie && prefix && cur);
-	PT_(match_prefix)(trie, prefix, cur);
+	const char *const prefix, struct PT_(cursor) *it) {
+	assert(trie && prefix && it);
+	PT_(match_prefix)(trie, prefix, it);
 	/* Make sure actually a prefix. */
-	if(cur->trie && !trie_is_prefix(prefix,
+	if(it->trie && !trie_is_prefix(prefix,
 		PT_(key_string)(PT_(entry_key)(
-		&cur->tree.t0->leaf[cur->leaf.lf0].as_entry)))) cur->tree.t0 = 0;
+		&it->cur.tree->leaf[it->cur.idx].as_entry)))) it->cur.tree = 0;
 }
 
 
@@ -746,8 +744,8 @@ static void T_(trie_prefix)(struct T_(trie) *const trie,
 static const PT_(entry) *T_(trie_next)(struct T_(trie_cursor) *const it)
 	{ return PT_(next)(&it->_); }
 
-static size_t PT_(size_r)(const struct PT_(cursor) *const cur) {
-	return cur->leaf.lf1 - cur->leaf.lf0; /* Fixme. */
+static size_t PT_(size_r)(const struct PT_(cursor) *const it) {
+	return it->end.idx - it->cur.idx; /* Fixme. */
 }
 
 /** Counts the of the items in initialized `it`. @order \O(|`it`|) @allow */
