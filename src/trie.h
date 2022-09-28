@@ -57,7 +57,7 @@
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-branches-left root (`{a, aa, aaa, ...}`). Parameter sets the
  maximum tree size. Prefer alignment `4n - 2`; cache `32n - 2`. */
-#define TRIE_MAX_LEFT /*3*//*6*/253
+#define TRIE_MAX_LEFT 3/*6*//*253*/
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX - 2 /* This is not ideal. */
 #error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX - 2]`.
 #endif
@@ -162,43 +162,102 @@ struct PT_(tree) {
 };
 struct T_(trie) { struct PT_(tree) *root; };
 
-
-/** @return A candidate match for `key`, non-null, in `tree`, which is the
- valid root, or null, if `key` is definitely not in the trie. */
-static int PT_(match)(struct PT_(tree) *tree,
-	const char *const string, PT_(entry) *const match) {
-	size_t bit; /* In bits of `key`. */
-	struct { size_t cur, next; } byte; /* `key` null checks. */
-	assert(tree && string && match);
-	for(bit = 0, byte.cur = 0; ; ) {
-		unsigned br0 = 0, br1 = tree->bsize, lf = 0;
-		while(br0 < br1) {
-			const struct trie_branch *const branch = tree->branch + br0;
-			for(byte.next = (bit += branch->skip) / CHAR_BIT;
-				byte.cur < byte.next; byte.cur++)
-				if(string[byte.cur] == '\0') return 0; /* `key` too short. */
-			if(!TRIE_QUERY(string, bit))
-				br1 = ++br0 + branch->left;
-			else
-				br0 += branch->left + 1, lf += branch->left + 1;
-			bit++;
-		}
-		if(!trie_bmp_test(&tree->bmp, lf))
-			return *match = tree->leaf[lf].as_entry, 1;
-		tree = tree->leaf[lf].as_link; /* Jumped trees. */
-	}
+/* Fall through `ref` until hit an entry. Must be pointing at something. */
+static void PT_(fall_through_to_entry)(struct PT_(ref_c) *ref) {
+	while(trie_bmp_test(&ref->tree->bmp, ref->idx))
+		ref->tree = ref->tree->leaf[ref->idx].as_link, ref->idx = 0;
 }
 
-/* A range of words. */
+/** If `ref.tree` is null, starts iteration.
+ @return Does `ref` have a successor in `root`? If yes, sets it to that. */
+static int PT_(to_successor_c)(const struct PT_(tree) *const root,
+	struct PT_(ref_c) *const ref) {
+	assert(ref);
+	if(!root || root->bsize == UCHAR_MAX) return 0; /* Empty. */
+	if(!ref->tree) { ref->tree = root, ref->idx = 0; } /* Start. */
+	else if(++ref->idx > ref->tree->bsize) { /* Gone off the end. */
+		const struct PT_(tree) *const old = ref->tree;
+		const char *const sample =
+			PT_(key_string)(PT_(entry_key)(&old->leaf[ref->idx - 1].as_entry));
+		const struct PT_(tree) *tree = root;
+		size_t bit = 0;
+		for(ref->tree = 0, ref->idx = 0; tree != old; ) {
+			unsigned br0 = 0, br1 = tree->bsize, lf = 0;
+			while(br0 < br1) {
+				const struct trie_branch *const branch = tree->branch + br0;
+				bit += branch->skip;
+				if(!TRIE_QUERY(sample, bit))
+					br1 = ++br0 + branch->left;
+				else
+					br0 += branch->left + 1, lf += branch->left + 1;
+				bit++;
+			}
+			if(lf < tree->bsize) ref->tree = tree, ref->idx = lf + 1;
+			assert(trie_bmp_test(&tree->bmp, lf));
+			tree = tree->leaf[lf].as_link;
+		}
+		if(!ref->tree) return 0; /* End of iteration. */
+	}
+	PT_(fall_through_to_entry)(ref);
+	return 1;
+}
+
+#define BOX_CONTENT const PT_(entry) *
+static int PT_(is_element_c)(const PT_(entry) *const e) { return !!e; }
+struct PT_(forward) { const struct PT_(tree) *root; struct PT_(ref_c) cur; };
+static struct PT_(forward) PT_(forward)(const struct T_(trie) *const trie) {
+	struct PT_(forward) it;
+	it.root = trie ? trie->root : 0, it.cur.tree = 0;
+	return it;
+}
+static const PT_(entry) *PT_(next_c)(struct PT_(forward) *const it) {
+	return assert(it), PT_(to_successor_c)(it->root, &it->cur)
+		? &it->cur.tree->leaf[it->cur.idx].as_entry : 0;
+}
+
+#define BOX_ITERATOR PT_(entry) *
+static int PT_(is_element)(const PT_(entry) *const e) { return !!e; }
+/* A range of words from `[t0:lf0, t1:lf1)`. */
 struct PT_(cursor) {
-	struct T_(trie) *trie; /* Valid, rest must be, too, or ignore rest. */
-	struct { struct PT_(tree) *t0, *t1; } tree;
+	const struct T_(trie) *trie; /* Valid, rest must be, too, or ignore rest. */
+	/*struct PT_(ref_c) start, end; <- this would be better */
+	struct { const struct PT_(tree) *t0, *t1; } tree;
 	struct { unsigned lf0, lf1; } leaf;
 };
+/** Loads the first element of `trie` (can be null) into `it`.
+ @implements begin */
+static void PT_(begin)(struct PT_(cursor) *const cur,
+	const struct T_(trie) *const trie) {
+	/* This is exactly what is happening, but we can shorten it.
+	 PT_(match_prefix)(trie, "", cur);*/
+	if(cur->trie = trie) {
+		if(cur->tree.t0 = trie->root) {
+			cur->leaf.lf0 = 0;
+			PT_(fall_through_to_entry)();
+		}
+	} else {
+		cur->tree.t0 = 0;
+	}
+	cur->tree.t1 = 0;
+}
+/** Advances `it`. @return The previous value or null. @implements next */
+const static PT_(entry) *PT_(next)(struct PT_(cursor) *const cur) {
+	struct PT_(ref_c) maybe;
+	assert(cur);
+	if(!cur->trie) return 0;
+	maybe.tree = cur->tree.t0, maybe.idx = cur->leaf.lf0;
+	if(!PT_(to_successor_c)(cur->trie->root, &maybe)
+		|| maybe.tree == cur->tree.t1 && maybe.idx <= cur->leaf.lf1) return 0;
+	return &(cur->tree.t0 = maybe.tree)
+		->leaf[cur->leaf.lf0 = maybe.idx].as_entry;
+}
+
+
+
 
 /** Looks at only the index of `trie` (which can be null) for potential
- `prefix` matches, and stores them in `cur`. */
-static void PT_(match_prefix)(struct T_(trie) *const trie,
+ `prefix` matches, and stores them in `cur` as `[key1, key2)`. */
+static void PT_(match_prefix)(const struct T_(trie) *const trie,
 	const char *const prefix, struct PT_(cursor) *cur) {
 	struct PT_(tree) *tree;
 	size_t bit;
@@ -230,71 +289,65 @@ finally:
 		cur->leaf.lf1 = lf + br1 - br0 + 1;
 		break;
 	}
+	printf("<%s>.match_prefix: [%s:%u<%s>..%s:%u)\n", prefix,
+		orcify(cur->tree.t0), cur->leaf.lf0,
+		PT_(key_string)(PT_(entry_key)(
+		&cur->tree.t0->leaf[cur->leaf.lf0].as_entry)),
+		orcify(cur->tree.t1), cur->leaf.lf1);
+	/* fixme: I'm not convinced that leaf will always be an entry . . . */
+	/* We need another fn to fall-trough. */
+}
+/** Stores all `prefix` matches in `trie` in `it`. @order \O(|`prefix`|) */
+static void PT_(prefix)(struct T_(trie) *const trie,
+	const char *const prefix, struct PT_(cursor) *cur) {
+	assert(trie && prefix && cur);
+	PT_(match_prefix)(trie, prefix, cur);
+	/* Make sure actually a prefix. */
+	if(cur->trie && !trie_is_prefix(prefix,
+		PT_(key_string)(PT_(entry_key)(
+		&cur->tree.t0->leaf[cur->leaf.lf0].as_entry)))) cur->tree.t0 = 0;
 }
 
-static int PT_(to_successor_c)(const struct PT_(tree) *const root,
-	struct PT_(ref_c) *const ref) {
-	assert(ref);
-	if(!root || root->bsize == UCHAR_MAX) return 0; /* Empty. */
-	if(!ref->tree) { ref->tree = root, ref->idx = 0; } /* Start. */
-	else if(++ref->idx > ref->tree->bsize) { /* Gone off the end. */
-		const struct PT_(tree) *const old = ref->tree;
-		const char *const sample =
-			PT_(key_string)(PT_(entry_key)(&old->leaf[ref->idx - 1].as_entry));
-		const struct PT_(tree) *tree = root;
-		size_t bit = 0;
-		for(ref->tree = 0, ref->idx = 0; tree != old; ) {
-			unsigned br0 = 0, br1 = tree->bsize, lf = 0;
-			while(br0 < br1) {
-				const struct trie_branch *const branch = tree->branch + br0;
-				bit += branch->skip;
-				if(!TRIE_QUERY(sample, bit))
-					br1 = ++br0 + branch->left;
-				else
-					br0 += branch->left + 1, lf += branch->left + 1;
-				bit++;
-			}
-			if(lf < tree->bsize) ref->tree = tree, ref->idx = lf + 1;
-			assert(trie_bmp_test(&tree->bmp, lf));
-			tree = tree->leaf[lf].as_link;
+
+
+
+
+
+
+
+/** @return A candidate match for `key`, non-null, in `tree`, which is the
+ valid root, or null, if `key` is definitely not in the trie. */
+static int PT_(match)(struct PT_(tree) *tree,
+	const char *const string, PT_(entry) *const match) {
+	size_t bit; /* In bits of `key`. */
+	struct { size_t cur, next; } byte; /* `key` null checks. */
+	assert(tree && string && match);
+	for(bit = 0, byte.cur = 0; ; ) {
+		unsigned br0 = 0, br1 = tree->bsize, lf = 0;
+		while(br0 < br1) {
+			const struct trie_branch *const branch = tree->branch + br0;
+			for(byte.next = (bit += branch->skip) / CHAR_BIT;
+				byte.cur < byte.next; byte.cur++)
+				if(string[byte.cur] == '\0') return 0; /* `key` too short. */
+			if(!TRIE_QUERY(string, bit))
+				br1 = ++br0 + branch->left;
+			else
+				br0 += branch->left + 1, lf += branch->left + 1;
+			bit++;
 		}
-		if(!ref->tree) return 0; /* End of iteration. */
+		if(!trie_bmp_test(&tree->bmp, lf))
+			return *match = tree->leaf[lf].as_entry, 1;
+		tree = tree->leaf[lf].as_link; /* Jumped trees. */
 	}
-	/* Fall through until hit data. */
-	while(trie_bmp_test(&ref->tree->bmp, ref->idx))
-		ref->tree = ref->tree->leaf[ref->idx].as_link, ref->idx = 0;
-	return 1;
-}
-
-#define BOX_CONTENT const PT_(entry) *
-static int PT_(is_element_c)(const PT_(entry) *const e) { return !!e; }
-
-struct PT_(forward) { const struct PT_(tree) *root; struct PT_(ref_c) next; };
-
-static struct PT_(forward) PT_(forward)(const struct T_(trie) *const trie) {
-	struct PT_(forward) it;
-	it.root = trie ? trie->root : 0, it.next.tree = 0;
-	return it;
-}
-static const PT_(entry) *PT_(next_c)(struct PT_(forward) *const it) {
-	return assert(it), PT_(to_successor_c)(it->root, &it->next)
-		? &it->next.tree->leaf[it->next.idx].as_entry : 0;
 }
 
 
 
-#if 0
-/** Loads the first element of `trie` (can be null) into `it`.
- @implements begin */
-static void PT_(begin)(struct PT_(iterator) *const it,
-	const struct T_(trie) *const trie) {
-	PT_(match_prefix)(trie, "", it);
-	it->end = 0; /* More robust to concurrent modifications? */
-}
-/** Advances `it`. @return The previous value or null. @implements next */
-const static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
-}
-#endif /* 0 */
+
+
+
+
+
 
 
 
@@ -315,17 +368,6 @@ static int PT_(query)(const struct T_(trie) *const trie,
 	}
 }
 
-/** Stores all `prefix` matches in `trie` in `it`. @order \O(|`prefix`|) */
-static void PT_(prefix)(struct T_(trie) *const trie,
-	const char *const prefix, struct PT_(cursor) *cur) {
-	assert(trie && prefix && cur);
-	PT_(match_prefix)(trie, prefix, cur);
-	/* Make sure actually a prefix. */
-	if(cur->trie && !trie_is_prefix(prefix,
-		PT_(key_string)(PT_(entry_key)(
-		&cur->tree.t0->leaf[cur->leaf.lf0].as_entry))))
-		cur->tree.t0 = 0;
-}
 
 /** @return The leftmost key `lf` of `tree`. */
 static const char *PT_(sample)(const struct PT_(tree) *tree, unsigned lf) {
@@ -462,7 +504,6 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	branch->left = is_right ? (unsigned char)(br1 - br0) : 0;
 	branch->skip = (unsigned char)(diff_bit - tree_bit);
 	tree->bsize++;
-	/* leaf->as_entry.key = "uninitialized"; */
 	return leaf;
 }
 
@@ -535,7 +576,8 @@ assign:
 #elif !defined(TRIE_KEY_IN_VALUE) /* key set --><!-- key value map */
 	leaf->as_entry.key = key;
 #else /* key value map --><!-- key in value */
-	/* Will rely on user to do it; oy. */
+	/* Will rely on user to do it; oy. We potentially do not have all the
+	 information to do it here. */
 #endif /* key in value --> */
 	*entry = &leaf->as_entry;
 	return 1;
@@ -700,11 +742,9 @@ static void T_(trie_prefix)(struct T_(trie) *const trie,
 	const char *const prefix, struct T_(trie_cursor) *const cur)
 	{ assert(cur); PT_(prefix)(trie, prefix, &cur->_); }
 
-#if 0
 /** Advances `it`. @return The previous value or null. @allow */
-static const PT_(entry) *T_(trie_next)(struct T_(trie_iterator) *const it)
-	{ return PT_(next)(&it->i); }
-#endif
+static const PT_(entry) *T_(trie_next)(struct T_(trie_cursor) *const it)
+	{ return PT_(next)(&it->_); }
 
 static size_t PT_(size_r)(const struct PT_(cursor) *const cur) {
 	return cur->leaf.lf1 - cur->leaf.lf0; /* Fixme. */

@@ -441,6 +441,7 @@ static void PT_(test)(void) {
 		assert(!errno);
 		{
 			struct PT_(forward) it;
+			struct T_(trie_cursor) cur;
 			size_t count = 0;
 			it = PT_(forward)(&trie);
 			const PT_(entry) *x;
@@ -448,6 +449,10 @@ static void PT_(test)(void) {
 			/*count = T_(trie_size)(T_(trie_cursor)(&cur));*/
 			//printf("Counted %lu elements, checksum %lu.\n", count, n_unique);
 			assert(count == n_unique);
+			/* FIXME
+			 cur = T_(trie_prefix)(&trie, "");
+			count = T_(trie_size)(&cur);
+			assert(count == n_unique);*/
 		}
 #if 0
 		for(m = 0; m <= n; m++) {

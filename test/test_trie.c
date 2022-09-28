@@ -242,8 +242,7 @@ static void contrived_test(void) {
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
 		const char *get;
 		int success = str_trie_query(&t, words[i], &get);
-		assert(success);
-		printf("get: %s\n", get);
+		assert(success && words[i] == get);
 	}
 	str_trie_prefix(&t, "b", &cur);
 	printf("b: %lu\n", str_trie_size(&cur));
@@ -261,6 +260,7 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	contrived_test(), str32_pool_clear(&global_pool);
+#if 0
 	str_trie_test(), str32_pool_clear(&global_pool); /* Key set. */
 	colour_trie_test(); /* Custom key set with enum string backing. */
 	mapint_trie_test(), str32_pool_clear(&global_pool); /* `string -> int`. */
@@ -268,6 +268,7 @@ int main(void) {
 	str8_trie_test(); /* Small key set with no dependancy on outside keys. */
 	star_trie_test(); /* Custom value with enum strings backing. */
 	keyval_trie_test(); /*  */
+#endif
 	str32_pool_(&global_pool); /* Destroy global string pool. */
 	return EXIT_SUCCESS;
 }
