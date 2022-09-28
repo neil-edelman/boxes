@@ -88,14 +88,11 @@ static void mapint_filler(const char **const key, unsigned *const value) {
 struct foo { int foo; const char *key; };
 static const char *foo_read_key(const struct foo *const foo)
 	{ return foo->key; }
-static int foo_write_key(struct foo *const foo, const char *string)
-	{ return foo->key = string, 1; }
 static void foo_filler(struct foo *const foo)
 	{ foo->foo = 42; str32_filler(&foo->key); }
 #define TRIE_NAME foo
 #define TRIE_VALUE struct foo
-#define TRIE_READ_KEY &foo_read_key
-#define TRIE_WRITE_KEY &foo_write_key
+#define TRIE_KEY_IN_VALUE &foo_read_key
 #define TRIE_TO_STRING
 #define TRIE_TEST &foo_filler
 #include "../src/trie.h"
@@ -108,13 +105,6 @@ static void foo_filler(struct foo *const foo)
  (somewhere bigger.) */
 struct str8 { char str[8]; };
 static const char *str8_read_key(const struct str8 *const s) { return s->str; }
-/** If one were really careful about calling it with strings of length < 8, it
- would be a `strcpy()`. */
-static int str8_write_key(struct str8 *const s, const char *string) {
-	unsigned i;
-	for(i = 0; ; i++) { if(string[i] == '\0') break; if(i == 7) return 0; }
-	return memcpy(s->str, string, i), 1;
-}
 static void str8_filler(struct str8 *const s) {
 #if 0
 	/* This is not enough range. */
@@ -122,7 +112,6 @@ static void str8_filler(struct str8 *const s) {
 #else
 	static const char alphabet[] = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 		"abcdefghijklmnopqrstuvwxyz~";
-	/* Assumes ASCII. */
 	unsigned i;
 	for(i = 0; i < 7; i++) s->str[i]
 		= alphabet[rand() / (RAND_MAX / ((int)sizeof alphabet - 1) + 1)];
@@ -131,8 +120,7 @@ static void str8_filler(struct str8 *const s) {
 }
 #define TRIE_NAME str8
 #define TRIE_VALUE struct str8
-#define TRIE_READ_KEY &str8_read_key
-#define TRIE_WRITE_KEY &str8_write_key
+#define TRIE_KEY_IN_VALUE &str8_read_key
 #define TRIE_TEST &str8_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
@@ -172,8 +160,6 @@ static const struct star stars[] = { STARS };
 static const size_t stars_size = sizeof stars / sizeof *stars;
 static const char *star_read_key(const struct star *const star)
 	{ return star->name; }
-static int star_write_key(struct star *const s, const char *string)
-	{ return s->name = string, 1; }
 static void star_filler(struct star *const star) {
 	const struct star *table = stars
 		+ (unsigned)rand() / (RAND_MAX / stars_size + 1);
@@ -182,8 +168,7 @@ static void star_filler(struct star *const star) {
 }
 #define TRIE_NAME star
 #define TRIE_VALUE struct star
-#define TRIE_READ_KEY &star_read_key
-#define TRIE_WRITE_KEY &star_write_key
+#define TRIE_KEY_IN_VALUE &star_read_key
 #define TRIE_TEST &star_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
@@ -208,7 +193,7 @@ static void keyval_filler(struct keyval **const kv_ptr) {
 }
 #define TRIE_NAME keyval
 #define TRIE_VALUE struct keyval *
-#define TRIE_READ_KEY &keyval_read_key
+#define TRIE_KEY_IN_VALUE &keyval_read_key
 #define TRIE_TEST &keyval_filler
 #define TRIE_TO_STRING
 #include "../src/trie.h"
