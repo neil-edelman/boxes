@@ -8,6 +8,8 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
+static const char *T_(trie_to_string)(const struct T_(trie) *);
+
 #ifndef TRIE_VALUE /* <!-- key set */
 /** Works by side-effects, _ie_ fills the type with data. */
 typedef void (*PT_(action_fn))(PT_(key) *);
@@ -432,7 +434,10 @@ static void PT_(test)(void) {
 		case TRIE_PRESENT: printf("Key %s is in trie already.\n",
 			PT_(key_string)(key)); break;
 		}
-		if(show) PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-insert.gv", n);
+		if(show) {
+			printf("Now: %s.\n", T_(trie_to_string)(&trie));
+			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-insert.gv", n);
+		}
 		assert(!errno);
 		{
 			struct PT_(forward) it;
@@ -441,7 +446,7 @@ static void PT_(test)(void) {
 			const PT_(entry) *x;
 			while(PT_(is_element_c)(x = PT_(next_c)(&it))) count++;
 			/*count = T_(trie_size)(T_(trie_cursor)(&cur));*/
-			printf("Counted %lu elements, checksum %lu.\n", count, n_unique);
+			//printf("Counted %lu elements, checksum %lu.\n", count, n_unique);
 			assert(count == n_unique);
 		}
 #if 0
