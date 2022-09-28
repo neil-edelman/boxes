@@ -217,7 +217,7 @@ static const PT_(entry) *PT_(next_c)(struct PT_(forward) *const it) {
 
 #define BOX_ITERATOR PT_(entry) *
 static int PT_(is_element)(const PT_(entry) *const e) { return !!e; }
-/* A range of words from `[t0:lf0, t1:lf1)`. */
+/* A range of words from `[t0:lf0, t1:lf1)` fixme: ]. */
 struct PT_(cursor) {
 	const struct T_(trie) *trie; /* Valid, rest must be, too, or ignore rest. */
 	struct PT_(ref_c) cur, end;
@@ -283,8 +283,8 @@ finally:
 		assert(br0 <= br1 && lf - br0 + br1 <= tree->bsize);
 		it->trie = trie;
 		it->cur.tree = it->end.tree = tree;
-		it->cur.idx = lf;
-		it->end.idx = lf + br1 - br0 + 1;
+		it->cur.idx = lf; /* and this? */
+		it->end.idx = lf + br1 - br0; /* fixme: What's stopping this from being a link? */
 		break;
 	}
 	printf("<%s>.match_prefix: [%s:%u<%s>..%s:%u)\n", prefix,
