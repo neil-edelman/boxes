@@ -376,7 +376,7 @@ static void PT_(valid)(const struct T_(trie) *const trie) {
 
 static void PT_(test)(void) {
 	struct T_(trie) trie = T_(trie)();
-	/*struct T_(trie_cursor) cur;*/
+	/*struct T_(trie_iterator) cur;*/
 	size_t n, n_unique;
 	struct { PT_(entry) data;
 		int is_in; } es[2000], *es_end, *e;
@@ -441,12 +441,12 @@ static void PT_(test)(void) {
 		assert(!errno);
 		{
 			struct PT_(forward) it;
-			struct T_(trie_cursor) cur;
+			struct T_(trie_iterator) cur;
 			size_t count = 0;
 			it = PT_(forward)(&trie);
 			const PT_(entry) *x;
 			while(PT_(is_element_c)(x = PT_(next_c)(&it))) count++;
-			/*count = T_(trie_size)(T_(trie_cursor)(&cur));*/
+			/*count = T_(trie_size)(T_(trie_iterator)(&cur));*/
 			//printf("Counted %lu elements, checksum %lu.\n", count, n_unique);
 			assert(count == n_unique);
 			/* FIXME
@@ -474,7 +474,7 @@ static void PT_(test)(void) {
 	{
 		/* Not implemented yet . . . again.
 		size_t before, after;
-		struct T_(trie_cursor) cur = T_(trie_cursor)(&trie);
+		struct T_(trie_iterator) cur = T_(trie_iterator)(&trie);
 		before = T_(trie_size)(&trie);*/
 		assert(trie.root && trie.root->bsize != UCHAR_MAX);
 		T_(trie_clear)(&trie);

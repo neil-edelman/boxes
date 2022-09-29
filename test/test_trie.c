@@ -222,12 +222,12 @@ static void contrived_test(void) {
 	const char *words[] = {
 		"foo", "bar", "baz", "quxx",
 		"a", "b", "c", "ba", "bb", "", "A", "Z", "z",
-		"a", "b", "â",
+		"a", "b", "â", "cc", "ccc", "cccc", "ccccc", "cccccc",
 		"foobar", "foo", "dictionary", "dictionaries"
 	};
 	unsigned i;
 	struct str_trie t = str_trie();
-	struct str_trie_cursor cur;
+	struct str_trie_iterator it;
 	printf("Contrived manual test of set <str>trie.\n");
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
 		/* printf("word: %s\n", words[i]); */
@@ -244,14 +244,16 @@ static void contrived_test(void) {
 		int success = str_trie_query(&t, words[i], &get);
 		assert(success && words[i] == get);
 	}
-	str_trie_prefix(&t, "b", &cur);
-	printf("b: %lu\n", str_trie_size(&cur));
-	str_trie_prefix(&t, "d", &cur);
-	printf("d: %lu\n", str_trie_size(&cur));
-	str_trie_prefix(&t, "f", &cur);
-	printf("f: %lu\n", str_trie_size(&cur));
-	str_trie_prefix(&t, "q", &cur);
-	printf("q: %lu\n", str_trie_size(&cur));
+	str_trie_prefix(&t, "b", &it);
+	printf("b: %lu\n", str_trie_size(&it));
+	str_trie_prefix(&t, "d", &it);
+	printf("d: %lu\n", str_trie_size(&it));
+	str_trie_prefix(&t, "f", &it);
+	printf("f: %lu\n", str_trie_size(&it));
+	str_trie_prefix(&t, "q", &it);
+	printf("q: %lu\n", str_trie_size(&it));
+	str_trie_prefix(&t, "c", &it);
+	printf("c: %lu\n", str_trie_size(&it));
 	str_trie_(&t);
 }
 

@@ -163,9 +163,14 @@ struct PT_(tree) {
 struct T_(trie) { struct PT_(tree) *root; };
 
 /* Fall through `ref` until hit an entry. Must be pointing at something. */
-static void PT_(fall_through_to_entry)(struct PT_(ref_c) *ref) {
+static void PT_(lower_entry)(struct PT_(ref_c) *ref) {
 	while(trie_bmp_test(&ref->tree->bmp, ref->idx))
 		ref->tree = ref->tree->leaf[ref->idx].as_link, ref->idx = 0;
+}
+static void PT_(higher_entry)(struct PT_(ref_c) *ref) {
+	while(trie_bmp_test(&ref->tree->bmp, ref->idx))
+		ref->tree = ref->tree->leaf[ref->idx].as_link,
+		ref->idx = ref->tree->bsize;
 }
 
 /** If `ref.tree` is null, starts iteration.
@@ -198,7 +203,7 @@ static int PT_(to_successor_c)(const struct PT_(tree) *const root,
 		}
 		if(!ref->tree) return 0; /* End of iteration. */
 	}
-	PT_(fall_through_to_entry)(ref);
+	PT_(lower_entry)(ref);
 	return 1;
 }
 
@@ -218,36 +223,45 @@ static const PT_(entry) *PT_(next_c)(struct PT_(forward) *const it) {
 #define BOX_ITERATOR PT_(entry) *
 static int PT_(is_element)(const PT_(entry) *const e) { return !!e; }
 /* A range of words from `[t0:lf0, t1:lf1)` fixme: ]. */
-struct PT_(cursor) {
+struct PT_(iterator) {
 	const struct T_(trie) *trie; /* Valid, rest must be, too, or ignore rest. */
 	struct PT_(ref_c) cur, end;
+	int seen;
 };
 /** Loads the first element of `trie` (can be null) into `it`.
  @implements begin */
-static void PT_(begin)(struct PT_(cursor) *const it,
+static void PT_(begin)(struct PT_(iterator) *const it,
 	const struct T_(trie) *const trie) {
 	/* This is exactly what is happening, but we can shorten it.
 	 PT_(match_prefix)(trie, "", cur); (not code, file size.) */
 	if(it->trie = trie) {
 		if(it->cur.tree = it->end.tree = trie->root) {
 			it->cur.idx = 0, it->end.idx = trie->root->bsize + 1;
-			PT_(fall_through_to_entry)(&it->cur);
+			PT_(lower_entry)(&it->cur);
+			PT_(higher_entry)(&it->end);
 		}
 	} else {
-		it->cur.tree = 0;
+		it->cur.tree = it->end.tree = 0;
 	}
+	it->seen = 0;
 }
 /** Advances `it`. @return The previous value or null. @implements next */
-const static PT_(entry) *PT_(next)(struct PT_(cursor) *const it) {
-	struct PT_(ref_c) maybe;
+const static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
 	assert(it);
-	if(!it->trie) return 0;
-	maybe = it->cur;
-	/* fixme: No. First do thing +1; hmm. hmmmmm. */
-	if(!PT_(to_successor_c)(it->trie->root, &maybe)
-		|| maybe.tree == it->end.tree && maybe.idx <= it->end.idx) return 0;
-	return &(it->cur.tree = maybe.tree)
-		->leaf[it->cur.idx = maybe.idx].as_entry;
+	/* Possibly this is still valid? */
+	if(!it->trie || !it->cur.tree || it->cur.tree->bsize < it->cur.idx
+		|| !it->end.tree || it->end.tree->bsize < it->end.idx) return 0;
+	if(it->seen) {
+		struct PT_(ref_c) maybe = it->cur;
+		/* We have reached the end. */
+		if(maybe.tree == it->end.tree && maybe.idx <= it->end.idx
+			|| !PT_(to_successor_c)(it->trie->root, &maybe)) return 0;
+		it->cur = maybe;
+	} else {
+		it->seen = 1;
+	}
+	assert(!trie_bmp_test(&it->cur.tree->bmp, it->cur.idx));
+	return &it->cur.tree->leaf[it->cur.idx].as_entry;
 }
 
 
@@ -256,7 +270,7 @@ const static PT_(entry) *PT_(next)(struct PT_(cursor) *const it) {
 /** Looks at only the index of `trie` (which can be null) for potential
  `prefix` matches, and stores them in `cur` as `[key1, key2)`. */
 static void PT_(match_prefix)(const struct T_(trie) *const trie,
-	const char *const prefix, struct PT_(cursor) *it) {
+	const char *const prefix, struct PT_(iterator) *it) {
 	struct PT_(tree) *tree;
 	size_t bit;
 	struct { size_t cur, next; } byte;
@@ -283,21 +297,21 @@ finally:
 		assert(br0 <= br1 && lf - br0 + br1 <= tree->bsize);
 		it->trie = trie;
 		it->cur.tree = it->end.tree = tree;
-		it->cur.idx = lf; /* and this? */
-		it->end.idx = lf + br1 - br0; /* fixme: What's stopping this from being a link? */
+		it->cur.idx = lf, PT_(lower_entry)(&it->cur);
+		it->end.idx = lf + br1 - br0, PT_(higher_entry)(&it->end);
 		break;
 	}
-	printf("<%s>.match_prefix: [%s:%u<%s>..%s:%u)\n", prefix,
+	printf("<%s>.match_prefix: [%s:%u<%s>..%s:%u<%s>]\n", prefix,
 		orcify(it->cur.tree), it->cur.idx,
 		PT_(key_string)(PT_(entry_key)(
 		&it->cur.tree->leaf[it->cur.idx].as_entry)),
-		orcify(it->end.tree), it->end.idx);
-	/* fixme: I'm not convinced that leaf will always be an entry . . . */
-	/* We need another fn to fall-trough. */
+		orcify(it->end.tree), it->end.idx,
+		PT_(key_string)(PT_(entry_key)(
+		&it->end.tree->leaf[it->end.idx].as_entry)));
 }
 /** Stores all `prefix` matches in `trie` in `it`. @order \O(|`prefix`|) */
 static void PT_(prefix)(struct T_(trie) *const trie,
-	const char *const prefix, struct PT_(cursor) *it) {
+	const char *const prefix, struct PT_(iterator) *it) {
 	assert(trie && prefix && it);
 	PT_(match_prefix)(trie, prefix, it);
 	/* Make sure actually a prefix. */
@@ -594,7 +608,7 @@ static void PT_(clear_r)(struct PT_(tree) *const tree) {
 		PT_(clear_r)(tree->leaf[i].as_link), free(tree->leaf[i].as_link);
 }
 
-struct T_(trie_cursor) { struct PT_(cursor) _; };
+struct T_(trie_iterator) { struct PT_(iterator) _; };
 
 /** Zeroed data (not all-bits-zero) is initialized. @return An idle tree.
  @order \Theta(1) @allow */
@@ -737,19 +751,19 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
  topological change to `trie`. Calling <fn:<T>trie_next> will iterate them in
  order. @order \O(\log `trie.size`) or \O(|`prefix`|) @allow */
 static void T_(trie_prefix)(struct T_(trie) *const trie,
-	const char *const prefix, struct T_(trie_cursor) *const cur)
+	const char *const prefix, struct T_(trie_iterator) *const cur)
 	{ assert(cur); PT_(prefix)(trie, prefix, &cur->_); }
 
 /** Advances `it`. @return The previous value or null. @allow */
-static const PT_(entry) *T_(trie_next)(struct T_(trie_cursor) *const it)
+static const PT_(entry) *T_(trie_next)(struct T_(trie_iterator) *const it)
 	{ return PT_(next)(&it->_); }
 
-static size_t PT_(size_r)(const struct PT_(cursor) *const it) {
+static size_t PT_(size_r)(const struct PT_(iterator) *const it) {
 	return it->end.idx - it->cur.idx; /* Fixme. */
 }
 
 /** Counts the of the items in initialized `it`. @order \O(|`it`|) @allow */
-static size_t T_(trie_size)(const struct T_(trie_cursor) *const cur)
+static size_t T_(trie_size)(const struct T_(trie_iterator) *const cur)
 	{ return assert(cur), PT_(size_r)(&cur->_); }
 
 
@@ -758,7 +772,7 @@ static size_t T_(trie_size)(const struct T_(trie_cursor) *const cur)
 #define BOX struct T_(trie)
 
 
-/* cursor... */
+/* iterator... */
 
 
 #ifdef TRIE_TEST /* <!-- test */
