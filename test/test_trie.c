@@ -244,16 +244,20 @@ static void contrived_test(void) {
 		int success = str_trie_query(&t, words[i], &get);
 		assert(success && words[i] == get);
 	}
-	str_trie_prefix(&t, "b", &it);
+	it = str_trie_prefix(&t, "b");
 	printf("b: %lu\n", str_trie_size(&it));
-	str_trie_prefix(&t, "d", &it);
+	it = str_trie_prefix(&t, "d");
 	printf("d: %lu\n", str_trie_size(&it));
-	str_trie_prefix(&t, "f", &it);
+	it = str_trie_prefix(&t, "f");
 	printf("f: %lu\n", str_trie_size(&it));
-	str_trie_prefix(&t, "q", &it);
+	it = str_trie_prefix(&t, "q");
 	printf("q: %lu\n", str_trie_size(&it));
-	str_trie_prefix(&t, "c", &it);
+	it = str_trie_prefix(&t, "c");
 	printf("c: %lu\n", str_trie_size(&it));
+	{
+		const char *const*item;
+		while(item = str_trie_next(&it)) printf("%s\n", *item);
+	}
 	str_trie_(&t);
 }
 

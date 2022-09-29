@@ -252,11 +252,9 @@ const static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
 	if(!it->trie || !it->cur.tree || it->cur.tree->bsize < it->cur.idx
 		|| !it->end.tree || it->end.tree->bsize < it->end.idx) return 0;
 	if(it->seen) {
-		struct PT_(ref_c) maybe = it->cur;
-		/* We have reached the end. */
-		if(maybe.tree == it->end.tree && maybe.idx <= it->end.idx
-			|| !PT_(to_successor_c)(it->trie->root, &maybe)) return 0;
-		it->cur = maybe;
+		/* We have reached the planned end or concurrent modification. */
+		if(it->cur.tree == it->end.tree && it->cur.idx >= it->end.idx
+			|| !PT_(to_successor_c)(it->trie->root, &it->cur)) return 0;
 	} else {
 		it->seen = 1;
 	}
@@ -750,10 +748,10 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
  @param[it] A pointer to an iterator that gets filled. It is valid until a
  topological change to `trie`. Calling <fn:<T>trie_next> will iterate them in
  order. @order \O(\log `trie.size`) or \O(|`prefix`|) @allow */
-static void T_(trie_prefix)(struct T_(trie) *const trie,
-	const char *const prefix, struct T_(trie_iterator) *const cur)
-	{ assert(cur); PT_(prefix)(trie, prefix, &cur->_); }
-
+static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
+	const char *const prefix) {
+	struct T_(trie_iterator) it; PT_(prefix)(trie, prefix, &it._); return it;
+}
 /** Advances `it`. @return The previous value or null. @allow */
 static const PT_(entry) *T_(trie_next)(struct T_(trie_iterator) *const it)
 	{ return PT_(next)(&it->_); }
