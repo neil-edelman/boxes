@@ -222,7 +222,7 @@ static const PT_(entry) *PT_(next_c)(struct PT_(forward) *const it) {
 
 #define BOX_ITERATOR PT_(entry) *
 static int PT_(is_element)(const PT_(entry) *const e) { return !!e; }
-/* A range of words from `[t0:lf0, t1:lf1)` fixme: ]. */
+/* A range of words from `[cur, end]`. */
 struct PT_(iterator) {
 	const struct T_(trie) *trie; /* Valid, rest must be, too, or ignore rest. */
 	struct PT_(ref_c) cur, end;
@@ -534,7 +534,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(key) key,
 	} /* Fall-through. */
 	if(tree->bsize == UCHAR_MAX) { /* Empty. */
 		tree->bsize = 0;
-		trie_bmp_clear_all(&trie->root->bmp); /* Technically only need 1 bit. */
+		trie_bmp_clear_all(&trie->root->bmp);
 		leaf = tree->leaf + 0;
 		goto assign;
 	}
@@ -604,6 +604,10 @@ static void PT_(clear_r)(struct PT_(tree) *const tree) {
 	assert(tree && tree->bsize != UCHAR_MAX);
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->bmp, i))
 		PT_(clear_r)(tree->leaf[i].as_link), free(tree->leaf[i].as_link);
+}
+
+static size_t PT_(size_r)(const struct PT_(iterator) *const it) {
+	return it->end.idx - it->cur.idx; /* Fixme. */
 }
 
 struct T_(trie_iterator) { struct PT_(iterator) _; };
@@ -725,18 +729,6 @@ static int T_(trie_put)(struct T_(trie) *const trie, const PT_(entry) x,
 	PT_(entry) */*const fixme*/eject)
 	{ return PT_(put)(trie, x, &eject, 0); }
 
-/** Adds a pointer to `x` to `trie` only if the entry is absent or if calling
- `replace` returns true or is null.
- @param[eject] If not null, on success it will hold the overwritten value or
- a pointer-to-null if it did not overwrite any value. If a collision occurs and
- `replace` does not return true, this will be a pointer to `x`.
- @param[replace] Called on collision and only replaces it if the function
- returns true. If null, it is semantically equivalent to <fn:<T>trie_put>.
- @return Success. @throws[realloc, ERANGE] @order \O(|`key`|) @allow */
-static int T_(trie_policy)(struct T_(trie) *const trie, const PT_(entry) x,
-	PT_(entry) *eject, const PT_(replace_fn) replace)
-	{ return assert(trie && x), PT_(put)(trie, x, &eject, replace); }
-
 /** Tries to remove `key` from `trie`. @return Success. */
 static int T_(trie_remove)(struct T_(trie) *const trie,
 	const char *const key) { return PT_(remove)(trie, key); }
@@ -756,10 +748,6 @@ static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
 static const PT_(entry) *T_(trie_next)(struct T_(trie_iterator) *const it)
 	{ return PT_(next)(&it->_); }
 
-static size_t PT_(size_r)(const struct PT_(iterator) *const it) {
-	return it->end.idx - it->cur.idx; /* Fixme. */
-}
-
 /** Counts the of the items in initialized `it`. @order \O(|`it`|) @allow */
 static size_t T_(trie_size)(const struct T_(trie_iterator) *const cur)
 	{ return assert(cur), PT_(size_r)(&cur->_); }
@@ -768,9 +756,6 @@ static size_t T_(trie_size)(const struct T_(trie_iterator) *const cur)
 /* Box override information. */
 #define BOX_ PT_
 #define BOX struct T_(trie)
-
-
-/* iterator... */
 
 
 #ifdef TRIE_TEST /* <!-- test */
