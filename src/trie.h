@@ -297,6 +297,7 @@ finally:
 		it->cur.tree = it->end.tree = tree;
 		it->cur.idx = lf, PT_(lower_entry)(&it->cur);
 		it->end.idx = lf + br1 - br0, PT_(higher_entry)(&it->end);
+		it->seen = 0;
 		break;
 	}
 	printf("<%s>.match_prefix: [%s:%u<%s>..%s:%u<%s>]\n", prefix,
