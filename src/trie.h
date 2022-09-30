@@ -11,7 +11,7 @@
 
  A <tag:<T>trie> is a prefix-tree, digital-tree, or trie: an ordered set or map
  of immutable key strings allowing efficient prefix queries. The strings used
- here are any encoding with a byte null-terminator, including
+ are any encoding with a byte null-terminator, including ASCII and
  [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8).
  The implementation is as <Morrison, 1968 PATRICiA>: a compact
  [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) that acts as an

@@ -1,0 +1,42 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	// tree 0x100b04180
+	// branches
+	tree0x100b04180branch0 [label="3", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100b04180branch0 -> tree0x100905970branch0 [style=dashed, arrowhead=rnormal];
+	tree0x100b04180branch0 -> tree0x100b04180branch1 [arrowhead=lnormal];
+	tree0x100b04180branch1 [label="3", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100b04180branch1 -> tree0x100b04180leaf1 [color=Gray75, arrowhead=rnormal];
+	tree0x100b04180branch1 -> tree0x100b04180leaf2 [color=Gray75, arrowhead=lnormal];
+	// leaves
+	tree0x100b04180leaf1 [label = <Rasalhague<font color="Gray75">⊔</font>>];
+	tree0x100b04180leaf2 [label = <Scheat<font color="Gray75">⊔</font>>];
+	// tree 0x100905970
+	// branches
+	tree0x100905970branch0 [label="0", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100905970branch0 -> tree0x100905970branch1 [arrowhead=rnormal];
+	tree0x100905970branch0 -> tree0x100910290branch0 [style=dashed, arrowhead=lnormal];
+	tree0x100905970branch1 [label="0", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100905970branch1 -> tree0x100905970leaf0 [color=Gray75, arrowhead=rnormal];
+	tree0x100905970branch1 -> tree0x100905970branch2 [arrowhead=lnormal];
+	tree0x100905970branch2 [label="1", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100905970branch2 -> tree0x100905970leaf1 [color=Gray75, arrowhead=rnormal];
+	tree0x100905970branch2 -> tree0x100905970leaf2 [color=Gray75, arrowhead=lnormal];
+	// leaves
+	tree0x100905970leaf0 [label = <Alhena<font color="Gray75">⊔</font>>];
+	tree0x100905970leaf1 [label = <Dschubba<font color="Gray75">⊔</font>>];
+	tree0x100905970leaf2 [label = <Eltanin<font color="Gray75">⊔</font>>];
+	// tree 0x100910290
+	// branches
+	tree0x100910290branch0 [label="1", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100910290branch0 -> tree0x100910290branch1 [arrowhead=rnormal];
+	tree0x100910290branch0 -> tree0x100910290leaf2 [color=Gray75, arrowhead=lnormal];
+	tree0x100910290branch1 [label="5", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100910290branch1 -> tree0x100910290leaf0 [color=Gray75, arrowhead=rnormal];
+	tree0x100910290branch1 -> tree0x100910290leaf1 [color=Gray75, arrowhead=lnormal];
+	// leaves
+	tree0x100910290leaf0 [label = <Markeb<font color="Gray75">⊔</font>>];
+	tree0x100910290leaf1 [label = <Mimosa<font color="Gray75">⊔</font>>];
+	tree0x100910290leaf2 [label = <Naos<font color="Gray75">⊔</font>>];
+}
