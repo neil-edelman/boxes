@@ -697,7 +697,7 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 
 #if 0
 /** Try to remove `key` from `trie`.
- @fixme Join when combined-half is less than half. */
+ @fixme Join when combined-half is less than a quarter? */
 static int PT_(remove)(struct T_(trie) *const trie,
 	const char *const key) {
 	struct trie_trunk *trunk;
