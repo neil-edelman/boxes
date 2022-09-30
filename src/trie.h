@@ -447,13 +447,6 @@ finally:
 		it->seen = 0;
 		break;
 	}
-	printf("<%s>.match_prefix: [%s:%u<%s>..%s:%u<%s>]\n", prefix,
-		orcify(it->cur.tree), it->cur.idx,
-		PT_(key_string)(PT_(entry_key)(
-		&it->cur.tree->leaf[it->cur.idx].as_entry)),
-		orcify(it->end.tree), it->end.idx,
-		PT_(key_string)(PT_(entry_key)(
-		&it->end.tree->leaf[it->end.idx].as_entry)));
 }
 /** Stores all `prefix` matches in `trie` in `it`. */
 static void PT_(prefix)(struct T_(trie) *const trie,
@@ -498,20 +491,16 @@ static int PT_(split)(struct PT_(tree) *const tree) {
 	/* Mitosis; more info added on error in <fn:<PT>add_unique>. */
 	if(!(kid = malloc(sizeof *kid))) return 0;
 	/* Where should we split it? <https://cs.stackexchange.com/q/144928> */
-	printf("split at root, order %u, split %u\n", TRIE_ORDER, TRIE_SPLIT);
-	for(lf = 0; lf <= tree->bsize; lf++)
-		if(trie_bmp_test(&tree->bmp, lf)) printf("leaf %u is a link\n", lf);
 	br0 = 0, br1 = tree->bsize, lf = 0;
 	do {
 		const struct trie_branch *const branch = tree->branch + br0;
 		const unsigned right = br1 - br0 - 1 - branch->left;
 		assert(br0 < br1);
 		if(branch->left > right) /* Prefer right; it's less work copying. */
-			br1 = ++br0 + branch->left, printf("left\n");
+			br1 = ++br0 + branch->left;
 		else
-			br0 += branch->left + 1, lf += branch->left + 1, printf("right\n");
+			br0 += branch->left + 1, lf += branch->left + 1;
 	} while(2 * (br1 - br0) + 1 > TRIE_SPLIT);
-	printf("cut at [%u..%u:%u]\n", br0, br1, lf);
 	/* Copy data rooted at the current node. */
 	kid->bsize = (unsigned char)(br1 - br0);
 	memcpy(kid->branch, tree->branch + br0, sizeof *tree->branch * kid->bsize);
@@ -523,9 +512,9 @@ static int PT_(split)(struct PT_(tree) *const tree) {
 		const unsigned right = br1 - br0 - 1 - branch->left;
 		assert(br0 < br1);
 		if(branch->left > right)
-			br1 = ++br0 + branch->left, branch->left -= kid->bsize, printf("left\n");
+			br1 = ++br0 + branch->left, branch->left -= kid->bsize;
 		else
-			br0 += branch->left + 1, lf += branch->left + 1, printf("right\n");
+			br0 += branch->left + 1, lf += branch->left + 1;
 	} while(2 * (br1 - br0) + 1 > TRIE_SPLIT);
 	/* Delete from `tree`. */
 	memmove(tree->branch + br0, tree->branch + br1,
@@ -534,9 +523,6 @@ static int PT_(split)(struct PT_(tree) *const tree) {
 		sizeof *tree->leaf * (tree->bsize + 1 - lf - kid->bsize - 1));
 	/* Move the bits. */
 	memcpy(&kid->bmp, &tree->bmp, sizeof tree->bmp);
-	printf("there were %u leaves.\n", tree->bsize + 1);
-	printf("moving %u leaves starting at %u leaving %u.\n",
-		kid->bsize + 1, lf, tree->bsize - lf - kid->bsize);
 	trie_bmp_remove(&kid->bmp, 0, lf);
 	trie_bmp_remove(&kid->bmp, kid->bsize + 1,
 		tree->bsize - lf - kid->bsize);
@@ -677,7 +663,6 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	const PT_(key) key) {
 	PT_(entry) *e;
 	assert(trie && PT_(key_string)(key));
-	printf("try(%s)\n", PT_(key_string)(key));
 	return PT_(query)(trie, PT_(key_string)(key), 0) ? TRIE_PRESENT
 		: (PT_(add_unique)(trie, key, &e) ? TRIE_UNIQUE : TRIE_ERROR);
 }
@@ -695,7 +680,6 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	const PT_(key) key, PT_(value) **const value) {
 	PT_(entry) *e, result;
 	assert(trie && PT_(key_string)(key));
-	printf("try(%s)\n", PT_(key_string)(key));
 	if(PT_(query)(trie, PT_(key_string)(key), &result)) {
 		if(value) *value = PT_(entry_value)(&result);
 		return TRIE_PRESENT;
@@ -712,6 +696,91 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 #endif /* trie value map OR key in value --> */
 
 #if 0
+/** Try to remove `key` from `trie`.
+ @fixme Join when combined-half is less than half. */
+static int PT_(remove)(struct T_(trie) *const trie,
+	const char *const key) {
+	struct trie_trunk *trunk;
+	size_t h, diff;
+	struct { unsigned br0, br1, lf; } t, u, v;
+	unsigned parent_br = 0; /* Useless initialization. */
+	struct { size_t cur, next; } byte; /* `key` null checks. */
+	PT_(entry) *rm;
+	assert(trie && key);
+
+	/* Same as match, but keep track of the branch not taken in `u`. */
+	printf("remove: <<%s>> from %s-trie.\n", key, orcify(trie));
+	if(!(h = trie->node_height)) return printf("remove: empty\n"), 0;
+	for(trunk = trie->root, assert(trunk), byte.cur = 0, diff = 0; ;
+		trunk = trie_inner(trunk)->leaf[t.lf].link) {
+		assert(trunk->skip < h), h -= 1 + trunk->skip;
+		t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
+		while(t.br0 < t.br1) {
+			const struct trie_branch *const branch
+				= trunk->branch + (parent_br = t.br0);
+			for(byte.next = (diff += branch->skip) / CHAR_BIT;
+				byte.cur < byte.next; byte.cur++)
+				if(key[byte.cur] == '\0') return printf("remove: unfound\n"), 0;
+			if(!TRIE_QUERY(key, diff))
+				u.lf = t.lf + branch->left + 1,
+				u.br1 = t.br1,
+				u.br0 = t.br1 = ++t.br0 + branch->left;
+			else
+				u.br0 = ++t.br0,
+				u.br1 = (t.br0 += branch->left),
+				u.lf = t.lf, t.lf += branch->left + 1;
+			/*printf("me: [%u,%u;%u], twin: [%u,%u;%u]\n",
+				t.br0, t.br1, t.lf, u.br0, u.br1, u.lf);*/
+			diff++;
+		}
+		if(!h) break;
+	}
+	rm = PT_(outer)(trunk)->leaf + t.lf;
+	if(strcmp(key, PT_(to_key)(*rm))) return printf("remove: doesn't match <<%s>>\n", PT_(to_key)(*rm)), 0;
+
+	/* If a branch, branch not taken's skip merges with the parent. */
+	if(u.br0 < u.br1) {
+		struct trie_branch *const parent = trunk->branch + parent_br,
+			*const diverge = trunk->branch + u.br0;
+		printf("remove: skip, parent %u, diverge %u.\n",
+			parent->skip, diverge->skip);
+		/* Would cause overflow. */
+		if(parent->skip == UCHAR_MAX
+			|| diverge->skip > UCHAR_MAX - parent->skip - 1)
+			return printf("remove: no!\n"), errno = EILSEQ, 0;
+		diverge->skip = parent->skip + 1 + diverge->skip;
+	}
+
+	/* Update `left` values for the path to the deleted branch. */
+	v.br0 = 0, v.br1 = trunk->bsize, v.lf = t.lf;
+	if(!v.br1) goto erased_tree;
+	for( ; ; ) {
+		struct trie_branch *const branch = trunk->branch + v.br0;
+		if(branch->left >= v.lf) {
+			if(!branch->left) break;
+			v.br1 = ++v.br0 + branch->left;
+			branch->left--;
+		} else {
+			if((v.br0 += branch->left + 1) >= v.br1) break;
+			v.lf -= branch->left + 1;
+		}
+	}
+
+	/* Remove the actual memory. */
+	memmove(trunk->branch + parent_br, trunk->branch
+		+ parent_br + 1, sizeof *trunk->branch
+		* (trunk->bsize - parent_br - 1));
+	memmove(rm, rm + 1, sizeof *rm * (trunk->bsize - t.lf));
+	trunk->bsize--;
+	printf("remove: success.\n");
+	return 1;
+
+erased_tree:
+	/* Maybe previous tree would be good? Set in match, unless this is
+	 recursive? Can it be? */
+	assert(0);
+	return 0;
+}
 /** Tries to remove `key` from `trie`. @return Success. */
 static int T_(trie_remove)(struct T_(trie) *const trie,
 	const char *const key) { return PT_(remove)(trie, key); }
