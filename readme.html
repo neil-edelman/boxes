@@ -61,11 +61,11 @@
 	<dt>Parameter: TRIE_NAME</dt>
 	<dd>Required <code>&lt;T&gt;</code> that satisfies <code>C</code> naming conventions when mangled. <code>&lt;PT&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: TRIE_KEY, TRIE_KEY_TO_STRING</dt>
-	<dd>Normally, the key is compatible with <code>const char *</code>. Optionally, one can set <code>TRIE_KEY</code> to a custom type <a href = "#typedef:&lt;PT&gt;key">&lt;PT&gt;key</a> needing <code>TRIE_KEY_TO_STRING</code> as a function satisfying <a href = "#typedef:&lt;PT&gt;key_to_string_fn">&lt;PT&gt;key_to_string_fn</a>.</dd>
+	<dd>Normally, the key is compatible with <code>const char *</code>. Optionally, one can set <code>TRIE_KEY</code> to a custom type <a href = "#typedef:&lt;PT&gt;key">&lt;PT&gt;key</a> needing <code>TRIE_KEY_TO_STRING</code> as an indirection function satisfying <a href = "#typedef:&lt;PT&gt;key_to_string_fn">&lt;PT&gt;key_to_string_fn</a>.</dd>
 	<dt>Parameter: TRIE_VALUE, TRIE_KEY_IN_VALUE</dt>
 	<dd><code>TRIE_VALUE</code> is an optional payload type to go with the key. Further, <code>TRIE_KEY_IN_VALUE</code> is an optional <a href = "#typedef:&lt;PT&gt;key_fn">&lt;PT&gt;key_fn</a> that picks out the key from the <a href = "#typedef:&lt;PT&gt;value">&lt;PT&gt;value</a>, otherwise it is an associative array from a key to value, <a href = "#tag:&lt;T&gt;trie_entry">&lt;T&gt;trie_entry</a>.</dd>
 	<dt>Parameter: TRIE_TO_STRING</dt>
-	<dd>Defining this includes <a href = "to_string.h">to_string.h</a>, with the keys as the string.</dd>
+	<dd>Defining this includes <a href = "src/to_string.h">src/to_string.h</a>, with the key strings.</dd>
 	<dt>Parameter: TRIE_DEFAULT_NAME, TRIE_DEFAULT</dt>
 	<dd>Get or default set default. FIXME: upcoming.</dd>
 	<dt>Standard:</dt>

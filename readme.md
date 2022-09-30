@@ -23,11 +23,11 @@ A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, 
  * Parameter: TRIE\_NAME  
    Required `<T>` that satisfies `C` naming conventions when mangled\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: TRIE\_KEY, TRIE\_KEY\_TO\_STRING  
-   Normally, the key is compatible with `const char *`\. Optionally, one can set `TRIE_KEY` to a custom type [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) needing `TRIE_KEY_TO_STRING` as a function satisfying [&lt;PT&gt;key_to_string_fn](#user-content-typedef-b2d72b0f)\.
+   Normally, the key is compatible with `const char *`\. Optionally, one can set `TRIE_KEY` to a custom type [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) needing `TRIE_KEY_TO_STRING` as an indirection function satisfying [&lt;PT&gt;key_to_string_fn](#user-content-typedef-b2d72b0f)\.
  * Parameter: TRIE\_VALUE, TRIE\_KEY\_IN\_VALUE  
    `TRIE_VALUE` is an optional payload type to go with the key\. Further, `TRIE_KEY_IN_VALUE` is an optional [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f) that picks out the key from the [&lt;PT&gt;value](#user-content-typedef-cc753b30), otherwise it is an associative array from a key to value, [&lt;T&gt;trie_entry](#user-content-tag-1422bb56)\.
  * Parameter: TRIE\_TO\_STRING  
-   Defining this includes [to\_string\.h](to_string.h), with the keys as the string\.
+   Defining this includes [src/to\_string\.h](src/to_string.h), with the key strings\.
  * Parameter: TRIE\_DEFAULT\_NAME, TRIE\_DEFAULT  
    Get or default set default\. FIXME: upcoming\.
  * Standard:  

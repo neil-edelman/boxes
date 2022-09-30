@@ -25,7 +25,7 @@
  @param[TRIE_KEY, TRIE_KEY_TO_STRING]
  Normally, the key is compatible with `const char *`. Optionally, one can set
  `TRIE_KEY` to a custom type <typedef:<PT>key> needing `TRIE_KEY_TO_STRING` as
- a function satisfying <typedef:<PT>key_to_string_fn>.
+ an indirection function satisfying <typedef:<PT>key_to_string_fn>.
 
  @param[TRIE_VALUE, TRIE_KEY_IN_VALUE]
  `TRIE_VALUE` is an optional payload type to go with the key. Further,
@@ -34,7 +34,7 @@
  key to value, <tag:<T>trie_entry>.
 
  @param[TRIE_TO_STRING]
- Defining this includes <to_string.h>, with the keys as the string.
+ Defining this includes <src/to_string.h>, with the key strings.
 
  @param[TRIE_DEFAULT_NAME, TRIE_DEFAULT]
  Get or default set default. FIXME: upcoming.
