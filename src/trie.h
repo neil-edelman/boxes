@@ -346,8 +346,8 @@ static void T_(trie_)(struct T_(trie) *const trie) {
 	free(trie->root); /* Empty. */
 	*trie = T_(trie)();
 }
-/** Clears every entry in a valid `trie`, but it continues to be active if it
- is not idle. @order \O(|`trie`|) @allow */
+/** Clears every entry in a valid `trie` (can be null), but it continues to be
+ active if it is not idle. @order \O(|`trie`|) @allow */
 static void T_(trie_clear)(struct T_(trie) *const trie) {
 	if(!trie || !trie->root) return; /* Null or idle. */
 	if(trie->root->bsize != UCHAR_MAX) PT_(clear_r)(trie->root); /* Contents. */
@@ -357,15 +357,16 @@ static void T_(trie_clear)(struct T_(trie) *const trie) {
 
 /* Lookup. Match just looks at the index. */
 
-/** @return A candidate match for `string` in `root`, which must both be
- non-null, and a valid root, or null, if `key` is definitely not in the trie. */
-static PT_(entry) *PT_(match)(struct PT_(tree) *const root,
+/** @return A candidate match for `string` in `trie`, (which must both be
+ non-null), or null, if `key` is definitely not in the trie. */
+static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
 	const char *const string) {
 	struct PT_(tree) *tree;
 	size_t bit; /* In bits of `key`. */
 	struct { size_t cur, next; } byte; /* `key` null checks. */
-	assert(root && string);
-	for(tree = root, bit = 0, byte.cur = 0; ; ) {
+	assert(trie && string);
+	if(!(tree = trie->root) || tree->bsize == UCHAR_MAX) return 0; /* Empty. */
+	for(bit = 0, byte.cur = 0; ; ) {
 		unsigned br0 = 0, br1 = tree->bsize, lf = 0;
 		while(br0 < br1) {
 			const struct trie_branch *const branch = tree->branch + br0;
@@ -384,34 +385,25 @@ static PT_(entry) *PT_(match)(struct PT_(tree) *const root,
 	}
 }
 /** @return Looks at only the index of `trie` for potential `key` matches,
- but will ignore the values of the bits that are not in the index.
- @order \O(|`key`|) @allow */
+ but will ignore the values of the bits that are not in the index. (Can both be
+ null.) @order \O(|`key`|) @allow */
 static PT_(entry) *T_(trie_match)(const struct T_(trie) *const trie,
-	const char *const string) { return trie && trie->root && string
-	? PT_(match)(trie->root, string) : 0; }
-/** Exact `string` in `trie`.
- @return Success; `result` holds entry if not null. */
-static int PT_(query)(const struct T_(trie) *const trie,
-	const char *const string, PT_(entry) *result) {
+	const char *const string)
+	{ return trie && string ? PT_(match)(trie, string) : 0; }
+/** @return An exact match for `string` in `trie`. */
+static PT_(entry) *PT_(get)(const struct T_(trie) *const trie,
+	const char *const string) {
 	PT_(entry) *entry;
-	if(trie && string && trie->root && trie->root->bsize != UCHAR_MAX
-		&& (entry = PT_(match)(trie->root, string))
-		&& !strcmp(PT_(key_string)(PT_(entry_key)(entry)), string)) {
-		if(result) *result = *entry;
-		return 1;
-	} else {
-		return 0;
-	}
+	assert(trie && string);
+	return (entry = PT_(match)(trie, string))
+		&& !strcmp(PT_(key_string)(PT_(entry_key)(entry)), string)
+		? entry : 0;
 }
-/** @return Exact match for `key` in `trie` or null no such item exists. If
- either is null, returns a null entry, that is, key or key in value, null,
- entry both are null. @order \O(|`key`|), <Thareja 2011, Data>. @allow */
-/** @param[result] If null, behaves like <fn:<T>trie_is>, otherwise, a
- <typedef:<PT>entry> which gets filled on true.
- @return Whether `string` is in `trie` (which can be null.) @allow */
-static int T_(trie_query)(const struct T_(trie) *const trie,
-	const char *const string, PT_(entry) *const result)
-	{ return trie && string ? PT_(query)(trie, string, result) : 0; }
+/** @return `string` exact match for `trie`.
+ @order \O(|`key`|) @allow */
+static PT_(entry) *T_(trie_get)(const struct T_(trie) *const trie,
+	const char *const string)
+	{ return trie && string ? PT_(match)(trie, string) : 0; }
 /** Looks at only the index of `trie` (which can be null) for potential
  `prefix` matches, and stores them in `it`. */
 static void PT_(match_prefix)(const struct T_(trie) *const trie,
@@ -421,7 +413,7 @@ static void PT_(match_prefix)(const struct T_(trie) *const trie,
 	struct { size_t cur, next; } byte;
 	assert(trie && prefix && it);
 	it->trie = 0;
-	if(!(tree = trie->root)) return;
+	if(!(tree = trie->root) || tree->bsize == UCHAR_MAX) return;
 	for(bit = 0, byte.cur = 0; ; ) {
 		unsigned br0 = 0, br1 = tree->bsize, lf = 0;
 		while(br0 < br1) {
@@ -587,7 +579,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(key) key,
 	const char *sample;
 	union PT_(leaf) *leaf;
 	const char *key_string = PT_(key_string)(key);
-	assert(trie && PT_(key_string)(key) && entry);
+	assert(trie && PT_(key_string)(key));
 	if(!(tree = trie->root)) { /* Idle. */
 		if(!(tree = malloc(sizeof *tree))) goto catch;
 		tree->bsize = UCHAR_MAX;
@@ -650,7 +642,7 @@ assign:
 	/* Will rely on user to do it; oy. We potentially do not have all the
 	 information to do it here. */
 #endif /* key in value --> */
-	*entry = &leaf->as_entry;
+	if(entry) *entry = &leaf->as_entry;
 	return 1;
 catch:
 	/* `malloc` doesn't have to set it according to `C89`. */
@@ -658,13 +650,13 @@ catch:
 	return 0;
 }
 #ifndef TRIE_VALUE /* <!-- key set */
-/** Adds `key` to `trie` if it doesn't exist. */
+/** Adds `key` to `trie` (which must both exist) if it doesn't exist. */
 static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	const PT_(key) key) {
-	PT_(entry) *e;
 	assert(trie && PT_(key_string)(key));
-	return PT_(query)(trie, PT_(key_string)(key), 0) ? TRIE_PRESENT
-		: (PT_(add_unique)(trie, key, &e) ? TRIE_UNIQUE : TRIE_ERROR);
+	return trie->root && trie->root->bsize != UCHAR_MAX
+		&& PT_(get)(trie, PT_(key_string)(key)) ? TRIE_PRESENT
+		: (PT_(add_unique)(trie, key, 0) ? TRIE_UNIQUE : TRIE_ERROR);
 }
 #else /* key set --><!-- key value map OR key in value */
 /** Adds `key` to `trie` if it doesn't exist already.
@@ -678,10 +670,10 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
  @order \O(max(|`trie.keys`|)) */
 static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	const PT_(key) key, PT_(value) **const value) {
-	PT_(entry) *e, result;
+	PT_(entry) *e;
 	assert(trie && PT_(key_string)(key));
-	if(PT_(query)(trie, PT_(key_string)(key), &result)) {
-		if(value) *value = PT_(entry_value)(&result);
+	if(e = PT_(get)(trie, PT_(key_string)(key))) {
+		if(value) *value = PT_(entry_value)(e);
 		return TRIE_PRESENT;
 	}
 	if(!PT_(add_unique)(trie, key, &e)) return TRIE_ERROR;

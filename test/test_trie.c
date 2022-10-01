@@ -239,9 +239,8 @@ static void contrived_test(void) {
 		trie_str_graph(&t, "graph/contrived-insert.gv", i);
 	}
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
-		const char *get;
-		int success = str_trie_query(&t, words[i], &get);
-		assert(success && words[i] == get);
+		const char **const get = str_trie_get(&t, words[i]);
+		assert(get && words[i] == *get);
 	}
 	{
 		const char *const prefixes[] = { "b", "c", "d", "f", "q" },
