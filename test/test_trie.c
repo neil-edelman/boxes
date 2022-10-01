@@ -222,9 +222,7 @@ static void contrived_test(void) {
 	const char *const words[] = { "foo", "bar", "baz", "quxx",
 		"a", "b", "c", "ba", "bb", "", "A", "Z", "z",
 		"a", "b", "â", "cc", "ccc", "cccc", "ccccc", "cccccc",
-		"foobar", "foo", "dictionary", "dictionaries" },
-		*const prefixes[] = { "b", "c", "d", "f", "q", "u" },
-		*const*prefix_end, *const*prefix;
+		"foobar", "foo", "dictionary", "dictionaries" };
 	unsigned i, count, count2, count3 = 0, letters[UCHAR_MAX];
 	struct str_trie t = str_trie();
 	memset(letters, 0, sizeof letters);
@@ -243,15 +241,6 @@ static void contrived_test(void) {
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
 		const char **const get = str_trie_get(&t, words[i]);
 		assert(get && words[i] == *get);
-	}
-	for(prefix = prefixes,
-		prefix_end = prefix + sizeof prefixes / sizeof *prefixes;
-		prefix < prefix_end; prefix++) {
-		struct str_trie_iterator it = str_trie_prefix(&t, *prefix);
-		const char *const*pstr;
-		printf("\"%s\": %lu\n", *prefix, str_trie_size(&it));
-		while(pstr = str_trie_next(&it)) printf("<%s>", *pstr);
-		printf("\n");
 	}
 	/* Add up all the letters; should be equal to the overall count. */
 	for(count2 = 0, i = 0; i < sizeof letters / sizeof *letters; i++) {
