@@ -259,10 +259,12 @@ static void contrived_test(void) {
 		unsigned count_letter = 0;
 		struct str_trie_iterator it;
 		const char *const*pstr;
+		int output = 0;
 		letter[0] = (char)i, letter[1] = '\0';
 		it = str_trie_prefix(&t, letter);
-		while(pstr = str_trie_next(&it)) printf("<%s>", *pstr), count_letter++;
-		printf("\n");
+		while(pstr = str_trie_next(&it)) printf("%s<%s>",
+			output ? "" : letter, *pstr), count_letter++, output = 1;
+		if(output) printf("\n");
 		if(i) {
 			assert(count_letter == letters[i]);
 			count2 += count_letter;

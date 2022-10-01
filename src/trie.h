@@ -448,17 +448,10 @@ static void PT_(prefix)(struct T_(trie) *const trie,
 	const char *const prefix, struct PT_(iterator) *it) {
 	assert(trie && prefix && it);
 	PT_(match_prefix)(trie, prefix, it);
-	printf("prefix %u: %s:%u..%s:%u\n", (unsigned char)*prefix, orcify(it->cur.tree), it->cur.idx, orcify(it->end.tree), it->end.idx);
-	{
-		const char *const s = PT_(key_string)(PT_(entry_key)(
-									   &it->cur.tree->leaf[it->cur.idx].as_entry));
-	printf("Is <%s>%u really a prefix of <%s>%u?\n", prefix, (unsigned char)*prefix, s, (unsigned char)*s);
-	}
 	/* Make sure actually a prefix. */
 	if(it->trie && !trie_is_prefix(prefix,
 		PT_(key_string)(PT_(entry_key)(
 		&it->cur.tree->leaf[it->cur.idx].as_entry))))
-		printf("(this is not a prefix)\n"),
 		it->trie = 0;
 }
 /** Fills `it` with iteration parameters that find values of keys that start
