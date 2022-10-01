@@ -199,11 +199,14 @@ struct PT_(ref) { struct PT_(tree) *tree; unsigned idx; };
 struct PT_(ref_c) { const struct PT_(tree) *tree; unsigned idx; };
 
 
-/* Fall through `ref` until hit an entry. Must be pointing at something. */
+/** Fall through `ref` until hit the first entry. Must be pointing at
+ something. */
 static void PT_(lower_entry)(struct PT_(ref_c) *ref) {
 	while(trie_bmp_test(&ref->tree->bmp, ref->idx))
 		ref->tree = ref->tree->leaf[ref->idx].as_link, ref->idx = 0;
 }
+/** Fall through `ref` until hit the last entry. Must be pointing at
+ something. */
 static void PT_(higher_entry)(struct PT_(ref_c) *ref) {
 	while(trie_bmp_test(&ref->tree->bmp, ref->idx))
 		ref->tree = ref->tree->leaf[ref->idx].as_link,
@@ -654,8 +657,7 @@ catch:
 static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	const PT_(key) key) {
 	assert(trie && PT_(key_string)(key));
-	return trie->root && trie->root->bsize != UCHAR_MAX
-		&& PT_(get)(trie, PT_(key_string)(key)) ? TRIE_PRESENT
+	return PT_(get)(trie, PT_(key_string)(key)) ? TRIE_PRESENT
 		: (PT_(add_unique)(trie, key, 0) ? TRIE_UNIQUE : TRIE_ERROR);
 }
 #else /* key set --><!-- key value map OR key in value */
@@ -680,7 +682,7 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 #ifndef TRIE_KEY_IN_VALUE /* <!-- key value map */
 	if(value) *value = &e->value;
 #else /* key value map --><!-- key in value */
-	assert(value);
+	assert(value); /* One _has_ to set the key in the value. */
 	*value = e;
 #endif /* key in value --> */
 	return TRIE_UNIQUE;

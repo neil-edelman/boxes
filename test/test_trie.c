@@ -16,7 +16,7 @@ struct str32 { char str[32]; };
 #define POOL_NAME str32
 #define POOL_TYPE struct str32
 #include "pool.h"
-static struct str32_pool global_pool;
+static struct str32_pool str_pool;
 
 
 /* A set of strings stored somewhere else; one must keep the storage for the
@@ -25,7 +25,7 @@ static struct str32_pool global_pool;
  index and not the keys themselves; the key strings are not accessed, then. */
 /** Generate a random name from `global_pool` and assign it to `key`. */
 static void str32_filler(const char **const key) {
-	struct str32 *backing = str32_pool_new(&global_pool);
+	struct str32 *backing = str32_pool_new(&str_pool);
 	/* Unlikely to fail, but for tests, we don't have recourse to back out. */
 	assert(backing && key);
 	orcish(backing->str, sizeof backing->str);
@@ -219,21 +219,23 @@ static void keyval_filler(struct keyval **const kv_ptr) {
 #endif
 
 static void contrived_test(void) {
-	const char *words[] = {
-		"foo", "bar", "baz", "quxx",
+	const char *const words[] = { "foo", "bar", "baz", "quxx",
 		"a", "b", "c", "ba", "bb", "", "A", "Z", "z",
 		"a", "b", "â", "cc", "ccc", "cccc", "ccccc", "cccccc",
-		"foobar", "foo", "dictionary", "dictionaries"
-	};
-	unsigned i;
+		"foobar", "foo", "dictionary", "dictionaries" },
+		*const prefixes[] = { "b", "c", "d", "f", "q", "u" },
+		*const*prefix_end, *const*prefix;
+	unsigned i, count, count2, count3 = 0, letters[UCHAR_MAX];
 	struct str_trie t = str_trie();
+	memset(letters, 0, sizeof letters);
 	printf("Contrived manual test of set <str>trie.\n");
-	for(i = 0; i < sizeof words / sizeof *words; i++) {
-		/* printf("word: %s\n", words[i]); */
-		switch(str_trie_try(&t, words[i])) {
+	for(count = 0, i = 0; i < sizeof words / sizeof *words; i++) {
+		const char *const word = words[i];
+		/* printf("word: %s\n", word); */
+		switch(str_trie_try(&t, word)) {
 		case TRIE_ERROR: assert(0); break;
-		case TRIE_UNIQUE: break;
-		case TRIE_PRESENT: printf("\"%s\" already there.\n", words[i]);
+		case TRIE_UNIQUE: count++, letters[(unsigned char)*word]++; break;
+		case TRIE_PRESENT: printf("\"%s\" already there.\n", word);
 			continue;
 		}
 		trie_str_graph(&t, "graph/contrived-insert.gv", i);
@@ -242,18 +244,35 @@ static void contrived_test(void) {
 		const char **const get = str_trie_get(&t, words[i]);
 		assert(get && words[i] == *get);
 	}
-	{
-		const char *const prefixes[] = { "b", "c", "d", "f", "q" },
-			*const*prefix_end, *const*prefix;
-		for(prefix = prefixes,
-			prefix_end = prefix + sizeof prefixes / sizeof *prefixes;
-			prefix < prefix_end; prefix++) {
-			struct str_trie_iterator it = str_trie_prefix(&t, *prefix);
-			const char *const*pstr;
-			printf("\"%s\": %lu\n", *prefix, str_trie_size(&it));
-			while(pstr = str_trie_next(&it)) printf("%s\n", *pstr);
+	for(prefix = prefixes,
+		prefix_end = prefix + sizeof prefixes / sizeof *prefixes;
+		prefix < prefix_end; prefix++) {
+		struct str_trie_iterator it = str_trie_prefix(&t, *prefix);
+		const char *const*pstr;
+		printf("\"%s\": %lu\n", *prefix, str_trie_size(&it));
+		while(pstr = str_trie_next(&it)) printf("<%s>", *pstr);
+		printf("\n");
+	}
+	/* Add up all the letters; should be equal to the overall count. */
+	for(count2 = 0, i = 0; i < sizeof letters / sizeof *letters; i++) {
+		char letter[2];
+		unsigned count_letter = 0;
+		struct str_trie_iterator it;
+		const char *const*pstr;
+		letter[0] = (char)i, letter[1] = '\0';
+		it = str_trie_prefix(&t, letter);
+		while(pstr = str_trie_next(&it)) printf("<%s>", *pstr), count_letter++;
+		printf("\n");
+		if(i) {
+			assert(count_letter == letters[i]);
+			count2 += count_letter;
+		} else { /* Sentinel. */
+			count3 = count_letter;
+			if(str_trie_get(&t, "")) count2++;
 		}
 	}
+	assert(count2 == count);
+	assert(count3 == count);
 	str_trie_(&t);
 }
 
@@ -261,16 +280,17 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
-	contrived_test(), str32_pool_clear(&global_pool);
+	contrived_test(), str32_pool_clear(&str_pool);
 #if 1
-	str_trie_test(), str32_pool_clear(&global_pool); /* Key set. */
+	str_trie_test(), str32_pool_clear(&str_pool); /* Key set. */
 	colour_trie_test(); /* Custom key set with enum string backing. */
-	mapint_trie_test(), str32_pool_clear(&global_pool); /* `string -> int`. */
-	foo_trie_test(), str32_pool_clear(&global_pool); /* Custom value. */
+	mapint_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */
+	foo_trie_test(), str32_pool_clear(&str_pool); /* Custom value. */
 	str8_trie_test(); /* Small key set with no dependancy on outside keys. */
 	star_trie_test(); /* Custom value with enum strings backing. */
-	keyval_trie_test(); /*  */
+	keyval_trie_test(), keyval_pool_clear(&kv_pool); /* Pointer to index. */
 #endif
-	str32_pool_(&global_pool); /* Destroy global string pool. */
+	keyval_pool_(&kv_pool);
+	str32_pool_(&str_pool);
 	return EXIT_SUCCESS;
 }
