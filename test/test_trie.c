@@ -225,6 +225,8 @@ static void contrived_test(void) {
 		"foobar", "foo", "dictionary", "dictionaries" };
 	unsigned i, count, count2, count3 = 0, letters[UCHAR_MAX];
 	struct str_trie t = str_trie();
+	int result;
+	/* Histogram of letters. */
 	memset(letters, 0, sizeof letters);
 	printf("Contrived manual test of set <str>trie.\n");
 	for(count = 0, i = 0; i < sizeof words / sizeof *words; i++) {
@@ -240,7 +242,7 @@ static void contrived_test(void) {
 	}
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
 		const char **const get = str_trie_get(&t, words[i]);
-		assert(get && words[i] == *get);
+		assert(get && !strcmp(words[i], *get));
 	}
 	/* Add up all the letters; should be equal to the overall count. */
 	for(count2 = 0, i = 0; i < sizeof letters / sizeof *letters; i++) {
@@ -264,6 +266,17 @@ static void contrived_test(void) {
 	}
 	assert(count2 == count);
 	assert(count3 == count);
+	result = str_trie_remove(&t, "yo");
+	assert(!result);
+	for(i = 0; i < sizeof words / sizeof *words; i++) {
+		const char *const word = words[i];
+		printf("Delete <%s>.\n", word);
+		result = str_trie_remove(&t, word);
+		if(result) count--;
+		else printf("Didn't find <%s>.\n", word);
+		trie_str_graph(&t, "graph/contrived-delete.gv", i);
+	}
+	assert(!count);
 	str_trie_(&t);
 }
 
@@ -272,7 +285,7 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	contrived_test(), str32_pool_clear(&str_pool);
-#if 1
+#if 0
 	str_trie_test(), str32_pool_clear(&str_pool); /* Key set. */
 	colour_trie_test(); /* Custom key set with enum string backing. */
 	mapint_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */

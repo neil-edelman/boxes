@@ -690,53 +690,48 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 }
 #endif /* trie value map OR key in value --> */
 
-#if 0
-/** Try to remove `key` from `trie`.
+/** Try to remove `string` from `trie`.
  @fixme Join when combined-half is less than a quarter? */
-static int PT_(remove)(struct T_(trie) *const trie,
-	const char *const key) {
-	struct trie_trunk *trunk;
-	size_t h, diff;
-	struct { unsigned br0, br1, lf; } t, u, v;
-	unsigned parent_br = 0; /* Useless initialization. */
+static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
+	struct PT_(tree) *tree;
+	size_t bit, tree_bit; /* In bits of `key`. */
 	struct { size_t cur, next; } byte; /* `key` null checks. */
+	struct { unsigned br0, br1, lf; } ye, no, up;
+	unsigned parent_br = 0; /* Useless initialization. */
 	PT_(entry) *rm;
-	assert(trie && key);
-
+	assert(trie && string);
 	/* Same as match, but keep track of the branch not taken in `u`. */
-	printf("remove: <<%s>> from %s-trie.\n", key, orcify(trie));
-	if(!(h = trie->node_height)) return printf("remove: empty\n"), 0;
-	for(trunk = trie->root, assert(trunk), byte.cur = 0, diff = 0; ;
-		trunk = trie_inner(trunk)->leaf[t.lf].link) {
-		assert(trunk->skip < h), h -= 1 + trunk->skip;
-		t.br0 = 0, t.br1 = trunk->bsize, t.lf = 0;
-		while(t.br0 < t.br1) {
+	printf("remove: <<%s>> from %s-trie.\n", string, orcify(trie));
+	/* Same as match except keep track of more stuff. */
+	if(!(tree = trie->root) || tree->bsize == UCHAR_MAX) return 0; /* Empty. */
+	for(bit = 0, byte.cur = 0; ; ) {
+		tree_bit = bit;
+		ye.br0 = 0, ye.br1 = tree->bsize, ye.lf = 0;
+		while(ye.br0 < ye.br1) {
 			const struct trie_branch *const branch
-				= trunk->branch + (parent_br = t.br0);
-			for(byte.next = (diff += branch->skip) / CHAR_BIT;
+				= tree->branch + (parent_br = ye.br0);
+			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
-				if(key[byte.cur] == '\0') return printf("remove: unfound\n"), 0;
-			if(!TRIE_QUERY(key, diff))
-				u.lf = t.lf + branch->left + 1,
-				u.br1 = t.br1,
-				u.br0 = t.br1 = ++t.br0 + branch->left;
+				if(string[byte.cur] == '\0') return 0; /* `key` too short. */
+			if(!TRIE_QUERY(string, bit))
+				no.lf = ye.lf + branch->left + 1,
+				no.br1 = ye.br1,
+				no.br0 = ye.br1 = ++ye.br0 + branch->left;
 			else
-				u.br0 = ++t.br0,
-				u.br1 = (t.br0 += branch->left),
-				u.lf = t.lf, t.lf += branch->left + 1;
-			/*printf("me: [%u,%u;%u], twin: [%u,%u;%u]\n",
-				t.br0, t.br1, t.lf, u.br0, u.br1, u.lf);*/
-			diff++;
+				no.br0 = ++ye.br0,
+				no.br1 = (ye.br0 += branch->left),
+				no.lf = ye.lf, ye.lf += branch->left + 1;
+			bit++;
 		}
-		if(!h) break;
+		if(!trie_bmp_test(&tree->bmp, ye.lf)) break;
+		tree = tree->leaf[ye.lf].as_link; /* Jumped trees. */
 	}
-	rm = PT_(outer)(trunk)->leaf + t.lf;
-	if(strcmp(key, PT_(to_key)(*rm))) return printf("remove: doesn't match <<%s>>\n", PT_(to_key)(*rm)), 0;
-
+	rm = &tree->leaf[ye.lf].as_entry;
+	if(strcmp(PT_(key_string)(PT_(entry_key)(rm)), string)) return 0;
 	/* If a branch, branch not taken's skip merges with the parent. */
-	if(u.br0 < u.br1) {
-		struct trie_branch *const parent = trunk->branch + parent_br,
-			*const diverge = trunk->branch + u.br0;
+	if(no.br0 < no.br1) {
+		struct trie_branch *const parent = tree->branch + parent_br,
+			*const diverge = tree->branch + no.br0;
 		printf("remove: skip, parent %u, diverge %u.\n",
 			parent->skip, diverge->skip);
 		/* Would cause overflow. */
@@ -745,31 +740,29 @@ static int PT_(remove)(struct T_(trie) *const trie,
 			return printf("remove: no!\n"), errno = EILSEQ, 0;
 		diverge->skip = parent->skip + 1 + diverge->skip;
 	}
-
 	/* Update `left` values for the path to the deleted branch. */
-	v.br0 = 0, v.br1 = trunk->bsize, v.lf = t.lf;
-	if(!v.br1) goto erased_tree;
+	up.br0 = 0, up.br1 = tree->bsize, up.lf = ye.lf;
+	if(!up.br1) goto erased_tree;
 	for( ; ; ) {
-		struct trie_branch *const branch = trunk->branch + v.br0;
-		if(branch->left >= v.lf) {
+		struct trie_branch *const branch = tree->branch + up.br0;
+		if(branch->left >= up.lf) {
 			if(!branch->left) break;
-			v.br1 = ++v.br0 + branch->left;
+			up.br1 = ++up.br0 + branch->left;
 			branch->left--;
 		} else {
-			if((v.br0 += branch->left + 1) >= v.br1) break;
-			v.lf -= branch->left + 1;
+			if((up.br0 += branch->left + 1) >= up.br1) break;
+			up.lf -= branch->left + 1;
 		}
 	}
-
 	/* Remove the actual memory. */
-	memmove(trunk->branch + parent_br, trunk->branch
-		+ parent_br + 1, sizeof *trunk->branch
-		* (trunk->bsize - parent_br - 1));
-	memmove(rm, rm + 1, sizeof *rm * (trunk->bsize - t.lf));
-	trunk->bsize--;
+	memmove(tree->branch + parent_br, tree->branch
+		+ parent_br + 1, sizeof *tree->branch
+		* (tree->bsize - parent_br - 1));
+	memmove(rm, rm + 1, sizeof *rm * (tree->bsize - ye.lf));
+	tree->bsize--;
 	printf("remove: success.\n");
+	/* fixme: Also delete bitmap. */
 	return 1;
-
 erased_tree:
 	/* Maybe previous tree would be good? Set in match, unless this is
 	 recursive? Can it be? */
@@ -779,8 +772,6 @@ erased_tree:
 /** Tries to remove `key` from `trie`. @return Success. */
 static int T_(trie_remove)(struct T_(trie) *const trie,
 	const char *const key) { return PT_(remove)(trie, key); }
-#endif
-
 
 
 /* Box override information. */
