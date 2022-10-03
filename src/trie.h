@@ -697,10 +697,11 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 	size_t bit, tree_bit; /* In bits of `key`. */
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	struct { unsigned br0, br1, lf; } ye, no, up;
-	unsigned parent_br = 0; /* Useless initialization. */
+	unsigned parent_br = 0; /* Same tree. Useless initialization. */
+	struct { struct PT_(tree) *tree; unsigned lf; } prev = { 0, 0 }; /* Diff. */
 	PT_(entry) *rm;
 	assert(trie && string);
-	/* Same as match, but keep track of the branch not taken in `u`. */
+	/* Same as match, but keep track of more stuff. */
 	printf("remove: <<%s>> from %s-trie.\n", string, orcify(trie));
 	/* Same as match except keep track of more stuff. */
 	if(!(tree = trie->root) || tree->bsize == UCHAR_MAX) return 0; /* Empty. */
@@ -724,6 +725,7 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 			bit++;
 		}
 		if(!trie_bmp_test(&tree->bmp, ye.lf)) break;
+		prev.tree = tree, prev.lf = ye.lf;
 		tree = tree->leaf[ye.lf].as_link; /* Jumped trees. */
 	}
 	rm = &tree->leaf[ye.lf].as_entry;
@@ -763,12 +765,23 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 	/* Remove the bit. */
 	trie_bmp_remove(&tree->bmp, ye.lf, 1);
 	printf("remove: success.\n");
+	if(!tree->bsize) goto single; /* fixme: Nope; before modification. */
 	return 1;
 erased_tree:
 	/* Maybe previous tree would be good? Set in match, unless this is
 	 recursive? Can it be? */
 	assert(0);
 	return 0;
+single: /* We don't allow single entries except one single entry. Merge. */
+	/* Not possible by the fact that we don't allow single elements? */
+	assert(!trie_bmp_test(&tree->bmp, 0));
+	/* This is the one element; fine. */
+	if(!prev.tree) return assert(trie->root == tree), 1;
+	assert(trie_bmp_test(&prev.tree->bmp, prev.lf)); /* This is a link. */
+	prev.tree->leaf[prev.lf].as_entry = tree->leaf[0].as_entry;
+	trie_bmp_clear(&prev.tree->bmp, prev.lf);
+	free(tree);
+	return 1;
 }
 /** Tries to remove `key` from `trie`. @return Success. */
 static int T_(trie_remove)(struct T_(trie) *const trie,
