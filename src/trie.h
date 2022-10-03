@@ -690,6 +690,10 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 }
 #endif /* trie value map OR key in value --> */
 
+/* fixme */
+static void PT_(graph)(const struct T_(trie) *const trie,
+					   const char *const fn, const size_t no);
+
 /** Try to remove `string` from `trie`.
  @fixme Join when combined-half is less than a quarter? */
 static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
@@ -713,7 +717,7 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 				= tree->branch + (parent_br = ye.br0);
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
-				if(string[byte.cur] == '\0') return 0; /* `key` too short. */
+				if(string[byte.cur] == '\0') return printf("===%s too short\n", string), 0; /* `key` too short. */
 			if(!TRIE_QUERY(string, bit))
 				no.lf = ye.lf + branch->left + 1,
 				no.br1 = ye.br1,
@@ -729,18 +733,43 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 		tree = tree->leaf[ye.lf].as_link; /* Jumped trees. */
 	}
 	rm = &tree->leaf[ye.lf].as_entry;
-	if(strcmp(PT_(key_string)(PT_(entry_key)(rm)), string)) return 0;
+	if(strcmp(PT_(key_string)(PT_(entry_key)(rm)), string)) return printf("===doesn't match %s, %s\n", PT_(key_string)(PT_(entry_key)(rm)), string), 0;
+	//PT_(graph)(trie, "graph/nonsense.gv", 42);
 	/* If a branch, branch not taken's skip merges with the parent. */
 	if(no.br0 < no.br1) {
 		struct trie_branch *const parent = tree->branch + parent_br,
-			*const diverge = tree->branch + no.br0;
-		printf("remove: skip, parent %u, diverge %u.\n",
-			parent->skip, diverge->skip);
+			*const no_child = tree->branch + no.br0;
+		printf("remove: skip, parent %u, no_child %u.\n",
+			parent->skip, no_child->skip);
 		/* Would cause overflow. */
 		if(parent->skip == UCHAR_MAX
-			|| diverge->skip > UCHAR_MAX - parent->skip - 1)
-			return printf("remove: no!\n"), errno = EILSEQ, 0;
-		diverge->skip = parent->skip + 1 + diverge->skip;
+			|| no_child->skip > UCHAR_MAX - parent->skip - 1)
+			return printf("remove: no!\n"), errno = ERANGE, 0;
+		no_child->skip += parent->skip + 1;
+	} else if(trie_bmp_test(&tree->bmp, no.lf)) { /* Could be a link. */
+		struct trie_branch *const parent = tree->branch + parent_br;
+		struct PT_(tree) *const downstream = tree->leaf[no.lf].as_link;
+		assert(downstream);
+		{
+			const unsigned is_link = trie_bmp_test(&tree->bmp, no.lf);
+			printf("not taken %s:%u is %s %s\n", orcify(tree), no.lf,
+				is_link ? "link" : "entry",
+				is_link
+				? orcify(tree->leaf[no.lf].as_link)
+				: PT_(key_string)(PT_(entry_key)(&tree->leaf[no.lf].as_entry)));
+		}
+		printf("remove: downstream %s.\n", orcify(downstream));
+		if(downstream->bsize) {
+			printf("remove: skip, parent %u, downstream %u.\n",
+				parent->skip, downstream->branch[0].skip);
+			if(parent->skip == UCHAR_MAX
+				|| downstream->branch[0].skip > UCHAR_MAX - parent->skip - 1)
+				return printf("remove link: no!\n"), errno = ERANGE, 0;
+			downstream->branch[0].skip += parent->skip + 1;
+		} else {
+			/* Don't allow links to be the single entry in a tree. */
+			assert(!trie_bmp_test(&downstream->bmp, 0));
+		}
 	}
 	/* Update `left` values for the path to the deleted branch. */
 	up.br0 = 0, up.br1 = tree->bsize, up.lf = ye.lf;
@@ -765,23 +794,24 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 	/* Remove the bit. */
 	trie_bmp_remove(&tree->bmp, ye.lf, 1);
 	printf("remove: success.\n");
-	if(!tree->bsize) goto single; /* fixme: Nope; before modification. */
+	if(tree->bsize) return 1; /* We are done. */
+	assert(!prev.tree || trie_bmp_test(&prev.tree->bmp, prev.lf));
+	if(trie_bmp_test(&tree->bmp, 0)) { /* Two links together? */
+		if(prev.tree) prev.tree->leaf[prev.lf].as_link = tree->leaf[0].as_link;
+	} else if(prev.tree) { /* Single leaf might as well go to previous tree. */
+		prev.tree->leaf[prev.lf].as_entry = tree->leaf[0].as_entry;
+		trie_bmp_clear(&prev.tree->bmp, prev.lf);
+	} else {
+		return printf("remove: just one.\n"), 1; /* Just one entry. */
+	}
+	printf("remove: ### freeing %s\n", orcify(tree));
+	free(tree);
 	return 1;
 erased_tree:
 	/* Maybe previous tree would be good? Set in match, unless this is
 	 recursive? Can it be? */
 	assert(0);
 	return 0;
-single: /* We don't allow single entries except one single entry. Merge. */
-	/* Not possible by the fact that we don't allow single elements? */
-	assert(!trie_bmp_test(&tree->bmp, 0));
-	/* This is the one element; fine. */
-	if(!prev.tree) return assert(trie->root == tree), 1;
-	assert(trie_bmp_test(&prev.tree->bmp, prev.lf)); /* This is a link. */
-	prev.tree->leaf[prev.lf].as_entry = tree->leaf[0].as_entry;
-	trie_bmp_clear(&prev.tree->bmp, prev.lf);
-	free(tree);
-	return 1;
 }
 /** Tries to remove `key` from `trie`. @return Success. */
 static int T_(trie_remove)(struct T_(trie) *const trie,
