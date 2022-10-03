@@ -746,7 +746,8 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 			|| no_child->skip > UCHAR_MAX - parent->skip - 1)
 			return printf("remove: no!\n"), errno = ERANGE, 0;
 		no_child->skip += parent->skip + 1;
-	} else if(trie_bmp_test(&tree->bmp, no.lf)) { /* Could be a link. */
+	} else if(no.br0 == no.br1 && trie_bmp_test(&tree->bmp, no.lf)) {
+		/* Branch not taken is a leaf link. */
 		struct trie_branch *const parent = tree->branch + parent_br;
 		struct PT_(tree) *const downstream = tree->leaf[no.lf].as_link;
 		assert(downstream);
