@@ -794,25 +794,28 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 	tree->bsize--;
 	/* Remove the bit. */
 	trie_bmp_remove(&tree->bmp, ye.lf, 1);
-	printf("remove: success.\n");
-	if(tree->bsize) return 1; /* We are done. */
+	if(tree->bsize) return printf("remove: success.\n"), 1; /* We are done. */
+	/* Just making sure. */
 	assert(!prev.tree || trie_bmp_test(&prev.tree->bmp, prev.lf));
-	if(trie_bmp_test(&tree->bmp, 0)) { /* Two links together? */
-		if(prev.tree) prev.tree->leaf[prev.lf].as_link = tree->leaf[0].as_link;
-	} else if(prev.tree) { /* Single leaf might as well go to previous tree. */
+	if(trie_bmp_test(&tree->bmp, 0)) { /* A single link on it's own tree. */
+		struct PT_(tree) *const next = tree->leaf[0].as_link;
+		printf("remove: a single link on it's own tree.\n");
+		if(prev.tree) prev.tree->leaf[prev.lf].as_link = next;
+		else assert(trie->root == tree), trie->root = next;
+	} else if(prev.tree) { /* Single entry might as well go to previous tree. */
+		printf("remove: single.\n");
 		prev.tree->leaf[prev.lf].as_entry = tree->leaf[0].as_entry;
 		trie_bmp_clear(&prev.tree->bmp, prev.lf);
-	} else {
-		return printf("remove: just one.\n"), 1; /* Just one entry. */
+	} else { /* Just one entry; leave it be. */
+		return printf("remove: just one.\n"), 1;
 	}
 	printf("remove: ### freeing %s\n", orcify(tree));
 	free(tree);
 	return 1;
 erased_tree:
-	/* Maybe previous tree would be good? Set in match, unless this is
-	 recursive? Can it be? */
-	assert(0);
-	return 0;
+	assert(trie->root == tree && !tree->bsize && !trie_bmp_test(&tree->bmp, 0));
+	tree->bsize = UCHAR_MAX;
+	return 1;
 }
 /** Tries to remove `key` from `trie`. @return Success. */
 static int T_(trie_remove)(struct T_(trie) *const trie,
