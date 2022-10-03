@@ -813,6 +813,7 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 	free(tree);
 	return 1;
 erased_tree:
+	printf("remove: entire trie.\n");
 	assert(trie->root == tree && !tree->bsize && !trie_bmp_test(&tree->bmp, 0));
 	tree->bsize = UCHAR_MAX;
 	return 1;
