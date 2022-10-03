@@ -760,8 +760,9 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 		* (tree->bsize - parent_br - 1));
 	memmove(rm, rm + 1, sizeof *rm * (tree->bsize - ye.lf));
 	tree->bsize--;
+	/* Remove the bit. */
+	trie_bmp_remove(&tree->bmp, ye.lf, 1);
 	printf("remove: success.\n");
-	/* fixme: Also delete bitmap. */
 	return 1;
 erased_tree:
 	/* Maybe previous tree would be good? Set in match, unless this is
