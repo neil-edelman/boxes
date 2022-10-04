@@ -355,9 +355,6 @@ static void PT_(print)(const struct PT_(tree) *const tree) {
 }
 #endif
 
-#ifndef TRIE_DEFAULT_TEST /* <!-- !set: a set of strings is not testable in the
- automatic framework, but convenient to have graphs for manual tests. */
-
 /** Make sure `tree` is in a valid state, (and all the children.) */
 static void PT_(valid_tree)(const struct PT_(tree) *const tree) {
 	unsigned i;
@@ -512,8 +509,6 @@ static void T_(trie_test)(void) {
 	PT_(test)();
 	fprintf(stderr, "Done tests of <" QUOTE(TRIE_NAME) ">trie.\n\n");
 }
-
-#endif /* !set --> */
 
 #undef QUOTE
 #undef QUOTE_
