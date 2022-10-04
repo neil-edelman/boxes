@@ -502,10 +502,18 @@ static void PT_(test)(void) {
  defining `assert`. @allow */
 static void T_(trie_test)(void) {
 	printf("<" QUOTE(TRIE_NAME) ">trie"
-		" of type <" QUOTE(TRIE_VALUE) ">"
-		" was created using: TREE_KEY<" QUOTE(TRIE_KEY_IN_VALUE) ">;"
-		" TRIE_TEST <" QUOTE(TRIE_TEST) ">;"
-		" testing:\n");
+#ifdef TRIE_KEY
+		" custom key <" QUOTE(TRIE_KEY) "> with string function <"
+		QUOTE(TRIE_KEY_TO_STRING) ">"
+#endif
+#ifdef TRIE_VALUE
+		" value <" QUOTE(TRIE_VALUE) ">"
+#endif
+#ifdef TRIE_KEY_IN_VALUE
+		" and the key is in the value with projection function <"
+		QUOTE(TRIE_KEY_IN_VALUE) ">"
+#endif
+		" testing using <" QUOTE(TRIE_TEST) ">:\n");
 	PT_(test)();
 	fprintf(stderr, "Done tests of <" QUOTE(TRIE_NAME) ">trie.\n\n");
 }
