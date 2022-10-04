@@ -226,9 +226,35 @@ static void contrived_test(void) {
 	unsigned i, count, count2, count3 = 0, letters[UCHAR_MAX];
 	struct str_trie t = str_trie();
 	int result;
+	enum trie_result trlt;
 	/* Histogram of letters. */
 	memset(letters, 0, sizeof letters);
 	printf("Contrived manual test of set <str>trie.\n");
+	printf("offset in <str>tree:\n"
+		" bsize: %lu\n"
+		" branch: %lu\n"
+		" bmp: %lu\n"
+		" leaf: %lu\n"
+		" whole struct: %lu\n",
+		(unsigned long)offsetof(struct trie_str_tree, bsize),
+		(unsigned long)offsetof(struct trie_str_tree, branch),
+		(unsigned long)offsetof(struct trie_str_tree, bmp),
+		(unsigned long)offsetof(struct trie_str_tree, leaf),
+		(unsigned long)sizeof(struct trie_str_tree));
+	assert(CHAR_BIT == 8 && ' ' ^ '!' == 1); /* Assumed UTF-8 for tests. */
+	errno = 0;
+	trlt = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ");
+	assert(trlt == TRIE_UNIQUE);
+	trlt = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 256 */
+	assert(trlt == TRIE_ERROR && errno == EILSEQ), errno = 0;
+	trlt = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa!"); /* 255 */
+	assert(trlt == TRIE_UNIQUE);
+	trlt = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 0 */
+	assert(trlt == TRIE_UNIQUE);
+	result = str_trie_remove(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa!");
+	assert(!result && errno == EILSEQ), errno = 0;
+	trie_str_graph(&t, "graph/contrived-max.gv", 0);
+	str_trie_clear(&t);
 	for(count = 0, i = 0; i < sizeof words / sizeof *words; i++) {
 		const char *const word = words[i];
 		/* printf("word: %s\n", word); */
@@ -278,15 +304,6 @@ static void contrived_test(void) {
 	}
 	assert(!count);
 	str_trie_(&t);
-	printf("offset in <str>tree:\n"
-		" bsize: %lu\n"
-		" branch: %lu\n"
-		" bmp: %lu\n"
-		" leaf: %lu\n",
-		offsetof(struct trie_str_tree, bsize),
-		offsetof(struct trie_str_tree, branch),
-		offsetof(struct trie_str_tree, bmp),
-		offsetof(struct trie_str_tree, leaf));
 }
 
 int main(void) {

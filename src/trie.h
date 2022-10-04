@@ -759,7 +759,7 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 		/* Would cause overflow. */
 		if(parent->skip == UCHAR_MAX
 			|| no_child->skip > UCHAR_MAX - parent->skip - 1)
-			return printf("remove: no!\n"), errno = ERANGE, 0;
+			return printf("remove: no!\n"), errno = EILSEQ, 0;
 		no_child->skip += parent->skip + 1;
 	} else if(no.br0 == no.br1 && trie_bmp_test(&tree->bmp, no.lf)) {
 		/* Branch not taken is a leaf link. */
@@ -780,7 +780,7 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 				parent->skip, downstream->branch[0].skip);
 			if(parent->skip == UCHAR_MAX
 				|| downstream->branch[0].skip > UCHAR_MAX - parent->skip - 1)
-				return printf("remove link: no!\n"), errno = EILSEQ, 0;
+				return printf("remove link: no (with link)!\n"), errno = EILSEQ, 0;
 			downstream->branch[0].skip += parent->skip + 1;
 		} else {
 			/* Don't allow links to be the single entry in a tree. */
