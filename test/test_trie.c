@@ -278,6 +278,15 @@ static void contrived_test(void) {
 	}
 	assert(!count);
 	str_trie_(&t);
+	printf("offset in <str>tree:\n"
+		" bsize: %lu\n"
+		" branch: %lu\n"
+		" bmp: %lu\n"
+		" leaf: %lu\n",
+		offsetof(struct trie_str_tree, bsize),
+		offsetof(struct trie_str_tree, branch),
+		offsetof(struct trie_str_tree, bmp),
+		offsetof(struct trie_str_tree, leaf));
 }
 
 int main(void) {

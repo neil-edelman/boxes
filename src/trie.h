@@ -1,9 +1,9 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Stand-alone (fixme) header <src/trie.h>; examples <test/test_trie.c>;
- article <doc/trie.pdf>. On a compatible workstation, `make` creates the
- test suite of the examples.
+ @abstract Stand-alone (fixme: bmp.h needed) header <src/trie.h>; examples
+ <test/test_trie.c>; article <doc/trie.pdf>. On a compatible workstation,
+ `make` creates the test suite of the examples.
 
  @subtitle Prefix tree
 
@@ -90,7 +90,9 @@
 /* Worst-case all-branches-left root. Parameter sets the maximum tree size.
  Prefer alignment `4n - 2`; cache `32n - 2`. */
 #define TRIE_MAX_LEFT 3/*6*//*253*/
-#if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX - 2 /* This is not ideal. */
+/* This is not ideal; could go up to 255, which would mean 256 branches.
+ 255 branches would be better then `1 + 255*2 = 511`. fixme: short. */
+#if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX - 2
 #error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX - 2]`.
 #endif
 #define TRIE_BRANCHES (TRIE_MAX_LEFT + 1) /* Maximum branches. */
@@ -670,7 +672,9 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
  `key`; `TRIE_PRESENT`, the value associated with `key`. If `TRIE_IN_VALUE`,
  was specified and the return is `TRIE_UNIQUE`, the trie is in an invalid state
  until filling in the key in value by `key`.
- @order \O(max(|`trie.keys`|)) */
+ @order \O(max(|`trie.keys`|)) @throws[EILSEQ] The string has a distinguishing
+ run of bytes that is too long. On most platforms, this is about 31 bytes the
+ same. @throws[malloc] */
 static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	const PT_(key) key, PT_(value) **const value) {
 	PT_(entry) *e;
@@ -690,9 +694,8 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 }
 #endif /* trie value map OR key in value --> */
 
-/* fixme */
-static void PT_(graph)(const struct T_(trie) *const trie,
-					   const char *const fn, const size_t no);
+
+/* Deleting entries. */
 
 /** Try to remove `string` from `trie`.
  @fixme Join when combined-half is less than a quarter? */
@@ -765,7 +768,7 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 				parent->skip, downstream->branch[0].skip);
 			if(parent->skip == UCHAR_MAX
 				|| downstream->branch[0].skip > UCHAR_MAX - parent->skip - 1)
-				return printf("remove link: no!\n"), errno = ERANGE, 0;
+				return printf("remove link: no!\n"), errno = EILSEQ, 0;
 			downstream->branch[0].skip += parent->skip + 1;
 		} else {
 			/* Don't allow links to be the single entry in a tree. */
@@ -818,9 +821,14 @@ erased_tree:
 	tree->bsize = UCHAR_MAX;
 	return 1;
 }
-/** Tries to remove `key` from `trie`. @return Success. */
+/** Tries to remove `string` from `trie`.
+ @return Success. If either parameter is null or the `string` is not in `trie`,
+ returns false without setting `errno`.
+ @throws[EILSEQ] The deletion of `string` would cause an overflow with the rest
+ of the strings. */
 static int T_(trie_remove)(struct T_(trie) *const trie,
-	const char *const key) { return PT_(remove)(trie, key); }
+	const char *const string)
+	{ return trie && string && PT_(remove)(trie, string); }
 
 
 /* Box override information. */
