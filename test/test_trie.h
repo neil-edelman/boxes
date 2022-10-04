@@ -365,7 +365,7 @@ static void PT_(valid_tree)(const struct PT_(tree) *const tree) {
 	const char *str1 = 0;
 	assert(tree && tree->bsize <= TRIE_BRANCHES);
 	for(i = 0; i < tree->bsize; i++)
-		assert(tree->branch[i].left < tree->bsize - 1 - i);
+		assert(tree->branch[i].left < tree->bsize - i);
 	for(i = 0; i <= tree->bsize; i++) {
 		if(trie_bmp_test(&tree->bmp, i)) {
 			PT_(valid_tree)(tree->leaf[i].as_link);
@@ -456,6 +456,7 @@ static void PT_(test)(void) {
 		}
 		assert(!errno);
 	}
+	PT_(valid)(&trie);
 	/* Check keys -- there's some key that's there. */
 	for(i = 0; i < tests_size; i++) {
 		const char *estring, *const tstring
@@ -491,52 +492,11 @@ static void PT_(test)(void) {
 	printf("Counted by letter %lu elements, checksum %lu.\n",
 		(unsigned long)count, (unsigned long)unique);
 	assert(count == unique);
-
-#if 0
-	/* Replacement. */
-	ret = T_(trie_add)(&trie, &es[0].data); /* Doesn't add. */
-	assert(!ret);
-	ret = T_(trie_put)(&trie, &es[0].data, 0); /* Replaces with itself. */
-	assert(ret);
-	ret = T_(trie_put)(&trie, &es[0].data, &data); /* Replaces with itself. */
-	assert(ret && data == &es[0].data);
-	ret = T_(trie_policy_put)(&trie, &es[0].data, 0, 0); /* Does add. */
-	assert(ret);
-	ret = T_(trie_policy_put)(&trie, &es[0].data, &data, 0); /* Does add. */
-	assert(ret && data == &es[0].data);
-	memcpy(&dup, &es[0].data, sizeof dup);
-	ret = T_(trie_policy_put)(&trie, &dup, &data, &PT_(false)); /* Not add. */
-	assert(ret && data == &dup);
-	ret = T_(trie_policy_put)(&trie, &dup, &data, &PT_(true)); /* Add. */
-	assert(ret && data == &es[0].data), es[0].is_in = 0;
-	T_(trie_prefix)(&trie, "", &it);
-	m = T_(trie_size)(&it);
-	printf("Trie %lu items added (some of them duplicates),"
-		" size: %lu before, replacement %lu.\n",
-		(unsigned long)es_size, (unsigned long)n, (unsigned long)m);
-	assert(n == m);
-	/* Restore the original. */
-	ret = T_(trie_put)(&trie, &es[0].data, 0); /* Add. */
-	assert(ret && data == &es[0].data), es[0].is_in = 1;
-
-	for(n = 0; n < es_size; n++) {
-		const char *key;
-		if(!es[n].is_in) { /*printf("es %lu is not in\n", n);*/ continue; }
-		key = PT_(to_key)(&es[n].data);
-		data = T_(trie_remove)(&trie, key);
-		assert(data == &es[n].data);
-		es[n].is_in = 0;
-		data = T_(trie_get)(&trie, key), assert(!data);
-		T_(trie_prefix)(&trie, "", &it), count = T_(trie_size)(&it);
-		show = !((count + 1) & count);
-		if(show) {
-			PT_(no)++;
-			printf("%lu: removed \"%s\" from trie.\n", (unsigned long)n, key);
-			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-remove.gv");
-		}
+	T_(trie_clear)(&trie);
+	{
+		struct T_(trie_iterator) it = T_(trie_prefix)(&trie, "");
+		assert(!T_(trie_next)(&it));
 	}
-#endif
-
 	T_(trie_)(&trie), assert(!trie.root), PT_(valid)(&trie);
 	assert(!errno);
 }
