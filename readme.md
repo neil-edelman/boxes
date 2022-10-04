@@ -48,12 +48,12 @@
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/trie">trie</a></td>
 	<td>prefix tree implementing string set or map</td>
-	<td>under active development</td>
-	<td></td>
+	<td>iterate, to_string</td>
+	<td>bmp</td>
 </tr><tr>
 	<td>disjoint</td>
 	<td></td>
-	<td>would be nice</td>
+	<td>thinking of doing</td>
 	<td></td>
 </tr></table>
 
