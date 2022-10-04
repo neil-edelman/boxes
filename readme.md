@@ -17,6 +17,8 @@ Header [src/trie\.h](src/trie.h) requires [src/bmp\.h](src/bmp.h); examples [tes
 
 A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, or trie: an ordered set or map of immutable key strings allowing efficient prefix queries\. The strings used are any encoding with a byte null\-terminator, including ASCII and [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. The implementation is as [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) that acts as an index, only storing the where the key bits are different\. For this reason, the keys must be stored somewhere else for comparison\.
 
+![Bit view of the trie.](doc/trie-bits.png)
+
 
 
  * Parameter: TRIE\_NAME  

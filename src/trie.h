@@ -18,6 +18,8 @@
  index, only storing the where the key bits are different. For this reason, the
  keys must be stored somewhere else for comparison.
 
+ ![Bit view of the trie.](../doc/trie-bits.png)
+
  @param[TRIE_NAME]
  Required `<T>` that satisfies `C` naming conventions when mangled. `<PT>` is
  private, whose names are prefixed in a manner to avoid collisions.
@@ -89,7 +91,7 @@
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-branches-left root. Parameter sets the maximum tree size.
  Prefer alignment `4n - 2`; cache `32n - 2`, (`(left + 1) * 2 + 2`.) */
-#define TRIE_MAX_LEFT 254
+#define TRIE_MAX_LEFT 5/*254*/
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX
 #error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX]`.
 #endif
