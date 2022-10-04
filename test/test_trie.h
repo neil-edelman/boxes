@@ -332,7 +332,7 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 }
 
 #if 0
-/** Prints `tree` to `stdout`. */
+/** Prints `tree` to `stdout`; useful in debugging. */
 static void PT_(print)(const struct PT_(tree) *const tree) {
 	const struct trie_branch *branch;
 	unsigned b, i;
@@ -386,45 +386,50 @@ static void PT_(valid)(const struct T_(trie) *const trie) {
 
 static void PT_(test)(void) {
 	struct T_(trie) trie = T_(trie)();
-	/*struct T_(trie_iterator) cur;*/
-	size_t n, n_unique;
-	struct { PT_(entry) data;
-		int is_in; } es[2000], *es_end, *e;
-	const size_t es_size = sizeof es / sizeof *es;
+	size_t i, unique, count;
+	unsigned letter_counts[UCHAR_MAX];
+	const size_t letter_counts_size
+		= sizeof letter_counts / sizeof *letter_counts;
+	struct { PT_(entry) entry; int is_in; } tests[2000], *test_end, *test;
+	const size_t tests_size = sizeof tests / sizeof *tests;
+	PT_(entry) *e;
 
 	/* Idle. */
+	errno = 0;
 	PT_(valid)(0);
 	PT_(valid)(&trie);
 	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-idle.gv", 0);
 	T_(trie_)(&trie), PT_(valid)(&trie);
-	/*data = T_(trie_match)(&trie, ""), assert(!data);*/ /* fixme */
-	/*data = T_(trie_get)(&trie, ""), assert(!data);*/ /* fixme */
+	e = T_(trie_match)(&trie, ""), assert(!e);
+	e = T_(trie_get)(&trie, ""), assert(!e);
 
 	/* Make random data. */
-	for(e = es, es_end = e + es_size; e < es_end; e++) {
+	for(test = tests, test_end = test + tests_size; test < test_end; test++) {
 #ifndef TRIE_VALUE /* <!-- key set */
-		PT_(filler)(&e->data);
+		PT_(filler)(&test->entry);
 #elif !defined(TRIE_KEY_IN_VALUE) /* ket set --><!-- key map */
-		PT_(filler)(&e->data.key, &e->data.value);
+		PT_(filler)(&test->entry.key, &test->entry.value);
 #else /* key map --><!-- custom */
-		PT_(filler)(&e->data);
+		PT_(filler)(&test->entry);
 #endif /* custom --> */
-		e->is_in = 0;
+		test->is_in = 0;
 	}
+	/*for(test = tests, test_end = test + tests_size; test < test_end; test++)
+		printf("%s\n", PT_(key_string)(PT_(entry_key)(&test->entry)));*/
 
 	/* Adding. */
-	n_unique = 0;
-	errno = 0;
-	for(n = 0; n < es_size; n++) {
-		int show = !((n + 1) & n) || n + 1 == es_size;
+	unique = 0;
+	memset(letter_counts, 0, sizeof letter_counts);
+	for(i = 0; i < tests_size; i++) {
+		int show = !((i + 1) & i) || i + 1 == tests_size;
 		PT_(key) key;
 #ifdef TRIE_VALUE
 		PT_(value) *value;
 #endif
-		e = es + n;
-		key = PT_(entry_key)(&e->data);
+		test = tests + i;
+		key = PT_(entry_key)(&test->entry);
 		if(show) printf("%lu: adding %s.\n",
-			(unsigned long)n, PT_(key_string)(key));
+			(unsigned long)i, PT_(key_string)(key));
 		switch(
 #ifndef TRIE_VALUE /* <!-- key set */
 		T_(trie_try)(&trie, key)
@@ -432,84 +437,60 @@ static void PT_(test)(void) {
 		T_(trie_try)(&trie, key, &value)
 #endif /* map --> */
 		) {
-		case TRIE_ERROR: assert(0); return;
-		case TRIE_UNIQUE: e->is_in = 1; n_unique++;
+		case TRIE_ERROR: perror("trie"); assert(0); return;
+		case TRIE_UNIQUE: test->is_in = 1; unique++;
+			letter_counts[(unsigned char)*PT_(key_string)(key)]++;
 #ifndef TRIE_VALUE /* <!-- set */
 #elif !defined(TRIE_KEY_IN_VALUE) /* set --><!-- map */
-			*value = e->data.value;
+			*value = test->entry.value;
 #else /* map --><!-- custom */
-			*value = e->data;
+			*value = test->entry;
 #endif /* custom --> */
 			break;
-		case TRIE_PRESENT: printf("Key %s is in trie already.\n",
-			PT_(key_string)(key)); break;
+		case TRIE_PRESENT: /*printf("Key %s is in trie already.\n",
+			PT_(key_string)(key)); spam */ break;
 		}
 		if(show) {
 			printf("Now: %s.\n", T_(trie_to_string)(&trie));
-			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-insert.gv", n);
+			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-insert.gv", i);
 		}
 		assert(!errno);
-		{
-			struct PT_(forward) it;
-			struct T_(trie_iterator) cur;
-			size_t count = 0;
-			it = PT_(forward)(&trie);
-			const PT_(entry) *x;
-			while(PT_(is_element_c)(x = PT_(next_c)(&it))) count++;
-			/*count = T_(trie_size)(T_(trie_iterator)(&cur));*/
-			//printf("Counted %lu elements, checksum %lu.\n", count, n_unique);
-			assert(count == n_unique);
-			/* FIXME
-			 cur = T_(trie_prefix)(&trie, "");
-			count = T_(trie_size)(&cur);
-			assert(count == n_unique);*/
-		}
-#if 0
-		for(m = 0; m <= n; m++) {
-			PT_(entry) result;
-			int present;
-			if(!es[m].is_in) continue;
-			key = PT_(entry_key)(&es[m].data);
-			present = T_(trie_query)(&trie, key, &result);
-			/*data = T_(trie_get)(&trie, PT_(entry_key)(&es[m].data));*/
-			/* This is O(n^2) spam.
-			printf("%lu: test get(%s) = %s\n", (unsigned long)n,
-				PT_(to_key)(&es[m].data),
-				data ? PT_(to_key)(data) : "<didn't find>");*/
-			/*assert(data == &es[m].data);*/
-		}
-#endif
 	}
-
-	{
-		/* Not implemented yet . . . again.
-		size_t before, after;
-		struct T_(trie_iterator) cur = T_(trie_iterator)(&trie);
-		before = T_(trie_size)(&trie);*/
-		assert(trie.root && trie.root->bsize != USHRT_MAX);
-		T_(trie_clear)(&trie);
-		assert(trie.root->bsize == USHRT_MAX);
-		/*after = str_trie_size(&trie);
-		printf("Testing clear: %lu -> %lu.\n", before, after);
-		assert(!after);*/
+	/* Check keys -- there's some key that's there. */
+	for(i = 0; i < tests_size; i++) {
+		const char *estring, *const tstring
+			= PT_(key_string)(PT_(entry_key)(&tests[i].entry));
+		e = T_(trie_get)(&trie, tstring);
+		assert(e);
+		estring = PT_(key_string)(PT_(entry_key)(e));
+		assert(e && !strcmp(estring, tstring));
 	}
-
-#if 0
-	/* Test prefix and size. */
-	{
-		size_t sum = !!T_(trie_get)(&trie, "");
-		for(n = 1; n < 256; n++) {
-			char a[2] = { '\0', '\0' };
-			a[0] = (char)n;
-			T_(trie_prefix)(&trie, a, &it);
-			sum += T_(trie_size)(&it);
+	/* Add up all the letters; should be equal to the overall count. */
+	for(count = 0, i = 0; i < letter_counts_size; i++) {
+		char letter[2];
+		unsigned count_letter = 0;
+		struct T_(trie_iterator) it;
+		int output = 0;
+		letter[0] = (char)i, letter[1] = '\0';
+		it = T_(trie_prefix)(&trie, letter);
+		/* fixme: No. */
+		while(e = T_(trie_next)(&it)) {
+			printf("%s<%s>", output ? "" : letter,
+				PT_(key_string)(PT_(entry_key)(e)));
+			count_letter++, output = 1;
 		}
-		T_(trie_prefix)(&trie, "", &it), n = T_(trie_size)(&it);
-		printf("Trie %s, %lu items inserted; %lu items counted;"
-			" sum of sub-trees %lu.\n", T_(trie_to_string)(&trie), count, n,
-			sum), assert(n == count && n == sum);
+		if(output) printf("\n");
+		if(i) {
+			assert(count_letter == letter_counts[i]);
+			count += count_letter;
+		} else { /* Sentinel; "" gets all the trie. */
+			assert(count_letter == unique);
+			if(T_(trie_get)(&trie, "")) count++; /* Is "" included? */
+		}
 	}
-#endif
+	printf("Counted by letter %lu elements, checksum %lu.\n",
+		(unsigned long)count, (unsigned long)unique);
+	assert(count == unique);
 
 #if 0
 	/* Replacement. */

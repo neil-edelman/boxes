@@ -206,58 +206,66 @@ struct PT_(ref) { struct PT_(tree) *tree; unsigned idx; };
 struct PT_(ref_c) { const struct PT_(tree) *tree; unsigned idx; };
 
 
-/** Fall through `ref` until hit the first entry. Must be pointing at
+/* Fall through `ref` until hit the first entry. Must be pointing at
  something. */
-static void PT_(lower_entry)(struct PT_(ref_c) *ref) {
-	while(trie_bmp_test(&ref->tree->bmp, ref->idx))
-		ref->tree = ref->tree->leaf[ref->idx].as_link, ref->idx = 0;
+#define LOWER(lower_entry_c, ref_c) \
+static void PT_(lower_entry_c)(struct PT_(ref_c) *ref) { \
+	while(trie_bmp_test(&ref->tree->bmp, ref->idx)) \
+		ref->tree = ref->tree->leaf[ref->idx].as_link, ref->idx = 0; \
 }
+LOWER(lower_entry, ref)
+LOWER(lower_entry_c, ref_c)
+#undef LOWER
 /** Fall through `ref` until hit the last entry. Must be pointing at
  something. */
-static void PT_(higher_entry)(struct PT_(ref_c) *ref) {
+static void PT_(higher_entry)(struct PT_(ref) *ref) {
 	while(trie_bmp_test(&ref->tree->bmp, ref->idx))
 		ref->tree = ref->tree->leaf[ref->idx].as_link,
 		ref->idx = ref->tree->bsize;
 }
 /** This is a convince function. @return The leftmost key `lf` of `tree`. */
-static const char *PT_(sample)(const struct PT_(tree) *tree, unsigned lf) {
-	struct PT_(ref_c) ref = { tree, lf };
-	PT_(lower_entry)(&ref);
+static const char *PT_(sample)(const struct PT_(tree) *const tree,
+	const unsigned idx) {
+	struct PT_(ref_c) ref; ref.tree = tree, ref.idx = idx;
+	PT_(lower_entry_c)(&ref);
 	return PT_(key_string)(PT_(entry_key)(&ref.tree->leaf[ref.idx].as_entry));
 }
 
-/** If `ref.tree` is null, starts iteration.
+/* If `ref.tree` is null, starts iteration.
  @return Does `ref` have a successor in `root`? If yes, sets it to that. */
-static int PT_(to_successor_c)(const struct PT_(tree) *const root,
-	struct PT_(ref_c) *const ref) {
-	assert(ref);
-	if(!root || root->bsize == USHRT_MAX) return 0; /* Empty. */
-	if(!ref->tree) { ref->tree = root, ref->idx = 0; } /* Start. */
-	else if(++ref->idx > ref->tree->bsize) { /* Gone off the end. */
-		const struct PT_(tree) *const old = ref->tree;
-		const char *const sample = PT_(sample)(old, ref->idx - 1);
-		const struct PT_(tree) *tree = root;
-		size_t bit = 0;
-		for(ref->tree = 0, ref->idx = 0; tree != old; ) {
-			unsigned br0 = 0, br1 = tree->bsize, lf = 0;
-			while(br0 < br1) {
-				const struct trie_branch *const branch = tree->branch + br0;
-				bit += branch->skip;
-				if(!TRIE_QUERY(sample, bit))
-					br1 = ++br0 + branch->left;
-				else
-					br0 += branch->left + 1, lf += branch->left + 1;
-				bit++;
-			}
-			if(lf < tree->bsize) ref->tree = tree, ref->idx = lf + 1;
-			assert(trie_bmp_test(&tree->bmp, lf));
-			tree = tree->leaf[lf].as_link;
-		}
-		if(!ref->tree) return 0; /* End of iteration. */
-	}
-	PT_(lower_entry)(ref);
-	return 1;
+#define SUCCESSOR(to_successor_c, ref_c, lower_entry_c, CONSTSTRUCT) \
+static int PT_(to_successor_c)(CONSTSTRUCT PT_(tree) *const root, \
+	struct PT_(ref_c) *const ref) { \
+	assert(ref); \
+	if(!root || root->bsize == USHRT_MAX) return 0; /* Empty. */ \
+	if(!ref->tree) { ref->tree = root, ref->idx = 0; } /* Start. */ \
+	else if(++ref->idx > ref->tree->bsize) { /* Gone off the end. */ \
+		const struct PT_(tree) *const old = ref->tree; \
+		const char *const sample = PT_(sample)(old, ref->idx - 1); \
+		CONSTSTRUCT PT_(tree) *tree = root; \
+		size_t bit = 0; \
+		for(ref->tree = 0, ref->idx = 0; tree != old; ) { \
+			unsigned br0 = 0, br1 = tree->bsize, lf = 0; \
+			while(br0 < br1) { \
+				const struct trie_branch *const branch = tree->branch + br0; \
+				bit += branch->skip; \
+				if(!TRIE_QUERY(sample, bit)) \
+					br1 = ++br0 + branch->left; \
+				else \
+					br0 += branch->left + 1, lf += branch->left + 1; \
+				bit++; \
+			} \
+			if(lf < tree->bsize) ref->tree = tree, ref->idx = lf + 1; \
+			assert(trie_bmp_test(&tree->bmp, lf)); \
+			tree = tree->leaf[lf].as_link; \
+		} \
+		if(!ref->tree) return 0; /* End of iteration. */ \
+	} \
+	PT_(lower_entry_c)(ref); \
+	return 1; \
 }
+SUCCESSOR(to_successor, ref, lower_entry, struct)
+SUCCESSOR(to_successor_c, ref_c, lower_entry_c, const struct)
 
 #define BOX_CONTENT const PT_(entry) *
 /** @return Is `e` not null. */
@@ -276,14 +284,17 @@ static const PT_(entry) *PT_(next_c)(struct PT_(forward) *const it) {
 }
 
 #define BOX_ITERATOR PT_(entry) *
+#if 0 /* That's weird? */
 /** @return Is `e` not null. */
 static int PT_(is_element)(const PT_(entry) *const e) { return !!e; }
+#endif
 /* A range of words from `[cur, end]`. */
 struct PT_(iterator) {
 	const struct T_(trie) *trie; /* Valid, rest must be, too, or ignore rest. */
-	struct PT_(ref_c) cur, end;
+	struct PT_(ref) cur, end;
 	int seen;
 };
+#if 0 /* Use prefix. */
 /** Loads the first element of `trie` (can be null) into `it`.
  @implements begin */
 static void PT_(begin)(struct PT_(iterator) *const it,
@@ -301,6 +312,7 @@ static void PT_(begin)(struct PT_(iterator) *const it,
 	}
 	it->seen = 0;
 }
+#endif
 /** Advances `it`. @return The previous value or null. @implements next */
 static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
 	assert(it);
@@ -310,7 +322,7 @@ static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
 	if(it->seen) {
 		/* We have reached the planned end or concurrent modification. */
 		if(it->cur.tree == it->end.tree && it->cur.idx >= it->end.idx
-			|| !PT_(to_successor_c)(it->trie->root, &it->cur)) return 0;
+			|| !PT_(to_successor)(it->trie->root, &it->cur)) return 0;
 	} else {
 		it->seen = 1;
 	}
@@ -416,8 +428,11 @@ static PT_(entry) *PT_(get)(const struct T_(trie) *const trie,
 /** @return `string` exact match for `trie`.
  @order \O(|`key`|) @allow */
 static PT_(entry) *T_(trie_get)(const struct T_(trie) *const trie,
-	const char *const string)
-	{ return trie && string ? PT_(match)(trie, string) : 0; }
+	const char *const string) {
+	PT_(entry) *e;
+	if(!trie || !string || !(e = PT_(match)(trie, string))) return 0;
+	return strcmp(string, PT_(key_string)(PT_(entry_key)(e))) ? 0 : e;
+}
 /** Looks at only the index of `trie` (which can be null) for potential
  `prefix` matches, and stores them in `it`. */
 static void PT_(match_prefix)(const struct T_(trie) *const trie,
@@ -476,7 +491,7 @@ static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
 }
 /** @return Advances `it` and returns the entry or, at the end, returns null.
  @allow */
-static const PT_(entry) *T_(trie_next)(struct T_(trie_iterator) *const it)
+static PT_(entry) *T_(trie_next)(struct T_(trie_iterator) *const it)
 	{ return PT_(next)(&it->_); }
 /** @return The number of elements in `it`. */
 static size_t PT_(size_r)(const struct PT_(iterator) *const it) {
@@ -749,7 +764,6 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 	}
 	rm = &tree->leaf[ye.lf].as_entry;
 	if(strcmp(PT_(key_string)(PT_(entry_key)(rm)), string)) return printf("===doesn't match %s, %s\n", PT_(key_string)(PT_(entry_key)(rm)), string), 0;
-	//PT_(graph)(trie, "graph/nonsense.gv", 42);
 	/* If a branch, branch not taken's skip merges with the parent. */
 	if(no.br0 < no.br1) {
 		struct trie_branch *const parent = tree->branch + parent_br,

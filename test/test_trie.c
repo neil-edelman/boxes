@@ -259,7 +259,7 @@ static void contrived_test(void) {
 		const char *const word = words[i];
 		/* printf("word: %s\n", word); */
 		switch(str_trie_try(&t, word)) {
-		case TRIE_ERROR: assert(0); break;
+		case TRIE_ERROR: perror("trie"); assert(0); break;
 		case TRIE_UNIQUE: count++, letters[(unsigned char)*word]++; break;
 		case TRIE_PRESENT: printf("\"%s\" already there.\n", word);
 			continue;
