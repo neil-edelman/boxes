@@ -498,6 +498,57 @@ static void PT_(test)(void) {
 	assert(!errno);
 }
 
+static void PT_(test_random)(void) {
+#if 0
+	struct T_(trie) trie = T_(trie)();
+	const size_t expectation = 100000;
+	size_t i, size = 0;
+	FILE *fp = fopen("graph/" QUOTE(TRIE_NAME) "-random.data", "w");
+	struct {
+
+		PT_(value) value;
+	}
+	PT_(value) []
+	for(i = 0; i < 5 * expectation; i++) {
+		unsigned r = (unsigned)rand();
+		if(r > size * (RAND_MAX / (2 * expectation))) { /* Create. */
+			PT_(entry) entry;
+#if defined(TRIE_VALUE) && !defined(TRIE_KEY_IN_VALUE)
+			PT_(filler)(&entry.key, &entry.value);
+#else
+			PT_(filler)(&entry);
+#endif
+
+			switch(
+	#ifndef TRIE_VALUE /* <!-- key set */
+			T_(trie_try)(&trie, key)
+	#else /* key set --><!-- map */
+			T_(trie_try)(&trie, key, &value)
+	#endif /* map --> */
+			) {
+			case TRIE_ERROR: perror("trie"); assert(0); return;
+			case TRIE_UNIQUE: test->is_in = 1; unique++;
+				letter_counts[(unsigned char)*PT_(key_string)(key)]++;
+	#ifndef TRIE_VALUE /* <!-- set */
+	#elif !defined(TRIE_KEY_IN_VALUE) /* set --><!-- map */
+				*value = test->entry.value;
+	#else /* map --><!-- custom */
+				*value = test->entry;
+	#endif /* custom --> */
+				break;
+			case TRIE_PRESENT: /*printf("Key %s is in trie already.\n",
+				PT_(key_string)(key)); spam */ break;
+			}
+			size++;
+		} else { /* Delete. */
+			size--;
+		}
+		if(fp) fprintf(fp, "%lu\n", (unsigned long)size);
+	}
+	if(fp) fclose(fp);
+#endif
+}
+
 /** Will be tested on stdout. Requires `TRIE_TEST`, and not `NDEBUG` while
  defining `assert`. @allow */
 static void T_(trie_test)(void) {
@@ -515,6 +566,7 @@ static void T_(trie_test)(void) {
 #endif
 		" testing using <" QUOTE(TRIE_TEST) ">:\n");
 	PT_(test)();
+	PT_(test_random)();
 	fprintf(stderr, "Done tests of <" QUOTE(TRIE_NAME) ">trie.\n\n");
 }
 
