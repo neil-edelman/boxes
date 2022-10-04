@@ -3,10 +3,10 @@ digraph {
 	node [shape=record, style=filled, fillcolor="Grey95", fontname="Bitstream Vera Sans"];
 	edge [fontname="Bitstream Vera Sans"];
 	null [label = "uninitialized\l|no dynamic memory;\lundetermined state\l", fillcolor = "Pink"];
-	static [label = "idle\l|no dynamic memory;\l\{0\} or TRIE_ZERO\l"];
+	static [label = "idle\l|no dynamic memory;\l"];
 	dynamic [label = "active\n|memory allocated;\lcould have size zero\l"];
 	null -> static [ label = "<T>trie" ];
-	static -> dynamic [ label = "<T>trie_try\n<T>trie_replace\n...\n" ];
+	static -> dynamic [ label = "<T>trie_try\n" ];
 	dynamic -> static [ label = "<T>trie_" ];
 	dynamic -> dynamic [label = "<T>trie_clear"];
 	static -> static [ label = "<T>trie_clear"];

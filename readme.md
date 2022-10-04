@@ -1,6 +1,6 @@
 # trie\.h #
 
-Stand\-alone \(fixme: bmp\.h needed\) header [src/trie\.h](src/trie.h); examples [test/test\_trie\.c](test/test_trie.c); article [doc/trie\.pdf](doc/trie.pdf)\. On a compatible workstation, `make` creates the test suite of the examples\.
+Header [src/trie\.h](src/trie.h) requires [src/bmp\.h](src/bmp.h); examples [test/test\_trie\.c](test/test_trie.c); article [doc/trie\.pdf](doc/trie.pdf)\. On a compatible workstation, `make` creates the test suite of the examples\.
 
 ## Prefix tree ##
 
