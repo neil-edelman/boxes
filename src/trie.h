@@ -89,7 +89,7 @@
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-branches-left root. Parameter sets the maximum tree size.
  Prefer alignment `4n - 2`; cache `32n - 2`. */
-#define TRIE_MAX_LEFT 3/*6*//*253*/
+#define TRIE_MAX_LEFT 126
 /* This is not ideal; could go up to 255, which would mean 256 branches.
  255 branches would be better then `1 + 255*2 = 511`. fixme: short. */
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX - 2
