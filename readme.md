@@ -1,13 +1,12 @@
 # trie\.h #
 
-Stand\-alone \(fixme\) header [src/trie\.h](src/trie.h); examples [test/test\_trie\.c](test/test_trie.c); article [doc/trie\.pdf](doc/trie.pdf)\. On a compatible workstation, `make` creates the test suite of the examples\.
+Stand\-alone \(fixme: bmp\.h needed\) header [src/trie\.h](src/trie.h); examples [test/test\_trie\.c](test/test_trie.c); article [doc/trie\.pdf](doc/trie.pdf)\. On a compatible workstation, `make` creates the test suite of the examples\.
 
 ## Prefix tree ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;key](#user-content-typedef-eeee1b4a), [&lt;PT&gt;key_to_string_fn](#user-content-typedef-b2d72b0f), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PT&gt;action_fn](#user-content-typedef-ba462b2e), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [trie_result](#user-content-tag-eb9850a3), [&lt;T&gt;trie_entry](#user-content-tag-1422bb56), [&lt;T&gt;trie](#user-content-tag-754a10a5)
- * [General Declarations](#user-content-data): [it](#user-content-data-47388410)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;key](#user-content-typedef-eeee1b4a), [&lt;PT&gt;key_to_string_fn](#user-content-typedef-b2d72b0f), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [trie_result](#user-content-tag-eb9850a3), [&lt;T&gt;trie_entry](#user-content-tag-1422bb56), [&lt;T&gt;trie](#user-content-tag-754a10a5), [&lt;T&gt;trie_iterator](#user-content-tag-854250a4)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -58,15 +57,7 @@ Transforms a [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) into a `const char 
 
 <code>typedef &lt;PT&gt;key(*<strong>&lt;PT&gt;key_fn</strong>)(const &lt;PT&gt;value *);</code>
 
-If `TRIE_KEY_IN_VALUE`, extracts the key from `TRIE_VALUE`; in this case, the user makes a contract to set this to the string on new before using the trie again\.
-
-
-
-### <a id = "user-content-typedef-ba462b2e" name = "user-content-typedef-ba462b2e">&lt;PT&gt;action_fn</a> ###
-
-<code>typedef void(*<strong>&lt;PT&gt;action_fn</strong>)(&lt;PT&gt;key *);</code>
-
-Works by side\-effects, _ie_ fills the type with data\.
+If `TRIE_KEY_IN_VALUE`, extracts the key from `TRIE_VALUE`; in this case, the user makes a contract to set this to the string on new before using the trie again, \(mostly\.\)
 
 
 
@@ -86,7 +77,7 @@ Works by side\-effects, _ie_ fills the type with data\.
 
 A result of modifying the table, of which `TRIE_ERROR` is false\.
 
-![A diagram of the result states.](../doc/put.png)
+![A diagram of the result states.](doc/result.png)
 
 
 
@@ -108,17 +99,11 @@ To initialize it to an idle state, see [&lt;T&gt;trie](#user-content-fn-754a10a5
 
 
 
-## <a id = "user-content-data" name = "user-content-data">General Declarations</a> ##
+### <a id = "user-content-tag-854250a4" name = "user-content-tag-854250a4">&lt;T&gt;trie_iterator</a> ###
 
-### <a id = "user-content-data-47388410" name = "user-content-data-47388410">it</a> ###
+<code>struct <strong>&lt;T&gt;trie_iterator</strong>;</code>
 
-<code>const static &lt;PT&gt;entry *&lt;PT&gt;next(struct &lt;PT&gt;iterator *const <strong>it</strong>){ assert(it); if(!it -&gt;trie ||!it -&gt;cur .tree ||it -&gt;cur .tree -&gt;bsize &lt;it -&gt;cur .idx ||!it -&gt;end .tree ||it -&gt;end .tree -&gt;bsize &lt;it -&gt;end .idx)return 0; if(it -&gt;seen){ if(it -&gt;cur .tree ==it -&gt;end .tree &amp;&amp;it -&gt;cur .idx &gt;=it -&gt;end .idx ||!&lt;PT&gt;to_successor_c(it -&gt;trie -&gt;root, &amp;it -&gt;cur))return 0; } else { it -&gt;seen = 1; } assert(!trie_bmp_test(&amp;it -&gt;cur .tree -&gt;bmp, it -&gt;cur .idx)); return &amp;it -&gt;cur .tree -&gt;leaf[it -&gt;cur .idx].as_entry; } struct &lt;T&gt;trie_iterator;</code>
-
-Advances `it`\. Represents a range of in\-order keys\.
-
- * Implements:  
-   next
-
+Represents a range of in\-order keys\.
 
 
 
@@ -138,15 +123,13 @@ Advances `it`\. Represents a range of in\-order keys\.
 
 <tr><td align = right>static &lt;PT&gt;entry *</td><td><a href = "#user-content-fn-46d99cc7">&lt;T&gt;trie_match</a></td><td>trie, string</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-cfc2af32">&lt;T&gt;trie_query</a></td><td>trie, string, result</td></tr>
+<tr><td align = right>static &lt;PT&gt;entry *</td><td><a href = "#user-content-fn-d0ca0cba">&lt;T&gt;trie_get</a></td><td>trie, string</td></tr>
 
 <tr><td align = right>static struct &lt;T&gt;trie_iterator</td><td><a href = "#user-content-fn-b720a682">&lt;T&gt;trie_prefix</a></td><td>trie, prefix</td></tr>
 
 <tr><td align = right>static const &lt;PT&gt;entry *</td><td><a href = "#user-content-fn-f36d1483">&lt;T&gt;trie_next</a></td><td>it</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a></td><td>cur</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-ae9d3396">&lt;T&gt;trie_test</a></td><td></td></tr>
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a></td><td>it</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
@@ -203,7 +186,7 @@ Returns any initialized `trie` \(can be null\) to idle\.
 
 <code>static void <strong>&lt;T&gt;trie_clear</strong>(struct &lt;T&gt;trie *const <em>trie</em>)</code>
 
-Clears every entry in a valid `trie`, but it continues to be active if it is not idle\.
+Clears every entry in a valid `trie` \(can be null\), but it continues to be active if it is not idle\.
 
  * Order:  
    &#927;\(|`trie`|\)
@@ -216,21 +199,21 @@ Clears every entry in a valid `trie`, but it continues to be active if it is not
 <code>static &lt;PT&gt;entry *<strong>&lt;T&gt;trie_match</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code>
 
  * Return:  
-   Looks at only the index of `trie` for potential `key` matches, but will ignore the values of the bits that are not in the index\.
+   Looks at only the index of `trie` for potential `string` matches, but will ignore the values of the bits that are not in the index\. \(Can both be null\.\) Does not access the string itself\.
  * Order:  
    &#927;\(|`key`|\)
 
 
 
 
-### <a id = "user-content-fn-cfc2af32" name = "user-content-fn-cfc2af32">&lt;T&gt;trie_query</a> ###
+### <a id = "user-content-fn-d0ca0cba" name = "user-content-fn-d0ca0cba">&lt;T&gt;trie_get</a> ###
 
-<code>static int <strong>&lt;T&gt;trie_query</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>string</em>, &lt;PT&gt;entry *const <em>result</em>)</code>
+<code>static &lt;PT&gt;entry *<strong>&lt;T&gt;trie_get</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code>
 
- * Parameter: _result_  
-   If null, behaves like [&lt;T&gt;trie_is](#user-content-fn-5b0aa2e2), otherwise, a [&lt;PT&gt;entry](#user-content-typedef-41052ced) which gets filled on true\.
  * Return:  
-   Whether `string` is in `trie` \(which can be null\.\)
+   `string` exact match for `trie`\.
+ * Order:  
+   &#927;\(|`key`|\)
 
 
 
@@ -239,10 +222,10 @@ Clears every entry in a valid `trie`, but it continues to be active if it is not
 
 <code>static struct &lt;T&gt;trie_iterator <strong>&lt;T&gt;trie_prefix</strong>(struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>prefix</em>)</code>
 
-Fills `it` with iteration parameters that find values of keys that start with `prefix` in `trie`\.
-
  * Parameter: _prefix_  
-   To fill `it` with the entire `trie`, use the empty string\.
+   To fill with the entire `trie`, use the empty string\.
+ * Return:  
+   An iterator that is set to all strings that start with `prefix` in `trie`\. It is valid until a topological change to `trie`\. Calling [&lt;T&gt;trie_next](#user-content-fn-f36d1483) will iterate them in order\.
  * Order:  
    &#927;\(|`prefix`|\)
 
@@ -261,7 +244,7 @@ Fills `it` with iteration parameters that find values of keys that start with `p
 
 ### <a id = "user-content-fn-b7ff4bcf" name = "user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a> ###
 
-<code>static size_t <strong>&lt;T&gt;trie_size</strong>(const struct &lt;T&gt;trie_iterator *const <em>cur</em>)</code>
+<code>static size_t <strong>&lt;T&gt;trie_size</strong>(const struct &lt;T&gt;trie_iterator *const <em>it</em>)</code>
 
 Counts the of the items in `it`\.
 
@@ -270,14 +253,6 @@ Counts the of the items in `it`\.
  * Caveat:  
    Doesn't work at all\.
 
-
-
-
-### <a id = "user-content-fn-ae9d3396" name = "user-content-fn-ae9d3396">&lt;T&gt;trie_test</a> ###
-
-<code>static void <strong>&lt;T&gt;trie_test</strong>(void)</code>
-
-Will be tested on stdout\. Requires `TRIE_TEST`, and not `NDEBUG` while defining `assert`\.
 
 
 

@@ -33,15 +33,14 @@
 
 <h1>trie.h</h1>
 
-<p>Stand-alone (fixme) header <a href = "src/trie.h">src/trie.h</a>; examples <a href = "test/test_trie.c">test/test_trie.c</a>; article <a href = "doc/trie.pdf">doc/trie.pdf</a>. On a compatible workstation, <code>make</code> creates the test suite of the examples.</p>
+<p>Stand-alone (fixme: bmp.h needed) header <a href = "src/trie.h">src/trie.h</a>; examples <a href = "test/test_trie.c">test/test_trie.c</a>; article <a href = "doc/trie.pdf">doc/trie.pdf</a>. On a compatible workstation, <code>make</code> creates the test suite of the examples.</p>
 
 <h2>Prefix tree</h2>
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>key">&lt;PT&gt;key</a>, <a href = "#typedef:<PT>key_to_string_fn">&lt;PT&gt;key_to_string_fn</a>, <a href = "#typedef:<PT>key_fn">&lt;PT&gt;key_fn</a>, <a href = "#typedef:<PT>action_fn">&lt;PT&gt;action_fn</a>, <a href = "#typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:trie_result">trie_result</a>, <a href = "#tag:<T>trie_entry">&lt;T&gt;trie_entry</a>, <a href = "#tag:<T>trie">&lt;T&gt;trie</a></li>
-	<li><a href = "#data:">General Declarations</a>: <a href = "#data:it">it</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PT>key">&lt;PT&gt;key</a>, <a href = "#typedef:<PT>key_to_string_fn">&lt;PT&gt;key_to_string_fn</a>, <a href = "#typedef:<PT>key_fn">&lt;PT&gt;key_fn</a>, <a href = "#typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:trie_result">trie_result</a>, <a href = "#tag:<T>trie_entry">&lt;T&gt;trie_entry</a>, <a href = "#tag:<T>trie">&lt;T&gt;trie</a>, <a href = "#tag:<T>trie_iterator">&lt;T&gt;trie_iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -102,17 +101,7 @@
 
 <p><code>typedef &lt;PT&gt;key(*<strong>&lt;PT&gt;key_fn</strong>)(const &lt;PT&gt;value *);</code></p>
 
-<p>If <code>TRIE_KEY_IN_VALUE</code>, extracts the key from <code>TRIE_VALUE</code>; in this case, the user makes a contract to set this to the string on new before using the trie again.</p>
-
-</div>
-
-<div>
-
-<h3><a id = "typedef:<PT>action_fn" name = "typedef:<PT>action_fn">&lt;PT&gt;action_fn</a></h3>
-
-<p><code>typedef void(*<strong>&lt;PT&gt;action_fn</strong>)(&lt;PT&gt;key *);</code></p>
-
-<p>Works by side-effects, <em>ie</em> fills the type with data.</p>
+<p>If <code>TRIE_KEY_IN_VALUE</code>, extracts the key from <code>TRIE_VALUE</code>; in this case, the user makes a contract to set this to the string on new before using the trie again, (mostly.)</p>
 
 </div>
 
@@ -136,7 +125,7 @@
 
 <p>A result of modifying the table, of which <code>TRIE_ERROR</code> is false.</p>
 
-<p><img alt = "A diagram of the result states." src = "../doc/put.png"></p>
+<p><img alt = "A diagram of the result states." src = "doc/result.png" width = 579 height = 308></p>
 
 </div>
 
@@ -162,20 +151,13 @@
 
 </div>
 
-<h2><a id = "data:" name = "data:">General Declarations</a></h2>
-
 <div>
 
-<h3><a id = "data:it" name = "data:it">it</a></h3>
+<h3><a id = "tag:<T>trie_iterator" name = "tag:<T>trie_iterator">&lt;T&gt;trie_iterator</a></h3>
 
-<p><code>const static &lt;PT&gt;entry *&lt;PT&gt;next(struct &lt;PT&gt;iterator *const <strong>it</strong>){ assert(it); if(!it -&gt;trie ||!it -&gt;cur .tree ||it -&gt;cur .tree -&gt;bsize &lt;it -&gt;cur .idx ||!it -&gt;end .tree ||it -&gt;end .tree -&gt;bsize &lt;it -&gt;end .idx)return 0; if(it -&gt;seen){ if(it -&gt;cur .tree ==it -&gt;end .tree &amp;&amp;it -&gt;cur .idx &gt;=it -&gt;end .idx ||!&lt;PT&gt;to_successor_c(it -&gt;trie -&gt;root, &amp;it -&gt;cur))return 0; } else { it -&gt;seen = 1; } assert(!trie_bmp_test(&amp;it -&gt;cur .tree -&gt;bmp, it -&gt;cur .idx)); return &amp;it -&gt;cur .tree -&gt;leaf[it -&gt;cur .idx].as_entry; } struct &lt;T&gt;trie_iterator;</code></p>
+<p><code>struct <strong>&lt;T&gt;trie_iterator</strong>;</code></p>
 
-<p>Advances <code>it</code>. Represents a range of in-order keys.</p>
-
-<dl>
-	<dt>Implements:</dt>
-	<dd>next</dd>
-</dl>
+<p>Represents a range of in-order keys.</p>
 
 </div>
 
@@ -197,15 +179,13 @@
 
 <tr><td align = right>static &lt;PT&gt;entry *</td><td><a href = "#fn:<T>trie_match">&lt;T&gt;trie_match</a></td><td>trie, string</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<T>trie_query">&lt;T&gt;trie_query</a></td><td>trie, string, result</td></tr>
+<tr><td align = right>static &lt;PT&gt;entry *</td><td><a href = "#fn:<T>trie_get">&lt;T&gt;trie_get</a></td><td>trie, string</td></tr>
 
 <tr><td align = right>static struct &lt;T&gt;trie_iterator</td><td><a href = "#fn:<T>trie_prefix">&lt;T&gt;trie_prefix</a></td><td>trie, prefix</td></tr>
 
 <tr><td align = right>static const &lt;PT&gt;entry *</td><td><a href = "#fn:<T>trie_next">&lt;T&gt;trie_next</a></td><td>it</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#fn:<T>trie_size">&lt;T&gt;trie_size</a></td><td>cur</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#fn:<T>trie_test">&lt;T&gt;trie_test</a></td><td></td></tr>
+<tr><td align = right>static size_t</td><td><a href = "#fn:<T>trie_size">&lt;T&gt;trie_size</a></td><td>it</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<STR>to_string">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
@@ -275,7 +255,7 @@
 
 <p><code>static void <strong>&lt;T&gt;trie_clear</strong>(struct &lt;T&gt;trie *const <em>trie</em>)</code></p>
 
-<p>Clears every entry in a valid <code>trie</code>, but it continues to be active if it is not idle.</p>
+<p>Clears every entry in a valid <code>trie</code> (can be null), but it continues to be active if it is not idle.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -292,7 +272,7 @@
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Looks at only the index of <code>trie</code> for potential <code>key</code> matches, but will ignore the values of the bits that are not in the index.</dd>
+	<dd>Looks at only the index of <code>trie</code> for potential <code>string</code> matches, but will ignore the values of the bits that are not in the index. (Can both be null.) Does not access the string itself.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(|<code>key</code>|)</dd>
 </dl>
@@ -301,15 +281,15 @@
 
 <div>
 
-<h3><a id = "fn:<T>trie_query" name = "fn:<T>trie_query">&lt;T&gt;trie_query</a></h3>
+<h3><a id = "fn:<T>trie_get" name = "fn:<T>trie_get">&lt;T&gt;trie_get</a></h3>
 
-<p><code>static int <strong>&lt;T&gt;trie_query</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>string</em>, &lt;PT&gt;entry *const <em>result</em>)</code></p>
+<p><code>static &lt;PT&gt;entry *<strong>&lt;T&gt;trie_get</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code></p>
 
 <dl>
-	<dt>Parameter: <em>result</em></dt>
-	<dd>If null, behaves like <a href = "#fn:&lt;T&gt;trie_is">&lt;T&gt;trie_is</a>, otherwise, a <a href = "#typedef:&lt;PT&gt;entry">&lt;PT&gt;entry</a> which gets filled on true.</dd>
 	<dt>Return:</dt>
-	<dd>Whether <code>string</code> is in <code>trie</code> (which can be null.)</dd>
+	<dd><code>string</code> exact match for <code>trie</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>key</code>|)</dd>
 </dl>
 
 </div>
@@ -320,11 +300,11 @@
 
 <p><code>static struct &lt;T&gt;trie_iterator <strong>&lt;T&gt;trie_prefix</strong>(struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>prefix</em>)</code></p>
 
-<p>Fills <code>it</code> with iteration parameters that find values of keys that start with <code>prefix</code> in <code>trie</code>.</p>
-
 <dl>
 	<dt>Parameter: <em>prefix</em></dt>
-	<dd>To fill <code>it</code> with the entire <code>trie</code>, use the empty string.</dd>
+	<dd>To fill with the entire <code>trie</code>, use the empty string.</dd>
+	<dt>Return:</dt>
+	<dd>An iterator that is set to all strings that start with <code>prefix</code> in <code>trie</code>. It is valid until a topological change to <code>trie</code>. Calling <a href = "#fn:&lt;T&gt;trie_next">&lt;T&gt;trie_next</a> will iterate them in order.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(|<code>prefix</code>|)</dd>
 </dl>
@@ -348,7 +328,7 @@
 
 <h3><a id = "fn:<T>trie_size" name = "fn:<T>trie_size">&lt;T&gt;trie_size</a></h3>
 
-<p><code>static size_t <strong>&lt;T&gt;trie_size</strong>(const struct &lt;T&gt;trie_iterator *const <em>cur</em>)</code></p>
+<p><code>static size_t <strong>&lt;T&gt;trie_size</strong>(const struct &lt;T&gt;trie_iterator *const <em>it</em>)</code></p>
 
 <p>Counts the of the items in <code>it</code>.</p>
 
@@ -358,16 +338,6 @@
 	<dt>Caveat:</dt>
 	<dd>Doesn't work at all.</dd>
 </dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<T>trie_test" name = "fn:<T>trie_test">&lt;T&gt;trie_test</a></h3>
-
-<p><code>static void <strong>&lt;T&gt;trie_test</strong>(void)</code></p>
-
-<p>Will be tested on stdout. Requires <code>TRIE_TEST</code>, and not <code>NDEBUG</code> while defining <code>assert</code>.</p>
 
 </div>
 

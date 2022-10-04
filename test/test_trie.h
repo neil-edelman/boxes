@@ -43,7 +43,7 @@ static const char *PT_(leaf_to_dir)(const struct PT_(tree) *const tr,
 	return shape;
 }
 
-/** Given a branch `b` in `tree` branches, calculate the right child branches.
+/** Given a branch `b` in `tr` branches, calculate the right child branches.
  @order \O(log `size`) */
 static unsigned PT_(right)(const struct PT_(tree) *const tr,
 	const unsigned b) {
@@ -60,7 +60,7 @@ static unsigned PT_(right)(const struct PT_(tree) *const tr,
 	return right;
 }
 
-/** @return Follows the branches to `b` in `tree` and returns the leaf. */
+/** @return Follows the branches to `b` in `tr` and returns the leaf. */
 static unsigned PT_(left_leaf)(const struct PT_(tree) *const tr,
 	const unsigned b) {
 	unsigned left, right, total = tr->bsize, i = 0, b0 = 0;
@@ -76,7 +76,7 @@ static unsigned PT_(left_leaf)(const struct PT_(tree) *const tr,
 	return i;
 }
 
-/** Graphs `tree` on `fp`. `treebit` is the number of bits currently
+/** Graphs `tr` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
 static void PT_(graph_tree_bits)(const struct PT_(tree) *const tr,
 	const size_t treebit, FILE *const fp) {
@@ -147,7 +147,7 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tr,
 	}
 }
 
-/** Graphs `tree` on `fp`. `treebit` is the number of bits currently
+/** Graphs `tr` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
 static void PT_(graph_tree_mem)(const struct PT_(tree) *const tr,
 	const size_t treebit, FILE *const fp) {
@@ -218,7 +218,7 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tr,
 	}
 }
 
-/** Graphs `tree` on `fp`.`treebit` is the number of bits currently
+/** Graphs `tr` on `fp`.`treebit` is the number of bits currently
  (recursive.) */
 static void PT_(graph_tree_logic)(const struct PT_(tree) *const tr,
 	const size_t treebit, FILE *const fp) {
@@ -302,7 +302,7 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 	fclose(fp);
 }
 
-/** Graphs logical `trie` output to `fn`. */
+/** Graphs logical `trie` output to `fn` using `no` as the filename index. */
 static void PT_(graph)(const struct T_(trie) *const trie,
 	const char *const fn, const size_t no) {
 	const char logic[] = "-tree", mem[] = "-mem", bits[] = "-bits";

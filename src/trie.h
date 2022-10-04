@@ -101,7 +101,7 @@
 #define X(n) TRIE_##n
 /** A result of modifying the table, of which `TRIE_ERROR` is false.
 
- ![A diagram of the result states.](../doc/put.png) */
+ ![A diagram of the result states.](../doc/result.png) */
 enum trie_result { TRIE_RESULT };
 #undef X
 #define X(n) #n
@@ -143,23 +143,26 @@ typedef const char *(*PT_(key_to_string_fn))(PT_(key));
 /* Valid <typedef:<PT>key_to_string_fn>. */
 static PT_(key_to_string_fn) PT_(key_string) = (TRIE_KEY_TO_STRING);
 #else /* custom key --><!-- string key */
-/** The string of `key` is itself by default.
+/** @return The string of `key` is itself, by default.
  @implements <typedef:<PT>key_to_string_fn> */
-static const char *PT_(string_to_string)(const char *const s) { return s; }
+static const char *PT_(string_to_string)(const char *const key) { return key; }
 static PT_(key_to_string_fn) PT_(key_string) = &PT_(string_to_string);
 #endif /* string key --> */
 
 
 #ifndef TRIE_VALUE /* <!-- key set */
 typedef PT_(key) PT_(entry);
-static PT_(key) PT_(entry_key)(const PT_(key) *const key) { return *key; }
+/** @return The key of `e` is itself in a set. */
+static PT_(key) PT_(entry_key)(const PT_(entry) *const e) { return *e; }
 #elif !defined(TRIE_KEY_IN_VALUE) /* key set --><!-- key value map */
 typedef TRIE_VALUE PT_(value);
 /** On `KEY_VALUE` but not `KEY_KEY_IN_VALUE`, defines an entry. */
 struct T_(trie_entry) { PT_(key) key; PT_(value) value; };
 typedef struct T_(trie_entry) PT_(entry);
+/** @return Key of `e` in a map. */
 static PT_(key) PT_(entry_key)(const struct T_(trie_entry) *const e)
 	{ return e->key; }
+/** @return Value of `e` in a map. */
 static PT_(value) *PT_(entry_value)(struct T_(trie_entry) *const e)
 	{ return &e->value; }
 #else /* key value map --><!-- key in value */
@@ -168,12 +171,14 @@ typedef TRIE_VALUE PT_(value);
 typedef PT_(value) PT_(entry);
 /** If `TRIE_KEY_IN_VALUE`, extracts the key from `TRIE_VALUE`; in this case,
  the user makes a contract to set this to the string on new before using the
- trie again. */
+ trie again, (mostly.) */
 typedef PT_(key) (*PT_(key_fn))(const PT_(value) *);
 /* Valid <typedef:<PT>key_fn>. */
 static PT_(key_fn) PT_(read_key) = (TRIE_KEY_IN_VALUE);
+/** @return A key-in-value `v`. */
 static const char *PT_(entry_key)(const PT_(value) *const v)
 	{ return PT_(read_key)(v); }
+/** @return A value-in-value `v`, which is itself. */
 static PT_(value) *PT_(entry_value)(PT_(value) *const v) { return v; }
 #endif /* key in value --> */
 
@@ -253,19 +258,23 @@ static int PT_(to_successor_c)(const struct PT_(tree) *const root,
 }
 
 #define BOX_CONTENT const PT_(entry) *
+/** @return Is `e` not null. */
 static int PT_(is_element_c)(const PT_(entry) *const e) { return !!e; }
 struct PT_(forward) { const struct PT_(tree) *root; struct PT_(ref_c) cur; };
+/** @return A constructed forward iterator at the start of `trie`. */
 static struct PT_(forward) PT_(forward)(const struct T_(trie) *const trie) {
 	struct PT_(forward) it;
 	it.root = trie ? trie->root : 0, it.cur.tree = 0;
 	return it;
 }
+/** @return Next entry of `it` or null. */
 static const PT_(entry) *PT_(next_c)(struct PT_(forward) *const it) {
 	return assert(it), PT_(to_successor_c)(it->root, &it->cur)
 		? &it->cur.tree->leaf[it->cur.idx].as_entry : 0;
 }
 
 #define BOX_ITERATOR PT_(entry) *
+/** @return Is `e` not null. */
 static int PT_(is_element)(const PT_(entry) *const e) { return !!e; }
 /* A range of words from `[cur, end]`. */
 struct PT_(iterator) {
@@ -291,7 +300,7 @@ static void PT_(begin)(struct PT_(iterator) *const it,
 	it->seen = 0;
 }
 /** Advances `it`. @return The previous value or null. @implements next */
-const static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
+static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
 	assert(it);
 	/* Possibly this is still valid? */
 	if(!it->trie || !it->cur.tree || it->cur.tree->bsize < it->cur.idx
@@ -387,9 +396,9 @@ static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
 		tree = tree->leaf[lf].as_link; /* Jumped trees. */
 	}
 }
-/** @return Looks at only the index of `trie` for potential `key` matches,
+/** @return Looks at only the index of `trie` for potential `string` matches,
  but will ignore the values of the bits that are not in the index. (Can both be
- null.) @order \O(|`key`|) @allow */
+ null.) Does not access the string itself. @order \O(|`key`|) @allow */
 static PT_(entry) *T_(trie_match)(const struct T_(trie) *const trie,
 	const char *const string)
 	{ return trie && string ? PT_(match)(trie, string) : 0; }
@@ -454,12 +463,11 @@ static void PT_(prefix)(struct T_(trie) *const trie,
 		&it->cur.tree->leaf[it->cur.idx].as_entry))))
 		it->trie = 0;
 }
-/** Fills `it` with iteration parameters that find values of keys that start
- with `prefix` in `trie`.
- @param[prefix] To fill `it` with the entire `trie`, use the empty string.
- @param[it] A pointer to an iterator that gets filled. It is valid until a
- topological change to `trie`. Calling <fn:<T>trie_next> will iterate them in
- order. @order \O(|`prefix`|) @allow */
+/** @return An iterator that is set to all strings that start with `prefix` in
+ `trie`. It is valid until a topological change to `trie`. Calling
+ <fn:<T>trie_next> will iterate them in order.
+ @param[prefix] To fill with the entire `trie`, use the empty string.
+ @order \O(|`prefix`|) @allow */
 static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
 	const char *const prefix) {
 	struct T_(trie_iterator) it; PT_(prefix)(trie, prefix, &it._); return it;
@@ -468,18 +476,19 @@ static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
  @allow */
 static const PT_(entry) *T_(trie_next)(struct T_(trie_iterator) *const it)
 	{ return PT_(next)(&it->_); }
+/** @return The number of elements in `it`. */
 static size_t PT_(size_r)(const struct PT_(iterator) *const it) {
 	return it->end.idx - it->cur.idx; /* Fixme. */
 }
 /** Counts the of the items in `it`. @order \O(|`it`|) @allow
  @fixme Doesn't work at all. */
-static size_t T_(trie_size)(const struct T_(trie_iterator) *const cur)
-	{ return assert(cur), PT_(size_r)(&cur->_); }
+static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
+	{ return assert(it), PT_(size_r)(&it->_); }
 
 
 /* Adding new entries. */
 
-/** @throws[malloc] */
+/** Splits `tree` into two trees. @throws[malloc] */
 static int PT_(split)(struct PT_(tree) *const tree) {
 	unsigned br0, br1, lf;
 	struct PT_(tree) *kid;
@@ -574,6 +583,9 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	tree->bsize++;
 	return leaf;
 }
+/** Adds `key` to `trie` and stores it in `entry`. Fills in the `key` unless
+ `TRIE_KEY_IN_VALUE` (because it doesn't have enough information, in that
+ case.) */
 static int PT_(add_unique)(struct T_(trie) *const trie, PT_(key) key,
 	PT_(entry) **const entry) {
 	struct PT_(tree) *tree;
@@ -835,13 +847,13 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
 
 
 #ifdef TRIE_TEST /* <!-- test */
-#include "../test/test_trie.h" /** \include */
+#include "../test/test_trie.h"
 #endif /* test --> */
 
 
 #ifdef TRIE_TO_STRING /* <!-- str: _sic_, have a natural string. */
 #define STR_(n) TRIE_CAT(T_(trie), n)
-/** Uses the natural `a` -> `z` that is defined by `TRIE_KEY_IN_VALUE`.
+/** Uses the natural `e` -> `z` that is defined by the key string.
  @fixme `sprintf` is large and cumbersome when a case statement will do. */
 static void PT_(to_string)(const PT_(entry) *const e,
 	char (*const z)[12]) {
