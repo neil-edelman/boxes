@@ -88,12 +88,10 @@
 #define TRIE_DIFF(a, b, n) \
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-branches-left root. Parameter sets the maximum tree size.
- Prefer alignment `4n - 2`; cache `32n - 2`. */
-#define TRIE_MAX_LEFT 126
-/* This is not ideal; could go up to 255, which would mean 256 branches.
- 255 branches would be better then `1 + 255*2 = 511`. fixme: short. */
-#if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX - 2
-#error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX - 2]`.
+ Prefer alignment `4n - 2`; cache `32n - 2`, (`(left + 1) * 2 + 2`.) */
+#define TRIE_MAX_LEFT 254
+#if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX
+#error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX]`.
 #endif
 #define TRIE_BRANCHES (TRIE_MAX_LEFT + 1) /* Maximum branches. */
 #define TRIE_ORDER (TRIE_BRANCHES + 1) /* Maximum branching factor/leaves. */
@@ -186,7 +184,7 @@ union PT_(leaf) { PT_(entry) as_entry; struct PT_(tree) *as_link; };
  <Bayer, McCreight, 1972 Large> and using <Knuth, 1998 Art 3> terminology, this
  is a node of `TRIE_ORDER`. */
 struct PT_(tree) {
-	unsigned char bsize;
+	unsigned short bsize;
 	struct trie_branch branch[TRIE_BRANCHES];
 	struct trie_bmp bmp;
 	union PT_(leaf) leaf[TRIE_ORDER];
@@ -226,7 +224,7 @@ static const char *PT_(sample)(const struct PT_(tree) *tree, unsigned lf) {
 static int PT_(to_successor_c)(const struct PT_(tree) *const root,
 	struct PT_(ref_c) *const ref) {
 	assert(ref);
-	if(!root || root->bsize == UCHAR_MAX) return 0; /* Empty. */
+	if(!root || root->bsize == USHRT_MAX) return 0; /* Empty. */
 	if(!ref->tree) { ref->tree = root, ref->idx = 0; } /* Start. */
 	else if(++ref->idx > ref->tree->bsize) { /* Gone off the end. */
 		const struct PT_(tree) *const old = ref->tree;
@@ -339,7 +337,7 @@ static int T_(trie_from_array)(struct T_(trie) *const trie,
  @order \O(|`tree`|) both time and space. */
 static void PT_(clear_r)(struct PT_(tree) *const tree) {
 	unsigned i;
-	assert(tree && tree->bsize != UCHAR_MAX);
+	assert(tree && tree->bsize != USHRT_MAX);
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->bmp, i))
 		PT_(clear_r)(tree->leaf[i].as_link), free(tree->leaf[i].as_link);
 }
@@ -347,7 +345,7 @@ static void PT_(clear_r)(struct PT_(tree) *const tree) {
  @order \O(|`trie`|) @allow */
 static void T_(trie_)(struct T_(trie) *const trie) {
 	if(!trie || !trie->root) return; /* Null or idle. */
-	if(trie->root->bsize != UCHAR_MAX) PT_(clear_r)(trie->root); /* Contents. */
+	if(trie->root->bsize != USHRT_MAX) PT_(clear_r)(trie->root); /* Contents. */
 	free(trie->root); /* Empty. */
 	*trie = T_(trie)();
 }
@@ -355,8 +353,8 @@ static void T_(trie_)(struct T_(trie) *const trie) {
  active if it is not idle. @order \O(|`trie`|) @allow */
 static void T_(trie_clear)(struct T_(trie) *const trie) {
 	if(!trie || !trie->root) return; /* Null or idle. */
-	if(trie->root->bsize != UCHAR_MAX) PT_(clear_r)(trie->root); /* Contents. */
-	trie->root->bsize = UCHAR_MAX; /* Hysteresis. */
+	if(trie->root->bsize != USHRT_MAX) PT_(clear_r)(trie->root); /* Contents. */
+	trie->root->bsize = USHRT_MAX; /* Hysteresis. */
 }
 
 
@@ -370,7 +368,7 @@ static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
 	size_t bit; /* In bits of `key`. */
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(trie && string);
-	if(!(tree = trie->root) || tree->bsize == UCHAR_MAX) return 0; /* Empty. */
+	if(!(tree = trie->root) || tree->bsize == USHRT_MAX) return 0; /* Empty. */
 	for(bit = 0, byte.cur = 0; ; ) {
 		unsigned br0 = 0, br1 = tree->bsize, lf = 0;
 		while(br0 < br1) {
@@ -418,7 +416,7 @@ static void PT_(match_prefix)(const struct T_(trie) *const trie,
 	struct { size_t cur, next; } byte;
 	assert(trie && prefix && it);
 	it->trie = 0;
-	if(!(tree = trie->root) || tree->bsize == UCHAR_MAX) return;
+	if(!(tree = trie->root) || tree->bsize == USHRT_MAX) return;
 	for(bit = 0, byte.cur = 0; ; ) {
 		unsigned br0 = 0, br1 = tree->bsize, lf = 0;
 		while(br0 < br1) {
@@ -588,10 +586,10 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(key) key,
 	assert(trie && PT_(key_string)(key));
 	if(!(tree = trie->root)) { /* Idle. */
 		if(!(tree = malloc(sizeof *tree))) goto catch;
-		tree->bsize = UCHAR_MAX;
+		tree->bsize = USHRT_MAX;
 		trie->root = tree;
 	} /* Fall-through. */
-	if(tree->bsize == UCHAR_MAX) { /* Empty. */
+	if(tree->bsize == USHRT_MAX) { /* Empty. */
 		tree->bsize = 0;
 		trie_bmp_clear_all(&trie->root->bmp);
 		leaf = tree->leaf + 0;
@@ -711,7 +709,7 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 	/* Same as match, but keep track of more stuff. */
 	printf("remove: <<%s>> from %s-trie.\n", string, orcify(trie));
 	/* Same as match except keep track of more stuff. */
-	if(!(tree = trie->root) || tree->bsize == UCHAR_MAX) return 0; /* Empty. */
+	if(!(tree = trie->root) || tree->bsize == USHRT_MAX) return 0; /* Empty. */
 	for(bit = 0, byte.cur = 0; ; ) {
 		tree_bit = bit;
 		ye.br0 = 0, ye.br1 = tree->bsize, ye.lf = 0;
@@ -818,7 +816,7 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 erased_tree:
 	printf("remove: entire trie.\n");
 	assert(trie->root == tree && !tree->bsize && !trie_bmp_test(&tree->bmp, 0));
-	tree->bsize = UCHAR_MAX;
+	tree->bsize = USHRT_MAX;
 	return 1;
 }
 /** Tries to remove `string` from `trie`.

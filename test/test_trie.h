@@ -296,7 +296,7 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 		"\tgraph [truecolor=true, bgcolor=transparent, fontname=modern];\n"
 		"\tnode [shape=none, fontname=modern];\n");
 	if(!trie->root) fprintf(fp, "\tidle;\n");
-	else if(trie->root->bsize == UCHAR_MAX) fprintf(fp, "\tempty;\n");
+	else if(trie->root->bsize == USHRT_MAX) fprintf(fp, "\tempty;\n");
 	else callback(trie->root, 0, fp);
 	fprintf(fp, "}\n");
 	fclose(fp);
@@ -486,9 +486,9 @@ static void PT_(test)(void) {
 		size_t before, after;
 		struct T_(trie_iterator) cur = T_(trie_iterator)(&trie);
 		before = T_(trie_size)(&trie);*/
-		assert(trie.root && trie.root->bsize != UCHAR_MAX);
+		assert(trie.root && trie.root->bsize != USHRT_MAX);
 		T_(trie_clear)(&trie);
-		assert(trie.root->bsize == UCHAR_MAX);
+		assert(trie.root->bsize == USHRT_MAX);
 		/*after = str_trie_size(&trie);
 		printf("Testing clear: %lu -> %lu.\n", before, after);
 		assert(!after);*/
