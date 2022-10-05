@@ -512,9 +512,9 @@ static void PT_(test_random)(void) {
 	struct T_(trie) trie = T_(trie)();
 	const size_t expectation = 1000;
 	size_t i, size = 0;
+	FILE *const fp = fopen("graph/" QUOTE(TRIE_NAME) "-random.data", "w");
 	printf("Random test; expectation value of items %lu.\n",
 		(unsigned long)expectation);
-	FILE *const fp = fopen("graph/" QUOTE(TRIE_NAME) "-random.data", "w");
 	if(!fp) goto catch;
 	for(i = 0; i < 5 * expectation; i++) {
 		size_t j;
