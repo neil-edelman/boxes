@@ -313,11 +313,11 @@ int main(void) {
 	contrived_test(), str32_pool_clear(&str_pool);
 #if 1
 	str_trie_test(), str32_pool_clear(&str_pool); /* Key set. */
-	colour_trie_test(); /* Custom key set with enum string backing. */
+	//colour_trie_test(); /* Custom key set with enum string backing. */
 	mapint_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */
 	foo_trie_test(), str32_pool_clear(&str_pool); /* Custom value. */
-	str8_trie_test(); /* Small key set with no dependancy on outside keys. */
-	star_trie_test(); /* Custom value with enum strings backing. */
+	//str8_trie_test(); /* Small key set with no dependancy on outside keys. */
+	//star_trie_test(); /* Custom value with enum strings backing. */
 	keyval_trie_test(), keyval_pool_clear(&kv_pool); /* Pointer to index. */
 #endif
 	keyval_pool_(&kv_pool);
