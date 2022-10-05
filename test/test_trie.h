@@ -498,55 +498,88 @@ static void PT_(test)(void) {
 	assert(!errno);
 }
 
-static void PT_(test_random)(void) {
-#if 0
-	struct T_(trie) trie = T_(trie)();
-	const size_t expectation = 100000;
-	size_t i, size = 0;
-	FILE *fp = fopen("graph/" QUOTE(TRIE_NAME) "-random.data", "w");
-	struct {
+/* String array for random sampling. */
+typedef const char *PT_(string);
+#define ARRAY_NAME PT_(string)
+#define ARRAY_TYPE PT_(string)
+#include "array.h"
+/* Backing for the trie and string array. */
+#define POOL_NAME PT_(entry)
+#define POOL_TYPE PT_(entry)
+#include "pool.h"
 
-		PT_(value) value;
-	}
-	PT_(value) []
+static void PT_(test_random)(void) {
+	struct PT_(string_array) strings = PT_(string_array)();
+	struct PT_(entry_pool) entries = PT_(entry_pool)();
+	struct T_(trie) trie = T_(trie)();
+	const size_t expectation = 10;
+	size_t i, size = 0;
+	printf("Random test; expectation value of items %lu.\n",
+		(unsigned long)expectation);
+	FILE *const fp = fopen("graph/" QUOTE(TRIE_NAME) "-random.data", "w");
+	if(!fp) goto catch;
 	for(i = 0; i < 5 * expectation; i++) {
-		unsigned r = (unsigned)rand();
-		if(r > size * (RAND_MAX / (2 * expectation))) { /* Create. */
+		if((unsigned)rand() > size * (RAND_MAX / (2 * expectation))) {
+			/* Create item with backing in entries and pointer in strings. */
 			PT_(entry) entry;
+			PT_(key) key;
+			const char **string_ptr;
+#ifdef TRIE_VALUE
+			PT_(value) *value;
+#endif
 #if defined(TRIE_VALUE) && !defined(TRIE_KEY_IN_VALUE)
 			PT_(filler)(&entry.key, &entry.value);
 #else
 			PT_(filler)(&entry);
 #endif
-
+			key = PT_(entry_key)(&entry);
+			printf("Creating %s.\n", PT_(key_string)(key));
 			switch(
-	#ifndef TRIE_VALUE /* <!-- key set */
+#ifndef TRIE_VALUE /* <!-- key set */
 			T_(trie_try)(&trie, key)
-	#else /* key set --><!-- map */
+#else /* key set --><!-- map */
 			T_(trie_try)(&trie, key, &value)
-	#endif /* map --> */
+#endif /* map --> */
 			) {
-			case TRIE_ERROR: perror("trie"); assert(0); return;
-			case TRIE_UNIQUE: test->is_in = 1; unique++;
-				letter_counts[(unsigned char)*PT_(key_string)(key)]++;
-	#ifndef TRIE_VALUE /* <!-- set */
-	#elif !defined(TRIE_KEY_IN_VALUE) /* set --><!-- map */
-				*value = test->entry.value;
-	#else /* map --><!-- custom */
-				*value = test->entry;
-	#endif /* custom --> */
+			case TRIE_ERROR: goto catch;
+			case TRIE_UNIQUE: size++;
+#ifdef TRIE_KEY_IN_VALUE
+				*value = entry;
+#elif defined(TRIE_VALUE)
+				*value = entry.value;
+#endif
+				if(!(string_ptr = PT_(string_array_new)(&strings))) goto catch;
+				*string_ptr = PT_(key_string)(PT_(entry_key)(&entry));
 				break;
-			case TRIE_PRESENT: /*printf("Key %s is in trie already.\n",
-				PT_(key_string)(key)); spam */ break;
+			case TRIE_PRESENT: break;
 			}
-			size++;
 		} else { /* Delete. */
+			unsigned r = (unsigned)rand() / (RAND_MAX / strings.size + 1);
+			const char *string = strings.data[r];
+			int result;
+			printf("Deleting %s.\n", string);
+			result = T_(trie_remove)(&trie, string);
+			assert(result);
+			{ size_t j; for(j = 0; j < strings.size; j++)
+				printf("%s; ", strings.data[j]); printf("\n"); }
+			PT_(string_array_lazy_remove)(&strings, strings.data + r);
+			{ size_t j; for(j = 0; j < strings.size; j++)
+				printf("%s; ", strings.data[j]); printf("\n"); }
 			size--;
 		}
 		if(fp) fprintf(fp, "%lu\n", (unsigned long)size);
+		PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
 	}
+	for(i = 0; i < strings.size; i++) printf("%s\n", strings.data[i]);
+	goto finally;
+catch:
+	perror("random test");
+	assert(0);
+finally:
 	if(fp) fclose(fp);
-#endif
+	T_(trie_)(&trie);
+	PT_(entry_pool_)(&entries);
+	PT_(string_array_)(&strings);
 }
 
 /** Will be tested on stdout. Requires `TRIE_TEST`, and not `NDEBUG` while

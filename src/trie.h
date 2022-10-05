@@ -268,7 +268,6 @@ SUCCESSOR(to_successor, ref, lower_entry, struct)
 SUCCESSOR(to_successor_c, ref_c, lower_entry_c, const struct)
 #undef SUCCESSOR
 
-#define BOX_CONTENT const PT_(entry) *
 /** @return Is `e` not null. */
 static int PT_(is_element_c)(const PT_(entry) *const e) { return !!e; }
 struct PT_(forward) { const struct PT_(tree) *root; struct PT_(ref_c) cur; };
@@ -284,7 +283,6 @@ static const PT_(entry) *PT_(next_c)(struct PT_(forward) *const it) {
 		? &it->cur.tree->leaf[it->cur.idx].as_entry : 0;
 }
 
-#define BOX_ITERATOR PT_(entry) *
 #if 0 /* That's weird? */
 /** @return Is `e` not null. */
 static int PT_(is_element)(const PT_(entry) *const e) { return !!e; }
@@ -859,11 +857,13 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
 
 
 #ifdef TRIE_TEST /* <!-- test */
-#include "../test/test_trie.h"
+#include "../test/test_trie.h" /* This includes boxes, must BOX_ after. */
 #endif /* test --> */
 
 
 /* Box override information. */
+#define BOX_CONTENT const PT_(entry) *
+#define BOX_ITERATOR PT_(entry) *
 #define BOX_ PT_
 #define BOX struct T_(trie)
 
