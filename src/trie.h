@@ -16,7 +16,9 @@
  The implementation is as <Morrison, 1968 PATRICiA>: a compact
  [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) that acts as an
  index, only storing the where the key bits are different. For this reason, the
- keys must be stored somewhere else for comparison.
+ keys must be stored somewhere else for comparison. The keys are grouped in
+ fixed-size nodes in a relaxed version of <Bayer, McCreight, 1972 Large> where
+ the height is dynamic.
 
  ![Bit view of the trie.](../doc/trie-bits.png)
 
@@ -187,9 +189,8 @@ static PT_(value) *PT_(entry_value)(PT_(value) *const v) { return v; }
 
 union PT_(leaf) { PT_(entry) as_entry; struct PT_(tree) *as_link; };
 /* Node already has conflicting meaning, so we use tree. Such that a trie is a
- forest of non-empty complete binary trees. In a B-tree, described in
- <Bayer, McCreight, 1972 Large> and using <Knuth, 1998 Art 3> terminology, this
- is a node of `TRIE_ORDER`. */
+ forest of non-empty complete binary trees. In a B-tree, described using
+ <Knuth, 1998 Art 3> terminology, this is a node of `TRIE_ORDER`. */
 struct PT_(tree) {
 	unsigned short bsize;
 	struct trie_branch branch[TRIE_BRANCHES];
