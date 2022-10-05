@@ -471,13 +471,12 @@ static void PT_(test)(void) {
 		int output = 0;
 		letter[0] = (char)i, letter[1] = '\0';
 		it = T_(trie_prefix)(&trie, letter);
-		/* fixme: No. */
 		while(e = T_(trie_next)(&it)) {
-			printf("%s<%s>", output ? "" : letter,
-				PT_(key_string)(PT_(entry_key)(e)));
+			/*printf("%s<%s>", output ? "" : letter,
+				PT_(key_string)(PT_(entry_key)(e)));*/
 			count_letter++, output = 1;
 		}
-		if(output) printf("\n");
+		/*if(output) printf("\n");*/
 		if(i) {
 			assert(count_letter == letter_counts[i]);
 			count += count_letter;
@@ -498,19 +497,18 @@ static void PT_(test)(void) {
 	assert(!errno);
 }
 
-/* String array for random sampling. */
-typedef const char *PT_(string);
-#define ARRAY_NAME PT_(string)
-#define ARRAY_TYPE PT_(string)
-#include "array.h"
-/* Backing for the trie and string array. */
+/* Backing for the trie. */
 #define POOL_NAME PT_(entry)
 #define POOL_TYPE PT_(entry)
 #include "pool.h"
+/* Pointer array for random sampling. */
+#define ARRAY_NAME PT_(handle)
+#define ARRAY_TYPE PT_(entry) *
+#include "array.h"
 
 static void PT_(test_random)(void) {
-	struct PT_(string_array) strings = PT_(string_array)();
 	struct PT_(entry_pool) entries = PT_(entry_pool)();
+	struct PT_(handle_array) handles = PT_(handle_array)();
 	struct T_(trie) trie = T_(trie)();
 	const size_t expectation = 10;
 	size_t i, size = 0;
@@ -520,10 +518,9 @@ static void PT_(test_random)(void) {
 	if(!fp) goto catch;
 	for(i = 0; i < 5 * expectation; i++) {
 		if((unsigned)rand() > size * (RAND_MAX / (2 * expectation))) {
-			/* Create item with backing in entries and pointer in strings. */
-			PT_(entry) entry;
+			/* Create item. */
+			PT_(entry) entry, **handle;
 			PT_(key) key;
-			const char **string_ptr;
 #ifdef TRIE_VALUE
 			PT_(value) *value;
 #endif
@@ -548,29 +545,38 @@ static void PT_(test_random)(void) {
 #elif defined(TRIE_VALUE)
 				*value = entry.value;
 #endif
-				if(!(string_ptr = PT_(string_array_new)(&strings))) goto catch;
-				*string_ptr = PT_(key_string)(PT_(entry_key)(&entry));
+				if(!(handle = PT_(handle_array_new)(&handles))) goto catch;
+				*handle = &entry; /* fixme: this is local */
+				printf("handle (%p)%s\n",
+					(void *)&entry, PT_(key_string)(PT_(entry_key)(*handle)));
 				break;
 			case TRIE_PRESENT: break;
 			}
-		} else { /* Delete. */
-			unsigned r = (unsigned)rand() / (RAND_MAX / strings.size + 1);
-			const char *string = strings.data[r];
+		} else { /* Delete item. */
+			unsigned r = (unsigned)rand() / (RAND_MAX / handles.size + 1);
+			PT_(entry) *handle = handles.data[r];
+			const char *const string = PT_(key_string)(PT_(entry_key)(handle));
 			int result;
 			printf("Deleting %s.\n", string);
+			{ size_t j; for(j = 0; j < handles.size; j++) printf("(%p)%s; ",
+				handles.data[j], PT_(key_string)(PT_(entry_key)(handles.data[j])));
+				printf("\n"); }
 			result = T_(trie_remove)(&trie, string);
 			assert(result);
-			{ size_t j; for(j = 0; j < strings.size; j++)
-				printf("%s; ", strings.data[j]); printf("\n"); }
-			PT_(string_array_lazy_remove)(&strings, strings.data + r);
-			{ size_t j; for(j = 0; j < strings.size; j++)
-				printf("%s; ", strings.data[j]); printf("\n"); }
+			{ size_t j; for(j = 0; j < handles.size; j++) printf("%s; ",
+				PT_(key_string)(PT_(entry_key)(handles.data[j])));
+				printf("\n"); }
+			PT_(handle_array_lazy_remove)(&handles, handles.data + r);
+			{ size_t j; for(j = 0; j < handles.size; j++) printf("%s; ",
+				PT_(key_string)(PT_(entry_key)(handles.data[j])));
+				printf("\n"); }
+			//PT_(entry_pool_remove)(&entries, *handle);
 			size--;
 		}
 		if(fp) fprintf(fp, "%lu\n", (unsigned long)size);
 		PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
 	}
-	for(i = 0; i < strings.size; i++) printf("%s\n", strings.data[i]);
+	//for(i = 0; i < handles.size; i++) printf("%s\n", handles.data[i]);
 	goto finally;
 catch:
 	perror("random test");
@@ -579,7 +585,7 @@ finally:
 	if(fp) fclose(fp);
 	T_(trie_)(&trie);
 	PT_(entry_pool_)(&entries);
-	PT_(string_array_)(&strings);
+	PT_(handle_array_)(&handles);
 }
 
 /** Will be tested on stdout. Requires `TRIE_TEST`, and not `NDEBUG` while
