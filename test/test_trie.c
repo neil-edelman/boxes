@@ -306,18 +306,44 @@ static void contrived_test(void) {
 	str_trie_(&t);
 }
 
+static void fixed_colour_test(void) {
+	struct colour_trie trie = colour_trie();
+	struct colour_trie_iterator it;
+	enum colour *c;
+	if(!colour_trie_try(&trie, Black)
+		|| !colour_trie_try(&trie, Red)
+		|| !colour_trie_try(&trie, Yellow)
+		|| !colour_trie_try(&trie, Lime)
+		|| !colour_trie_try(&trie, Steel)) { assert(0); goto catch; }
+	trie_colour_graph(&trie, "graph/colour-fixed.gv", 0);
+	colour_trie_remove(&trie, "Steel");
+	trie_colour_graph(&trie, "graph/colour-fixed.gv", 1);
+	it = colour_trie_prefix(&trie, "");
+	c = colour_trie_next(&it), assert(c && *c == Black);
+	c = colour_trie_next(&it), assert(c && *c == Lime);
+	c = colour_trie_next(&it), assert(c && *c == Red);
+	c = colour_trie_next(&it), assert(c && *c == Yellow);
+	c = colour_trie_next(&it), assert(!c);
+	goto finally;
+catch:
+	perror("fixed colour trie");
+finally:
+	colour_trie_(&trie);
+}
+
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	contrived_test(), str32_pool_clear(&str_pool);
+	fixed_colour_test();
 #if 1
 	str_trie_test(), str32_pool_clear(&str_pool); /* Key set. */
-	//colour_trie_test(); /* Custom key set with enum string backing. */
+	colour_trie_test(); /* Custom key set with enum string backing. */
 	mapint_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */
 	foo_trie_test(), str32_pool_clear(&str_pool); /* Custom value. */
-	//str8_trie_test(); /* Small key set with no dependancy on outside keys. */
-	//star_trie_test(); /* Custom value with enum strings backing. */
+	str8_trie_test(); /* Small key set with no dependancy on outside keys. */
+	star_trie_test(); /* Custom value with enum strings backing. */
 	keyval_trie_test(), keyval_pool_clear(&kv_pool); /* Pointer to index. */
 #endif
 	keyval_pool_(&kv_pool);

@@ -818,7 +818,10 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 	memmove(tree->branch + parent_br, tree->branch
 		+ parent_br + 1, sizeof *tree->branch
 		* (tree->bsize - parent_br - 1));
-	memmove(rm, rm + 1, sizeof *rm * (tree->bsize - ye.lf));
+	/* Do not do this; `rm` might be less size for very specific tries:
+	 memmove(rm, rm + 1, sizeof *rm * (tree->bsize - ye.lf)); */
+	memmove(tree->leaf + ye.lf, tree->leaf + ye.lf + 1,
+		sizeof *tree->leaf * (tree->bsize - ye.lf));
 	tree->bsize--;
 	/* Remove the bit. */
 	trie_bmp_remove(&tree->bmp, ye.lf, 1);
