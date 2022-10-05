@@ -266,6 +266,7 @@ static int PT_(to_successor_c)(CONSTSTRUCT PT_(tree) *const root, \
 }
 SUCCESSOR(to_successor, ref, lower_entry, struct)
 SUCCESSOR(to_successor_c, ref_c, lower_entry_c, const struct)
+#undef SUCCESSOR
 
 #define BOX_CONTENT const PT_(entry) *
 /** @return Is `e` not null. */
@@ -857,14 +858,14 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
 	{ return trie && string && PT_(remove)(trie, string); }
 
 
-/* Box override information. */
-#define BOX_ PT_
-#define BOX struct T_(trie)
-
-
 #ifdef TRIE_TEST /* <!-- test */
 #include "../test/test_trie.h"
 #endif /* test --> */
+
+
+/* Box override information. */
+#define BOX_ PT_
+#define BOX struct T_(trie)
 
 
 #ifdef TRIE_TO_STRING /* <!-- str: _sic_, have a natural string. */
