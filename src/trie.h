@@ -877,17 +877,21 @@ static void PT_(to_string)(const PT_(entry) *const e,
 #endif /* str --> */
 
 
-/*static void PT_(unused_base_coda)(void);
+static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
-	PT_(begin)(0, 0);
-	T_(trie)(0); T_(trie_)(0); T_(trie_clear)(0);
-	T_(trie_is)(0, 0); T_(trie_match)(0, 0); T_(trie_get)(0, 0);
-	T_(trie_try)(0, 0); T_(trie_put)(0, 0, 0); T_(trie_policy)(0, 0, 0, 0);
+	PT_(forward)(0); PT_(next_c)(0);
+	T_(trie)(); T_(trie_)(0); T_(trie_clear)(0);
+	T_(trie_match)(0, 0); T_(trie_get)(0, 0);
+#ifndef TRIE_VALUE
+	T_(trie_try)(0, 0);
+#else
+	T_(trie_try)(0, 0, 0);
+#endif
 	T_(trie_remove)(0, 0);
-	T_(trie_prefix)(0, 0, 0); T_(trie_next)(0); T_(trie_size)(0);
+	T_(trie_prefix)(0, 0); T_(trie_next)(0); /*T_(trie_size)(0);*/
 	PT_(unused_base_coda)();
 }
-static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }*/
+static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 
 #elif defined(TABLE_DEFAULT) /* base --><!-- default */
