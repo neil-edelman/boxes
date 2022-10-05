@@ -510,7 +510,7 @@ static void PT_(test_random)(void) {
 	struct PT_(entry_pool) entries = PT_(entry_pool)();
 	struct PT_(handle_array) handles = PT_(handle_array)();
 	struct T_(trie) trie = T_(trie)();
-	const size_t expectation = 10;
+	const size_t expectation = 1000;
 	size_t i, size = 0;
 	printf("Random test; expectation value of items %lu.\n",
 		(unsigned long)expectation);
@@ -532,7 +532,7 @@ static void PT_(test_random)(void) {
 			PT_(filler)(entry);
 #endif
 			key = PT_(entry_key)(entry);
-			printf("Creating %s: ", PT_(key_string)(key));
+			/*printf("Creating %s: ", PT_(key_string)(key));*/
 			switch(
 #ifndef TRIE_VALUE /* <!-- key set */
 			T_(trie_try)(&trie, key)
@@ -541,10 +541,10 @@ static void PT_(test_random)(void) {
 #endif /* map --> */
 			) {
 			case TRIE_ERROR:
-				printf("error.\n");
+				/*printf("error.\n");*/
 				goto catch;
 			case TRIE_UNIQUE:
-				printf("unique.\n");
+				/*printf("unique.\n");*/
 				size++;
 #ifdef TRIE_KEY_IN_VALUE
 				*value = *entry;
@@ -555,7 +555,7 @@ static void PT_(test_random)(void) {
 				*handle = entry;
 				break;
 			case TRIE_PRESENT:
-				printf("present.\n");
+				/*printf("present.\n");*/
 				PT_(entry_pool_remove)(&entries, entry);
 				break;
 			}
@@ -564,7 +564,7 @@ static void PT_(test_random)(void) {
 			PT_(entry) *handle = handles.data[r];
 			const char *const string = PT_(key_string)(PT_(entry_key)(handle));
 			int result;
-			printf("Deleting %s.\n", string);
+			/*printf("Deleting %s.\n", string);*/
 			result = T_(trie_remove)(&trie, string);
 			assert(result);
 			PT_(handle_array_lazy_remove)(&handles, handles.data + r);
@@ -572,14 +572,20 @@ static void PT_(test_random)(void) {
 			size--;
 		}
 		if(fp) fprintf(fp, "%lu\n", (unsigned long)size);
-		PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
+		if(i % (5 * expectation / 10) == 5 * expectation / 20) {
+			fputc('#', stdout);
+			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
+		}
 		for(j = 0; j < handles.size; j++) {
 			PT_(entry) *e = T_(trie_get)(&trie,
 				PT_(key_string)(PT_(entry_key)(handles.data[j])));
 			assert(e);
 		}
 	}
-	for(i = 0; i < handles.size; i++) printf("%s\n", PT_(key_string)(PT_(entry_key)(handles.data[i])));
+	fputc('\n', stdout);
+	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
+	/*for(i = 0; i < handles.size; i++) printf("%s\n",
+		PT_(key_string)(PT_(entry_key)(handles.data[i])));*/
 	goto finally;
 catch:
 	perror("random test");
