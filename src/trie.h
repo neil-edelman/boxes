@@ -91,7 +91,7 @@
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-branches-left root. Parameter sets the maximum tree size.
  Prefer alignment `4n - 2`; cache `32n - 2`, (`(left + 1) * 2 + 2`.) */
-#define TRIE_MAX_LEFT 253 /* fixme: bmp fails at 254, which is what I want. */
+#define TRIE_MAX_LEFT 254
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX
 #error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX]`.
 #endif
@@ -223,7 +223,8 @@ static void PT_(higher_entry)(struct PT_(ref) *ref) {
 		ref->tree = ref->tree->leaf[ref->idx].as_link,
 		ref->idx = ref->tree->bsize;
 }
-/** This is a convince function. @return The leftmost key `lf` of `tree`. */
+/** This is a convince function.
+ @return The leftmost entry string at `idx` of `tree`. */
 static const char *PT_(sample)(const struct PT_(tree) *const tree,
 	const unsigned idx) {
 	struct PT_(ref_c) ref; ref.tree = tree, ref.idx = idx;

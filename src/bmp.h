@@ -34,6 +34,7 @@
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #define BMP_CAT_(n, m) n ## _ ## m
 #define BMP_CAT(n, m) BMP_CAT_(n, m)
+/* FIXME: <B> is <B>tree! */
 #define B_(n) BMP_CAT(BMP_NAME, n)
 #define PB_(n) BMP_CAT(bmp, B_(n))
 /** The underlying array type. */
@@ -59,6 +60,25 @@ struct B_(bmp) { bmpchunk chunk[BMP_CHUNKS]; };
 /** Sets `a` to all false. @allow */
 static void B_(bmp_clear_all)(struct B_(bmp) *const a)
 	{ assert(a); memset(a, 0, sizeof *a); }
+
+/** Copies and overwrites `b` with `bit_offset` range `bit_range` from `a`.
+ Left over is filled with zeros. `bit_range` cannot be zero. @fixme Untested. */
+static void B_(bmp_copy)(struct B_(bmp) *const a, const unsigned bit_offset,
+	const unsigned bit_range, struct B_(bmp) *const b) {
+	struct { unsigned hi, lo; } i, j;
+	unsigned rest;
+	assert(a && b && bit_range && bit_offset + bit_range < BMP_BITS);
+	i.hi = bit_offset / BMP_CHUNK, i.lo = bit_offset % BMP_CHUNK;
+	j.hi = j.lo = 0;
+	for(rest = bit_range; rest > BMP_CHUNK; j.hi++, rest -= BMP_CHUNK)
+		b->chunk[j.hi] = (a->chunk[i.hi + j.hi] << i.lo)
+		| (a->chunk[i.lo + j.lo + 1] >> (8 - i.lo));
+	b->chunk[j.hi] = a->chunk[i.hi + j.hi] << i.lo;
+	if(i.hi + j.hi < (bit_offset + bit_range) / BMP_CHUNK)
+		b->chunk[j.hi] |= (a->chunk[i.hi + j.hi + 1] >> (8 - i.lo));
+	b->chunk[j.hi++] &= ~(BMP_MAX >> rest);
+	memset(b + j.hi, 0, BMP_CHUNK - j.hi);
+}
 
 /** Inverts all entries of `a`. @allow */
 static void B_(bmp_invert_all)(struct B_(bmp) *const a) {
@@ -98,7 +118,7 @@ static void B_(bmp_insert)(struct B_(bmp) *const a,
 	if(!n) return;
 	move.hi = n / BMP_CHUNK, move.lo = n % BMP_CHUNK;
 	first.hi = x / BMP_CHUNK, first.lo = x % BMP_CHUNK;
-	i = BMP_CHUNKS - 1 - move.hi; store = a->chunk[first.hi];
+	i = BMP_CHUNKS - move.hi - (move.lo ? 1 : 0); store = a->chunk[first.hi];
 	/* Zero the bits that are not involved on the last iteration. */
 	a->chunk[first.hi] &= BMP_MAX >> first.lo;
 	/* Copy a superset aligned with `<PB>chunk` bits, backwards. */
@@ -130,7 +150,7 @@ static void B_(bmp_remove)(struct B_(bmp) *const a,
 	/* Copy a superset aligned with `<PB>chunk` bits. */
 	for( ; ; ) {
 		temp = a->chunk[i] << move.lo;
-		if(i == BMP_CHUNKS - 1) { a->chunk[i - move.hi] = temp; break; }
+		if(i >= BMP_CHUNKS - 1) { a->chunk[i - move.hi] = temp; break; }
 		if(move.lo) temp |= a->chunk[i + 1] >> BMP_CHUNK - move.lo;
 		a->chunk[i++ - move.hi] = temp;
 	}
@@ -148,7 +168,7 @@ static void B_(bmp_remove)(struct B_(bmp) *const a,
 
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
-	B_(bmp_clear_all)(0); B_(bmp_invert_all)(0); B_(bmp_test)(0, 0);
+	B_(bmp_clear_all)(0); B_(bmp_copy)(0, 0, 0, 0); B_(bmp_invert_all)(0);
 	B_(bmp_set)(0, 0); B_(bmp_clear)(0, 0); B_(bmp_toggle)(0, 0);
 	PB_(unused_base_coda)();
 }
