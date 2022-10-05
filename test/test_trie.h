@@ -531,7 +531,7 @@ static void PT_(test_random)(void) {
 			PT_(filler)(entry);
 #endif
 			key = PT_(entry_key)(entry);
-			printf("Creating %s.\n", PT_(key_string)(key));
+			printf("Creating %s: ", PT_(key_string)(key));
 			switch(
 #ifndef TRIE_VALUE /* <!-- key set */
 			T_(trie_try)(&trie, key)
@@ -539,8 +539,10 @@ static void PT_(test_random)(void) {
 			T_(trie_try)(&trie, key, &value)
 #endif /* map --> */
 			) {
-			case TRIE_ERROR: goto catch;
-			case TRIE_UNIQUE: size++;
+			case TRIE_ERROR: printf("error.\n"); goto catch;
+			case TRIE_UNIQUE:
+				printf("unique.\n.");
+				size++;
 #ifdef TRIE_KEY_IN_VALUE
 				*value = *entry;
 #elif defined(TRIE_VALUE)
@@ -548,10 +550,11 @@ static void PT_(test_random)(void) {
 #endif
 				if(!(handle = PT_(handle_array_new)(&handles))) goto catch;
 				*handle = entry;
-				printf("handle (%p)%s\n",
-					(void *)&entry, PT_(key_string)(PT_(entry_key)(*handle)));
 				break;
-			case TRIE_PRESENT: PT_(entry_pool_remove)(&entries, entry); break;
+			case TRIE_PRESENT:
+				printf("present already.\n");
+				PT_(entry_pool_remove)(&entries, entry);
+				break;
 			}
 		} else { /* Delete item. */
 			unsigned r = (unsigned)rand() / (RAND_MAX / handles.size + 1);
@@ -559,25 +562,16 @@ static void PT_(test_random)(void) {
 			const char *const string = PT_(key_string)(PT_(entry_key)(handle));
 			int result;
 			printf("Deleting %s.\n", string);
-			{ size_t j; for(j = 0; j < handles.size; j++) printf("(%p)%s; ",
-				(void *)handles.data[j], PT_(key_string)(PT_(entry_key)(handles.data[j])));
-				printf("\n"); }
 			result = T_(trie_remove)(&trie, string);
 			assert(result);
-			{ size_t j; for(j = 0; j < handles.size; j++) printf("%s; ",
-				PT_(key_string)(PT_(entry_key)(handles.data[j])));
-				printf("\n"); }
 			PT_(handle_array_lazy_remove)(&handles, handles.data + r);
-			{ size_t j; for(j = 0; j < handles.size; j++) printf("%s; ",
-				PT_(key_string)(PT_(entry_key)(handles.data[j])));
-				printf("\n"); }
 			PT_(entry_pool_remove)(&entries, handle);
 			size--;
 		}
 		if(fp) fprintf(fp, "%lu\n", (unsigned long)size);
 		PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
 	}
-	//for(i = 0; i < handles.size; i++) printf("%s\n", handles.data[i]);
+	for(i = 0; i < handles.size; i++) printf("%s\n", PT_(key_string)(PT_(entry_key)(handles.data[i])));
 	goto finally;
 catch:
 	perror("random test");
