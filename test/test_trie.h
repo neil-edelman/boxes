@@ -517,6 +517,7 @@ static void PT_(test_random)(void) {
 	FILE *const fp = fopen("graph/" QUOTE(TRIE_NAME) "-random.data", "w");
 	if(!fp) goto catch;
 	for(i = 0; i < 5 * expectation; i++) {
+		size_t j;
 		if((unsigned)rand() > size * (RAND_MAX / (2 * expectation))) {
 			/* Create item. */
 			PT_(entry) *entry, **handle;
@@ -539,9 +540,11 @@ static void PT_(test_random)(void) {
 			T_(trie_try)(&trie, key, &value)
 #endif /* map --> */
 			) {
-			case TRIE_ERROR: printf("error.\n"); goto catch;
+			case TRIE_ERROR:
+				printf("error.\n");
+				goto catch;
 			case TRIE_UNIQUE:
-				printf("unique.\n.");
+				printf("unique.\n");
 				size++;
 #ifdef TRIE_KEY_IN_VALUE
 				*value = *entry;
@@ -552,7 +555,7 @@ static void PT_(test_random)(void) {
 				*handle = entry;
 				break;
 			case TRIE_PRESENT:
-				printf("present already.\n");
+				printf("present.\n");
 				PT_(entry_pool_remove)(&entries, entry);
 				break;
 			}
@@ -570,6 +573,11 @@ static void PT_(test_random)(void) {
 		}
 		if(fp) fprintf(fp, "%lu\n", (unsigned long)size);
 		PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
+		for(j = 0; j < handles.size; j++) {
+			PT_(entry) *e = T_(trie_get)(&trie,
+				PT_(key_string)(PT_(entry_key)(handles.data[j])));
+			assert(e);
+		}
 	}
 	for(i = 0; i < handles.size; i++) printf("%s\n", PT_(key_string)(PT_(entry_key)(handles.data[i])));
 	goto finally;
