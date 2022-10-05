@@ -572,17 +572,14 @@ static void PT_(test_random)(void) {
 			size--;
 		}
 		if(fp) fprintf(fp, "%lu\n", (unsigned long)size);
-		if(i % (5 * expectation / 10) == 5 * expectation / 20) {
-			fputc('#', stdout);
+		if(i % (5 * expectation / 10) == 5 * expectation / 20)
 			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
-		}
 		for(j = 0; j < handles.size; j++) {
 			PT_(entry) *e = T_(trie_get)(&trie,
 				PT_(key_string)(PT_(entry_key)(handles.data[j])));
 			assert(e);
 		}
 	}
-	fputc('\n', stdout);
 	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
 	/*for(i = 0; i < handles.size; i++) printf("%s\n",
 		PT_(key_string)(PT_(entry_key)(handles.data[i])));*/

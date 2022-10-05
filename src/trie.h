@@ -91,7 +91,7 @@
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Worst-case all-branches-left root. Parameter sets the maximum tree size.
  Prefer alignment `4n - 2`; cache `32n - 2`, (`(left + 1) * 2 + 2`.) */
-#define TRIE_MAX_LEFT 30/*254*/
+#define TRIE_MAX_LEFT 253 /* fixme: bmp fails at 254, which is what I want. */
 #if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX
 #error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX]`.
 #endif
@@ -492,6 +492,7 @@ static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
  @allow */
 static PT_(entry) *T_(trie_next)(struct T_(trie_iterator) *const it)
 	{ return PT_(next)(&it->_); }
+#if 0
 /** @return The number of elements in `it`. */
 static size_t PT_(size_r)(const struct PT_(iterator) *const it) {
 	return it->end.idx - it->cur.idx; /* Fixme. */
@@ -500,6 +501,7 @@ static size_t PT_(size_r)(const struct PT_(iterator) *const it) {
  @fixme Doesn't work at all. */
 static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
 	{ return assert(it), PT_(size_r)(&it->_); }
+#endif
 
 
 /* Adding new entries. */
@@ -725,7 +727,7 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 
 /** Try to remove `string` from `trie`.
  @fixme Join when combined-half is less than a quarter? This is crucial to
- performance in real-life. */
+ performance in real-life? */
 static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 	struct PT_(tree) *tree;
 	size_t bit, tree_bit; /* In bits of `key`. */
@@ -822,11 +824,11 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 	} else {
 		return 1; /* Just one entry; leave it be. */
 	}
-	printf("remove: ### freeing %s\n", orcify(tree));
+	/*printf("remove: ### freeing %s\n", orcify(tree));*/
 	free(tree);
 	return 1;
 erased_tree:
-	printf("remove: entire trie.\n");
+	/*printf("remove: entire trie.\n");*/
 	assert(trie->root == tree && !tree->bsize && !trie_bmp_test(&tree->bmp, 0));
 	tree->bsize = USHRT_MAX;
 	return 1;
