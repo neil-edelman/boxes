@@ -519,17 +519,18 @@ static void PT_(test_random)(void) {
 	for(i = 0; i < 5 * expectation; i++) {
 		if((unsigned)rand() > size * (RAND_MAX / (2 * expectation))) {
 			/* Create item. */
-			PT_(entry) entry, **handle;
+			PT_(entry) *entry, **handle;
 			PT_(key) key;
 #ifdef TRIE_VALUE
 			PT_(value) *value;
 #endif
+			if(!(entry = PT_(entry_pool_new)(&entries))) goto catch;
 #if defined(TRIE_VALUE) && !defined(TRIE_KEY_IN_VALUE)
-			PT_(filler)(&entry.key, &entry.value);
+			PT_(filler)(&entry->key, &entry->value);
 #else
-			PT_(filler)(&entry);
+			PT_(filler)(entry);
 #endif
-			key = PT_(entry_key)(&entry);
+			key = PT_(entry_key)(entry);
 			printf("Creating %s.\n", PT_(key_string)(key));
 			switch(
 #ifndef TRIE_VALUE /* <!-- key set */
@@ -541,16 +542,16 @@ static void PT_(test_random)(void) {
 			case TRIE_ERROR: goto catch;
 			case TRIE_UNIQUE: size++;
 #ifdef TRIE_KEY_IN_VALUE
-				*value = entry;
+				*value = *entry;
 #elif defined(TRIE_VALUE)
-				*value = entry.value;
+				*value = entry->value;
 #endif
 				if(!(handle = PT_(handle_array_new)(&handles))) goto catch;
-				*handle = &entry; /* fixme: this is local */
+				*handle = entry;
 				printf("handle (%p)%s\n",
 					(void *)&entry, PT_(key_string)(PT_(entry_key)(*handle)));
 				break;
-			case TRIE_PRESENT: break;
+			case TRIE_PRESENT: PT_(entry_pool_remove)(&entries, entry); break;
 			}
 		} else { /* Delete item. */
 			unsigned r = (unsigned)rand() / (RAND_MAX / handles.size + 1);
@@ -559,7 +560,7 @@ static void PT_(test_random)(void) {
 			int result;
 			printf("Deleting %s.\n", string);
 			{ size_t j; for(j = 0; j < handles.size; j++) printf("(%p)%s; ",
-				handles.data[j], PT_(key_string)(PT_(entry_key)(handles.data[j])));
+				(void *)handles.data[j], PT_(key_string)(PT_(entry_key)(handles.data[j])));
 				printf("\n"); }
 			result = T_(trie_remove)(&trie, string);
 			assert(result);
@@ -570,7 +571,7 @@ static void PT_(test_random)(void) {
 			{ size_t j; for(j = 0; j < handles.size; j++) printf("%s; ",
 				PT_(key_string)(PT_(entry_key)(handles.data[j])));
 				printf("\n"); }
-			//PT_(entry_pool_remove)(&entries, *handle);
+			PT_(entry_pool_remove)(&entries, handle);
 			size--;
 		}
 		if(fp) fprintf(fp, "%lu\n", (unsigned long)size);
