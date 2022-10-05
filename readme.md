@@ -135,7 +135,9 @@ Returns true if the `replace` replaces the `original`\. \(Shouldn't it be entry?
 
 <code>enum <strong>table_result</strong> { TABLE_RESULT };</code>
 
-A result of modifying the table, of which `TABLE_ERROR` is false\. ![A diagram of the result states.](doc/put.png)
+A result of modifying the table, of which `TABLE_ERROR` is false\.
+
+![A diagram of the result states.](doc/put.png)
 
 
 

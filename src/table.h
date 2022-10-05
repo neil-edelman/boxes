@@ -101,6 +101,7 @@
 #define TABLE_RESULT X(ERROR), X(UNIQUE), X(YIELD), X(REPLACE)
 #define X(n) TABLE_##n
 /** A result of modifying the table, of which `TABLE_ERROR` is false.
+ 
  ![A diagram of the result states.](../doc/put.png) */
 enum table_result { TABLE_RESULT };
 #undef X
