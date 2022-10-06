@@ -59,7 +59,7 @@ Transforms a [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) into a `const char 
 
 <code>typedef &lt;PT&gt;key(*<strong>&lt;PT&gt;key_fn</strong>)(const &lt;PT&gt;value *);</code>
 
-If `TRIE_KEY_IN_VALUE`, extracts the key from `TRIE_VALUE`; in this case, the user makes a contract to set this to the string on new before using the trie again, \(mostly\.\)
+If `TRIE_KEY_IN_VALUE`, extracts the key from `TRIE_VALUE`; in this case, the user makes a contract to set this on new entries before using the trie again, \(mostly, can still match, but not reliably modify the topology again\.\)
 
 
 
