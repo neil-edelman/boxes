@@ -95,7 +95,7 @@ On `KEY_VALUE` but not `KEY_KEY_IN_VALUE`, defines an entry\.
 
 <code>struct <strong>&lt;T&gt;trie</strong>;</code>
 
-To initialize it to an idle state, see [&lt;T&gt;trie](#user-content-fn-754a10a5), `{0}` \(`C99`\), or being `static`\.
+To initialize it to an idle state, see [&lt;T&gt;trie](#user-content-fn-754a10a5), `{0}`, or being `static`\.
 
 ![States.](doc/states.png)
 

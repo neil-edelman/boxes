@@ -196,8 +196,8 @@ struct PT_(tree) {
 	struct trie_bmp bmp;
 	union PT_(leaf) leaf[TRIE_ORDER];
 };
-/** To initialize it to an idle state, see <fn:<T>trie>, `{0}` (`C99`), or
- being `static`.
+/** To initialize it to an idle state, see <fn:<T>trie>, `{0}`, or being
+ `static`.
 
  ![States.](../doc/states.png) */
 struct T_(trie);
