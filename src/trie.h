@@ -426,7 +426,7 @@ static PT_(entry) *PT_(get)(const struct T_(trie) *const trie,
 		&& !strcmp(PT_(key_string)(PT_(entry_key)(entry)), string)
 		? entry : 0;
 }
-/** @return `string` exact match for `trie`.
+/** @return Exact `string` match for `trie` or null, (both can be null.)
  @order \O(|`key`|) @allow */
 static PT_(entry) *T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const string) {
@@ -481,16 +481,16 @@ static void PT_(prefix)(struct T_(trie) *const trie,
 		&it->cur.tree->leaf[it->cur.idx].as_entry))))
 		it->trie = 0;
 }
-/** @return An iterator that is set to all strings that start with `prefix` in
- `trie`. It is valid until a topological change to `trie`. Calling
- <fn:<T>trie_next> will iterate them in order.
+/** @return An iterator set to strings that start with `prefix` in `trie`.
+ It is valid until a topological change to `trie`. Calling <fn:<T>trie_next>
+ will iterate them in order.
  @param[prefix] To fill with the entire `trie`, use the empty string.
  @order \O(|`prefix`|) @allow */
 static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
 	const char *const prefix) {
 	struct T_(trie_iterator) it; PT_(prefix)(trie, prefix, &it._); return it;
 }
-/** @return Advances `it` and returns the entry or, at the end, returns null.
+/** @return Advances `it` and returns the entry, or, at the end, returns null.
  @allow */
 static PT_(entry) *T_(trie_next)(struct T_(trie_iterator) *const it)
 	{ return PT_(next)(&it->_); }
@@ -695,7 +695,7 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 }
 #else /* key set --><!-- key value map OR key in value */
 /** Adds `key` to `trie` if it doesn't exist already.
- @param[value] Only if `TRIE_VALUE` is set will this parameter exist; output
+ @param[value] Only if `TRIE_VALUE` is set will this parameter exist. Output
  pointer. Can be null only if `TRIE_KEY_IN_VALUE` was not defined.
  @return One of, `TRIE_ERROR`, `errno` is set and `value` is not;
  `TRIE_UNIQUE`, added to `trie`, and uninitialized `value` is associated with
@@ -704,7 +704,7 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
  until filling in the key in value by `key`.
  @order \O(max(|`trie.keys`|)) @throws[EILSEQ] The string has a distinguishing
  run of bytes that is too long. On most platforms, this is about 31 bytes the
- same. @throws[malloc] */
+ same. @throws[malloc] @allow */
 static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	const PT_(key) key, PT_(value) **const value) {
 	PT_(entry) *e;
@@ -839,7 +839,7 @@ erased_tree:
  @return Success. If either parameter is null or the `string` is not in `trie`,
  returns false without setting `errno`.
  @throws[EILSEQ] The deletion of `string` would cause an overflow with the rest
- of the strings. */
+ of the strings. @allow */
 static int T_(trie_remove)(struct T_(trie) *const trie,
 	const char *const string)
 	{ return trie && string && PT_(remove)(trie, string); }

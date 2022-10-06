@@ -189,6 +189,10 @@
 
 <tr><td align = right>static size_t</td><td><a href = "#fn:<T>trie_size">&lt;T&gt;trie_size</a></td><td>it</td></tr>
 
+<tr><td align = right>static enum trie_result</td><td><a href = "#fn:<T>trie_try">&lt;T&gt;trie_try</a></td><td>trie, key, value</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>trie_remove">&lt;T&gt;trie_remove</a></td><td>trie, string</td></tr>
+
 <tr><td align = right>static const char *</td><td><a href = "#fn:<STR>to_string">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
 </table>
@@ -291,7 +295,7 @@
 
 <dl>
 	<dt>Return:</dt>
-	<dd><code>string</code> exact match for <code>trie</code>.</dd>
+	<dd>Exact <code>string</code> match for <code>trie</code> or null, (both can be null.)</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(|<code>key</code>|)</dd>
 </dl>
@@ -308,7 +312,7 @@
 	<dt>Parameter: <em>prefix</em></dt>
 	<dd>To fill with the entire <code>trie</code>, use the empty string.</dd>
 	<dt>Return:</dt>
-	<dd>An iterator that is set to all strings that start with <code>prefix</code> in <code>trie</code>. It is valid until a topological change to <code>trie</code>. Calling <a href = "#fn:&lt;T&gt;trie_next">&lt;T&gt;trie_next</a> will iterate them in order.</dd>
+	<dd>An iterator set to strings that start with <code>prefix</code> in <code>trie</code>. It is valid until a topological change to <code>trie</code>. Calling <a href = "#fn:&lt;T&gt;trie_next">&lt;T&gt;trie_next</a> will iterate them in order.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(|<code>prefix</code>|)</dd>
 </dl>
@@ -323,7 +327,7 @@
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Advances <code>it</code> and returns the entry or, at the end, returns null.</dd>
+	<dd>Advances <code>it</code> and returns the entry, or, at the end, returns null.</dd>
 </dl>
 
 </div>
@@ -341,6 +345,45 @@
 	<dd>&#927;(|<code>it</code>|)</dd>
 	<dt>Caveat:</dt>
 	<dd>Doesn't work at all.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>trie_try" name = "fn:<T>trie_try">&lt;T&gt;trie_try</a></h3>
+
+<p><code>static enum trie_result <strong>&lt;T&gt;trie_try</strong>(struct &lt;T&gt;trie *const <em>trie</em>, const &lt;PT&gt;key <em>key</em>, &lt;PT&gt;value **const <em>value</em>)</code></p>
+
+<p>Adds <code>key</code> to <code>trie</code> if it doesn't exist already.</p>
+
+<dl>
+	<dt>Parameter: <em>value</em></dt>
+	<dd>Only if <code>TRIE_VALUE</code> is set will this parameter exist. Output pointer. Can be null only if <code>TRIE_KEY_IN_VALUE</code> was not defined.</dd>
+	<dt>Return:</dt>
+	<dd>One of, <code>TRIE_ERROR</code>, <code>errno</code> is set and <code>value</code> is not; <code>TRIE_UNIQUE</code>, added to <code>trie</code>, and uninitialized <code>value</code> is associated with <code>key</code>; <code>TRIE_PRESENT</code>, the value associated with <code>key</code>. If <code>TRIE_IN_VALUE</code>, was specified and the return is <code>TRIE_UNIQUE</code>, the trie is in an invalid state until filling in the key in value by <code>key</code>.</dd>
+	<dt>Exceptional return: EILSEQ</dt>
+	<dd>The string has a distinguishing run of bytes that is too long. On most platforms, this is about 31 bytes the same.</dd>
+	<dt>Exceptional return: malloc</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(max(|<code>trie.keys</code>|))</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>trie_remove" name = "fn:<T>trie_remove">&lt;T&gt;trie_remove</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;trie_remove</strong>(struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code></p>
+
+<p>Tries to remove <code>string</code> from <code>trie</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success. If either parameter is null or the <code>string</code> is not in <code>trie</code>, returns false without setting <code>errno</code>.</dd>
+	<dt>Exceptional return: EILSEQ</dt>
+	<dd>The deletion of <code>string</code> would cause an overflow with the rest of the strings.</dd>
 </dl>
 
 </div>
