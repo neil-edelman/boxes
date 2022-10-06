@@ -272,9 +272,11 @@
 
 <p><code>static &lt;PT&gt;entry *<strong>&lt;T&gt;trie_match</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code></p>
 
+<p>Looks at only the index of <code>trie</code> for potential <code>string</code> (can both be null) matches. Does not access the string itself, thus will ignore the bits that are not in the index.</p>
+
 <dl>
 	<dt>Return:</dt>
-	<dd>Looks at only the index of <code>trie</code> for potential <code>string</code> matches, but will ignore the values of the bits that are not in the index. (Can both be null.) Does not access the string itself.</dd>
+	<dd>A candidate match for <code>string</code> or null.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(|<code>key</code>|)</dd>
 </dl>

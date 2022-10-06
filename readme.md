@@ -200,8 +200,10 @@ Clears every entry in a valid `trie` \(can be null\), but it continues to be act
 
 <code>static &lt;PT&gt;entry *<strong>&lt;T&gt;trie_match</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code>
 
+Looks at only the index of `trie` for potential `string` \(can both be null\) matches\. Does not access the string itself, thus will ignore the bits that are not in the index\.
+
  * Return:  
-   Looks at only the index of `trie` for potential `string` matches, but will ignore the values of the bits that are not in the index\. \(Can both be null\.\) Does not access the string itself\.
+   A candidate match for `string` or null\.
  * Order:  
    &#927;\(|`key`|\)
 

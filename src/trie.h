@@ -410,9 +410,10 @@ static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
 		tree = tree->leaf[lf].as_link; /* Jumped trees. */
 	}
 }
-/** @return Looks at only the index of `trie` for potential `string` matches,
- but will ignore the values of the bits that are not in the index. (Can both be
- null.) Does not access the string itself. @order \O(|`key`|) @allow */
+/** Looks at only the index of `trie` for potential `string` (can both
+ be null) matches. Does not access the string itself, thus will ignore the
+ bits that are not in the index.
+ @return A candidate match for `string` or null. @order \O(|`key`|) @allow */
 static PT_(entry) *T_(trie_match)(const struct T_(trie) *const trie,
 	const char *const string)
 	{ return trie && string ? PT_(match)(trie, string) : 0; }
