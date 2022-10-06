@@ -363,7 +363,7 @@
 	<dt>Return:</dt>
 	<dd>One of, <code>TRIE_ERROR</code>, <code>errno</code> is set and <code>value</code> is not; <code>TRIE_UNIQUE</code>, added to <code>trie</code>, and uninitialized <code>value</code> is associated with <code>key</code>; <code>TRIE_PRESENT</code>, the value associated with <code>key</code>. If <code>TRIE_IN_VALUE</code>, was specified and the return is <code>TRIE_UNIQUE</code>, the trie is in an invalid state until filling in the key in value by <code>key</code>.</dd>
 	<dt>Exceptional return: EILSEQ</dt>
-	<dd>The string has a distinguishing run of bytes that is too long. On most platforms, this is about 31 bytes the same.</dd>
+	<dd>The string has a distinguishing run of bytes with a neighbouring string that is too long. On most platforms, this is about 32 bytes the same.</dd>
 	<dt>Exceptional return: malloc</dt>
 	<dt>Order:</dt>
 	<dd>Sources differ on this; after reading the literature, I thought &#927;(max(|<code>trie.keys</code>|)), but I seem to to be able to construct a scenario where it is as much as &#927;(|<code>trie</code>|), but not amortized.</dd>

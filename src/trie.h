@@ -705,8 +705,9 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
  @order Sources differ on this; after reading the literature, I thought
  \O(max(|`trie.keys`|)), but I seem to to be able to construct a scenario where
  it is as much as \O(|`trie`|), but not amortized.
- @throws[EILSEQ] The string has a distinguishing run of bytes that is too long.
- On most platforms, this is about 31 bytes the same. @throws[malloc] @allow */
+ @throws[EILSEQ] The string has a distinguishing run of bytes with a
+ neighbouring string that is too long. On most platforms, this is about
+ 32 bytes the same. @throws[malloc] @allow */
 static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	const PT_(key) key, PT_(value) **const value) {
 	PT_(entry) *e;

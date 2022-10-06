@@ -275,7 +275,7 @@ Adds `key` to `trie` if it doesn't exist already\.
  * Return:  
    One of, `TRIE_ERROR`, `errno` is set and `value` is not; `TRIE_UNIQUE`, added to `trie`, and uninitialized `value` is associated with `key`; `TRIE_PRESENT`, the value associated with `key`\. If `TRIE_IN_VALUE`, was specified and the return is `TRIE_UNIQUE`, the trie is in an invalid state until filling in the key in value by `key`\.
  * Exceptional return: EILSEQ  
-   The string has a distinguishing run of bytes that is too long\. On most platforms, this is about 31 bytes the same\.
+   The string has a distinguishing run of bytes with a neighbouring string that is too long\. On most platforms, this is about 32 bytes the same\.
  * Exceptional return: malloc  
  * Order:  
    Sources differ on this; after reading the literature, I thought &#927;\(max\(|`trie.keys`|\)\), but I seem to to be able to construct a scenario where it is as much as &#927;\(|`trie`|\), but not amortized\.
