@@ -173,8 +173,9 @@ static PT_(value) *PT_(entry_value)(struct T_(trie_entry) *const e)
 typedef TRIE_VALUE PT_(value);
 typedef PT_(value) PT_(entry);
 /** If `TRIE_KEY_IN_VALUE`, extracts the key from `TRIE_VALUE`; in this case,
- the user makes a contract to set this to the string on new before using the
- trie again, (mostly.) */
+ the user makes a contract to set this on new entries before using the trie
+ again, (mostly, can still match, but not reliably modify the topology
+ again.) */
 typedef PT_(key) (*PT_(key_fn))(const PT_(value) *);
 /* Valid <typedef:<PT>key_fn>. */
 static PT_(key_fn) PT_(read_key) = (TRIE_KEY_IN_VALUE);
