@@ -1,0 +1,37 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	tree0x100a04120branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td colspan="3" align="left"><font color="Grey75">Vakgimbat</font> ∑bit=0</td></tr>
+	<hr/>
+	<tr>
+		<td><font face="Times-Italic">left</font></td>
+		<td><font face="Times-Italic">skip</font></td>
+		<td><font face="Times-Italic">leaves</font></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td align="right">1</td>
+		<td align="right">3</td>
+		<td align="left" port="0">Achernar<font color="Grey75">⊔</font></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="right" bgcolor="Gray95">7</td>
+		<td align="left" port="1" bgcolor="Gray95">Arcturus<font color="Grey75">⊔</font></td>
+	</tr>
+	<tr>
+		<td align="right">0</td>
+		<td align="right">1</td>
+		<td align="left" port="2">Sol<font color="Grey75">⊔</font></td>
+	</tr>
+	<tr>
+		<td>&#8205;</td>
+		<td>&#8205;</td>
+		<td align="left" port="3" bgcolor="Gray95">Vega<font color="Grey75">⊔</font></td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+}

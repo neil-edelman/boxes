@@ -47,7 +47,7 @@
       \section*{\abstractname}%
     \else \small %
       \begin{center}%
-        {\bfseries\color{ilrblue} \abstractname\vspace{\z@}\vspace{-12bp}}%
+        {\bfseries\color{ilrblue} \abstractname\vspace{\z@}\vspace{-8bp}}%
       \end{center}%
       \quotation
     \fi}
@@ -67,14 +67,14 @@
 }
 
 \author{Neil A. Edelman}
-\title{Compact Radix B-trees as an Efficient Index}
+\title{Compact binary prefix trees}
 \date{2021-10-20}
 
 \begin{document}
 
 \maketitle
 
-\abstract{A data structure based on a compact radix trees is introduced, with an index on key strings bits stored semi-implicitly. B-tree methods are used to group data in a sequential conglomeration, called a tree in a trie-forest. This increases cache-coherence, and presents an efficient ordered string set or map with prefix-matching capabilities. Tests comparing it to a hash map show the structure performs for . . .}
+\abstract{Our prefix-tree, digital-tree, or trie is an ordered set or map with key strings. We build a dynamic index of two-bytes {\it per} entry, only storing differences in a compact binary radix tree. To maximize locality of reference while minimizing data range while descending the trie, these are grouped together in a forest of fix-sized trees.}
 
 \section{Introduction}
 
@@ -84,97 +84,149 @@ Often, only parts of the key string are important; a radix trie (compact prefix 
 
 For most applications, a 256-ary trie is space-intensive; the index contains many spaces for keys that are unused. Various compression schemes are available, such as re-using a pool of memory\cite{de1959file}, reducing our encoding alphabet, or take smaller than 8-bit chunks\cite{fredkin1960trie}.
 
-We use a combination binary radix trie, first described in \cite{morrison1968patricia} as the PATRICIA automaton. Rather than being sparse, a Patricia-tree is a packed index; a full binary tree with $order - 1$ branches, (corresponding to choices of zero or one in a bit position) for $order$ leaves.
+We use a combination binary radix trie, described in \cite{morrison1968patricia} as the PATRICIA automaton. Rather than being sparse, a Patricia-tree is a packed index. Recursively, it encodes which is next distinguishing bit and how many keys are on the zero path and the one path. This will be a full binary tree with $order - 1$ branches, for $order$ keys as leaves.
 
-This trie asks: what is the minimum number of bits, and the closest to the start, to distinguish the string keys? Then it encodes that information in two bytes {\it per} entry in a complete binary tree; the tree is therefore an index to the data.
+In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{morrison1968patricia}. In C, a NUL-terminated string automatically has this property, and is ordered correctly. Keys are sorted in lexicographic order by numerical value, not by any collation algorithm: \code{strcmp}-order.
 
-In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{morrison1968patricia}. In C, a NUL-terminated string automatically has this property and is ordered correctly.
+\section{Implementation}
 
-Keys are sorted in lexicographic order by numerical value, not by any collation algorithm. Thus, any strings with NUL-terminated encoding with byte quanta will be suitable, most notably ASCII and Modified UTF-8.
+\subsection{Encoding}
 
-\subsection{Locality}
+% star-3
+%\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
+\begin{figure}
+	\centering
+	\subcaptionbox{Bit meaning.\label{star-0:bits}}{%
+\digraph[scale=0.6]{star0bits}{
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	tree0x100a04120branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr>
+		<td align="left" port="0">Achernar<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="1">Arcturus<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+	<tr>
+		<td align="left" port="2">Sol<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="3">Vega<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+</table>>];
+}
+	}
+	\subcaptionbox{Memory.\label{star-0:mem}}{
+\digraph[scale=0.5]{star0mem}{
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	tree0x100a04120branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td colspan="3" align="left"><font color="Grey75">Vakgimbat</font> \detokenize{∑}bit=0</td></tr>
+	<hr/>
+	<tr>
+		<td><font face="Times-Italic">left</font></td>
+		<td><font face="Times-Italic">skip</font></td>
+		<td><font face="Times-Italic">leaves</font></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td align="right">1</td>
+		<td align="right">3</td>
+		<td align="left" port="0">Achernar<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="right" bgcolor="Gray95">7</td>
+		<td align="left" port="1" bgcolor="Gray95">Arcturus<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td align="right">0</td>
+		<td align="right">1</td>
+		<td align="left" port="2">Sol<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td></td>
+		<td></td>
+		<td align="left" port="3" bgcolor="Gray95">Vega<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+}
+	}
+	\subcaptionbox{Tree.\label{star-0:tree}}{
+\digraph[scale=\Scale]{star0tree}{
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	tree0x100a04120branch0 [label="3", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100a04120branch0 -> tree0x100a04120branch1 [arrowhead=rnormal];
+	tree0x100a04120branch0 -> tree0x100a04120branch2 [arrowhead=lnormal];
+	tree0x100a04120branch1 [label="7", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100a04120branch1 -> tree0x100a04120leaf0 [color=Gray75, arrowhead=rnormal];
+	tree0x100a04120branch1 -> tree0x100a04120leaf1 [color=Gray75, arrowhead=lnormal];
+	tree0x100a04120branch2 [label="1", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100a04120branch2 -> tree0x100a04120leaf2 [color=Gray75, arrowhead=rnormal];
+	tree0x100a04120branch2 -> tree0x100a04120leaf3 [color=Gray75, arrowhead=lnormal];
+	tree0x100a04120leaf0 [label = <Achernar<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100a04120leaf1 [label = <Arcturus<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100a04120leaf2 [label = <Sol<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100a04120leaf3 [label = <Vega<font color="Gray75">\detokenize{⊔}</font>>];
+}
+	}
+	\caption{A trie with three different views of the data.\label{star-0}}
+\end{figure}
+
+A binary radix tree and skip values when bits offer no difference is a Patrica trie\cite{morrison1968patricia}. This is seen in Figure~\ref{star-0:bits}.
+
+The branches indicate a \code{do not care} for all the skipped bits. If a query might have a difference in the skipped values, one must also check the final result for agreement with the found value.
+
+\subsection{Range and locality}
 
 After `exp(order)` the trie becomes saturated with `n-1` links? no, every branch could be a link.
 
 only left and skip are descended in a binary search pattern, the leaf is the result. \code{skip} depends on the keys we are presented, but the maximum size is ideally \code{SIZE\_MAX * CHAR\_BITS - 1} to fit all strings that C uses. \code{left} is maximal at a graph of all left nodes, where it has `order - 2` value.
 
 thus, being cache-conscious means making left and skip really small.
-
-% star-3
-%\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
-\begin{figure}
-	\centering
-	\subcaptionbox{Bit view.\label{star-3:bits}}{%
-		\digraph[scale=\Scale]{star3bits}{
-	node [shape = none];
-	tree0x1028049c0branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
-<TABLE BORDER="0" CELLBORDER="0">
-	<TR>
-		<TD ALIGN="LEFT" BORDER="0" PORT="0">Algieba</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>0</TD>
-		<TD BGCOLOR="White" BORDER="1">0</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="LEFT" BORDER="0" PORT="1">Regulus</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>0</TD>
-		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
-		<TD>0</TD>
-		<TD BGCOLOR="White" BORDER="1">0</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="LEFT" BORDER="0" PORT="2">Vega</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>0</TD>
-		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
-		<TD>0</TD>
-		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
-	</TR>
-</TABLE>>];
-		}
-	}
-	\subcaptionbox{Logical view.\label{star-3:logic}}{
-\digraph[scale=\Scale]{star3logic}{
-	node [shape = none];
-	tree0x1028049c0branch0 [label = "3", shape = circle, style = filled, fillcolor = Grey95];
-	tree0x1028049c0branch0 -> tree0x1028049c0leaf0 [style = dashed, color = Gray];
-	tree0x1028049c0branch0 -> tree0x1028049c0branch1;
-	tree0x1028049c0branch1 [label = "1", shape = circle, style = filled, fillcolor = Grey95];
-	tree0x1028049c0branch1 -> tree0x1028049c0leaf1 [style = dashed, color = Gray];
-	tree0x1028049c0branch1 -> tree0x1028049c0leaf2 [color = Gray];
-	tree0x1028049c0leaf0 [label = "Algieba"];
-	tree0x1028049c0leaf1 [label = "Regulus"];
-	tree0x1028049c0leaf2 [label = "Vega"];
-}}
-	\subcaptionbox{Memory view.\label{star-3:mem}}{
-\digraph[scale=\Scale]{star3mem}{
-	node [shape = none];
-	tree0x1028049c0branch0 [shape = box, style = filled, fillcolor = Gray95, label = <
-<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="right" BORDER="0">left</TD>
-		<TD BGCOLOR="Gray90">0</TD>
-		<TD BGCOLOR="Gray90">0</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="right" BORDER="0">skip</TD>
-		<TD>3</TD>
-		<TD>1</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="right" BORDER="0">leaves</TD>
-		<TD BGCOLOR="Grey90">Algieba</TD>
-		<TD BGCOLOR="Grey90">Regulus</TD>
-		<TD BGCOLOR="Grey90">Vega</TD>
-	</TR>
-</TABLE>>];
-}}
-	\caption{A full 3-trie.\label{star-3}}
-\end{figure}
 
 % star-4
 \begin{figure}
@@ -349,10 +401,6 @@ thus, being cache-conscious means making left and skip really small.
 }}
 	\caption{Split the 3-trie to put four items.\label{star-4}}
 \end{figure}
-
-\section{Implementation}
-
-A compact representation is a Patrica trie\cite{morrison1968patricia}: that is, a binary radix tree and skip values when bits offer no difference. In Figure~\ref{star-3:logic}, the branches indicate a \code{do not care} for all the skipped bits before, corresponding to Figure~\ref{star-3:bits} that offer no delineation. If a query might have a difference in the skipped values, one could also check the final result of a query for agreement with the found value.
 
 The leaves are lexicographically in-order, but the branches are better served pre-order. That is, reading from low to high, one must test if the current bit is zero or one, and that corresponds directly to the branch going left or right, respectively. An accumulator, $leaf$, is incremented based on this decision until end of the tree.
 

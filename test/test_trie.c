@@ -127,7 +127,8 @@ static void str8_filler(struct str8 *const s) {
 
 
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
- Sol. */
+ Sol. The trie is a copy of this table, _vs_ the actual table if we would have
+ used pointers. */
 #define STARS \
 	X(Sol, 0), X(Sirius, 8.6), X(Canopus, 310), X(Rigil Kentaurus, 4.4), \
 	X(Toliman, 4.4), X(Arcturus, 37), X(Vega, 25), X(Capella, 43), \
@@ -331,12 +332,39 @@ finally:
 	colour_trie_(&trie);
 }
 
+static void article_test(void) {
+	/* Set TRIE_LEFT_MAX = 5. */
+	unsigned list1[] = { 0, 5, 6, 10 },
+		list2[] = { 1, 2, 6, 8, 11, 13, 17, 18, 22, 25, 26, 49, 19, 7 },
+		i;
+	struct star_trie trie = star_trie();
+	for(i = 0; i < sizeof list1 / sizeof *list1; i++) {
+		const struct star *const star = stars + list1[i];
+		struct star *entry;
+		star_trie_try(&trie, star->name, &entry);
+		entry->name = star->name;
+		entry->distance = star->distance;
+	}
+	trie_star_graph(&trie, "graph/article.gv", 0);
+	star_trie_clear(&trie);
+	for(i = 0; i < sizeof list2 / sizeof *list2; i++) {
+		const struct star *const star = stars + list2[i];
+		struct star *entry;
+		star_trie_try(&trie, star->name, &entry);
+		entry->name = star->name;
+		entry->distance = star->distance;
+	}
+	trie_star_graph(&trie, "graph/article.gv", 1);
+	star_trie_(&trie);
+}
+
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	contrived_test(), str32_pool_clear(&str_pool);
 	fixed_colour_test();
+#if 1
 	str_trie_test(), str32_pool_clear(&str_pool); /* Key set. */
 	colour_trie_test(); /* Custom key set with enum string backing. */
 	mapint_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */
@@ -344,6 +372,8 @@ int main(void) {
 	str8_trie_test(); /* Small key set with no dependancy on outside keys. */
 	star_trie_test(); /* Custom value with enum strings backing. */
 	keyval_trie_test(), keyval_pool_clear(&kv_pool); /* Pointer to index. */
+#endif
+	article_test();
 	keyval_pool_(&kv_pool);
 	str32_pool_(&str_pool);
 	return EXIT_SUCCESS;

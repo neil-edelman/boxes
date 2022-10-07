@@ -181,8 +181,8 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tr,
 				bgc, branch->skip);
 		} else {
 			fprintf(fp, "\t<tr>\n"
-				"\t\t<td>&#8205;</td>"
-				"\t\t<td>&#8205;</td>");
+				"\t\t<td>&#8205;</td>\n"
+				"\t\t<td>&#8205;</td>\n");
 		}
 		fprintf(fp, "\t\t<td align=\"left\" port=\"%u\"%s>"
 			"%s%s%s⊔</font></td>\n"
