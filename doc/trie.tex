@@ -84,9 +84,9 @@ Often, only parts of the key string are important; a radix trie (compact prefix 
 
 For most applications, a 256-ary trie is space-intensive; the index contains many spaces for keys that are unused. Various compression schemes are available, such as re-using a pool of memory\cite{de1959file}, reducing our encoding alphabet, or take smaller than 8-bit chunks\cite{fredkin1960trie}.
 
-We use a combination binary radix trie, described in \cite{morrison1968patricia} as the PATRICIA automaton. Rather than being sparse, a Patricia-tree is a packed index. Recursively, it encodes which is next distinguishing bit and how many keys are on the zero path and the one path. This will be a full binary tree with $order - 1$ branches, for $order$ keys as leaves.
+We use a combination binary radix trie, described in \cite{morrison1968patricia} as the PATRICIA automaton. Rather than being sparse, a Patricia-tree is a packed index. Recursively, it encodes which is next distinguishing bit and how many keys are on the zero path and the one path.
 
-In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{morrison1968patricia}. In C, a NUL-terminated string automatically has this property, and is ordered correctly. Keys are sorted in lexicographic order by numerical value, not by any collation algorithm: \code{strcmp}-order.
+In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{morrison1968patricia}. In C, a NUL-terminated string automatically has this property, and is ordered correctly. Keys are sorted in lexicographic order by numerical value; \code{strcmp}-order, not by any collation algorithm, (although, that could be an added complication.)
 
 \section{Implementation}
 
@@ -216,17 +216,27 @@ In practice, we talk about a string always terminated by a sentinel; this is an 
 	\caption{A trie with three different views of the data.\label{star-0}}
 \end{figure}
 
-A binary radix tree and skip values when bits offer no difference is a Patrica trie\cite{morrison1968patricia}. This is seen in Figure~\ref{star-0:bits}.
+Figure~\ref{star-0:bits} is a visual example of a Patrica trie\cite{morrison1968patricia}, that is, a binary radix tree and skip values when bits offer no difference. Note that, in ASCII and UTF-8, \code{A} is represented by an octet with the value of 65, binary 01000001; \code{c} 99, 01100011; \code{r} 114, 01110010; \code{S} 83, 01010011; \code{V} 86, 01010110.
 
-The branches indicate a \code{do not care} for all the skipped bits. If a query might have a difference in the skipped values, one must also check the final result for agreement with the found value.
+We encode the branches in pre-order fashion, as in Figure~\ref{star-0:mem}. Each branch has a \code{left} and a \code{skip}, corresponding to how many branches on the left, and how many bits we should skip before the decision bit. With the initial range set to the total number of branches, it becomes a matter of accumulating leaf values for the right branches of a key, accessing the index skip-sequentially, until the range is zero. The right values are implicit in the range. The leaves, on the other hand, are alphabetized, in-order. There will always be one less branch than leaf; that is, this is a full (strict) binary tree with $order - 1$ branches, for $order$ keys as leaves.
+
+Figure~\ref{star-0:tree} shows the conventional full binary tree view of the same data as Figure~\ref{star-0:bits} and \ref{star-0:mem}. The branches indicate a \code{do not care} for all the skipped bits. If a query might have a difference in the skipped values, one can also check the final leaf for agreement with the found value.
 
 \subsection{Range and locality}
 
+Only when the algorithm arrives at a leaf will it go outside the \code{left-skip} index. This suggests that the index, and the size of the trie, be contiguous and as small as possible to fit the maximum into cache. However, in establishing a maximum \code{skip} value, one limits the contiguous bits that can be skipped; this has an effect on both on insertion and deletion.
+
+The maximum \code{left} plus one is the maximum number of leaves in the worst-case of all-left. It also is inefficient to insert more and more leaves, the addition requiring more branches to be augmented and an array insertion of the leaf.
+
+For these reasons, we have broken up the trie in much the same manner as \cite{bayer1972organization}. Except in tries, contrary to B-trees, the data can not be rotated at will; instead, it uses a bitmap of which leaves are links to other structures. We use that a trie is a forest of non-empty complete binary trees. This tree corresponds to a B-tree node\cite{knuth1997sorting}; the language of a node to represent a contiguous area in memory conflicts with a node as representing a single entry, which now no longer implict.
+
+Say how you break trees up.
+
+\section{Old}
+
 After `exp(order)` the trie becomes saturated with `n-1` links? no, every branch could be a link.
 
-only left and skip are descended in a binary search pattern, the leaf is the result. \code{skip} depends on the keys we are presented, but the maximum size is ideally \code{SIZE\_MAX * CHAR\_BITS - 1} to fit all strings that C uses. \code{left} is maximal at a graph of all left nodes, where it has `order - 2` value.
 
-thus, being cache-conscious means making left and skip really small.
 
 % star-4
 \begin{figure}
@@ -402,10 +412,6 @@ thus, being cache-conscious means making left and skip really small.
 	\caption{Split the 3-trie to put four items.\label{star-4}}
 \end{figure}
 
-The leaves are lexicographically in-order, but the branches are better served pre-order. That is, reading from low to high, one must test if the current bit is zero or one, and that corresponds directly to the branch going left or right, respectively. An accumulator, $leaf$, is incremented based on this decision until end of the tree.
-
-instead of adding in one big trie, where the data type presents a limit of how big it is, we have pointers to sub-blocks. This is seen in ... This allows us to shrink the data-type significantly; for a non-empty complete binary tree that has `n` leaves (order `n`), it has `n - 1` the internal nodes, or branches. The maximum that the left branch count can be is when the right node of the root is a leaf, that is `n - 2`. If we set this left-branch maximum to the maximum of the data type, we can use all the range. Practically, we set it to 254 instead of 255; the branches take up 255, and the branch size number is 1, for alignment.
-
 This is a fixed-maximum size trie within a B-tree. Because of overlapping terminology, some care must be used in describing the structure. We use the notion that a trie is a forest of trees. In B-tree terminology, nodes, are now trees, such that a complete path through the forest always visits the same number of trees. However, since it's always the root instead of the middle item, we are not guaranteed fullness. Depending on the implementation, a complete path might be truncated; for example, \code{Sol} might require less than \code{Betelgeuse}, because it's shorter.[ref b-tree]
 
 \subsection{Trees}
@@ -430,8 +436,6 @@ The data has been engineered for maximum effectiveness of the cache in reading a
 
 The `\O(log n)` running time is only when the trie has bounds on strings that are placed there. Worst-case $\{ a, aa, aaa, aaaa, ... \}$. The case where the trie has strings that are bounded, as the tree grows, we can guarantee . . .
 
-Tries are a fairly succinct encoding at low numbers, but at high numbers, the internal trees add up. In the limit, with bounded strings, we need $n \log_{\text{order}} n$ to store $n$ items? However, practically, if one sets the order high enough, this is not an issue?
-
 \subsection{Limits}
 
 The skip value is limited by its range; in this case, 255 bits. For example, this trie is valid, $\{ dictionary \}$, as well as, $\{ dictator, dictionary, dictionaries \}$, but one ca'n't transition to, $\{ dictionary, dictionaries \}$, because it is too long a skip value. There are several modifications that would allow this, but they are out of this scope. (This is not true; 8 x 8 = 64; 8 x 32 = 256.)
@@ -450,8 +454,6 @@ leaf tree: bsize, ?, branch[o-1], leaf[o] { skip, union{ data, trie } }
 or
 leaf tree: bsize, ?, branch[o-1], leaf[o] { 32:skip, 32:height, 64:root / 64:data }
 $
-
-ASCII and other encodings don't prioritize splitting the glyphs evenly between bits, therefore with a uniform distribution of strings, it's very unlikely that the trie will be balanced. On our trie, this results in wasted space. <- now doesn't
 
 \bibliography{trie}
 
