@@ -727,6 +727,8 @@ Thus, on adding to a tree in a trie that has the maximum number of keys, we must
 
 A more complex example is given in Figure~\ref{star-1}. This is a fixed tree of order 7 leaves and 6 branches
 
+The grey \code{Altair} and \code{Polaris} in the root tree, \code{Vakgimbat}, are samples of the the trees that are links. We could get any sample from the sub-tree, because all the bits up to bit 6 and 4, respectively, are the same. This is important information to have when adding keys, because one has to test each bit of the key against something.
+
 Issues with having zero, one, zero, one, zero, items always needing to allocate memory. Fixme: store the order instead of the branches.
 
 The data has been engineered for maximum effectiveness of the cache in reading and traversing. That is, the tree structure and the string decisions have been reduced to each a byte and placed at the the top of the data structure of the tree. Always forward in memory. The size of this sub-structure should be a multiple of the cache line size, while also maximizing the dynamic range of $\mathit{left}$; a trie (also a B-tree) of order 256 is an obvious choice.\cite{sinha2004cache}
@@ -734,6 +736,8 @@ The data has been engineered for maximum effectiveness of the cache in reading a
 \subsection{Running Time}
 
 When inserting in a tree...
+
+The links do not affect the asymptotic run-time, but in reality, the number of links is closely related to how long it takes. Not only is this an extra node, it has to fetch it, and then jump to a new tree. Once in the cache, it is much faster.
 
 \cite{shannon1948mathematical} $\log n == m$.
 
