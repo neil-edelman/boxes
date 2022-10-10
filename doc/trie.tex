@@ -92,11 +92,9 @@ In practice, we talk about a string always terminated by a sentinel; this is an 
 
 \subsection{Encoding}
 
-% star-3
-%\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
 \begin{figure}
 	\centering
-	\subcaptionbox{Bit meaning.\label{star-0:bits}}{%
+	\subcaptionbox{bits\label{star-0:bits}}{%
 \digraph[scale=0.6]{star0bits}{
 	graph [truecolor=true, bgcolor=transparent, fontname=modern];
 	node [shape=none, fontname=modern];
@@ -155,7 +153,7 @@ In practice, we talk about a string always terminated by a sentinel; this is an 
 </table>>];
 }
 	}
-	\subcaptionbox{Memory.\label{star-0:mem}}{
+	\subcaptionbox{memory\label{star-0:mem}}{
 \digraph[scale=0.5]{star0mem}{
 	graph [truecolor=true, bgcolor=transparent, fontname=modern];
 	node [shape=none, fontname=modern];
@@ -194,7 +192,7 @@ In practice, we talk about a string always terminated by a sentinel; this is an 
 </table>>];
 }
 	}
-	\subcaptionbox{Tree.\label{star-0:tree}}{
+	\subcaptionbox{tree\label{star-0:tree}}{
 \digraph[scale=\Scale]{star0tree}{
 	graph [truecolor=true, bgcolor=transparent, fontname=modern];
 	node [shape=none, fontname=modern];
@@ -232,193 +230,510 @@ To combat these two contradictory requirements, we have broken up the trie in mu
 
 Thus, on adding to a tree in a trie that has the maximum number of keys, we must split it into two trees. We use the fact that a binary tree of $n \ge 2$ nodes can be split into two trees not exceeding $\left\lceil \frac{2n-1}{3} \right\rceil$ nodes by starting \code{cut} at the root and choosing the subtree that is larger until the bound is achieved; the cut will be be between \code{cut} and it's parent. The parent will have an extra linking leaf.
 
-\subsection{Example}
+\subsection{Machine Considerations}
 
-% star-4
 \begin{figure}
 	\centering
-	\subcaptionbox{Bit view.\label{star-4:bits}}{
-\digraph[scale=\Scale]{star4bits}{
-	node [shape = none];
-	tree0x1028049f0branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
-<TABLE BORDER="0" CELLBORDER="0">
-	<TR>
-		<TD ALIGN="LEFT" BORDER="0" PORT="0">\detokenize{↓}<FONT COLOR="Gray">Algieba</FONT></TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>0</TD>
-		<TD BGCOLOR="White" BORDER="1">0</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="LEFT" BORDER="0" PORT="1">\detokenize{↓}<FONT COLOR="Gray">Regulus</FONT></TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>0</TD>
-		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
-	</TR>
-</TABLE>>];
-	tree0x1028049f0branch0:0 -> tree0x1028049c0branch0 [color = "Black:invis:Black" style = dashed];
-	tree0x1028049f0branch0:1 -> tree0x102804a20branch0 [color = "Black:invis:Black"];
-	tree0x1028049c0branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
-<TABLE BORDER="0" CELLBORDER="0">
-	<TR>
-		<TD ALIGN="LEFT" BORDER="0" PORT="0">Algieba</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>0</TD>
-		<TD>0</TD>
-		<TD>0</TD>
-		<TD>0</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD BORDER="0">&nbsp;</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>1</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>1</TD>
-		<TD>0</TD>
-		<TD>0</TD>
-		<TD BORDER="0">&nbsp;</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>1</TD>
-		<TD BGCOLOR="White" BORDER="1">0</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="LEFT" BORDER="0" PORT="1">Alpheratz</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>0</TD>
-		<TD>0</TD>
-		<TD>0</TD>
-		<TD>0</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD BORDER="0">&nbsp;</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>1</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>1</TD>
-		<TD>0</TD>
-		<TD>0</TD>
-		<TD BORDER="0">&nbsp;</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>1</TD>
-		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
-	</TR>
-</TABLE>>];
-	tree0x102804a20branch0 [shape = box, style = filled, fillcolor="Grey95" label = <
-<TABLE BORDER="0" CELLBORDER="0">
-	<TR>
-		<TD ALIGN="LEFT" BORDER="0" PORT="0">Regulus</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>0</TD>
-		<TD BGCOLOR="White" BORDER="1">0</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="LEFT" BORDER="0" PORT="1">Vega</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>0</TD>
-		<TD>1</TD>
-		<TD>0</TD>
-		<TD BGCOLOR="Black" COLOR="White" BORDER="1"><FONT COLOR="White">1</FONT></TD>
-	</TR>
-</TABLE>>];
-}}
-	\subcaptionbox{Logical view.\label{star-4:logic}}{
-\digraph[scale=\Scale]{star4logic}{
-	node [shape = none];
-	tree0x1028049f0branch0 [label = "3", shape = circle, style = filled, fillcolor = Grey95];
-	tree0x1028049f0branch0 -> tree0x1028049c0branch0 [style = dashed, color = "Black:invis:Black"];
-	tree0x1028049f0branch0 -> tree0x102804a20branch0 [color = "Black:invis:Black"];
-	tree0x1028049c0branch0 [label = "15", shape = circle, style = filled, fillcolor = Grey95];
-	tree0x1028049c0branch0 -> tree0x1028049c0leaf0 [style = dashed, color = Gray];
-	tree0x1028049c0branch0 -> tree0x1028049c0leaf1 [color = Gray];
-	tree0x1028049c0leaf0 [label = "Algieba"];
-	tree0x1028049c0leaf1 [label = "Alpheratz"];
-	tree0x102804a20branch0 [label = "1", shape = circle, style = filled, fillcolor = Grey95];
-	tree0x102804a20branch0 -> tree0x102804a20leaf0 [style = dashed, color = Gray];
-	tree0x102804a20branch0 -> tree0x102804a20leaf1 [color = Gray];
-	tree0x102804a20leaf0 [label = "Regulus"];
-	tree0x102804a20leaf1 [label = "Vega"];
-}}\\
-	\subcaptionbox{Memory view.\label{star-4:mem}}{
-\digraph[scale=\Scale]{star4mem}{
-	node [shape = none];
-	tree0x1028049f0branch0 [shape = box, style = filled, fillcolor = Gray95, label = <
-<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="right" BORDER="0">left</TD>
-		<TD BGCOLOR="Gray90">0</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="right" BORDER="0">skip</TD>
-		<TD>3</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="right" BORDER="0">leaves</TD>
-		<TD PORT="0" BGCOLOR="Gray90">...</TD>
-		<TD PORT="1" BGCOLOR="Gray90">...</TD>
-	</TR>
-</TABLE>>];
-	tree0x1028049f0branch0:0 -> tree0x1028049c0branch0 [color = "Black:invis:Black" style = dashed];
-	tree0x1028049f0branch0:1 -> tree0x102804a20branch0 [color = "Black:invis:Black"];
-	tree0x1028049c0branch0 [shape = box, style = filled, fillcolor = Gray95, label = <
-<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="right" BORDER="0">left</TD>
-		<TD BGCOLOR="Gray90">0</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="right" BORDER="0">skip</TD>
-		<TD>15</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="right" BORDER="0">leaves</TD>
-		<TD BGCOLOR="Grey90">Algieba</TD>
-		<TD BGCOLOR="Grey90">Alpheratz</TD>
-	</TR>
-</TABLE>>];
-	tree0x102804a20branch0 [shape = box, style = filled, fillcolor = Gray95, label = <
-<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="right" BORDER="0">left</TD>
-		<TD BGCOLOR="Gray90">0</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="right" BORDER="0">skip</TD>
-		<TD>1</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="right" BORDER="0">leaves</TD>
-		<TD BGCOLOR="Grey90">Regulus</TD>
-		<TD BGCOLOR="Grey90">Vega</TD>
-	</TR>
-</TABLE>>];
-}}
-	\caption{Split the 3-trie to put four items.\label{star-4}}
+	\subcaptionbox{bits\label{star-1:bits}}{
+\digraph[scale=\Scale]{star1bits}{
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	tree0x100a04120branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr>
+		<td align="left" port="0">\detokenize{↓}<font color="Grey75">Altair\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="1">Fomalhaut<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="2">Gacrux<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+	<tr>
+		<td align="left" port="3">\detokenize{↓}<font color="Grey75">Polaris\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+</table>>];
+	tree0x100a04120branch0:0 -> tree0x100b04160branch0 [style = dashed, arrowhead = rnormal];
+	tree0x100a04120branch0:3 -> tree0x100b040d0branch0 [style = dashed, arrowhead = lnormal];
+	tree0x100b04160branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr>
+		<td align="left" port="0">Altair<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="1">Betelgeuse<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="2">Canopus<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="3">Capella<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="4">Castor<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+</table>>];
+	tree0x100b040d0branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr>
+		<td align="left" port="0">Polaris<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>1</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="1">Pollux<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>1</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+	<tr>
+		<td align="left" port="2">Regulus<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="3">Rigel<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+	<tr>
+		<td align="left" port="4">Sirius<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="5">Spica<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+	<tr>
+		<td align="left" port="6">Vega<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+</table>>];
+}
+	}
+	\subcaptionbox{memory\label{star-1:mem}}{
+\digraph[scale=0.42]{star1mem}{
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	tree0x100a04120branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td colspan="3" align="left"><font color="Grey75">Vakgimbat</font> \detokenize{∑}bit=0</td></tr>
+	<hr/>
+	<tr>
+		<td><font face="Times-Italic">left</font></td>
+		<td><font face="Times-Italic">skip</font></td>
+		<td><font face="Times-Italic">leaves</font></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td align="right">2</td>
+		<td align="right">3</td>
+		<td align="left" port="0">\detokenize{↓}<font color="Grey75">Altair\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="right" bgcolor="Gray95">1</td>
+		<td align="left" port="1" bgcolor="Gray95">Fomalhaut<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td align="right">0</td>
+		<td align="right">1</td>
+		<td align="left" port="2">Gacrux<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td></td>
+		<td></td>
+		<td align="left" port="3" bgcolor="Gray95">\detokenize{↓}<font color="Grey75">Polaris\detokenize{⊔}</font></td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	tree0x100a04120branch0:0 -> tree0x100b04160branch0 [style = dashed, arrowhead = rnormal];
+	tree0x100a04120branch0:3 -> tree0x100b040d0branch0 [style = dashed, arrowhead = lnormal];
+	tree0x100b04160branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td colspan="3" align="left"><font color="Grey75">Ukgul</font> \detokenize{∑}bit=6</td></tr>
+	<hr/>
+	<tr>
+		<td><font face="Times-Italic">left</font></td>
+		<td><font face="Times-Italic">skip</font></td>
+		<td><font face="Times-Italic">leaves</font></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td align="right">0</td>
+		<td align="right">0</td>
+		<td align="left" port="0">Altair<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="left" port="1" bgcolor="Gray95">Betelgeuse<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td align="right">0</td>
+		<td align="right">11</td>
+		<td align="left" port="2">Canopus<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="right" bgcolor="Gray95">2</td>
+		<td align="left" port="3" bgcolor="Gray95">Capella<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td></td>
+		<td></td>
+		<td align="left" port="4">Castor<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	tree0x100b040d0branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td colspan="3" align="left"><font color="Grey75">Orglob</font> \detokenize{∑}bit=4</td></tr>
+	<hr/>
+	<tr>
+		<td><font face="Times-Italic">left</font></td>
+		<td><font face="Times-Italic">skip</font></td>
+		<td><font face="Times-Italic">leaves</font></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td align="right">5</td>
+		<td align="right">1</td>
+		<td align="left" port="0">Polaris<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95">1</td>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="left" port="1" bgcolor="Gray95">Pollux<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td align="right">0</td>
+		<td align="right">21</td>
+		<td align="left" port="2">Regulus<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95">1</td>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="left" port="3" bgcolor="Gray95">Rigel<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td align="right">0</td>
+		<td align="right">4</td>
+		<td align="left" port="4">Sirius<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="right" bgcolor="Gray95">3</td>
+		<td align="left" port="5" bgcolor="Gray95">Spica<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td></td>
+		<td></td>
+		<td align="left" port="6">Vega<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+}
+	}
+	\subcaptionbox{tree\label{star-1:tree}}{
+\digraph[scale=0.36]{star1tree}{
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	tree0x100a04120branch0 [label="3", shape=circle, style=filled, fillcolor="Grey95"];
+	tree0x100a04120branch0 -> tree0x100a04120branch1 [arrowhead=rnormal];
+	tree0x100a04120branch0 -> tree0x100b040d0branch0 [style=dashed, arrowhead=lnormal];
+	tree0x100a04120branch1 [label="1", shape=circle, style=filled, fillcolor="Grey95"];
+	tree0x100a04120branch1 -> tree0x100b04160branch0 [style=dashed, arrowhead=rnormal];
+	tree0x100a04120branch1 -> tree0x100a04120branch2 [arrowhead=lnormal];
+	tree0x100a04120branch2 [label="1", shape=circle, style=filled, fillcolor="Grey95"];
+	tree0x100a04120branch2 -> tree0x100a04120leaf1 [color=Gray75, arrowhead=rnormal];
+	tree0x100a04120branch2 -> tree0x100a04120leaf2 [color=Gray75, arrowhead=lnormal];
+	tree0x100a04120leaf1 [label = <Fomalhaut<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100a04120leaf2 [label = <Gacrux<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100b04160branch0 [label="0", shape=circle, style=filled, fillcolor="Grey95"];
+	tree0x100b04160branch0 -> tree0x100b04160leaf0 [color=Gray75, arrowhead=rnormal];
+	tree0x100b04160branch0 -> tree0x100b04160branch1 [arrowhead=lnormal];
+	tree0x100b04160branch1 [label="0", shape=circle, style=filled, fillcolor="Grey95"];
+	tree0x100b04160branch1 -> tree0x100b04160leaf1 [color=Gray75, arrowhead=rnormal];
+	tree0x100b04160branch1 -> tree0x100b04160branch2 [arrowhead=lnormal];
+	tree0x100b04160branch2 [label="11", shape=circle, style=filled, fillcolor="Grey95"];
+	tree0x100b04160branch2 -> tree0x100b04160leaf2 [color=Gray75, arrowhead=rnormal];
+	tree0x100b04160branch2 -> tree0x100b04160branch3 [arrowhead=lnormal];
+	tree0x100b04160branch3 [label="2", shape=circle, style=filled, fillcolor="Grey95"];
+	tree0x100b04160branch3 -> tree0x100b04160leaf3 [color=Gray75, arrowhead=rnormal];
+	tree0x100b04160branch3 -> tree0x100b04160leaf4 [color=Gray75, arrowhead=lnormal];
+	tree0x100b04160leaf0 [label = <Altair<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100b04160leaf1 [label = <Betelgeuse<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100b04160leaf2 [label = <Canopus<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100b04160leaf3 [label = <Capella<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100b04160leaf4 [label = <Castor<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100b040d0branch0 [label="1", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100b040d0branch0 -> tree0x100b040d0branch1 [arrowhead=rnormal];
+	tree0x100b040d0branch0 -> tree0x100b040d0leaf6 [color=Gray75, arrowhead=lnormal];
+	tree0x100b040d0branch1 [label="0", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100b040d0branch1 -> tree0x100b040d0branch2 [arrowhead=rnormal];
+	tree0x100b040d0branch1 -> tree0x100b040d0branch3 [arrowhead=lnormal];
+	tree0x100b040d0branch2 [label="21", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100b040d0branch2 -> tree0x100b040d0leaf0 [color=Gray75, arrowhead=rnormal];
+	tree0x100b040d0branch2 -> tree0x100b040d0leaf1 [color=Gray75, arrowhead=lnormal];
+	tree0x100b040d0branch3 [label="0", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100b040d0branch3 -> tree0x100b040d0branch4 [arrowhead=rnormal];
+	tree0x100b040d0branch3 -> tree0x100b040d0branch5 [arrowhead=lnormal];
+	tree0x100b040d0branch4 [label="4", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100b040d0branch4 -> tree0x100b040d0leaf2 [color=Gray75, arrowhead=rnormal];
+	tree0x100b040d0branch4 -> tree0x100b040d0leaf3 [color=Gray75, arrowhead=lnormal];
+	tree0x100b040d0branch5 [label="3", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100b040d0branch5 -> tree0x100b040d0leaf4 [color=Gray75, arrowhead=rnormal];
+	tree0x100b040d0branch5 -> tree0x100b040d0leaf5 [color=Gray75, arrowhead=lnormal];
+	tree0x100b040d0leaf0 [label = <Polaris<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100b040d0leaf1 [label = <Pollux<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100b040d0leaf2 [label = <Regulus<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100b040d0leaf3 [label = <Rigel<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100b040d0leaf4 [label = <Sirius<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100b040d0leaf5 [label = <Spica<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100b040d0leaf6 [label = <Vega<font color="Gray75">\detokenize{⊔}</font>>];
+}
+	}
+	\caption{A trie as a forest of 3 trees of order-7.\label{star-1}}
 \end{figure}
 
-
-
-\subsection{Hysteresis}
+A more complex example is given in Figure~\ref{star-1}. This is a fixed tree of order 7 leaves and 6 branches
 
 Issues with having zero, one, zero, one, zero, items always needing to allocate memory. Fixme: store the order instead of the branches.
-
-\subsection{Machine Considerations}
 
 The data has been engineered for maximum effectiveness of the cache in reading and traversing. That is, the tree structure and the string decisions have been reduced to each a byte and placed at the the top of the data structure of the tree. Always forward in memory. The size of this sub-structure should be a multiple of the cache line size, while also maximizing the dynamic range of $\mathit{left}$; a trie (also a B-tree) of order 256 is an obvious choice.\cite{sinha2004cache}
 
 \subsection{Running Time}
+
+When inserting in a tree...
 
 \cite{shannon1948mathematical} $\log n == m$.
 
