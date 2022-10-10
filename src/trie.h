@@ -702,9 +702,7 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
  `key`; `TRIE_PRESENT`, the value associated with `key`. If `TRIE_IN_VALUE`,
  was specified and the return is `TRIE_UNIQUE`, the trie is in an invalid state
  until filling in the key in value by `key`.
- @order Sources differ on this; after reading the literature, I thought
- \O(max(|`trie.keys`|)), but I seem to to be able to construct a scenario where
- it is as much as \O(|`trie`|), but not amortized.
+ @order Amortized \O(|`key`|)
  @throws[EILSEQ] The string has a distinguishing run of bytes with a
  neighbouring string that is too long. On most platforms, this is about
  32 bytes the same. @throws[malloc] @allow */
@@ -862,11 +860,19 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
 
 #ifdef TRIE_TO_STRING /* <!-- str: _sic_, have a natural string. */
 #define STR_(n) TRIE_CAT(T_(trie), n)
-/** Uses the natural `e` -> `z` that is defined by the key string.
- @fixme `sprintf` is large and cumbersome when a case statement will do. */
+/** Uses the natural `e` -> `z` that is defined by the key string. */
 static void PT_(to_string)(const PT_(entry) *const e,
 	char (*const z)[12]) {
-	assert(e && z), sprintf(*z, "%.11s", PT_(key_string(PT_(entry_key)(e))));
+	const char *string = PT_(key_string(PT_(entry_key)(e)));
+	/* sprintf(*z, "%.11s", string); <- Unnecessary size. */
+	unsigned i;
+	char *y = *z;
+	assert(e && z);
+	for(i = 0; i < 11; string++, i++) {
+		*y++ = *string;
+		if(*string == '\0') return;
+	}
+	*y = '\0';
 }
 #define TO_STRING &PT_(to_string)
 #define TO_STRING_LEFT '{'
