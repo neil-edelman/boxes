@@ -74,7 +74,7 @@
 
 \maketitle
 
-\abstract{Our prefix-tree, digital-tree, or trie is an ordered set or map with key strings. We build a dynamic index of two-bytes {\it per} entry, only storing differences in a compact binary radix tree. To maximize locality of reference while minimizing data range while descending the trie, these are grouped together in a forest of fix-sized trees.}
+\abstract{Our prefix-tree, digital-tree, or trie is an ordered set or map with key strings. We build a dynamic index of two-bytes {\it per} entry, only storing differences in a compact binary radix tree. To maximize locality of reference while descending the trie and minimizing update data, these are grouped together in a forest of fix-sized trees.}
 
 \section{Introduction}
 
@@ -86,7 +86,7 @@ For most applications, a 256-ary trie is space-intensive; the index contains man
 
 We use a combination binary radix trie, described in \cite{morrison1968patricia} as the PATRICIA automaton. Rather than being sparse, a Patricia-tree is a packed index. Recursively, it encodes which is next distinguishing bit and how many keys are on the zero path and the one path.
 
-In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{morrison1968patricia}. In C, a NUL-terminated string automatically has this property, and is ordered correctly. Keys are sorted in lexicographic order by numerical value; \code{strcmp}-order, not by any collation algorithm, (although, that could be an added complication.)
+In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{morrison1968patricia}. In C, a NUL-terminated string automatically has this property, and is ordered correctly. Keys are sorted in lexicographic order by numerical value; \code{strcmp}-order, not by any collation algorithm.
 
 \section{Implementation}
 
@@ -218,25 +218,21 @@ In practice, we talk about a string always terminated by a sentinel; this is an 
 
 Figure~\ref{star-0:bits} is a visual example of a Patrica trie\cite{morrison1968patricia}, that is, a binary radix tree and skip values when bits offer no difference. Note that, in ASCII and UTF-8, \code{A} is represented by an octet with the value of 65, binary 01000001; \code{c} 99, 01100011; \code{r} 114, 01110010; \code{S} 83, 01010011; \code{V} 86, 01010110.
 
-We encode the branches in pre-order fashion, as in Figure~\ref{star-0:mem}. Each branch has a \code{left} and a \code{skip}, corresponding to how many branches on the left, and how many bits we should skip before the decision bit. With the initial range set to the total number of branches, it becomes a matter of accumulating leaf values for the right branches of a key, accessing the index skip-sequentially, until the range is zero. The right values are implicit in the range. The leaves, on the other hand, are alphabetized, in-order. There will always be one less branch than leaf; that is, this is a full (strict) binary tree with $order - 1$ branches, for $order$ keys as leaves.
+We encode the branches in pre-order fashion, as in Figure~\ref{star-0:mem}. Each branch has a \code{left} and a \code{skip}, corresponding to how many branches are descendants on the left, and how many bits we should skip before the decision bit. With the initial range set to the total number of branches, it becomes a matter of accumulating leaf values for the right branches of a key, accessing the index skip-sequentially, until the range is zero. The right values are implicit in the range. The leaves, on the other hand, are alphabetized, in-order. There will always be one less branch than leaf; that is, this is a full (strict) binary tree with $order - 1$ branches, for $order$ keys as leaves.
 
 Figure~\ref{star-0:tree} shows the conventional full binary tree view of the same data as Figure~\ref{star-0:bits} and \ref{star-0:mem}. The branches indicate a \code{do not care} for all the skipped bits. If a query might have a difference in the skipped values, one can also check the final leaf for agreement with the found value.
 
 \subsection{Range and locality}
 
-Only when the algorithm arrives at a leaf will it go outside the \code{left-skip} index. This suggests that the index, and the size of the trie, be contiguous and as small as possible to fit the maximum into cache. However, in establishing a maximum \code{skip} value, one limits the contiguous bits that can be skipped; this has an effect on both on insertion and deletion.
+Only when the algorithm arrives at a leaf will it go outside the \code{left-skip} index. This suggests that the index, and the size of the trie, be contiguous and as small as possible to fit the maximum into cache.
 
-The maximum \code{left} plus one is the maximum number of leaves in the worst-case of all-left. It also is inefficient to insert more and more leaves, the addition requiring more branches to be augmented and an array insertion of the leaf.
+However, in establishing a maximum \code{skip} value, one limits the contiguous bits that can be skipped; this has an effect on both on insertion and deletion. More noticeably, the maximum \code{left} plus one is the maximum number of leaves in the worst-case of all-left. It is also inefficient to modify the trie with more and more keys; this requires more branches to be changed and an array insertion of the leaf.
 
-For these reasons, we have broken up the trie in much the same manner as \cite{bayer1972organization}. Except in tries, contrary to B-trees, the data can not be rotated at will; instead, it uses a bitmap of which leaves are links to other structures. We use that a trie is a forest of non-empty complete binary trees. This tree corresponds to a B-tree node\cite{knuth1997sorting}; the language of a node to represent a contiguous area in memory conflicts with a node as representing a single entry, which now no longer implict.
+To combat these two contradictory requirements, we have broken up the trie in much the same manner as \cite{bayer1972organization}. Except in tries, contrary to B-trees, the data can not be rotated at will; instead, it uses a bitmap of which leaves are links to other structures. We use that a trie is a forest of non-empty complete binary trees. A tree corresponds to a B-tree node\cite{knuth1997sorting}, that is, a contiguous area in memory. This would conflict with a key as a leaf and individual branches, which is are longer implicit.
 
-Say how you break trees up.
+Thus, on adding to a tree in a trie that has the maximum number of keys, we must split it into two trees. We use the fact that a binary tree of $n \ge 2$ nodes can be split into two trees not exceeding $\left\lceil \frac{2n-1}{3} \right\rceil$ nodes by starting \code{cut} at the root and choosing the subtree that is larger until the bound is achieved; the cut will be be between \code{cut} and it's parent. The parent will have an extra linking leaf.
 
-\section{Old}
-
-After `exp(order)` the trie becomes saturated with `n-1` links? no, every branch could be a link.
-
-
+\subsection{Example}
 
 % star-4
 \begin{figure}
@@ -412,19 +408,11 @@ After `exp(order)` the trie becomes saturated with `n-1` links? no, every branch
 	\caption{Split the 3-trie to put four items.\label{star-4}}
 \end{figure}
 
-This is a fixed-maximum size trie within a B-tree. Because of overlapping terminology, some care must be used in describing the structure. We use the notion that a trie is a forest of trees. In B-tree terminology, nodes, are now trees, such that a complete path through the forest always visits the same number of trees. However, since it's always the root instead of the middle item, we are not guaranteed fullness. Depending on the implementation, a complete path might be truncated; for example, \code{Sol} might require less than \code{Betelgeuse}, because it's shorter.[ref b-tree]
 
-\subsection{Trees}
 
-Patrica trie is a full binary tree. Non-empty. Issues with having zero, one, zero, one, zero, items always needing to allocate memory. Fixme: store the order instead of the branches.
+\subsection{Hysteresis}
 
-\subsection{Structure in Memory}
-
-Like a node in a B-trie, a tree structure is a contiguous chunk. As an example, refer to Figure~\ref{star-3:mem}. A tree whose $\mathit{size}$, the number of nodes, is composed of internal nodes, $\mathit{branch}$, and external nodes, $\mathit{leaf}$; $\mathit{size} = \mathit{branch} + \mathit{leaf}$. As a non-empty complete binary tree, $\mathit{leaf} = \mathit{branch} + 1 \rightarrow \mathit{size} = 2\mathit{branch} + 1$. We arrange the branches pre-order in an array, thus, forward read in topologically sorted order. If the number of branches remaining is initialized to $b = \mathit{branch}$, we can make the tree semi-implicit by storing the $\mathit{left}$ branches and calculating $\mathit{right} = b - \mathit{left}$. When $b = 0$, the accumulator, $l$, is the position of the leaf. This is a succinct encoding[?]. Programme.
-
-The above wastes half of $\mathit{left}$'s dynamic range, in the best case, because branches that are $e$ from the end will have at most $\mathit{left} = e$ (such that the end will always be zero): a tree with all left branches.
-
- Separate the leaves, which are pointers to data or to another tree, from the branches, which are decision bits in the key string passed to look up. Only one leaf lookup is performed per tree.
+Issues with having zero, one, zero, one, zero, items always needing to allocate memory. Fixme: store the order instead of the branches.
 
 \subsection{Machine Considerations}
 
