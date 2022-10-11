@@ -278,7 +278,7 @@ Adds `key` to `trie` if it doesn't exist already\.
    The string has a distinguishing run of bytes with a neighbouring string that is too long\. On most platforms, this is about 32 bytes the same\.
  * Exceptional return: malloc  
  * Order:  
-   Sources differ on this; after reading the literature, I thought &#927;\(max\(|`trie.keys`|\)\), but I seem to to be able to construct a scenario where it is as much as &#927;\(|`trie`|\), but not amortized\.
+   Amortized &#927;\(|`key`|\)
 
 
 
