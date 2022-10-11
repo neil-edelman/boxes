@@ -888,7 +888,7 @@ static void PT_(to_string)(const PT_(entry) *const e,
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
-	PT_(forward)(0); PT_(next_c)(0);
+	PT_(forward)(0); PT_(is_element_c)(0); PT_(next_c)(0);
 	T_(trie)(); T_(trie_)(0); T_(trie_clear)(0);
 	T_(trie_match)(0, 0); T_(trie_get)(0, 0);
 #ifndef TRIE_VALUE

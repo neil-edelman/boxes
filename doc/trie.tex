@@ -5,7 +5,7 @@
 \usepackage[utf8]{inputenc}
 %\usepackage{times} % font
 \usepackage{lmodern} % scalable font
-\usepackage{graphicx} % include graphics
+\usepackage[pdftex]{graphicx} % include graphics
 \usepackage{amsmath} % align, nobreakdash
 \usepackage[pdf,tmpdir]{graphviz} % digraph
 \usepackage{fullpage} % book margins -> std margins
@@ -15,6 +15,14 @@
 \usepackage[colorlinks]{hyperref} % pdf links
 \usepackage{url} % url support
 %\usepackage{comment} % comment
+
+\usepackage{siunitx}
+%\usepackage{graphicx} already
+\usepackage{latexsym}
+\usepackage{keyval}
+\usepackage{ifthen}
+\usepackage{moreverb}
+\usepackage[siunitx, subfolder]{gnuplottex}
 
 % code doesn't wrap
 \usepackage[table]{xcolor}
@@ -84,7 +92,7 @@ Often, only parts of the key string are important; a radix trie (compact prefix 
 
 For most applications, a 256-ary trie is space-intensive; the index contains many spaces for keys that are unused. Various compression schemes are available, such as re-using a pool of memory\cite{de1959file}, reducing our encoding alphabet, or take smaller than 8-bit chunks\cite{fredkin1960trie}.
 
-We use a combination binary radix trie, described in \cite{morrison1968patricia} as the PATRICIA automaton. Rather than being sparse, a Patricia-tree is a packed index. Recursively, it encodes which is next distinguishing bit and how many keys are on the zero path and the one path.
+We use a combination binary radix trie, described in \cite{morrison1968patricia} as the PATRICIA automaton. Rather than being sparse, a Patricia-trie is a packed index. Recursively, it encodes which is next distinguishing bit and how many keys are on the zero path and the one path.
 
 \section{Implementation}
 
@@ -214,7 +222,7 @@ We use a combination binary radix trie, described in \cite{morrison1968patricia}
 
 In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{morrison1968patricia}. In C, a NUL-terminated string automatically has this property, and is ordered correctly. Keys are sorted in lexicographic order by numerical value; \code{strcmp}-order, not by any collation algorithm.
 
-Figure~\ref{star-0:bits} is a visual example of a Patrica trie\cite{morrison1968patricia}, that is, a binary radix tree and skip values when bits offer no difference. Note that, in ASCII and UTF-8, \code{A} is represented by an octet with the value of 65, binary 01000001; \code{c} 99, 01100011; \code{r} 114, 01110010; \code{S} 83, 01010011; \code{V} 86, 01010110.
+Figure~\ref{star-0:bits} is a visual example of a Patricia trie, that is, a binary radix tree and skip values when bits offer no difference. Note that, in ASCII and UTF-8, \code{A} is represented by an octet with the value of 65, binary 01000001; \code{c} 99, 01100011; \code{r} 114, 01110010; \code{S} 83, 01010011; \code{V} 86, 01010110.
 
 We encode the branches in pre-order fashion, as in Figure~\ref{star-0:mem}. Each branch has a \code{left} and a \code{skip}, corresponding to how many branches are descendants on the left, and how many bits we should skip before the decision bit. With the initial range set to the total number of branches, it becomes a matter of accumulating leaf values for the right branches of a key, accessing the index skip-sequentially, until the range is zero. The right values are implicit in the range. The leaves, on the other hand, are alphabetized, in-order. There will always be one less branch than leaf; that is, this is a full (strict) binary tree with $order - 1$ branches, for $order$ keys as leaves.
 
@@ -230,7 +238,9 @@ To combat these two contradictory requirements, we have broken up the trie in mu
 
 Thus, on adding to a tree in a trie that has the maximum number of keys, we must split it into two trees. We use the fact that a binary tree of $n \ge 2$ nodes can be split into two trees not exceeding $\left\lceil \frac{2n-1}{3} \right\rceil$ nodes by starting \code{daughter} tree at the root and choosing the subtree that is larger until the bound is achieved. The \code{mother} will have an extra linking leaf.
 
-\subsection{Machine Considerations}
+We use
+
+\section{Machine Considerations}
 
 \begin{figure}
 	\centering
@@ -725,42 +735,54 @@ Thus, on adding to a tree in a trie that has the maximum number of keys, we must
 	\caption{A trie as a forest of 3 trees of order-7.\label{star-1}}
 \end{figure}
 
-A more complex example is given in Figure~\ref{star-1}. This is a fixed tree of order 7 leaves and 6 branches
+A more complex example is given in Figure~\ref{star-1}. This has 3 fixed trees of order 7 maximum leaves and 6 maximum branches with 14 keys in total.
 
-The grey \code{Altair} and \code{Polaris} in the root tree, \code{Vakgimbat}, are samples of the the trees that are links. We could get any sample from the sub-tree, because all the bits up to bit 6 and 4, respectively, are the same. This is important information to have when adding keys, because one has to test each bit of the key against something.
+\subsection{Linked sample keys}
 
-Issues with having zero, one, zero, one, zero, items always needing to allocate memory. Fixme: store the order instead of the branches.
+The grey \code{Altair} and \code{Polaris} in the root tree, \code{Vakgimbat}, are samples of the the trees that are links. We could get any sample from the sub-tree, because all the bits up to bit 6 and 4, respectively, are the same in the sub-tree. Faced with this ambiguity, we arbitrarily and conveniently select the very left. This is important information to have when adding keys, because one has to test each bit of the key against something.
+
+Thus, this is also important when calculating asymptotic run time of adding keys. Imagine a trie which is engineered with many left-links. On addition of a short key to the right, we must go though all the left-links to arrive at a key for comparison. This leads to worst-case performance $\mathcal{O}(|\text{trie}|)$, something we don't see in practice. We argue that the length of a key should be amortized for future linked-key sample in insertions, in the worst case. While there can be multiple insertions with the same trie structure, it becomes less important as the trie grows. Amortized $\mathcal{O}(|\text{key}|)$ is more what we see in practice, which is related to amortized $\mathcal{O}(\log |\text{trie}|)$\cite{shannon1948mathematical}.
+
+\subsection{Hysteresis}
+
+The non-empty criteria of the trees avoids the pathological case where empty trees from deletion pop-up. Further, we can always join a single leaf with its parent except the in the root.
+
+With smaller, dynamic tries, it is more important to not free resources which could be used in the future. Anything less than greedy merging on deletion will have hysteresis. We also should have a zero-key-state with resources.
+
+% Store the order instead of the branches; it's the same thing. Doesn't need to be in here.
+
+\subsection{Data size}
+
+\begin{figure}%
+\centering%
+\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
+set xlabel "order"
+set ylabel "elements"
+set zlabel "time, t (ms)"
+set zrange [0:]
+set parametric
+set hidden3d back offset 0 trianglepattern 3 undefined 1 altdiagonal bentover
+set style data lines
+set colorbox vertical origin screen 0.9, 0.2 size screen 0.05, 0.6 front  noinvert bdefault
+set key noautotitle
+set ytics 200000
+set ztics 1000
+set view 60, 75
+set grid z
+set colorsequence classic
+set format x '\tiny %g'
+set format y '\tiny %g'
+splot "../timing/timing.tsv" using 1:2:($3/1000)
+\end{gnuplot}
+\caption{Order.}%
+\label{timing}%
+\end{figure}%
 
 The data has been engineered for maximum effectiveness of the cache in reading and traversing. That is, the tree structure and the string decisions have been reduced to each a byte and placed at the the top of the data structure of the tree. Always forward in memory. The size of this sub-structure should be a multiple of the cache line size, while also maximizing the dynamic range of $\mathit{left}$; a trie (also a B-tree) of order 256 is an obvious choice.\cite{sinha2004cache}
 
-\subsection{Running Time}
-
-When inserting in a tree...
-
 The links do not affect the asymptotic run-time, but in reality, the number of links is closely related to how long it takes. Not only is this an extra node, it has to fetch it, and then jump to a new tree. Once in the cache, it is much faster.
 
-\cite{shannon1948mathematical} $\log n == m$.
-
-The `\O(log n)` running time is only when the trie has bounds on strings that are placed there. Worst-case $\{ a, aa, aaa, aaaa, ... \}$. The case where the trie has strings that are bounded, as the tree grows, we can guarantee . . .
-
 \subsection{Limits}
-
-The skip value is limited by its range; in this case, 255 bits. For example, this trie is valid, $\{ dictionary \}$, as well as, $\{ dictator, dictionary, dictionaries \}$, but one ca'n't transition to, $\{ dictionary, dictionaries \}$, because it is too long a skip value. There are several modifications that would allow this, but they are out of this scope. (This is not true; 8 x 8 = 64; 8 x 32 = 256.)
-
-Insertion: Any leaf on the sub-tree queried will do; in this implementation, favours the left side.
-
-on split, do we have to go locally and see if we can join them?
-
-we don't need to store any data if the leaf-trees are different from the branch-trees?
-$
-trie: root, height
-branch tree: bsize, +branchtree, branch[o-1], leaf[o]
-leaf tree: bsize, ?, branch[o-1], is_recursive_bmp[o/8], leaf[o]
-or
-leaf tree: bsize, ?, branch[o-1], leaf[o] { skip, union{ data, trie } }
-or
-leaf tree: bsize, ?, branch[o-1], leaf[o] { 32:skip, 32:height, 64:root / 64:data }
-$
 
 \bibliography{trie}
 
