@@ -221,7 +221,7 @@ Looks at only the index of `trie` for potential `string` \(can both be null\) ma
  * Return:  
    Exact `string` match for `trie` or null, \(both can be null\.\)
  * Order:  
-   &#927;\(|`key`|\)
+   &#927;\(|`string`|\)
 
 
 

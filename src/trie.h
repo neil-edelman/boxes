@@ -427,7 +427,7 @@ static PT_(entry) *PT_(get)(const struct T_(trie) *const trie,
 		? entry : 0;
 }
 /** @return Exact `string` match for `trie` or null, (both can be null.)
- @order \O(|`key`|) @allow */
+ @order \O(|`string`|) @allow */
 static PT_(entry) *T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const string) {
 	PT_(entry) *e;
