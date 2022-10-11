@@ -743,7 +743,7 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 	/* Same as match, except keep track of more stuff. */
 	if(!(tree = trie->root) || tree->bsize == USHRT_MAX) return 0; /* Empty. */
 	for(bit = 0, byte.cur = 0; ; ) {
-		ye.br0 = 0, ye.br1 = tree->bsize, ye.lf = 0;
+		ye.br0 = no.br0 = 0, ye.br1 = no.br1 = tree->bsize, ye.lf = no.lf = 0;
 		while(ye.br0 < ye.br1) {
 			const struct trie_branch *const branch
 				= tree->branch + (parent_br = ye.br0);
@@ -776,7 +776,7 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 			return errno = EILSEQ, 0;
 		no_child->skip += parent->skip + 1;
 	} else if(no.br0 == no.br1 && trie_bmp_test(&tree->bmp, no.lf)) {
-		/* Branch not taken is a leaf link. */
+		/* Branch not taken is a link leaf. */
 		struct trie_branch *const parent = tree->branch + parent_br;
 		struct PT_(tree) *const downstream = tree->leaf[no.lf].as_link;
 		assert(downstream);
