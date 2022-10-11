@@ -763,7 +763,7 @@ set style line 4 lt 5 lw 2 lc rgb '#00ac33'
 set style line 5 lt 5 lw 2 lc rgb '#19d3f5'
 set grid
 set xlabel "order"
-set ylabel "time, t (ms)"
+set ylabel "time (ms)"
 set format x '\tiny %g'
 set format y '\tiny %g'
 set xrange [0:256]
@@ -779,7 +779,7 @@ plot \
 
 An octet is presumed to be a byte, if not, this will introduce some inefficiencies. An individual \code{left}, in multiples of octets, is either a maximum of 255, 65\,535, or more. 255 is a reasonable size for a contiguous tree. However, we reserve one flag, 254. This corresponds to the maximum branches of 255 and the maximum branching factor, or order, of 256.
 
-Because of alignment, \code{skip} must also be one or three octets. We have made it one octet. One might also play around with the balance of \code{left} and \code{skip} ranges, but without a specific use case, this has been deemed acceptable. The size of the tree fits nicely in the front, giving a maximum index size of 512 octets.
+Because of alignment, \code{skip} must also be one or three octets. We have made it one octet. One might also play around with the balance of \code{left} and \code{skip} ranges, but without a specific use case, this has been deemed acceptable. Bit fields are not as well-defined as bytes. The size of the tree fits nicely in the front, giving a maximum index size of 512 octets.
 
 
 
