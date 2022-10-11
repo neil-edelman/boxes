@@ -739,9 +739,9 @@ A more complex example is given in Figure~\ref{star-1}. This has 3 fixed trees o
 
 \subsection{Linked sample keys}
 
-The grey \code{Altair} and \code{Polaris} in the root tree, \code{Vakgimbat}, are samples of the the trees that are links. We could get any sample from the sub-tree, because all the bits up to bit 6 and 4, respectively, are the same in the sub-tree. Faced with this ambiguity, we arbitrarily and conveniently select the very left. This is important information to have when adding keys, because one has to test each bit of the key against something.
+The grey \code{Altair} and \code{Polaris} in the root tree, \code{Vakgimbat}, in Figure~\ref{star-1}, are samples of the the trees that are links. We could get any sample from the sub-tree, because all the bits up to bit 6 and 4, respectively, are the same in the sub-tree. Faced with this ambiguity, we arbitrarily and conveniently select the very left. This is important information to have when adding keys, because one has to test each bit of the key against something.
 
-Thus, this is also important when calculating asymptotic run time of adding keys. Imagine a trie which is engineered with many left-links. On addition of a short key to the right, we must go though all the left-links to arrive at a key for comparison. This leads to worst-case performance $\mathcal{O}(|\text{trie}|)$, something we don't see in practice. We argue that the length of a key should be amortized for future linked-key sample in insertions, in the worst case. While there can be multiple insertions with the same trie structure, it becomes less important as the trie grows. Amortized $\mathcal{O}(|\text{key}|)$ is more what we see in practice, which is related to amortized $\mathcal{O}(\log |\text{trie}|)$\cite{shannon1948mathematical}.
+Picking a sample is also important when calculating asymptotic run time of adding keys. The worse case would be an engineered trie, (not with randomly distributed keys,) which with many left-links at once. On addition of a short key to the right, the algorithm must go though all the left-links to arrive at a key for comparison. This leads to worst-case performance $\mathcal{O}(|\text{trie}|)$, something we don't see in practice. We argue that the length of a key should be amortized for future samples in insertions; while there can be multiple insertions with the same trie structure, it becomes less important as the trie grows. Amortized $\mathcal{O}(|\text{key}|)$ is more what we see in practice, which is related to amortized $\mathcal{O}(\log |\text{trie}|)$\cite{shannon1948mathematical}.
 
 \subsection{Hysteresis}
 
@@ -751,7 +751,7 @@ With smaller, dynamic tries, it is more important to not free resources which co
 
 % Store the order instead of the branches; it's the same thing. Doesn't need to be in here.
 
-\subsection{Data size}
+\subsection{Data size and order}
 
 \begin{figure}%
 \centering%
@@ -766,15 +766,22 @@ set xlabel "order"
 set ylabel "time, t (ms)"
 set format x '\tiny %g'
 set format y '\tiny %g'
-set log y
+set xrange [0:256]
+#set log y
 plot \
-"../timing/timing4.tsv" using 1:($3/1000):($4/1000) with errorlines title "10000 keys" ls 1, \
+"../timing/timing4.tsv" using 1:($3/1000):($4/1000) with errorlines title "10000 keys" ls 4, \
 "../timing/timing5.tsv" using 1:($3/1000):($4/1000) with errorlines title "100000 keys" ls 3, \
-"../timing/timing6.tsv" using 1:($3/1000):($4/1000) with errorlines title "1000000 keys" ls 4
+"../timing/timing6.tsv" using 1:($3/1000):($4/1000) with errorlines title "1000000 keys" ls 1
 \end{gnuplot}
-\caption{Order.}%
+\caption{The effects of order on run-time.}%
 \label{timing}%
 \end{figure}%
+
+An octet is presumed to be a byte, if not, this will introduce some inefficiencies. An individual \code{left}, in multiples of octets, is either a maximum of 255, 65\,535, or more. 255 is a reasonable size for a contiguous tree. However, we reserve one flag, 254. This corresponds to the maximum branches of 255 and the maximum branching factor, or order, of 256.
+
+Because of alignment, \code{skip} must also be one or three octets. We have made it one octet. One might also play around with the balance of \code{left} and \code{skip} ranges, but without a specific use case, this has been deemed acceptable. The size of the tree fits nicely in the front, giving a maximum index size of 512 octets.
+
+
 
 The data has been engineered for maximum effectiveness of the cache in reading and traversing. That is, the tree structure and the string decisions have been reduced to each a byte and placed at the the top of the data structure of the tree. Always forward in memory. The size of this sub-structure should be a multiple of the cache line size, while also maximizing the dynamic range of $\mathit{left}$; a trie (also a B-tree) of order 256 is an obvious choice.\cite{sinha2004cache}
 
