@@ -756,23 +756,21 @@ With smaller, dynamic tries, it is more important to not free resources which co
 \begin{figure}%
 \centering%
 \begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
+set style line 1 lt 5 lw 2 lc rgb '#4fa6dc'
+set style line 2 lt 5 lw 2 lc rgb '#0072bd'
+set style line 3 lt 5 lw 2 lc rgb '#ff0000'
+set style line 4 lt 5 lw 2 lc rgb '#00ac33'
+set style line 5 lt 5 lw 2 lc rgb '#19d3f5'
+set grid
 set xlabel "order"
-set ylabel "elements"
-set zlabel "time, t (ms)"
-set zrange [0:]
-set parametric
-set hidden3d back offset 0 trianglepattern 3 undefined 1 altdiagonal bentover
-set style data lines
-set colorbox vertical origin screen 0.9, 0.2 size screen 0.05, 0.6 front  noinvert bdefault
-set key noautotitle
-set ytics 200000
-set ztics 1000
-set view 60, 75
-set grid z
-set colorsequence classic
+set ylabel "time, t (ms)"
 set format x '\tiny %g'
 set format y '\tiny %g'
-splot "../timing/timing.tsv" using 1:2:($3/1000)
+set log y
+plot \
+"../timing/timing4.tsv" using 1:($3/1000):($4/1000) with errorlines title "10000 keys" ls 1, \
+"../timing/timing5.tsv" using 1:($3/1000):($4/1000) with errorlines title "100000 keys" ls 3, \
+"../timing/timing6.tsv" using 1:($3/1000):($4/1000) with errorlines title "1000000 keys" ls 4
 \end{gnuplot}
 \caption{Order.}%
 \label{timing}%

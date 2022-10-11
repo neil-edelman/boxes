@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
 		double stddev = m_stddev(&m);
 		if(stddev != stddev) stddev = 0; /* Is nan; happens. */
 		printf(
-			"# reported order, target, mean (us), stddev (us)\n"
+			/*"# reported order, target, mean (us), stddev (us)\n"*/
 			"%u\t%u\t%f\t%f\n", order, target, m_mean(&m), stddev);
 	}
 	goto finally;
