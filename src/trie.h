@@ -733,7 +733,7 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
  performance in real-life? */
 static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 	struct PT_(tree) *tree;
-	size_t bit, tree_bit; /* In bits of `key`. */
+	size_t bit; /* In bits of `key`. */
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	struct { unsigned br0, br1, lf; } ye, no, up;
 	unsigned parent_br = 0; /* Same tree. Useless initialization. */
@@ -743,7 +743,6 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 	/* Same as match, except keep track of more stuff. */
 	if(!(tree = trie->root) || tree->bsize == USHRT_MAX) return 0; /* Empty. */
 	for(bit = 0, byte.cur = 0; ; ) {
-		tree_bit = bit;
 		ye.br0 = 0, ye.br1 = tree->bsize, ye.lf = 0;
 		while(ye.br0 < ye.br1) {
 			const struct trie_branch *const branch
