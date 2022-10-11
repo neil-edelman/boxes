@@ -278,7 +278,7 @@ Adds `key` to `trie` if it doesn't exist already\.
    The string has a distinguishing run of bytes with a neighbouring string that is too long\. On most platforms, this is about 32 bytes the same\.
  * Exceptional return: malloc  
  * Order:  
-   Amortized &#927;\(|`key`|\)
+   Amortized &#927;\(|`key.string`|\)
 
 
 
@@ -293,6 +293,8 @@ Tries to remove `string` from `trie`\.
    Success\. If either parameter is null or the `string` is not in `trie`, returns false without setting `errno`\.
  * Exceptional return: EILSEQ  
    The deletion of `string` would cause an overflow with the rest of the strings\.
+ * Order:  
+   &#927;\(|`string`|\)
 
 
 

@@ -702,7 +702,7 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
  `key`; `TRIE_PRESENT`, the value associated with `key`. If `TRIE_IN_VALUE`,
  was specified and the return is `TRIE_UNIQUE`, the trie is in an invalid state
  until filling in the key in value by `key`.
- @order Amortized \O(|`key`|)
+ @order Amortized \O(|`key.string`|)
  @throws[EILSEQ] The string has a distinguishing run of bytes with a
  neighbouring string that is too long. On most platforms, this is about
  32 bytes the same. @throws[malloc] @allow */
@@ -840,7 +840,7 @@ erased_tree:
  @return Success. If either parameter is null or the `string` is not in `trie`,
  returns false without setting `errno`.
  @throws[EILSEQ] The deletion of `string` would cause an overflow with the rest
- of the strings. @allow */
+ of the strings. @order \O(|`string`|) @allow */
 static int T_(trie_remove)(struct T_(trie) *const trie,
 	const char *const string)
 	{ return trie && string && PT_(remove)(trie, string); }

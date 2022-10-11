@@ -366,7 +366,7 @@
 	<dd>The string has a distinguishing run of bytes with a neighbouring string that is too long. On most platforms, this is about 32 bytes the same.</dd>
 	<dt>Exceptional return: malloc</dt>
 	<dt>Order:</dt>
-	<dd>Amortized &#927;(|<code>key</code>|)</dd>
+	<dd>Amortized &#927;(|<code>key.string</code>|)</dd>
 </dl>
 
 </div>
@@ -384,6 +384,8 @@
 	<dd>Success. If either parameter is null or the <code>string</code> is not in <code>trie</code>, returns false without setting <code>errno</code>.</dd>
 	<dt>Exceptional return: EILSEQ</dt>
 	<dd>The deletion of <code>string</code> would cause an overflow with the rest of the strings.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>string</code>|)</dd>
 </dl>
 
 </div>
