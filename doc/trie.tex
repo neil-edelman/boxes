@@ -232,7 +232,7 @@ Figure~\ref{star-0:tree} shows the conventional full binary tree view of the sam
 
 Only when the algorithm arrives at a leaf will it go outside the \code{left, skip}. This suggests that these be placed in a contiguous index. This index should be compact as possible to fit the maximum into cache.
 
-However, in establishing a maximum \code{skip} value, one limits the contiguous bits that can be skipped; this has an effect on both on insertion and deletion. More noticeably, the maximum \code{left} plus one is the maximum number of leaves in the worst-case of all-left. It is also inefficient to modify the trie with more and more keys; this requires more branches to be changed and an array insertion of the leaf.
+However, in establishing a maximum \code{skip} value, one limits the contiguous bits that can be skipped; this has an effect on both on insertion and deletion. One octet provides 255 bits skip, usually enough for approximately 32 bytes. More noticeably, the maximum \code{left} plus one is the maximum number of leaves in the worst-case of all-left. It is also inefficient to modify the trie with more and more keys; this requires more branches to be changed and an array insertion of the leaf.
 
 To combat these two contradictory requirements, we have broken up the trie in much the same manner as \cite{bayer1972organization}. Except in tries, contrary to B-trees, the data can not be rotated at will; instead, it relaxes the rules and instead uses a bitmap of which leaves are links to other structures, called trees. Thus a trie is a forest of non-empty full binary trees. A tree corresponds to a B-tree node\cite{knuth1997sorting}, that is, a contiguous area in memory. This would conflict with the terminology of a key as a leaf and individual branches, which are longer implicit.
 
@@ -735,7 +735,7 @@ We use
 	\caption{A trie as a forest of 3 trees of order-7.\label{star-1}}
 \end{figure}
 
-A more complex example is given in Figure~\ref{star-1}. This has 3 fixed trees of order 7 maximum leaves and 6 maximum branches with 14 keys in total.
+A more complex example is given in Figure~\ref{star-1}. This trie has 3 fixed trees of order 7 maximum leaves and 6 maximum branches with 14 keys in total.
 
 \subsection{Linked sample keys}
 
@@ -756,11 +756,11 @@ With smaller, dynamic tries, it is more important to not free resources which co
 \begin{figure}%
 \centering%
 \begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
-set style line 1 lt 5 lw 2 lc rgb '#4fa6dc'
-set style line 2 lt 5 lw 2 lc rgb '#0072bd'
-set style line 3 lt 5 lw 2 lc rgb '#ff0000'
-set style line 4 lt 5 lw 2 lc rgb '#00ac33'
-set style line 5 lt 5 lw 2 lc rgb '#19d3f5'
+set style line 1 lt 6 lw 2 lc rgb '#888888' #'#4fa6dc'
+set style line 2 lt 5 lw 2 lc rgb '#19d3f5'
+set style line 3 lt 3 lw 2 lc rgb '#444444' #'#cc3333'
+set style line 4 lt 8 lw 2 lc rgb '#666666' #'#00ac33'
+set style line 5 lt 5 lw 2 lc rgb '#0072bd'
 set grid
 set xlabel "order"
 set ylabel "time (ms)"
@@ -777,17 +777,17 @@ plot \
 \label{timing}%
 \end{figure}%
 
-An octet is presumed to be a byte, if not, this will introduce some inefficiencies. An individual \code{left}, in multiples of octets, is either a maximum of 255, 65\,535, or more. 255 is a reasonable size for a contiguous tree. However, we reserve one flag, 254. This corresponds to the maximum branches of 255 and the maximum branching factor, or order, of 256.
+We will push the index to be as small as possible, but no more. The order, or branching factor, is the number of leaves, which is bounded by $\max(\code{left}) + 2$. We should have a zero-length flag on the length for empty but active. This is not onerous because the alignment supports a size, then $2^n-1$ index entries, then $2^n$ leaves and bits in the bitmap.
 
-Because of alignment, \code{skip} must also be one or three octets. We have made it one octet. One might also play around with the balance of \code{left} and \code{skip} ranges, but without a specific use case, this has been deemed acceptable. Bit fields are not as well-defined as bytes. The size of the tree fits nicely in the front, giving a maximum index size of 512 octets.
+Figure~\ref{timing} shows straight insertion of different numbers of keys. It uses two-octet size for each of the branches on the index, divided evenly between \code{left} and \code{skip}. The order is how many leaves each tree holds, either keys or links.
 
+The smaller the order, the more links; this adversely affects the performance because the contents of the next index must be fetched into cache, and the trees split more often. The larger the order, the more updates to the local tree on insertion.\cite{sinha2004cache} In Figure~\ref{timing}, we see a very shallow maximum performance, corresponding to a minimum time. However, at low orders, the performance noticeably suffers. Specifically, when we don't fill 64\,kB of our cache lines.
 
+\subsection{Comparison verses other data structures}
 
-The data has been engineered for maximum effectiveness of the cache in reading and traversing. That is, the tree structure and the string decisions have been reduced to each a byte and placed at the the top of the data structure of the tree. Always forward in memory. The size of this sub-structure should be a multiple of the cache line size, while also maximizing the dynamic range of $\mathit{left}$; a trie (also a B-tree) of order 256 is an obvious choice.\cite{sinha2004cache}
+\section{Conclusion}
 
-The links do not affect the asymptotic run-time, but in reality, the number of links is closely related to how long it takes. Not only is this an extra node, it has to fetch it, and then jump to a new tree. Once in the cache, it is much faster.
-
-\subsection{Limits}
+Despite it's limitations, our trie is fairly fast, and would certainly have some use.
 
 \bibliography{trie}
 
