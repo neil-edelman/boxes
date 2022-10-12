@@ -380,6 +380,7 @@ static void stackoverflow(void) {
 	str_trie_(&trie);
 }
 
+/* fixme: why is it going 3x slower than yesterday for no good reason? */
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
