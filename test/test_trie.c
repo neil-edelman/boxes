@@ -358,13 +358,35 @@ static void article_test(void) {
 	star_trie_(&trie);
 }
 
+static void stackoverflow(void) {
+	struct str_trie trie = str_trie();
+	/*str_trie_try(&trie, "aaaaaaaaaaaaa");
+	str_trie_try(&trie, "aaaaaaaaaaaab");
+	str_trie_try(&trie, "aaaaaaaaaaab");
+	str_trie_try(&trie, "aaaaaaaaaab");
+	str_trie_try(&trie, "aaaaaaaaab");
+	str_trie_try(&trie, "aaaaaaaab");
+	str_trie_try(&trie, "aaaaaaab");*/
+	str_trie_try(&trie, "aaaaaab");
+	str_trie_try(&trie, "aaaaab");
+	str_trie_try(&trie, "aaaab");
+	str_trie_try(&trie, "aaab");
+	str_trie_try(&trie, "aab");
+	str_trie_try(&trie, "ab");
+	str_trie_try(&trie, "b");
+	trie_str_graph(&trie, "graph/so.gv", 0);
+	str_trie_try(&trie, "z");
+	trie_str_graph(&trie, "graph/so.gv", 1);
+	str_trie_(&trie);
+}
+
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	contrived_test(), str32_pool_clear(&str_pool);
 	fixed_colour_test();
-#if 1
+#if 0
 	str_trie_test(), str32_pool_clear(&str_pool); /* Key set. */
 	colour_trie_test(); /* Custom key set with enum string backing. */
 	mapint_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */
@@ -374,6 +396,7 @@ int main(void) {
 	keyval_trie_test(), keyval_pool_clear(&kv_pool); /* Pointer to index. */
 #endif
 	article_test();
+	stackoverflow();
 	keyval_pool_(&kv_pool);
 	str32_pool_(&str_pool);
 	return EXIT_SUCCESS;

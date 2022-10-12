@@ -2,15 +2,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-#include "../../test/orcish.h"
+#include "orcish.h"
 
 struct str16 { char str[16]; };
 #define POOL_NAME str16
 #define POOL_TYPE struct str16
-#include "../../test/pool.h"
+#include "../../../test/pool.h"
 
 #define TRIE_NAME str
-#include "../../src/trie.h"
+#include "../../../src/trie.h"
 
 #include <math.h>
 #ifndef NAN

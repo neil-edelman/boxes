@@ -766,12 +766,13 @@ set xlabel "order"
 set ylabel "time (ms)"
 set format x '\tiny %g'
 set format y '\tiny %g'
+set key font "modern,20"
 set xrange [0:256]
 #set log y
 plot \
-"../timing/timing4.tsv" using 1:($3/1000):($4/1000) with errorlines title "10000 keys" ls 4, \
-"../timing/timing5.tsv" using 1:($3/1000):($4/1000) with errorlines title "100000 keys" ls 3, \
-"../timing/timing6.tsv" using 1:($3/1000):($4/1000) with errorlines title "1000000 keys" ls 1
+"timing4.tsv" using 1:($3/1000):($4/1000) with errorlines title "10000 keys" ls 4, \
+"timing5.tsv" using 1:($3/1000):($4/1000) with errorlines title "100000 keys" ls 3, \
+"timing6.tsv" using 1:($3/1000):($4/1000) with errorlines title "1000000 keys" ls 1
 \end{gnuplot}
 \caption{The effects of order on run-time.}%
 \label{timing}%
@@ -785,9 +786,37 @@ The smaller the order, the more links; this adversely affects the performance be
 
 \subsection{Comparison verses other data structures}
 
+\begin{figure}%
+\centering%
+\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
+set style line 1 lt 6 lw 2 lc rgb '#888888' #'#4fa6dc'
+set style line 2 lt 5 lw 2 lc rgb '#19d3f5'
+set style line 3 lt 3 lw 2 lc rgb '#444444' #'#cc3333'
+set style line 4 lt 8 lw 2 lc rgb '#666666' #'#00ac33'
+set style line 5 lt 5 lw 2 lc rgb '#0072bd'
+set grid
+set xlabel "elements"
+set ylabel "time per element, t (ns)"
+set yrange [0:]
+#set xrange [0:256]
+set format x '\tiny %g'
+set format y '\tiny %g'
+set key font "modern,20"
+set log x
+plot \
+"table.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "table" ls 4, \
+"tree.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "tree" ls 3, \
+"trie.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "trie" ls 1
+\end{gnuplot}
+\caption{Compaison.}%
+\label{compare}%
+\end{figure}%
+
+Figure~\ref{compare}\ldots But compare lookup, too.
+
 \section{Conclusion}
 
-Despite it's limitations, our trie is fairly fast, and would certainly have some use.
+It's okay.
 
 \bibliography{trie}
 
