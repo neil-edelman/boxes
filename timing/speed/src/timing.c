@@ -65,9 +65,17 @@ static double m_stddev(const struct measure *const m)
 	{ return sqrt(m_sample_variance(m)); }
 
 #define EXPS \
-	X(TRIE, trie), \
-	X(TREE, tree), \
-	X(TABLE, table)
+	X(TRIE_ADD, trie-add), \
+	X(TRIE_LOOK, trie-look), \
+	X(TREE_ADD, tree-add), \
+	X(TREE_LOOK, tree-look), \
+	X(TABLE_ADD, table-add), \
+	X(TABLE_LOOK, table-look)
+
+/** <https://theunixzoo.co.uk/blog/2021-10-14-preventing-optimisations.html> */
+static inline void DoNotOptimize(void *value) {
+	asm volatile("" : "+r,m"(value) : : "memory");
+}
 
 int main(void) {
 	const unsigned replicas = 5;
@@ -96,7 +104,7 @@ int main(void) {
 			exp[e].name, replicas);
 	}
 	/* Do experiment. */
-	for(n = 1; n < 1000000; n <<= 1) {
+	for(n = 1; n < 10000000; n <<= 1) {
 		unsigned r;
 		for(e = 0; e < exp_size; e++) m_reset(&exp[e].m);
 		for(r = 0; r < replicas; r++) {
@@ -127,12 +135,20 @@ int main(void) {
 				case TABLE_YIELD: /*printf("%s already.\n", *o);*/ break;
 				}
 			}
-			m_add(&exp[TABLE].m, diff_us(t));
-			/*{
+			m_add(&exp[TABLE_ADD].m, diff_us(t));
+			t = clock();
+			{
 				struct str_table_iterator it = str_table_begin(&table);
-				char *str;
-				while(str_table_next(&it, &str)) fprintf(stderr, "->%s\n", str);
-			}*/
+				char *str, *look = 0;
+				while(str_table_next(&it, &str)) {
+					/*fprintf(stderr, "->%s\n", str);*/
+					DoNotOptimize(look);
+					look = str_table_get_or(&table, str, 0);
+					DoNotOptimize(look);
+					assert(str == look);
+				}
+			}
+			m_add(&exp[TABLE_LOOK].m, diff_us(t));
 			str_table_clear(&table);
 			str_table_(&table);
 
@@ -146,12 +162,20 @@ int main(void) {
 				case TRIE_PRESENT: /*printf("%s already.\n", *o);*/ break;
 				}
 			}
-			m_add(&exp[TRIE].m, diff_us(t));
-			/*{
+			m_add(&exp[TRIE_ADD].m, diff_us(t));
+			t = clock();
+			{
 				struct str_trie_iterator it = str_trie_prefix(&trie, "");
-				const char **str;
-				while(str = str_trie_next(&it)) fprintf(stderr, "->%s\n", *str);
-			}*/
+				const char **str, **look = 0;
+				while(str = str_trie_next(&it)) {
+					/*fprintf(stderr, "->%s\n", *str);*/
+					DoNotOptimize(look);
+					look = str_trie_get(&trie, *str);
+					DoNotOptimize(look);
+					assert(*str == *look);
+				}
+			}
+			m_add(&exp[TRIE_LOOK].m, diff_us(t));
 			str_trie_clear(&trie);
 
 			/* Time tree. */
@@ -164,12 +188,20 @@ int main(void) {
 				case TREE_PRESENT: /*printf("%s already.\n", *o);*/ break;
 				}
 			}
-			m_add(&exp[TREE].m, diff_us(t));
-			/*{
+			m_add(&exp[TREE_ADD].m, diff_us(t));
+			t = clock();
+			{
 				struct str_tree_cursor it = str_tree_begin(&tree);
-				const char **str;
-				while(str = str_tree_next(&it)) fprintf(stderr, "->%s\n", *str);
-			}*/
+				char **str, *look = 0;
+				while(str = str_tree_next(&it)) {
+					/*fprintf(stderr, "->%s\n", *str);*/
+					DoNotOptimize(look);
+					look = str_tree_get_or(&tree, *str, 0);
+					DoNotOptimize(look);
+					assert(*str == look);
+				}
+			}
+			m_add(&exp[TREE_LOOK].m, diff_us(t));
 			str_tree_clear(&tree);
 
 			str_array_clear(&orcs);

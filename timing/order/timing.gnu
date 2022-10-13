@@ -10,4 +10,6 @@ set xlabel "order"
 set ylabel "time, t (ms)"
 set yrange [0:]
 plot \
-"timing4.tsv" using 1:($3/1000):($4/1000) with errorlines title "10000 keys" ls 1
+"timing4.tsv" using 1:($3/1000):($4/1000) with errorlines title "10000 keys" ls 2,\
+"timing5.tsv" using 1:($3/1000):($4/1000) with errorlines title "100000 keys" ls 4,\
+"timing6.tsv" using 1:($3/1000):($4/1000) with errorlines title "1000000 keys" ls 5
