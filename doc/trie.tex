@@ -783,6 +783,8 @@ Figure~\ref{timing} shows straight insertion of different numbers of keys. It us
 
 The smaller the order, the more links; this adversely affects the performance because the contents of the next index must be fetched into cache, and the trees split more often. The larger the order, the more updates to the local tree on insertion.\cite{sinha2004cache} In Figure~\ref{timing}, we see a very shallow maximum performance, corresponding to a minimum time. However, at low orders, the performance noticeably suffers. Specifically, when we don't fill 64\,kB of our cache lines.
 
+\cite{tong2016smoothed}
+
 \subsection{Comparison verses other data structures}
 
 \begin{figure}%
