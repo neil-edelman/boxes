@@ -72,7 +72,7 @@
 	<dt>Standard:</dt>
 	<dd>C89 (Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ.)</dd>
 	<dt>Caveat:</dt>
-	<dd>(<a href = "#fn:&lt;T&gt;trie_from_array">&amp;lt;T&amp;gt;trie_from_array</a>, <a href = "#fn:&lt;T&gt;trie_size">&amp;lt;T&amp;gt;trie_size</a>)</dd>
+	<dd>(<a href = "#fn:&lt;T&gt;trie_from_array">&amp;lt;T&amp;gt;trie_from_array</a>, <a href = "#fn:&lt;T&gt;trie_size">&amp;lt;T&amp;gt;trie_size</a>, <a href = "#fn:&lt;T&gt;trie_try">&amp;lt;T&amp;gt;trie_try</a>)</dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
@@ -366,7 +366,9 @@
 	<dd>The string has a distinguishing run of bytes with a neighbouring string that is too long. On most platforms, this is about 32 bytes the same.</dd>
 	<dt>Exceptional return: malloc</dt>
 	<dt>Order:</dt>
-	<dd>Amortized &#927;(|<code>key.string</code>|)</dd>
+	<dd>&#927;(|<code>trie</code>|) worse case with arbitrarily increasing length. The height of a trie in a smoothed model is &#927;(log |<code>trie</code>|) iid, <a href = "https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed">Tong, Goebel, Lin, 2015, Smoothed</a>. However, this is not the run time.</dd>
+	<dt>Caveat:</dt>
+	<dd>It could be &#927;(|max(<code>trie.key.string</code>)|) if we changed the algorithm; instead of doing it on-line and finding samples for every branch, we do it in two passes, find exemplar, and add. Would not be more because <code>get</code> already is two passes.</dd>
 </dl>
 
 </div>

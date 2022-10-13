@@ -705,6 +705,10 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
  @order \O(|`trie`|) worse case with arbitrarily increasing length. The height
  of a trie in a smoothed model is \O(\log |`trie`|) iid,
  <Tong, Goebel, Lin, 2015, Smoothed>. However, this is not the run time.
+ @fixme It could be \O(|max(`trie.key.string`)|) if we changed the algorithm;
+ instead of doing it on-line and finding samples for every branch, we do it in
+ two passes, find exemplar, and add. Would not be more because `get` already is
+ two passes.
  @throws[EILSEQ] The string has a distinguishing run of bytes with a
  neighbouring string that is too long. On most platforms, this is about
  32 bytes the same. @throws[malloc] @allow */
