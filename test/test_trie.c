@@ -293,6 +293,12 @@ static void contrived_test(void) {
 	}
 	assert(count2 == count);
 	assert(count3 == count);
+	{
+		trie_str_entry *e;
+		enum trie_result r;
+		r = trie_str_add(&t, "a", &e), assert(r == TRIE_PRESENT);
+		r = trie_str_add(&t, "yo", &e), assert(r == TRIE_UNIQUE);
+	}
 	result = str_trie_remove(&t, "yo");
 	assert(!result);
 	for(i = 0; i < sizeof words / sizeof *words; i++) {

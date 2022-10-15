@@ -603,6 +603,137 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	tree->bsize++;
 	return leaf;
 }
+/** Fixme: could I make it recursive to only do one decent? Do I want to? */
+static PT_(entry) *PT_(exemplar)(const struct T_(trie) *const trie,
+	const char *const string) {
+	struct PT_(ref) ref;
+	size_t bit; /* In bits of `key`. */
+	struct { size_t cur, next; } byte; /* `key` null checks. */
+	assert(trie && string);
+	/* Empty. */
+	if(!(ref.tree = trie->root) || ref.tree->bsize == USHRT_MAX) return 0;
+	for(bit = 0, byte.cur = 0; ; ) {
+		unsigned br0 = 0, br1 = ref.tree->bsize;
+		ref.idx = 0;
+		while(br0 < br1) {
+			const struct trie_branch *const branch = ref.tree->branch + br0;
+			for(byte.next = (bit += branch->skip) / CHAR_BIT;
+				byte.cur < byte.next; byte.cur++)
+				if(string[byte.cur] == '\0') {
+					PT_(lower_entry)(&ref); /* There are several, pick first. */
+					goto finally;
+				}
+			if(!TRIE_QUERY(string, bit))
+				br1 = ++br0 + branch->left;
+			else
+				br0 += branch->left + 1, ref.idx += branch->left + 1;
+			bit++;
+		}
+		if(!trie_bmp_test(&ref.tree->bmp, ref.idx)) goto finally;
+		ref.tree = ref.tree->leaf[ref.idx].as_link; /* Jumped trees. */
+	}
+finally:
+	return &ref.tree->leaf[ref.idx].as_entry;
+}
+
+static enum trie_result PT_(add)(struct T_(trie) *const trie, PT_(key) key,
+	PT_(entry) **const entry) {
+	struct PT_(ref) ref;
+	union PT_(leaf) *leaf;
+	struct { size_t cur, next; } byte; /* `key` null checks. */
+	PT_(entry) *exemplar;
+	const char *key_string = PT_(key_string)(key), *exemplar_string;
+	size_t bit_diff, bit;
+	assert(trie && PT_(key_string)(key) && entry);
+	if(!(ref.tree = trie->root)) { /* Idle. */
+		if(!(ref.tree = malloc(sizeof *ref.tree))) goto catch;
+		ref.tree->bsize = USHRT_MAX;
+		trie->root = ref.tree;
+	} /* Fall-through. */
+	if(ref.tree->bsize == USHRT_MAX) { /* Empty: special case. */
+		ref.tree->bsize = 0;
+		trie_bmp_clear_all(&ref.tree->bmp);
+		leaf = ref.tree->leaf + 0;
+		goto assign;
+	}
+	/* Otherwise we will be able to find an exemplar: a neighbouring key to the
+	 new key up to the difference, (after that, it doesn't matter.) */
+	for(bit = 0, byte.cur = 0; ; ) {
+		unsigned br0 = 0, br1 = ref.tree->bsize;
+		ref.idx = 0; /* Leaf. */
+		while(br0 < br1) {
+			const struct trie_branch *const branch = ref.tree->branch + br0;
+			for(byte.next = (bit += branch->skip) / CHAR_BIT;
+				byte.cur < byte.next; byte.cur++)
+				if(key_string[byte.cur] == '\0') {
+					/* There are several; arbitrarily pick the first. */
+					PT_(lower_entry)(&ref);
+					goto found_exemplar;
+				}
+			if(!TRIE_QUERY(key_string, bit))
+				br1 = ++br0 + branch->left;
+			else
+				br0 += branch->left + 1, ref.idx += branch->left + 1;
+			bit++;
+		}
+		/* There is one exemplar? */
+		if(!trie_bmp_test(&ref.tree->bmp, ref.idx)) goto found_exemplar;
+		ref.tree = ref.tree->leaf[ref.idx].as_link; /* Jumped trees. */
+	}
+found_exemplar:
+	exemplar = &ref.tree->leaf[ref.idx].as_entry;
+	exemplar_string = PT_(key_string)(PT_(entry_key)(exemplar));
+	printf("key: <<%s>>, exemplar: <<%s>>.\n", key_string, exemplar_string);
+	/* Exact match? This is just `strcmp`, but keep track of position. */
+	for(bit_diff = 0; *key_string == *exemplar_string;
+		bit_diff += CHAR_BIT, key_string++, exemplar_string++)
+		if(*key_string == '\0') return *entry = exemplar, TRIE_PRESENT;
+	/* Bit resolution; maximum 8. */
+	for( ; !TRIE_DIFF(key_string, exemplar_string, bit_diff); bit_diff++);
+	printf("bit difference %lu.\n", (unsigned long)bit_diff);
+	/* Save some useful things about this descent. */
+	bit_diff = bit, tree_diff = ref.tree;
+#if 0
+	/* Restart and go to the difference. */
+	for(bit = 0, tree = trie->root; ; tree = tree->leaf[lf].as_link) {
+tree:
+		br0 = 0, br1 = tree->bsize, lf = 0;
+		sample = PT_(sample)(tree, 0);
+		while(br0 < br1) {
+			const struct trie_branch *const branch = tree->branch + br0;
+			const size_t branch_bit = bit + branch->skip;
+			for( ; bit < branch_bit; bit++)
+				if(TRIE_DIFF(key_string, sample, bit)) goto found;
+			if(!TRIE_QUERY(key_string, bit)) {
+				br1 = ++br0 + branch->left;
+			} else {
+				br0 += branch->left + 1, lf += branch->left + 1;
+				sample = PT_(sample)(tree, lf);
+			}
+			bit++;
+		}
+		/* Got to a leaf without getting a difference. */
+		if(!trie_bmp_test(&tree->bmp, lf)) break;
+	}
+	//if(TRIE_QUERY(key_string, bit_diff)) lf += br1 - br0 + 1;
+#endif
+	assert(0);
+	return 0;
+assign:
+#ifndef TRIE_VALUE /* <!-- key set */
+	leaf->as_entry = key;
+#elif !defined(TRIE_KEY_IN_VALUE) /* key set --><!-- key value map */
+	leaf->as_entry.key = key;
+#else /* key value map --><!-- key in value */
+	/* Will rely on user to do it; oy. We potentially do not have all the
+	 information to do it here. */
+#endif /* key in value --> */
+	if(entry) *entry = &leaf->as_entry;
+	return TRIE_UNIQUE;
+catch:
+	if(!errno) errno = ERANGE; /* `malloc` only has to set it in POSIX. */
+	return TRIE_ERROR;
+}
 /** Adds `key` to `trie` and stores it in `entry`. Fills in the `key` unless
  `TRIE_KEY_IN_VALUE` (because it doesn't have enough information, in that
  case.) */
