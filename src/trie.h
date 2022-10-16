@@ -165,9 +165,9 @@ typedef struct T_(trie_entry) PT_(entry);
 /** @return Key of `e` in a map. */
 static PT_(key) PT_(entry_key)(const struct T_(trie_entry) *const e)
 	{ return e->key; }
-/** @return Value of `e` in a map. */
-static PT_(value) *PT_(entry_value)(struct T_(trie_entry) *const e)
-	{ return &e->value; }
+/* @return Value of `e` in a map. */
+/* static PT_(value) *PT_(entry_value)(struct T_(trie_entry) *const e)
+	{ return &e->value; } */
 #else /* key value map --><!-- key in value */
 /* The entry is the value. */
 typedef TRIE_VALUE PT_(value);
@@ -181,8 +181,8 @@ static PT_(key_fn) PT_(read_key) = (TRIE_KEY_IN_VALUE);
 /** @return A key-in-value `v`. */
 static const char *PT_(entry_key)(const PT_(value) *const v)
 	{ return PT_(read_key)(v); }
-/** @return A value-in-value `v`, which is itself. */
-static PT_(value) *PT_(entry_value)(PT_(value) *const v) { return v; }
+/* @return A value-in-value `v`, which is itself. */
+/* static PT_(value) *PT_(entry_value)(PT_(value) *const v) { return v; } */
 #endif /* key in value --> */
 
 
@@ -202,16 +202,16 @@ struct PT_(tree) {
  ![States.](../doc/states.png) */
 struct T_(trie);
 struct T_(trie) { struct PT_(tree) *root; };
-struct PT_(ref) { struct PT_(tree) *tree; unsigned idx; };
-struct PT_(ref_c) { const struct PT_(tree) *tree; unsigned idx; };
+struct PT_(ref) { struct PT_(tree) *tree; unsigned lf; };
+struct PT_(ref_c) { const struct PT_(tree) *tree; unsigned lf; };
 
 
 /* Fall through `ref` until hit the first entry. Must be pointing at
  something. */
 #define LOWER(lower_entry_c, ref_c) \
 static void PT_(lower_entry_c)(struct PT_(ref_c) *ref) { \
-	while(trie_bmp_test(&ref->tree->bmp, ref->idx)) \
-		ref->tree = ref->tree->leaf[ref->idx].as_link, ref->idx = 0; \
+	while(trie_bmp_test(&ref->tree->bmp, ref->lf)) \
+		ref->tree = ref->tree->leaf[ref->lf].as_link, ref->lf = 0; \
 }
 LOWER(lower_entry, ref)
 LOWER(lower_entry_c, ref_c)
@@ -219,17 +219,17 @@ LOWER(lower_entry_c, ref_c)
 /** Fall through `ref` until hit the last entry. Must be pointing at
  something. */
 static void PT_(higher_entry)(struct PT_(ref) *ref) {
-	while(trie_bmp_test(&ref->tree->bmp, ref->idx))
-		ref->tree = ref->tree->leaf[ref->idx].as_link,
-		ref->idx = ref->tree->bsize;
+	while(trie_bmp_test(&ref->tree->bmp, ref->lf))
+		ref->tree = ref->tree->leaf[ref->lf].as_link,
+		ref->lf = ref->tree->bsize;
 }
 /** This is a convince function.
- @return The leftmost entry string at `idx` of `tree`. */
+ @return The leftmost entry string at `lf` of `tree`. */
 static const char *PT_(sample)(const struct PT_(tree) *const tree,
-	const unsigned idx) {
-	struct PT_(ref_c) ref; ref.tree = tree, ref.idx = idx;
+	const unsigned lf) {
+	struct PT_(ref_c) ref; ref.tree = tree, ref.lf = lf;
 	PT_(lower_entry_c)(&ref);
-	return PT_(key_string)(PT_(entry_key)(&ref.tree->leaf[ref.idx].as_entry));
+	return PT_(key_string)(PT_(entry_key)(&ref.tree->leaf[ref.lf].as_entry));
 }
 
 /* If `ref.tree` is null, starts iteration.
@@ -239,13 +239,13 @@ static int PT_(to_successor_c)(CONSTSTRUCT PT_(tree) *const root, \
 	struct PT_(ref_c) *const ref) { \
 	assert(ref); \
 	if(!root || root->bsize == USHRT_MAX) return 0; /* Empty. */ \
-	if(!ref->tree) { ref->tree = root, ref->idx = 0; } /* Start. */ \
-	else if(++ref->idx > ref->tree->bsize) { /* Gone off the end. */ \
+	if(!ref->tree) { ref->tree = root, ref->lf = 0; } /* Start. */ \
+	else if(++ref->lf > ref->tree->bsize) { /* Gone off the end. */ \
 		const struct PT_(tree) *const old = ref->tree; \
-		const char *const sample = PT_(sample)(old, ref->idx - 1); \
+		const char *const sample = PT_(sample)(old, ref->lf - 1); \
 		CONSTSTRUCT PT_(tree) *tree = root; \
 		size_t bit = 0; \
-		for(ref->tree = 0, ref->idx = 0; tree != old; ) { \
+		for(ref->tree = 0, ref->lf = 0; tree != old; ) { \
 			unsigned br0 = 0, br1 = tree->bsize, lf = 0; \
 			while(br0 < br1) { \
 				const struct trie_branch *const branch = tree->branch + br0; \
@@ -256,7 +256,7 @@ static int PT_(to_successor_c)(CONSTSTRUCT PT_(tree) *const root, \
 					br0 += branch->left + 1, lf += branch->left + 1; \
 				bit++; \
 			} \
-			if(lf < tree->bsize) ref->tree = tree, ref->idx = lf + 1; \
+			if(lf < tree->bsize) ref->tree = tree, ref->lf = lf + 1; \
 			assert(trie_bmp_test(&tree->bmp, lf)); \
 			tree = tree->leaf[lf].as_link; \
 		} \
@@ -281,7 +281,7 @@ static struct PT_(forward) PT_(forward)(const struct T_(trie) *const trie) {
 /** @return Next entry of `it` or null. */
 static const PT_(entry) *PT_(next_c)(struct PT_(forward) *const it) {
 	return assert(it), PT_(to_successor_c)(it->root, &it->cur)
-		? &it->cur.tree->leaf[it->cur.idx].as_entry : 0;
+		? &it->cur.tree->leaf[it->cur.lf].as_entry : 0;
 }
 
 #if 0 /* That's weird? */
@@ -303,7 +303,7 @@ static void PT_(begin)(struct PT_(iterator) *const it,
 	 PT_(match_prefix)(trie, "", cur); (not code, file size.) */
 	if(it->trie = trie) {
 		if(it->cur.tree = it->end.tree = trie->root) {
-			it->cur.idx = 0, it->end.idx = trie->root->bsize + 1;
+			it->cur.lf = 0, it->end.lf = trie->root->bsize + 1;
 			PT_(lower_entry)(&it->cur);
 			PT_(higher_entry)(&it->end);
 		}
@@ -317,17 +317,17 @@ static void PT_(begin)(struct PT_(iterator) *const it,
 static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
 	assert(it);
 	/* Possibly this is still valid? */
-	if(!it->trie || !it->cur.tree || it->cur.tree->bsize < it->cur.idx
-		|| !it->end.tree || it->end.tree->bsize < it->end.idx) return 0;
+	if(!it->trie || !it->cur.tree || it->cur.tree->bsize < it->cur.lf
+		|| !it->end.tree || it->end.tree->bsize < it->end.lf) return 0;
 	if(it->seen) {
 		/* We have reached the planned end or concurrent modification. */
-		if(it->cur.tree == it->end.tree && it->cur.idx >= it->end.idx
+		if(it->cur.tree == it->end.tree && it->cur.lf >= it->end.lf
 			|| !PT_(to_successor)(it->trie->root, &it->cur)) return 0;
 	} else {
 		it->seen = 1;
 	}
-	assert(!trie_bmp_test(&it->cur.tree->bmp, it->cur.idx));
-	return &it->cur.tree->leaf[it->cur.idx].as_entry;
+	assert(!trie_bmp_test(&it->cur.tree->bmp, it->cur.lf));
+	return &it->cur.tree->leaf[it->cur.lf].as_entry;
 }
 
 
@@ -429,11 +429,8 @@ static PT_(entry) *PT_(get)(const struct T_(trie) *const trie,
 /** @return Exact `string` match for `trie` or null, (both can be null.)
  @order \O(|`string`|) @allow */
 static PT_(entry) *T_(trie_get)(const struct T_(trie) *const trie,
-	const char *const string) {
-	PT_(entry) *e;
-	if(!trie || !string || !(e = PT_(match)(trie, string))) return 0;
-	return strcmp(string, PT_(key_string)(PT_(entry_key)(e))) ? 0 : e;
-}
+	const char *const string)
+	{ return trie && string ? PT_(get)(trie, string) : 0; }
 /** Looks at only the index of `trie` (which can be null) for potential
  `prefix` matches, and stores them in `it`. */
 static void PT_(match_prefix)(const struct T_(trie) *const trie,
@@ -464,8 +461,8 @@ finally:
 		assert(br0 <= br1 && lf - br0 + br1 <= tree->bsize);
 		it->trie = trie;
 		it->cur.tree = it->end.tree = tree;
-		it->cur.idx = lf, PT_(lower_entry)(&it->cur);
-		it->end.idx = lf + br1 - br0, PT_(higher_entry)(&it->end);
+		it->cur.lf = lf, PT_(lower_entry)(&it->cur);
+		it->end.lf = lf + br1 - br0, PT_(higher_entry)(&it->end);
 		it->seen = 0;
 		break;
 	}
@@ -478,7 +475,7 @@ static void PT_(prefix)(struct T_(trie) *const trie,
 	/* Make sure actually a prefix. */
 	if(it->trie && !trie_is_prefix(prefix,
 		PT_(key_string)(PT_(entry_key)(
-		&it->cur.tree->leaf[it->cur.idx].as_entry))))
+		&it->cur.tree->leaf[it->cur.lf].as_entry))))
 		it->trie = 0;
 }
 /** @return An iterator set to strings that start with `prefix` in `trie`.
@@ -497,7 +494,7 @@ static PT_(entry) *T_(trie_next)(struct T_(trie_iterator) *const it)
 #if 0
 /** @return The number of elements in `it`. */
 static size_t PT_(size_r)(const struct PT_(iterator) *const it) {
-	return it->end.idx - it->cur.idx; /* Fixme. */
+	return it->end.lf - it->cur.lf; /* Fixme. */
 }
 /** Counts the of the items in `it`. @order \O(|`it`|) @allow
  @fixme Doesn't work at all. */
@@ -508,7 +505,7 @@ static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
 
 /* Adding new entries. */
 
-/** Splits `tree` into two trees. @throws[malloc] */
+/** Splits `tree` into two trees. Used in <fn:<PT>add>. @throws[malloc] */
 static int PT_(split)(struct PT_(tree) *const tree) {
 	unsigned br0, br1, lf;
 	struct PT_(tree) *kid;
@@ -557,8 +554,7 @@ static int PT_(split)(struct PT_(tree) *const tree) {
 	tree->bsize -= kid->bsize;
 	return 1;
 }
-/** Open up an uninitialized space in a non-full `tree`. Used in
- <fn:<PT>add_unique>.
+/** Open up an uninitialized space in a non-full `tree`. Used in <fn:<PT>add>.
  @param[tree, tree_bit] The start of the tree.
  @param[key, diff_bit] New key and where the new key differs from the tree.
  @return The uninitialized leaf as data. */
@@ -603,39 +599,9 @@ static union PT_(leaf) *PT_(tree_open)(struct PT_(tree) *const tree,
 	tree->bsize++;
 	return leaf;
 }
-/** Fixme: could I make it recursive to only do one decent? Do I want to? */
-static PT_(entry) *PT_(exemplar)(const struct T_(trie) *const trie,
-	const char *const string) {
-	struct PT_(ref) ref;
-	size_t bit; /* In bits of `key`. */
-	struct { size_t cur, next; } byte; /* `key` null checks. */
-	assert(trie && string);
-	/* Empty. */
-	if(!(ref.tree = trie->root) || ref.tree->bsize == USHRT_MAX) return 0;
-	for(bit = 0, byte.cur = 0; ; ) {
-		unsigned br0 = 0, br1 = ref.tree->bsize;
-		ref.idx = 0;
-		while(br0 < br1) {
-			const struct trie_branch *const branch = ref.tree->branch + br0;
-			for(byte.next = (bit += branch->skip) / CHAR_BIT;
-				byte.cur < byte.next; byte.cur++)
-				if(string[byte.cur] == '\0') {
-					PT_(lower_entry)(&ref); /* There are several, pick first. */
-					goto finally;
-				}
-			if(!TRIE_QUERY(string, bit))
-				br1 = ++br0 + branch->left;
-			else
-				br0 += branch->left + 1, ref.idx += branch->left + 1;
-			bit++;
-		}
-		if(!trie_bmp_test(&ref.tree->bmp, ref.idx)) goto finally;
-		ref.tree = ref.tree->leaf[ref.idx].as_link; /* Jumped trees. */
-	}
-finally:
-	return &ref.tree->leaf[ref.idx].as_entry;
-}
-
+/** Adds `key` to `trie` and stores it in `entry`, if it is not null. On
+ unique, fills in the `key` unless `TRIE_KEY_IN_VALUE` (because it doesn't have
+ enough information, in that case.) @return A result. */
 static enum trie_result PT_(add)(struct T_(trie) *const trie, PT_(key) key,
 	PT_(entry) **const entry) {
 	struct PT_(ref) ref;
@@ -660,8 +626,8 @@ static enum trie_result PT_(add)(struct T_(trie) *const trie, PT_(key) key,
 	/* Otherwise we will be able to find an exemplar: a neighbouring key to the
 	 new key up to the difference, (after that, it doesn't matter.) */
 	for(bit1 = 0, byte.cur = 0; ;
-		ref.tree = ref.tree->leaf[ref.idx].as_link) {
-		br0 = 0, br1 = ref.tree->bsize, ref.idx = 0; /* Leaf. */
+		ref.tree = ref.tree->leaf[ref.lf].as_link) {
+		br0 = 0, br1 = ref.tree->bsize, ref.lf = 0; /* Leaf. */
 		while(br0 < br1) {
 			const struct trie_branch *const branch = ref.tree->branch + br0;
 			for(byte.next = (bit1 += branch->skip) / CHAR_BIT;
@@ -674,13 +640,13 @@ static enum trie_result PT_(add)(struct T_(trie) *const trie, PT_(key) key,
 			if(!TRIE_QUERY(key_string, bit1))
 				br1 = ++br0 + branch->left;
 			else
-				br0 += branch->left + 1, ref.idx += branch->left + 1;
+				br0 += branch->left + 1, ref.lf += branch->left + 1;
 			bit1++;
 		}
-		if(!trie_bmp_test(&ref.tree->bmp, ref.idx)) break; /* One exemplar. */
+		if(!trie_bmp_test(&ref.tree->bmp, ref.lf)) break; /* One exemplar. */
 	}
 found_exemplar:
-	exemplar = &ref.tree->leaf[ref.idx].as_entry;
+	exemplar = &ref.tree->leaf[ref.lf].as_entry;
 	exemplar_string = PT_(key_string)(PT_(entry_key)(exemplar));
 	/* Do a string comparison to find difference, first bytes, then bits. */
 	{
@@ -699,24 +665,24 @@ found_exemplar:
 	if((bit1 ? bit1 - 1 : 0) + UCHAR_MAX < diff) { errno = EILSEQ; goto catch; }
 	/* Restart and go to the difference. */
 	for(bit1 = 0, ref.tree = trie->root; ;
-		ref.tree = ref.tree->leaf[ref.idx].as_link) {
+		ref.tree = ref.tree->leaf[ref.lf].as_link) {
 		tree_bit1 = bit1;
 tree:
-		br0 = 0, br1 = ref.tree->bsize, ref.idx = 0;
+		br0 = 0, br1 = ref.tree->bsize, ref.lf = 0;
 		while(br0 < br1) {
 			const struct trie_branch *const branch = ref.tree->branch + br0;
 			if(diff <= (bit1 += branch->skip)) goto found_diff;
 			if(!TRIE_QUERY(key_string, bit1))
 				br1 = ++br0 + branch->left;
 			else
-				br0 += branch->left + 1, ref.idx += branch->left + 1;
+				br0 += branch->left + 1, ref.lf += branch->left + 1;
 			bit1++;
 		}
-		if(!trie_bmp_test(&ref.tree->bmp, ref.idx)) goto found_diff;
+		if(!trie_bmp_test(&ref.tree->bmp, ref.lf)) goto found_diff;
 	}
 found_diff:
 	/* Account for choosing the right leaf. */
-	if(TRIE_QUERY(key_string, diff)) ref.idx += br1 - br0 + 1;
+	if(TRIE_QUERY(key_string, diff)) ref.lf += br1 - br0 + 1;
 	/* Split. Agnostic of the key, also inefficient in that it moves data one
 	 time for split and a subset of the data a second time for insert. Having
 	 `TREE_ORDER` be more makes this matter less. */
@@ -742,107 +708,12 @@ catch:
 	if(!errno) errno = ERANGE; /* `malloc` only has to set it in POSIX. */
 	return TRIE_ERROR;
 }
-/** Adds `key` to `trie` and stores it in `entry`. Fills in the `key` unless
- `TRIE_KEY_IN_VALUE` (because it doesn't have enough information, in that
- case.) */
-static int PT_(add_unique)(struct T_(trie) *const trie, PT_(key) key,
-	PT_(entry) **const entry) {
-	struct PT_(tree) *tree;
-	size_t tree_bit, bit;
-	struct { size_t cur, next; } byte;
-	unsigned br0, br1, lf;
-	const char *sample;
-	union PT_(leaf) *leaf;
-	const char *key_string = PT_(key_string)(key);
-	assert(trie && PT_(key_string)(key));
-	printf("-*-add(%s)\n", key_string);
-	if(!(tree = trie->root)) { /* Idle. */
-		printf("idle\n");
-		if(!(tree = malloc(sizeof *tree))) goto catch;
-		tree->bsize = USHRT_MAX;
-		trie->root = tree;
-	} /* Fall-through. */
-	if(tree->bsize == USHRT_MAX) { /* Empty. */
-		printf("empty\n");
-		tree->bsize = 0;
-		trie_bmp_clear_all(&trie->root->bmp);
-		leaf = tree->leaf + 0;
-		goto assign;
-	}
-	/* Find the first bit not in the tree. */
-	for(tree_bit = bit = 0, byte.cur = 0; ;
-		tree = tree->leaf[lf].as_link, tree_bit = bit) {
-tree:
-		br0 = 0, br1 = tree->bsize, lf = 0;
-		sample = PT_(sample)(tree, 0);
-		while(br0 < br1) {
-			const struct trie_branch *const branch = tree->branch + br0;
-			const size_t branch_bit = bit + branch->skip;
-			for( ; bit < branch_bit; bit++)
-				if(TRIE_DIFF(key_string, sample, bit)) goto found;
-			if(!TRIE_QUERY(key_string, bit)) {
-				br1 = ++br0 + branch->left;
-			} else {
-				br0 += branch->left + 1, lf += branch->left + 1;
-				sample = PT_(sample)(tree, lf);
-			}
-			bit++;
-		}
-		/* Got to a leaf without getting a difference. */
-		if(!trie_bmp_test(&tree->bmp, lf)) break;
-	}
-	{ /* Too much similarity to fit in a byte, (~32 characters.) */
-		const size_t limit = bit + UCHAR_MAX;
-		printf("limit: %lu\n", limit);
-		while(!TRIE_DIFF(key_string, sample, bit))
-			if(++bit > limit) { errno = EILSEQ; goto catch; }
-	}
-found:
-	/* Account for choosing the right leaf. */
-	if(!!TRIE_QUERY(key_string, bit)) lf += br1 - br0 + 1;
-	printf("key:    <<%s>>,\n"
-		"sample: <<%s>>.\n", key_string, sample);
-	printf("bit difference %lu\n", bit);
-	/* Split. This is inefficient in that it moves data one time for split and
-	 a subset of the data a second time for insert. It also is agnostic of the
-	 key that we are going to put in. Having `TREE_ORDER` be more makes this
-	 matter less. */
-	assert(tree->bsize <= TRIE_BRANCHES);
-	if(tree->bsize == TRIE_BRANCHES) {
-		if(!PT_(split)(tree)) goto catch;
-		bit = tree_bit;
-		goto tree; /* Start again from the top of the first tree. */
-	}
-	/* Tree is not full. */
-	leaf = PT_(tree_open)(tree, tree_bit, key_string, bit);
-assign:
-#ifndef TRIE_VALUE /* <!-- key set */
-	leaf->as_entry = key;
-#elif !defined(TRIE_KEY_IN_VALUE) /* key set --><!-- key value map */
-	leaf->as_entry.key = key;
-#else /* key value map --><!-- key in value */
-	/* Will rely on user to do it; oy. We potentially do not have all the
-	 information to do it here. */
-#endif /* key in value --> */
-	if(entry) *entry = &leaf->as_entry;
-	return 1;
-catch:
-	printf("error?\n");
-	/* `malloc` doesn't have to set it according to `C89`. */
-	if(!errno) errno = ERANGE;
-	return 0;
-}
 #ifndef TRIE_VALUE /* <!-- key set */
 /** Adds `key` to `trie` (which must both exist) if it doesn't exist. */
 static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	const PT_(key) key) {
 	assert(trie && PT_(key_string)(key));
-#if 1
 	return PT_(add)(trie, key, 0);
-#else
-	return PT_(get)(trie, PT_(key_string)(key)) ? TRIE_PRESENT
-		: (PT_(add_unique)(trie, key, 0) ? TRIE_UNIQUE : TRIE_ERROR);
-#endif
 }
 #else /* key set --><!-- key value map OR key in value */
 /** Adds `key` to `trie` if it doesn't exist already.
@@ -853,13 +724,9 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
  `key`; `TRIE_PRESENT`, the value associated with `key`. If `TRIE_IN_VALUE`,
  was specified and the return is `TRIE_UNIQUE`, the trie is in an invalid state
  until filling in the key in value by `key`.
- @order \O(|`trie`|) worse case with arbitrarily increasing length. The height
- of a trie in a smoothed model is \O(\log |`trie`|) iid,
- <Tong, Goebel, Lin, 2015, Smoothed>. However, this is not the run time.
- @fixme It could be \O(|max(`trie.key.string`)|) if we changed the algorithm;
- instead of doing it on-line and finding samples for every branch, we do it in
- two passes, find exemplar, and add. Would not be more because `get` already is
- two passes.
+ @order \O(\max(|`key`|)) worse case with arbitrarily increasing length. In a
+ smoothed model \O(\log \max(|`trie`|)) iid,
+ <Tong, Goebel, Lin, 2015, Smoothed>.
  @throws[EILSEQ] The string has a distinguishing run of bytes with a
  neighbouring string that is too long. On most platforms, this is about
  32 bytes the same. @throws[malloc] @allow */
@@ -868,11 +735,6 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	enum trie_result res;
 	PT_(entry) *e;
 	assert(trie && PT_(key_string)(key));
-	/*if(e = PT_(get)(trie, PT_(key_string)(key))) {
-		if(value) *value = PT_(entry_value)(e);
-		return TRIE_PRESENT;
-	}
-	if(!PT_(add_unique)(trie, key, &e)) return TRIE_ERROR;*/
 	if(res = PT_(add)(trie, key, &e)) {
 #ifndef TRIE_KEY_IN_VALUE /* <!-- key value map */
 		if(value) *value = &e->value;
@@ -888,9 +750,8 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 
 /* Deleting entries. */
 
-/** Try to remove `string` from `trie`.
- @fixme Join when combined-half is less than a quarter? This is crucial to
- performance in real-life? */
+/** Try to remove `string` from `trie`. @fixme Join when combined-half is less
+ than a quarter? Probably crucial to performance in some corner cases. */
 static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 	struct PT_(tree) *tree;
 	size_t bit; /* In bits of `key`. */
@@ -986,11 +847,9 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 	} else {
 		return 1; /* Just one entry; leave it be. */
 	}
-	/*printf("remove: ### freeing %s\n", orcify(tree));*/
 	free(tree);
 	return 1;
 erased_tree:
-	/*printf("remove: entire trie.\n");*/
 	assert(trie->root == tree && !tree->bsize && !trie_bmp_test(&tree->bmp, 0));
 	tree->bsize = USHRT_MAX;
 	return 1;
@@ -999,7 +858,8 @@ erased_tree:
  @return Success. If either parameter is null or the `string` is not in `trie`,
  returns false without setting `errno`.
  @throws[EILSEQ] The deletion of `string` would cause an overflow with the rest
- of the strings. @order \O(|`string`|) @allow */
+ of the strings.
+ @order \O(|`string`|), iid \O(\log |`trie`|) @allow */
 static int T_(trie_remove)(struct T_(trie) *const trie,
 	const char *const string)
 	{ return trie && string && PT_(remove)(trie, string); }
@@ -1023,7 +883,6 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
 static void PT_(to_string)(const PT_(entry) *const e,
 	char (*const z)[12]) {
 	const char *string = PT_(key_string(PT_(entry_key)(e)));
-	/* sprintf(*z, "%.11s", string); <- Unnecessary size. */
 	unsigned i;
 	char *y = *z;
 	assert(e && z);

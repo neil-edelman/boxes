@@ -34,7 +34,7 @@ A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, 
  * Standard:  
    C89 \(Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ\.\)
  * Caveat:  
-   ([&lt;T&gt;trie_from_array](#user-content-fn-3554106c), [&lt;T&gt;trie_size](#user-content-fn-b7ff4bcf), [&lt;T&gt;trie_try](#user-content-fn-6750ab7))
+   ([&lt;T&gt;trie_from_array](#user-content-fn-3554106c), [&lt;T&gt;trie_size](#user-content-fn-b7ff4bcf))
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -278,9 +278,7 @@ Adds `key` to `trie` if it doesn't exist already\.
    The string has a distinguishing run of bytes with a neighbouring string that is too long\. On most platforms, this is about 32 bytes the same\.
  * Exceptional return: malloc  
  * Order:  
-   &#927;\(|`trie`|\) worse case with arbitrarily increasing length\. The height of a trie in a smoothed model is &#927;\(log |`trie`|\) iid, [Tong, Goebel, Lin, 2015, Smoothed](https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed)\. However, this is not the run time\.
- * Caveat:  
-   It could be &#927;\(|max\(`trie.key.string`\)|\) if we changed the algorithm; instead of doing it on\-line and finding samples for every branch, we do it in two passes, find exemplar, and add\. Would not be more because `get` already is two passes\.
+   &#927;\(\\max\(|`key`|\)\) worse case with arbitrarily increasing length\. In a smoothed model &#927;\(log \\max\(|`trie`|\)\) iid, [Tong, Goebel, Lin, 2015, Smoothed](https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed)\.
 
 
 
@@ -296,7 +294,7 @@ Tries to remove `string` from `trie`\.
  * Exceptional return: EILSEQ  
    The deletion of `string` would cause an overflow with the rest of the strings\.
  * Order:  
-   &#927;\(|`string`|\)
+   &#927;\(|`string`|\), iid &#927;\(log |`trie`|\)
 
 
 
