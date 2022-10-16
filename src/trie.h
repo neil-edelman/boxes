@@ -646,23 +646,17 @@ static enum trie_result PT_(add)(struct T_(trie) *const trie, PT_(key) key,
 	const char *const key_string = PT_(key_string)(key), *exemplar_string;
 	size_t bit1, diff, tree_bit1;
 	assert(trie && PT_(key_string)(key));
-
-	printf("---add(%s)\n", key_string);
 	if(!(ref.tree = trie->root)) { /* Idle. */
-		printf("idle\n");
 		if(!(ref.tree = malloc(sizeof *ref.tree))) goto catch;
 		ref.tree->bsize = USHRT_MAX;
 		trie->root = ref.tree;
 	} /* Fall-through. */
-
 	if(ref.tree->bsize == USHRT_MAX) { /* Empty: special case. */
-		printf("empty\n");
 		ref.tree->bsize = 0;
 		trie_bmp_clear_all(&ref.tree->bmp);
 		leaf = ref.tree->leaf + 0;
 		goto assign;
 	}
-
 	/* Otherwise we will be able to find an exemplar: a neighbouring key to the
 	 new key up to the difference, (after that, it doesn't matter.) */
 	for(bit1 = 0, byte.cur = 0; ;
@@ -688,9 +682,6 @@ static enum trie_result PT_(add)(struct T_(trie) *const trie, PT_(key) key,
 found_exemplar:
 	exemplar = &ref.tree->leaf[ref.idx].as_entry;
 	exemplar_string = PT_(key_string)(PT_(entry_key)(exemplar));
-	printf("key:      <<%s>>,\n"
-		"exemplar: <<%s>>.\n", key_string, exemplar_string);
-
 	/* Do a string comparison to find difference, first bytes, then bits. */
 	{
 		const char *k = key_string, *e = exemplar_string;
@@ -698,7 +689,7 @@ found_exemplar:
 			if(*k == '\0') { if(entry) *entry = exemplar; return TRIE_PRESENT; }
 			diff += CHAR_BIT;
 			/* Both one ahead at this point, (they might not exist.) */
-			if(bit1 + UCHAR_MAX < diff) return printf("too many bytes key<%c>:exe<%c>, bit %lu diff %lu\n", *k, *e, bit1, diff), errno = EILSEQ, TRIE_ERROR;
+			if(bit1 + UCHAR_MAX < diff) return errno = EILSEQ, TRIE_ERROR;
 		}
 	}
 	/* `diff` switched from ahead; now actual; there is a difference. */
@@ -706,8 +697,6 @@ found_exemplar:
 	assert(!bit1 || diff != bit1 - 1);
 	/* Too much similarity to fit in a limited skip, (~32 characters.) */
 	if((bit1 ? bit1 - 1 : 0) + UCHAR_MAX < diff) { errno = EILSEQ; goto catch; }
-	printf("bit %lu, diff %lu\n", bit1, diff);
-
 	/* Restart and go to the difference. */
 	for(bit1 = 0, ref.tree = trie->root; ;
 		ref.tree = ref.tree->leaf[ref.idx].as_link) {
@@ -749,9 +738,7 @@ assign:
 #endif /* key in value --> */
 	if(entry) *entry = &leaf->as_entry;
 	return TRIE_UNIQUE;
-	
 catch:
-	printf("error?\n");
 	if(!errno) errno = ERANGE; /* `malloc` only has to set it in POSIX. */
 	return TRIE_ERROR;
 }

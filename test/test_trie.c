@@ -398,7 +398,7 @@ int main(void) {
 	errno = 0;
 	contrived_test(), str32_pool_clear(&str_pool);
 	fixed_colour_test();
-#if 0
+#if 1
 	str_trie_test(), str32_pool_clear(&str_pool); /* Key set. */
 	colour_trie_test(); /* Custom key set with enum string backing. */
 	mapint_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */
