@@ -52,7 +52,7 @@
 
 <p><img alt = "Example of trie." src = "doc/trie.png" width = 999 height = 642></p>
 
-<p>A <a href = "#tag:&lt;T&gt;trie">&lt;T&gt;trie</a> is a prefix-tree, digital-tree, or trie: an ordered set or map of immutable key strings allowing efficient prefix queries. Any encoding with a byte null-terminator is supported, including ASCII and <a href = "https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8">modified UTF-8</a>. The implementation is as <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a> that acts as a compact index, only storing the where the key bits are different. The keys are grouped in fixed-size nodes in a relaxed version of <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large">Bayer, McCreight, 1972 Large</a>, where the height is dynamic.</p>
+<p>A <a href = "#tag:&lt;T&gt;trie">&lt;T&gt;trie</a> is a prefix-tree, digital-tree, or trie: an ordered set or map of byte null-terminated immutable key strings allowing efficient prefix queries. The implementation is as <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a> that acts as an index, only storing the where the key bits are different. The keys are grouped in fixed-size nodes in a relaxed version of <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large">Bayer, McCreight, 1972 Large</a>, where the height is dynamic.</p>
 
 <p><img alt = "Bit view of the trie." src = "doc/trie-bits.png" width = 1136 height = 416></p>
 

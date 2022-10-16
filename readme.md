@@ -15,7 +15,7 @@ Header [src/trie\.h](src/trie.h) requires [src/bmp\.h](src/bmp.h); examples [tes
 
 ![Example of trie.](doc/trie.png)
 
-A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, or trie: an ordered set or map of immutable key strings allowing efficient prefix queries\. Any encoding with a byte null\-terminator is supported, including ASCII and [modified UTF-8](https://en.wikipedia.org/wiki/UTF-8#Modified_UTF-8)\. The implementation is as [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) that acts as a compact index, only storing the where the key bits are different\. The keys are grouped in fixed\-size nodes in a relaxed version of [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large), where the height is dynamic\.
+A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, or trie: an ordered set or map of byte null\-terminated immutable key strings allowing efficient prefix queries\. The implementation is as [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) that acts as an index, only storing the where the key bits are different\. The keys are grouped in fixed\-size nodes in a relaxed version of [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large), where the height is dynamic\.
 
 ![Bit view of the trie.](doc/trie-bits.png)
 
