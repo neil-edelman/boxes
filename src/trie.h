@@ -644,7 +644,7 @@ static enum trie_result PT_(add)(struct T_(trie) *const trie, PT_(key) key,
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	PT_(entry) *exemplar;
 	const char *key_string = PT_(key_string)(key), *exemplar_string;
-	size_t bit_diff, bit;
+	size_t bit, diff, tree_bit;
 	assert(trie && PT_(key_string)(key) && entry);
 
 	if(!(ref.tree = trie->root)) { /* Idle. */
@@ -689,20 +689,20 @@ found_exemplar:
 	printf("key: <<%s>>, exemplar: <<%s>>.\n", key_string, exemplar_string);
 
 	/* Do a string comparison to find difference, first bytes, then bits. */
-	for(bit_diff = 0; *key_string == *exemplar_string;
-		bit_diff += CHAR_BIT, key_string++, exemplar_string++)
+	for(diff = 0; *key_string == *exemplar_string;
+		diff += CHAR_BIT, key_string++, exemplar_string++)
 		if(*key_string == '\0') return *entry = exemplar, TRIE_PRESENT;
-	for( ; !TRIE_DIFF(key_string, exemplar_string, bit_diff); bit_diff++);
-	printf("bit difference %lu.\n", (unsigned long)bit_diff);
+	for( ; !TRIE_DIFF(key_string, exemplar_string, diff); diff++);
+	printf("bit difference %lu.\n", (unsigned long)diff);
 
 	/* Restart and go to the difference. */
 	for(bit = 0, ref.tree = trie->root; ;
 		ref.tree = ref.tree->leaf[ref.idx].as_link) {
-		br0 = 0, br1 = ref.tree->bsize;
-		ref.idx = 0; /* Leaf. */
+tree:
+		tree_bit = bit, br0 = 0, br1 = ref.tree->bsize, ref.idx = 0; /* Leaf. */
 		while(br0 < br1) {
 			const struct trie_branch *const branch = ref.tree->branch + br0;
-			if((bit += branch->skip) >= bit_diff) goto found_diff;
+			if(diff <= (bit += branch->skip)) goto found_diff;
 			if(!TRIE_QUERY(key_string, bit))
 				br1 = ++br0 + branch->left;
 			else
@@ -711,11 +711,24 @@ found_exemplar:
 		}
 		if(!trie_bmp_test(&ref.tree->bmp, ref.idx)) goto found_diff;
 	}
+	/* Too much similarity to fit in a limited skip, (~32 characters.) */
+	if(bit + 1 + UCHAR_MAX < diff) { errno = EILSEQ; goto catch; }
 found_diff:
-	if(TRIE_QUERY(key_string, bit_diff)) ref.idx += br1 - br0 + 1;
-	assert(0);
-	return 0;
-
+	assert(diff != bit);
+	/* Account for choosing the right leaf. */
+	if(TRIE_QUERY(key_string, diff)) ref.idx += br1 - br0 + 1;
+	/* Split. This is inefficient in that it moves data one time for split and
+	 a subset of the data a second time for insert. It also is agnostic of the
+	 key that we are going to put in. Having `TREE_ORDER` be more makes this
+	 matter less. */
+	assert(ref.tree->bsize <= TRIE_BRANCHES);
+	if(ref.tree->bsize == TRIE_BRANCHES) {
+		if(!PT_(split)(ref.tree)) goto catch; /* Takes memory. */
+		bit = tree_bit;
+		goto tree; /* Start again from the top of the first tree. */
+	}
+	/* Tree is not full. */
+	leaf = PT_(tree_open)(ref.tree, tree_bit, key_string, diff);
 assign:
 #ifndef TRIE_VALUE /* <!-- key set */
 	leaf->as_entry = key;
@@ -757,7 +770,7 @@ static int PT_(add_unique)(struct T_(trie) *const trie, PT_(key) key,
 		goto assign;
 	}
 	/* Find the first bit not in the tree. */
-	for(tree_bit = 0, bit = 0, byte.cur = 0; ;
+	for(tree_bit = bit = 0, byte.cur = 0; ;
 		tree = tree->leaf[lf].as_link, tree_bit = bit) {
 tree:
 		br0 = 0, br1 = tree->bsize, lf = 0;

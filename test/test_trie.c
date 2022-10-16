@@ -298,6 +298,7 @@ static void contrived_test(void) {
 		enum trie_result r;
 		r = trie_str_add(&t, "a", &e), assert(r == TRIE_PRESENT);
 		r = trie_str_add(&t, "yo", &e), assert(r == TRIE_UNIQUE);
+		trie_str_graph(&t, "graph/yo.gv", 0);
 	}
 	result = str_trie_remove(&t, "yo");
 	assert(!result);
