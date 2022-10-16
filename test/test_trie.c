@@ -360,9 +360,10 @@ static void article_test(void) {
 	for(i = 0; i < sizeof list2 / sizeof *list2; i++) {
 		const struct star *const star = stars + list2[i];
 		struct star *entry;
-		star_trie_try(&trie, star->name, &entry);
+		if(!star_trie_try(&trie, star->name, &entry)) { assert(0); break; }
 		entry->name = star->name;
 		entry->distance = star->distance;
+		trie_star_graph(&trie, "graph/article.gv", i + 1000);
 	}
 	trie_star_graph(&trie, "graph/article.gv", 1);
 	star_trie_(&trie);
