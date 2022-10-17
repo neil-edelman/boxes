@@ -107,7 +107,7 @@ To initialize it to an idle state, see [&lt;T&gt;trie](#user-content-fn-754a10a5
 
 <code>struct <strong>&lt;T&gt;trie_iterator</strong>;</code>
 
-Represents a range of in\-order keys\.
+Represents a range of in\-order keys in &#927;\(1\) space\.
 
 
 

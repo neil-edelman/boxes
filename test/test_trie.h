@@ -594,6 +594,26 @@ finally:
 	PT_(handle_array_)(&handles);
 }
 
+#if 0
+	/* This is old code that is a superior test; merge it, maybe? */
+	for( ; i; i--) {
+		int is;
+		show = 1/*!(i & (i - 1))*/;
+		if(show) trie_str_no++;
+		if(show) printf("\"%s\" remove.\n", str_array[i - 1]);
+		is = str_trie_remove(&strs, str_array[i - 1]);
+		if(show) trie_str_graph(&strs, "graph/str-deleted.gv");
+		for(j = 0; j < sizeof str_array / sizeof *str_array; j++) {
+			const char *get = str_trie_get(&strs, str_array[j]);
+			const int want_to_get = j < i - 1;
+			printf("Test get(%s) = %s, (%swant to get.)\n",
+				str_array[j], get ? get : "<didn't find>",
+				want_to_get ? "" : "DON'T ");
+			assert(!(want_to_get ^ (get == str_array[j])));
+		}
+	}
+#endif
+
 /** Will be tested on stdout. Requires `TRIE_TEST`, and not `NDEBUG` while
  defining `assert`. @allow */
 static void T_(trie_test)(void) {

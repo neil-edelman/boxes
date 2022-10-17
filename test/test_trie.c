@@ -126,6 +126,31 @@ static void str8_filler(struct str8 *const s) {
 #include "../src/trie.h"
 
 
+/** This is an external pointer; the trie is just an index. We will be
+ responsible for assigning keys. */
+struct keyval { char key[12]; int value; };
+#define POOL_NAME keyval
+#define POOL_TYPE struct keyval
+#include "pool.h"
+static struct keyval_pool kv_pool;
+static const char *keyval_read_key(/*fixme! If possible? const*/
+	struct keyval *const*const kv_ptr)
+	{ return (*kv_ptr)->key; }
+static void keyval_filler(struct keyval **const kv_ptr) {
+	struct keyval *kv = keyval_pool_new(&kv_pool);
+	assert(kv); /* Not testing malloc. */
+	kv->value = rand() / (RAND_MAX / 1098 + 1) - 99;
+	orcish(kv->key, sizeof kv->key);
+	*kv_ptr = kv;
+}
+#define TRIE_NAME keyval
+#define TRIE_VALUE struct keyval *
+#define TRIE_KEY_IN_VALUE &keyval_read_key
+#define TRIE_TEST &keyval_filler
+#define TRIE_TO_STRING
+#include "../src/trie.h"
+
+
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
  Sol. The trie is a copy of this table, _vs_ the actual table if we would have
  used pointers. */
@@ -174,50 +199,6 @@ static void star_filler(struct star *const star) {
 #define TRIE_TO_STRING
 #include "../src/trie.h"
 
-
-/** This is an external pointer; the trie is just an index. We will be
- responsible for assigning keys. */
-struct keyval { char key[12]; int value; };
-#define POOL_NAME keyval
-#define POOL_TYPE struct keyval
-#include "pool.h"
-static struct keyval_pool kv_pool;
-static const char *keyval_read_key(/*fixme! If possible? const*/
-	struct keyval *const*const kv_ptr)
-	{ return (*kv_ptr)->key; }
-static void keyval_filler(struct keyval **const kv_ptr) {
-	struct keyval *kv = keyval_pool_new(&kv_pool);
-	assert(kv); /* Not testing malloc. */
-	kv->value = rand() / (RAND_MAX / 1098 + 1) - 99;
-	orcish(kv->key, sizeof kv->key);
-	*kv_ptr = kv;
-}
-#define TRIE_NAME keyval
-#define TRIE_VALUE struct keyval *
-#define TRIE_KEY_IN_VALUE &keyval_read_key
-#define TRIE_TEST &keyval_filler
-#define TRIE_TO_STRING
-#include "../src/trie.h"
-
-
-#if 0
-	for( ; i; i--) {
-		int is;
-		show = 1/*!(i & (i - 1))*/;
-		if(show) trie_str_no++;
-		if(show) printf("\"%s\" remove.\n", str_array[i - 1]);
-		is = str_trie_remove(&strs, str_array[i - 1]);
-		if(show) trie_str_graph(&strs, "graph/str-deleted.gv");
-		for(j = 0; j < sizeof str_array / sizeof *str_array; j++) {
-			const char *get = str_trie_get(&strs, str_array[j]);
-			const int want_to_get = j < i - 1;
-			printf("Test get(%s) = %s, (%swant to get.)\n",
-				str_array[j], get ? get : "<didn't find>",
-				want_to_get ? "" : "DON'T ");
-			assert(!(want_to_get ^ (get == str_array[j])));
-		}
-	}
-#endif
 
 static void contrived_test(void) {
 	const char *const words[] = { "foo", "bar", "baz", "quxx",
@@ -369,28 +350,6 @@ static void article_test(void) {
 	star_trie_(&trie);
 }
 
-static void stackoverflow(void) {
-	struct str_trie trie = str_trie();
-	/*str_trie_try(&trie, "aaaaaaaaaaaaa");
-	str_trie_try(&trie, "aaaaaaaaaaaab");
-	str_trie_try(&trie, "aaaaaaaaaaab");
-	str_trie_try(&trie, "aaaaaaaaaab");
-	str_trie_try(&trie, "aaaaaaaaab");
-	str_trie_try(&trie, "aaaaaaaab");
-	str_trie_try(&trie, "aaaaaaab");*/
-	str_trie_try(&trie, "aaaaaab");
-	str_trie_try(&trie, "aaaaab");
-	str_trie_try(&trie, "aaaab");
-	str_trie_try(&trie, "aaab");
-	str_trie_try(&trie, "aab");
-	str_trie_try(&trie, "ab");
-	str_trie_try(&trie, "b");
-	trie_str_graph(&trie, "graph/so.gv", 0);
-	str_trie_try(&trie, "z");
-	trie_str_graph(&trie, "graph/so.gv", 1);
-	str_trie_(&trie);
-}
-
 /* fixme: why is it going 3x slower than yesterday for no good reason? */
 int main(void) {
 	unsigned seed = (unsigned)clock();
@@ -404,12 +363,10 @@ int main(void) {
 	mapint_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */
 	foo_trie_test(), str32_pool_clear(&str_pool); /* Custom value. */
 	str8_trie_test(); /* Small key set with no dependancy on outside keys. */
+	keyval_trie_test(), keyval_pool_(&kv_pool); /* Pointer to index. */
 	star_trie_test(); /* Custom value with enum strings backing. */
-	keyval_trie_test(), keyval_pool_clear(&kv_pool); /* Pointer to index. */
 #endif
 	article_test();
-	stackoverflow();
-	keyval_pool_(&kv_pool);
 	str32_pool_(&str_pool);
 	return EXIT_SUCCESS;
 }

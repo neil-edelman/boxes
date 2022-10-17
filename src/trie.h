@@ -332,7 +332,7 @@ static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
 }
 
 
-/** Represents a range of in-order keys. */
+/** Represents a range of in-order keys in \O(1) space. */
 struct T_(trie_iterator);
 struct T_(trie_iterator) { struct PT_(iterator) _; };
 
