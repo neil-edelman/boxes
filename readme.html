@@ -54,6 +54,8 @@
 
 <p>A <a href = "#tag:&lt;T&gt;trie">&lt;T&gt;trie</a> is a prefix-tree, digital-tree, or trie: an ordered set or map of byte null-terminated immutable key strings allowing efficient prefix queries. The implementation is as <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a> that acts as an index, only storing the where the key bits are different. The keys are grouped in fixed-size nodes in a relaxed version of <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large">Bayer, McCreight, 1972 Large</a>, where the height is dynamic.</p>
 
+<p>The worse-case run-time of querying or modifying the trie is also &#927;(log |<code>trie</code>|) iid, see <a href = "https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed">Tong, Goebel, Lin, 2015, Smoothed</a>.</p>
+
 <p><img alt = "Bit view of the trie." src = "doc/trie-bits.png" width = 1136 height = 416></p>
 
 </div>
@@ -282,7 +284,7 @@
 	<dt>Return:</dt>
 	<dd>A candidate match for <code>string</code> or null.</dd>
 	<dt>Order:</dt>
-	<dd>&#927;(|<code>key</code>|)</dd>
+	<dd>&#927;(|<code>string</code>|)</dd>
 </dl>
 
 </div>
@@ -366,7 +368,7 @@
 	<dd>The string has a distinguishing run of bytes with a neighbouring string that is too long. On most platforms, this is about 32 bytes the same.</dd>
 	<dt>Exceptional return: malloc</dt>
 	<dt>Order:</dt>
-	<dd>&#927;(\max(|<code>key</code>|)) worse case with arbitrarily increasing length. In a smoothed model &#927;(log \max(|<code>trie</code>|)) iid, <a href = "https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed">Tong, Goebel, Lin, 2015, Smoothed</a>.</dd>
+	<dd>&#927;(\max(|<code>key</code>|)) worse case with arbitrarily increasing length.</dd>
 </dl>
 
 </div>
@@ -385,7 +387,7 @@
 	<dt>Exceptional return: EILSEQ</dt>
 	<dd>The deletion of <code>string</code> would cause an overflow with the rest of the strings.</dd>
 	<dt>Order:</dt>
-	<dd>&#927;(|<code>string</code>|), iid &#927;(log |<code>trie</code>|)</dd>
+	<dd>&#927;(|<code>string</code>|)</dd>
 </dl>
 
 </div>

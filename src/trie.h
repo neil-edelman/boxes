@@ -17,6 +17,9 @@
  in fixed-size nodes in a relaxed version of
  <Bayer, McCreight, 1972 Large>, where the height is dynamic.
 
+ The worse-case run-time of querying or modifying the trie is also
+ \O(\log |`trie`|) iid, see <Tong, Goebel, Lin, 2015, Smoothed>.
+
  ![Bit view of the trie.](../doc/trie-bits.png)
 
  @param[TRIE_NAME]
@@ -411,7 +414,7 @@ static PT_(entry) *PT_(match)(const struct T_(trie) *const trie,
 /** Looks at only the index of `trie` for potential `string` (can both
  be null) matches. Does not access the string itself, thus will ignore the
  bits that are not in the index.
- @return A candidate match for `string` or null. @order \O(|`key`|) @allow */
+ @return A candidate match for `string` or null. @order \O(|`string`|) @allow */
 static PT_(entry) *T_(trie_match)(const struct T_(trie) *const trie,
 	const char *const string)
 	{ return trie && string ? PT_(match)(trie, string) : 0; }
@@ -722,9 +725,7 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
  `key`; `TRIE_PRESENT`, the value associated with `key`. If `TRIE_IN_VALUE`,
  was specified and the return is `TRIE_UNIQUE`, the trie is in an invalid state
  until filling in the key in value by `key`.
- @order \O(\max(|`key`|)) worse case with arbitrarily increasing length. In a
- smoothed model \O(\log \max(|`trie`|)) iid,
- <Tong, Goebel, Lin, 2015, Smoothed>.
+ @order \O(\max(|`key`|)) worse case with arbitrarily increasing length.
  @throws[EILSEQ] The string has a distinguishing run of bytes with a
  neighbouring string that is too long. On most platforms, this is about
  32 bytes the same. @throws[malloc] @allow */
@@ -857,7 +858,7 @@ erased_tree:
  returns false without setting `errno`.
  @throws[EILSEQ] The deletion of `string` would cause an overflow with the rest
  of the strings.
- @order \O(|`string`|), iid \O(\log |`trie`|) @allow */
+ @order \O(|`string`|) @allow */
 static int T_(trie_remove)(struct T_(trie) *const trie,
 	const char *const string)
 	{ return trie && string && PT_(remove)(trie, string); }

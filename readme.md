@@ -17,6 +17,8 @@ Header [src/trie\.h](src/trie.h) requires [src/bmp\.h](src/bmp.h); examples [tes
 
 A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, or trie: an ordered set or map of byte null\-terminated immutable key strings allowing efficient prefix queries\. The implementation is as [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) that acts as an index, only storing the where the key bits are different\. The keys are grouped in fixed\-size nodes in a relaxed version of [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large), where the height is dynamic\.
 
+The worse\-case run\-time of querying or modifying the trie is also &#927;\(log |`trie`|\) iid, see [Tong, Goebel, Lin, 2015, Smoothed](https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed)\.
+
 ![Bit view of the trie.](doc/trie-bits.png)
 
 
@@ -209,7 +211,7 @@ Looks at only the index of `trie` for potential `string` \(can both be null\) ma
  * Return:  
    A candidate match for `string` or null\.
  * Order:  
-   &#927;\(|`key`|\)
+   &#927;\(|`string`|\)
 
 
 
@@ -278,7 +280,7 @@ Adds `key` to `trie` if it doesn't exist already\.
    The string has a distinguishing run of bytes with a neighbouring string that is too long\. On most platforms, this is about 32 bytes the same\.
  * Exceptional return: malloc  
  * Order:  
-   &#927;\(\\max\(|`key`|\)\) worse case with arbitrarily increasing length\. In a smoothed model &#927;\(log \\max\(|`trie`|\)\) iid, [Tong, Goebel, Lin, 2015, Smoothed](https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed)\.
+   &#927;\(\\max\(|`key`|\)\) worse case with arbitrarily increasing length\.
 
 
 
@@ -294,7 +296,7 @@ Tries to remove `string` from `trie`\.
  * Exceptional return: EILSEQ  
    The deletion of `string` would cause an overflow with the rest of the strings\.
  * Order:  
-   &#927;\(|`string`|\), iid &#927;\(log |`trie`|\)
+   &#927;\(|`string`|\)
 
 
 
