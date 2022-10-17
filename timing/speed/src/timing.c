@@ -30,10 +30,6 @@ static int str_is_equal(const char *const a, const char *const b)
 #define TABLE_IS_EQUAL &str_is_equal
 #include "table.h"
 
-/* FIXME: this should not be necessary, obv. */
-#undef B_
-#undef PB_
-
 #define TREE_NAME str
 #define TREE_KEY char *
 #define TREE_COMPARE &strcmp
