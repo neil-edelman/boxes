@@ -737,7 +737,7 @@ A more complex example is given in Figure~\ref{star-1}. This trie has 3 fixed tr
 
 The grey \code{Altair} and \code{Polaris} in the root tree, \code{Vakgimbat}, in Figure~\ref{star-1}, are samples of the the trees that are links. We could get any sample from the sub-tree, because all the bits up to bit 6 and 4, respectively, are the same in the sub-tree. Any time we are Faced with an ambiguity, we arbitrarily and conveniently select the very left.
 
-Picking a sample is also important when calculating asymptotic run time of adding keys. The worse case would be an engineered trie, (not with randomly distributed keys,) which with many left-links at once. On addition of a short key to the right, the algorithm must go though all the left-links to arrive at a key for comparison. This leads to worst-case performance $\mathcal{O}(|\text{trie}|)$, something we don't see in practice. We argue that the length of a key should be amortized for future samples in insertions; while there can be multiple insertions with the same trie structure, it becomes less important as the trie grows. Amortized $\mathcal{O}(|\text{key}|)$ is more what we see in practice, which is related to amortized $\mathcal{O}(\log |\text{trie}|)$\cite{shannon1948mathematical}.
+Picking a sample is also important when calculating asymptotic run time of adding keys. The worse case would be an engineered trie, (not with randomly distributed keys,) which with many left-links at once. On addition of a short key to the right, the algorithm must go though all the left-links to arrive at a key for comparison. This leads to worst-case performance $\mathcal{O}(|\text{trie}|)$, something we don't see in practice. We argue that the length of a key should be amortized for future samples in insertions; while there can be multiple insertions with the same trie structure, it becomes less important as the trie grows. Amortized $\mathcal{O}(|\text{key}|)$ is more what we see in practice, which is related to amortized $\mathcal{O}(\log |\text{trie}|)$\cite{shannon1948mathematical}. \textcolor{red}{Not applicable anymore. Dubious. Move to run-time.}
 
 \subsection{Inserting and deleting keys}
 
@@ -759,7 +759,9 @@ We will push the index to be as small as possible, but no more. The order, or br
 
 \subsection{Run-time}
 
-\cite{tong2016smoothed}
+We are compressing by prefix.\cite{shannon1948mathematical}
+
+It was shown in \cite{tong2016smoothed}
 
 \subsection{Size of a tree}
 
@@ -837,9 +839,11 @@ plot \
 \label{compare}%
 \end{figure}%
 
-Figure~\ref{compare}\ldots But compare lookup, too.
+Figure~\ref{compare}\ldots
 
-The application decides the data-structure. For an unordered set, a hash table is still hard to beat. If order is needed, then a B-tree. This is seen practice in, for example, \code{C$^{++}$23} where \code{unordered\_set} is commonly a hash table and \code{std::ordered\_set} is a red-black tree. On top of that, if prefix matching is at all convenient, a Patricia trie is a really competitive solution.
+We do a second run down the trie, one for calculating which exemplar we are using, finding the difference, and restarting to add.
+
+For an unordered set, a hash table is still hard to beat. If order is needed, then a B-tree. This is seen practice in, for example, \code{C$^{++}$23} where \code{std::unordered\_set} is commonly a hash table and \code{std::ordered\_set} is commonly a red-black tree. On top of that, if prefix matching is at all convenient, a Patricia trie is a really competitive solution.
 
 \section{Conclusion}
 
