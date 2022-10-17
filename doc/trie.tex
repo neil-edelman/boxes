@@ -82,7 +82,7 @@
 
 \maketitle
 
-\abstract{Our prefix-tree, digital-tree, or trie is an ordered set or map with key strings. We build a dynamic index of two-bytes {\it per} entry, only storing differences in a compact binary radix tree. To maximize locality of reference while descending the trie and minimizing update data, these are grouped together in a forest of fix-sized trees.}
+\abstract{Our prefix-tree, digital-tree, or trie is an ordered set or map with key strings. We build a dynamic index of two-bytes {\it per} entry, only storing differences in a compact binary radix tree. To maximize locality of reference while descending the trie and minimizing update data, these are grouped together in a forest of fix-sized trees. In practice, this trie is comparable to a B-tree in performance.}
 
 \section{Introduction}
 
@@ -90,9 +90,9 @@ A trie is a tree that stores partitioned sets of strings\cite{de1959file, fredki
 
 Often, only parts of the key string are important; a radix trie (compact prefix tree) skips past the parts that are not important, as \cite{askitis2007hat}. If a candidate key match is found, a full match can be made with one index from the trie.
 
-For most applications, a 256-ary trie is space-intensive; the index contains many spaces for keys that are unused. Various compression schemes are available, such as re-using a pool of memory\cite{de1959file}, reducing our encoding alphabet, or take smaller than 8-bit chunks\cite{fredkin1960trie}.
+For most applications, a 256-ary trie is space-intensive; the index contains many spaces for keys that are unused. Compression schemes are available, such as re-using a pool of memory\cite{de1959file}, reducing our encoding alphabet, or take smaller than 8-bit chunks\cite{fredkin1960trie}.
 
-We use a combination binary radix trie, described in \cite{morrison1968patricia} as the PATRICIA automaton. Rather than being sparse, a Patricia-trie is a packed index. Recursively, it encodes which is next distinguishing bit and how many keys are on the zero path and the one path.
+We use a combination binary radix trie, described in \cite{morrison1968patricia} as the PATRICIA automaton. Rather than being sparse, a Patricia-trie is a packed index. It is sometimes convenient to think of this as a full binary tree whose branches store the number of skip bits before the cursor, and splits according to 0 or 1 of the decision bit. The leaves, therefore, are keys, and any other information associated with the key, necessarily corresponding to the path through the branches. Examples of this are seen in Figure~\ref{star-0:tree} and \ref{star-1:tree}.
 
 \section{Implementation}
 
@@ -238,9 +238,9 @@ To combat these two contradictory requirements, we have broken up the trie in mu
 
 Thus, on adding to a tree in a trie that has the maximum number of keys, we must split it into two trees. We use the fact that a binary tree of $n \ge 2$ nodes can be split into two trees not exceeding $\left\lceil \frac{2n-1}{3} \right\rceil$ nodes by starting \code{daughter} tree at the root and choosing the subtree that is larger until the bound is achieved. The \code{mother} will have an extra linking leaf.
 
-We use
+\subsection{Link keys}
 
-\section{Machine Considerations}
+A more complex example is given in Figure~\ref{star-1}. This trie has 3 fixed trees of order 7 maximum leaves and 6 maximum branches with 14 keys in total.
 
 \begin{figure}
 	\centering
@@ -735,13 +735,15 @@ We use
 	\caption{A trie as a forest of 3 trees of order-7.\label{star-1}}
 \end{figure}
 
-A more complex example is given in Figure~\ref{star-1}. This trie has 3 fixed trees of order 7 maximum leaves and 6 maximum branches with 14 keys in total.
-
-\subsection{Linked sample keys}
-
-The grey \code{Altair} and \code{Polaris} in the root tree, \code{Vakgimbat}, in Figure~\ref{star-1}, are samples of the the trees that are links. We could get any sample from the sub-tree, because all the bits up to bit 6 and 4, respectively, are the same in the sub-tree. Faced with this ambiguity, we arbitrarily and conveniently select the very left. This is important information to have when adding keys, because one has to test each bit of the key against something.
+The grey \code{Altair} and \code{Polaris} in the root tree, \code{Vakgimbat}, in Figure~\ref{star-1}, are samples of the the trees that are links. We could get any sample from the sub-tree, because all the bits up to bit 6 and 4, respectively, are the same in the sub-tree. Any time we are Faced with an ambiguity, we arbitrarily and conveniently select the very left.
 
 Picking a sample is also important when calculating asymptotic run time of adding keys. The worse case would be an engineered trie, (not with randomly distributed keys,) which with many left-links at once. On addition of a short key to the right, the algorithm must go though all the left-links to arrive at a key for comparison. This leads to worst-case performance $\mathcal{O}(|\text{trie}|)$, something we don't see in practice. We argue that the length of a key should be amortized for future samples in insertions; while there can be multiple insertions with the same trie structure, it becomes less important as the trie grows. Amortized $\mathcal{O}(|\text{key}|)$ is more what we see in practice, which is related to amortized $\mathcal{O}(\log |\text{trie}|)$\cite{shannon1948mathematical}.
+
+\subsection{Inserting and deleting keys}
+
+To add a key to an existing trie, first we match the key's bits with the tree. If it doesn't have enough length to pick out one key, we arbitrarily choose the left-most alphabetically. We call this the ...
+
+It was tried doing this is one pass by updating the sample . . .
 
 \subsection{Hysteresis}
 
@@ -749,73 +751,95 @@ The non-empty criteria of the trees avoids the pathological case where empty tre
 
 With smaller, dynamic tries, it is more important to not free resources which could be used in the future. Anything less than greedy merging on deletion will have hysteresis. We also should have a zero-key-state with resources.
 
-% Store the order instead of the branches; it's the same thing. Doesn't need to be in here.
-
 \subsection{Data size and order}
+
+We will push the index to be as small as possible, but no more. The order, or branching factor, is the number of leaves, which is bounded by $\max(\code{left}) + 2$. We should have a zero-length flag on the length for empty but active. This is not onerous because the alignment supports a size, then $2^n-1$ index entries, then $2^n$ leaves and bits in the bitmap.
+
+\section{Analysis}
+
+\subsection{Run-time}
+
+\cite{tong2016smoothed}
+
+\subsection{Size of a tree}
 
 \begin{figure}%
 \centering%
 \begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
-set style line 1 lt 6 lw 2 lc rgb '#888888' #'#4fa6dc'
-set style line 2 lt 5 lw 2 lc rgb '#19d3f5'
-set style line 3 lt 3 lw 2 lc rgb '#444444' #'#cc3333'
-set style line 4 lt 8 lw 2 lc rgb '#666666' #'#00ac33'
-set style line 5 lt 5 lw 2 lc rgb '#0072bd'
+set key font "modern,20"
 set grid
+set monochrome
 set xlabel "order"
-set ylabel "time (ms)"
+set ylabel 'time {\it per} key (µs)'
 set format x '\tiny %g'
 set format y '\tiny %g'
 set key font "modern,20"
 set xrange [0:256]
 plot \
-"timing4.tsv" using 1:($3/1000):($4/1000) with errorlines title "10000 keys" ls 4, \
-"timing5.tsv" using 1:($3/1000):($4/1000) with errorlines title "100000 keys" ls 3, \
-"timing6.tsv" using 1:($3/1000):($4/1000) with errorlines title "1000000 keys" ls 1
+"timing4.tsv" using 1:($3/$2):($4/$2) with errorlines title "10000 keys", \
+"timing5.tsv" using 1:($3/$2):($4/$2) with errorlines title "100000 keys", \
+"timing6.tsv" using 1:($3/$2):($4/$2) with errorlines title "1000000 keys"
 \end{gnuplot}
 \caption{The effects of order on run-time.}%
 \label{timing}%
 \end{figure}%
 
-We will push the index to be as small as possible, but no more. The order, or branching factor, is the number of leaves, which is bounded by $\max(\code{left}) + 2$. We should have a zero-length flag on the length for empty but active. This is not onerous because the alignment supports a size, then $2^n-1$ index entries, then $2^n$ leaves and bits in the bitmap.
-
 Figure~\ref{timing} shows straight insertion of different numbers of keys. It uses two-octet size for each of the branches on the index, divided evenly between \code{left} and \code{skip}. The order is how many leaves each tree holds, either keys or links.
 
 The smaller the order, the more links; this adversely affects the performance because the contents of the next index must be fetched into cache, and the trees split more often. The larger the order, the more updates to the local tree on insertion.\cite{sinha2004cache} In Figure~\ref{timing}, we see a very shallow maximum performance, corresponding to a minimum time. However, at low orders, the performance noticeably suffers. Specifically, when we don't fill 64\,kB of our cache lines.
 
-\cite{tong2016smoothed}
+\subsection{Performance}
 
-\subsection{Comparison verses other data structures}
-
-\begin{figure}%
-\centering%
+\begin{figure}\centering
+\begin{subcaptionblock}{\textwidth}
+\centering
 \begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
-set style line 1 lt 6 lw 2 lc rgb '#888888' #'#4fa6dc'
-set style line 2 lt 5 lw 2 lc rgb '#19d3f5'
-set style line 3 lt 3 lw 2 lc rgb '#444444' #'#cc3333'
-set style line 4 lt 8 lw 2 lc rgb '#666666' #'#00ac33'
-set style line 5 lt 5 lw 2 lc rgb '#0072bd'
-set grid
-set xlabel "elements"
-set ylabel "time per element, t (ns)"
-set yrange [0:]
-#set xrange [0:256] # do this
 set format x '\tiny %g'
 set format y '\tiny %g'
 set key font "modern,20"
+set grid
+set monochrome
+set xlabel "keys"
+set ylabel 'amortized time {\it per} key, (µs)'
+set yrange [0:0.5]
+set xrange [1:8388608]
 set log x
 plot \
-"table.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "table" ls 4, \
-"tree.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "tree" ls 3, \
-"trie.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "trie" ls 1
+"trie-look.tsv" using 1:($2/$1):($3/$1) with errorlines title "trie look", \
+"tree-look.tsv" using 1:($2/$1):($3/$1) with errorlines title "tree look", \
+"table-look.tsv" using 1:($2/$1):($3/$1) with errorlines title "hash table look"
 \end{gnuplot}
-\caption{Compaison.}%
+\caption{Time to lookup all keys.}
+\label{compare:look}
+\end{subcaptionblock}
+\begin{subcaptionblock}{\textwidth}
+\centering
+\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
+set format x '\tiny %g'
+set format y '\tiny %g'
+set key font "modern,20"
+set grid
+set monochrome
+set xlabel "keys"
+set ylabel 'amortized time {\it per} key, (µs)'
+set yrange [0:3]
+set xrange [1:8388608]
+set log x
+plot \
+"trie-add.tsv" using 1:($2/$1):($3/$1) with errorlines title "trie add", \
+"tree-add.tsv" using 1:($2/$1):($3/$1) with errorlines title "tree add", \
+"table-add.tsv" using 1:($2/$1):($3/$1) with errorlines title "hash table add"
+\end{gnuplot}
+\caption{Time to add all keys.}
+\label{compare:add}
+\end{subcaptionblock}
+\caption{Comparison of look-up and insertion in three different data structures.}%
 \label{compare}%
 \end{figure}%
 
 Figure~\ref{compare}\ldots But compare lookup, too.
 
-The density increases.
+The application decides the data-structure. For an unordered set, a hash table is still hard to beat. If order is needed, then a B-tree. This is seen practice in, for example, \code{C$^{++}$23} where \code{unordered\_set} is commonly a hash table and \code{std::ordered\_set} is a red-black tree. On top of that, if prefix matching is at all convenient, a Patricia trie is a really competitive solution.
 
 \section{Conclusion}
 
