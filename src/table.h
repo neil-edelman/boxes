@@ -242,8 +242,9 @@ typedef int (*PN_(policy_fn))(PN_(key) original, PN_(key) replace);
 struct N_(table) { /* "Padding size," good. */
 	struct PN_(bucket) *buckets; /* @ has zero/one key specified by `next`. */
 	/* `size <= capacity`; size is not needed but convenient and allows
-	 short-circuiting. Top is an index of the stack, lazy, so MSB stores
-	 whether this is a step ahead. */
+	 short-circuiting. Top is an index of the stack, potentially lazy: MSB
+	 stores whether this is a step ahead (which would make it less, the stack
+	 grows from the bottom,) otherwise it is right at the top, */
 	PN_(uint) log_capacity, size, top;
 };
 
@@ -313,8 +314,7 @@ static void PN_(shrink_stack)(struct N_(table) *const table,
 	assert(PN_(in_stack_range)(table, b)); /* I think this is assured? Think. */
 	if(b != table->top) {
 		struct PN_(bucket) *const prev = PN_(prev)(table, table->top);
-		memcpy(table->buckets + b, table->buckets + table->top,
-			sizeof *table->buckets);
+		table->buckets[b] = table->buckets[table->top];
 		prev->next = b;
 	}
 	table->buckets[table->top].next = TABLE_NULL;
@@ -726,7 +726,7 @@ static void N_(table_clear)(struct N_(table) *const table) {
 	for(b = table->buckets, b_end = b + PN_(capacity)(table); b < b_end; b++)
 		b->next = TABLE_NULL;
 	table->size = 0;
-	table->top = (PN_(capacity)(table) - 1) & TABLE_HIGH;
+	table->top = (PN_(capacity)(table) - 1) | TABLE_HIGH;
 }
 
 /** @return Whether `key` is in `table` (which can be null.) @allow */

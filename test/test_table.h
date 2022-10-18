@@ -389,10 +389,18 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 	}
 	/* Clear. */
 	N_(table_clear)(&table);
+	PN_(graph)(&table, "graph/" QUOTE(TABLE_NAME) "-clear.gv");
+	PN_(legit)(&table);
 	for(b = 0, b_end = b + PN_(capacity)(&table); b < b_end; b++)
 		assert(table.buckets[b].next == TABLE_NULL);
 	assert(table.size == 0);
 	printf("Clear: %s.\n", PN_(table_to_string)(&table));
+	for(i = 0; i < trial_size; i++) {
+		const struct sample *s = trials.sample + i;
+		enum table_result result;
+		result = N_(table_update)(&table, s->entry, 0, 0);
+		printf("Result %s.\n", table_result_str[result]);
+	}
 	N_(table_)(&table);
 	assert(!table.buckets && !table.log_capacity && !table.size);
 }
