@@ -588,7 +588,7 @@ If the hash function forms a bijection between the range in the space where elem
 
 \subsection{Iteration}
 
-Inline-chaining is generally good for iteration. For implementations that do not provide a special iteration mechanism, iteration on separate-chaining is $\mathcal{O}(\text{capacity} + \text{size})$. For open-addressing and inline-chaining, because we store collisions in the hash-table itself, it's $\mathcal{O}(\text{capacity})$. However, a practical capacity in open-addressing will be larger because the decrease in performance as the load-factor reaches saturation.
+Inline-chaining is generally good for iteration. For implementations that do not provide a special iteration mechanism, iteration on separate-chaining is $\mathcal{O}(\text{capacity} + \text{size})$. For open-addressing and inline-chaining, because we store collisions in the hash-table itself, it's $\mathcal{O}(\text{capacity})$. However, a practical capacity in open-addressing will be smaller than inline-chaining because the decrease in performance as the load-factor reaches saturation.
 
 \section{Conclusion}
 
