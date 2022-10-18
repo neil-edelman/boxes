@@ -395,11 +395,11 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 		assert(table.buckets[b].next == TABLE_NULL);
 	assert(table.size == 0);
 	printf("Clear: %s.\n", PN_(table_to_string)(&table));
-	for(i = 0; i < trial_size; i++) {
+	for(i = 0; i < trial_size; i++) { /* Make sure to test it again. */
 		const struct sample *s = trials.sample + i;
 		enum table_result result;
 		result = N_(table_update)(&table, s->entry, 0, 0);
-		printf("Result %s.\n", table_result_str[result]);
+		assert(result == TABLE_YIELD || result == TABLE_UNIQUE);
 	}
 	N_(table_)(&table);
 	assert(!table.buckets && !table.log_capacity && !table.size);
