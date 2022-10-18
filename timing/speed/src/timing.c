@@ -146,7 +146,6 @@ int main(void) {
 			}
 			m_add(&exp[TABLE_LOOK].m, diff_us(t));
 			str_table_clear(&table);
-			str_table_(&table);
 
 			/* Time trie. */
 			printf("Trie.\n");
