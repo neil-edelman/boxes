@@ -44,6 +44,7 @@
 #ifndef TO_STRING_H /* <!-- idempotent */
 #define TO_STRING_H
 #include <string.h>
+#include <assert.h>
 #if defined(TO_STRING_CAT_) || defined(TO_STRING_CAT) || defined(PSTR_)
 #error Unexpected defines.
 #endif
