@@ -104,23 +104,23 @@ typedef const ARRAY_TYPE PA_(type_c);
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
-#define BOX_CONTENT PA_(type_c) *
+#define BOX_CONTENT_C const PA_(type_c) *
 /** Is `x` not null? @implements `is_element_c` */
-static int PA_(is_element_c)(PA_(type_c) *const x) { return !!x; }
+static int PA_(is_element_c)(const PA_(type_c) *const x) { return !!x; }
 /* Enumerate the contents (`input_or_output_const_iterator`.)
  @implements `forward` */
 struct PA_(forward) { const struct A_(array) *a; size_t next; };
 /** @return A pointer to null in `a`. @implements `forward` */
-static struct PA_(forward) PA_(forward)(const struct A_(array) *const a) {
-	struct PA_(forward) it; it.a = a, it.next = 0; return it; }
+static struct PA_(forward) PA_(forward)(const struct A_(array) *const a)
+	{ struct PA_(forward) it; it.a = a, it.next = 0; return it; }
 /** Move to next `it`. @return Element or null. @implements `next_c` */
-static PA_(type_c) *PA_(next_c)(struct PA_(forward) *const it) {
+static const PA_(type_c) *PA_(next_c)(struct PA_(forward) *const it) {
 	assert(it);
 	if(it->a && it->next < it->a->size) return it->a->data + it->next++;
 	else { it->next = 0; return 0; }
 }
 
-#define BOX_ITERATOR PA_(type) *
+#define BOX_CONTENT PA_(type) *
 /** Is `x` not null? @implements `is_element` */
 static int PA_(is_element)(const PA_(type) *const x) { return !!x; }
 /* @implements `iterator` */
@@ -377,7 +377,7 @@ static int A_(array_splice)(struct A_(array) *restrict const a,
 
 #ifdef ARRAY_TEST /* <!-- test */
 /* Forward-declare. */
-static void (*PA_(to_string))(const PA_(type) *, char (*)[12]);
+static void (*PA_(to_string))(const PA_(type_c) *, char (*)[12]);
 static const char *(*PA_(array_to_string))(const struct A_(array) *);
 #include "../test/test_array.h"
 #endif /* test --> */
@@ -464,8 +464,8 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #undef ARRAY_TYPE
 #undef BOX_
 #undef BOX
+#undef BOX_CONTENT_C
 #undef BOX_CONTENT
-#undef BOX_ITERATOR
 #undef BOX_ACCESS
 #undef BOX_CONTIGUOUS
 #endif /* !trait --> */

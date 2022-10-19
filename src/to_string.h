@@ -3,7 +3,7 @@
 
  @subtitle To string trait
 
- Interface defined by `BOX_`, `BOX`, and `BOX_CONTENT`.
+ Interface defined by `BOX_`, `BOX`, and `BOX_CONTENT_C`.
 
  @param[STR_(n)]
  A one-argument macro producing a name that is responsible for the name of the
@@ -27,7 +27,7 @@
 
  @std C89 */
 
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT_C) \
 	|| !defined(STR_) || !defined(TO_STRING)
 #error Unexpected preprocessor symbols.
 #endif
@@ -79,11 +79,11 @@ static unsigned to_string_buffer_i;
 #endif
 
 typedef BOX PSTR_(box);
-typedef BOX_CONTENT PSTR_(element_c);
+typedef BOX_CONTENT_C PSTR_(element_c);
 
 /** <src/to_string.h>: responsible for turning the argument into a 12-`char`
  null-terminated output string. */
-typedef void (*PSTR_(to_string_fn))(PSTR_(element_c), char (*)[12]);
+typedef void (*PSTR_(to_string_fn))(const PSTR_(element_c), char (*)[12]);
 /* Check that `TO_STRING` is a function implementing
  <typedef:<PSTR>to_string>. */
 static const PSTR_(to_string_fn) PSTR_(to_string) = (TO_STRING);

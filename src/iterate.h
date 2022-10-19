@@ -3,7 +3,7 @@
 
  @subtitle Iterate trait
 
- Interface defined by `BOX_`, `BOX`, `BOX_CONTENT`, and `BOX_ITERATOR`.
+ Interface defined by `BOX_`, `BOX`, `BOX_CONTENT_C`, and `BOX_CONTENT`.
 
  @param[ITR_]
  A one-argument macro producing a name that is responsible for the name of the
@@ -18,10 +18,10 @@
  does not expire after box completion.
  */
 
-/* `BOX_CONTENT`: is_element_c, forward, next_c.
- `BOX_ITERATOR`: is_element, iterator, next */
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
-	|| !defined(BOX_ITERATOR) || !defined(ITR_)
+/* `BOX_CONTENT_C`: is_element_c, forward, next_c.
+ `BOX_CONTENT`: is_element, iterator, next */
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT_C) \
+	|| !defined(BOX_CONTENT) || !defined(ITR_)
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -39,8 +39,8 @@
 #endif /* idempotent --> */
 
 typedef BOX PITR_(box);
-typedef BOX_CONTENT PITR_(element_c);
-typedef BOX_ITERATOR PITR_(element);
+typedef BOX_CONTENT_C PITR_(element_c);
+typedef BOX_CONTENT PITR_(element);
 
 /** <src/iterate.h>: Operates by side-effects. */
 typedef void (*PITR_(action_fn))(PITR_(element));

@@ -116,6 +116,26 @@ static int keyval_value_cmp(const struct keyval *const a,
 #include "../src/array.h"
 
 
+static int targets[] = { 4, 2, 8, 2, 6, 5, 3, 6, 1, 2, 9, 3 };
+static void pointer_to_string(const int *const*const i, char (*const a)[12])
+	{ sprintf(*a, "%d", **i); }
+static void pointer_filler(int **const i)
+	{ *i = targets
+	+ rand() / (RAND_MAX / (int)(sizeof targets / sizeof *targets) + 1); }
+static int pointer_cmp(const int *const*const a, const int *const*const b)
+	{ return int_cmp(*a, *b); }
+#define ARRAY_NAME pointer
+#define ARRAY_TYPE int *
+#define ARRAY_TEST &pointer_filler
+#define ARRAY_EXPECT_TRAIT
+#include "../src/array.h"
+#define ARRAY_COMPARE &pointer_cmp
+#define ARRAY_EXPECT_TRAIT
+#include "../src/array.h"
+#define ARRAY_TO_STRING &pointer_to_string
+#include "../src/array.h"
+
+
 /** Tests; assert crashes on failed test. @return `EXIT_SUCCESS`. */
 int main(void) {
 	unsigned seed = (unsigned)clock();
