@@ -53,7 +53,7 @@ static void PA_(graph)(const struct A_(array) *const a, const char *const fn) {
 		"<FONT COLOR=\"Gray85\">%s</FONT></TD></TR>\n", orcify(a->data));
 	for(i = 0; i < a->size; i++) {
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
-		PA_(to_string)(a->data + i, &z);
+		PA_(to_string)((const PA_(type_c) *)(a->data + i), &z);
 		fprintf(fp, "\t<TR>\n"
 			"\t\t<TD ALIGN=\"RIGHT\"%s>%lu</TD>\n"
 			"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
@@ -118,17 +118,19 @@ static void PA_(test_basic)(void) {
 	assert(i == 3);
 	printf("Backwards:\n");
 	for(it = A_(array_iterator)(&a), i = 0; item = A_(array_previous)(&it); i++)
-		PA_(to_string)(item, &z), printf("%s\n", z),
+		PA_(to_string)((const PA_(type_c) *)item, &z), printf("%s\n", z),
 		assert(!memcmp(item, items + 2 - i, sizeof *item));
 	assert(i == 3);
 	it = A_(array_iterator)(&a);
-	item = A_(array_next)(&it), assert(item), PA_(to_string)(item, &z);
+	item = A_(array_next)(&it), assert(item),
+		PA_(to_string)((const PA_(type_c) *)item, &z);
 	A_(array_next)(&it), item = A_(array_previous)(&it);
 	assert(!memcmp(item, items + 0, sizeof *item));
 	for(i = 0; i < 3; i++) {
 		it = A_(array_iterator_before)(&a, i);
 		item = A_(array_next)(&it), assert(item);
-		PA_(to_string)(item, &z), printf("a[%lu] = %s\n", (unsigned long)i, z);
+		PA_(to_string)((const PA_(type_c) *)item, &z);
+		printf("a[%lu] = %s\n", (unsigned long)i, z);
 		assert(!memcmp(item, items + i, sizeof *item));
 	}
 	it = A_(array_iterator_before)(&a,i/*3*/), item = A_(array_next)(&it), assert(!item);
@@ -226,7 +228,7 @@ static void PA_(test_random)(void) {
 				{ perror("Error"), assert(0); return; }
 			size++;
 			PA_(filler)(data);
-			PA_(to_string)(data, &str);
+			PA_(to_string)((const PA_(type_c) *)data, &str);
 			if(is_print) printf("created %s.", str);
 		} else {
 			const unsigned t = RAND_MAX / 2;
@@ -235,13 +237,13 @@ static void PA_(test_random)(void) {
 			if(r < t) {
 				data = A_(array_peek)(&a);
 				assert(data);
-				PA_(to_string)(data, &str);
+				PA_(to_string)((const PA_(type_c) *)data, &str);
 				if(is_print) printf("popping %s.", str);
 				assert(data == A_(array_pop)(&a));
 			} else {
 				size_t idx = (unsigned)rand() / (RAND_MAX / size + 1);
 				if(!(data = a.data + idx)) continue;
-				PA_(to_string)(data, &str);
+				PA_(to_string)((const PA_(type_c) *)data, &str);
 				if(is_print)
 					printf("removing %s at %lu.", str, (unsigned long)idx);
 				A_(array_remove)(&a, data);
@@ -367,12 +369,12 @@ static void PA_(increment)(PA_(type) *const t) {
 }
 /** True, independent of `t`.
  @implements <PA>Predicate */
-static int PA_(true)(const PA_(type) *const t) {
+static int PA_(true)(const PA_(type_c) *const t) {
 	(void)t;
 	return 1;
 }
 /** @implements <PA>Predicate @return Is `t` zero-filled? */
-static int PA_(zero_filled)(const PA_(type) *const t) {
+static int PA_(zero_filled)(const PA_(type_c) *const t) {
 	const char *c = (const char *)t, *const end = (const char *)(t + 1);
 	assert(t);
 	while(c < end) if(*c++) return 0;
@@ -460,7 +462,7 @@ static void PA_(test_trim)(void) {
 	item = A_(array_new)(&a);
 	assert(item);
 	PA_(filler)(item);
-	is_zero = PA_(zero_filled)(item);
+	is_zero = PA_(zero_filled)((const PA_(type_c) *)item);
 	item = A_(array_new)(&a);
 	assert(item);
 	memset(item, 0, sizeof *item);
@@ -523,7 +525,8 @@ static int PCMP_(fill_unique)(PA_(type) *const fill,
 	assert(fill);
 	for(i = 0; i < 1000; i++) {
 		PA_(filler)(fill);
-		if(!neq || !PCMP_(is_equal)(neq, fill)) return 1;
+		if(!neq || !PCMP_(is_equal)((const PA_(type_c) *)neq,
+			(const PA_(type_c) *)fill)) return 1;
 	}
 	assert(0); return 0;
 }
@@ -576,11 +579,13 @@ static void PCMP_(test_compactify)(void) {
 	CMP_(reverse)(&a);
 	printf("Reverse: %s.\n", PA_(array_to_string)(&a));
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(PCMP_(compare)(t, t + 1) >= 0);
+		assert(PCMP_(compare)((const PA_(type_c) *)t,
+			(const PA_(type_c) *)(t + 1)) >= 0);
 	CMP_(sort)(&a);
 	printf("Sorted: %s.\n", PA_(array_to_string)(&a));
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(PCMP_(compare)(t, t + 1) <= 0);
+		assert(PCMP_(compare)((const PA_(type_c) *)t,
+			(const PA_(type_c) *)(t + 1)) <= 0);
 #endif /* compare --> */
 	A_(array_)(&a);
 }
@@ -604,14 +609,14 @@ static void PCMP_(test_compare)(void) {
 	it = A_(array_iterator)(&a);
 	while(t = A_(array_next)(&it)) {
 		char z[12];
-		PA_(to_string)(t, &z);
+		PA_(to_string)((const PA_(type_c) *)t, &z);
 		printf("next %s; ", z);
 		assert(t = a.data + i++);
 	}
 	assert(i == ts_size);
 	while(t = A_(array_previous)(&it)) {
 		char z[12];
-		PA_(to_string)(t, &z);
+		PA_(to_string)((const PA_(type_c) *)t, &z);
 		printf("previous %s; ", z);
 		assert(t = a.data + --i);
 	}
@@ -655,7 +660,8 @@ static void PCMP_(test_sort)(void) {
 		for(i = 0; i < size; i++) PA_(filler)(a->data + i); /* Emplace. */
 		CMP_(sort)(a);
 		for(x = a->data; x < x_end - 1; x++)
-			cmp = PCMP_(compare)(x, x + 1), assert(cmp <= 0);
+			cmp = PCMP_(compare)((const PA_(type_c) *)x,
+			(const PA_(type_c) *)(x + 1)), assert(cmp <= 0);
 	}
 	/* Now sort the lists. */
 	qsort(as, as_size, sizeof *as, &PCMP_(cmp_void));
@@ -677,6 +683,7 @@ static void PCMP_(test_bounds)(void) {
 	const size_t size = 10;
 	size_t i, low, high;
 	PA_(type) elem, *cont;
+	const PA_(type_c) *elemp;
 	int ret;
 	char z[12];
 	printf("\ntest bounds:\n");
@@ -684,32 +691,38 @@ static void PCMP_(test_bounds)(void) {
 	for(i = 0; i < size; i++) PA_(filler)(a.data + i);
 	memset(&elem, 0, sizeof elem), PA_(filler)(&elem);
 	CMP_(sort)(&a);
+	elemp = (const PA_(type_c) *)&elem;
 	printf("sorted: %s.\n", PA_(array_to_string)(&a));
-	PA_(to_string)(&elem, &z), printf("element to compare: %s\n", z);
-	low = CMP_(lower_bound)(&a, &elem);
+	PA_(to_string)(elemp, &z);
+	printf("element to compare: %s\n", z);
+	low = CMP_(lower_bound)(&a, elemp);
 	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
 	assert(low <= a.size);
-	assert(!low || PCMP_(compare)(a.data + low - 1, &elem) < 0);
-	assert(low == a.size || PCMP_(compare)(&elem, a.data + low) <= 0);
-	high = CMP_(upper_bound)(&a, &elem);
+	assert(!low || PCMP_(compare)((const PA_(type_c) *)(a.data + low - 1),
+		elemp) < 0);
+	assert(low == a.size || PCMP_(compare)(elemp,
+		(const PA_(type_c) *)(a.data + low)) <= 0);
+	high = CMP_(upper_bound)(&a, elemp);
 	printf(QUOTE(ARRAY_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
 	assert(high <= a.size);
-	assert(!high || PCMP_(compare)(a.data + high - 1, &elem) <= 0);
-	assert(high == a.size || PCMP_(compare)(&elem, a.data + high) < 0);
-	PA_(to_string)(&elem, &z);
+	assert(!high || PCMP_(compare)((const PA_(type_c) *)(a.data + high - 1),
+		elemp) <= 0);
+	assert(high == a.size || PCMP_(compare)(elemp,
+		(const PA_(type_c) *)(a.data + high)) < 0);
+	PA_(to_string)(elemp, &z);
 	printf("insert: %s into %s of size %lu.\n",
 		z, PA_(array_to_string)(&a), (unsigned long)size);
-	ret = CMP_(insert_after)(&a, &elem);
+	ret = CMP_(insert_after)(&a, elemp);
 	assert(ret && a.size == size + 1);
-	ret = memcmp(&elem, a.data + low, sizeof elem), assert(!ret);
+	ret = memcmp(elemp, a.data + low, sizeof elem), assert(!ret);
 	A_(array_clear)(&a);
 	cont = A_(array_append)(&a, size), assert(cont);
 	for(i = 0; i < size; i++) memcpy(cont + i, &elem, sizeof elem);
 	printf("bounds: now %s.\n", PA_(array_to_string)(&a));
-	low = CMP_(lower_bound)(&a, &elem);
+	low = CMP_(lower_bound)(&a, elemp);
 	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
 	assert(low == 0);
-	high = CMP_(upper_bound)(&a, &elem);
+	high = CMP_(upper_bound)(&a, elemp);
 	printf(QUOTE(ARRAY_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
 	assert(high == a.size);
 	A_(array_)(&a);

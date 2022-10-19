@@ -150,6 +150,11 @@ int main(void) {
 	keyval_array_test();
 	keyval_array_compare_test();
 	keyval_array_value_compare_test();
+	pointer_array_test();
+	/*pointer_array_compare_test();
+	 <- probably the test is wrong, assumes contiguous. I don't know what it's
+	 doing, wrote 10 years ago. */
+	(void)pointer_array_compare_test;
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

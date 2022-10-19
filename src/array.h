@@ -116,7 +116,8 @@ static struct PA_(forward) PA_(forward)(const struct A_(array) *const a)
 /** Move to next `it`. @return Element or null. @implements `next_c` */
 static const PA_(type_c) *PA_(next_c)(struct PA_(forward) *const it) {
 	assert(it);
-	if(it->a && it->next < it->a->size) return it->a->data + it->next++;
+	if(it->a && it->next < it->a->size)
+		return (const PA_(type_c) *)(it->a->data + it->next++);
 	else { it->next = 0; return 0; }
 }
 

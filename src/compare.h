@@ -90,7 +90,8 @@ static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
 	const PCMP_(element_c) element) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(PCMP_(compare)(element, BOX_(at)(box,
+		if(PCMP_(compare)(element,
+			(const PCMP_(element_c))BOX_(at)(box,
 			mid = low + (high - low) / 2)) <= 0) high = mid;
 		else low = mid + 1;
 	return low;
@@ -104,7 +105,7 @@ static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
 	const PCMP_(element_c) element) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(PCMP_(compare)(element, BOX_(at)(box,
+		if(PCMP_(compare)(element, (const PCMP_(element_c))BOX_(at)(box,
 			mid = low + (high - low) / 2)) >= 0) low = mid + 1;
 		else high = mid;
 	return low;
@@ -214,7 +215,8 @@ static void CMP_(unique_merge)(PCMP_(box) *const box,
 		for(choice = 0, next = 1; cursor + next < last; next++) {
 			const PCMP_(element) a = BOX_(at)(box, cursor + choice),
 				b = BOX_(at)(box, cursor + next);
-			if(!PCMP_(is_equal)(a, b)) break;
+			if(!PCMP_(is_equal)((const PCMP_(element_c))a,
+				(const PCMP_(element_c))b)) break;
 			if(merge && merge(a, b)) choice = next;
 		}
 		if(next == 1) continue;
