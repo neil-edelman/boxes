@@ -870,8 +870,8 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
 
 
 /* Box override information. */
-#define BOX_CONTENT const PT_(entry) *
-#define BOX_ITERATOR PT_(entry) *
+#define BOX_CONTENT_C const PT_(entry) *
+#define BOX_CONTENT PT_(entry) *
 #define BOX_ PT_
 #define BOX struct T_(trie)
 
@@ -948,8 +948,8 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #endif
 #undef BOX_
 #undef BOX
+#undef BOX_CONTENT_C
 #undef BOX_CONTENT
-#undef BOX_ITERATOR
 #endif /* !trait --> */
 #undef TRIE_DEFAULT_TRAIT
 #undef TRIE_TRAITS

@@ -139,7 +139,7 @@ typedef PH_(priority_c) PH_(node_c);
  ![States.](../doc/states.png) */
 struct H_(heap) { struct PH_(node_array) _; };
 
-#define BOX_CONTENT PH_(node_c) *
+#define BOX_CONTENT_C PH_(node_c) *
 #define PAH_(n) HEAP_CAT(HEAP_CAT(array, PH_(node)), n)
 /** Is `x` not null? @implements `is_element_c` */
 static int PH_(is_element_c)(PH_(node_c) *const x) { return !!x; }
@@ -421,7 +421,7 @@ static void PH_(unused_to_string_coda)(void) { PH_(unused_to_string)(); }
 #endif
 #undef BOX_
 #undef BOX
-#undef BOX_CONTENT
+#undef BOX_CONTENT_C
 #endif /* !trait --> */
 #undef HEAP_TO_STRING_TRAIT
 #undef HEAP_TRAITS
