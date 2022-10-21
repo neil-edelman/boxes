@@ -5,8 +5,8 @@ error array_test && (!array_trait && !array_to_string || array_trait && !array_h
 
 def array_restrict,restrict?
 
-ifndef box {
-	def array_base array_min_capacity box_content box_access box_contiguous box_ box
+ifndef array_trait {
+	def array_min_capacity box_content box_access box_contiguous box_ box
 	def/undef itr_
 }
 
@@ -19,10 +19,9 @@ ifdef array_to_string {
 	undef array_to_string
 }
 
-if array_test && array_base {
+if array_test && !array_trait {
 	include test
 }
-(undef array_base?)
 
 if array_compare || array_is_equal {
 	def compare_name compare_type compare_trait? compare? compare_is_equal?
