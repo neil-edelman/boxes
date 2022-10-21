@@ -69,8 +69,7 @@
 #endif
 
 
-#ifndef BOX /* <!-- base code */
-#define ARRAY_BASE
+#ifndef ARRAY_TRAIT /* <!-- base code */
 
 
 #ifndef ARRAY_MIN_CAPACITY /* <!-- !min; */
@@ -137,9 +136,9 @@ static int PA_(remove)(struct PA_(iterator) *const it) {
 }
 
 #define BOX_ACCESS
-/** @return Iterator immediately before element `idx` of `a`.
- @implements `before` */
-static struct PA_(iterator) PA_(before)(struct A_(array) *a, size_t idx)
+/** @return Iterator at element `idx` of `a`.
+ @implements `iterator_at` */
+static struct PA_(iterator) PA_(iterator_at)(struct A_(array) *a, size_t idx)
 	{ struct PA_(iterator) it; it.a = a, it.i = idx, it.seen = 0; return it; }
 /** Size of `a`. @implements `size` */
 static size_t PA_(size)(const struct A_(array) *a) { return a ? a->size : 0; }
@@ -174,9 +173,9 @@ static void A_(array_)(struct A_(array) *const a)
 static struct A_(array_iterator) A_(array_iterator)(struct A_(array) *a)
 	{ struct A_(array_iterator) it; it._ = PA_(iterator)(a); return it; }
 /** @return An iterator at `idx` of `a`. */
-static struct A_(array_iterator) A_(array_iterator_before)(struct A_(array) *a,
+static struct A_(array_iterator) A_(array_iterator_at)(struct A_(array) *a,
 	size_t idx) { struct A_(array_iterator) it;
-	it._ = PA_(before)(a, idx); return it; }
+	it._ = PA_(iterator_at)(a, idx); return it; }
 /** @return `it` next element. */
 static PA_(type) *A_(array_next)(struct A_(array_iterator) *const it)
 	{ return assert(it), PA_(next)(&it->_); }
@@ -350,7 +349,7 @@ static void PA_(unused_base)(void) {
 	PA_(is_element)(0); PA_(remove)(0); PA_(size)(0); PA_(at)(0, 0);
 	PA_(tell_size)(0, 0);
 	A_(array)(); A_(array_)(0);
-	A_(array_iterator)(0); A_(array_iterator_before)(0, 0);
+	A_(array_iterator)(0); A_(array_iterator_at)(0, 0);
 	A_(array_previous)(0); A_(array_next)(0); A_(array_previous)(0);
 	A_(array_insert)(0, 0, 0); A_(array_new)(0);
 	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
@@ -377,7 +376,7 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #endif /* to string trait --> */
 
 
-#if defined(ARRAY_TEST) && defined(ARRAY_BASE) /* <!-- test base */
+#if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT) /* <!-- test base */
 #include "../test/test_array.h"
 #endif /* test base --> */
 

@@ -124,12 +124,12 @@ static void PA_(test_basic)(void) {
 	A_(array_next)(&it), item = A_(array_previous)(&it);
 	assert(!memcmp(item, items + 0, sizeof *item));
 	for(i = 0; i < 3; i++) {
-		it = A_(array_iterator_before)(&a, i);
+		it = A_(array_iterator_at)(&a, i);
 		item = A_(array_next)(&it), assert(item), A_(to_string)(item, &z);
 		printf("a[%lu] = %s\n", (unsigned long)i, z);
 		assert(!memcmp(item, items + i, sizeof *item));
 	}
-	it = A_(array_iterator_before)(&a,i/*3*/), item = A_(array_next)(&it), assert(!item);
+	it = A_(array_iterator_at)(&a,i/*3*/), item = A_(array_next)(&it), assert(!item);
 	/* Iteration and back. */
 	it = A_(array_iterator)(&a);
 	item = A_(array_next)(&it), assert(!memcmp(item, items + 0, sizeof *item));
