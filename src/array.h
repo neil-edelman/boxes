@@ -33,32 +33,17 @@
  @std C89 */
 
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
-#error Name ARRAY_NAME or tag type ARRAY_TYPE undefined.
+#error Name or tag type undefined.
 #endif
-#if defined(ARRAY_TO_STRING_NAME) || defined(ARRAY_TO_STRING)
-#define ARRAY_TO_STRING_TRAIT 1
-#else
-#define ARRAY_TO_STRING_TRAIT 0
+#if defined(ARRAY_TRAIT) ^ defined(BOX)
+#error ARRAY_TRAIT name must come after ARRAY_EXPECT_TRAIT.
 #endif
-#if defined(ARRAY_COMPARE_NAME) || defined(ARRAY_COMPARE) \
-	|| defined(ARRAY_IS_EQUAL)
-#define ARRAY_COMPARE_TRAIT 1
-#else
-#define ARRAY_COMPARE_TRAIT 0
+#if defined(ARRAY_COMPARE) && defined(ARRAY_IS_EQUAL)
+#error Only one can be defined at a time.
 #endif
-#define ARRAY_TRAITS ARRAY_TO_STRING_TRAIT + ARRAY_COMPARE_TRAIT
-#if ARRAY_TRAITS > 1
-#error Only one trait per include is allowed; use ARRAY_EXPECT_TRAIT.
-#endif
-#if ARRAY_TRAITS && !defined(BOX)
-#error Trying to define a trait without defining the base datatype.
-#endif
-#if defined(ARRAY_TO_STRING_NAME) && !defined(ARRAY_TO_STRING)
-#error ARRAY_TO_STRING_NAME requires ARRAY_TO_STRING.
-#endif
-#if defined(ARRAY_COMPARE_NAME) \
-	&& (!(!defined(ARRAY_COMPARE) ^ !defined(ARRAY_IS_EQUAL)))
-#error ARRAY_COMPARE_NAME requires ARRAY_COMPARE or ARRAY_IS_EQUAL not both.
+#if defined(ARRAY_TEST) && (!defined(ARRAY_TRAIT) && !defined(ARRAY_TO_STRING) \
+	|| defined(ARRAY_TRAIT) && !defined(ARRAY_HAS_TO_STRING))
+#error Test requires to string.
 #endif
 
 #ifndef ARRAY_H /* <!-- idempotent */
@@ -84,7 +69,8 @@
 #endif
 
 
-#if ARRAY_TRAITS == 0 /* <!-- base code */
+#ifndef BOX /* <!-- base code */
+#define ARRAY_BASE
 
 
 #ifndef ARRAY_MIN_CAPACITY /* <!-- !min; */
@@ -93,7 +79,6 @@
 
 /** A valid tag type set by `ARRAY_TYPE`. */
 typedef ARRAY_TYPE PA_(type);
-typedef const ARRAY_TYPE PA_(type_c);
 
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`. The fields should be
@@ -104,26 +89,10 @@ typedef const ARRAY_TYPE PA_(type_c);
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
-#define BOX_CONTENT_C const PA_(type_c) *
-/** Is `x` not null? @implements `is_element_c` */
-static int PA_(is_element_c)(const PA_(type_c) *const x) { return !!x; }
-/* Enumerate the contents (`input_or_output_const_iterator`.)
- @implements `forward` */
-struct PA_(forward) { const struct A_(array) *a; size_t next; };
-/** @return A pointer to null in `a`. @implements `forward` */
-static struct PA_(forward) PA_(forward)(const struct A_(array) *const a)
-	{ struct PA_(forward) it; it.a = a, it.next = 0; return it; }
-/** Move to next `it`. @return Element or null. @implements `next_c` */
-static const PA_(type_c) *PA_(next_c)(struct PA_(forward) *const it) {
-	assert(it);
-	if(it->a && it->next < it->a->size)
-		return (const PA_(type_c) *)(it->a->data + it->next++);
-	else { it->next = 0; return 0; }
-}
-
 #define BOX_CONTENT PA_(type) *
 /** Is `x` not null? @implements `is_element` */
 static int PA_(is_element)(const PA_(type) *const x) { return !!x; }
+
 /* @implements `iterator` */
 struct PA_(iterator) { struct A_(array) *a; size_t i; int seen; };
 /** @return A pointer to null in `a`. @implements `iterator` */
@@ -376,16 +345,8 @@ static int A_(array_splice)(struct A_(array) *restrict const a,
 #undef ITR_
 #endif /* iterate --> */
 
-#ifdef ARRAY_TEST /* <!-- test */
-/* Forward-declare. */
-static void (*PA_(to_string))(const PA_(type_c) *, char (*)[12]);
-static const char *(*PA_(array_to_string))(const struct A_(array) *);
-#include "../test/test_array.h"
-#endif /* test --> */
-
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
-	PA_(is_element_c)(0); PA_(forward)(0); PA_(next_c)(0);
 	PA_(is_element)(0); PA_(remove)(0); PA_(size)(0); PA_(at)(0, 0);
 	PA_(tell_size)(0, 0);
 	A_(array)(); A_(array_)(0);
@@ -400,37 +361,34 @@ static void PA_(unused_base)(void) {
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 
-#elif defined(ARRAY_TO_STRING) /* base code --><!-- to string trait */
+#endif /* base code --> */
 
 
-#ifdef ARRAY_TO_STRING_NAME
-#define STR_(n) ARRAY_CAT(A_(array), ARRAY_CAT(ARRAY_TO_STRING_NAME, n))
+#ifdef ARRAY_TO_STRING /* <!-- to string trait */
+#define TO_STRING_NAME ARRAY_NAME
+#define TO_STRING_TYPE array
+#ifdef ARRAY_TRAIT
+#define TO_STRING_TRAIT ARRAY_TRAIT
 #else
-#define STR_(n) ARRAY_CAT(A_(array), n)
+#define ARRAY_HAS_TO_STRING
 #endif
-#define TO_STRING ARRAY_TO_STRING
 #include "to_string.h" /** \include */
-#ifdef ARRAY_TEST /* <!-- expect: greedy satisfy forward-declared. */
-#undef ARRAY_TEST
-static PSTR_(to_string_fn) PA_(to_string) = PSTR_(to_string);
-static const char *(*PA_(array_to_string))(const struct A_(array) *)
-	= &STR_(to_string);
-#endif /* expect --> */
-#undef STR_
 #undef ARRAY_TO_STRING
-#ifdef ARRAY_TO_STRING_NAME
-#undef ARRAY_TO_STRING_NAME
+#endif /* to string trait --> */
+
+
+#if defined(ARRAY_TEST) && defined(ARRAY_BASE) /* <!-- test base */
+#include "../test/test_array.h"
+#endif /* test base --> */
+
+
+#if defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL) /* <!-- compare trait */
+#define COMPARE_NAME ARRAY_NAME
+#define COMPARE_TYPE array
+#ifdef ARRAY_TRAIT
+#define COMPARE_TRAIT ARRAY_TRAIT
 #endif
-
-
-#else /* to string trait --><!-- compare trait */
-
-
-#ifdef ARRAY_COMPARE_NAME
-#define CMP_(n) ARRAY_CAT(A_(array), ARRAY_CAT(ARRAY_COMPARE_NAME, n))
-#else
-#define CMP_(n) ARRAY_CAT(A_(array), n)
-#endif
+/*#define CMP_(n) ARRAY_CAT(A_(array), n)*/
 #ifdef ARRAY_COMPARE /* <!-- cmp */
 #define COMPARE ARRAY_COMPARE
 #else /* cmp --><!-- eq */
@@ -440,39 +398,35 @@ static const char *(*PA_(array_to_string))(const struct A_(array) *)
 #ifdef ARRAY_TEST /* <!-- test: this detects and outputs compare test. */
 #include "../test/test_array.h"
 #endif /* test --> */
-#undef CMP_
-#ifdef ARRAY_COMPARE_NAME
-#undef ARRAY_COMPARE_NAME
-#endif
 #ifdef ARRAY_COMPARE
 #undef ARRAY_COMPARE
-#endif
-#ifdef ARRAY_IS_EQUAL
+#else
 #undef ARRAY_IS_EQUAL
 #endif
+#endif /* compare trait --> */
 
 
-#endif /* traits --> */
-
-
-#ifdef ARRAY_EXPECT_TRAIT /* <!-- trait */
+#ifdef ARRAY_EXPECT_TRAIT /* <!-- more */
 #undef ARRAY_EXPECT_TRAIT
-#else /* trait --><!-- !trait */
-#ifdef ARRAY_TEST
-#error No ARRAY_TO_STRING traits defined for ARRAY_TEST.
-#endif
+#else /* more --><!-- done */
 #undef ARRAY_NAME
 #undef ARRAY_TYPE
 #undef BOX_
 #undef BOX
-#undef BOX_CONTENT_C
 #undef BOX_CONTENT
+#undef BOX_ITERATOR
 #undef BOX_ACCESS
 #undef BOX_CONTIGUOUS
-#endif /* !trait --> */
-#undef ARRAY_TO_STRING_TRAIT
-#undef ARRAY_COMPARE_TRAIT
-#undef ARRAY_TRAITS
+#ifdef ARRAY_HAS_TO_STRING
+#undef ARRAY_HAS_TO_STRING
+#endif
+#ifdef ARRAY_TEST
+#undef ARRAY_TEST
+#endif
+#endif /* done --> */
+#ifdef ARRAY_TRAIT
+#undef ARRAY_TRAIT
+#endif
 #ifdef ARRAY_RESTRICT
 #undef ARRAY_RESTRICT
 #undef restrict

@@ -24,10 +24,11 @@ static void str4_filler(struct str4 *const s)
 #define ARRAY_NAME str4
 #define ARRAY_TYPE struct str4
 #define ARRAY_TEST &str4_filler
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
 #define ARRAY_TO_STRING &str4_to_string
 #include "../src/array.h"
+
+
+#if 0
 
 
 #define HAVE_ITERATE_H /* More tests. */
@@ -53,11 +54,7 @@ static int colour_is_equal(const enum colour *const a,
 #define ARRAY_NAME colour
 #define ARRAY_TYPE enum colour
 #define ARRAY_TEST &colour_filler
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
 #define ARRAY_IS_EQUAL &colour_is_equal
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
 #define ARRAY_TO_STRING &colour_to_string
 #include "../src/array.h"
 
@@ -72,12 +69,7 @@ static int int_cmp(const int *const a, const int *const b)
 #define ARRAY_NAME int
 #define ARRAY_TYPE int
 #define ARRAY_TEST &int_filler
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
 #define ARRAY_COMPARE &int_cmp
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
-/* On testing, always include to string last, as it un-defines ARRAY_TEST. */
 #define ARRAY_TO_STRING &int_to_string
 #include "../src/array.h"
 
@@ -99,20 +91,8 @@ static int keyval_value_cmp(const struct keyval *const a,
 #define ARRAY_NAME keyval
 #define ARRAY_TYPE struct keyval
 #define ARRAY_TEST &keyval_filler
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
-#define ARRAY_COMPARE &keyval_key_cmp
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
-#define ARRAY_COMPARE_NAME value
-#define ARRAY_COMPARE &keyval_value_cmp
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
-#define ARRAY_TO_STRING &keyval_key_to_string
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
-#define ARRAY_TO_STRING_NAME value
-#define ARRAY_TO_STRING &keyval_value_to_string
+#define ARRAY_COMPARE &keyval_cmp
+#define ARRAY_TO_STRING &keyval_to_string
 #include "../src/array.h"
 
 
@@ -127,14 +107,12 @@ static int pointer_cmp(const int *const*const a, const int *const*const b)
 #define ARRAY_NAME pointer
 #define ARRAY_TYPE int *
 #define ARRAY_TEST &pointer_filler
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
 #define ARRAY_COMPARE &pointer_cmp
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
 #define ARRAY_TO_STRING &pointer_to_string
 #include "../src/array.h"
 
+
+#endif
 
 /** Tests; assert crashes on failed test. @return `EXIT_SUCCESS`. */
 int main(void) {
@@ -143,6 +121,7 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	str4_array_test();
+#if 0
 	colour_array_test();
 	colour_array_compare_test();
 	int_array_test();
@@ -155,6 +134,7 @@ int main(void) {
 	 <- probably the test is wrong, assumes contiguous. I don't know what it's
 	 doing, wrote 10 years ago. */
 	(void)pointer_array_compare_test;
+#endif
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

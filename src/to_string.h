@@ -27,8 +27,8 @@
 
  @std C89 */
 
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT_C) \
-	|| !defined(STR_) || !defined(TO_STRING)
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
+	|| !defined(TO_STRING_NAME) || !defined(TO_STRING_TYPE)
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -50,6 +50,8 @@
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #define TO_STRING_CAT_(n, m) n ## _ ## m
 #define TO_STRING_CAT(n, m) TO_STRING_CAT_(n, m)
+#define STRNAME_(n) TO_STRING_CAT(TO_STRING_NAME, n)
+#define STR_(n) TO_STRING_CAT(TO_STRING_CAT(TO_STRING_NAME, TO_STRING_TYPE), n)
 #define PSTR_(n) TO_STRING_CAT(to_string, STR_(n))
 #if defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN) /* <!-- ntern */
 extern char to_string_buffers[4][256];
@@ -79,14 +81,11 @@ static unsigned to_string_buffer_i;
 #endif
 
 typedef BOX PSTR_(box);
-typedef BOX_CONTENT_C PSTR_(element_c);
+typedef BOX_CONTENT PSTR_(element);
 
-/** <src/to_string.h>: responsible for turning the argument into a 12-`char`
- null-terminated output string. */
-typedef void (*PSTR_(to_string_fn))(const PSTR_(element_c), char (*)[12]);
-/* Check that `TO_STRING` is a function implementing
- <typedef:<PSTR>to_string>. */
-static const PSTR_(to_string_fn) PSTR_(to_string) = (TO_STRING);
+/** <src/to_string.h>: responsible for turning the read-only argument into a
+ 12-`char` null-terminated output string. */
+typedef void (*PSTR_(to_string_fn))(const PSTR_(element), char (*)[12]);
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
  256 bytes, with limitations of only printing 4 things at a time. `<STR>` is
@@ -98,25 +97,31 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	const size_t ellipsis_len = sizeof ellipsis - 1;
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance;
-	PSTR_(element_c) x;
-	struct BOX_(forward) it;
+	PSTR_(element) x;
+	struct BOX_(iterator) it;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
 	assert(box && !(to_string_buffers_no & (to_string_buffers_no - 1))
 		&& to_string_buffer_size >= 1 + 11 + 1 + ellipsis_len + 1 + 1);
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
-	it = BOX_(forward)(box);
+	{ /* We do not modify `box`, but the compiler doesn't know that. */
+		PSTR_(box) *promise_box;
+		memcpy(&promise_box, &box, sizeof box);
+		it = BOX_(iterator)(promise_box);
+	}
 	*b++ = left;
-	while(BOX_(is_element_c)(x = BOX_(next_c)(&it))) {
-		PSTR_(to_string)(x, (char (*)[12])b);
+	while(BOX_(is_element)(x = BOX_(next)(&it))) {
+		/* One must have this function declared, where STRNAME is the argument
+		 supplied by *_NAME. */
+		STRNAME_(to_string)(x, (char (*)[12])b);
 		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size_t)(b - buffer)
 			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1) {
-			if(BOX_(is_element_c)(BOX_(next_c)(&it))) goto ellipsis;
+			if(BOX_(is_element)(BOX_(next)(&it))) goto ellipsis;
 			else break;
 		}
 	}
@@ -138,10 +143,8 @@ static void PSTR_(unused_to_string)(void)
 	{ STR_(to_string)(0); PSTR_(unused_to_string_coda)(); }
 static void PSTR_(unused_to_string_coda)(void) { PSTR_(unused_to_string)(); }
 
-#undef TO_STRING
-#ifdef TO_STRING_NAME
 #undef TO_STRING_NAME
-#endif
+#undef TO_STRING_TYPE
 #ifdef TO_STRING_EXTERN
 #undef TO_STRING_EXTERN
 #endif

@@ -4,8 +4,6 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-#if ARRAY_TRAITS == 0 /* <!-- !traits */
-
 /** <../test/test_array.h>: operates by side-effects on <typedef:<PA>type>. */
 typedef void (*PA_(action_fn))(PA_(type) *);
 
@@ -53,7 +51,7 @@ static void PA_(graph)(const struct A_(array) *const a, const char *const fn) {
 		"<FONT COLOR=\"Gray85\">%s</FONT></TD></TR>\n", orcify(a->data));
 	for(i = 0; i < a->size; i++) {
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
-		PA_(to_string)((const PA_(type_c) *)(a->data + i), &z);
+		A_(to_string)(a->data + i, &z);
 		fprintf(fp, "\t<TR>\n"
 			"\t\t<TD ALIGN=\"RIGHT\"%s>%lu</TD>\n"
 			"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
@@ -112,24 +110,22 @@ static void PA_(test_basic)(void) {
 		memcpy(item, items + i, sizeof *item);
 	}
 	printf("Testing iteration, a = %s.\n",
-		PA_(array_to_string)(&a));
+		A_(array_to_string)(&a));
 	for(it = A_(array_iterator)(&a), i = 0; item = A_(array_next)(&it); i++)
 		assert(!memcmp(item, items + i, sizeof *item));
 	assert(i == 3);
 	printf("Backwards:\n");
 	for(it = A_(array_iterator)(&a), i = 0; item = A_(array_previous)(&it); i++)
-		PA_(to_string)((const PA_(type_c) *)item, &z), printf("%s\n", z),
+		A_(to_string)(item, &z), printf("%s\n", z),
 		assert(!memcmp(item, items + 2 - i, sizeof *item));
 	assert(i == 3);
 	it = A_(array_iterator)(&a);
-	item = A_(array_next)(&it), assert(item),
-		PA_(to_string)((const PA_(type_c) *)item, &z);
+	item = A_(array_next)(&it), assert(item), A_(to_string)(item, &z);
 	A_(array_next)(&it), item = A_(array_previous)(&it);
 	assert(!memcmp(item, items + 0, sizeof *item));
 	for(i = 0; i < 3; i++) {
 		it = A_(array_iterator_before)(&a, i);
-		item = A_(array_next)(&it), assert(item);
-		PA_(to_string)((const PA_(type_c) *)item, &z);
+		item = A_(array_next)(&it), assert(item), A_(to_string)(item, &z);
 		printf("a[%lu] = %s\n", (unsigned long)i, z);
 		assert(!memcmp(item, items + i, sizeof *item));
 	}
@@ -166,20 +162,20 @@ static void PA_(test_basic)(void) {
 	}
 	assert(A_(array_peek)(&a));
 	printf("Now %lu elements: %s.\n",
-		(unsigned long)items_size, PA_(array_to_string)(&a));
+		(unsigned long)items_size, A_(array_to_string)(&a));
 	assert(a.size == items_size);
 	item = a.data + items_size - 2;
 	A_(array_remove)(&a, item);
 	item = a.data + items_size - 3;
 	A_(array_remove)(&a, item);
-	printf("Now: %s.\n", PA_(array_to_string)(&a));
+	printf("Now: %s.\n", A_(array_to_string)(&a));
 
 	assert(a.size == items_size - 2);
 	A_(array_append)(&a, 2);
 	memcpy(item + 1, items + 3, sizeof *item * 2);
 	assert(a.size == items_size);
 	PA_(valid_state)(&a);
-	printf("Now: %s.\n", PA_(array_to_string)(&a));
+	printf("Now: %s.\n", A_(array_to_string)(&a));
 
 	/* Peek/Pop. */
 	item = A_(array_peek)(&a);
@@ -196,12 +192,12 @@ static void PA_(test_basic)(void) {
 		item = A_(array_new)(&a), assert(item);
 		PA_(filler)(item);
 	}
-	printf("%s.\n", PA_(array_to_string)(&a));
+	printf("%s.\n", A_(array_to_string)(&a));
 	PA_(valid_state)(&a);
 
 	printf("Clear:\n");
 	A_(array_clear)(&a);
-	printf("%s.\n", PA_(array_to_string)(&a));
+	printf("%s.\n", A_(array_to_string)(&a));
 	assert(A_(array_peek)(&a) == 0 && a.size == 0);
 
 	printf("Destructor:\n");
@@ -227,8 +223,7 @@ static void PA_(test_random)(void) {
 			if(!(data = A_(array_new)(&a)))
 				{ perror("Error"), assert(0); return; }
 			size++;
-			PA_(filler)(data);
-			PA_(to_string)((const PA_(type_c) *)data, &str);
+			PA_(filler)(data), A_(to_string)(data, &str);
 			if(is_print) printf("created %s.", str);
 		} else {
 			const unsigned t = RAND_MAX / 2;
@@ -236,14 +231,13 @@ static void PA_(test_random)(void) {
 			assert(size);
 			if(r < t) {
 				data = A_(array_peek)(&a);
-				assert(data);
-				PA_(to_string)((const PA_(type_c) *)data, &str);
+				assert(data), A_(to_string)(data, &str);
 				if(is_print) printf("popping %s.", str);
 				assert(data == A_(array_pop)(&a));
 			} else {
 				size_t idx = (unsigned)rand() / (RAND_MAX / size + 1);
 				if(!(data = a.data + idx)) continue;
-				PA_(to_string)((const PA_(type_c) *)data, &str);
+				A_(to_string)(data, &str);
 				if(is_print)
 					printf("removing %s at %lu.", str, (unsigned long)idx);
 				A_(array_remove)(&a, data);
@@ -254,7 +248,7 @@ static void PA_(test_random)(void) {
 		PA_(valid_state)(&a);
 		if(a.size < 1000000 && !(i & (i - 1))) {
 			char fn[32];
-			printf("%s.\n", PA_(array_to_string)(&a));
+			printf("%s.\n", A_(array_to_string)(&a));
 			sprintf(fn, "graph/" QUOTE(ARRAY_NAME) "-array-%lu.gv",
 				(unsigned long)i);
 			PA_(graph)(&a, fn);
@@ -282,24 +276,24 @@ static void PA_(test_replace)(void) {
 	assert(a.size == ts_size);	
 	/* No-op. */
 	success = A_(array_splice)(&a, 0, 0, 0);
-	printf("Array %s.\n", PA_(array_to_string)(&a));
+	printf("Array %s.\n", A_(array_to_string)(&a));
 	assert(success && a.size == ts_size);
 	/* Deleting from the front. */
 	success = A_(array_splice)(&a, 0, 0, 1);
-	printf("Array after deleting from front %s.\n", PA_(array_to_string)(&a));
+	printf("Array after deleting from front %s.\n", A_(array_to_string)(&a));
 	assert(success && a.size == ts_size - 1);
 	/* Adding at the back. */
 	t = A_(array_new)(&b);
 	assert(t);
 	memcpy(t, ts + 0, sizeof *t);
 	success = A_(array_splice)(&a, &b, a.size, a.size);
-	printf("Array after adding %s to back %s.\n", PA_(array_to_string)(&b),
-		PA_(array_to_string)(&a));
+	printf("Array after adding %s to back %s.\n", A_(array_to_string)(&b),
+		A_(array_to_string)(&a));
 	assert(success && a.size == ts_size);
 	/* Replacing same-size. */
 	success = A_(array_splice)(&a, &b, 1, 2);
-	printf("Array after replacing [1, 2) %s: %s.\n", PA_(array_to_string)(&b),
-		PA_(array_to_string)(&a));
+	printf("Array after replacing [1, 2) %s: %s.\n", A_(array_to_string)(&b),
+		A_(array_to_string)(&a));
 	assert(success && a.size == ts_size
 		&& !memcmp(t, a.data + 1, sizeof *t));
 	/* Replacing larger size. */
@@ -307,14 +301,14 @@ static void PA_(test_replace)(void) {
 	assert(t);
 	memcpy(t, ts + 1, sizeof *t);
 	success = A_(array_splice)(&a, &b, 1, 2);
-	printf("Array after replacing [1, 2) %s: %s.\n", PA_(array_to_string)(&b),
-		PA_(array_to_string)(&a));
+	printf("Array after replacing [1, 2) %s: %s.\n", A_(array_to_string)(&b),
+		A_(array_to_string)(&a));
 	assert(success && a.size == ts_size + 1
 		&& !memcmp(t, a.data + 2, sizeof *t));
 	/* Replacing a smaller size. */
 	success = A_(array_splice)(&a, &b, 1, 4);
-	printf("Array after replacing [1, 4) %s: %s.\n", PA_(array_to_string)(&b),
-		PA_(array_to_string)(&a));
+	printf("Array after replacing [1, 4) %s: %s.\n", A_(array_to_string)(&b),
+		A_(array_to_string)(&a));
 	assert(success && a.size == ts_size
 		&& !memcmp(t, a.data + 2, sizeof *t));
 	A_(array_clear)(&b);
@@ -322,23 +316,23 @@ static void PA_(test_replace)(void) {
 	memcpy(t, ts + 2, sizeof *t * 2);
 	assert(b.size == 2);
 	/* a = [[1],[0],[1],[4],[0]]; b = [[2],[3]] */
-	printf("0: a = %s, b = %s.\n", PA_(array_to_string)(&a),
-		PA_(array_to_string)(&b));
+	printf("0: a = %s, b = %s.\n", A_(array_to_string)(&a),
+		A_(array_to_string)(&b));
 	assert(a.size == 5 && b.size == 2);
 	A_(array_splice)(&a, &b, a.size, a.size);
-	printf("1: a = %s.\n", PA_(array_to_string)(&a));
+	printf("1: a = %s.\n", A_(array_to_string)(&a));
 	/* a = [[1],[0],[1],[4],[0],[2],[3]] */
 	assert(a.size == 7);
 	A_(array_splice)(&a, &b, 1, 3);
-	printf("2: a = %s.\n", PA_(array_to_string)(&a));
+	printf("2: a = %s.\n", A_(array_to_string)(&a));
 	/* a = [[1],[2],[3],[4],[0],[2],[3]] */
 	assert(a.size == 7);
 	A_(array_splice)(&a, &b, 2, 3);
-	printf("3: a = %s.\n", PA_(array_to_string)(&a));
+	printf("3: a = %s.\n", A_(array_to_string)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[3]] */
 	assert(a.size == 8);
 	A_(array_splice)(&a, &b, 7, 8);
-	printf("4: a = %s.\n", PA_(array_to_string)(&a));
+	printf("4: a = %s.\n", A_(array_to_string)(&a));
 	/* a = [[1],[2],[2],[3],[4],[0],[2],[2],[3]] */
 	assert(a.size == 9 &&
 		!memcmp(ts + 1, a.data, sizeof *t * 2) &&
@@ -353,7 +347,7 @@ static void PA_(test_replace)(void) {
 #ifdef HAVE_ITERATE_H /* <!-- iterate */
 /** @implements <PA>Predicate
  @return A set sequence of ones and zeros, independant of `data`. */
-static int PA_(keep_deterministic)(const PA_(type_c) *const data) {
+static int PA_(keep_deterministic)(/*const*/ PA_(type_c) *const data) {
 	static size_t i;
 	static const int things[] = { 1,0,0,0,0,1,0,0,1,1, 0,1,0,1,0,1,0 };
 	const int predicate = things[i++];
@@ -369,12 +363,12 @@ static void PA_(increment)(PA_(type) *const t) {
 }
 /** True, independent of `t`.
  @implements <PA>Predicate */
-static int PA_(true)(const PA_(type_c) *const t) {
+static int PA_(true)(/*const*/ PA_(type_c) *const t) {
 	(void)t;
 	return 1;
 }
 /** @implements <PA>Predicate @return Is `t` zero-filled? */
-static int PA_(zero_filled)(const PA_(type_c) *const t) {
+static int PA_(zero_filled)(/*const*/ PA_(type_c) *const t) {
 	const char *c = (const char *)t, *const end = (const char *)(t + 1);
 	assert(t);
 	while(c < end) if(*c++) return 0;
@@ -462,7 +456,7 @@ static void PA_(test_trim)(void) {
 	item = A_(array_new)(&a);
 	assert(item);
 	PA_(filler)(item);
-	is_zero = PA_(zero_filled)((const PA_(type_c) *)item);
+	is_zero = PA_(zero_filled)((/*const*/ PA_(type_c) *)item);
 	item = A_(array_new)(&a);
 	assert(item);
 	memset(item, 0, sizeof *item);
@@ -485,12 +479,12 @@ static void PA_(test_insert)(void) {
 	for(i = 0; i <= original_size; i++) {
 		e = A_(array_append)(&a, original_size), assert(e);
 		memcpy(e, original, sizeof original);
-		if(!i) printf("a = %s.\n", PA_(array_to_string)(&a));
+		if(!i) printf("a = %s.\n", A_(array_to_string)(&a));
 		PA_(valid_state)(&a);
 		e = A_(array_insert)(&a, 1, i), assert(e);
 		memcpy(e, &solitary, sizeof solitary);
 		printf("After insert(%lu) a = %s.\n",
-			(unsigned long)i, PA_(array_to_string)(&a));
+			(unsigned long)i, A_(array_to_string)(&a));
 		A_(array_clear)(&a);
 	}
 	A_(array_)(&a);
@@ -502,7 +496,7 @@ static void A_(array_test)(void) {
 	printf("array<" QUOTE(ARRAY_NAME) "> of type <" QUOTE(ARRAY_TYPE)
 		"> was created using: ARRAY_TO_STRING <" QUOTE(ARRAY_TO_STRING) ">; "
 		"ARRAY_TEST <" QUOTE(ARRAY_TEST) ">; testing:\n");
-	assert(PA_(to_string) && PA_(array_to_string));
+	assert(A_(to_string) && A_(array_to_string));
 	PA_(test_basic)();
 	PA_(test_random)();
 	PA_(test_replace)();
@@ -514,8 +508,7 @@ static void A_(array_test)(void) {
 }
 
 
-/* !traits --><!-- compare */
-#elif defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL)
+#if 0
 
 
 /** Fills `fill` that is not equal to `neq` if possible. */
@@ -754,13 +747,8 @@ static void CMP_(compare_test)(void) {
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array compare.\n\n");
 }
 
+#endif
 
-#else /* compare --><!-- no */
-#error Test should not be here.
-#endif /* no --> */
 
 #undef QUOTE
 #undef QUOTE_
-
-/* We should *not* undef `ARRAY_TEST`, since it's used to pick the first
- to_string. */

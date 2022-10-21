@@ -85,7 +85,7 @@ static void ITR_(if_each)(PITR_(box) *const box,
 	assert(box && predicate && action);
 	for(it = BOX_(iterator)(box), i = BOX_(next)(&it); BOX_(is_element)(i); ) {
 		PITR_(element) j = BOX_(next)(&it);
-		if(predicate((const PITR_(element_c))i)) action(i);
+		if(predicate((/*const*/ PITR_(element_c))i)) action(i);
 		i = j; /* Could be to remove `i` from the list. */
 	}
 }
@@ -105,7 +105,7 @@ static int ITR_(copy_if)(PITR_(box) *restrict const dst,
 	if(!src) return 1;
 	for(i = BOX_(at)(src, 0), end = i + BOX_(size)(src); i < end; i++) {
 		/* Not falling/rising. */
-		if(!(!!rise ^ (difcpy = copy((const PITR_(element_c))i)))) continue;
+		if(!(!!rise ^ (difcpy = copy((/*const*/ PITR_(element_c))i)))) continue;
 		if(difcpy) { /* Rising edge. */
 			assert(!rise);
 			rise = i;
