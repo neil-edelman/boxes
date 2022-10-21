@@ -3,7 +3,7 @@
 
  @subtitle Compare trait
 
- Interface defined by `BOX_`, `BOX`, and `BOX_CONTENT`.
+ Interface defined by `BOX_`, `BOX`, and `BOX_CONTENT_C`.
 
  @param[CMP_(n)]
  A one-argument macro producing a name that is responsible for the name of the
@@ -16,10 +16,10 @@
 
  @std C89 */
 
-/* `BOX_CONTENT`: is_content_c, forward, next_c. */
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
+/* `BOX_CONTENT_C`: is_content_c, forward, next_c. */
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT_C) \
 	|| !defined(CMP_) || !(defined(COMPARE_IS_EQUAL) ^ defined(COMPARE)) \
-	|| defined(BOX_CONTIGUOUS) && !defined(BOX_ITERATOR)
+	|| defined(BOX_CONTIGUOUS) && !defined(BOX_CONTENT)
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -37,9 +37,9 @@
 #endif /* idempotent --> */
 
 typedef BOX PCMP_(box);
-typedef BOX_CONTENT PCMP_(element_c);
-#ifdef BOX_ITERATOR
-typedef BOX_ITERATOR PCMP_(element);
+typedef BOX_CONTENT_C PCMP_(element_c);
+#ifdef BOX_CONTENT
+typedef BOX_CONTENT PCMP_(element);
 #endif
 
 /** <src/compare.h>: Returns a boolean given two read-only elements. */
@@ -50,8 +50,8 @@ typedef int (*PCMP_(bipredicate_fn))(const PCMP_(element_c),
  `a > b`, respectively. */
 typedef int (*PCMP_(compare_fn))(const PCMP_(element_c) restrict a,
 	const PCMP_(element_c) restrict b);
-#ifdef BOX_ITERATOR
-/** <src/compare.h>, `BOX_ITERATOR`: Returns a boolean given two modifiable
+#ifdef BOX_CONTENT
+/** <src/compare.h>, `BOX_CONTENT`: Returns a boolean given two modifiable
  arguments. */
 typedef int (*PCMP_(biaction_fn))(PCMP_(element) restrict,
 	PCMP_(element) restrict);
@@ -90,7 +90,8 @@ static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
 	const PCMP_(element_c) element) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(PCMP_(compare)(element, BOX_(at)(box,
+		if(PCMP_(compare)(element,
+			(const PCMP_(element_c))BOX_(at)(box,
 			mid = low + (high - low) / 2)) <= 0) high = mid;
 		else low = mid + 1;
 	return low;
@@ -104,7 +105,7 @@ static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
 	const PCMP_(element_c) element) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(PCMP_(compare)(element, BOX_(at)(box,
+		if(PCMP_(compare)(element, (const PCMP_(element_c))BOX_(at)(box,
 			mid = low + (high - low) / 2)) >= 0) low = mid + 1;
 		else high = mid;
 	return low;
@@ -214,7 +215,8 @@ static void CMP_(unique_merge)(PCMP_(box) *const box,
 		for(choice = 0, next = 1; cursor + next < last; next++) {
 			const PCMP_(element) a = BOX_(at)(box, cursor + choice),
 				b = BOX_(at)(box, cursor + next);
-			if(!PCMP_(is_equal)(a, b)) break;
+			if(!PCMP_(is_equal)((const PCMP_(element_c))a,
+				(const PCMP_(element_c))b)) break;
 			if(merge && merge(a, b)) choice = next;
 		}
 		if(next == 1) continue;

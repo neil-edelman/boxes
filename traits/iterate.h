@@ -3,7 +3,7 @@
 
  @subtitle Iterate trait
 
- Interface defined by `BOX_`, `BOX`, `BOX_CONTENT`, and `BOX_ITERATOR`.
+ Interface defined by `BOX_`, `BOX`, `BOX_CONTENT_C`, and `BOX_CONTENT`.
 
  @param[ITR_]
  A one-argument macro producing a name that is responsible for the name of the
@@ -18,10 +18,10 @@
  does not expire after box completion.
  */
 
-/* `BOX_CONTENT`: is_element_c, forward, next_c.
- `BOX_ITERATOR`: is_element, iterator, next */
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
-	|| !defined(BOX_ITERATOR) || !defined(ITR_)
+/* `BOX_CONTENT_C`: is_element_c, forward, next_c.
+ `BOX_CONTENT`: is_element, iterator, next */
+#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT_C) \
+	|| !defined(BOX_CONTENT) || !defined(ITR_)
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -39,8 +39,8 @@
 #endif /* idempotent --> */
 
 typedef BOX PITR_(box);
-typedef BOX_CONTENT PITR_(element_c);
-typedef BOX_ITERATOR PITR_(element);
+typedef BOX_CONTENT_C PITR_(element_c);
+typedef BOX_CONTENT PITR_(element);
 
 /** <src/iterate.h>: Operates by side-effects. */
 typedef void (*PITR_(action_fn))(PITR_(element));
@@ -58,7 +58,7 @@ static PITR_(element) ITR_(any)(PITR_(box) *const box,
 	PITR_(element) i;
 	assert(box && predicate);
 	for(it = BOX_(iterator)(box); BOX_(is_element)(i = BOX_(next)(&it)); )
-		if(predicate(i)) return i;
+		if(predicate((const PITR_(element_c))i)) return i;
 	return 0;
 }
 
@@ -85,7 +85,7 @@ static void ITR_(if_each)(PITR_(box) *const box,
 	assert(box && predicate && action);
 	for(it = BOX_(iterator)(box), i = BOX_(next)(&it); BOX_(is_element)(i); ) {
 		PITR_(element) j = BOX_(next)(&it);
-		if(predicate(i)) action(i);
+		if(predicate((const PITR_(element_c))i)) action(i);
 		i = j; /* Could be to remove `i` from the list. */
 	}
 }
@@ -104,7 +104,8 @@ static int ITR_(copy_if)(PITR_(box) *restrict const dst,
 	assert(dst && copy && dst != src);
 	if(!src) return 1;
 	for(i = BOX_(at)(src, 0), end = i + BOX_(size)(src); i < end; i++) {
-		if(!(!!rise ^ (difcpy = copy(i)))) continue; /* Not falling/rising. */
+		/* Not falling/rising. */
+		if(!(!!rise ^ (difcpy = copy((const PITR_(element_c))i)))) continue;
 		if(difcpy) { /* Rising edge. */
 			assert(!rise);
 			rise = i;
@@ -133,7 +134,8 @@ static void ITR_(keep_if)(PITR_(box) *const box,
 	assert(box && keep);
 	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end;
 		keep0 = keep1, i++) {
-		if(!(keep1 = !!keep(i)) && destruct) destruct(i);
+		if(!(keep1 = !!keep((const PITR_(element_c))i)) && destruct)
+			destruct(i);
 		if(!(keep0 ^ keep1)) continue; /* Not a falling/rising edge. */
 		if(keep1) { /* Rising edge. */
 			assert(erase && !retain);
@@ -171,8 +173,10 @@ static void ITR_(trim)(PITR_(box) *const box,
 	if(!predicate) return;
 	right = BOX_(size)(box);
 	first = BOX_(at)(box, 0);
-	while(right && predicate(first + right - 1)) right--;
-	for(left = 0; left < right && predicate(first + left); left++);
+	while(right && predicate((const PITR_(element_c))(first + right - 1)))
+		right--;
+	for(left = 0; left < right
+		&& predicate((const PITR_(element_c))(first + left)); left++);
 	if(right == BOX_(size)(box) && !left) return; /* No change. */
 	assert(left <= right);
 	if(left) memmove(first, first + left, sizeof *first * (right - left));
