@@ -28,7 +28,7 @@
  @std C89 */
 
 #if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
-	|| !defined(TO_STRING_NAME) || !defined(TO_STRING_TYPE)
+	|| !defined(TO_STRING_NAME) || !defined(TO_STRING_LABEL)
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -44,14 +44,15 @@
 #ifndef TO_STRING_H /* <!-- idempotent */
 #define TO_STRING_H
 #include <string.h>
-#if defined(TO_STRING_CAT_) || defined(TO_STRING_CAT) || defined(PSTR_)
+#if defined(TO_STRING_CAT_) || defined(TO_STRING_CAT) \
+	|| defined(STRNAME_) || defined(STR_) || defined(PSTR_)
 #error Unexpected defines.
 #endif
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #define TO_STRING_CAT_(n, m) n ## _ ## m
 #define TO_STRING_CAT(n, m) TO_STRING_CAT_(n, m)
 #define STRNAME_(n) TO_STRING_CAT(TO_STRING_NAME, n)
-#define STR_(n) TO_STRING_CAT(TO_STRING_CAT(TO_STRING_NAME, TO_STRING_TYPE), n)
+#define STR_(n) TO_STRING_CAT(TO_STRING_CAT(TO_STRING_NAME, TO_STRING_LABEL), n)
 #define PSTR_(n) TO_STRING_CAT(to_string, STR_(n))
 #if defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN) /* <!-- ntern */
 extern char to_string_buffers[4][256];
@@ -84,12 +85,16 @@ typedef BOX PSTR_(box);
 typedef BOX_CONTENT PSTR_(element);
 
 /** <src/to_string.h>: responsible for turning the read-only argument into a
- 12-`char` null-terminated output string. */
+ 12-`char` null-terminated output string. The first argument should be a
+ read-only reference to an element and the second a pointer to the bytes. */
 typedef void (*PSTR_(to_string_fn))(const PSTR_(element), char (*)[12]);
+/* _Nb_: this is for documentation only; there is no way to get a general
+ read-only type which what we are supplied. Think of nested pointers. */
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
  256 bytes, with limitations of only printing 4 things at a time. `<STR>` is
- loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`.
+ `<NAME>_<BOX>_<TRAIT>`. Requires `<NAME>_<TRAIT>_to_string` be declared as a
+ <typedef:<PSTR>to_string_fn>.
  @return Address of the static buffer. @order \Theta(1) @allow */
 static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	const char comma = ',', space = ' ', ellipsis[] = "…",
@@ -112,8 +117,9 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	}
 	*b++ = left;
 	while(BOX_(is_element)(x = BOX_(next)(&it))) {
-		/* One must have this function declared, where STRNAME is the argument
-		 supplied by *_NAME. */
+		/* One must have this function declared.
+		 FIXME: should have NAME BOX TRAIT -> NAME TRAIT
+		 _Eg_, `ARRAY_NAME foo` -> `foo_to_string`. */
 		STRNAME_(to_string)(x, (char (*)[12])b);
 		/* Paranoid about '\0'. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
@@ -144,7 +150,7 @@ static void PSTR_(unused_to_string)(void)
 static void PSTR_(unused_to_string_coda)(void) { PSTR_(unused_to_string)(); }
 
 #undef TO_STRING_NAME
-#undef TO_STRING_TYPE
+#undef TO_STRING_LABEL
 #ifdef TO_STRING_EXTERN
 #undef TO_STRING_EXTERN
 #endif

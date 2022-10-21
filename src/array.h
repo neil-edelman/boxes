@@ -366,10 +366,10 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 #ifdef ARRAY_TO_STRING /* <!-- to string trait */
 #define TO_STRING_NAME ARRAY_NAME
-#define TO_STRING_TYPE array
 #ifdef ARRAY_TRAIT
-#define TO_STRING_TRAIT ARRAY_TRAIT
+#define TO_STRING_LABEL CAT(array, ARRAY_TRAIT)
 #else
+#define TO_STRING_LABEL array
 #define ARRAY_HAS_TO_STRING
 #endif
 #include "to_string.h" /** \include */

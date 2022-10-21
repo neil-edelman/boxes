@@ -1,0 +1,40 @@
+error !array_name || !array_type 
+error array_trait ^ box
+error array_compare && array_is_equal
+error array_test && (!array_trait && !array_to_string || array_trait && !array_has_to_string)
+
+def array_restrict,restrict?
+
+ifndef box {
+	def array_base array_min_capacity box_content box_access box_contiguous box_ box
+	def/undef itr_
+}
+
+ifdef array_to_string {
+	def to_string_name to_string_type to_string_trait? array_has_to_string?
+	to_string.h {
+		error !box_ !box !box_content !to_string_name !to_string_type
+		undef to_string_name to_string_type
+	}
+	undef array_to_string
+}
+
+if array_test && array_base {
+	include test
+}
+(undef array_base?)
+
+if array_compare || array_is_equal {
+	def compare_name compare_type compare_trait? compare? compare_is_equal?
+	ifdef array_test {
+		include test
+	}
+	undef array_compare? array_is_equal?
+}
+
+ifdef array_expect_trait {
+	undef array_expect_trait
+} else {
+	undef array_name array_type box_ box box_content box_iterator box_access box_contiguous array_has_to_string? array_test?
+}
+undef array_trait array_restict,restrict
