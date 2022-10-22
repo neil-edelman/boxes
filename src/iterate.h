@@ -5,7 +5,9 @@
 
  Interface defined by box. Singleton.
 
- @std C89 */
+ @std C89
+ @fixme BOX_CONTENT_C is a hack and doesn't work in all instances. This should
+ not be passed, instead implied. */
 /**
  @param[HAVE_ITERATE_H]
  The `<ITR>` functions need this value. This includes <src/iterate.h>, which
@@ -13,8 +15,8 @@
  does not expire after box completion.
  */
 
-#if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
-	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME)
+#if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_CONTENT_C) \
+	|| !defined(BOX_) || !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME)
 #error Unexpected preprocessor symbols.
 #endif
 

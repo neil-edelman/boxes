@@ -3,12 +3,7 @@
 
  @subtitle Compare trait
 
- Interface defined by `BOX_`, `BOX`, and `BOX_CONTENT_C`.
-
- @param[CMP_(n)]
- A one-argument macro producing a name that is responsible for the name of the
- functions. Should be something like `CMP_(x) -> foo_widget_x`. The caller is
- responsible for undefining `CMP_`.
+ Interface defined by box.
 
  @param[COMPARE_IS_EQUAL, COMPARE]
  Function implementing <typedef:<PCMP>is_equal_fn> or
@@ -16,7 +11,11 @@
 
  @std C89 */
 
-/* `BOX_CONTENT_C`: is_content_c, forward, next_c. */
+#if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
+	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME) \
+	|| defined(STR_) || defined(STRLABEL_)
+#error Unexpected preprocessor symbols.
+#endif
 #if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT_C) \
 	|| !defined(CMP_) || !(defined(COMPARE_IS_EQUAL) ^ defined(COMPARE)) \
 	|| defined(BOX_CONTIGUOUS) && !defined(BOX_CONTENT)
