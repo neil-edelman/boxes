@@ -347,7 +347,7 @@ static void PA_(test_replace)(void) {
 #ifdef HAVE_ITERATE_H /* <!-- iterate */
 /** @implements <PA>Predicate
  @return A set sequence of ones and zeros, independant of `data`. */
-static int PA_(keep_deterministic)(/*const*/ PA_(type_c) *const data) {
+static int PA_(keep_deterministic)(const PA_(type) *const data) {
 	static size_t i;
 	static const int things[] = { 1,0,0,0,0,1,0,0,1,1, 0,1,0,1,0,1,0 };
 	const int predicate = things[i++];
@@ -363,12 +363,12 @@ static void PA_(increment)(PA_(type) *const t) {
 }
 /** True, independent of `t`.
  @implements <PA>Predicate */
-static int PA_(true)(/*const*/ PA_(type_c) *const t) {
+static int PA_(true)(const PA_(type) *const t) {
 	(void)t;
 	return 1;
 }
 /** @implements <PA>Predicate @return Is `t` zero-filled? */
-static int PA_(zero_filled)(/*const*/ PA_(type_c) *const t) {
+static int PA_(zero_filled)(const PA_(type) *const t) {
 	const char *c = (const char *)t, *const end = (const char *)(t + 1);
 	assert(t);
 	while(c < end) if(*c++) return 0;
@@ -389,9 +389,9 @@ static void PA_(test_keep)(void) {
 		e = A_(array_new)(&a), assert(e);
 		memcpy(e, t, sizeof *t);
 	}
-	printf("a = %s.\n", PA_(array_to_string)(&a));
+	printf("a = %s.\n", A_(array_to_string)(&a));
 	A_(array_keep_if)(&a, &PA_(keep_deterministic), 0);
-	printf("a = k(a) = %s.\n", PA_(array_to_string)(&a));
+	printf("a = k(a) = %s.\n", A_(array_to_string)(&a));
 	assert(a.size == 7
 		&& !memcmp(ts + 0, a.data + 0, sizeof *t * 1)
 		&& !memcmp(ts + 5, a.data + 1, sizeof *t * 1)
@@ -403,7 +403,7 @@ static void PA_(test_keep)(void) {
 	ret = A_(array_copy_if)(&b, 0, &PA_(keep_deterministic));
 	assert(ret && !b.size);
 	ret = A_(array_copy_if)(&b, &a, &PA_(keep_deterministic));
-	printf("b = k(a) = %s.\n", PA_(array_to_string)(&b));
+	printf("b = k(a) = %s.\n", A_(array_to_string)(&b));
 	assert(ret && b.size == 2
 		&& !memcmp(ts + 0, b.data + 0, sizeof *t * 1)
 		&& !memcmp(ts + 13, b.data + 1, sizeof *t * 1));
@@ -456,7 +456,7 @@ static void PA_(test_trim)(void) {
 	item = A_(array_new)(&a);
 	assert(item);
 	PA_(filler)(item);
-	is_zero = PA_(zero_filled)((/*const*/ PA_(type_c) *)item);
+	is_zero = PA_(zero_filled)(item);
 	item = A_(array_new)(&a);
 	assert(item);
 	memset(item, 0, sizeof *item);

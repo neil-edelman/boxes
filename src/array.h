@@ -87,6 +87,8 @@ typedef ARRAY_TYPE PA_(type);
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
+/** Returns null. */
+static PA_(type) *PA_(null)(void) { return 0; }
 /** Is `x` not null? @implements `is_element` */
 static int PA_(is_element)(const PA_(type) *const x) { return !!x; }
 /* @implements `iterator` */
@@ -122,7 +124,7 @@ reset:
 	*it = PA_(iterator)(it->a);
 	return 0;
 }
-/** Removes the element last returned by `it`. (Untested.)
+/** Removes the element last returned by `it`. (Untested. Unused.)
  @return There was an element. @order \O(`a.size`). @implements `remove` */
 static int PA_(remove)(struct PA_(iterator) *const it) {
 	assert(0 && 1);
@@ -330,6 +332,7 @@ static int A_(array_splice)(struct A_(array) *restrict const a,
 /* Box override information. */
 #define BOX_TYPE struct A_(array)
 #define BOX_CONTENT PA_(type) *
+#define BOX_CONTENT_C const PA_(type) *
 #define BOX_ PA_
 #define BOX_MAJOR_NAME array
 #define BOX_MINOR_NAME ARRAY_NAME
@@ -337,9 +340,7 @@ static int A_(array_splice)(struct A_(array) *restrict const a,
 #define BOX_CONTIGUOUS
 
 #ifdef HAVE_ITERATE_H /* <!-- iterate */
-#define ITR_(n) ARRAY_CAT(A_(array), n)
 #include "iterate.h" /** \include */
-#undef ITR_
 #endif /* iterate --> */
 
 static void PA_(unused_base_coda)(void);
@@ -406,6 +407,7 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #else /* more --><!-- done */
 #undef BOX_TYPE
 #undef BOX_CONTENT
+#undef BOX_CONTENT_C
 #undef BOX_
 #undef BOX_MAJOR_NAME
 #undef BOX_MINOR_NAME

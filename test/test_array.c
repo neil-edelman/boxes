@@ -28,22 +28,6 @@ static void str4_filler(struct str4 *const s)
 #include "../src/array.h"
 
 
-
-static void cool_foo_to_string(const int *const i, char (*const a)[12])
-	{ sprintf(*a, "%.11d", *i); }
-
-#define ARRAY_NAME cool
-#define ARRAY_TYPE int
-#define ARRAY_EXPECT_TRAIT
-#include "../src/array.h"
-#define ARRAY_TRAIT foo
-//#define ARRAY_TEST
-#define ARRAY_TO_STRING
-#include "../src/array.h"
-
-#if 0
-
-
 #define HAVE_ITERATE_H /* More tests. */
 
 /* Enum array. */
@@ -68,10 +52,11 @@ static int colour_is_equal(const enum colour *const a,
 #define ARRAY_TYPE enum colour
 #define ARRAY_TEST &colour_filler
 #define ARRAY_IS_EQUAL &colour_is_equal
-#define ARRAY_TO_STRING &colour_to_string
+#define ARRAY_TO_STRING
 #include "../src/array.h"
 
 
+#if 0
 /* Int array with compare. */
 static void int_to_string(const int *i, char (*const a)[12])
 	{ sprintf(*a, "%d", *i); }

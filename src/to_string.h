@@ -3,16 +3,8 @@
 
  @subtitle To string trait
 
- Interface defined by `BOX_`, `BOX`, and `BOX_CONTENT`.
-
- @param[STR_(n)]
- A one-argument macro producing a name that is responsible for the name of the
- to string function. Should be something like
- `STR_(to_string) -> widget_foo_to_string`. The caller is responsible for
- undefining `STR_`.
-
- @param[TO_STRING]
- Function implementing <typedef:<PZ>to_string_fn>.
+ Interface defined by box. Requires `<NAME>[_<TRAIT>]_to_string` be declared as
+ a <typedef:<PSTR>to_string_fn>.
 
  @param[TO_STRING_LEFT, TO_STRING_RIGHT]
  7-bit characters, defaults to '(' and ')'.
@@ -28,7 +20,8 @@
  @std C89 */
 
 #if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
-	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME)
+	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME) \
+	|| defined(STR_) || defined(STRLABEL_)
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -44,9 +37,8 @@
 #ifndef TO_STRING_H /* <!-- idempotent */
 #define TO_STRING_H
 #include <string.h>
-#if defined(TO_STRING_CAT_) || defined(TO_STRING_CAT) \
-	|| defined(STR_) || defined(PSTR_) || defined(STRLABEL_)
-#error Unexpected defines.
+#if defined(TO_STRING_CAT_) || defined(TO_STRING_CAT) || defined(PSTR_)
+#error Unexpected preprocessor symbols.
 #endif
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #define TO_STRING_CAT_(n, m) n ## _ ## m
@@ -79,7 +71,7 @@ static unsigned to_string_buffer_i;
 #define TO_STRING_RIGHT ')'
 #endif
 
-#ifndef BOX_TRAIT_NAME /* <!-- !trait: Different. */
+#ifndef BOX_TRAIT_NAME /* <!-- !trait */
 #define STR_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), n)
 #define STRLABEL_(n) TO_STRING_CAT(BOX_MINOR_NAME, n)
 #else /* !trait --><!-- trait */
