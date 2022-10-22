@@ -24,9 +24,22 @@ static void str4_filler(struct str4 *const s)
 #define ARRAY_NAME str4
 #define ARRAY_TYPE struct str4
 #define ARRAY_TEST &str4_filler
-#define ARRAY_TO_STRING &str4_to_string
+#define ARRAY_TO_STRING
 #include "../src/array.h"
 
+
+
+static void cool_foo_to_string(const int *const i, char (*const a)[12])
+	{ sprintf(*a, "%.11d", *i); }
+
+#define ARRAY_NAME cool
+#define ARRAY_TYPE int
+#define ARRAY_EXPECT_TRAIT
+#include "../src/array.h"
+#define ARRAY_TRAIT foo
+//#define ARRAY_TEST
+#define ARRAY_TO_STRING
+#include "../src/array.h"
 
 #if 0
 

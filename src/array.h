@@ -35,7 +35,7 @@
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
 #error Name or tag type undefined.
 #endif
-#if defined(ARRAY_TRAIT) ^ defined(BOX)
+#if defined(ARRAY_TRAIT) ^ defined(BOX_TYPE)
 #error ARRAY_TRAIT name must come after ARRAY_EXPECT_TRAIT.
 #endif
 #if defined(ARRAY_COMPARE) && defined(ARRAY_IS_EQUAL)
@@ -71,7 +71,6 @@
 
 #ifndef ARRAY_TRAIT /* <!-- base code */
 
-
 #ifndef ARRAY_MIN_CAPACITY /* <!-- !min; */
 #define ARRAY_MIN_CAPACITY 3 /* > 1 */
 #endif /* !min --> */
@@ -88,10 +87,8 @@ typedef ARRAY_TYPE PA_(type);
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
-#define BOX_CONTENT PA_(type) *
 /** Is `x` not null? @implements `is_element` */
 static int PA_(is_element)(const PA_(type) *const x) { return !!x; }
-
 /* @implements `iterator` */
 struct PA_(iterator) { struct A_(array) *a; size_t i; int seen; };
 /** @return A pointer to null in `a`. @implements `iterator` */
@@ -134,8 +131,6 @@ static int PA_(remove)(struct PA_(iterator) *const it) {
 		sizeof *it->a->data * (--it->a->size - it->i));
 	return 1;
 }
-
-#define BOX_ACCESS
 /** @return Iterator at element `idx` of `a`.
  @implements `iterator_at` */
 static struct PA_(iterator) PA_(iterator_at)(struct A_(array) *a, size_t idx)
@@ -145,15 +140,9 @@ static size_t PA_(size)(const struct A_(array) *a) { return a ? a->size : 0; }
 /** @return Element `idx` of `a`. @implements `at` */
 static PA_(type) *PA_(at)(const struct A_(array) *a, const size_t idx)
 	{ return a->data + idx; }
-
-#define BOX_CONTIGUOUS /* Depends on `BOX_ACCESS`. Also, `append` later. */
 /** Writes `size` to `a`. @implements `tell_size` */
 static void PA_(tell_size)(struct A_(array) *a, const size_t size)
 	{ assert(a); a->size = size; }
-
-/* Box override information. */
-#define BOX_ PA_
-#define BOX struct A_(array)
 
 /** Cursor; may become invalid after a topological change to any items
  previous. */
@@ -338,6 +327,15 @@ static int A_(array_splice)(struct A_(array) *restrict const a,
 	return 1;
 }
 
+/* Box override information. */
+#define BOX_TYPE struct A_(array)
+#define BOX_CONTENT PA_(type) *
+#define BOX_ PA_
+#define BOX_MAJOR_NAME array
+#define BOX_MINOR_NAME ARRAY_NAME
+#define BOX_ACCESS
+#define BOX_CONTIGUOUS
+
 #ifdef HAVE_ITERATE_H /* <!-- iterate */
 #define ITR_(n) ARRAY_CAT(A_(array), n)
 #include "iterate.h" /** \include */
@@ -359,20 +357,18 @@ static void PA_(unused_base)(void) {
 }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
-
 #endif /* base code --> */
 
 
+#ifdef ARRAY_TRAIT /* <-- trait: Will be different on different includes. */
+#define BOX_TRAIT_NAME ARRAY_TRAIT
+#endif /* trait --> */
+
+
 #ifdef ARRAY_TO_STRING /* <!-- to string trait */
-#define TO_STRING_NAME ARRAY_NAME
-#ifdef ARRAY_TRAIT
-#define TO_STRING_LABEL CAT(array, ARRAY_TRAIT)
-#else
-#define TO_STRING_LABEL array
-#define ARRAY_HAS_TO_STRING
-#endif
 #include "to_string.h" /** \include */
 #undef ARRAY_TO_STRING
+#define ARRAY_HAS_TO_STRING
 #endif /* to string trait --> */
 
 
@@ -408,14 +404,15 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #ifdef ARRAY_EXPECT_TRAIT /* <!-- more */
 #undef ARRAY_EXPECT_TRAIT
 #else /* more --><!-- done */
-#undef ARRAY_NAME
-#undef ARRAY_TYPE
-#undef BOX_
-#undef BOX
+#undef BOX_TYPE
 #undef BOX_CONTENT
-#undef BOX_ITERATOR
+#undef BOX_
+#undef BOX_MAJOR_NAME
+#undef BOX_MINOR_NAME
 #undef BOX_ACCESS
 #undef BOX_CONTIGUOUS
+#undef ARRAY_NAME
+#undef ARRAY_TYPE
 #ifdef ARRAY_HAS_TO_STRING
 #undef ARRAY_HAS_TO_STRING
 #endif
@@ -425,6 +422,7 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #endif /* done --> */
 #ifdef ARRAY_TRAIT
 #undef ARRAY_TRAIT
+#undef BOX_TRAIT_NAME
 #endif
 #ifdef ARRAY_RESTRICT
 #undef ARRAY_RESTRICT

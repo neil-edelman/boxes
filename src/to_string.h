@@ -3,7 +3,7 @@
 
  @subtitle To string trait
 
- Interface defined by `BOX_`, `BOX`, and `BOX_CONTENT_C`.
+ Interface defined by `BOX_`, `BOX`, and `BOX_CONTENT`.
 
  @param[STR_(n)]
  A one-argument macro producing a name that is responsible for the name of the
@@ -27,8 +27,8 @@
 
  @std C89 */
 
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
-	|| !defined(TO_STRING_NAME) || !defined(TO_STRING_LABEL)
+#if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
+	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME)
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -45,14 +45,12 @@
 #define TO_STRING_H
 #include <string.h>
 #if defined(TO_STRING_CAT_) || defined(TO_STRING_CAT) \
-	|| defined(STRNAME_) || defined(STR_) || defined(PSTR_)
+	|| defined(STR_) || defined(PSTR_) || defined(STRLABEL_)
 #error Unexpected defines.
 #endif
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #define TO_STRING_CAT_(n, m) n ## _ ## m
 #define TO_STRING_CAT(n, m) TO_STRING_CAT_(n, m)
-#define STRNAME_(n) TO_STRING_CAT(TO_STRING_NAME, n)
-#define STR_(n) TO_STRING_CAT(TO_STRING_CAT(TO_STRING_NAME, TO_STRING_LABEL), n)
 #define PSTR_(n) TO_STRING_CAT(to_string, STR_(n))
 #if defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN) /* <!-- ntern */
 extern char to_string_buffers[4][256];
@@ -81,7 +79,17 @@ static unsigned to_string_buffer_i;
 #define TO_STRING_RIGHT ')'
 #endif
 
-typedef BOX PSTR_(box);
+#ifndef BOX_TRAIT_NAME /* <!-- !trait: Different. */
+#define STR_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), n)
+#define STRLABEL_(n) TO_STRING_CAT(BOX_MINOR_NAME, n)
+#else /* !trait --><!-- trait */
+#define STR_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), \
+	TO_STRING_CAT(BOX_TRAIT_NAME, n))
+#define STRLABEL_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, \
+	BOX_TRAIT_NAME), n)
+#endif /* trait --> */
+
+typedef BOX_TYPE PSTR_(box);
 typedef BOX_CONTENT PSTR_(element);
 
 /** <src/to_string.h>: responsible for turning the read-only argument into a
@@ -93,8 +101,8 @@ typedef void (*PSTR_(to_string_fn))(const PSTR_(element), char (*)[12]);
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
  256 bytes, with limitations of only printing 4 things at a time. `<STR>` is
- `<NAME>_<BOX>_<TRAIT>`. Requires `<NAME>_<TRAIT>_to_string` be declared as a
- <typedef:<PSTR>to_string_fn>.
+ `<NAME>_<BOX>[_<TRAIT>]`. Requires `<NAME>[_<TRAIT>]_to_string` be declared as
+ a <typedef:<PSTR>to_string_fn>.
  @return Address of the static buffer. @order \Theta(1) @allow */
 static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	const char comma = ',', space = ' ', ellipsis[] = "…",
@@ -117,11 +125,9 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	}
 	*b++ = left;
 	while(BOX_(is_element)(x = BOX_(next)(&it))) {
-		/* One must have this function declared.
-		 FIXME: should have NAME BOX TRAIT -> NAME TRAIT
-		 _Eg_, `ARRAY_NAME foo` -> `foo_to_string`. */
-		STRNAME_(to_string)(x, (char (*)[12])b);
-		/* Paranoid about '\0'. */
+		/* One must have this function declared! */
+		STRLABEL_(to_string)(x, (char (*)[12])b);
+		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
@@ -149,8 +155,8 @@ static void PSTR_(unused_to_string)(void)
 	{ STR_(to_string)(0); PSTR_(unused_to_string_coda)(); }
 static void PSTR_(unused_to_string_coda)(void) { PSTR_(unused_to_string)(); }
 
-#undef TO_STRING_NAME
-#undef TO_STRING_LABEL
+#undef STR_
+#undef STRLABEL_
 #ifdef TO_STRING_EXTERN
 #undef TO_STRING_EXTERN
 #endif
