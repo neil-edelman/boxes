@@ -15,8 +15,8 @@
  does not expire after box completion.
  */
 
-#if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_CONTENT_C) \
-	|| !defined(BOX_) || !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME)
+#if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
+	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME)
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -37,7 +37,7 @@
 
 typedef BOX_TYPE PITR_(box);
 typedef BOX_CONTENT PITR_(element);
-typedef BOX_CONTENT_C PITR_(element_c);
+typedef const BOX_CONTENT PITR_(element_c); /* Sketchy. */
 
 /** <src/iterate.h>: Operates by side-effects. */
 typedef void (*PITR_(action_fn))(PITR_(element));

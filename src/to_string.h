@@ -21,7 +21,7 @@
 
 #if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
 	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME) \
-	|| defined(STR_) || defined(STRLABEL_)
+	|| defined(STR_) || defined(STREXTERN_)
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -73,11 +73,11 @@ static unsigned to_string_buffer_i;
 
 #ifndef BOX_TRAIT_NAME /* <!-- !trait */
 #define STR_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), n)
-#define STRLABEL_(n) TO_STRING_CAT(BOX_MINOR_NAME, n)
+#define STREXTERN_(n) TO_STRING_CAT(BOX_MINOR_NAME, n)
 #else /* !trait --><!-- trait */
 #define STR_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), \
 	TO_STRING_CAT(BOX_TRAIT_NAME, n))
-#define STRLABEL_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, \
+#define STREXTERN_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, \
 	BOX_TRAIT_NAME), n)
 #endif /* trait --> */
 
@@ -118,7 +118,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	*b++ = left;
 	while(BOX_(is_element)(x = BOX_(next)(&it))) {
 		/* One must have this function declared! */
-		STRLABEL_(to_string)(x, (char (*)[12])b);
+		STREXTERN_(to_string)(x, (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
@@ -148,7 +148,7 @@ static void PSTR_(unused_to_string)(void)
 static void PSTR_(unused_to_string_coda)(void) { PSTR_(unused_to_string)(); }
 
 #undef STR_
-#undef STRLABEL_
+#undef STREXTERN_
 #ifdef TO_STRING_EXTERN
 #undef TO_STRING_EXTERN
 #endif

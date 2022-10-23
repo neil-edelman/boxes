@@ -119,9 +119,9 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	str4_array_test();
-#if 0
 	colour_array_test();
 	colour_array_compare_test();
+#if 0
 	int_array_test();
 	int_array_compare_test();
 	keyval_array_test();

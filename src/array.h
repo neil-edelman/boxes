@@ -332,7 +332,6 @@ static int A_(array_splice)(struct A_(array) *restrict const a,
 /* Box override information. */
 #define BOX_TYPE struct A_(array)
 #define BOX_CONTENT PA_(type) *
-#define BOX_CONTENT_C const PA_(type) *
 #define BOX_ PA_
 #define BOX_MAJOR_NAME array
 #define BOX_MINOR_NAME ARRAY_NAME
@@ -345,8 +344,8 @@ static int A_(array_splice)(struct A_(array) *restrict const a,
 
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
-	PA_(is_element)(0); PA_(remove)(0); PA_(size)(0); PA_(at)(0, 0);
-	PA_(tell_size)(0, 0);
+	PA_(null)(); PA_(is_element)(0); PA_(remove)(0); PA_(size)(0);
+	PA_(at)(0, 0); PA_(tell_size)(0, 0);
 	A_(array)(); A_(array_)(0);
 	A_(array_iterator)(0); A_(array_iterator_at)(0, 0);
 	A_(array_previous)(0); A_(array_next)(0); A_(array_previous)(0);
@@ -378,15 +377,12 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #endif /* test base --> */
 
 
-/* fixme this is old \/ */
-
 #if defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL) /* <!-- compare trait */
 #define COMPARE_NAME ARRAY_NAME
 #define COMPARE_TYPE array
 #ifdef ARRAY_TRAIT
 #define COMPARE_TRAIT ARRAY_TRAIT
 #endif
-/*#define CMP_(n) ARRAY_CAT(A_(array), n)*/
 #ifdef ARRAY_COMPARE /* <!-- cmp */
 #define COMPARE ARRAY_COMPARE
 #else /* cmp --><!-- eq */
@@ -394,8 +390,10 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #endif /* eq --> */
 #include "compare.h" /** \include */
 #ifdef ARRAY_TEST /* <!-- test: this detects and outputs compare test. */
-#include "../test/test_array.h"
+#include "../test/test_array_compare.h"
 #endif /* test --> */
+#undef CMP_ /* From <compare.h>. */
+#undef CMPEXTERN_
 #ifdef ARRAY_COMPARE
 #undef ARRAY_COMPARE
 #else

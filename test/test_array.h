@@ -4,12 +4,11 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-/** <../test/test_array.h>: operates by side-effects on <typedef:<PA>type>. */
+#if 0
+/** <../test/test_array.h>: operates by side-effects on <typedef:<PA>type>.
+ (This is not used; but filler is this.) */
 typedef void (*PA_(action_fn))(PA_(type) *);
-
-/** <../test/test_array.h>: a <typedef:<PA>action_fn> that takes in an
- uninitialized <typedef:<PA>type> and makes up a valid object for testing. */
-static PA_(action_fn) PA_(filler) = (ARRAY_TEST);
+#endif
 
 /** @return Is `a` in a valid state? */
 static void PA_(valid_state)(const struct A_(array) *const a) {
@@ -83,7 +82,7 @@ static void PA_(test_basic)(void) {
 	memset(items, 0, sizeof items);
 	/* Get elements. */
 	for(item = items, item1 = item + items_size; item < item1; item++)
-		PA_(filler)(item);
+		A_(filler)(item);
 
 	printf("Test one element.\n");
 	item = A_(array_new)(&a); /* Add. */
@@ -190,7 +189,7 @@ static void PA_(test_basic)(void) {
 	/* Big. */
 	for(i = 0; i < big; i++) {
 		item = A_(array_new)(&a), assert(item);
-		PA_(filler)(item);
+		A_(filler)(item);
 	}
 	printf("%s.\n", A_(array_to_string)(&a));
 	PA_(valid_state)(&a);
@@ -223,7 +222,7 @@ static void PA_(test_random)(void) {
 			if(!(data = A_(array_new)(&a)))
 				{ perror("Error"), assert(0); return; }
 			size++;
-			PA_(filler)(data), A_(to_string)(data, &str);
+			A_(filler)(data), A_(to_string)(data, &str);
 			if(is_print) printf("created %s.", str);
 		} else {
 			const unsigned t = RAND_MAX / 2;
@@ -267,7 +266,7 @@ static void PA_(test_replace)(void) {
 	/* valgrind does not like this. */
 	memset(ts, 0, sizeof ts);
 	/* Get elements. */
-	for(t = ts, t1 = t + ts_size; t < t1; t++) PA_(filler)(t);
+	for(t = ts, t1 = t + ts_size; t < t1; t++) A_(filler)(t);
 	printf("Test replace.\n");
 	for(t = ts, t1 = t + ts_size; t < t1; t++) {
 		e = A_(array_new)(&a), assert(e);
@@ -385,7 +384,7 @@ static void PA_(test_keep)(void) {
 	memset(ts, 0, sizeof ts); /* Valgrind. */
 	PA_(valid_state)(&a);
 	for(t = ts, t1 = t + ts_size; t < t1; t++) {
-		PA_(filler)(t);
+		A_(filler)(t);
 		e = A_(array_new)(&a), assert(e);
 		memcpy(e, t, sizeof *t);
 	}
@@ -455,7 +454,7 @@ static void PA_(test_trim)(void) {
 	memset(item, 0, sizeof *item);
 	item = A_(array_new)(&a);
 	assert(item);
-	PA_(filler)(item);
+	A_(filler)(item);
 	is_zero = PA_(zero_filled)(item);
 	item = A_(array_new)(&a);
 	assert(item);
@@ -474,8 +473,8 @@ static void PA_(test_insert)(void) {
 	printf("Test insert:\n");
 	memset(original, 0, sizeof original); /* Valgrind. */
 	PA_(valid_state)(&a);
-	for(t = original, t1 = t + original_size; t < t1; t++) PA_(filler)(t);
-	PA_(filler)(&solitary);
+	for(t = original, t1 = t + original_size; t < t1; t++) A_(filler)(t);
+	A_(filler)(&solitary);
 	for(i = 0; i <= original_size; i++) {
 		e = A_(array_append)(&a, original_size), assert(e);
 		memcpy(e, original, sizeof original);
@@ -517,7 +516,7 @@ static int PCMP_(fill_unique)(PA_(type) *const fill,
 	size_t i;
 	assert(fill);
 	for(i = 0; i < 1000; i++) {
-		PA_(filler)(fill);
+		A_(filler)(fill);
 		if(!neq || !PCMP_(is_equal)((const PA_(type_c) *)neq,
 			(const PA_(type_c) *)fill)) return 1;
 	}
@@ -531,7 +530,7 @@ static int PCMP_(unique_array)(PA_(type) *const fill, const size_t size) {
 	for(attempt = 0; attempt < no_try; attempt++) {
 		size_t back;
 		char z[12];
-		PA_(filler)(fill + i);
+		A_(filler)(fill + i);
 		PA_(to_string)(fill + i, &z), printf("unique_array: %s?\n", z);
 		for(back = i; back && !PCMP_(is_equal)(fill + back - 1, fill + i);
 			back--);
@@ -593,7 +592,7 @@ static void PCMP_(test_compare)(void) {
 	/* `valgrind` is giving me grief if I don't do this? */
 	memset(ts, 0, sizeof ts);
 	/* Get elements. */
-	for(t = ts, t1 = t + ts_size; t < t1; t++) PA_(filler)(t);
+	for(t = ts, t1 = t + ts_size; t < t1; t++) A_(filler)(t);
 	if(!A_(array_append)(&a, ts_size)) { assert(0); return; }
 	memcpy(a.data, ts, sizeof *t * ts_size);
 	printf("\ntest compare: %s.\n", PA_(array_to_string)(&a));
@@ -650,7 +649,7 @@ static void PCMP_(test_sort)(void) {
 		x_end = x + size;
 		if(!size) continue;
 		assert(x);
-		for(i = 0; i < size; i++) PA_(filler)(a->data + i); /* Emplace. */
+		for(i = 0; i < size; i++) A_(filler)(a->data + i); /* Emplace. */
 		CMP_(sort)(a);
 		for(x = a->data; x < x_end - 1; x++)
 			cmp = PCMP_(compare)((const PA_(type_c) *)x,
@@ -681,8 +680,8 @@ static void PCMP_(test_bounds)(void) {
 	char z[12];
 	printf("\ntest bounds:\n");
 	if(!A_(array_append)(&a, size)) { assert(0); return; }
-	for(i = 0; i < size; i++) PA_(filler)(a.data + i);
-	memset(&elem, 0, sizeof elem), PA_(filler)(&elem);
+	for(i = 0; i < size; i++) A_(filler)(a.data + i);
+	memset(&elem, 0, sizeof elem), A_(filler)(&elem);
 	CMP_(sort)(&a);
 	elemp = (const PA_(type_c) *)&elem;
 	printf("sorted: %s.\n", PA_(array_to_string)(&a));
