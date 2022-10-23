@@ -67,14 +67,23 @@ typedef int (*PCMP_(biaction_fn))(PCMP_(element) restrict,
  @order \O(`|a|` & `|b|`) @allow */
 static int CMP_(compare)(const PCMP_(box) *restrict const a,
 	const PCMP_(box) *restrict const b) {
-	struct BOX_(forward) ia = BOX_(forward)(a),
-		ib = BOX_(forward)(b);
+	struct BOX_(iterator) ia, ib;
+	{ /* We do not modify, but the compiler doesn't know that. */
+		const PCMP_(box) *const rm_restrict = a;
+		PCMP_(box) *promise_box;
+		memcpy(&promise_box, &rm_restrict, sizeof a);
+		ia = BOX_(iterator)(promise_box);
+	} {
+		const PCMP_(box) *const rm_restrict = b;
+		PCMP_(box) *promise_box;
+		memcpy(&promise_box, &rm_restrict, sizeof b);
+		ib = BOX_(iterator)(promise_box);
+	}
 	for( ; ; ) {
-		const PCMP_(element_c) x = BOX_(next_c)(&ia),
-			y = BOX_(next_c)(&ib);
+		const PCMP_(element) x = BOX_(next)(&ia), y = BOX_(next)(&ib);
 		int diff;
-		if(!BOX_(is_element_c)(x)) return BOX_(is_element_c)(y) ? -1 : 0;
-		else if(!BOX_(is_element_c)(y)) return 1;
+		if(!BOX_(is_element)(x)) return BOX_(is_element)(y) ? -1 : 0;
+		else if(!BOX_(is_element)(y)) return 1;
 		/* Must have this function declared. */
 		if(diff = CMPEXTERN_(compare)(x, y)) return diff;
 	}
@@ -103,7 +112,7 @@ static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
 	PCMP_(element_c) element) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(PCMP_(compare)(element, (const PCMP_(element_c))BOX_(at)(box,
+		if(CMPEXTERN_(compare)(element, BOX_(at)(box,
 			mid = low + (high - low) / 2)) >= 0) low = mid + 1;
 		else high = mid;
 	return low;

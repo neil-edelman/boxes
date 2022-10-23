@@ -23,7 +23,7 @@ static void str4_filler(struct str4 *const s)
 	{ orcish(s->value, sizeof s->value); }
 #define ARRAY_NAME str4
 #define ARRAY_TYPE struct str4
-#define ARRAY_TEST &str4_filler
+#define ARRAY_TEST
 #define ARRAY_TO_STRING
 #include "../src/array.h"
 
@@ -50,27 +50,28 @@ static int colour_is_equal(const enum colour *const a,
 	const enum colour *const b) { return *a == *b; }
 #define ARRAY_NAME colour
 #define ARRAY_TYPE enum colour
-#define ARRAY_TEST &colour_filler
-#define ARRAY_IS_EQUAL &colour_is_equal
+#define ARRAY_TEST
+#define ARRAY_IS_EQUAL
 #define ARRAY_TO_STRING
 #include "../src/array.h"
 
 
-#if 0
 /* Int array with compare. */
 static void int_to_string(const int *i, char (*const a)[12])
 	{ sprintf(*a, "%d", *i); }
 static void int_filler(int *const i)
 	{ *i = rand() / (RAND_MAX / 1998 + 1) - 999; }
-static int int_cmp(const int *const a, const int *const b)
+static int int_compare(const int *const a, const int *const b)
 	{ return (*a > *b) - (*b > *a); }
 #define ARRAY_NAME int
 #define ARRAY_TYPE int
-#define ARRAY_TEST &int_filler
-#define ARRAY_COMPARE &int_cmp
-#define ARRAY_TO_STRING &int_to_string
+#define ARRAY_TEST
+#define ARRAY_COMPARE
+#define ARRAY_TO_STRING
 #include "../src/array.h"
 
+
+#if 0
 
 /* Array with multiple of the same trait. */
 struct keyval { int key; char value[12]; };
@@ -121,9 +122,9 @@ int main(void) {
 	str4_array_test();
 	colour_array_test();
 	colour_array_compare_test();
-#if 0
 	int_array_test();
 	int_array_compare_test();
+#if 0
 	keyval_array_test();
 	keyval_array_compare_test();
 	keyval_array_value_compare_test();
