@@ -71,29 +71,34 @@ static int int_compare(const int *const a, const int *const b)
 #include "../src/array.h"
 
 
-#if 0
-
-/* Array with multiple of the same trait. */
+/* Array with two traits. */
 struct keyval { int key; char value[12]; };
 static void keyval_filler(struct keyval *const kv)
 	{ kv->key = rand() / (RAND_MAX / 1098 + 1) - 99;
 	orcish(kv->value, sizeof kv->value); }
-static void keyval_key_to_string(const struct keyval *const kv,
+static void keyval_to_string(const struct keyval *const kv,
 	char (*const a)[12]) { sprintf(*a, "%d_%.7s", kv->key, kv->value); }
 static void keyval_value_to_string(const struct keyval *const kv,
 	char (*const a)[12]) { sprintf(*a, "%.11s", kv->value); }
-static int keyval_key_cmp(const struct keyval *const a,
+static int keyval_compare(const struct keyval *const a,
 	const struct keyval *const b)
 	{ return (a->key > b->key) - (a->key < b->key); }
-static int keyval_value_cmp(const struct keyval *const a,
+static int keyval_value_compare(const struct keyval *const a,
 	const struct keyval *const b) { return strcmp(a->value, b->value); }
 #define ARRAY_NAME keyval
 #define ARRAY_TYPE struct keyval
-#define ARRAY_TEST &keyval_filler
-#define ARRAY_COMPARE &keyval_cmp
-#define ARRAY_TO_STRING &keyval_to_string
+#define ARRAY_TEST
+#define ARRAY_COMPARE
+#define ARRAY_TO_STRING
+#define ARRAY_EXPECT_TRAIT
+#include "../src/array.h"
+#define ARRAY_TRAIT value
+#define ARRAY_TO_STRING
+#define ARRAY_COMPARE
 #include "../src/array.h"
 
+
+#if 0
 
 static int targets[] = { 4, 2, 8, 2, 6, 5, 3, 6, 1, 2, 9, 3 };
 static void pointer_to_string(const int *const*const i, char (*const a)[12])
@@ -124,10 +129,10 @@ int main(void) {
 	colour_array_compare_test();
 	int_array_test();
 	int_array_compare_test();
-#if 0
 	keyval_array_test();
 	keyval_array_compare_test();
 	keyval_array_value_compare_test();
+#if 0
 	pointer_array_test();
 	/*pointer_array_compare_test();
 	 <- probably the test is wrong, assumes contiguous. I don't know what it's
