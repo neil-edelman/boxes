@@ -108,13 +108,13 @@ struct P_(pool) {
 	size_t capacity0; /* Capacity of slab-zero. */
 };
 
-#define BOX_CONTENT_C PP_(type_c) *
+#define BOX_CONTENT PP_(type_c) *
 /** Is `x` not null? @implements `is_content` */
 static int PP_(is_element_c)(PP_(type_c) *const x) { return !!x; }
-/* It is very useful in debugging, is required for `BOX_CONTENT_C`. Only
- iterates on `slot0` and ignores the free-heap. We don't have enough
- information to do otherwise, since (presumably) the memory address is in local
- variables and will be freed (hopefully.) Unreliable. */
+/* It is very useful in debugging, is required for `BOX_CONTENT`. Only iterates
+ on `slot0` and ignores the free-heap. We don't have enough information to do
+ otherwise, since (presumably) the memory address is in local variables and
+ will be freed (hopefully.) Unreliable. */
 struct PP_(forward) { struct PP_(slot) *slot0; size_t i; };
 /** @return Before `p`. @implements `forward` */
 static struct PP_(forward) PP_(forward)(const struct P_(pool) *const p)
@@ -368,7 +368,7 @@ static const char *(*PP_(pool_to_string))(const struct P_(pool) *)
 #undef POOL_TYPE
 #undef BOX_
 #undef BOX
-#undef BOX_CONTENT_C
+#undef BOX_CONTENT
 #endif /* !trait --> */
 #undef POOL_TO_STRING_TRAIT
 #undef POOL_TRAITS

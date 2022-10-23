@@ -17,7 +17,7 @@ Header [src/trie\.h](src/trie.h) requires [src/bmp\.h](src/bmp.h); examples [tes
 
 A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, or trie: an ordered set or map of byte null\-terminated immutable key strings allowing efficient prefix queries\. The implementation is as [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) that acts as an index, only storing the where the key bits are different\. The keys are grouped in fixed\-size nodes in a relaxed version of [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large), where the height is dynamic\.
 
-The worse\-case run\-time of querying or modifying the trie is also &#927;\(log |`trie`|\) iid, see [Tong, Goebel, Lin, 2015, Smoothed](https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed)\.
+The worse\-case run\-time of querying or modifying the trie is generally &#927;\(|`string`|\); however, this presumes that the string is packed with decision bits, something it's very hard to engineer in practice\. In reality, the bottleneck is more the density of looked\-at bits\. An iid model, [Tong, Goebel, Lin, 2015, Smoothed](https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed), is &#927;\(log |`trie`|\), which is very much what we see in practice, and what is reported here\.
 
 ![Bit view of the trie.](doc/trie-bits.png)
 
@@ -67,7 +67,7 @@ If `TRIE_KEY_IN_VALUE`, extracts the key from `TRIE_VALUE`; in this case, the us
 
 ### <a id = "user-content-typedef-8a8349ca" name = "user-content-typedef-8a8349ca">&lt;PSTR&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(&lt;PSTR&gt;element_c, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element_c, char(*)[12]);</code>
 
 [src/to\_string\.h](src/to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\.
 
@@ -223,7 +223,7 @@ Looks at only the index of `trie` for potential `string` \(can both be null\) ma
  * Return:  
    Exact `string` match for `trie` or null, \(both can be null\.\)
  * Order:  
-   &#927;\(|`string`|\)
+   &#927;\(log |`trie`|\) iid
 
 
 
@@ -248,6 +248,8 @@ Looks at only the index of `trie` for potential `string` \(can both be null\) ma
 
  * Return:  
    Advances `it` and returns the entry, or, at the end, returns null\.
+ * Order:  
+   &#927;\(log |`trie`|\)
 
 
 
@@ -280,7 +282,7 @@ Adds `key` to `trie` if it doesn't exist already\.
    The string has a distinguishing run of bytes with a neighbouring string that is too long\. On most platforms, this is about 32 bytes the same\.
  * Exceptional return: malloc  
  * Order:  
-   &#927;\(\\max\(|`key`|\)\) worse case with arbitrarily increasing length\.
+   &#927;\(log |`trie`|\)
 
 
 
@@ -296,7 +298,7 @@ Tries to remove `string` from `trie`\.
  * Exceptional return: EILSEQ  
    The deletion of `string` would cause an overflow with the rest of the strings\.
  * Order:  
-   &#927;\(|`string`|\)
+   &#927;\(log |`trie`|\)
 
 
 
