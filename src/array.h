@@ -415,6 +415,7 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #undef BOX_CONTIGUOUS
 #undef ARRAY_NAME
 #undef ARRAY_TYPE
+#undef ARRAY_MIN_CAPACITY
 #ifdef ARRAY_HAS_TO_STRING
 #undef ARRAY_HAS_TO_STRING
 #endif

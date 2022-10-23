@@ -61,15 +61,15 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 ### <a id = "user-content-typedef-8a8349ca" name = "user-content-typedef-8a8349ca">&lt;PSTR&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(&lt;PSTR&gt;element_c, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element, char(*)[12]);</code>
 
-[src/to\_string\.h](src/to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\.
+[src/to\_string\.h](src/to_string.h): responsible for turning the read\-only argument into a 12\-`char` null\-terminated output string\. The first argument should be a read\-only reference to an element and the second a pointer to the bytes\.
 
 
 
 ### <a id = "user-content-typedef-82edbc04" name = "user-content-typedef-82edbc04">&lt;PCMP&gt;bipredicate_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PCMP&gt;bipredicate_fn</strong>)(const &lt;PCMP&gt;element_c, const &lt;PCMP&gt;element_c);</code>
+<code>typedef int(*<strong>&lt;PCMP&gt;bipredicate_fn</strong>)(&lt;PCMP&gt;element_c restrict, &lt;PCMP&gt;element_c restrict);</code>
 
 [src/compare\.h](src/compare.h): Returns a boolean given two read\-only elements\.
 
@@ -87,7 +87,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 <code>typedef int(*<strong>&lt;PCMP&gt;biaction_fn</strong>)(&lt;PCMP&gt;element restrict, &lt;PCMP&gt;element restrict);</code>
 
-[src/compare\.h](src/compare.h), `BOX_ITERATOR`: Returns a boolean given two modifiable arguments\.
+[src/compare\.h](src/compare.h): Returns a boolean given two modifiable arguments\.
 
 
 
@@ -351,7 +351,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 ### <a id = "user-content-fn-73c52918" name = "user-content-fn-73c52918">&lt;ITR&gt;any</a> ###
 
-<code>static &lt;PITR&gt;element <strong>&lt;ITR&gt;any</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code>
+<code>static &lt;PITR&gt;element <strong>&lt;ITR&gt;any</strong>(const &lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code>
 
 [src/iterate\.h](src/iterate.h): Iterates through `box` and calls `predicate` until it returns true\.
 
@@ -428,7 +428,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<STR>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<STR>` is `<NAME>_<BOX>[_<TRAIT>]`\. Requires `<NAME>[_<TRAIT>]_to_string` be declared as a [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
 
  * Return:  
    Address of the static buffer\.
@@ -454,7 +454,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 ### <a id = "user-content-fn-620cbec1" name = "user-content-fn-620cbec1">&lt;CMP&gt;lower_bound</a> ###
 
-<code>static size_t <strong>&lt;CMP&gt;lower_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;element_c <em>element</em>)</code>
+<code>static size_t <strong>&lt;CMP&gt;lower_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, &lt;PCMP&gt;element_c <em>element</em>)</code>
 
 [src/compare\.h](src/compare.h), `COMPARE`, `BOX_ACCESS`: `box` should be partitioned true/false with less\-then `element`\.
 
@@ -468,7 +468,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 ### <a id = "user-content-fn-b6f29e84" name = "user-content-fn-b6f29e84">&lt;CMP&gt;upper_bound</a> ###
 
-<code>static size_t <strong>&lt;CMP&gt;upper_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;element_c <em>element</em>)</code>
+<code>static size_t <strong>&lt;CMP&gt;upper_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, &lt;PCMP&gt;element_c <em>element</em>)</code>
 
 [src/compare\.h](src/compare.h), `COMPARE`, `BOX_ACCESS`: `box` should be partitioned false/true with greater\-than or equal\-to `element`\.
 
