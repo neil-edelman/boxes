@@ -46,7 +46,7 @@ typedef BOX_CONTENT PCMP_(element);
 /* fixme: Assumes non-const pointer. */
 typedef const BOX_CONTENT PCMP_(element_c);
 
-/* fixme: Restrict not defined everywhere. */
+/* fixme: Restrict not defined everywhere. Only works in _eg_ array. */
 /** <src/compare.h>: Returns a boolean given two read-only elements. */
 typedef int (*PCMP_(bipredicate_fn))(PCMP_(element_c) restrict,
 	PCMP_(element_c) restrict);

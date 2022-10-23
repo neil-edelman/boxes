@@ -5,9 +5,7 @@
 
  Interface defined by box. Singleton.
 
- @std C89
- @fixme BOX_CONTENT_C is a hack and doesn't work in all instances. This should
- not be passed, instead implied. */
+ @std C89 */
 /**
  @param[HAVE_ITERATE_H]
  The `<ITR>` functions need this value. This includes <src/iterate.h>, which
