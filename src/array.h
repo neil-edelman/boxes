@@ -378,11 +378,6 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 
 #if defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL) /* <!-- compare trait */
-#define COMPARE_NAME ARRAY_NAME
-#define COMPARE_TYPE array
-#ifdef ARRAY_TRAIT
-#define COMPARE_TRAIT ARRAY_TRAIT
-#endif
 #ifdef ARRAY_COMPARE /* <!-- cmp */
 #define COMPARE ARRAY_COMPARE
 #else /* cmp --><!-- eq */
