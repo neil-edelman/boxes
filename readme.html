@@ -52,9 +52,9 @@
 
 <p><img alt = "Example of heap." src = "doc/heap.png" width = 654 height = 347></p>
 
-<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. It can be used as an implementation of a priority queue; internally, it is an array with implicit heap properties on <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> that is associated with the value.</p>
+<p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. It can be used as an implementation of a priority queue. Internally, it is an array with implicit heap properties on <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> that is associated with the value.</p>
 
-</div>
+<a href = "src/to_string.h">src/to_string.h</a>: <code>&lt;STR&gt;</code> trait functions require <code>&lt;name&gt;[&lt;trait&gt;]to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</div>
 
 <dl>
 	<dt>Parameter: HEAP_NAME, HEAP_TYPE</dt>
@@ -63,10 +63,10 @@
 	<dd>A function satisfying <a href = "#typedef:&lt;PH&gt;compare_fn">&lt;PH&gt;compare_fn</a>. Defaults to minimum-hash. Required if <code>HEAP_TYPE</code> is changed to an incomparable type. For example, a maximum heap, <code>(a, b) -&gt; a &lt; b</code>.</dd>
 	<dt>Parameter: HEAP_VALUE</dt>
 	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that, on <code>HEAP_VALUE</code>, is stored in <a href = "#tag:&lt;H&gt;heapnode">&lt;H&gt;heapnode</a>, which is <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>.</dd>
-	<dt>Parameter: HEAP_EXPECT_TRAIT</dt>
-	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
-	<dt>Parameter: HEAP_TO_STRING_NAME, HEAP_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>. An optional mangled name for uniqueness and function implementing <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</dd>
+	<dt>Parameter: HEAP_TO_STRING</dt>
+	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>.</dd>
+	<dt>Parameter: HEAP_EXPECT_TRAIT, HEAP_TRAIT</dt>
+	<dd>Named traits are obtained by including <code>heap.h</code> multiple times with <code>HEAP_EXPECT_TRAIT</code> and then subsequently including the name in <code>HEAP_TRAIT</code>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>Dependancies:</dt>
@@ -109,9 +109,9 @@
 
 <h3><a id = "typedef:<PSTR>to_string_fn" name = "typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element_c, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element, char(*)[12]);</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the read-only argument into a 12-<code>char</code> null-terminated output string. The first argument should be a read-only reference to an element and the second a pointer to the bytes.</p>
 
 </div>
 
@@ -131,9 +131,9 @@
 
 <h3><a id = "tag:<H>heap" name = "tag:<H>heap">&lt;H&gt;heap</a></h3>
 
-<p><code>struct <strong>&lt;H&gt;heap</strong> { struct &lt;PH&gt;node_array _; };</code></p>
+<p><code>struct <strong>&lt;H&gt;heap</strong> { struct &lt;PH&gt;node_array as_array; };</code></p>
 
-<p>Stores the heap as an implicit binary tree in an array called <code>a</code>. To initialize it to an idle state, see <a href = "#fn:&lt;H&gt;heap">&lt;H&gt;heap</a>, <code>HEAP_IDLE</code>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
+<p>Stores the heap as an implicit binary tree in an array called <code>a</code>. To initialize it to an idle state, see <a href = "#fn:&lt;H&gt;heap">&lt;H&gt;heap</a>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
 
 <p><img alt = "States." src = "doc/states.png" width = 912 height = 137></p>
 
@@ -295,7 +295,7 @@
 
 <p><code>static &lt;PH&gt;node *<strong>&lt;H&gt;heap_buffer</strong>(struct &lt;H&gt;heap *const <em>heap</em>, const size_t <em>n</em>)</code></p>
 
-<p>The capacity of <code>heap</code> will be increased to at least <code>n</code> elements beyond the size. Invalidates pointers in <code>heap</code>. All the elements <code>heap._.size</code> &lt;= <code>index</code> &lt; <code>heap._.capacity</code> can be used to construct new elements without immediately making them part of the heap, then <a href = "#fn:&lt;H&gt;heap_append">&lt;H&gt;heap_append</a>.</p>
+<p>The capacity of <code>heap</code> will be increased to at least <code>n</code> elements beyond the size. Invalidates pointers in <code>heap</code>. All the elements <code>heap.as_array.size</code> &lt;= <code>index</code> &lt; <code>heap.as_array.capacity</code> can be used to construct new elements without immediately making them part of the heap, then <a href = "#fn:&lt;H&gt;heap_append">&lt;H&gt;heap_append</a>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -350,7 +350,7 @@
 
 <p><code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;STR&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time.</p>
 
 <dl>
 	<dt>Return:</dt>

@@ -17,18 +17,16 @@
  <typedef:<PA>type>, associated therewith; required. `<PA>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
- @param[ARRAY_EXPECT_TRAIT]
- Do not un-define certain variables for subsequent inclusion in a parameterized
- trait.
+ @param[ARRAY_COMPARE, ARRAY_IS_EQUAL]
+ Compare trait contained in <src/compare.h>.
 
- @param[ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL]
- Compare trait contained in <src/compare.h>. An optional mangled name for
- uniqueness and a function implementing either <typedef:<PCMP>compare_fn> or
- <typedef:<PCMP>bipredicate_fn>.
+ @param[ARRAY_TO_STRING]
+ To string trait contained in <src/to_string.h>.
 
- @param[ARRAY_TO_STRING_NAME, ARRAY_TO_STRING]
- To string trait contained in <src/to_string.h>. An optional mangled name for
- uniqueness and function implementing <typedef:<PSTR>to_string_fn>.
+ @param[ARRAY_EXPECT_TRAIT, ARRAY_TRAIT]
+ Named traits are obtained by including `array.h` multiple times with
+ `ARRAY_EXPECT_TRAIT` and then subsequently including the name in
+ `ARRAY_TRAIT`.
 
  @std C89 */
 

@@ -31,13 +31,13 @@
  Optional value <typedef:<PH>value>, that, on `HEAP_VALUE`, is stored in
  <tag:<H>heapnode>, which is <typedef:<PH>value>.
 
- @param[HEAP_EXPECT_TRAIT]
- Do not un-define certain variables for subsequent inclusion in a parameterized
- trait.
+ @param[HEAP_TO_STRING]
+ To string trait contained in <src/to_string.h>.
 
- @param[HEAP_TO_STRING_NAME, HEAP_TO_STRING]
- To string trait contained in <src/to_string.h>. An optional mangled name for
- uniqueness and function implementing <typedef:<PSTR>to_string_fn>.
+ @param[HEAP_EXPECT_TRAIT, HEAP_TRAIT]
+ Named traits are obtained by including `heap.h` multiple times with
+ `HEAP_EXPECT_TRAIT` and then subsequently including the name in
+ `HEAP_TRAIT`.
 
  @depend [array](https://github.com/neil-edelman/array)
  @std C89 */
@@ -334,13 +334,6 @@ static int H_(heap_affix)(struct H_(heap) *restrict const heap,
 	return 1;
 }
 
-/* Box override information. */
-#define BOX_TYPE struct H_(heap)
-#define BOX_CONTENT PH_(node) *
-#define BOX_ PH_
-#define BOX_MAJOR_NAME heap
-#define BOX_MINOR_NAME HEAP_NAME
-
 static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
 	PH_(node) unused; memset(&unused, 0, sizeof unused);
@@ -351,6 +344,13 @@ static void PH_(unused_base)(void) {
 	PH_(unused_base_coda)();
 }
 static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
+
+/* Box override information. */
+#define BOX_TYPE struct H_(heap)
+#define BOX_CONTENT PH_(node) *
+#define BOX_ PH_
+#define BOX_MAJOR_NAME heap
+#define BOX_MINOR_NAME HEAP_NAME
 
 #endif /* base code --> */
 
@@ -365,46 +365,6 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #undef HEAP_TO_STRING
 #define HEAP_HAS_TO_STRING
 #endif /* to string trait --> */
-
-
-
-#if 0
-
-#ifdef HEAP_TO_STRING_NAME
-#define STR_(n) HEAP_CAT(H_(heap), HEAP_CAT(HEAP_TO_STRING_NAME, n))
-#else
-#define STR_(n) HEAP_CAT(H_(heap), n)
-#endif
-#define TSTR_(n) HEAP_CAT(heap_sz, STR_(n))
-#ifdef HEAP_VALUE /* <!-- value */
-/* Check that `HEAP_TO_STRING` is a function implementing this prototype. */
-static void (*const TSTR_(actual_to_string))(const PH_(value_c),
-	char (*const)[12]) = (HEAP_TO_STRING);
-/** Call <data:<TSTR>actual_to_string> with just the value of `node` and `z`. */
-static void TSTR_(thunk_to_string)(const PH_(node) *const node,
-	char (*const z)[12]) { TSTR_(actual_to_string)(node->value, z); }
-#define TO_STRING &TSTR_(thunk_to_string)
-#else
-#define TO_STRING HEAP_TO_STRING
-#endif
-#include "to_string.h" /** \include */
-#ifdef HEAP_TEST /* <!-- expect: greedy satisfy forward-declared. */
-#undef HEAP_TEST
-static PSTR_(to_string_fn) PH_(to_string) = PSTR_(to_string);
-static const char *(*PH_(heap_to_string))(const struct H_(heap) *)
-	= &STR_(to_string);
-#endif /* expect --> */
-#undef STR_
-#undef HEAP_TO_STRING
-#ifdef HEAP_TO_STRING_NAME
-#undef HEAP_TO_STRING_NAME
-#endif
-
-static void PH_(unused_to_string_coda)(void);
-static void PH_(unused_to_string)(void) { H_(heap_to_string)(0);
-	PH_(unused_to_string_coda)(); }
-static void PH_(unused_to_string_coda)(void) { PH_(unused_to_string)(); }
-#endif /* 0 --> */
 
 
 #if defined(HEAP_TEST) && !defined(HEAP_TRAIT) /* <!-- test base */

@@ -181,8 +181,8 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	size_t c, insert;
 	int is_recycled = 0;
 	assert(pool && min_size <= max_size && pool->capacity0 <= max_size &&
-		(!pool->slots.size && !pool->free0.as_array.size
-		|| pool->slots.size && base /* !slots[0] -> !free0 */
+		(!pool->slots.size && !pool->free0.as_array.size /* !slots[0] -> !free0 */
+		|| pool->slots.size && base
 		&& base[0].size <= pool->capacity0
 		&& (!pool->free0.as_array.size
 		|| pool->free0.as_array.size < base[0].size
@@ -190,7 +190,7 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 
 	/* Ensure space for new slot. */
 	if(!n || pool->slots.size && n <= pool->capacity0
-		- base[0].size + pool->free0.as_array.size) return 1; /* Enough. */
+		- base[0].size + pool->free0.as_array.size) return 1; /* Already enough. */
 	if(max_size < n) return errno = ERANGE, 1; /* Request unsatisfiable. */
 	if(!PP_(slot_array_buffer)(&pool->slots, 1)) return 0;
 	base = pool->slots.data; /* It may have moved! */

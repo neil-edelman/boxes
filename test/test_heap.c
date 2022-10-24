@@ -50,28 +50,27 @@ static unsigned orc_filler(struct orc **const orc_ptr) {
 #define HEAP_TO_STRING
 #include "../src/heap.h"
 
-#if 0
+
 /* Maximum heap with a `size_t`. */
 static void index_to_string(const size_t *const i, char (*const a)[12]) {
 	sprintf(*a, "%lu", (unsigned long)*i);
 }
-static size_t test_index(void) {
+static size_t index_filler(void) {
 	return (size_t)rand();
 }
 static int index_compare(const size_t a, const size_t b) { return a < b; }
 #define HEAP_NAME index
 #define HEAP_TYPE size_t
 #define HEAP_COMPARE &index_compare
-#define HEAP_TEST &test_index
+#define HEAP_TEST
 #define HEAP_TO_STRING
 #include "../src/heap.h"
-#endif
 
 
 int main(void) {
 	rand();
 	int_heap_test();
 	orc_heap_test(), orc_pool_(&orcs);
-	/*index_heap_test();*/
+	index_heap_test();
 	return EXIT_SUCCESS;
 }

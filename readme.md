@@ -15,9 +15,9 @@ Header [src/heap\.h](src/heap.h) depends on [src/array\.h](src/array.h); example
 
 ![Example of heap.](doc/heap.png)
 
-A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. It can be used as an implementation of a priority queue; internally, it is an array with implicit heap properties on [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) that is associated with the value\.
+A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. It can be used as an implementation of a priority queue\. Internally, it is an array with implicit heap properties on [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) that is associated with the value\.
 
-
+[src/to\_string\.h](src/to_string.h): `<STR>` trait functions require `<name>[<trait>]to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
 
  * Parameter: HEAP\_NAME, HEAP\_TYPE  
    `<H>` that satisfies `C` naming conventions when mangled and an assignable type [&lt;PH&gt;priority](#user-content-typedef-775cba47) associated therewith\. `HEAP_NAME` is required; `HEAP_TYPE` defaults to `unsigned int`\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions\.
@@ -25,10 +25,10 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Wil
    A function satisfying [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533)\. Defaults to minimum\-hash\. Required if `HEAP_TYPE` is changed to an incomparable type\. For example, a maximum heap, `(a, b) -> a < b`\.
  * Parameter: HEAP\_VALUE  
    Optional value [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), that, on `HEAP_VALUE`, is stored in [&lt;H&gt;heapnode](#user-content-tag-9938042f), which is [&lt;PH&gt;value](#user-content-typedef-a55b7cd4)\.
- * Parameter: HEAP\_EXPECT\_TRAIT  
-   Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
- * Parameter: HEAP\_TO\_STRING\_NAME, HEAP\_TO\_STRING  
-   To string trait contained in [src/to\_string\.h](src/to_string.h)\. An optional mangled name for uniqueness and function implementing [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
+ * Parameter: HEAP\_TO\_STRING  
+   To string trait contained in [src/to\_string\.h](src/to_string.h)\.
+ * Parameter: HEAP\_EXPECT\_TRAIT, HEAP\_TRAIT  
+   Named traits are obtained by including `heap.h` multiple times with `HEAP_EXPECT_TRAIT` and then subsequently including the name in `HEAP_TRAIT`\.
  * Standard:  
    C89
  * Dependancies:  
@@ -63,9 +63,9 @@ If `HEAP_VALUE` is set, \(priority, value\) set by [&lt;H&gt;heapnode](#user-con
 
 ### <a id = "user-content-typedef-8a8349ca" name = "user-content-typedef-8a8349ca">&lt;PSTR&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element_c, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element, char(*)[12]);</code>
 
-[src/to\_string\.h](src/to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\.
+[src/to\_string\.h](src/to_string.h): responsible for turning the read\-only argument into a 12\-`char` null\-terminated output string\. The first argument should be a read\-only reference to an element and the second a pointer to the bytes\.
 
 
 
@@ -81,9 +81,9 @@ If `HEAP_VALUE` is set, this becomes [&lt;PH&gt;node](#user-content-typedef-23ae
 
 ### <a id = "user-content-tag-8ef1078f" name = "user-content-tag-8ef1078f">&lt;H&gt;heap</a> ###
 
-<code>struct <strong>&lt;H&gt;heap</strong> { struct &lt;PH&gt;node_array _; };</code>
+<code>struct <strong>&lt;H&gt;heap</strong> { struct &lt;PH&gt;node_array as_array; };</code>
 
-Stores the heap as an implicit binary tree in an array called `a`\. To initialize it to an idle state, see [&lt;H&gt;heap](#user-content-fn-8ef1078f), `HEAP_IDLE`, `{0}` \(`C99`\), or being `static`\.
+Stores the heap as an implicit binary tree in an array called `a`\. To initialize it to an idle state, see [&lt;H&gt;heap](#user-content-fn-8ef1078f), `{0}` \(`C99`\), or being `static`\.
 
 ![States.](doc/states.png)
 
@@ -218,7 +218,7 @@ Only defined when [&lt;H&gt;heap_size](#user-content-fn-2f5a4cc1) returns true\.
 
 <code>static &lt;PH&gt;node *<strong>&lt;H&gt;heap_buffer</strong>(struct &lt;H&gt;heap *const <em>heap</em>, const size_t <em>n</em>)</code>
 
-The capacity of `heap` will be increased to at least `n` elements beyond the size\. Invalidates pointers in `heap`\. All the elements `heap._.size` <= `index` < `heap._.capacity` can be used to construct new elements without immediately making them part of the heap, then [&lt;H&gt;heap_append](#user-content-fn-9c9f1648)\.
+The capacity of `heap` will be increased to at least `n` elements beyond the size\. Invalidates pointers in `heap`\. All the elements `heap.as_array.size` <= `index` < `heap.as_array.capacity` can be used to construct new elements without immediately making them part of the heap, then [&lt;H&gt;heap_append](#user-content-fn-9c9f1648)\.
 
  * Return:  
    The start of the buffered space\. If `a` is idle and `buffer` is zero, a null pointer is returned, otherwise null indicates an error\.
@@ -264,7 +264,7 @@ Shallow\-copies and heapifies `master` into `heap`\.
 
 <code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<STR>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\.
 
  * Return:  
    Address of the static buffer\.
