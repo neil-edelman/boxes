@@ -30,8 +30,8 @@ static void PH_(graph)(const struct H_(heap) *const heap,
 		/* Google search / Wikipedia says we should draw them with the top down.
 		"\trankdir = BT;\n" */
 		"\tedge [arrowhead = none];\n");
-	for(i = 0; i < heap->_.size; i++) {
-		PH_(to_string)(heap->_.data + i, &a);
+	for(i = 0; i < heap->as_array.size; i++) {
+		PH_(to_string)(heap->as_array.data + i, &a);
 		fprintf(fp, "\t\tn%lu [label=\"%s\"];\n", (unsigned long)i, a);
 		if(!i) continue;
 		fprintf(fp, "\t\tn%lu -> n%lu;\n",
@@ -47,8 +47,8 @@ static void PH_(valid)(const struct H_(heap) *const heap) {
 	size_t i;
 	PH_(node) *n0;
 	if(!heap) return;
-	if(!(n0 = heap->_.data)) { assert(!heap->_.size); return; }
-	for(i = 1; i < heap->_.size; i++) {
+	if(!(n0 = heap->as_array.data)) { assert(!heap->as_array.size); return; }
+	for(i = 1; i < heap->as_array.size; i++) {
 		size_t iparent = (i - 1) >> 1;
 		if(PH_(compare)(PH_(get_priority)(n0 + iparent),
 			PH_(get_priority)(n0 + i)) <= 0) continue;
@@ -80,9 +80,9 @@ static void PH_(test_basic)(void) {
 	printf("Test empty.\n");
 	PH_(valid)(0);
 	errno = 0;
-	assert(!heap._.size);
+	assert(!heap.as_array.size);
 	H_(heap_)(&heap);
-	assert(!heap._.size);
+	assert(!heap.as_array.size);
 	assert(!H_(heap_peek)(&heap));
 	/*assert(!H_(heap_pop)(&heap));*/
 	PH_(valid)(&heap);
@@ -92,12 +92,12 @@ static void PH_(test_basic)(void) {
 	PH_(fill)(&add);
 	v = PH_(get_value)(&add);
 	ret = H_(heap_add)(&heap, add), assert(ret), cum_size++;
-	printf("Added one, %s.\n", PH_(heap_to_string)(&heap));
-	assert(heap._.size == cum_size);
+	printf("Added one, %s.\n", H_(heap_to_string)(&heap));
+	assert(heap.as_array.size == cum_size);
 	node = H_(heap_peek)(&heap);
 	PH_(valid)(&heap);
 	x = H_(heap_pop)(&heap), cum_size--;
-	assert(v == x && heap._.size == cum_size);
+	assert(v == x && heap.as_array.size == cum_size);
 	assert(PH_(get_value)(node) == x);
 	PH_(valid)(&heap);
 
@@ -116,16 +116,16 @@ static void PH_(test_basic)(void) {
 	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-done-1.gv",
 		(unsigned long)cum_size);
 	PH_(graph)(&heap, fn);
-	assert(heap._.size == cum_size);
-	printf("Heap: %s.\n", PH_(heap_to_string)(&heap));
+	assert(heap.as_array.size == cum_size);
+	printf("Heap: %s.\n", H_(heap_to_string)(&heap));
 	printf("Heap buffered add, before size = %lu.\n",
-		(unsigned long)heap._.size);
+		(unsigned long)heap.as_array.size);
 	node = H_(heap_buffer)(&heap, test_size_2);
 	assert(node);
 	for(i = 0; i < test_size_2; i++) PH_(fill)(node + i);
 	H_(heap_append)(&heap, test_size_2), cum_size += test_size_2;
-	printf("Now size = %lu.\n", (unsigned long)heap._.size);
-	assert(heap._.size == cum_size);
+	printf("Now size = %lu.\n", (unsigned long)heap.as_array.size);
+	assert(heap.as_array.size == cum_size);
 	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-buffer.gv", cum_size);
 	PH_(graph)(&heap, fn);
 	PH_(valid)(&heap);
@@ -153,13 +153,13 @@ static void PH_(test_basic)(void) {
 		(unsigned long)cum_size);
 	PH_(graph)(&merge, fn);
 	PH_(valid)(&merge);
-	success = H_(heap_affix)(&heap, &merge), cum_size += merge._.size;
+	success = H_(heap_affix)(&heap, &merge), cum_size += merge.as_array.size;
 	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-combined.gv",
 		(unsigned long)cum_size);
 	PH_(graph)(&heap, fn);
-	assert(success && heap._.size == cum_size);
+	assert(success && heap.as_array.size == cum_size);
 	PH_(valid)(&heap);
-	printf("Final heap: %s.\n", PH_(heap_to_string)(&heap));
+	printf("Final heap: %s.\n", H_(heap_to_string)(&heap));
 	for(i = cum_size; i > 0; i--) {
 		char z[12];
 		node = H_(heap_peek)(&heap);
@@ -172,7 +172,7 @@ static void PH_(test_basic)(void) {
 				(unsigned long)i);
 			PH_(graph)(&heap, fn);
 		}
-		assert(heap._.size == i - 1 && H_(heap_size)(&heap) == i - 1);
+		assert(heap.as_array.size == i - 1 && H_(heap_size)(&heap) == i - 1);
 		PH_(valid)(&heap);
 		if(i != cum_size)
 			assert(PH_(compare)(last_priority, PH_(get_priority)(node)) <= 0);

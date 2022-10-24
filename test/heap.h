@@ -172,10 +172,10 @@ static PH_(value) PH_(get_value)(const PH_(node) *const node) {
  @param[heap] At least one entry; the last entry will be replaced by `node`.
  @order \O(log `size`) */
 static void PH_(sift_up)(struct H_(heap) *const heap, PH_(node) *const node) {
-	PH_(node) *const n0 = heap->_.data;
+	PH_(node) *const n0 = heap->as_array.data;
 	PH_(priority) p = PH_(get_priority)(node);
-	size_t i = heap->_.size - 1;
-	assert(heap && heap->_.size && node);
+	size_t i = heap->as_array.size - 1;
+	assert(heap && heap->as_array.size && node);
 	if(i) {
 		size_t i_up;
 		do { /* Note: don't change the `<=`; it's a queue. */
@@ -191,10 +191,10 @@ static void PH_(sift_up)(struct H_(heap) *const heap, PH_(node) *const node) {
  element. @param[heap] At least one entry. The head is popped, and the size
  will be one less. */
 static void PH_(sift_down)(struct H_(heap) *const heap) {
-	const size_t size = (assert(heap && heap->_.size), --heap->_.size),
+	const size_t size = (assert(heap && heap->as_array.size), --heap->as_array.size),
 		half = size >> 1;
 	size_t i = 0, c;
-	PH_(node) *const n0 = heap->_.data,
+	PH_(node) *const n0 = heap->as_array.data,
 		*const down = n0 + size /* Put it at the top. */, *child;
 	const PH_(priority) down_p = PH_(get_priority)(down);
 	while(i < half) {
@@ -214,11 +214,11 @@ static void PH_(sift_down)(struct H_(heap) *const heap) {
  slightly more complex than <fn:<PH>sift_down>, but the same thing.
  @param[heap] At least `i + 1` entries. */
 static void PH_(sift_down_i)(struct H_(heap) *const heap, size_t i) {
-	const size_t size = (assert(heap && i < heap->_.size), heap->_.size),
+	const size_t size = (assert(heap && i < heap->as_array.size), heap->as_array.size),
 		half = size >> 1;
 	size_t c;
 	/* Uninitialized variable warning suppression. */
-	PH_(node) *const n0 = heap->_.data, *child, temp = *(&temp);
+	PH_(node) *const n0 = heap->as_array.data, *child, temp = *(&temp);
 	int temp_valid = 0;
 	while(i < half) {
 		c = (i << 1) + 1;
@@ -245,19 +245,19 @@ static void PH_(sift_down_i)(struct H_(heap) *const heap, size_t i) {
 static void PH_(heapify)(struct H_(heap) *const heap) {
 	size_t i;
 	assert(heap);
-	if(heap->_.size > 1)
-		for(i = heap->_.size / 2 - 1; (PH_(sift_down_i)(heap, i), i); i--);
+	if(heap->as_array.size > 1)
+		for(i = heap->as_array.size / 2 - 1; (PH_(sift_down_i)(heap, i), i); i--);
 }
 
 /** Removes from `heap`. Must have a non-zero size. */
 static PH_(node) PH_(remove)(struct H_(heap) *const heap) {
-	const PH_(node) result = *heap->_.data;
+	const PH_(node) result = *heap->as_array.data;
 	assert(heap);
-	if(heap->_.size > 1) {
+	if(heap->as_array.size > 1) {
 		PH_(sift_down)(heap);
 	} else {
-		assert(heap->_.size == 1);
-		heap->_.size = 0;
+		assert(heap->as_array.size == 1);
+		heap->as_array.size = 0;
 	}
 	return result;
 }
@@ -280,7 +280,7 @@ static void H_(heap_clear)(struct H_(heap) *const heap)
 
 /** @return If the `heap` is not null, returns it's size. @allow */
 static size_t H_(heap_size)(const struct H_(heap) *const heap)
-	{ return heap ? heap->_.size : 0; }
+	{ return heap ? heap->as_array.size : 0; }
 
 /** Copies `node` into `heap`.
  @return Success. @throws[ERANGE, realloc] @order \O(log `heap.size`) @allow */
@@ -292,19 +292,19 @@ static int H_(heap_add)(struct H_(heap) *const heap, PH_(node) node) {
 /** @return The value of the lowest element in `heap` or null when the heap is
  empty. @order \O(1) @allow */
 static PH_(node) *H_(heap_peek)(const struct H_(heap) *const heap)
-	{ return assert(heap), heap->_.size ? heap->_.data : 0; }
+	{ return assert(heap), heap->as_array.size ? heap->as_array.data : 0; }
 
 /** Only defined when <fn:<H>heap_size> returns true. Removes the lowest
  element. @return The value of the lowest element in `heap`.
  @order \O(\log `size`) @allow */
 static PH_(value) H_(heap_pop)(struct H_(heap) *const heap) {
 	PH_(node) n;
-	return assert(heap && heap->_.size), (n = PH_(remove)(heap), PH_(get_value)(&n));
+	return assert(heap && heap->as_array.size), (n = PH_(remove)(heap), PH_(get_value)(&n));
 }
 
 /** The capacity of `heap` will be increased to at least `n` elements beyond
  the size. Invalidates pointers in `heap`. All the elements
- `heap._.size` <= `index` < `heap._.capacity` can be used to construct new
+ `heap.as_array.size` <= `index` < `heap.as_array.capacity` can be used to construct new
  elements without immediately making them part of the heap, then
  <fn:<H>heap_append>.
  @return The start of the buffered space. If `a` is idle and `buffer` is zero,
@@ -322,7 +322,7 @@ static void H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 	PH_(node) *more;
 	/* In practice, pushing uninitialized elements onto the heap does not make
 	 sense, so we assert that the elements exist first. */
-	assert(heap && n <= heap->_.capacity - heap->_.size);
+	assert(heap && n <= heap->as_array.capacity - heap->as_array.size);
 	more = PH_(node_array_append)(&heap->_, n), assert(more);
 	if(n) PH_(heapify)(heap);
 }
@@ -334,11 +334,11 @@ static int H_(heap_affix)(struct H_(heap) *restrict const heap,
 	const struct H_(heap) *restrict const master) {
 	PH_(node) *n;
 	assert(heap);
-	if(!master || !master->_.size) return 1;
-	assert(master->_.data);
-	if(!(n = PH_(node_array_buffer)(&heap->_, master->_.size))) return 0;
-	memcpy(n, master->_.data, sizeof *n * master->_.size);
-	n = PH_(node_array_append)(&heap->_, master->_.size), assert(n);
+	if(!master || !master->as_array.size) return 1;
+	assert(master->as_array.data);
+	if(!(n = PH_(node_array_buffer)(&heap->_, master->as_array.size))) return 0;
+	memcpy(n, master->as_array.data, sizeof *n * master->as_array.size);
+	n = PH_(node_array_append)(&heap->_, master->as_array.size), assert(n);
 	PH_(heapify)(heap);
 	return 1;
 }

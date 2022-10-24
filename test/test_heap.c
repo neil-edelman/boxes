@@ -18,17 +18,16 @@
 /* Also an `unsigned int`, but with testing. */
 static void int_to_string(const unsigned *const i, char (*const z)[12])
 	{ sprintf(*z, "%u", *i); }
-static unsigned test_int(void) {
+static unsigned int_filler(void) {
 	return (unsigned)rand() / (RAND_MAX / 99 + 1) + 1;
 }
 #define HEAP_NAME int
-#define HEAP_TEST &test_int
-#define HEAP_EXPECT_TRAIT
-#include "../src/heap.h"
-#define HEAP_TO_STRING &int_to_string
+#define HEAP_TEST
+#define HEAP_TO_STRING
 #include "../src/heap.h"
 
 
+#if 0
 /* Value pointer along with a priority. We have to store values somewhere, so
  we use a pool, (which depends on `heap`, it has evolved.) */
 struct orc { unsigned health; char name[12]; };
@@ -49,9 +48,7 @@ static unsigned test_orc(struct orc **const orc_ptr) {
 #define HEAP_NAME orc
 #define HEAP_VALUE struct orc *
 #define HEAP_TEST &test_orc
-#define HEAP_EXPECT_TRAIT
-#include "../src/heap.h"
-#define HEAP_TO_STRING &orc_to_string
+#define HEAP_TO_STRING
 #include "../src/heap.h"
 
 
@@ -67,16 +64,15 @@ static int index_compare(const size_t a, const size_t b) { return a < b; }
 #define HEAP_TYPE size_t
 #define HEAP_COMPARE &index_compare
 #define HEAP_TEST &test_index
-#define HEAP_EXPECT_TRAIT
+#define HEAP_TO_STRING
 #include "../src/heap.h"
-#define HEAP_TO_STRING &index_to_string
-#include "../src/heap.h"
+#endif
 
 
 int main(void) {
 	rand();
 	int_heap_test();
-	orc_heap_test(), orc_pool_(&orcs);
-	index_heap_test();
+	/*orc_heap_test(), orc_pool_(&orcs);
+	index_heap_test();*/
 	return EXIT_SUCCESS;
 }
