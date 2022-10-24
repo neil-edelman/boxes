@@ -30,7 +30,7 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 		"\tnode [shape=none, fontname=modern];\n");
 	if(!pool->free0.as_array.size) goto no_free0;
 	for(i = 0; i < pool->free0.as_array.size; i++) {
-		fprintf(fp, "\tfree0_%lu [label=<<font color=\"Gray50\" "
+		fprintf(fp, "\tfree0_%lu [label=<<font color=\"Gray50\""
 			" face=\"Times-Italic\">%lu</font>>, width=0, height=0,"
 			" margin=0.05];\n", i, pool->free0.as_array.data[i]);
 		if(i) fprintf(fp, "\tfree0_%lu -> free0_%lu [dir=back];\n",
@@ -289,14 +289,10 @@ static void PP_(test_states)(void) {
 	printf("Done basic tests.\n\n");
 }
 
-/* #define ARRAY_NAME PP_(test)
-#define ARRAY_TYPE PP_(type) *
-#include "../src/array.h" <- Now BOX is defined in this; too much work. */
-
 static void PP_(test_random)(void) {
 	struct P_(pool) pool = P_(pool)();
 	/* This parameter controls how big the pool wants to be. */
-	struct { size_t size; PP_(type) *data[2*5000]; } test;
+	struct { size_t size; PP_(type) *data[2*5000/*10*/]; } test;
 	const size_t test_size = sizeof test.data / sizeof *test.data,
 		length = 120000; /* Controls how many iterations. */
 	size_t i;
