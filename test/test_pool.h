@@ -30,8 +30,9 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 		"\tnode [shape=none, fontname=modern];\n");
 	if(!pool->free0.as_array.size) goto no_free0;
 	for(i = 0; i < pool->free0.as_array.size; i++) {
-		fprintf(fp, "\tfree0_%lu [label=<<font color=\"Gray75\">%lu</font>>,"
-			" shape=circle];\n", i, pool->free0.as_array.data[i]);
+		fprintf(fp, "\tfree0_%lu [label=<<font color=\"Gray50\" "
+			" face=\"Times-Italic\">%lu</font>>, width=0, height=0,"
+			" margin=0.05];\n", i, pool->free0.as_array.data[i]);
 		if(i) fprintf(fp, "\tfree0_%lu -> free0_%lu [dir=back];\n",
 			i, (unsigned long)((i - 1) / 2));
 	}
@@ -123,13 +124,11 @@ no_free0:
 		}
 		for(j = 0; j < slot->size; j++) {
 			const char *const bgc = j & 1 ? " bgcolor=\"Grey95\"" : "";
-			/*fprintf(fp, "\t<tr>\n"
-				"\t\t<td port=\"%lu\" align=\"right\"%s>%lu</td>\n",
-				(unsigned long)j, bgc, (unsigned long)j);*/
 			fprintf(fp, "\t<tr><td port=\"%lu\" align=\"left\"%s>",
 				(unsigned long)j, bgc);
 			if(bmp[j]) {
-				fprintf(fp, "<font color=\"Gray75\">deleted</font>");
+				fprintf(fp, "<font color=\"Gray50\" face=\"Times-Italic\">%lu</font>",
+					(unsigned long)j);
 			} else {
 				P_(to_string)(slab + j, &str);
 				fprintf(fp, "%s", str);
