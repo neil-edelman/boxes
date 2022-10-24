@@ -12,9 +12,6 @@
 /** Operates by side-effects. */
 typedef void (*PP_(action_fn))(PP_(type) *);
 
-/** `POOL_TEST` must be a function that implements <typedef:<PP>action_fn>. */
-static const PP_(action_fn) PP_(filler) = (POOL_TEST);
-
 /** Graphs `pool` output to `fn`. */
 static void PP_(graph)(const struct P_(pool) *const pool,
 	const char *const fn) {
@@ -127,7 +124,7 @@ no_free0:
 					"<FONT COLOR=\"Gray75\">deleted"
 					"</FONT></TD>\n", bgc);
 			} else {
-				PP_(to_string)(slab + j, &str);
+				P_(to_string)(slab + j, &str);
 				fprintf(fp, "\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n", bgc, str);
 			}
 			fprintf(fp, "\t</TR>\n");
@@ -189,8 +186,9 @@ static void PP_(test_states)(void) {
 	PP_(valid_state)(&pool);
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-01-idle.gv");
 
+	/** `<P>filler` must be a function implementing <typedef:<PP>action_fn>. */
 	printf("One element.\n");
-	t = P_(pool_new)(&pool), assert(t), PP_(filler)(t), PP_(valid_state)(&pool);
+	t = P_(pool_new)(&pool), assert(t), P_(filler)(t), PP_(valid_state)(&pool);
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-02-one.gv");
 
 	printf("Remove.\n");
@@ -203,14 +201,14 @@ static void PP_(test_states)(void) {
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-04-buffer.gv");
 
 	for(i = 0; i < size[0]; i++) t = P_(pool_new)(&pool), assert(t),
-		PP_(filler)(t), PP_(valid_state)(&pool);
+		P_(filler)(t), PP_(valid_state)(&pool);
 	assert(pool.slots.size == 1);
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-05-one-slab.gv");
 	for(i = 0; i < size[1]; i++) t = P_(pool_new)(&pool), assert(t),
-		PP_(filler)(t), PP_(valid_state)(&pool);
+		P_(filler)(t), PP_(valid_state)(&pool);
 	assert(pool.slots.size == 2);
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-06-two-slabs.gv");
-	t = P_(pool_new)(&pool), assert(t), PP_(filler)(t), PP_(valid_state)(&pool);
+	t = P_(pool_new)(&pool), assert(t), P_(filler)(t), PP_(valid_state)(&pool);
 	assert(pool.slots.size == 3);
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-07-three-slabs.gv");
 	/* It's `malloc` whether, `conf = { 0: { 2, 0, 1 }, 1: { 2, 1, 0 } }`. */
@@ -221,11 +219,11 @@ static void PP_(test_states)(void) {
 	assert(pool.slots.data[0].size == 1);
 	printf("%s is %u, %s is %u.\n", orcify(pool.slots.data[1].slab), conf,
 		orcify(pool.slots.data[2].slab), !conf);
-	t = pool.slots.data[!conf + 1].slab + 0, PP_(to_string)(t, &z);
+	t = pool.slots.data[!conf + 1].slab + 0, P_(to_string)(t, &z);
 	printf("Removing index-zero %s from slab %u %s.\n", z, !conf + 1,
 		orcify(pool.slots.data[!conf + 1].slab));
 	P_(pool_remove)(&pool, t), PP_(valid_state)(&pool);
-	t = pool.slots.data[0].slab + 0, PP_(to_string)(t, &z);
+	t = pool.slots.data[0].slab + 0, P_(to_string)(t, &z);
 	printf("Removing index-zero %s from slab %u %s.\n", z, 0,
 		orcify(pool.slots.data[0].slab));
 	P_(pool_remove)(&pool, pool.slots.data[0].slab + 0);
@@ -242,7 +240,7 @@ static void PP_(test_states)(void) {
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-09-clear.gv");
 
 	/* Remove at random. */
-	for(i = 0; i < size[2]; i++) t = P_(pool_new)(&pool), assert(t), PP_(filler)(t), PP_(valid_state)(&pool);
+	for(i = 0; i < size[2]; i++) t = P_(pool_new)(&pool), assert(t), P_(filler)(t), PP_(valid_state)(&pool);
 	{
 		const size_t n1 = size[2] - 1, n0 = n1 >> 1;
 		size_t n;
@@ -272,7 +270,7 @@ static void PP_(test_states)(void) {
 
 	/* Add at random to an already removed. */
 	while(i) t = P_(pool_new)(&pool), assert(t),
-		PP_(filler)(t), PP_(valid_state)(&pool), i--;
+		P_(filler)(t), PP_(valid_state)(&pool), i--;
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-11-replace.gv");
 	assert(pool.slots.size == 1 && pool.slots.data[0].size == size[2]
 		&& pool.capacity0 == size[2] && pool.free0.as_array.size == 0);
@@ -307,8 +305,8 @@ static void PP_(test_random)(void) {
 			/* Create. */
 			data = P_(pool_new)(&pool);
 			if(!data) { perror("Error"), assert(0); return;}
-			PP_(filler)(data);
-			PP_(to_string)(data, &str);
+			P_(filler)(data);
+			P_(to_string)(data, &str);
 			if(is_print) printf("%lu: Created %s.\n", (unsigned long)i, str);
 			test.data[test.size++] = data;
 		} else {
@@ -316,7 +314,7 @@ static void PP_(test_random)(void) {
 			int ret;
 			assert(test.size);
 			ptr = test.data + (unsigned)rand() / (RAND_MAX / test.size + 1);
-			PP_(to_string)(*ptr, &str);
+			P_(to_string)(*ptr, &str);
 			if(is_print) printf("%lu: Removing %s.\n", (unsigned long)i, str);
 			ret = P_(pool_remove)(&pool, *ptr);
 			assert(ret || (perror("Removing"),
@@ -330,7 +328,7 @@ static void PP_(test_random)(void) {
 			sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-step-%lu.gv",
 				(unsigned long)(i + 1));
 			PP_(graph)(&pool, graph_fn);
-			printf("%s.\n", PP_(pool_to_string)(&pool));
+			printf("%s.\n", P_(pool_to_string)(&pool));
 		}
 		PP_(valid_state)(&pool);
 	}
