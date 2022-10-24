@@ -31,10 +31,10 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
 		" fontface=modern];\n"
 		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n");
-	if(!pool->free0._.size) goto no_free0;
-	for(i = 0; i < pool->free0._.size; i++) {
+	if(!pool->free0.as_array.size) goto no_free0;
+	for(i = 0; i < pool->free0.as_array.size; i++) {
 		fprintf(fp, "\tfree0_%lu [label=<<FONT COLOR=\"Gray75\">%lu</FONT>>,"
-			" shape=circle];\n", i, pool->free0._.data[i]);
+			" shape=circle];\n", i, pool->free0.as_array.data[i]);
 		if(i) fprintf(fp, "\tfree0_%lu -> free0_%lu [dir=back];\n",
 			i, (unsigned long)((i - 1) / 2));
 	}
@@ -68,8 +68,8 @@ no_free0:
 		"</TABLE>>];\n",
 		(unsigned long)pool->slots.size,
 		(unsigned long)pool->slots.capacity,
-		(unsigned long)pool->free0._.size,
-		(unsigned long)pool->free0._.capacity);
+		(unsigned long)pool->free0.as_array.size,
+		(unsigned long)pool->free0.as_array.capacity);
 	if(!pool->slots.data) goto no_slots;
 	fprintf(fp, "\tpool:slots -> slots;\n"
 		"\tslots [label = <\n"
@@ -112,8 +112,8 @@ no_free0:
 		/* Primary buffer: print rows. */
 		if(!(bmp = calloc(slot->size, sizeof *bmp)))
 			{ perror("temp bitmap"); assert(0); exit(EXIT_FAILURE); }
-		for(j = 0; j < pool->free0._.size; j++) {
-			size_t *f0p = pool->free0._.data + j;
+		for(j = 0; j < pool->free0.as_array.size; j++) {
+			size_t *f0p = pool->free0.as_array.data + j;
 			assert(f0p && *f0p < slot->size);
 			bmp[*f0p] = 1;
 		}
@@ -162,13 +162,13 @@ static void PP_(valid_state)(const struct P_(pool) *const pool) {
 	}
 	if(!pool->slots.size) {
 		/* There are no free0 without slots. */
-		assert(!pool->free0._.size);
+		assert(!pool->free0.as_array.size);
 	} else {
 		/* size[0] <= capacity0 */
 		assert(pool->slots.data[0].size <= pool->capacity0);
 		/* The free-heap indices are strictly less than the size. */
-		for(i = 0; i < pool->free0._.size; i++)
-			assert(pool->free0._.data[i] < pool->slots.data[0].size);
+		for(i = 0; i < pool->free0.as_array.size; i++)
+			assert(pool->free0.as_array.data[i] < pool->slots.data[0].size);
 	}
 }
 
@@ -268,14 +268,14 @@ static void PP_(test_states)(void) {
 	}
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-10-remove.gv");
 	assert(pool.slots.size == 1 && pool.slots.data[0].size == size[2]
-		&& pool.capacity0 == size[2] && pool.free0._.size == i);
+		&& pool.capacity0 == size[2] && pool.free0.as_array.size == i);
 
 	/* Add at random to an already removed. */
 	while(i) t = P_(pool_new)(&pool), assert(t),
 		PP_(filler)(t), PP_(valid_state)(&pool), i--;
 	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-11-replace.gv");
 	assert(pool.slots.size == 1 && pool.slots.data[0].size == size[2]
-		&& pool.capacity0 == size[2] && pool.free0._.size == 0);
+		&& pool.capacity0 == size[2] && pool.free0.as_array.size == 0);
 
 	printf("Destructor:\n");
 	P_(pool_)(&pool);
