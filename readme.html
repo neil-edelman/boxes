@@ -54,19 +54,17 @@
 
 <p><a href = "#tag:&lt;A&gt;array">&lt;A&gt;array</a> is a dynamic array that stores contiguous <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a>. Resizing may be necessary when increasing the size of the array; this incurs amortised cost, and any pointers to this memory may become stale.</p>
 
-</div>
+<a href = "src/iterate.h">src/iterate.h</a>: defining <code>HAVE_ITERATE_H</code> supplies <code>&lt;ITR&gt;</code> functions for all boxes that support them. Is not a trait, adds a fixed amount of functions for all boxes.<a href = "src/to_string.h">src/to_string.h</a>: <code>&lt;STR&gt;</code> trait functions require <code>&lt;name&gt;[&lt;trait&gt;]to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.<a href = "src/compare.h">src/compare.h</a>: <code>&lt;CMP&gt;</code> trait functions require <code>&lt;name&gt;[&lt;trait&gt;]compare</code> to be declared as <a href = "#typedef:&lt;PCMP&gt;compare_fn">&lt;PCMP&gt;compare_fn</a> or <code>&lt;name&gt;[&lt;trait&gt;]is_equal</code> to be declared as <a href = "#typedef:&lt;PCMP&gt;bipredicate_fn">&lt;PCMP&gt;bipredicate_fn</a>, respectfully, (but not both.)</div>
 
 <dl>
 	<dt>Parameter: ARRAY_NAME, ARRAY_TYPE</dt>
 	<dd><code>&lt;A&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid tag-type, <a href = "#typedef:&lt;PA&gt;type">&lt;PA&gt;type</a>, associated therewith; required. <code>&lt;PA&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
-	<dt>Parameter: ARRAY_EXPECT_TRAIT</dt>
-	<dd>Do not un-define certain variables for subsequent inclusion in a parameterized trait.</dd>
-	<dt>Parameter: ARRAY_COMPARE_NAME, ARRAY_COMPARE, ARRAY_IS_EQUAL</dt>
-	<dd>Compare trait contained in <a href = "src/compare.h">src/compare.h</a>. An optional mangled name for uniqueness and a function implementing either <a href = "#typedef:&lt;PCMP&gt;compare_fn">&lt;PCMP&gt;compare_fn</a> or <a href = "#typedef:&lt;PCMP&gt;bipredicate_fn">&lt;PCMP&gt;bipredicate_fn</a>.</dd>
-	<dt>Parameter: ARRAY_TO_STRING_NAME, ARRAY_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>. An optional mangled name for uniqueness and function implementing <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</dd>
-	<dt>Parameter: HAVE_ITERATE_H</dt>
-	<dd>The <code>&lt;ITR&gt;</code> functions need this value. This includes <a href = "src/iterate.h">src/iterate.h</a>, which take no parameters. Some functions may only be available for some boxes. This does not expire after box completion.</dd>
+	<dt>Parameter: ARRAY_COMPARE, ARRAY_IS_EQUAL</dt>
+	<dd>Compare trait contained in <a href = "src/compare.h">src/compare.h</a>.</dd>
+	<dt>Parameter: ARRAY_TO_STRING</dt>
+	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>.</dd>
+	<dt>Parameter: ARRAY_EXPECT_TRAIT, ARRAY_TRAIT</dt>
+	<dd>Named traits are obtained by including <code>array.h</code> multiple times with <code>ARRAY_EXPECT_TRAIT</code> and then subsequently including the name in <code>ARRAY_TRAIT</code>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 </dl>
@@ -546,7 +544,7 @@
 
 <p><code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;STR&gt;</code> is <code>&lt;NAME&gt;_&lt;BOX&gt;[_&lt;TRAIT&gt;]</code>. Requires <code>&lt;NAME&gt;[_&lt;TRAIT&gt;]_to_string</code> be declared as a <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time.</p>
 
 <dl>
 	<dt>Return:</dt>

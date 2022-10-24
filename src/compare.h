@@ -10,6 +10,10 @@
  <typedef:<PCMP>compare_fn>. One is required, (but not two.)
 
  @std C89 */
+/** <src/compare.h>: `<CMP>` trait functions require
+ `<name>[<trait>]compare` to be declared as <typedef:<PCMP>compare_fn> or
+ `<name>[<trait>]is_equal` to be declared as <typedef:<PCMP>bipredicate_fn>,
+ respectfully, (but not both.) */
 
 #if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
 	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME) \
