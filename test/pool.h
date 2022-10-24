@@ -181,16 +181,16 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	size_t c, insert;
 	int is_recycled = 0;
 	assert(pool && min_size <= max_size && pool->capacity0 <= max_size &&
-		(!pool->slots.size && !pool->free0._.size /* !slots[0] -> !free0 */
-		|| pool->slots.size && base
+		(!pool->slots.size && !pool->free0.as_array.size
+		|| pool->slots.size && base /* !slots[0] -> !free0 */
 		&& base[0].size <= pool->capacity0
-		&& (!pool->free0._.size
-		|| pool->free0._.size < base[0].size
-		&& pool->free0._.data[0] < base[0].size)));
+		&& (!pool->free0.as_array.size
+		|| pool->free0.as_array.size < base[0].size
+		&& pool->free0.as_array.data[0] < base[0].size)));
 
 	/* Ensure space for new slot. */
 	if(!n || pool->slots.size && n <= pool->capacity0
-		- base[0].size + pool->free0._.size) return 1; /* Already enough. */
+		- base[0].size + pool->free0.as_array.size) return 1; /* Enough. */
 	if(max_size < n) return errno = ERANGE, 1; /* Request unsatisfiable. */
 	if(!PP_(slot_array_buffer)(&pool->slots, 1)) return 0;
 	base = pool->slots.data; /* It may have moved! */
@@ -283,13 +283,13 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 	struct PP_(slot) *slot0;
 	assert(pool);
 	if(!PP_(buffer)(pool, 1)) return 0;
-	assert(pool->slots.size && (pool->free0._.size ||
+	assert(pool->slots.size && (pool->free0.as_array.size ||
 		pool->slots.data[0].size < pool->capacity0));
 	if(poolfree_heap_size(&pool->free0)) {
 		/* Cheating: we prefer the minimum index from a max-heap, but it
 		 doesn't really matter, so take the one off the array used for heap. */
 		size_t *free;
-		free = heap_poolfree_node_array_pop(&pool->free0._);
+		free = heap_poolfree_node_array_pop(&pool->free0.as_array);
 		return assert(free), pool->slots.data[0].slab + *free;
 	}
 	/* The free-heap is empty; guaranteed by <fn:<PP>buffer>. */
@@ -308,7 +308,7 @@ static int P_(pool_remove)(struct P_(pool) *const pool,
 static void P_(pool_clear)(struct P_(pool) *const pool) {
 	struct PP_(slot) *s, *s_end;
 	assert(pool);
-	if(!pool->slots.size) { assert(!pool->free0._.size); return; }
+	if(!pool->slots.size) { assert(!pool->free0.as_array.size); return; }
 	for(s = pool->slots.data + 1, s_end = s - 1 + pool->slots.size;
 		s < s_end; s++) assert(s->slab && s->size), free(s->slab);
 	pool->slots.data[0].size = 0;

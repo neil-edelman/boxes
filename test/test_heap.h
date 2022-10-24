@@ -12,9 +12,6 @@ typedef PH_(priority) (*PH_(test_fn))(PH_(value) *);
 typedef PH_(priority) (*PH_(test_fn))(void);
 #endif
 
-/** `HEAP_TEST` must be a function that implements <typedef:<PH>test_fn>. */
-static PH_(test_fn) PH_(filler) = (HEAP_TEST);
-
 /** Draw a graph of `heap` to `fn` in Graphviz format. */
 static void PH_(graph)(const struct H_(heap) *const heap,
 	const char *const fn) {
@@ -31,7 +28,11 @@ static void PH_(graph)(const struct H_(heap) *const heap,
 		"\trankdir = BT;\n" */
 		"\tedge [arrowhead = none];\n");
 	for(i = 0; i < heap->as_array.size; i++) {
-		PH_(to_string)(heap->as_array.data + i, &a);
+#ifdef HEAP_VALUE
+		H_(to_string)(heap->as_array.data[i].value, &a);
+#else
+		H_(to_string)(heap->as_array.data + i, &a);
+#endif
 		fprintf(fp, "\t\tn%lu [label=\"%s\"];\n", (unsigned long)i, a);
 		if(!i) continue;
 		fprintf(fp, "\t\tn%lu -> n%lu;\n",
@@ -61,9 +62,9 @@ static void PH_(valid)(const struct H_(heap) *const heap) {
 /** Fills `node` whether it has `HEAP_VALUE` or not. */
 static void PH_(fill)(PH_(node) *const node) {
 #ifdef HEAP_VALUE
-	node->priority = PH_(filler)(&node->value);
+	node->priority = H_(filler)(&node->value);
 #else
-	*node = PH_(filler)();
+	*node = H_(filler)();
 #endif
 }
 
@@ -164,7 +165,11 @@ static void PH_(test_basic)(void) {
 		char z[12];
 		node = H_(heap_peek)(&heap);
 		assert(node);
-		PH_(to_string)(node, &z);
+#ifdef HEAP_VALUE
+		H_(to_string)(node->value, &z);
+#else
+		H_(to_string)(node, &z);
+#endif
 		H_(heap_pop)(&heap);
 		if(!i || !(i & (i - 1))) {
 			printf("%lu: retreving %s.\n", (unsigned long)i, z);

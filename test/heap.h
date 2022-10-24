@@ -134,20 +134,20 @@ typedef PH_(priority) PH_(node);
  or being `static`.
 
  ![States.](../doc/states.png) */
-struct H_(heap) { struct PH_(node_array) _; };
+struct H_(heap) { struct PH_(node_array) as_array; };
 
 #define BOX_CONTENT PH_(node) *
 #define PAH_(n) HEAP_CAT(HEAP_CAT(array, PH_(node)), n)
 /** Is `x` not null? @implements `is_content` */
 static int PH_(is_content)(const PH_(node) *const x) { return !!x; }
 /* @implements `forward` */
-struct PH_(forward) { struct PAH_(forward) _; };
+struct PH_(iterator) { struct PAH_(iterator) _; };
 /** @return Before `h`. @implements `forward` */
-static struct PH_(forward) PH_(forward)(const struct H_(heap) *const h) {
-	struct PH_(forward) it; it._ = PAH_(forward)(&h->_); return it; }
+static struct PH_(iterator) PH_(iterator)(struct H_(heap) *const h) {
+	struct PH_(iterator) it; it._ = PAH_(iterator)(&h->as_array); return it; }
 /** @return The next `it` or null. @implements `next_c` */
-static const PH_(node) *PH_(next_c)(struct PH_(forward) *const it)
-	{ return PAH_(next_c)(&it->_); }
+static const PH_(node) *PH_(next)(struct PH_(iterator) *const it)
+	{ return PAH_(next)(&it->_); }
 #undef PAH_
 
 /** Extracts the <typedef:<PH>priority> of `node`, which must not be null. */
@@ -265,18 +265,18 @@ static PH_(node) PH_(remove)(struct H_(heap) *const heap) {
 /** Zeroed data (not all-bits-zero) is initialised.
  @return An idle heap. @order \Theta(1) @allow */
 static struct H_(heap) H_(heap)(void)
-	{ struct H_(heap) heap; heap._ = PH_(node_array)(); return heap; }
+	{ struct H_(heap) heap; heap.as_array = PH_(node_array)(); return heap; }
 
 /** Returns `heap` to the idle state where it takes no dynamic memory.
  @order \Theta(1) @allow */
 static void H_(heap_)(struct H_(heap) *const heap)
-	{ if(heap) PH_(node_array_)(&heap->_); }
+	{ if(heap) PH_(node_array_)(&heap->as_array); }
 
 /** Sets `heap` to be empty. That is, the size of `heap` will be zero, but if
  it was previously in an active non-idle state, it continues to be.
  @param[heap] If null, does nothing. @order \Theta(1) @allow */
 static void H_(heap_clear)(struct H_(heap) *const heap)
-	{ assert(heap), PH_(node_array_clear)(&heap->_); }
+	{ assert(heap), PH_(node_array_clear)(&heap->as_array); }
 
 /** @return If the `heap` is not null, returns it's size. @allow */
 static size_t H_(heap_size)(const struct H_(heap) *const heap)
@@ -286,7 +286,8 @@ static size_t H_(heap_size)(const struct H_(heap) *const heap)
  @return Success. @throws[ERANGE, realloc] @order \O(log `heap.size`) @allow */
 static int H_(heap_add)(struct H_(heap) *const heap, PH_(node) node) {
 	assert(heap);
-	return PH_(node_array_new)(&heap->_) && (PH_(sift_up)(heap, &node), 1);
+	return PH_(node_array_new)(&heap->as_array)
+		&& (PH_(sift_up)(heap, &node), 1);
 }
 
 /** @return The value of the lowest element in `heap` or null when the heap is
@@ -311,7 +312,7 @@ static PH_(value) H_(heap_pop)(struct H_(heap) *const heap) {
  a null pointer is returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */
 static PH_(node) *H_(heap_buffer)(struct H_(heap) *const heap,
-	const size_t n) { return PH_(node_array_buffer)(&heap->_, n); }
+	const size_t n) { return PH_(node_array_buffer)(&heap->as_array, n); }
 
 /** Adds and heapifies `n` elements to `heap`. Uses <Floyd, 1964, Treesort> to
  sift-down all the internal nodes of heap. The heap elements must exist, see
@@ -323,7 +324,7 @@ static void H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
 	/* In practice, pushing uninitialized elements onto the heap does not make
 	 sense, so we assert that the elements exist first. */
 	assert(heap && n <= heap->as_array.capacity - heap->as_array.size);
-	more = PH_(node_array_append)(&heap->_, n), assert(more);
+	more = PH_(node_array_append)(&heap->as_array, n), assert(more);
 	if(n) PH_(heapify)(heap);
 }
 
@@ -336,9 +337,11 @@ static int H_(heap_affix)(struct H_(heap) *restrict const heap,
 	assert(heap);
 	if(!master || !master->as_array.size) return 1;
 	assert(master->as_array.data);
-	if(!(n = PH_(node_array_buffer)(&heap->_, master->as_array.size))) return 0;
+	if(!(n = PH_(node_array_buffer)(&heap->as_array, master->as_array.size)))
+		return 0;
 	memcpy(n, master->as_array.data, sizeof *n * master->as_array.size);
-	n = PH_(node_array_append)(&heap->_, master->as_array.size), assert(n);
+	n = PH_(node_array_append)(&heap->as_array, master->as_array.size),
+		assert(n);
 	PH_(heapify)(heap);
 	return 1;
 }
@@ -353,7 +356,7 @@ static const char *(*PH_(heap_to_string))(const struct H_(heap) *);
 static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
 	PH_(node) unused; memset(&unused, 0, sizeof unused);
-	PH_(is_content)(0); PH_(forward)(0); PH_(next_c)(0);
+	PH_(is_content)(0); PH_(iterator)(0); PH_(next)(0);
 	H_(heap)(); H_(heap_)(0); H_(heap_clear)(0); H_(heap_size)(0);
 	H_(heap_add)(0, unused); H_(heap_peek)(0); H_(heap_pop)(0);
 	H_(heap_buffer)(0, 0); H_(heap_append)(0, 0); H_(heap_affix)(0, 0);

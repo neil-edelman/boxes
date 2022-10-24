@@ -336,7 +336,7 @@ static int H_(heap_affix)(struct H_(heap) *restrict const heap,
 
 /* Box override information. */
 #define BOX_TYPE struct H_(heap)
-#define BOX_CONTENT PH_(node_c) *
+#define BOX_CONTENT PH_(node) *
 #define BOX_ PH_
 #define BOX_MAJOR_NAME heap
 #define BOX_MINOR_NAME HEAP_NAME
@@ -422,6 +422,7 @@ static void PH_(unused_to_string_coda)(void) { PH_(unused_to_string)(); }
 #undef BOX_MINOR_NAME
 #undef HEAP_NAME
 #undef HEAP_TYPE
+#undef HEAP_COMPARE
 #ifdef HEAP_VALUE
 #undef HEAP_VALUE
 #endif

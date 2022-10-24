@@ -27,7 +27,6 @@ static unsigned int_filler(void) {
 #include "../src/heap.h"
 
 
-#if 0
 /* Value pointer along with a priority. We have to store values somewhere, so
  we use a pool, (which depends on `heap`, it has evolved.) */
 struct orc { unsigned health; char name[12]; };
@@ -37,7 +36,7 @@ static void orc_to_string(const struct orc *const orc, char (*const a)[12])
 #define POOL_TYPE struct orc
 #include "pool.h"
 static struct orc_pool orcs;
-static unsigned test_orc(struct orc **const orc_ptr) {
+static unsigned orc_filler(struct orc **const orc_ptr) {
 	struct orc *orc = orc_pool_new(&orcs);
 	if(!orc) { assert(0); exit(EXIT_FAILURE); }
 	orc->health = (unsigned)rand() / (RAND_MAX / 99 + 1);
@@ -47,11 +46,11 @@ static unsigned test_orc(struct orc **const orc_ptr) {
 }
 #define HEAP_NAME orc
 #define HEAP_VALUE struct orc *
-#define HEAP_TEST &test_orc
+#define HEAP_TEST
 #define HEAP_TO_STRING
 #include "../src/heap.h"
 
-
+#if 0
 /* Maximum heap with a `size_t`. */
 static void index_to_string(const size_t *const i, char (*const a)[12]) {
 	sprintf(*a, "%lu", (unsigned long)*i);
@@ -72,7 +71,7 @@ static int index_compare(const size_t a, const size_t b) { return a < b; }
 int main(void) {
 	rand();
 	int_heap_test();
-	/*orc_heap_test(), orc_pool_(&orcs);
-	index_heap_test();*/
+	orc_heap_test(), orc_pool_(&orcs);
+	/*index_heap_test();*/
 	return EXIT_SUCCESS;
 }
