@@ -30,7 +30,7 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 		"\tnode [shape=none, fontname=modern];\n");
 	if(!pool->free0.as_array.size) goto no_free0;
 	for(i = 0; i < pool->free0.as_array.size; i++) {
-		fprintf(fp, "\tfree0_%lu [label=<font color=\"Gray75\">%lu</font>>,"
+		fprintf(fp, "\tfree0_%lu [label=<<font color=\"Gray75\">%lu</font>>,"
 			" shape=circle];\n", i, pool->free0.as_array.data[i]);
 		if(i) fprintf(fp, "\tfree0_%lu -> free0_%lu [dir=back];\n",
 			i, (unsigned long)((i - 1) / 2));
@@ -45,22 +45,21 @@ no_free0:
 		"&gt;pool: " QUOTE(POOL_TYPE) "</font></td></tr>\n"
 		"\t<hr/>\n"
 		"\t<tr>\n"
-		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Gray95\">"
+		"\t\t<td border=\"0\" align=\"right\">"
 		"capacity0</td>\n"
-		"\t\t<td border=\"0\" bgcolor=\"Gray95\">&#8205;</td>\n"
-		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Gray95\">%lu</td>\n"
+		"\t\t<td border=\"0\">&#8205;</td>\n"
+		"\t\t<td border=\"0\" align=\"right\">%lu</td>\n"
 		"\t</tr>\n", (unsigned long)pool->capacity0);
 	fprintf(fp, "\t<tr>\n"
-		"\t\t<td border=\"0\" align=\"right\">slots</td>\n"
-		"\t\t<td border=\"0\" align=\"right\">%lu</td>\n"
-		"\t\t<td port=\"slots\" border=\"0\" align=\"right\">%lu</td>\n"
+		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Gray95\">slots</td>\n"
+		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Gray95\">%lu</td>\n"
+		"\t\t<td port=\"slots\" border=\"0\" align=\"right\" "
+		"bgcolor=\"Gray95\">%lu</td>\n"
 		"\t</tr>\n"
 		"\t<tr>\n"
-		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Grey95\">"
-		"freeheap0</td>\n"
-		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Grey95\">%lu</td>\n"
-		"\t\t<td port=\"free\" border=\"0\" align=\"right\" bgcolor=\"Grey95\">"
-		"%lu</td>\n"
+		"\t\t<td border=\"0\" align=\"right\">freeheap0</td>\n"
+		"\t\t<td border=\"0\" align=\"right\">%lu</td>\n"
+		"\t\t<td port=\"free\" border=\"0\" align=\"right\">%lu</td>\n"
 		"\t</tr>\n"
 		"\t<hr/>\n"
 		"\t<tr><td></td></tr>\n"
@@ -82,7 +81,7 @@ no_free0:
 		"\t</tr>\n"
 		"\t<hr/>\n");
 	for(i = 0; i < pool->slots.size; i++) {
-		const char *const bgc = i & 1 ? "" : " bgcolor=\"Grey95\"";
+		const char *const bgc = i & 1 ? " bgcolor=\"Grey95\"" : "";
 		fprintf(fp, "\t<tr>\n"
 			"\t\t<td align=\"right\"%s>%lu</td>\n"
 			"\t\t<td align=\"left\"%s>%s</td>\n"
@@ -103,13 +102,13 @@ no_free0:
 			"\tslots:%lu -> slab%lu;\n"
 			"\tslab%lu [label=<\n"
 			"<table border=\"0\" cellspacing=\"0\">\n"
-			"\t<tr><td colspan=\"2\" align=\"left\">"
+			"\t<tr><td align=\"left\">"
 			"<font color=\"Gray75\">%s</font></td></tr>\n"
 			"\t<hr/>\n",
 			(unsigned long)i, (unsigned long)i,
 			(unsigned long)i, orcify(slab));
 		if(i || !slot->size) {
-			fprintf(fp, "\t<tr><td colspan=\"2\" align=\"left\">"
+			fprintf(fp, "\t<tr><td align=\"left\">"
 				"<font face=\"Times-Italic\">count %lu</font></td></tr>\n",
 				slot->size);
 			goto no_slab_data;
@@ -123,19 +122,19 @@ no_free0:
 			bmp[*f0p] = 1;
 		}
 		for(j = 0; j < slot->size; j++) {
-			const char *const bgc = j & 1 ? "" : " bgcolor=\"Grey95\"";
-			fprintf(fp, "\t<tr>\n"
+			const char *const bgc = j & 1 ? " bgcolor=\"Grey95\"" : "";
+			/*fprintf(fp, "\t<tr>\n"
 				"\t\t<td port=\"%lu\" align=\"right\"%s>%lu</td>\n",
-				(unsigned long)j, bgc, (unsigned long)j);
+				(unsigned long)j, bgc, (unsigned long)j);*/
+			fprintf(fp, "\t<tr><td port=\"%lu\" align=\"left\"%s>",
+				(unsigned long)j, bgc);
 			if(bmp[j]) {
-				fprintf(fp, "\t\t<td align=\"left\"%s>"
-					"<font color=\"Gray75\">deleted"
-					"</font></td>\n", bgc);
+				fprintf(fp, "<font color=\"Gray75\">deleted</font>");
 			} else {
 				P_(to_string)(slab + j, &str);
-				fprintf(fp, "\t\t<td align=\"left\"%s>%s</td>\n", bgc, str);
+				fprintf(fp, "%s", str);
 			}
-			fprintf(fp, "\t</tr>\n");
+			fprintf(fp, "</td></tr>\n");
 		}
 		free(bmp);
 no_slab_data:
