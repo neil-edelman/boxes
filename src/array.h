@@ -402,7 +402,6 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #else /* more --><!-- done */
 #undef BOX_TYPE
 #undef BOX_CONTENT
-#undef BOX_CONTENT_C
 #undef BOX_
 #undef BOX_MAJOR_NAME
 #undef BOX_MINOR_NAME

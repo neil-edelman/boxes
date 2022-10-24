@@ -98,7 +98,7 @@ static int keyval_value_compare(const struct keyval *const a,
 #include "../src/array.h"
 
 
-#if 0
+#if 1
 
 static int targets[] = { 4, 2, 8, 2, 6, 5, 3, 6, 1, 2, 9, 3 };
 static void pointer_to_string(const int *const*const i, char (*const a)[12])
@@ -106,13 +106,13 @@ static void pointer_to_string(const int *const*const i, char (*const a)[12])
 static void pointer_filler(int **const i)
 	{ *i = targets
 	+ rand() / (RAND_MAX / (int)(sizeof targets / sizeof *targets) + 1); }
-static int pointer_cmp(const int *const*const a, const int *const*const b)
-	{ return int_cmp(*a, *b); }
+static int pointer_compare(const int *const*const a, const int *const*const b)
+	{ return int_compare(*a, *b); }
 #define ARRAY_NAME pointer
 #define ARRAY_TYPE int *
-#define ARRAY_TEST &pointer_filler
-#define ARRAY_COMPARE &pointer_cmp
-#define ARRAY_TO_STRING &pointer_to_string
+#define ARRAY_TEST
+#define ARRAY_COMPARE
+#define ARRAY_TO_STRING
 #include "../src/array.h"
 
 
@@ -132,13 +132,11 @@ int main(void) {
 	keyval_array_test();
 	keyval_array_compare_test();
 	keyval_array_value_compare_test();
-#if 0
 	pointer_array_test();
 	/*pointer_array_compare_test();
 	 <- probably the test is wrong, assumes contiguous. I don't know what it's
 	 doing, wrote 10 years ago. */
 	(void)pointer_array_compare_test;
-#endif
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

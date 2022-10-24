@@ -66,11 +66,11 @@ static void PCMP_(test_compactify)(void) {
 	CMP_(reverse)(&a);
 	printf("Reverse: %s.\n", A_(array_to_string)(&a));
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(CMPEXTERN_(compare)(t, t + 1) >= 0);
+		assert(CMPEXTERN_(compare)((void *)t, (void *)(t + 1)) >= 0);
 	CMP_(sort)(&a);
 	printf("Sorted: %s.\n", A_(array_to_string)(&a));
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(CMPEXTERN_(compare)(t, t + 1) <= 0);
+		assert(CMPEXTERN_(compare)((void *)t, (void *)(t + 1)) <= 0);
 #endif /* compare --> */
 	A_(array_)(&a);
 }
@@ -94,14 +94,14 @@ static void PCMP_(test_compare)(void) {
 	it = A_(array_iterator)(&a);
 	while(t = A_(array_next)(&it)) {
 		char z[12];
-		A_(to_string)(t, &z);
+		A_(to_string)((void *)t, &z);
 		printf("next %s; ", z);
 		assert(t = a.data + i++);
 	}
 	assert(i == ts_size);
 	while(t = A_(array_previous)(&it)) {
 		char z[12];
-		A_(to_string)(t, &z);
+		A_(to_string)((void *)t, &z);
 		printf("previous %s; ", z);
 		assert(t = a.data + --i);
 	}
@@ -145,7 +145,8 @@ static void PCMP_(test_sort)(void) {
 		for(i = 0; i < size; i++) A_(filler)(a->data + i); /* Emplace. */
 		CMP_(sort)(a);
 		for(x = a->data; x < x_end - 1; x++)
-			cmp = CMPEXTERN_(compare)(x, x + 1), assert(cmp <= 0);
+			cmp = CMPEXTERN_(compare)((void *)x, (void *)(x + 1)),
+			assert(cmp <= 0);
 	}
 	/* Now sort the lists. */
 	qsort(as, as_size, sizeof *as, &PCMP_(cmp_void));
@@ -175,19 +176,23 @@ static void PCMP_(test_bounds)(void) {
 	memset(&elem, 0, sizeof elem), A_(filler)(&elem);
 	CMP_(sort)(&a);
 	printf("sorted: %s.\n", A_(array_to_string)(&a));
-	A_(to_string)(&elem, &z);
+	A_(to_string)((void *)&elem, &z);
 	printf("element to compare: %s\n", z);
 	low = CMP_(lower_bound)(&a, &elem);
 	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
 	assert(low <= a.size);
-	assert(!low || CMPEXTERN_(compare)(a.data + low - 1, &elem) < 0);
-	assert(low == a.size || CMPEXTERN_(compare)(&elem, a.data + low) <= 0);
+	assert(!low || CMPEXTERN_(compare)((void *)(a.data + low - 1),
+		(void *)&elem) < 0);
+	assert(low == a.size || CMPEXTERN_(compare)((void *)&elem,
+		(void *)(a.data + low)) <= 0);
 	high = CMP_(upper_bound)(&a, &elem);
 	printf(QUOTE(ARRAY_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
 	assert(high <= a.size);
-	assert(!high || CMPEXTERN_(compare)(a.data + high - 1, &elem) <= 0);
-	assert(high == a.size || CMPEXTERN_(compare)(&elem, a.data + high) < 0);
-	A_(to_string)(&elem, &z);
+	assert(!high || CMPEXTERN_(compare)((void *)(a.data + high - 1),
+		(void *)&elem) <= 0);
+	assert(high == a.size || CMPEXTERN_(compare)((void *)&elem,
+		(void *)(a.data + high)) < 0);
+	A_(to_string)((void *)&elem, &z);
 	printf("insert: %s into %s of size %lu.\n",
 		z, A_(array_to_string)(&a), (unsigned long)size);
 	ret = CMP_(insert_after)(&a, &elem);

@@ -85,7 +85,7 @@ static int CMP_(compare)(const PCMP_(box) *restrict const a,
 		if(!BOX_(is_element)(x)) return BOX_(is_element)(y) ? -1 : 0;
 		else if(!BOX_(is_element)(y)) return 1;
 		/* Must have this function declared. */
-		if(diff = CMPEXTERN_(compare)(x, y)) return diff;
+		if(diff = CMPEXTERN_(compare)((void *)x, (void *)y)) return diff;
 	}
 }
 
@@ -98,8 +98,8 @@ static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
 	PCMP_(element_c) element) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(CMPEXTERN_(compare)(element, BOX_(at)(box,
-			mid = low + (high - low) / 2)) <= 0) high = mid;
+		if(CMPEXTERN_(compare)((const void *)element, (const void *)
+			BOX_(at)(box, mid = low + (high - low) / 2)) <= 0) high = mid;
 		else low = mid + 1;
 	return low;
 }
@@ -112,8 +112,9 @@ static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
 	PCMP_(element_c) element) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(CMPEXTERN_(compare)(element, BOX_(at)(box,
-			mid = low + (high - low) / 2)) >= 0) low = mid + 1;
+		if(CMPEXTERN_(compare)((const void *)element,
+			(const void *)BOX_(at)(box, mid = low + (high - low) / 2)) >= 0)
+			low = mid + 1;
 		else high = mid;
 	return low;
 }
@@ -175,7 +176,9 @@ static void CMP_(reverse)(PCMP_(box) *const box) {
  collide with another function!
  @implements <typedef:<PCMP>bipredicate_fn> */
 static int CMPEXTERN_(is_equal)(const PCMP_(element_c) restrict a,
-	const PCMP_(element_c) restrict b) { return !CMPEXTERN_(compare)(a, b); }
+	const PCMP_(element_c) restrict b) {
+	return !CMPEXTERN_(compare)((const void *)a, (const void *)b);
+}
 
 #endif /* compare --> */
 

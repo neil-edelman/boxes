@@ -50,7 +50,7 @@ static void PA_(graph)(const struct A_(array) *const a, const char *const fn) {
 		"<FONT COLOR=\"Gray85\">%s</FONT></TD></TR>\n", orcify(a->data));
 	for(i = 0; i < a->size; i++) {
 		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
-		A_(to_string)(a->data + i, &z);
+		A_(to_string)((void *)(a->data + i), &z);
 		fprintf(fp, "\t<TR>\n"
 			"\t\t<TD ALIGN=\"RIGHT\"%s>%lu</TD>\n"
 			"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
@@ -115,16 +115,17 @@ static void PA_(test_basic)(void) {
 	assert(i == 3);
 	printf("Backwards:\n");
 	for(it = A_(array_iterator)(&a), i = 0; item = A_(array_previous)(&it); i++)
-		A_(to_string)(item, &z), printf("%s\n", z),
+		A_(to_string)((void *)item, &z), printf("%s\n", z),
 		assert(!memcmp(item, items + 2 - i, sizeof *item));
 	assert(i == 3);
 	it = A_(array_iterator)(&a);
-	item = A_(array_next)(&it), assert(item), A_(to_string)(item, &z);
+	item = A_(array_next)(&it), assert(item), A_(to_string)((void *)item, &z);
 	A_(array_next)(&it), item = A_(array_previous)(&it);
 	assert(!memcmp(item, items + 0, sizeof *item));
 	for(i = 0; i < 3; i++) {
 		it = A_(array_iterator_at)(&a, i);
-		item = A_(array_next)(&it), assert(item), A_(to_string)(item, &z);
+		item = A_(array_next)(&it), assert(item);
+		A_(to_string)((void *)item, &z);
 		printf("a[%lu] = %s\n", (unsigned long)i, z);
 		assert(!memcmp(item, items + i, sizeof *item));
 	}
@@ -222,7 +223,7 @@ static void PA_(test_random)(void) {
 			if(!(data = A_(array_new)(&a)))
 				{ perror("Error"), assert(0); return; }
 			size++;
-			A_(filler)(data), A_(to_string)(data, &str);
+			A_(filler)(data), A_(to_string)((void *)data, &str);
 			if(is_print) printf("created %s.", str);
 		} else {
 			const unsigned t = RAND_MAX / 2;
@@ -230,13 +231,13 @@ static void PA_(test_random)(void) {
 			assert(size);
 			if(r < t) {
 				data = A_(array_peek)(&a);
-				assert(data), A_(to_string)(data, &str);
+				assert(data), A_(to_string)((void *)data, &str);
 				if(is_print) printf("popping %s.", str);
 				assert(data == A_(array_pop)(&a));
 			} else {
 				size_t idx = (unsigned)rand() / (RAND_MAX / size + 1);
 				if(!(data = a.data + idx)) continue;
-				A_(to_string)(data, &str);
+				A_(to_string)((void *)data, &str);
 				if(is_print)
 					printf("removing %s at %lu.", str, (unsigned long)idx);
 				A_(array_remove)(&a, data);
