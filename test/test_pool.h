@@ -26,11 +26,11 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 	printf("*** %s\n", fn);
 	fprintf(fp, "digraph {\n"
 		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
-		" fontface=modern];\n"
-		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n");
+		" fontname=modern];\n"
+		"\tnode [shape=none, fontname=modern];\n");
 	if(!pool->free0.as_array.size) goto no_free0;
 	for(i = 0; i < pool->free0.as_array.size; i++) {
-		fprintf(fp, "\tfree0_%lu [label=<<FONT COLOR=\"Gray75\">%lu</FONT>>,"
+		fprintf(fp, "\tfree0_%lu [label=<font color=\"Gray75\">%lu</font>>,"
 			" shape=circle];\n", i, pool->free0.as_array.data[i]);
 		if(i) fprintf(fp, "\tfree0_%lu -> free0_%lu [dir=back];\n",
 			i, (unsigned long)((i - 1) / 2));
@@ -39,30 +39,32 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 		"\tpool:free -> free0_0;\n");
 no_free0:
 	fprintf(fp, "\tpool [label=<\n"
-		"<TABLE BORDER=\"0\">\n"
-		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\">"
-		"<FONT COLOR=\"Gray85\">&lt;" QUOTE(POOL_NAME)
-		"&gt;pool: " QUOTE(POOL_TYPE) "</FONT></TD></TR>\n"
-		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">"
-		"capacity0</TD>\n"
-		"\t\t<TD BORDER=\"0\" BGCOLOR=\"Gray90\">&#8205;</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
-		"\t</TR>\n", (unsigned long)pool->capacity0);
-	fprintf(fp, "\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">slots"
-		"</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%lu</TD>\n"
-		"\t\t<TD PORT=\"slots\" BORDER=\"0\" ALIGN=\"RIGHT\">%lu</TD>\n"
-		"\t</TR>\n"
-		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">"
-		"freeheap0</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
-		"\t\t<TD PORT=\"free\" BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">"
-		"%lu</TD>\n"
-		"\t</TR>\n"
-		"</TABLE>>];\n",
+		"<table border=\"0\" cellspacing=\"0\">\n"
+		"\t<tr><td colspan=\"3\" align=\"left\">"
+		"<font color=\"Grey75\">&lt;" QUOTE(POOL_NAME)
+		"&gt;pool: " QUOTE(POOL_TYPE) "</font></td></tr>\n"
+		"\t<hr/>\n"
+		"\t<tr>\n"
+		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Gray95\">"
+		"capacity0</td>\n"
+		"\t\t<td border=\"0\" bgcolor=\"Gray95\">&#8205;</td>\n"
+		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Gray95\">%lu</td>\n"
+		"\t</tr>\n", (unsigned long)pool->capacity0);
+	fprintf(fp, "\t<tr>\n"
+		"\t\t<td border=\"0\" align=\"right\">slots</td>\n"
+		"\t\t<td border=\"0\" align=\"right\">%lu</td>\n"
+		"\t\t<td port=\"slots\" border=\"0\" align=\"right\">%lu</td>\n"
+		"\t</tr>\n"
+		"\t<tr>\n"
+		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Grey95\">"
+		"freeheap0</td>\n"
+		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Grey95\">%lu</td>\n"
+		"\t\t<td port=\"free\" border=\"0\" align=\"right\" bgcolor=\"Grey95\">"
+		"%lu</td>\n"
+		"\t</tr>\n"
+		"\t<hr/>\n"
+		"\t<tr><td></td></tr>\n"
+		"</table>>];\n",
 		(unsigned long)pool->slots.size,
 		(unsigned long)pool->slots.capacity,
 		(unsigned long)pool->free0.as_array.size,
@@ -70,23 +72,28 @@ no_free0:
 	if(!pool->slots.data) goto no_slots;
 	fprintf(fp, "\tpool:slots -> slots;\n"
 		"\tslots [label = <\n"
-		"<TABLE BORDER=\"0\">\n"
-		"\t<TR>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">i</FONT></TD>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">slab</FONT></TD>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">size</FONT></TD>\n"
-		"\t</TR>\n");
+		"<table border=\"0\" cellspacing=\"0\">\n"
+		"\t<tr><td></td></tr>\n"
+		"\t<hr/>\n"
+		"\t<tr>\n"
+		"\t\t<td border=\"0\"><font face=\"Times-Italic\">i</font></td>\n"
+		"\t\t<td border=\"0\"><font face=\"Times-Italic\">slab</font></td>\n"
+		"\t\t<td border=\"0\"><font face=\"Times-Italic\">size</font></td>\n"
+		"\t</tr>\n"
+		"\t<hr/>\n");
 	for(i = 0; i < pool->slots.size; i++) {
-		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"";
-		fprintf(fp, "\t<TR>\n"
-			"\t\t<TD ALIGN=\"RIGHT\"%s>%lu</TD>\n"
-			"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
-			"\t\t<TD PORT=\"%lu\" ALIGN=\"RIGHT\"%s>%lu</TD>\n"
-			"\t</TR>\n",
+		const char *const bgc = i & 1 ? "" : " bgcolor=\"Grey95\"";
+		fprintf(fp, "\t<tr>\n"
+			"\t\t<td align=\"right\"%s>%lu</td>\n"
+			"\t\t<td align=\"left\"%s>%s</td>\n"
+			"\t\t<td port=\"%lu\" align=\"right\"%s>%lu</td>\n"
+			"\t</tr>\n",
 			bgc, (unsigned long)i, bgc, orcify(pool->slots.data[i].slab),
 			(unsigned long)i, bgc, pool->slots.data[i].size);
 	}
-	fprintf(fp, "</TABLE>>];\n");
+	fprintf(fp, "\t<hr/>\n"
+		"\t<tr><td></td></tr>\n"
+		"</table>>];\n");
 	/* For each slot, there is a slab. */
 	for(i = 0; i < pool->slots.size; i++) {
 		char *bmp;
@@ -95,14 +102,15 @@ no_free0:
 		fprintf(fp,
 			"\tslots:%lu -> slab%lu;\n"
 			"\tslab%lu [label=<\n"
-			"<TABLE BORDER=\"0\">\n"
-			"\t<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\">"
-			"<FONT COLOR=\"Gray85\">%s</FONT></TD></TR>\n",
+			"<table border=\"0\" cellspacing=\"0\">\n"
+			"\t<tr><td colspan=\"2\" align=\"left\">"
+			"<font color=\"Gray75\">%s</font></td></tr>\n"
+			"\t<hr/>\n",
 			(unsigned long)i, (unsigned long)i,
 			(unsigned long)i, orcify(slab));
 		if(i || !slot->size) {
-			fprintf(fp, "\t<TR><TD COLSPAN=\"2\" ALIGN=\"LEFT\">"
-				"<FONT FACE=\"Times-Italic\">count %lu</FONT></TD></TR>\n",
+			fprintf(fp, "\t<tr><td colspan=\"2\" align=\"left\">"
+				"<font face=\"Times-Italic\">count %lu</font></td></tr>\n",
 				slot->size);
 			goto no_slab_data;
 		}
@@ -115,23 +123,25 @@ no_free0:
 			bmp[*f0p] = 1;
 		}
 		for(j = 0; j < slot->size; j++) {
-			const char *const bgc = j & 1 ? "" : " BGCOLOR=\"Gray90\"";
-			fprintf(fp, "\t<TR>\n"
-				"\t\t<TD PORT=\"%lu\" ALIGN=\"RIGHT\"%s>%lu</TD>\n",
+			const char *const bgc = j & 1 ? "" : " bgcolor=\"Grey95\"";
+			fprintf(fp, "\t<tr>\n"
+				"\t\t<td port=\"%lu\" align=\"right\"%s>%lu</td>\n",
 				(unsigned long)j, bgc, (unsigned long)j);
 			if(bmp[j]) {
-				fprintf(fp, "\t\t<TD ALIGN=\"LEFT\"%s>"
-					"<FONT COLOR=\"Gray75\">deleted"
-					"</FONT></TD>\n", bgc);
+				fprintf(fp, "\t\t<td align=\"left\"%s>"
+					"<font color=\"Gray75\">deleted"
+					"</font></td>\n", bgc);
 			} else {
 				P_(to_string)(slab + j, &str);
-				fprintf(fp, "\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n", bgc, str);
+				fprintf(fp, "\t\t<td align=\"left\"%s>%s</td>\n", bgc, str);
 			}
-			fprintf(fp, "\t</TR>\n");
+			fprintf(fp, "\t</tr>\n");
 		}
 		free(bmp);
 no_slab_data:
-		fprintf(fp, "</TABLE>>];\n");
+		fprintf(fp, "\t<hr/>\n"
+			"\t<tr><td></td></tr>\n"
+			"</table>>];\n");
 		/* Too crowded to draw heap.
 		if(i) continue;
 		for(j = 1; j < pool->free0._.size; j++) {
