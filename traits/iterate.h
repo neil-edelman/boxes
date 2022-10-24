@@ -6,12 +6,9 @@
  Interface defined by box. Singleton.
 
  @std C89 */
-/**
- @param[HAVE_ITERATE_H]
- The `<ITR>` functions need this value. This includes <src/iterate.h>, which
- take no parameters. Some functions may only be available for some boxes. This
- does not expire after box completion.
- */
+/** <src/iterate.h>: defining `HAVE_ITERATE_H` supplies `<ITR>` functions for
+ all boxes that support them. Is not a trait, adds a fixed amount of functions
+ for all boxes. */
 
 #if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
 	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME)

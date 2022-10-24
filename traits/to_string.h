@@ -18,6 +18,8 @@
  @fixme `extern` untested.
 
  @std C89 */
+/** <src/to_string.h>: `<STR>` trait functions require
+ `<name>[<trait>]to_string` be declared as <typedef:<PSTR>to_string_fn>. */
 
 #if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
 	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME) \
@@ -93,9 +95,7 @@ typedef void (*PSTR_(to_string_fn))(const PSTR_(element), char (*)[12]);
  read-only type which what we are supplied. Think of nested pointers. */
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
- 256 bytes, with limitations of only printing 4 things at a time. `<STR>` is
- `<NAME>_<BOX>[_<TRAIT>]`. Requires `<NAME>[_<TRAIT>]_to_string` be declared as
- a <typedef:<PSTR>to_string_fn>.
+ 256 bytes, with limitations of only printing 4 things at a time.
  @return Address of the static buffer. @order \Theta(1) @allow */
 static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	const char comma = ',', space = ' ', ellipsis[] = "…",
