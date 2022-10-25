@@ -31,12 +31,13 @@
  Optional value <typedef:<PH>value>, that, on `HEAP_VALUE`, is stored in
  <tag:<H>heapnode>, which is <typedef:<PH>value>.
 
- @param[HEAP_EXPECT_TRAIT]
- Do not un-define certain variables for subsequent inclusion in a parameterized
- trait.
-
- @param[HEAP_TO_STRING_NAME, HEAP_TO_STRING]
+ @param[HEAP_TO_STRING]
  To string trait contained in <src/to_string.h>.
+
+ @param[HEAP_EXPECT_TRAIT, HEAP_TRAIT]
+ Named traits are obtained by including `heap.h` multiple times with
+ `HEAP_EXPECT_TRAIT` and then subsequently including the name in
+ `HEAP_TRAIT`.
 
  @depend [array](https://github.com/neil-edelman/array)
  @std C89 */
