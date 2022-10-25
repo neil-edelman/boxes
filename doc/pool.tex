@@ -147,36 +147,42 @@ In the case where the free-heap is empty, return slab$_0[$size$_0]$. If there's 
 %\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
 \begin{figure}
 	\centering
-	\digraph[scale=\Scale]{pool}{
+	\digraph[scale=0.6]{pool}{
 	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname=modern];
 	node [shape=none, fontname=modern];
-	free0_0 [label=<<font color="Gray50" face="Times-Italic">9</font>>, width=0, height=0, margin=0.05];
-	free0_1 [label=<<font color="Gray50" face="Times-Italic">7</font>>, width=0, height=0, margin=0.05];
+	free0_0 [label=<<font color="Gray50" face="Times-Italic">12</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_1 [label=<<font color="Gray50" face="Times-Italic">10</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
 	free0_1 -> free0_0 [dir=back];
-	free0_2 [label=<<font color="Gray50" face="Times-Italic">8</font>>, width=0, height=0, margin=0.05];
+	free0_2 [label=<<font color="Gray50" face="Times-Italic">11</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
 	free0_2 -> free0_0 [dir=back];
-	free0_3 [label=<<font color="Gray50" face="Times-Italic">4</font>>, width=0, height=0, margin=0.05];
+	free0_3 [label=<<font color="Gray50" face="Times-Italic">7</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
 	free0_3 -> free0_1 [dir=back];
-	{rank=same; pool; free0_0; }
-	pool:free -> free0_0;
+	free0_4 [label=<<font color="Gray50" face="Times-Italic">0</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_4 -> free0_1 [dir=back];
+	free0_5 [label=<<font color="Gray50" face="Times-Italic">2</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_5 -> free0_2 [dir=back];
+	free0_6 [label=<<font color="Gray50" face="Times-Italic">4</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_6 -> free0_2 [dir=back];
+	{rank=same; free0_0; pool; slots; }
+	free0_0 -> pool:free [dir=back];
 	pool [label=<
 <table border="0" cellspacing="0">
 	<tr><td colspan="3" align="left"><font color="Grey75">&lt;colour&gt;pool: enum colour</font></td></tr>
 	<hr/>
 	<tr>
-		<td border="0" align="right">capacity0</td>
-		<td border="0"></td>
-		<td border="0" align="right">13</td>
-	</tr>
-	<tr>
-		<td border="0" align="right" bgcolor="Gray95">slots</td>
-		<td border="0" align="right" bgcolor="Gray95">2</td>
-		<td port="slots" border="0" align="right" bgcolor="Gray95">3</td>
-	</tr>
-	<tr>
 		<td border="0" align="right">freeheap0</td>
-		<td border="0" align="right">4</td>
-		<td port="free" border="0" align="right">6</td>
+		<td border="0" align="right">7</td>
+		<td port="free" border="0" align="right">9</td>
+	</tr>
+	<tr>
+		<td border="0" align="right" bgcolor="Gray95">capacity0</td>
+		<td border="0" bgcolor="Gray95"></td>
+		<td border="0" align="right" bgcolor="Gray95">20</td>
+	</tr>
+	<tr>
+		<td border="0" align="right">slots</td>
+		<td border="0" align="right">3</td>
+		<td port="slots" border="0" align="right">3</td>
 	</tr>
 	<hr/>
 	<tr><td></td></tr>
@@ -194,13 +200,18 @@ In the case where the free-heap is empty, return slab$_0[$size$_0]$. If there's 
 	<hr/>
 	<tr>
 		<td align="right">0</td>
-		<td align="left">Krihai</td>
-		<td port="0" align="right">12</td>
+		<td align="left">Ith-izg</td>
+		<td port="0" align="right">14</td>
 	</tr>
 	<tr>
 		<td align="right" bgcolor="Grey95">1</td>
-		<td align="left" bgcolor="Grey95">Ythburz</td>
-		<td port="1" align="right" bgcolor="Grey95">1</td>
+		<td align="left" bgcolor="Grey95">Omedurb</td>
+		<td port="1" align="right" bgcolor="Grey95">6</td>
+	</tr>
+	<tr>
+		<td align="right">2</td>
+		<td align="left">Gratbul</td>
+		<td port="2" align="right">1</td>
 	</tr>
 	<hr/>
 	<tr><td></td></tr>
@@ -208,34 +219,46 @@ In the case where the free-heap is empty, return slab$_0[$size$_0]$. If there's 
 	slots:0 -> slab0;
 	slab0 [label=<
 <table border="0" cellspacing="0">
-	<tr><td align="left"><font color="Gray75">Krihai</font></td></tr>
+	<tr><td align="left"><font color="Gray75">Ith-izg</font></td></tr>
 	<hr/>
-	<tr><td port="0" align="left">Royal</td></tr>
-	<tr><td port="1" align="left" bgcolor="Grey95">Sienna</td></tr>
-	<tr><td port="2" align="left">Salmon</td></tr>
-	<tr><td port="3" align="left" bgcolor="Grey95">Cyan</td></tr>
+	<tr><td port="0" align="left"><font color="Gray50" face="Times-Italic">0</font></td></tr>
+	<tr><td port="1" align="left" bgcolor="Grey95">Olive</td></tr>
+	<tr><td port="2" align="left"><font color="Gray50" face="Times-Italic">2</font></td></tr>
+	<tr><td port="3" align="left" bgcolor="Grey95">Wheat</td></tr>
 	<tr><td port="4" align="left"><font color="Gray50" face="Times-Italic">4</font></td></tr>
-	<tr><td port="5" align="left" bgcolor="Grey95">Wheat</td></tr>
-	<tr><td port="6" align="left">Wheat</td></tr>
+	<tr><td port="5" align="left" bgcolor="Grey95">Yellow</td></tr>
+	<tr><td port="6" align="left">Gold</td></tr>
 	<tr><td port="7" align="left" bgcolor="Grey95"><font color="Gray50" face="Times-Italic">7</font></td></tr>
-	<tr><td port="8" align="left"><font color="Gray50" face="Times-Italic">8</font></td></tr>
-	<tr><td port="9" align="left" bgcolor="Grey95"><font color="Gray50" face="Times-Italic">9</font></td></tr>
-	<tr><td port="10" align="left">Black</td></tr>
-	<tr><td port="11" align="left" bgcolor="Grey95">Blue</td></tr>
+	<tr><td port="8" align="left">Gold</td></tr>
+	<tr><td port="9" align="left" bgcolor="Grey95">Gold</td></tr>
+	<tr><td port="10" align="left"><font color="Gray50" face="Times-Italic">10</font></td></tr>
+	<tr><td port="11" align="left" bgcolor="Grey95"><font color="Gray50" face="Times-Italic">11</font></td></tr>
+	<tr><td port="12" align="left"><font color="Gray50" face="Times-Italic">12</font></td></tr>
+	<tr><td port="13" align="left" bgcolor="Grey95">Tan</td></tr>
 	<hr/>
 	<tr><td></td></tr>
 </table>>];
 	slots:1 -> slab1;
 	slab1 [label=<
 <table border="0" cellspacing="0">
-	<tr><td align="left"><font color="Gray75">Ythburz</font></td></tr>
+	<tr><td align="left"><font color="Gray75">Omedurb</font></td></tr>
+	<hr/>
+	<tr><td align="left"><font face="Times-Italic">count 6</font></td></tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	slots:2 -> slab2;
+	slab2 [label=<
+<table border="0" cellspacing="0">
+	<tr><td align="left"><font color="Gray75">Gratbul</font></td></tr>
 	<hr/>
 	<tr><td align="left"><font face="Times-Italic">count 1</font></td></tr>
 	<hr/>
 	<tr><td></td></tr>
 </table>>];
+	node [fillcolour=red];
 	}
-	\caption{A pool consists of several slabs of packed data managed by an array, and a free-heap for slab$_0$.}
+	\caption{A pool consists of several slabs of packed data managed by an array, and a free-heap for slab$_0$, and reference-counting for the rest.}
 	\label{pool}
 \end{figure}
 
@@ -243,7 +266,7 @@ Figure~\ref{pool} shows a diagram of a pool. This is the {\it free-heap} design 
 
 \subsection{Heap implementation}
 
-This implements an invariant that the end of the list is never deleted. A maximum-heap with which we can compare the data in the maximum position in slab$_0$ on deletion. If it matches, we decrement the max value and pop from the stack until $\text{top} < \text{address}_\text{end}$. The procedure is amortized. For example, in Figure~\ref{pool}, if we deleted the data at slab$_0$, index 6, \code{480\_Ioniagr}, then it would result in successive amortized deletions of all the heap; the $size$ would be 2.
+This implements an invariant that the end of the list is never deleted. A maximum-heap with which we can compare the data in the maximum position in slab$_0$ on deletion. If it matches, we decrement the max value and pop from the stack until $\text{top} < \text{address}_\text{end}$. The procedure is amortized. For example, in Figure~\ref{pool}, if we deleted the data at slab$_0$, index 13, \code{Tan}, then the free heap would also pop-max 12, 11, and 10.
 
 %This can be seen as a form of path-compression\cite{tarjan1979compression}, where the compressed nodes are deleted. But is it?
 

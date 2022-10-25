@@ -71,25 +71,26 @@ static void keyval_to_string(const struct keyval *const kv,
 
 /** For paper. */
 static void special(void) {
-	struct keyval_pool kvp = keyval_pool();
-	struct keyval *kv[30];
-	int is_kv[sizeof kv / sizeof *kv];
+	struct colour_pool pool = colour_pool();
+	enum colour *colour[35];
+	int is[sizeof colour / sizeof *colour];
 	size_t i;
-	for(i = 0; i < sizeof kv / sizeof *kv; i++) kv[i] = 0, is_kv[i] = 0;
-	for(i = 0; i < sizeof kv / sizeof *kv; i++) {
-		if(!(kv[i] = keyval_pool_new(&kvp))) goto finally;
-		keyval_filler(kv[i]);
-		is_kv[i] = 1;
+	for(i = 0; i < sizeof colour / sizeof *colour; i++) colour[i] = 0, is[i] = 0;
+	for(i = 0; i < sizeof colour / sizeof *colour; i++) {
+		if(!(colour[i] = colour_pool_new(&pool))) goto finally;
+		colour_filler(colour[i]);
+		is[i] = 1;
 	}
-	for(i = 0; i < sizeof kv / sizeof *kv; i++) {
-		size_t r = (size_t)rand() / (RAND_MAX / (sizeof kv / sizeof *kv) + 1);
-		if(!is_kv[r]) continue;
-		if(!keyval_pool_remove(&kvp, kv[r])) goto finally;
-		is_kv[r] = 0;
+	for(i = 0; i < sizeof colour / sizeof *colour; i++) {
+		size_t r = (size_t)rand()
+			/ (RAND_MAX / (sizeof colour / sizeof *colour) + 1);
+		if(!is[r]) continue;
+		if(!colour_pool_remove(&pool, colour[r])) goto finally;
+		is[r] = 0;
 	}
 finally:
-	pool_keyval_graph(&kvp, "graph/kvpool.gv");
-	keyval_pool_(&kvp);
+	pool_colour_graph(&pool, "graph/paper.gv");
+	colour_pool_(&pool);
 }
 
 

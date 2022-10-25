@@ -28,17 +28,20 @@ static void PP_(graph)(const struct P_(pool) *const pool,
 		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
 		" fontname=modern];\n"
 		"\tnode [shape=none, fontname=modern];\n");
+	/* Free heap. */
 	if(!pool->free0.as_array.size) goto no_free0;
 	for(i = 0; i < pool->free0.as_array.size; i++) {
 		fprintf(fp, "\tfree0_%lu [label=<<font color=\"Gray50\""
 			" face=\"Times-Italic\">%lu</font>>, width=0, height=0,"
-			" margin=0.05];\n", i, pool->free0.as_array.data[i]);
+			" margin=0.03, shape=circle, style=filled, fillcolor=\"Gray95\"];\n",
+			i, pool->free0.as_array.data[i]);
 		if(i) fprintf(fp, "\tfree0_%lu -> free0_%lu [dir=back];\n",
 			i, (unsigned long)((i - 1) / 2));
 	}
-	fprintf(fp, "\t{rank=same; pool; free0_0; }\n"
-		"\tpool:free -> free0_0;\n");
+	fprintf(fp, "\t{rank=same; free0_0; pool; slots; }\n"
+		"\tfree0_0 -> pool:free [dir=back];\n");
 no_free0:
+	/* Top label. */
 	fprintf(fp, "\tpool [label=<\n"
 		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td colspan=\"3\" align=\"left\">"
@@ -46,29 +49,29 @@ no_free0:
 		"&gt;pool: " QUOTE(POOL_TYPE) "</font></td></tr>\n"
 		"\t<hr/>\n"
 		"\t<tr>\n"
-		"\t\t<td border=\"0\" align=\"right\">"
-		"capacity0</td>\n"
-		"\t\t<td border=\"0\">&#8205;</td>\n"
-		"\t\t<td border=\"0\" align=\"right\">%lu</td>\n"
-		"\t</tr>\n", (unsigned long)pool->capacity0);
-	fprintf(fp, "\t<tr>\n"
-		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Gray95\">slots</td>\n"
-		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Gray95\">%lu</td>\n"
-		"\t\t<td port=\"slots\" border=\"0\" align=\"right\" "
-		"bgcolor=\"Gray95\">%lu</td>\n"
-		"\t</tr>\n"
-		"\t<tr>\n"
 		"\t\t<td border=\"0\" align=\"right\">freeheap0</td>\n"
 		"\t\t<td border=\"0\" align=\"right\">%lu</td>\n"
 		"\t\t<td port=\"free\" border=\"0\" align=\"right\">%lu</td>\n"
+		"\t</tr>\n"
+		"\t<tr>\n"
+		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Gray95\">capacity0</td>\n"
+		"\t\t<td border=\"0\" bgcolor=\"Gray95\"></td>\n"
+		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Gray95\">%lu</td>\n"
+		"\t</tr>\n",
+		(unsigned long)pool->free0.as_array.size,
+		(unsigned long)pool->free0.as_array.capacity,
+		(unsigned long)pool->capacity0);
+	fprintf(fp, "\t<tr>\n"
+		"\t\t<td border=\"0\" align=\"right\">slots</td>\n"
+		"\t\t<td border=\"0\" align=\"right\">%lu</td>\n"
+		"\t\t<td port=\"slots\" border=\"0\" align=\"right\">%lu</td>\n"
 		"\t</tr>\n"
 		"\t<hr/>\n"
 		"\t<tr><td></td></tr>\n"
 		"</table>>];\n",
 		(unsigned long)pool->slots.size,
-		(unsigned long)pool->slots.capacity,
-		(unsigned long)pool->free0.as_array.size,
-		(unsigned long)pool->free0.as_array.capacity);
+		(unsigned long)pool->slots.capacity);
+	/* Slots. */
 	if(!pool->slots.data) goto no_slots;
 	fprintf(fp, "\tpool:slots -> slots;\n"
 		"\tslots [label = <\n"
