@@ -281,8 +281,10 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 	return slot0->slab + slot0->size++;
 }
 
-/** Deletes `data` from `pool`. Do not remove data that is not in `pool`.
- @return Success. @order \O(\log \log `items`) (maybe?) @allow */
+/** Deletes `data` from `pool`. (Do not remove data that is not in `pool`.)
+ @return Success. @order \O(\log (`slab0-free-heap` | `slabs`))
+ @throws[malloc] Because of lazy deletion, remove can actually demand memory
+ when `data` requires adding to the free-heap. @allow */
 static int P_(pool_remove)(struct P_(pool) *const pool,
 	PP_(type) *const data) { return PP_(remove)(pool, data); }
 

@@ -129,12 +129,14 @@ This pointer is constant until it gets [&lt;P&gt;pool_remove](#user-content-fn-9
 
 <code>static int <strong>&lt;P&gt;pool_remove</strong>(struct &lt;P&gt;pool *const <em>pool</em>, &lt;PP&gt;type *const <em>data</em>)</code>
 
-Deletes `data` from `pool`\. Do not remove data that is not in `pool`\.
+Deletes `data` from `pool`\. \(Do not remove data that is not in `pool`\.\)
 
  * Return:  
    Success\.
+ * Exceptional return: malloc  
+   Because of lazy deletion, remove can actually demand memory when `data` requires adding to the free\-heap\.
  * Order:  
-   &#927;\(log log `items`\) \(maybe?\)
+   &#927;\(log \(`slab0-free-heap` | `slabs`\)\)
 
 
 

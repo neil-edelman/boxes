@@ -189,13 +189,15 @@
 
 <p><code>static int <strong>&lt;P&gt;pool_remove</strong>(struct &lt;P&gt;pool *const <em>pool</em>, &lt;PP&gt;type *const <em>data</em>)</code></p>
 
-<p>Deletes <code>data</code> from <code>pool</code>. Do not remove data that is not in <code>pool</code>.</p>
+<p>Deletes <code>data</code> from <code>pool</code>. (Do not remove data that is not in <code>pool</code>.)</p>
 
 <dl>
 	<dt>Return:</dt>
 	<dd>Success.</dd>
+	<dt>Exceptional return: malloc</dt>
+	<dd>Because of lazy deletion, remove can actually demand memory when <code>data</code> requires adding to the free-heap.</dd>
 	<dt>Order:</dt>
-	<dd>&#927;(log log <code>items</code>) (maybe?)</dd>
+	<dd>&#927;(log (<code>slab0-free-heap</code> | <code>slabs</code>))</dd>
 </dl>
 
 </div>
