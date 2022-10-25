@@ -18,11 +18,9 @@
 struct permute_listlink;
 static void permute_to_string(const struct permute_listlink *const p,
 	char (*const z)[12]) { orc_ptr(*z, sizeof *z, p); }
-static void permute_fill(struct permute_listlink *const p) { (void)(p); }
+static void permute_filler(struct permute_listlink *const p) { (void)(p); }
 #define LIST_NAME permute
 #define LIST_TEST &permute_fill
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
 #define LIST_TO_STRING &permute_to_string
 #include "../src/list.h"
 
@@ -44,20 +42,15 @@ static struct permute_listlink *permute_from_pool(void *const vpool) {
  which is mostly what one wants. */
 struct no_listlink;
 static void no_to_string(const struct no_listlink *, char (*)[12]);
-static void no_fill(struct no_listlink *);
+static void no_filler(struct no_listlink *);
 static int no_compare(const struct no_listlink *, const struct no_listlink *);
 #define LIST_NAME no
 #define LIST_TEST &no_fill
-#define LIST_EXPECT_TRAIT
+#define LIST_COMPARE
+#define LIST_TO_STRING
 #include "../src/list.h"
-#define LIST_COMPARE &no_compare
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
-#define LIST_TO_STRING &no_to_string
-#include "../src/list.h"
-
 /** Stick it inside a `no`. */
-struct no { struct no_listlink link; int i, unused; };
+struct no { struct no_listlink link; int i; };
 /** Can do this because `nl` is the first field in <tag:no>. */
 static void no_to_string(const struct no_listlink *const nl,
 	char (*const a)[12]) {
@@ -70,11 +63,10 @@ static int no_compare(const struct no_listlink *const al,
 		*const b = (const struct no *)bl;
 	return (a->i > b->i) - (b->i > a->i);
 }
-static void no_fill(struct no_listlink *const nl) {
+static void no_filler(struct no_listlink *const nl) {
 	struct no *const n = (struct no *)nl;
 	n->i = rand() / (RAND_MAX / 100/*000*/ + 1);
 }
-
 /* Pool is convenient to store <tag:no>. */
 #define POOL_NAME no
 #define POOL_TYPE struct no
@@ -87,6 +79,7 @@ static struct no_listlink *no_from_pool(void *const vns) {
 }
 
 
+#if 0
 /* 26 items is for testing binary-operations. */
 struct letter_listlink;
 static void letter_to_string(const struct letter_listlink *, char (*)[12]);
@@ -1083,4 +1076,11 @@ int main(void) {
 	skips_tests();
 	animals_tests();
 	return EXIT_SUCCESS;
+}
+#endif
+
+int main(void) {
+	struct permutelink_pool permutes = permutelink_pool();
+	permute_list_test(&permute_from_pool, &permutes),
+		permutelink_pool_(&permutes);
 }

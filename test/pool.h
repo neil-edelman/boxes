@@ -10,11 +10,13 @@
  ![Example of Pool](../doc/pool.png)
 
  <tag:<P>pool> is a memory pool that stores only one type, <typedef:<PP>type>,
- using [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation).
- A free-heap in the active-slab allows random-access insertions and deletions.
- Pointers to valid items in the pool are stable, but not generally in any
- order. When removal is ongoing and uniformly sampled while reaching a
- steady-state size, it will eventually settle in one contiguous region.
+ using [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation). As
+ <Bonwick, 1994, Slab>, it helps reduce internal fragmentation from repeated
+ allocation and destruction by caching contiguous blocks. A free-heap in the
+ active-slab allows random-access insertions and deletions. Pointers to valid
+ items in the pool are stable. If removal is ongoing and uniformly sampled
+ while reaching a steady-state size, it will eventually settle in one
+ contiguous region.
 
  @param[POOL_NAME, POOL_TYPE]
  `<P>` that satisfies `C` naming conventions when mangled and a valid tag type,
@@ -32,19 +34,10 @@
  this is not very useful except for debugging. */
 
 #if !defined(POOL_NAME) || !defined(POOL_TYPE)
-#error Name POOL_NAME undefined or tag type POOL_TYPE undefined.
+#error Name or tag type undefined.
 #endif
-#if defined(POOL_TO_STRING_NAME) || defined(POOL_TO_STRING)
-#define POOL_TO_STRING_TRAIT 1
-#else
-#define POOL_TO_STRING_TRAIT 0
-#endif
-#define POOL_TRAITS POOL_TO_STRING_TRAIT
-#if POOL_TRAITS > 1
-#error Only one trait per include is allowed; use POOL_EXPECT_TRAIT.
-#endif
-#if defined(POOL_TO_STRING_NAME) && !defined(POOL_TO_STRING)
-#error POOL_TO_STRING_NAME requires POOL_TO_STRING.
+#if defined(POOL_TEST) && !defined(POOL_TO_STRING)
+#error Test requires to string.
 #endif
 
 #ifndef POOL_H /* <!-- idempotent */
@@ -61,22 +54,19 @@
 #define P_(n) POOL_CAT(POOL_NAME, n)
 #define PP_(n) POOL_CAT(pool, P_(n))
 /** @return An order on `a`, `b` which specifies a max-heap. */
-static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
+static int poolfree_compare(const size_t a, const size_t b) { return a < b; }
 #define HEAP_NAME poolfree
 #define HEAP_TYPE size_t
-#define HEAP_COMPARE &pool_index_compare
+#define HEAP_COMPARE &poolfree_compare
 #include "heap.h"
 #if !defined(__STDC__) || !defined(__STDC_VERSION__) \
 	|| __STDC_VERSION__ < 199901L /* < C99 */
-#define POOL_PTR (const void *)
+#define POOL_CAST (const void *)
 #else /* < C99 --><!-- >= C99 */
 #include <stdint.h>
-#define POOL_PTR (const uintptr_t)(const void *)
+#define POOL_CAST (const uintptr_t)(const void *)
 #endif /* >= C99 --> */
 #endif /* idempotent --> */
-
-
-#if POOL_TRAITS == 0 /* <!-- base code */
 
 
 /* Undocumented: set the initial size. */
@@ -89,7 +79,6 @@ static int pool_index_compare(const size_t a, const size_t b) { return a < b; }
 
 /** A valid tag type set by `POOL_TYPE`. */
 typedef POOL_TYPE PP_(type);
-typedef const POOL_TYPE PP_(type_c);
 
 /* Goes into a slab-sorted array. */
 struct PP_(slot) { size_t size; PP_(type) *slab; };
@@ -108,26 +97,20 @@ struct P_(pool) {
 	size_t capacity0; /* Capacity of slab-zero. */
 };
 
-#define BOX_CONTENT PP_(type_c) *
 /** Is `x` not null? @implements `is_content` */
-static int PP_(is_element_c)(PP_(type_c) *const x) { return !!x; }
+static int PP_(is_element)(PP_(type) *const x) { return !!x; }
 /* It is very useful in debugging, is required for `BOX_CONTENT`. Only iterates
- on `slot0` and ignores the free-heap. We don't have enough information to do
- otherwise, since (presumably) the memory address is in local variables and
- will be freed (hopefully.) Unreliable. */
-struct PP_(forward) { struct PP_(slot) *slot0; size_t i; };
+ on `slot0` and ignores the free-heap. This is a memory-manager, we don't have
+ enough information to do otherwise. */
+struct PP_(iterator) { struct PP_(slot) *slot0; size_t i; };
 /** @return Before `p`. @implements `forward` */
-static struct PP_(forward) PP_(forward)(const struct P_(pool) *const p)
-	{ struct PP_(forward) it; it.slot0 = p && p->slots.size
+static struct PP_(iterator) PP_(iterator)(const struct P_(pool) *const p)
+	{ struct PP_(iterator) it; it.slot0 = p && p->slots.size
 	? p->slots.data + 0 : 0, it.i = 0; return it; }
 /** Move to next `it`. @return Element or null. @implements `next_c` */
-static PP_(type_c) *PP_(next_c)(struct PP_(forward) *const it)
+static PP_(type) *PP_(next)(struct PP_(iterator) *const it)
 	{ return assert(it), it->slot0 && it->i < it->slot0->size
 	? it->slot0->slab + it->i++ : 0; }
-
-/* Box override information. */
-#define BOX_ PP_
-#define BOX struct P_(pool)
 
 /** @return Index of slot that is higher than `x` in `slots`, but treating zero
  as special. @order \O(\log `slots`) */
@@ -143,9 +126,9 @@ static size_t PP_(upper)(const struct PP_(slot_array) *const slots,
 	for(b0 = 1, --n; n; n /= 2) {
 		b1 = b0 + n / 2;
 		/* Cast to `void *` then `uintptr_t` if available. */
-		if(POOL_PTR x < POOL_PTR base[b1].slab)
+		if(POOL_CAST x < POOL_CAST base[b1].slab)
 			{ continue; }
-		else if(POOL_PTR base[b1 + 1].slab <= POOL_PTR x)
+		else if(POOL_CAST base[b1 + 1].slab <= POOL_CAST x)
 			{ b0 = b1 + 1; n--; continue; }
 		else
 			{ return b1 + 1; }
@@ -181,16 +164,16 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	size_t c, insert;
 	int is_recycled = 0;
 	assert(pool && min_size <= max_size && pool->capacity0 <= max_size &&
-		(!pool->slots.size && !pool->free0._.size /* !slots[0] -> !free0 */
-		|| pool->slots.size && base
+		(!pool->slots.size && !pool->free0.as_array.size
+		|| pool->slots.size && base /* !slots[0] -> !free0 */
 		&& base[0].size <= pool->capacity0
-		&& (!pool->free0._.size
-		|| pool->free0._.size < base[0].size
-		&& pool->free0._.data[0] < base[0].size)));
+		&& (!pool->free0.as_array.size
+		|| pool->free0.as_array.size < base[0].size
+		&& pool->free0.as_array.data[0] < base[0].size)));
 
 	/* Ensure space for new slot. */
 	if(!n || pool->slots.size && n <= pool->capacity0
-		- base[0].size + pool->free0._.size) return 1; /* Already enough. */
+		- base[0].size + pool->free0.as_array.size) return 1; /* Enough. */
 	if(max_size < n) return errno = ERANGE, 1; /* Request unsatisfiable. */
 	if(!PP_(slot_array_buffer)(&pool->slots, 1)) return 0;
 	base = pool->slots.data; /* It may have moved! */
@@ -283,13 +266,13 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 	struct PP_(slot) *slot0;
 	assert(pool);
 	if(!PP_(buffer)(pool, 1)) return 0;
-	assert(pool->slots.size && (pool->free0._.size ||
+	assert(pool->slots.size && (pool->free0.as_array.size ||
 		pool->slots.data[0].size < pool->capacity0));
 	if(poolfree_heap_size(&pool->free0)) {
 		/* Cheating: we prefer the minimum index from a max-heap, but it
 		 doesn't really matter, so take the one off the array used for heap. */
 		size_t *free;
-		free = heap_poolfree_node_array_pop(&pool->free0._);
+		free = heap_poolfree_node_array_pop(&pool->free0.as_array);
 		return assert(free), pool->slots.data[0].slab + *free;
 	}
 	/* The free-heap is empty; guaranteed by <fn:<PP>buffer>. */
@@ -299,7 +282,7 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 }
 
 /** Deletes `data` from `pool`. Do not remove data that is not in `pool`.
- @return Success. @order \O(\log \log `items`) @allow */
+ @return Success. @order \O(\log \log `items`) (maybe?) @allow */
 static int P_(pool_remove)(struct P_(pool) *const pool,
 	PP_(type) *const data) { return PP_(remove)(pool, data); }
 
@@ -308,7 +291,7 @@ static int P_(pool_remove)(struct P_(pool) *const pool,
 static void P_(pool_clear)(struct P_(pool) *const pool) {
 	struct PP_(slot) *s, *s_end;
 	assert(pool);
-	if(!pool->slots.size) { assert(!pool->free0._.size); return; }
+	if(!pool->slots.size) { assert(!pool->free0.as_array.size); return; }
 	for(s = pool->slots.data + 1, s_end = s - 1 + pool->slots.size;
 		s < s_end; s++) assert(s->slab && s->size), free(s->slab);
 	pool->slots.data[0].size = 0;
@@ -316,59 +299,39 @@ static void P_(pool_clear)(struct P_(pool) *const pool) {
 	poolfree_heap_clear(&pool->free0);
 }
 
-#ifdef POOL_TEST /* <!-- test */
-/* Forward-declare. */
-static void (*PP_(to_string))(const PP_(type) *, char (*)[12]);
-static const char *(*PP_(pool_to_string))(const struct P_(pool) *);
-#include "../test/test_pool.h"
-#endif /* test --> */
-
 static void PP_(unused_base_coda)(void);
 static void PP_(unused_base)(void) {
-	PP_(is_element_c)(0); PP_(forward)(0); PP_(next_c)(0);
+	PP_(is_element)(0); PP_(iterator)(0); PP_(next)(0);
 	P_(pool)(); P_(pool_)(0); P_(pool_buffer)(0, 0); P_(pool_new)(0);
 	P_(pool_remove)(0, 0); P_(pool_clear)(0); PP_(unused_base_coda)();
 }
 static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 
+/* Box override information. */
+#define BOX_TYPE struct P_(pool)
+#define BOX_CONTENT PP_(type) *
+#define BOX_ PP_
+#define BOX_MAJOR_NAME pool
+#define BOX_MINOR_NAME POOL_NAME
 
-#elif defined(POOL_TO_STRING) /* base code --><!-- to string trait */
 
-
-#ifdef POOL_TO_STRING_NAME /* <!-- name */
-#define STR_(n) POOL_CAT(P_(pool), POOL_CAT(POOL_TO_STRING_NAME, n))
-#else /* name --><!-- !name */
-#define STR_(n) POOL_CAT(P_(pool), n)
-#endif /* !name --> */
-#define TO_STRING POOL_TO_STRING
+#ifdef POOL_TO_STRING /* <!-- string */
 #include "to_string.h"
-#ifdef POOL_TEST /* <!-- expect: greedy satisfy forward-declared. */
-#undef POOL_TEST
-static PSTR_(to_string_fn) PP_(to_string) = PSTR_(to_string);
-static const char *(*PP_(pool_to_string))(const struct P_(pool) *)
-	= &STR_(to_string);
-#endif /* expect --> */
-#undef STR_
 #undef POOL_TO_STRING
-#ifdef POOL_TO_STRING_NAME
-#undef POOL_TO_STRING_NAME
 #endif
 
 
-#endif /* traits --> */
+#ifdef POOL_TEST /* <!-- test */
+#include "../test/test_pool.h"
+#undef POOL_TEST
+#endif /* test --> */
 
 
-#ifdef POOL_EXPECT_TRAIT /* <!-- trait */
-#undef POOL_EXPECT_TRAIT
-#else /* trait --><!-- !trait */
-#ifdef POOL_TEST
-#error No POOL_TO_STRING traits defined for POOL_TEST.
-#endif
+#undef BOX_TYPE
+#undef BOX_CONTENT
+#undef BOX_
+#undef BOX_MAJOR_NAME
+#undef BOX_MINOR_NAME
 #undef POOL_NAME
 #undef POOL_TYPE
-#undef BOX_
-#undef BOX
-#undef BOX_CONTENT
-#endif /* !trait --> */
-#undef POOL_TO_STRING_TRAIT
-#undef POOL_TRAITS
+#undef POOL_SLAB_MIN_CAPACITY

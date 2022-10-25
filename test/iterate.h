@@ -3,25 +3,15 @@
 
  @subtitle Iterate trait
 
- Interface defined by `BOX_`, `BOX`, `BOX_CONTENT`, and `BOX_ITERATOR`.
-
- @param[ITR_]
- A one-argument macro producing a name that is responsible for the name of the
- functions. Should be something like `ITR_(x) -> foo_widget_x`. The caller is
- responsible for undefining `ITR_`.
+ Interface defined by box. Singleton.
 
  @std C89 */
-/**
- @param[HAVE_ITERATE_H]
- The `<ITR>` functions need this value. This includes <src/iterate.h>, which
- take no parameters. Some functions may only be available for some boxes. This
- does not expire after box completion.
- */
+/** <src/iterate.h>: defining `HAVE_ITERATE_H` supplies `<ITR>` functions for
+ all boxes that support them. Is not a trait, adds a fixed amount of functions
+ for all boxes. */
 
-/* `BOX_CONTENT`: is_element_c, forward, next_c.
- `BOX_ITERATOR`: is_element, iterator, next */
-#if !defined(BOX_) || !defined(BOX) || !defined(BOX_CONTENT) \
-	|| !defined(BOX_ITERATOR) || !defined(ITR_)
+#if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
+	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME)
 #error Unexpected preprocessor symbols.
 #endif
 
@@ -29,37 +19,43 @@
 #define ITERATE_H
 #include <stddef.h>
 #include <limits.h>
-#if defined(ITERATE_CAT_) || defined(ITERATE_CAT) || defined(PITR_)
-#error Unexpected defines.
+#if defined(ITERATE_CAT_) || defined(ITERATE_CAT) || defined(ITR_) \
+	|| defined(PITR_)
+#error Unexpected preprocessor symbols.
 #endif
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #define ITERATE_CAT_(n, m) n ## _ ## m
 #define ITERATE_CAT(n, m) ITERATE_CAT_(n, m)
+#define ITR_(n) ITERATE_CAT(ITERATE_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), n)
 #define PITR_(n) ITERATE_CAT(iterate, ITR_(n))
 #endif /* idempotent --> */
 
-typedef BOX PITR_(box);
-typedef BOX_CONTENT PITR_(element_c);
-typedef BOX_ITERATOR PITR_(element);
+typedef BOX_TYPE PITR_(box);
+typedef BOX_CONTENT PITR_(element);
+typedef const BOX_CONTENT PITR_(element_c); /* Sketchy. */
 
 /** <src/iterate.h>: Operates by side-effects. */
 typedef void (*PITR_(action_fn))(PITR_(element));
 /** <src/iterate.h>: Returns a boolean given read-only. */
 typedef int (*PITR_(predicate_fn))(const PITR_(element_c));
-
+/* This is duplicate const? */
 
 /** <src/iterate.h>: Iterates through `box` and calls `predicate` until it
  returns true. @return The first `predicate` that returned true, or, if the
  statement is false on all, null.
  @order \O(`box.size`) \times \O(`predicate`) @allow */
-static PITR_(element) ITR_(any)(PITR_(box) *const box,
+static PITR_(element) ITR_(any)(const PITR_(box) *const box,
 	const PITR_(predicate_fn) predicate) {
 	struct BOX_(iterator) it;
 	PITR_(element) i;
 	assert(box && predicate);
-	for(it = BOX_(iterator)(box); BOX_(is_element)(i = BOX_(next)(&it)); )
-		if(predicate(i)) return i;
-	return 0;
+	{ /* We do not modify `box`, but the compiler doesn't know that. */
+		PITR_(box) *promise_box;
+		memcpy(&promise_box, &box, sizeof box);
+		it = BOX_(iterator)(promise_box);
+	}
+	while(BOX_(is_element)(i = BOX_(next)(&it))) if(predicate(i)) return i;
+	return BOX_(null)();
 }
 
 /** <src/iterate.h>: Iterates through `box` and calls `action` on all the
@@ -104,7 +100,8 @@ static int ITR_(copy_if)(PITR_(box) *restrict const dst,
 	assert(dst && copy && dst != src);
 	if(!src) return 1;
 	for(i = BOX_(at)(src, 0), end = i + BOX_(size)(src); i < end; i++) {
-		if(!(!!rise ^ (difcpy = copy(i)))) continue; /* Not falling/rising. */
+		/* Not falling/rising. */
+		if(!(!!rise ^ (difcpy = copy(i)))) continue;
 		if(difcpy) { /* Rising edge. */
 			assert(!rise);
 			rise = i;
@@ -133,7 +130,8 @@ static void ITR_(keep_if)(PITR_(box) *const box,
 	assert(box && keep);
 	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end;
 		keep0 = keep1, i++) {
-		if(!(keep1 = !!keep(i)) && destruct) destruct(i);
+		if(!(keep1 = !!keep(i)) && destruct)
+			destruct(i);
 		if(!(keep0 ^ keep1)) continue; /* Not a falling/rising edge. */
 		if(keep1) { /* Rising edge. */
 			assert(erase && !retain);
@@ -171,8 +169,10 @@ static void ITR_(trim)(PITR_(box) *const box,
 	if(!predicate) return;
 	right = BOX_(size)(box);
 	first = BOX_(at)(box, 0);
-	while(right && predicate(first + right - 1)) right--;
-	for(left = 0; left < right && predicate(first + left); left++);
+	while(right && predicate(first + right - 1))
+		right--;
+	for(left = 0; left < right
+		&& predicate(first + left); left++);
 	if(right == BOX_(size)(box) && !left) return; /* No change. */
 	assert(left <= right);
 	if(left) memmove(first, first + left, sizeof *first * (right - left));

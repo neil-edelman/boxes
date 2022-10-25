@@ -54,7 +54,7 @@
 
 <p>In parlance of <a href = "https://scholar.google.ca/scholar?q=Thareja+2014%2C+Structures">Thareja 2014, Structures</a>, <a href = "#tag:&lt;L&gt;list">&lt;L&gt;list</a> is a circular header, or sentinel, to a doubly-linked list of <a href = "#tag:&lt;L&gt;listlink">&lt;L&gt;listlink</a>. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list. The links will be generally in a larger container.</p>
 
-</div>
+<a href = "src/iterate.h">src/iterate.h</a>: defining <code>HAVE_ITERATE_H</code> supplies <code>&lt;ITR&gt;</code> functions for all boxes that support them. Is not a trait, adds a fixed amount of functions for all boxes.<a href = "src/to_string.h">src/to_string.h</a>: <code>&lt;STR&gt;</code> trait functions require <code>&lt;name&gt;[&lt;trait&gt;]to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.<a href = "src/compare.h">src/compare.h</a>: <code>&lt;CMP&gt;</code> trait functions require <code>&lt;name&gt;[&lt;trait&gt;]compare</code> to be declared as <a href = "#typedef:&lt;PCMP&gt;compare_fn">&lt;PCMP&gt;compare_fn</a> or <code>&lt;name&gt;[&lt;trait&gt;]is_equal</code> to be declared as <a href = "#typedef:&lt;PCMP&gt;bipredicate_fn">&lt;PCMP&gt;bipredicate_fn</a>, respectfully, (but not both.)</div>
 
 <dl>
 	<dt>Parameter: LIST_NAME</dt>
@@ -65,8 +65,6 @@
 	<dd>Compare trait contained in <a href = "src/list_coda.h">src/list_coda.h</a>. An optional mangled name for uniqueness and a function implementing either <a href = "#typedef:&lt;PCMP&gt;compare_fn">&lt;PCMP&gt;compare_fn</a> or <a href = "#typedef:&lt;PCMP&gt;bipredicate_fn">&lt;PCMP&gt;bipredicate_fn</a>.</dd>
 	<dt>Parameter: LIST_TO_STRING_NAME, LIST_TO_STRING</dt>
 	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>. An optional mangled name for uniqueness and function implementing <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</dd>
-	<dt>Parameter: HAVE_ITERATE_H</dt>
-	<dd>The <code>&lt;ITR&gt;</code> functions need this value. This includes <a href = "src/iterate.h">src/iterate.h</a>, which take no parameters. Some functions may only be available for some boxes. This does not expire after box completion.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 </dl>
@@ -97,9 +95,9 @@
 
 <h3><a id = "typedef:<PSTR>to_string_fn" name = "typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(&lt;PSTR&gt;element_c, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element, char(*)[12]);</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the read-only argument into a 12-<code>char</code> null-terminated output string. The first argument should be a read-only reference to an element and the second a pointer to the bytes.</p>
 
 </div>
 
@@ -107,7 +105,7 @@
 
 <h3><a id = "typedef:<PCMP>bipredicate_fn" name = "typedef:<PCMP>bipredicate_fn">&lt;PCMP&gt;bipredicate_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PCMP&gt;bipredicate_fn</strong>)(const &lt;PCMP&gt;element_c, const &lt;PCMP&gt;element_c);</code></p>
+<p><code>typedef int(*<strong>&lt;PCMP&gt;bipredicate_fn</strong>)(&lt;PCMP&gt;element_c restrict, &lt;PCMP&gt;element_c restrict);</code></p>
 
 <p><a href = "src/compare.h">src/compare.h</a>: Returns a boolean given two read-only elements.</p>
 
@@ -129,7 +127,7 @@
 
 <p><code>typedef int(*<strong>&lt;PCMP&gt;biaction_fn</strong>)(&lt;PCMP&gt;element restrict, &lt;PCMP&gt;element restrict);</code></p>
 
-<p><a href = "src/compare.h">src/compare.h</a>, <code>BOX_ITERATOR</code>: Returns a boolean given two modifiable arguments.</p>
+<p><a href = "src/compare.h">src/compare.h</a>: Returns a boolean given two modifiable arguments.</p>
 
 </div>
 
@@ -416,7 +414,7 @@
 
 <h3><a id = "fn:<ITR>any" name = "fn:<ITR>any">&lt;ITR&gt;any</a></h3>
 
-<p><code>static &lt;PITR&gt;element <strong>&lt;ITR&gt;any</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code></p>
+<p><code>static &lt;PITR&gt;element <strong>&lt;ITR&gt;any</strong>(const &lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code></p>
 
 <p><a href = "src/iterate.h">src/iterate.h</a>: Iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
 
@@ -528,7 +526,7 @@
 
 <p><code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;STR&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -560,7 +558,7 @@
 
 <h3><a id = "fn:<CMP>lower_bound" name = "fn:<CMP>lower_bound">&lt;CMP&gt;lower_bound</a></h3>
 
-<p><code>static size_t <strong>&lt;CMP&gt;lower_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;element_c <em>element</em>)</code></p>
+<p><code>static size_t <strong>&lt;CMP&gt;lower_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, &lt;PCMP&gt;element_c <em>element</em>)</code></p>
 
 <p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_ACCESS</code>: <code>box</code> should be partitioned true/false with less-then <code>element</code>.</p>
 
@@ -577,7 +575,7 @@
 
 <h3><a id = "fn:<CMP>upper_bound" name = "fn:<CMP>upper_bound">&lt;CMP&gt;upper_bound</a></h3>
 
-<p><code>static size_t <strong>&lt;CMP&gt;upper_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;element_c <em>element</em>)</code></p>
+<p><code>static size_t <strong>&lt;CMP&gt;upper_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, &lt;PCMP&gt;element_c <em>element</em>)</code></p>
 
 <p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_ACCESS</code>: <code>box</code> should be partitioned false/true with greater-than or equal-to <code>element</code>.</p>
 

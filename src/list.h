@@ -11,53 +11,37 @@
  In parlance of <Thareja 2014, Structures>, <tag:<L>list> is a circular
  header, or sentinel, to a doubly-linked list of <tag:<L>listlink>. This is a
  closed structure, such that with with a pointer to any element, it is possible
- to extract the entire list. The links will be generally in a larger container.
+ to extract the entire list. The links will be generally in a larger container
+ type.
 
  @param[LIST_NAME]
  `<L>` that satisfies `C` naming conventions when mangled; required. `<PL>` is
  private, whose names are prefixed in a manner to avoid collisions.
 
- @param[LIST_EXPECT_TRAIT]
- Do not un-define certain variables for subsequent inclusion in a trait.
+ @param[LIST_COMPARE, LIST_IS_EQUAL]
+ Compare trait contained in <src/compare.h>.
 
- @param[LIST_COMPARE_NAME, LIST_COMPARE, LIST_IS_EQUAL]
- Compare trait contained in <src/list_coda.h>. An optional mangled name for
- uniqueness and a function implementing either <typedef:<PCMP>compare_fn> or
- <typedef:<PCMP>bipredicate_fn>.
+ @param[LIST_TO_STRING]
+ To string trait contained in <src/to_string.h>.
 
- @param[LIST_TO_STRING_NAME, LIST_TO_STRING]
- To string trait contained in <src/to_string.h>. An optional mangled name for
- uniqueness and function implementing <typedef:<PSTR>to_string_fn>.
+ @param[LIST_EXPECT_TRAIT, LIST_TRAIT]
+ Named traits are obtained by including `array.h` multiple times with
+ `LIST_EXPECT_TRAIT` and then subsequently including the name in `LIST_TRAIT`.
 
  @std C89 */
 
 #ifndef LIST_NAME
-#error Name LIST_NAME undefined.
+#error Name undefined.
 #endif
-#if defined(LIST_TO_STRING_NAME) || defined(LIST_TO_STRING)
-#define LIST_TO_STRING_TRAIT 1
-#else
-#define LIST_TO_STRING_TRAIT 0
+#if defined(LIST_TRAIT) ^ defined(BOX_TYPE)
+#error LIST_TRAIT name must come after LIST_EXPECT_TRAIT.
 #endif
-#if defined(LIST_COMPARE_NAME) || defined(LIST_COMPARE) \
-	|| defined(LIST_IS_EQUAL)
-#define LIST_COMPARE_TRAIT 1
-#else
-#define LIST_COMPARE_TRAIT 0
+#if defined(LIST_COMPARE) && defined(LIST_IS_EQUAL)
+#error Only one can be defined at a time.
 #endif
-#define LIST_TRAITS LIST_TO_STRING_TRAIT + LIST_COMPARE_TRAIT
-#if LIST_TRAITS > 1
-#error Only one trait per include is allowed; use LIST_EXPECT_TRAIT.
-#endif
-#if LIST_TRAITS && !defined(BOX)
-#error Trying to define a trait without defining the base datatype.
-#endif
-#if defined(LIST_TO_STRING_NAME) && !defined(LIST_TO_STRING)
-#error LIST_TO_STRING_NAME requires LIST_TO_STRING.
-#endif
-#if defined(LIST_COMPARE_NAME) \
-	&& (!(!defined(LIST_COMPARE) ^ !defined(LIST_IS_EQUAL)))
-#error LIST_COMPARE_NAME requires LIST_COMPARE or LIST_IS_EQUAL not both.
+#if defined(LIST_TEST) && (!defined(LIST_TRAIT) && !defined(LIST_TO_STRING) \
+	|| defined(LIST_TRAIT) && !defined(LIST_HAS_TO_STRING))
+#error Test requires to string.
 #endif
 
 #ifndef LIST_H /* <!-- idempotent */
@@ -88,13 +72,12 @@ enum list_operation { /* Dummy ensures closed. */
 #endif
 
 
-#if LIST_TRAITS == 0 /* <!-- base code */
+#ifndef LIST_TRAIT /* <!-- base code */
 
 
 /** Storage of this structure is the responsibility of the caller, who must
  provide a stable pointer while in a list. Generally, one encloses this in a
- host `struct` or `union`. The contents of this structure should be treated as
- read-only while in the list.
+ host `struct` or `union`.
 
  ![States.](../doc/node-states.png) */
 struct L_(listlink) { struct L_(listlink) *next, *prev; };
@@ -111,27 +94,13 @@ struct L_(list) {
 	} u;
 };
 
-#define BOX_CONTENT const struct L_(listlink) *
-/** Is `x` not null? @implements `is_content` */
-static int PL_(is_element_c)(const struct L_(listlink) *const x)
-	{ return assert(x ? x->next && x->prev : 1), !!x; }
-/* Since this is a permutation, the iteration is defined by none other then
- itself. @implements `forward` */
-struct PL_(forward) { const struct L_(listlink) *link; };
-/** @return Before `l`. @implements `forward` */
-static struct PL_(forward) PL_(forward)(const struct L_(list) *const l)
-	{ struct PL_(forward) it; it.link = l ? &l->u.as_head.head : 0; return it; }
-/** Move to next `it`. @return Element or null. @implements `next_c` */
-static const struct L_(listlink) *PL_(next_c)(struct PL_(forward) *const
-	it) { struct L_(listlink) *n; assert(it);
-	if(!it->link || !(n = it->link->next)) return 0;
-	return (it->link = n)->next ? n : 0; }
-
-#define BOX_ITERATOR struct L_(listlink) *
+/** Returns null. */
+static struct L_(listlink) *PL_(null)(void) { return 0; }
 /** Is `x` not null? @implements `is_content` */
 static int PL_(is_element)(struct L_(listlink) *const x)
 	{ return assert(x ? x->next && x->prev : 1), !!x; }
-/* @implements `iterator` */
+/* Since this is a permutation, the iteration is defined by none other then
+ itself. @implements `iterator` */
 struct PL_(iterator) { struct L_(listlink) *link; int seen; };
 /** @return A pointer to null in `l`. @implements `iterator` */
 static struct PL_(iterator) PL_(iterator)(struct L_(list) *const l)
@@ -140,33 +109,23 @@ static struct PL_(iterator) PL_(iterator)(struct L_(list) *const l)
 /** Advances `it`. @implements `next` */
 static struct L_(listlink) *PL_(next)(struct PL_(iterator) *const it) {
 	struct L_(listlink) *next; assert(it);
-	if(!it->link) return 0; /* Iterator unattached. */
-	next = it->link->next, assert(next);
-	if(!next->next) { /* End of list; reset. */
-		it->link = &((struct L_(list) *)(void *)((char *)next
-			- offsetof(struct L_(list), u.as_tail.tail)))->u.as_head.head;
-		it->seen = 0;
-		return 0;
-	}
+	if(!it->link || !(next = it->link->next)) return 0; /* Unattached? */
+	if(!next->next) { it->seen = 0; return 0; } /* End of list. */
 	return it->seen = 1, it->link = next;
 }
 /** Reverses `it`. @implements `previous` */
 static struct L_(listlink) *PL_(previous)(struct PL_(iterator) *const it) {
 	struct L_(listlink) *prev; assert(it);
-	if(!it->link) return 0; /* Iterator unattached. */
-	prev = it->link->prev, assert(prev);
-	if(!prev->prev) { /* Beginning of list; reset. */
-		it->link = prev;
-		it->seen = 0;
-		return 0;
-	}
+	if(!it->link || !(prev = it->link->prev)) return 0; /* Unattached? */
+	if(!prev->prev) { it->seen = 0; return 0; } /* Beginning of list. */
 	/* Header has `prev = 0`, special case when must not have seen because
 	 there is nothing to see; (should not enter this state, but recoverable.) */
-	if(it->seen || !it->link->next) it->link = prev;
-	else prev = it->link;
-	return (it->seen = 1), prev;
+	/* if(it->seen || !it->link->next) it->link = prev;
+	else prev = it->link; wtf? */
+	return it->seen = 1, it->link = prev;
 }
-/** Removes the element last returned by `it`. (Untested.)
+#if 0
+/** Removes the element last returned by `it`. (Untested and unused.)
  @return There was an element. @implements `remove` */
 static int PL_(remove)(struct PL_(iterator) *const it) {
 	struct L_(listlink) *n; assert(0 && it);
@@ -177,10 +136,7 @@ static int PL_(remove)(struct PL_(iterator) *const it) {
 	n->next->prev = n->prev;
 	n->prev = n->next = 0;
 }
-
-/* Box override information. */
-#define BOX_ PL_
-#define BOX struct L_(list)
+#endif
 
 /** Cats all `from` (can be null) in front of `after`; `from` will be empty
  after. Careful that `after` is not in `from` because that will just erase the
@@ -197,25 +153,11 @@ static void PL_(move)(struct L_(list) *restrict const from,
 	from->u.flat.prev = &from->u.as_head.head;
 }
 
-/* For those who want to directly iterate. */
-
-/** @return The head of `list` or null. */
-static const struct L_(listlink) *L_(list_head_c)(const struct L_(list) *const
-	list) { const struct L_(listlink) *head; assert(list);
-	head = list->u.flat.next;
-	return head && head->next ? head : 0;
-}
 /** @return The head of `list` or null. */
 static struct L_(listlink) *L_(list_head)(struct L_(list) *const list) {
 	struct L_(listlink) *head; assert(list);
 	head = list->u.flat.next;
 	return head && head->next ? head : 0;
-}
-/** @return The tail of `list` or null. */
-static const struct L_(listlink) *L_(list_tail_c)(const struct L_(list) *const
-	list) { const struct L_(listlink) *tail; assert(list);
-	tail = list->u.flat.prev;
-	return tail && tail->prev ? tail : 0;
 }
 /** @return The tail of `list` or null. */
 static struct L_(listlink) *L_(list_tail)(struct L_(list) *const list) {
@@ -224,19 +166,9 @@ static struct L_(listlink) *L_(list_tail)(struct L_(list) *const list) {
 	return tail && tail->prev ? tail : 0;
 }
 /** @return The previous of `link` or null. */
-static const struct L_(listlink) *L_(list_previous_c)(const struct L_(listlink)
-	*const link) { const struct L_(listlink) *prev;
-	return link && (prev = link->prev) && prev->prev ? prev : 0;
-}
-/** @return The previous of `link` or null. */
 static struct L_(listlink) *L_(list_previous)(struct L_(listlink) *const link) {
 	struct L_(listlink) *prev;
 	return link && (prev = link->prev) && prev->prev ? prev : 0;
-}
-/** @return The next of `link` or null. */
-static const struct L_(listlink) *L_(list_next_c)(const struct L_(listlink)
-	*const link) { const struct L_(listlink) *next;
-	return link && (next = link->next) && next->next ? next : 0;
 }
 /** @return The next of `link` or null. */
 static struct L_(listlink) *L_(list_next)(struct L_(listlink) *const link) {
@@ -315,7 +247,7 @@ static struct L_(listlink) *L_(list_shift)(struct L_(list) *const list) {
 	struct L_(listlink) *node;
 	assert(list && list->u.flat.next);
 	if(!(node = list->u.flat.next)->next) return 0;
-	L_(list_remove)(node);
+	PL_(rm)(node);
 	return node;
 }
 
@@ -325,7 +257,7 @@ static struct L_(listlink) *L_(list_pop)(struct L_(list) *const list) {
 	struct L_(listlink) *node;
 	assert(list && list->u.flat.prev);
 	if(!(node = list->u.flat.prev)->prev) return 0;
-	L_(list_remove)(node);
+	PL_(rm)(node);
 	return node;
 }
 
@@ -362,8 +294,14 @@ static void L_(list_self_correct)(struct L_(list) *const list) {
 	}
 }
 
+/* Box override information. */
+#define BOX_TYPE struct L_(list)
+#define BOX_CONTENT struct L_(listlink) *
+#define BOX_ PL_
+#define BOX_MAJOR_NAME list
+#define BOX_MINOR_NAME LIST_NAME
+
 #ifdef HAVE_ITERATE_H /* <!-- iterate */
-#define ITR_(n) LIST_CAT(L_(list), n)
 #include "iterate.h" /** \include */
 /** HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if
  `predicate` is true.
@@ -379,24 +317,13 @@ static void ITR_(to_if)(struct L_(list) *restrict const from,
 		if(to) L_(list_add_before)(&to->u.as_tail.tail, link);
 	}
 }
-#undef ITR_
 #endif /* iterate --> */
-
-#ifdef LIST_TEST /* <!-- test */
-/* Forward-declare. */
-static void (*PL_(to_string))(const struct L_(listlink) *, char (*)[12]);
-static const char *(*PL_(list_to_string))(const struct L_(list) *);
-#include "../test/test_list.h"
-#endif /* test --> */
 
 static void PL_(unused_base_coda)(void);
 static void PL_(unused_base)(void) {
-	PL_(is_element_c)(0); PL_(forward)(0); PL_(next_c)(0);
-	PL_(is_element)(0); PL_(iterator)(0); PL_(previous)(0); PL_(next)(0);
-	PL_(remove)(0);
-	L_(list_head_c)(0); L_(list_head)(0); L_(list_tail_c)(0); L_(list_tail)(0);
-	L_(list_previous_c)(0); L_(list_previous)(0);
-	L_(list_next_c)(0); L_(list_next)(0);
+	PL_(null)(); PL_(is_element)(0); PL_(iterator)(0); PL_(previous)(0);
+	PL_(next)(0); /*PL_(remove)(0);*/
+	L_(list_head)(0); L_(list_tail)(0); L_(list_previous)(0); L_(list_next)(0);
 	L_(list_clear)(0); L_(list_add_before)(0, 0); L_(list_add_after)(0, 0);
 	L_(list_unshift)(0, 0); L_(list_push)(0, 0); L_(list_remove)(0);
 	L_(list_shift)(0); L_(list_pop)(0); L_(list_to)(0, 0);
@@ -408,45 +335,36 @@ static void PL_(unused_base)(void) {
 }
 static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 
+#endif /* base code --> */
 
-#elif defined(LIST_TO_STRING) /* base code --><!-- to string trait */
+
+#ifdef LIST_TRAIT /* <-- trait: Will be different on different includes. */
+#define BOX_TRAIT_NAME LIST_TRAIT
+#endif /* trait --> */
 
 
-#ifdef LIST_TO_STRING_NAME
-#define STR_(n) LIST_CAT(L_(list), LIST_CAT(LIST_TO_STRING_NAME, n))
-#else
-#define STR_(n) LIST_CAT(L_(list), n)
-#endif
-#define TO_STRING LIST_TO_STRING
+#ifdef LIST_TO_STRING /* <!-- to string trait */
 #include "to_string.h" /** \include */
-#ifdef LIST_TEST /* <!-- expect: greedy satisfy forward-declared. */
-#undef LIST_TEST
-static PSTR_(to_string_fn) PL_(to_string) = PSTR_(to_string);
-static const char *(*PL_(list_to_string))(const struct L_(list) *)
-	= &STR_(to_string);
-#endif /* expect --> */
-#undef STR_
 #undef LIST_TO_STRING
-#ifdef LIST_TO_STRING_NAME
-#undef LIST_TO_STRING_NAME
-#endif
+#define LIST_HAS_TO_STRING
+#endif /* to string trait --> */
 
 
-#else /* to string trait --><!-- compare trait */
+#if defined(LIST_TEST) && !defined(LIST_TRAIT) /* <!-- test base */
+#include "../test/test_list.h"
+#endif /* test base --> */
 
 
-#ifdef LIST_COMPARE_NAME
-#define CMP_(n) LIST_CAT(L_(list), LIST_CAT(LIST_COMPARE_NAME, n))
-#else
-#define CMP_(n) LIST_CAT(L_(list), n)
-#endif
-#ifdef LIST_COMPARE
+#if defined(LIST_COMPARE) || defined(LIST_IS_EQUAL) /* <!-- compare trait */
+#ifdef LIST_COMPARE /* <!-- cmp */
 #define COMPARE LIST_COMPARE
-#else
+#else /* cmp --><!-- eq */
 #define COMPARE_IS_EQUAL LIST_IS_EQUAL
-#endif
+#endif /* eq --> */
 #include "compare.h" /** \include */
-#ifdef LIST_COMPARE /* <!-- compare: override `qsort` -> natural merge sort. */
+
+#ifdef LIST_COMPARE /* <!-- compare: more list-specific compare functions. */
+
 /** Merges `from` into `to`, preferring elements from `to` go in the front.
  @order \O(|`from`| + |`to`|). @allow */
 static void CMP_(merge)(struct L_(list) *restrict const to,
@@ -462,7 +380,7 @@ static void CMP_(merge)(struct L_(list) *restrict const to,
 	from->u.flat.prev->next = to->u.flat.prev->next = 0;
 	/* Merge. */
 	for( ; ; ) {
-		if(PCMP_(compare)(t, f) <= 0) {
+		if(L_(compare)(t, f) <= 0) {
 			t->prev = prev, prev = *x = t, x = &t->next;
 			if(!(t = t->next)) { *x = f; goto from_left; }
 		} else {
@@ -490,7 +408,7 @@ static void PCMP_(merge_runs)(struct L_(listlink) **const head_ptr) {
 		*const prev = a->prev;
 	assert(head_ptr && a && b);
 	for( ; ; ) {
-		if(PCMP_(compare)(a, b) <= 0) {
+		if(L_(compare)(a, b) <= 0) {
 			*x = a, x = &a->next;
 			if(!(a = a->next)) { *x = b; break; }
 		} else {
@@ -508,7 +426,7 @@ static void PCMP_(merge_final)(struct L_(list) *const list,
 		*b = head, *a = head->prev;
 	assert(list && b && a && !a->prev);
 	for( ; ; ) {
-		if(PCMP_(compare)(a, b) <= 0) {
+		if(L_(compare)(a, b) <= 0) {
 			a->prev = prev, prev = *x = a, x = &a->next;
 			if(!(a = a->next)) { a = *x = b; break; }
 		} else {
@@ -538,7 +456,7 @@ static void CMP_(sort)(struct L_(list) *const list) {
 	/* Identify runs of monotonicity until `b` sentinel. */
 	run.count = 0, run.prev = 0, run.head = a;
 	for(c = b->next; c; a = b, b = c, c = c->next) {
-		cmp = PCMP_(compare)(b, a);
+		cmp = L_(compare)(b, a);
 		switch(mono + (0 < cmp) - (cmp < 0)) {
 			/* Valley and mountain inflection. */
 		case INC - 1: a->next = 0; /* _Sic_. */
@@ -602,7 +520,7 @@ static void PCMP_(boolean)(struct L_(list) *restrict const alist,
 		&& (!alist || (alist != blist)));
 	if(a && b) {
 		while(a->next && b->next) {
-			comp = PCMP_(compare)(a, b);
+			comp = L_(compare)(a, b);
 			if(comp < 0) {
 				temp = a, a = a->next;
 				if(op & LIST_SUBTRACTION_AB) {
@@ -679,7 +597,9 @@ static void CMP_(xor_to)(struct L_(list) *restrict const a,
 	struct L_(list) *restrict const b, struct L_(list) *restrict const result)
 	{ PCMP_(boolean)(a, b, result, LIST_SUBTRACTION_AB | LIST_SUBTRACTION_BA
 		| LIST_DEFAULT_A | LIST_DEFAULT_B); }
+
 #endif /* compare --> */
+
 /** Moves all local-duplicates of `from` to the end of `to`.
 
  For example, if `from` is `(A, B, B, A)`, it would concatenate the second
@@ -692,7 +612,7 @@ static void CMP_(duplicates_to)(struct L_(list) *restrict const from,
 	assert(from);
 	if(!(b = a->next)) return;
 	while(b->next) {
-		if(!PCMP_(is_equal)(a, b)) {
+		if(!L_(is_equal)(a, b)) {
 			a = b, b = b->next;
 		} else {
 			temp = b, b = b->next;
@@ -711,39 +631,40 @@ static void PL_(unused_extra_compare)(void) {
 	CMP_(duplicates_to)(0, 0); PL_(unused_extra_compare_coda)();
 }
 static void PL_(unused_extra_compare_coda)(void){ PL_(unused_extra_compare)(); }
+
 #ifdef LIST_TEST /* <!-- test: this detects and outputs compare test. */
-#include "../test/test_list.h"
+#include "../test/test_list_compare.h"
 #endif /* test --> */
 #undef CMP_
-#ifdef LIST_COMPARE_NAME
-#undef LIST_COMPARE_NAME
-#endif
 #ifdef LIST_COMPARE
 #undef LIST_COMPARE
 #endif
 #ifdef LIST_IS_EQUAL
 #undef LIST_IS_EQUAL
 #endif
-
-
-#endif /* traits --> */
+#endif /* compare trait --> */
 
 
 #ifdef LIST_EXPECT_TRAIT /* <!-- trait */
 #undef LIST_EXPECT_TRAIT
-#else /* trait --><!-- !trait */
-#ifdef LIST_TEST
-#error No LIST_TO_STRING traits defined for LIST_TEST.
-#endif
-#undef LIST_NAME
-#undef BOX_
-#undef BOX
+#else /* trait --><!-- done */
+#undef BOX_TYPE
 #undef BOX_CONTENT
-#undef BOX_ITERATOR
+#undef BOX_
+#undef BOX_MAJOR_NAME
+#undef BOX_MINOR_NAME
+#undef LIST_NAME
+#ifdef LIST_HAS_TO_STRING
+#undef LIST_HAS_TO_STRING
+#endif
+#ifdef LIST_TEST
+#undef LIST_TEST
+#endif
 #endif /* !trait --> */
-#undef LIST_TO_STRING_TRAIT
-#undef LIST_COMPARE_TRAIT
-#undef LIST_TRAITS
+#ifdef LIST_TRAIT
+#undef LIST_TRAIT
+#undef BOX_TRAIT_NAME
+#endif
 #ifdef LIST_RESTRICT
 #undef LIST_RESTRICT
 #undef restrict
