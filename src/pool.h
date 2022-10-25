@@ -86,9 +86,8 @@ struct PP_(slot) { size_t size; PP_(type) *slab; };
 #define ARRAY_TYPE struct PP_(slot)
 #include "array.h"
 
-/** This is a slab memory-manager and free-heap for slab zero. A zeroed pool is
- a valid state. To instantiate to an idle state, see <fn:<P>pool>, `{0}`
- (`C99`,) or being `static`.
+/** A zeroed pool is a valid state. To instantiate to an idle state, see
+ <fn:<P>pool>, `{0}` (`C99`,) or being `static`.
 
  ![States.](../doc/states.png) */
 struct P_(pool) {
