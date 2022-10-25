@@ -23,7 +23,6 @@ static void permute_filler(struct permute_listlink *const p) { (void)(p); }
 #define LIST_TEST &permute_fill
 #define LIST_TO_STRING &permute_to_string
 #include "../src/list.h"
-
 /* We have to have some way to store the test data. One could store it however,
  but it must be stable, so vectors (`<A>array`) are a problem. */
 #define POOL_NAME permutelink
@@ -106,7 +105,6 @@ static void letter_filler(struct letter_listlink *const ll) {
 	struct letter *const l = (struct letter *)ll;
 	l->letter = 'A' + (char)(rand() / (RAND_MAX / 26 + 1));
 }
-
 #define POOL_NAME letter
 #define POOL_TYPE struct letter
 #include "pool.h"
@@ -117,59 +115,46 @@ static struct letter_listlink *letter_from_pool(void *const vls) {
 	return &l->link;
 }
 
-#if 0
 
 /** Name is a linked component of panda. */
 struct name_listlink;
 static void name_to_string(const struct name_listlink *, char (*)[12]);
-static void fill_panda_name(struct name_listlink *);
+static void name_filler(struct name_listlink *);
 static int name_compare(const struct name_listlink *,
 	const struct name_listlink *);
 #define LIST_NAME name
-#define LIST_TEST &fill_panda_name
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
-#define LIST_COMPARE &name_compare
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
-#define LIST_TO_STRING &name_to_string
+#define LIST_TEST
+#define LIST_COMPARE
+#define LIST_TO_STRING
 #include "../src/list.h"
 /** Where is a linked component of panda. */
 struct where_listlink;
 static void where_to_string(const struct where_listlink *, char (*)[12]);
-static void fill_panda_where(struct where_listlink *);
+static void where_filler(struct where_listlink *);
 static int where_compare(const struct where_listlink *,
 	const struct where_listlink *);
 #define LIST_NAME where
-#define LIST_TEST &fill_panda_where
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
-#define LIST_COMPARE &where_compare
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
-#define LIST_TO_STRING &where_to_string
+#define LIST_TEST
+#define LIST_COMPARE
+#define LIST_TO_STRING
 #include "../src/list.h"
 /** Ferocity is a linked component of panda. */
 struct fero_listlink;
 static void fero_to_string(const struct fero_listlink *, char (*)[12]);
-static void fill_panda_fero(struct fero_listlink *);
+static void fero_filler(struct fero_listlink *);
 static int fero_compare(const struct fero_listlink *,
 	const struct fero_listlink *);
 #define LIST_NAME fero
-#define LIST_TEST &fill_panda_fero
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
-#define LIST_COMPARE &fero_compare
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
-#define LIST_TO_STRING &fero_to_string
+#define LIST_TEST
+#define LIST_COMPARE
+#define LIST_TO_STRING
 #include "../src/list.h"
 /* A struct containing multiple list nodes. Pandas have a multi-list with three
  permutations at once, with a basic `container_of` in <fn:name_upcast>, _etc_.
  We could even have different lists containing different elements in the same
  structure. */
 struct panda {
-	char name[12], unused[4];
+	char name[12];
 	int where, ferociousness;
 	struct name_listlink name_node;
 	struct where_listlink where_node;
@@ -235,13 +220,13 @@ static void fill_panda(struct panda *const p) {
 	p->where = rand() / (RAND_MAX / 198 + 1) - 99;
 	p->ferociousness = rand() / (RAND_MAX / 11 + 1);
 }
-static void fill_panda_name(struct name_listlink *const name) {
+static void name_filler(struct name_listlink *const name) {
 	fill_panda(name_upcast(name));
 }
-static void fill_panda_where(struct where_listlink *const where) {
+static void where_filler(struct where_listlink *const where) {
 	fill_panda(where_upcast(where));
 }
-static void fill_panda_fero(struct fero_listlink *const fero) {
+static void fero_filler(struct fero_listlink *const fero) {
 	fill_panda(fero_upcast(fero));
 }
 
@@ -279,8 +264,8 @@ static struct panda *panda_from_pool_combined(struct panda_pool *const pool,
 	fero_list_push(f, &p->fero_node);
 	return p;
 }
-static void panda_graph(const struct name_list *const n,
-	const struct where_list *const w, const struct fero_list *const f) {
+static void panda_graph(struct name_list *const n,
+	struct where_list *const w, struct fero_list *const f) {
 	const char *fn = "graph/pandas.gv";
 	FILE *fp;
 	assert(n && w && f);
@@ -316,6 +301,8 @@ static void pandas_tests(void) {
 	panda_pool_(&pandas);
 }
 
+
+#if 0
 
 /* Fixed width skip list. This is probably overkill on the type-safety. */
 struct layer0_listlink;
@@ -1045,15 +1032,15 @@ int main(void) {
 	struct permutelink_pool permutes = permutelink_pool();
 	struct no_pool nos = no_pool();
 	struct letter_pool ls = letter_pool();
-	/*struct panda_pool pandas = panda_pool();
-	struct skip_pool skips = skip_pool();*/
+	struct panda_pool pandas = panda_pool();
+	/*struct skip_pool skips = skip_pool();*/
 	permute_list_test(&permute_from_pool, &permutes),
 		permutelink_pool_(&permutes);
 	no_list_test(&no_from_pool, &nos), no_pool_clear(&nos);
 	no_list_compare_test(&no_from_pool, &nos), no_pool_(&nos);
 	letter_list_test(&letter_from_pool, &ls), letter_pool_clear(&ls);
 	letter_list_compare_test(&letter_from_pool, &ls), letter_pool_(&ls);
-	/*name_list_test(&panda_name_from_pool, &pandas), panda_pool_clear(&pandas);
+	name_list_test(&panda_name_from_pool, &pandas), panda_pool_clear(&pandas);
 	name_list_compare_test(&panda_name_from_pool, &pandas),
 		panda_pool_clear(&pandas);
 	where_list_test(&panda_where_from_pool, &pandas), panda_pool_clear(&pandas);
@@ -1062,14 +1049,14 @@ int main(void) {
 	fero_list_test(&panda_fero_from_pool, &pandas), panda_pool_clear(&pandas);
 	fero_list_compare_test(&panda_fero_from_pool, &pandas),
 		panda_pool_(&pandas);
-	layer0_list_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
+	/*layer0_list_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
 	layer0_list_compare_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
 	layer1_list_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
 	layer1_list_compare_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
 	layer2_list_test(&l2_from_pool, &skips), skip_pool_clear(&skips);
-	layer2_list_compare_test(&l2_from_pool, &skips), skip_pool_(&skips);
+	layer2_list_compare_test(&l2_from_pool, &skips), skip_pool_(&skips);*/
 	pandas_tests();
-	skips_tests();
+	/*skips_tests();
 	animals_tests();*/
 	return EXIT_SUCCESS;
 }
