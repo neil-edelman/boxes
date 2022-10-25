@@ -302,50 +302,36 @@ static void pandas_tests(void) {
 }
 
 
-#if 0
-
-/* Fixed width skip list. This is probably overkill on the type-safety. */
+/* Fixed width skip list. */
 struct layer0_listlink;
-static int l0_compare(const struct layer0_listlink *,
+static int layer0_compare(const struct layer0_listlink *,
 	const struct layer0_listlink *);
-static void l0_to_string(const struct layer0_listlink *, char (*)[12]);
-static void fill_l0(struct layer0_listlink *);
+static void layer0_to_string(const struct layer0_listlink *, char (*)[12]);
+static void layer0_filler(struct layer0_listlink *);
 #define LIST_NAME layer0
-#define LIST_TEST &fill_l0
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
-#define LIST_COMPARE &l0_compare
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
-#define LIST_TO_STRING &l0_to_string
+#define LIST_TEST
+#define LIST_COMPARE
+#define LIST_TO_STRING
 #include "../src/list.h"
 struct layer1_listlink;
-static int l1_compare(const struct layer1_listlink *,
+static int layer1_compare(const struct layer1_listlink *,
 	const struct layer1_listlink *);
-static void l1_to_string(const struct layer1_listlink *, char (*)[12]);
-static void fill_l1(struct layer1_listlink *);
+static void layer1_to_string(const struct layer1_listlink *, char (*)[12]);
+static void layer1_filler(struct layer1_listlink *);
 #define LIST_NAME layer1
-#define LIST_TEST &fill_l1
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
-#define LIST_COMPARE &l1_compare
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
-#define LIST_TO_STRING &l1_to_string
+#define LIST_TEST
+#define LIST_COMPARE
+#define LIST_TO_STRING
 #include "../src/list.h"
 struct layer2_listlink;
-static int l2_compare(const struct layer2_listlink *,
+static int layer2_compare(const struct layer2_listlink *,
 	const struct layer2_listlink *);
-static void l2_to_string(const struct layer2_listlink *, char (*)[12]);
-static void fill_l2(struct layer2_listlink *);
+static void layer2_to_string(const struct layer2_listlink *, char (*)[12]);
+static void layer2_filler(struct layer2_listlink *);
 #define LIST_NAME layer2
-#define LIST_TEST &fill_l2
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
-#define LIST_COMPARE &l2_compare
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
-#define LIST_TO_STRING &l2_to_string
+#define LIST_TEST
+#define LIST_COMPARE
+#define LIST_TO_STRING
 #include "../src/list.h"
 struct skip {
 	struct layer0_listlink l0;
@@ -371,33 +357,33 @@ static struct skip *l2_upcast(struct layer2_listlink *const n)
 static int skip_compare(const struct skip *const a,
 	const struct skip *const b)
 	{ return (a->value > b->value) - (b->value > a->value); }
-static int l0_compare(const struct layer0_listlink *a,
+static int layer0_compare(const struct layer0_listlink *a,
 	const struct layer0_listlink *b)
 	{ return skip_compare(l0_upcast_c(a), l0_upcast_c(b)); }
-static int l1_compare(const struct layer1_listlink *a,
+static int layer1_compare(const struct layer1_listlink *a,
 	const struct layer1_listlink *b)
 	{ return skip_compare(l1_upcast_c(a), l1_upcast_c(b)); }
-static int l2_compare(const struct layer2_listlink *a,
+static int layer2_compare(const struct layer2_listlink *a,
 	const struct layer2_listlink *b)
 	{ return skip_compare(l2_upcast_c(a), l2_upcast_c(b)); }
 static void skip_to_string(const struct skip *const skip,
 	char (*const a)[12]) { sprintf(*a, "%d", skip->value); }
-static void l0_to_string(const struct layer0_listlink *const l0,
+static void layer0_to_string(const struct layer0_listlink *const l0,
 	char (*const a)[12]) { skip_to_string(l0_upcast_c(l0), a); }
-static void l1_to_string(const struct layer1_listlink *const l1,
+static void layer1_to_string(const struct layer1_listlink *const l1,
 	char (*const a)[12]) { skip_to_string(l1_upcast_c(l1), a); }
-static void l2_to_string(const struct layer2_listlink *const l2,
+static void layer2_to_string(const struct layer2_listlink *const l2,
 	char (*const a)[12]) { skip_to_string(l2_upcast_c(l2), a); }
-static void fill_skip(struct skip *const skip) {
+static void skip_filler(struct skip *const skip) {
 	assert(skip);
 	skip->value = (unsigned)rand() / (RAND_MAX / 999 + 1);
 }
-static void fill_l0(struct layer0_listlink *const l0)
-	{ fill_skip(l0_upcast(l0)); }
-static void fill_l1(struct layer1_listlink *const l1)
-	{ fill_skip(l1_upcast(l1)); }
-static void fill_l2(struct layer2_listlink *const l2)
-	{ fill_skip(l2_upcast(l2)); }
+static void layer0_filler(struct layer0_listlink *const l0)
+	{ skip_filler(l0_upcast(l0)); }
+static void layer1_filler(struct layer1_listlink *const l1)
+	{ skip_filler(l1_upcast(l1)); }
+static void layer2_filler(struct layer2_listlink *const l2)
+	{ skip_filler(l2_upcast(l2)); }
 
 #define POOL_NAME skip
 #define POOL_TYPE struct skip
@@ -432,7 +418,7 @@ static void skip_clear(struct skip_list *const skip) {
 	layer2_list_clear(&skip->l2list);
 }
 /* See <graph/skip.gv>. */
-static void skip_graph(const struct skip_list *const skip) {
+static void skip_graph(struct skip_list *const skip) {
 	const char *fn = "graph/skip.gv";
 	FILE *fp;
 	assert(skip);
@@ -467,22 +453,22 @@ static void skips_tests(void) {
 		struct layer1_listlink *l1, *l1_pr, *l1_lim;
 		struct layer0_listlink *l0, *l0_pr, *l0_lim;
 		if(!skip) { assert(0); goto finally; }
-		fill_skip(skip);
+		skip_filler(skip);
 		/* Find the order. */
 		for(l2 = 0, l2_pr = layer2_list_head(&s.l2list);
-			l2_pr && l2_compare(&skip->l2, l2_pr) > 0;
+			l2_pr && layer2_compare(&skip->l2, l2_pr) > 0;
 			l2 = l2_pr, l2_pr = layer2_list_next(l2_pr));
 		l1 = l2 ? &l2_upcast(l2)->l1 : 0;
 		l1_lim = l2_pr ? &l2_upcast(l2_pr)->l1 : 0;
 		for(l1_pr = l1 ? layer1_list_next(l1) : layer1_list_head(&s.l1list);
 			l1_pr && (l1_lim ? l1_pr != l1_lim : 1)
-			&& l1_compare(&skip->l1, l1_pr) > 0;
+			&& layer1_compare(&skip->l1, l1_pr) > 0;
 			l1 = l1_pr, l1_pr = layer1_list_next(l1_pr));
 		l0 = l1 ? &l1_upcast(l1)->l0 : 0;
 		l0_lim = l1_pr ? &l1_upcast(l1_pr)->l0 : 0;
 		for(l0_pr = l0 ? layer0_list_next(l0) : layer0_list_head(&s.l0list);
 			l0_pr && (l0_lim ? l0_pr != l0_lim : 1)
-			&& l0_compare(&skip->l0, l0_pr) > 0;
+			&& layer0_compare(&skip->l0, l0_pr) > 0;
 			l0 = l0_pr, l0_pr = layer0_list_next(l0_pr));
 		/* Since we have a fixed number of lists,
 		 \> n = \log_{1/p} size
@@ -506,6 +492,7 @@ finally:
 }
 
 
+#if 0
 /* Animals, see <../web/animals.gv>. Id is the list that holds all the animals
  together. */
 struct id_listlink;
@@ -1033,7 +1020,7 @@ int main(void) {
 	struct no_pool nos = no_pool();
 	struct letter_pool ls = letter_pool();
 	struct panda_pool pandas = panda_pool();
-	/*struct skip_pool skips = skip_pool();*/
+	struct skip_pool skips = skip_pool();
 	permute_list_test(&permute_from_pool, &permutes),
 		permutelink_pool_(&permutes);
 	no_list_test(&no_from_pool, &nos), no_pool_clear(&nos);
@@ -1049,14 +1036,14 @@ int main(void) {
 	fero_list_test(&panda_fero_from_pool, &pandas), panda_pool_clear(&pandas);
 	fero_list_compare_test(&panda_fero_from_pool, &pandas),
 		panda_pool_(&pandas);
-	/*layer0_list_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
+	layer0_list_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
 	layer0_list_compare_test(&l0_from_pool, &skips), skip_pool_clear(&skips);
 	layer1_list_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
 	layer1_list_compare_test(&l1_from_pool, &skips), skip_pool_clear(&skips);
 	layer2_list_test(&l2_from_pool, &skips), skip_pool_clear(&skips);
-	layer2_list_compare_test(&l2_from_pool, &skips), skip_pool_(&skips);*/
+	layer2_list_compare_test(&l2_from_pool, &skips), skip_pool_(&skips);
 	pandas_tests();
-	/*skips_tests();
-	animals_tests();*/
+	skips_tests();
+	/*animals_tests();*/
 	return EXIT_SUCCESS;
 }
