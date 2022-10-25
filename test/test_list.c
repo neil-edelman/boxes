@@ -45,7 +45,7 @@ static void no_to_string(const struct no_listlink *, char (*)[12]);
 static void no_filler(struct no_listlink *);
 static int no_compare(const struct no_listlink *, const struct no_listlink *);
 #define LIST_NAME no
-#define LIST_TEST &no_fill
+#define LIST_TEST
 #define LIST_COMPARE
 #define LIST_TO_STRING
 #include "../src/list.h"
@@ -79,23 +79,17 @@ static struct no_listlink *no_from_pool(void *const vns) {
 }
 
 
-#if 0
 /* 26 items is for testing binary-operations. */
 struct letter_listlink;
 static void letter_to_string(const struct letter_listlink *, char (*)[12]);
-static void letter_fill(struct letter_listlink *);
+static void letter_filler(struct letter_listlink *);
 static int letter_compare(const struct letter_listlink *,
 	const struct letter_listlink *);
 #define LIST_NAME letter
-#define LIST_TEST &letter_fill
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
+#define LIST_TEST
 #define LIST_COMPARE &letter_compare
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
 #define LIST_TO_STRING &letter_to_string
 #include "../src/list.h"
-
 struct letter { struct letter_listlink link; char letter, unused[7]; };
 static int letter_compare(const struct letter_listlink *const al,
 	const struct letter_listlink *const bl) {
@@ -108,7 +102,7 @@ static void letter_to_string(const struct letter_listlink *const ll,
 	const struct letter *const l = (const struct letter *)ll;
 	(*z)[0] = l->letter, (*z)[1] = '\0';
 }
-static void letter_fill(struct letter_listlink *const ll) {
+static void letter_filler(struct letter_listlink *const ll) {
 	struct letter *const l = (struct letter *)ll;
 	l->letter = 'A' + (char)(rand() / (RAND_MAX / 26 + 1));
 }
@@ -123,6 +117,7 @@ static struct letter_listlink *letter_from_pool(void *const vls) {
 	return &l->link;
 }
 
+#if 0
 
 /** Name is a linked component of panda. */
 struct name_listlink;
@@ -1044,20 +1039,21 @@ static int animals_tests(void) {
 	return is_success;
 }
 
+#endif
 
 int main(void) {
 	struct permutelink_pool permutes = permutelink_pool();
 	struct no_pool nos = no_pool();
 	struct letter_pool ls = letter_pool();
-	struct panda_pool pandas = panda_pool();
-	struct skip_pool skips = skip_pool();
+	/*struct panda_pool pandas = panda_pool();
+	struct skip_pool skips = skip_pool();*/
 	permute_list_test(&permute_from_pool, &permutes),
 		permutelink_pool_(&permutes);
 	no_list_test(&no_from_pool, &nos), no_pool_clear(&nos);
 	no_list_compare_test(&no_from_pool, &nos), no_pool_(&nos);
 	letter_list_test(&letter_from_pool, &ls), letter_pool_clear(&ls);
 	letter_list_compare_test(&letter_from_pool, &ls), letter_pool_(&ls);
-	name_list_test(&panda_name_from_pool, &pandas), panda_pool_clear(&pandas);
+	/*name_list_test(&panda_name_from_pool, &pandas), panda_pool_clear(&pandas);
 	name_list_compare_test(&panda_name_from_pool, &pandas),
 		panda_pool_clear(&pandas);
 	where_list_test(&panda_where_from_pool, &pandas), panda_pool_clear(&pandas);
@@ -1074,13 +1070,6 @@ int main(void) {
 	layer2_list_compare_test(&l2_from_pool, &skips), skip_pool_(&skips);
 	pandas_tests();
 	skips_tests();
-	animals_tests();
+	animals_tests();*/
 	return EXIT_SUCCESS;
-}
-#endif
-
-int main(void) {
-	struct permutelink_pool permutes = permutelink_pool();
-	permute_list_test(&permute_from_pool, &permutes),
-		permutelink_pool_(&permutes);
 }
