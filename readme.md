@@ -80,6 +80,13 @@ execution. One does not need to download `boxes` to use the individual
 projects: one can pick which ones are appropriate. The `sh`-script
 `autoclone` downloads them all.
 
+## Papers ##
+
+* [A slab-allocator for similar objects](https://github.com/neil-edelman/pool/blob/master/doc/pool.pdf)
+* [Allocation-conscious chained hash-table](https://github.com/neil-edelman/table/blob/master/doc/table.pdf)
+* [Practical in-memory B-tree design](https://github.com/neil-edelman/tree/blob/master/doc/tree.pdf)
+* [Compact binary prefix trees](https://github.com/neil-edelman/trie/blob/master/doc/trie.pdf)
+
 ## License ##
 
 2016 Neil Edelman, distributed under the terms of the [MIT
