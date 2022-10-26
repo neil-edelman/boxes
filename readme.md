@@ -43,7 +43,7 @@
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/tree">tree</a></td>
 	<td>B-tree implementing set or map</td>
-	<td>cursor, to_string</td>
+	<td>iterate, to_string</td>
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/trie">trie</a></td>
