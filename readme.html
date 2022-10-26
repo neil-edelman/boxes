@@ -54,7 +54,7 @@
 
 <p><a href = "#tag:&lt;N&gt;table">&lt;N&gt;table</a> implements a set or map of <a href = "#typedef:&lt;PN&gt;entry">&lt;PN&gt;entry</a> as a hash table. It must be supplied a <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> and, <a href = "#typedef:&lt;PN&gt;is_equal_fn">&lt;PN&gt;is_equal_fn</a> or <a href = "#typedef:&lt;PN&gt;inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a>.</p>
 
-</div>
+<a href = "src/iterate.h">src/iterate.h</a>: defining <code>HAVE_ITERATE_H</code> supplies <code>&lt;ITR&gt;</code> functions for all boxes that support them. Is not a trait, adds a fixed amount of functions for all boxes.<a href = "src/to_string.h">src/to_string.h</a>: <code>&lt;STR&gt;</code> trait functions require <code>&lt;name&gt;[&lt;trait&gt;]to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</div>
 
 <dl>
 	<dt>Parameter: TABLE_NAME, TABLE_KEY</dt>
@@ -71,8 +71,6 @@
 	<dd>Default trait; a name that satisfies <code>C</code> naming conventions when mangled and a <a href = "#typedef:&lt;PN&gt;value">&lt;PN&gt;value</a> used in <a href = "#fn:&lt;N&gt;table&lt;D&gt;get">&lt;N&gt;table&lt;D&gt;get</a>. There can be multiple defaults, but only one can omit <code>TABLE_DEFAULT_NAME</code>.</dd>
 	<dt>Parameter: TABLE_TO_STRING_NAME, TABLE_TO_STRING</dt>
 	<dd>To string trait contained in <a href = "to_string.h">to_string.h</a>; <code>&lt;STR&gt;</code> that satisfies <code>C</code> naming conventions when mangled and function implementing <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>. There can be multiple to string traits, but only one can omit <code>TABLE_TO_STRING_NAME</code>.</dd>
-	<dt>Parameter: HAVE_ITERATE_H</dt>
-	<dd>The <code>&lt;ITR&gt;</code> functions need this value. This includes <a href = "src/iterate.h">src/iterate.h</a>, which take no parameters. Some functions may only be available for some boxes. This does not expire after box completion.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 </dl>
@@ -183,9 +181,9 @@
 
 <h3><a id = "typedef:<PSTR>to_string_fn" name = "typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(&lt;PSTR&gt;element_c, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element, char(*)[12]);</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the read-only argument into a 12-<code>char</code> null-terminated output string. The first argument should be a read-only reference to an element and the second a pointer to the bytes.</p>
 
 </div>
 
@@ -592,7 +590,7 @@
 
 <h3><a id = "fn:<ITR>any" name = "fn:<ITR>any">&lt;ITR&gt;any</a></h3>
 
-<p><code>static &lt;PITR&gt;element <strong>&lt;ITR&gt;any</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code></p>
+<p><code>static &lt;PITR&gt;element <strong>&lt;ITR&gt;any</strong>(const &lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code></p>
 
 <p><a href = "src/iterate.h">src/iterate.h</a>: Iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
 
@@ -704,7 +702,7 @@
 
 <p><code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;STR&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time.</p>
 
 <dl>
 	<dt>Return:</dt>

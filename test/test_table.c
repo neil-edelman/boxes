@@ -24,38 +24,36 @@ static const char *zodiac[] = { ZODIAC(X) };
 #undef X
 /** Sequential monotonic values make a pretty good hash.
  @implements <zodiac>hash_fn */
-static unsigned hash_zodiac(const enum zodiac z) { return z; }
+static unsigned zodiac_hash(const enum zodiac z) { return z; }
 /** This is a discrete set with a simple homomorphism between keys and hash
  values, therefore it's simpler to work in hash space. This saves us from
  having to define <typedef:<PN>is_equal_fn> and saves the key from even being
  stored. @implements <zodiac>inverse_hash_fn */
-static enum zodiac hash_inv_zodiac(const unsigned z) { return z; }
+static enum zodiac zodiac_inverse_hash(const unsigned z) { return z; }
 /** This is not necessary except for testing, because that is how we see what
  we're testing. @implements <zodiac>to_string_fn */
 static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 	{ strcpy(*a, zodiac[z]); /* strlen z < 12 */ }
-#define TABLE_NAME zodiac
-#define TABLE_KEY enum zodiac
-#define TABLE_HASH &hash_zodiac
-/* Generally, if you can, inverse is less space and simpler than equals. */
-#define TABLE_INVERSE &hash_inv_zodiac
-/* There are less than 256/2 keys, so a byte would suffice, but speed-wise, we
- expect type coercion between different sizes to be slower. */
-#define TABLE_UINT unsigned
-#define TABLE_TEST /* Testing requires to string. */
-#define TABLE_EXPECT_TRAIT /* It is a trait; this is here to not undef. */
-#include "../src/table.h"
-#define TABLE_TO_STRING &zodiac_to_string /* Requires <../src/to_string.h>. */
-#include "../src/table.h"
 /* For testing; there is no extra memory required to generate random `enum`.
- @implements <zodiac>fill_fn */
-static int fill_zodiac(void *const zero, enum zodiac *const z) {
+ @implements <zodiac>action_fn */
+static int zodiac_filler(void *const zero, enum zodiac *const z) {
 	(void)zero, assert(!zero);
 	*z = (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1));
 	return 1;
 }
+#define TABLE_NAME zodiac
+#define TABLE_KEY enum zodiac
+/* Generally, if you can, inverse is less space and simpler than equals. */
+#define TABLE_INVERSE
+/* There are less than 256/2 keys, so a byte would suffice, but speed-wise, we
+ expect type coercion between different sizes to be slower. */
+#define TABLE_UINT unsigned
+#define TABLE_TEST /* Testing requires to string. */
+#define TABLE_TO_STRING /* Requires <../src/to_string.h>. */
+#include "../src/table.h"
 
 
+#if 0
 /* String set. */
 
 /** One must supply the hash: djb2 <http://www.cse.yorku.ca/~oz/hash.html> is
@@ -805,13 +803,14 @@ finally:
 	star_table_(&stars);
 	printf("\n");
 }
+#endif
 
 
 int main(void) {
-	struct str16_pool strings = str16_pool();
-	struct vec4_pool vec4s = vec4_pool();
-	zodiac_table_test(&fill_zodiac, 0); /* Don't require any space. */
-	string_table_test(&str16_from_void, &strings), str16_pool_(&strings);
+	/*struct str16_pool strings = str16_pool();
+	struct vec4_pool vec4s = vec4_pool();*/
+	zodiac_table_test(0); /* Don't require any space. */
+	/*string_table_test(&str16_from_void, &strings), str16_pool_(&strings);
 	uint_table_test(&uint_from_void, 0);
 	int_table_test(&int_from_void, 0);
 	vec4_table_test(&vec4_from_void, &vec4s), vec4_pool_(&vec4s);
@@ -822,7 +821,7 @@ int main(void) {
 	boat_club();
 	linked_dict();
 	year_of();
-	nato();
+	nato();*/
 	return EXIT_SUCCESS;
 }
 

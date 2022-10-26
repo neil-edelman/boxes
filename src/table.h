@@ -49,30 +49,15 @@
 
  @std C89 */
 
-#if !defined(TABLE_NAME) || !defined(TABLE_KEY) || !defined(TABLE_HASH) \
-	|| !(defined(TABLE_IS_EQUAL) ^ defined(TABLE_INVERSE))
-#error Name TABLE_NAME, tag type TABLE_KEY, functions TABLE_HASH, and, \
-	TABLE_IS_EQUAL or TABLE_INVERSE (but not both) undefined.
+#if !defined(TABLE_NAME) || !defined(TABLE_KEY)
+#error Name TABLE_NAME or tag type TABLE_KEY undefined.
 #endif
-#if defined(TABLE_DEFAULT_NAME) || defined(TABLE_DEFAULT)
-#define TABLE_DEFAULT_TRAIT 1
-#else
-#define TABLE_DEFAULT_TRAIT 0
+#if defined(TABLE_TRAIT) ^ defined(BOX_TYPE)
+#error TABLE_TRAIT name must come after TABLE_EXPECT_TRAIT.
 #endif
-#if defined(TABLE_TO_STRING_NAME) || defined(TABLE_TO_STRING)
-#define TABLE_TO_STRING_TRAIT 1
-#else
-#define TABLE_TO_STRING_TRAIT 0
-#endif
-#define TABLE_TRAITS TABLE_DEFAULT_TRAIT + TABLE_TO_STRING_TRAIT
-#if TABLE_TRAITS > 1
-#error Only one trait per include is allowed; use TABLE_EXPECT_TRAIT.
-#endif
-#if defined(TABLE_DEFAULT_NAME) && !defined(TABLE_DEFAULT)
-#error TABLE_DEFAULT_NAME requires TABLE_DEFAULT.
-#endif
-#if defined(TABLE_TO_STRING_NAME) && !defined(TABLE_TO_STRING)
-#error TABLE_TO_STRING_NAME requires TABLE_TO_STRING.
+#if defined(TABLE_TEST) && (!defined(TABLE_TRAIT) && !defined(TABLE_TO_STRING) \
+	|| defined(TABLE_TRAIT) && !defined(TABLE_HAS_TO_STRING))
+#error Test requires to string.
 #endif
 
 #ifndef TABLE_H /* <!-- idempotent */
@@ -81,8 +66,7 @@
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#if defined(TABLE_CAT_) || defined(TABLE_CAT) || defined(N_) || defined(PN_) \
-	|| defined(TABLE_IDLE)
+#if defined(TABLE_CAT_) || defined(TABLE_CAT) || defined(N_) || defined(PN_)
 #error Unexpected defines.
 #endif
 /* <Kernighan and Ritchie, 1988, p. 231>. */
@@ -113,8 +97,7 @@ static const char *const table_result_str[] = { TABLE_RESULT };
 #endif /* idempotent --> */
 
 
-#if TABLE_TRAITS == 0 /* <!-- base table */
-
+#ifndef TABLE_TRAIT /* <!-- base code */
 
 #ifndef TABLE_UINT
 #define TABLE_UINT size_t
@@ -127,35 +110,28 @@ typedef TABLE_UINT PN_(uint);
 /** Valid tag type defined by `TABLE_KEY` used for keys. If `TABLE_INVERSE` is
  not defined, a copy of this value will be stored in the internal buckets. */
 typedef TABLE_KEY PN_(key);
-typedef const TABLE_KEY PN_(key_c);
+typedef const TABLE_KEY PN_(key_c); /* Works 90%? */
 
-/** A map from <typedef:<PN>key_c> onto <typedef:<PN>uint> that, ideally,
- should be easy to compute while minimizing duplicate addresses. Must be
- consistent for each value while in the table. If <typedef:<PN>key> is a
- pointer, one is permitted to have null in the domain. */
-typedef PN_(uint) (*PN_(hash_fn))(PN_(key_c));
-/* Check that `TABLE_HASH` is a function implementing <typedef:<PN>hash_fn>. */
-static const PN_(hash_fn) PN_(hash) = (TABLE_HASH);
-
+#if 0 /* <!-- documentation */
+/** A map from <typedef:<PN>key_c> onto <typedef:<PN>uint>, called `<N>hash`,
+ that, ideally, should be easy to compute while minimizing duplicate addresses.
+ Must be consistent for each value while in the table. If <typedef:<PN>key> is
+ a pointer, one is permitted to have null in the domain. */
+typedef PN_(uint) (*PN_(hash_fn))(const PN_(key));
 #ifdef TABLE_INVERSE /* <!-- inv */
 /** Defining `TABLE_INVERSE` says <typedef:<PN>hash_fn> forms a bijection
- between the range in <typedef:<PN>key> and the image in <typedef:<PN>uint>.
- Keys are not stored in the hash table, rather they are generated using this
- inverse-mapping. */
+ between the range in <typedef:<PN>key> and the image in <typedef:<PN>uint>,
+ and the inverse is called `<N>inverse_hash`. In this case, keys are not stored
+ in the hash table, rather they are generated using this inverse-mapping. */
 typedef PN_(key) (*PN_(inverse_hash_fn))(PN_(uint));
-/* Check that `TABLE_INVERSE` is a function implementing
- <typedef:<PN>inverse_hash_fn>. */
-static const PN_(inverse_hash_fn) PN_(inverse_hash) = (TABLE_INVERSE);
 #else /* inv --><!-- !inv */
 /** Equivalence relation between <typedef:<PN>key> that satisfies
- `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`. Can not be set if
- `TABLE_INVERSE`, because the comparison is done directly in hash space, in
- that case. */
+ `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`, called `<N>is_equal`.
+ If `TABLE_INVERSE` is set, there is no need for this function because the
+ comparison is done directly in hash space. */
 typedef int (*PN_(is_equal_fn))(PN_(key_c) a, PN_(key_c) b);
-/* Check that `TABLE_IS_EQUAL` is a function implementing
- <typedef:<PN>is_equal_fn>. */
-static const PN_(is_equal_fn) PN_(equal) = (TABLE_IS_EQUAL);
 #endif /* !inv --> */
+#endif /* documentation --> */
 
 #ifdef TABLE_VALUE /* <!-- value */
 /** Defining `TABLE_VALUE` produces an associative map, otherwise it is the
@@ -200,7 +176,8 @@ struct PN_(bucket) {
 static PN_(key) PN_(bucket_key)(const struct PN_(bucket) *const bucket) {
 	assert(bucket && bucket->next != TABLE_NULL);
 #ifdef TABLE_INVERSE
-	return PN_(inverse_hash)(bucket->hash);
+	/* On `TABLE_INVERSE`, this function must be defined by the user. */
+	return N_(inverse_hash)(bucket->hash);
 #else
 	return bucket->key;
 #endif
@@ -527,7 +504,8 @@ static enum table_result PN_(put)(struct N_(table) *const table,
 	PN_(entry) entry, PN_(entry) *eject, const PN_(policy_fn) policy) {
 	struct PN_(bucket) *bucket;
 	const PN_(key) key = PN_(entry_key)(entry);
-	const PN_(uint) hash = PN_(hash)(key);
+	/* This function must be defined by the user. */
+	const PN_(uint) hash = N_(hash)(key);
 	enum table_result result;
 	assert(table);
 	if(table->buckets && (bucket = PN_(query)(table, key, hash))) {
@@ -542,40 +520,10 @@ static enum table_result PN_(put)(struct N_(table) *const table,
 	return result;
 }
 
-#define BOX_CONTENT const struct PN_(bucket) *
 /** Is `x` not null? @implements `is_content` */
-static int PN_(is_element_c)(const struct PN_(bucket) *const x) { return !!x; }
-/* Enumerate the contents, (in no particular order, usually, but
- deterministic up to topology changes.) @implements `forward` */
-struct PN_(forward) { const struct N_(table) *table; PN_(uint) i; };
-/** Helper to skip the buckets of `it` that are not there.
- @return Whether it found another index. */
-static int PN_(forward_skip)(struct PN_(forward) *const it) {
-	const struct N_(table) *const hash = it->table;
-	const PN_(uint) limit = PN_(capacity)(hash);
-	assert(it && it->table && it->table->buckets);
-	while(it->i < limit) {
-		struct PN_(bucket) *const bucket = hash->buckets + it->i;
-		if(bucket->next != TABLE_NULL) return 1;
-		it->i++;
-	}
-	return 0;
-}
-/** @return Before `table`. @implements `forward` */
-static struct PN_(forward) PN_(forward)(const struct N_(table) *const
-	table) { struct PN_(forward) it; it.table = table, it.i = 0; return it; }
-/** Advances `it` to the next element. @return Pointer to the current element
- or null. @implements `next_c` */
-static const struct PN_(bucket) *PN_(next_c)(struct PN_(forward) *const
-	it) { assert(it);
-	if(!it->table || !it->table->buckets) return 0;
-	if(PN_(forward_skip)(it)) return it->table->buckets + it->i++;
-	it->table = 0, it->i = 0;
-	return 0;
-}
-
-#define BOX_ITERATOR struct PN_(bucket) *
-/* More complex iterator that supports write. @implements `iterator` */
+static int PN_(is_element)(const struct PN_(bucket) *const x) { return !!x; }
+/* In no particular order, usually, but deterministic up to topology changes.
+ @implements `iterator` */
 struct PN_(iterator) { struct N_(table) *table; PN_(uint) cur, prev; };
 /** Helper to skip the buckets of `it` that are not there.
  @return Whether it found another index. */
@@ -591,9 +539,10 @@ static int PN_(skip)(struct PN_(iterator) *const it) {
 	return 0;
 }
 /** @return Before `table`. @implements `begin` */
-static struct PN_(iterator) PN_(begin)(struct N_(table) *const table)
-	{ struct PN_(iterator) it; it.table = table, it.cur = 0;
-	it.prev = TABLE_NULL; return it; }
+static struct PN_(iterator) PN_(iterator)(struct N_(table) *const table) {
+	struct PN_(iterator) it; it.table = table, it.cur = 0; it.prev = TABLE_NULL;
+	return it;
+}
 /** Advances `it` to the next element. @return Pointer to the current element
  or null. @implements `next` */
 static struct PN_(bucket) *PN_(next)(struct PN_(iterator) *const it) {
@@ -635,12 +584,6 @@ static int PN_(remove)(struct PN_(iterator) *const it) {
 	return 1;
 }
 
-
-/* Box override information. */
-#define BOX_ PN_
-#define BOX struct N_(table)
-
-
 /** ![States](../doc/it.png)
 
  Adding, deleting, successfully looking up entries, or any modification of the
@@ -664,7 +607,7 @@ static void N_(table_)(struct N_(table) *const table)
 
 /** Loads `table` (can be null) into `it`. @allow */
 static struct N_(table_iterator) N_(table_begin)(struct N_(table) *const
-	table) { struct N_(table_iterator) it; it._ = PN_(begin)(table);
+	table) { struct N_(table_iterator) it; it._ = PN_(iterator)(table);
 	return it; }
 /** Advances `it`. The awkwardness of this function because <typedef:<PN>entry>
  is not necessarily nullifyable, so we are not guaranteed to have an
@@ -730,9 +673,11 @@ static void N_(table_clear)(struct N_(table) *const table) {
 }
 
 /** @return Whether `key` is in `table` (which can be null.) @allow */
-static int N_(table_is)(struct N_(table) *const table, const PN_(key) key)
-	{ return table && table->buckets
-		? !!PN_(query)(table, key, PN_(hash)(key)) : 0; }
+static int N_(table_is)(struct N_(table) *const table, const PN_(key) key) {
+	/* This function must be defined by the user. */
+	return table && table->buckets
+		? !!PN_(query)(table, key, N_(hash)(key)) : 0;
+}
 
 /** @param[result] If null, behaves like <fn:<N>table_is>, otherwise, a
  <typedef:<PN>entry> which gets filled on true.
@@ -740,8 +685,9 @@ static int N_(table_is)(struct N_(table) *const table, const PN_(key) key)
 static int N_(table_query)(struct N_(table) *const table, const PN_(key) key,
 	PN_(entry) *result) {
 	struct PN_(bucket) *bucket;
+	/* This function must be defined by the user. */
 	if(!table || !table->buckets
-		|| !(bucket = PN_(query)(table, key, PN_(hash)(key)))) return 0;
+		|| !(bucket = PN_(query)(table, key, N_(hash)(key)))) return 0;
 	if(result) *result = PN_(to_entry)(bucket);
 	return 1;
 }
@@ -752,8 +698,9 @@ static int N_(table_query)(struct N_(table) *const table, const PN_(key) key,
 static PN_(value) N_(table_get_or)(struct N_(table) *const table,
 	const PN_(key) key, PN_(value) default_value) {
 	struct PN_(bucket) *bucket;
+	/* This function must be defined by the user. */
 	return table && table->buckets
-		&& (bucket = PN_(query)(table, key, PN_(hash)(key)))
+		&& (bucket = PN_(query)(table, key, N_(hash)(key)))
 		? PN_(bucket_value)(bucket) : default_value;
 }
 
@@ -833,7 +780,8 @@ static enum table_result N_(table_compute)(struct N_(table) *const table,
 static int N_(table_remove)(struct N_(table) *const table,
 	const PN_(key) key) {
 	struct PN_(bucket) *current;
-	PN_(uint) crnt, prv = TABLE_NULL, nxt, hash = PN_(hash)(key);
+	/* This function must be defined by the user. */
+	PN_(uint) crnt, prv = TABLE_NULL, nxt, hash = N_(hash)(key);
 	if(!table || !table->size) return 0; assert(table->buckets);
 	/* Find item and keep track of previous. */
 	current = table->buckets + (crnt = PN_(to_bucket_no)(table, hash));
@@ -862,24 +810,21 @@ static int N_(table_remove)(struct N_(table) *const table,
 	return 1;
 }
 
-#ifdef HAVE_ITERATE_H /* <!-- iterate */
-#define ITR_(n) ARRAY_CAT(N_(table), n)
-#include "iterate.h" /** \include */
-#undef ITR_
-#endif /* iterate --> */
+/* Box override information. */
+#define BOX_TYPE struct N_(table)
+#define BOX_CONTENT struct PN_(bucket) *
+#define BOX_ PN_
+#define BOX_MAJOR_NAME table
+#define BOX_MINOR_NAME TABLE_NAME
 
-#ifdef TABLE_TEST /* <!-- test */
-/* Forward-declare. */
-static void (*PN_(to_string))(PN_(key_c), char (*)[12]);
-static const char *(*PN_(table_to_string))(const struct N_(table) *);
-#include "../test/test_table.h"
-#endif /* test --> */
+#ifdef HAVE_ITERATE_H /* <!-- iterate */
+#include "iterate.h" /** \include */
+#endif /* iterate --> */
 
 static void PN_(unused_base_coda)(void);
 static void PN_(unused_base)(void) {
 	PN_(entry) e; PN_(key) k; PN_(value) v;
 	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
-	PN_(is_element_c)(0); PN_(forward)(0); PN_(next_c)(0);
 	N_(table)(); N_(table_)(0); N_(table_begin)(0); N_(table_next)(0, 0);
 	N_(table_buffer)(0, 0); N_(table_clear)(0); N_(table_is)(0, k);
 	N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v); N_(table_try)(0, e);
@@ -893,10 +838,43 @@ static void PN_(unused_base)(void) {
 }
 static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 
+#endif /* base code --> */
 
-#elif defined(TABLE_DEFAULT) /* base --><!-- default */
+
+#ifdef TABLE_TRAIT /* <-- trait: Will be different on different includes. */
+#define BOX_TRAIT_NAME TABLE_TRAIT
+#endif /* trait --> */
+/* #ifdef TABLE_TRAIT
+#define N_D_(n, m) TABLE_CAT(N_(n), TABLE_CAT(TABLE_TRAIT, m))
+#else
+#define N_D_(n, m) TABLE_CAT(N_(n), m)
+#endif
+#define PN_D_(n, m) TABLE_CAT(table, N_D_(n, m)) */
 
 
+#ifdef TABLE_TO_STRING /* <!-- to string trait */
+/** Private <tag:<PN>bucket> would be a confusing thing with which to call
+ to string. Insert an extra level of indirection to call this with the key. */
+static void N_(to_string_thunk)(const struct PN_(bucket) *const bucket,
+	char (*const z)[12]) {
+	/* This function must be defined by the user. */
+	N_(to_string)(PN_(bucket_key)(bucket), z);
+}
+#define TO_STRING_THUNK_(n) TABLE_CAT(n, thunk)
+#define TO_STRING_LEFT '{'
+#define TO_STRING_RIGHT '}'
+#include "to_string.h" /** \include */
+#undef TABLE_TO_STRING
+#define TABLE_HAS_TO_STRING
+#endif /* to string trait --> */
+
+
+#if defined(TABLE_TEST) && !defined(TABLE_TRAIT) /* <!-- test base */
+#include "../test/test_table.h"
+#endif /* test base --> */
+
+
+#ifdef TABLE_DEFAULT /* <!-- default trait */
 #ifdef TABLE_DEFAULT_NAME
 #define N_D_(n, m) TABLE_CAT(N_(n), TABLE_CAT(TABLE_DEFAULT_NAME, m))
 #define PN_D_(n, m) TABLE_CAT(table, N_D_(n, m))
@@ -904,11 +882,9 @@ static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 #define N_D_(n, m) TABLE_CAT(N_(n), m)
 #define PN_D_(n, m) TABLE_CAT(table, N_D_(n, m))
 #endif
-
-/* Check that `TABLE_DEFAULT` is a valid <tag:<PN>value> and that only one
- `TABLE_DEFAULT_NAME` is omitted. */
-static const PN_(value) PN_D_(default, value) = (TABLE_DEFAULT);
-
+#ifdef TABLE_TEST /* <!-- test */
+#include "../test/test_table_default.h"
+#endif /* test --> */
 /** This is functionally identical to <fn:<N>table_get_or>, but a with a trait
  specifying a constant default value.
  @return The value associated with `key` in `table`, (which can be null.) If
@@ -917,70 +893,34 @@ static const PN_(value) PN_D_(default, value) = (TABLE_DEFAULT);
 static PN_(value) N_D_(table, get)(struct N_(table) *const table,
 	const PN_(key) key) {
 	struct PN_(bucket) *bucket;
+	/* `TABLE_DEFAULT` is a valid <tag:<PN>value>. */
+	const PN_(value) PN_D_(default, value) = (TABLE_DEFAULT);
+	/* Function `<N>hash` must be defined by the user. */
 	return table && table->buckets
-		&& (bucket = PN_(query)(table, key, PN_(hash)(key)))
+		&& (bucket = PN_(query)(table, key, N_(hash)(key)))
 		? PN_(bucket_value)(bucket) : PN_D_(default, value);
 }
-
 static void PN_D_(unused, default_coda)(void);
 static void PN_D_(unused, default)(void) { PN_(key) k; memset(&k, 0, sizeof k);
 	N_D_(table, get)(0, k); PN_D_(unused, default_coda)(); }
 static void PN_D_(unused, default_coda)(void) { PN_D_(unused, default)(); }
-
 #undef N_D_
 #undef PN_D_
 #undef TABLE_DEFAULT
 #ifdef TABLE_DEFAULT_NAME
 #undef TABLE_DEFAULT_NAME
 #endif
+#endif /* default trait --> */
 
 
-#elif defined(TABLE_TO_STRING) /* default --><!-- to string trait */
-
-
-#ifdef TABLE_TO_STRING_NAME
-#define STR_(n) TABLE_CAT(N_(table), TABLE_CAT(TABLE_TO_STRING_NAME, n))
-#else
-#define STR_(n) TABLE_CAT(N_(table), n)
-#endif
-#define TSTR_(n) TABLE_CAT(table_sz, STR_(n))
-/* Check that `TABLE_TO_STRING` is a function implementing this prototype. */
-static void (*const TSTR_(actual_to_string))(PN_(key_c), char (*)[12])
-	= (TABLE_TO_STRING);
-/** This is to line up the hash, which can have <typedef:<PN>key> a pointer or
- not, with to string, which requires a pointer. Call
- <data:<TSTR>actual_to_string> with key of `bucket` and `z`. */
-static void TSTR_(thunk_to_string)(const struct PN_(bucket) *const bucket,
-	char (*const z)[12])
-	{ TSTR_(actual_to_string)(PN_(bucket_key)(bucket), z); }
-#define TO_STRING &TSTR_(thunk_to_string)
-#define TO_STRING_LEFT '{'
-#define TO_STRING_RIGHT '}'
-#include "to_string.h" /** \include */
-#ifdef TABLE_TEST /* <!-- expect: greedy satisfy forward-declared. */
-#undef TABLE_TEST
-static void (*PN_(to_string))(PN_(key_c), char (*const)[12])
-	= TSTR_(actual_to_string);
-static const char *(*PN_(table_to_string))(const struct N_(table) *)
-	= &STR_(to_string);
-#endif /* expect --> */
-#undef TSTR_
-#undef STR_
-#undef TABLE_TO_STRING
-#ifdef TABLE_TO_STRING_NAME
-#undef TABLE_TO_STRING_NAME
-#endif
-
-
-#endif /* traits --> */
-
-
-#ifdef TABLE_EXPECT_TRAIT /* <!-- trait */
+#ifdef TABLE_EXPECT_TRAIT /* <!-- more */
 #undef TABLE_EXPECT_TRAIT
-#else /* trait --><!-- !trait */
-#ifdef TABLE_TEST
-#error No TABLE_TO_STRING traits defined for TABLE_TEST.
-#endif
+#else /* more --><!-- done */
+#undef BOX_TYPE
+#undef BOX_CONTENT
+#undef BOX_
+#undef BOX_MAJOR_NAME
+#undef BOX_MINOR_NAME
 #undef TABLE_NAME
 #undef TABLE_KEY
 #undef TABLE_UINT
@@ -993,11 +933,8 @@ static const char *(*PN_(table_to_string))(const struct N_(table) *)
 #ifdef TABLE_VALUE
 #undef TABLE_VALUE
 #endif
-#undef BOX_
-#undef BOX
-#undef BOX_CONTENT
-#undef BOX_ITERATOR
-#endif /* !trait --> */
-#undef TABLE_DEFAULT_TRAIT
-#undef TABLE_TO_STRING_TRAIT
-#undef TABLE_TRAITS
+#endif /* done --> */
+#ifdef TABLE_TRAIT
+#undef TABLE_TRAIT
+#undef BOX_TRAIT_NAME
+#endif

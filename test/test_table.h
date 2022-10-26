@@ -133,7 +133,7 @@ static void PN_(graph)(const struct N_(table) *const table,
 			const char *const closed
 				= PN_(to_bucket_no)(table, b->hash) == i ? "⬤" : "◯";
 			char z[12];
-			PN_(to_string)(PN_(bucket_key)(b), &z);
+			N_(to_string)(PN_(bucket_key)(b), &z);
 			fprintf(fp, "\t\t<TD ALIGN=\"RIGHT\"%s>0x%lx</TD>\n"
 				"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
 				"\t\t<TD PORT=\"%lu\"%s>%s</TD>\n",
@@ -228,7 +228,7 @@ static void PN_(histogram)(const struct N_(table) *const table,
 static int PN_(eq_en)(PN_(entry) a, PN_(entry) b) {
 	PN_(key_c) ka = PN_(entry_key)(a), kb = PN_(entry_key)(b);
 #ifdef TABLE_INVERSE /* Compare in <typedef:<PN>uint> space. */
-	return PN_(hash)(ka) == PN_(hash)(kb);
+	return N_(hash)(ka) == N_(hash)(kb);
 #else
 	return PN_(equal)(ka, kb);
 #endif
@@ -256,7 +256,7 @@ static void PN_(legit)(const struct N_(table) *const table) {
 }
 
 /** Passed `parent_new` and `parent` from <fn:<N>hash_test>. */
-static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
+static void PN_(test_basic)(void *const parent) {
 	struct {
 		struct sample {
 			PN_(entry) entry;
@@ -274,7 +274,7 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 	char z[12];
 	struct N_(table) table = N_(table)();
 	int success;
-	assert(fill && trial_size > 1);
+	assert(trial_size > 1);
 	/* Pre-computation. O(element_size*(element_size-1)/2); this places a limit
 	 on how much a reasonable test is. */
 	for(i = 0; i < trial_size; i++) {
@@ -283,8 +283,8 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 /*#ifdef TABLE_VALUE
 		s->entry.value = &s.temp_value;
 #endif*/
-		if(!fill(parent, &s->entry)) { assert(0); return; }
-		PN_(to_string)(PN_(entry_key)(s->entry), &z);
+		if(!N_(filler)(parent, &s->entry)) { assert(0); return; }
+		N_(to_string)(PN_(entry_key)(s->entry), &z);
 		s->is_in = 0;
 		for(j = 0; j < i && !PN_(eq_en)(s->entry, trials.sample[j].entry);
 			j++);
@@ -330,10 +330,11 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 		assert(success && PN_(eq_en)(s->entry, entry));
 		if(table.size < max_graph && !(i & (i - 1)) || i + 1 == trial_size) {
 			char fn[64];
-			PN_(to_string)(PN_(entry_key)(s->entry), &z);
+			N_(to_string)(PN_(entry_key)(s->entry), &z);
 			printf("%lu. Store \"%s\" result %s, table %s.\n", (unsigned long)i,
-				z, table_result_str[result], PN_(table_to_string)(&table));
-			sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-%lu.gv", (unsigned long)i+1);
+				z, table_result_str[result], N_(table_to_string)(&table));
+			sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-%lu.gv",
+				(unsigned long)i+1);
 			PN_(graph)(&table, fn);
 		}
 		PN_(legit)(&table);
@@ -394,7 +395,7 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
 	for(b = 0, b_end = b + PN_(capacity)(&table); b < b_end; b++)
 		assert(table.buckets[b].next == TABLE_NULL);
 	assert(table.size == 0);
-	printf("Clear: %s.\n", PN_(table_to_string)(&table));
+	printf("Clear: %s.\n", N_(table_to_string)(&table));
 	for(i = 0; i < trial_size; i++) { /* Make sure to test it again. */
 		const struct sample *s = trials.sample + i;
 		enum table_result result;
@@ -412,7 +413,7 @@ static void PN_(test_basic)(PN_(fill_fn) fill, void *const parent) {
  <tag:<N>hashlink> and `TABLE_TEST` is not allowed to go over the limits of the
  data key. @param[parent] The parameter passed to `parent_new`. Ignored if
  `parent_new` is null. @allow */
-static void N_(table_test)(PN_(fill_fn) fill, void *const parent) {
+static void N_(table_test)(void *const parent) {
 	printf("<" QUOTE(TABLE_NAME) ">table of key <" QUOTE(TABLE_KEY)
 		"> was created using: "
 		"TABLE_UINT <" QUOTE(TABLE_UINT) ">; "
@@ -427,8 +428,7 @@ static void N_(table_test)(PN_(fill_fn) fill, void *const parent) {
 #endif
 		"TABLE_TEST; "
 		"testing%s:\n", parent ? "(pointer)" : "");
-	assert(fill);
-	PN_(test_basic)(fill, parent);
+	PN_(test_basic)(parent);
 	fprintf(stderr, "Done tests of <" QUOTE(TABLE_NAME) ">hash.\n\n");
 }
 
