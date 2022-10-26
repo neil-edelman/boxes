@@ -66,11 +66,11 @@ development.
 
 ## Details ##
 
-Some code, called traits, may be shared between boxes on some
-preprocessor commands. This is contained in headers that are meant
-to be further included internally by the box itself. The documentation
-for each box explains more. One can have multiple named traits by
-including the file again. This is used mainly in `to_string.h`.
+Some code, called traits, may be shared between boxes on some extra
+preprocessor commands for more functionality. This is contained in
+headers that are meant to be further included internally by the box
+itself. The documentation for each box explains more. One can have
+multiple named traits by including the file again.
 
 Throughout these headers, errors are returned with `errno`. Assertions
 are used at runtime; to stop them, define `#define NDEBUG` before
