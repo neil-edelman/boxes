@@ -1,2 +1,0 @@
-Simplify const?
-Fix clear error in table.
