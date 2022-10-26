@@ -15,18 +15,18 @@ Stand\-alone header [src/list\.h](src/list.h); examples [test/test\_list\.c](tes
 
 ![Example of a stochastic skip-list.](doc/list.png)
 
-In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Thareja+2014%2C+Structures), [&lt;L&gt;list](#user-content-tag-eb84971d) is a circular header, or sentinel, to a doubly\-linked list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list\. The links will be generally in a larger container\.
+In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Thareja+2014%2C+Structures), [&lt;L&gt;list](#user-content-tag-eb84971d) is a circular header, or sentinel, to a doubly\-linked list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list\. The links will be generally in a larger container type\.
 
 [src/iterate\.h](src/iterate.h): defining `HAVE_ITERATE_H` supplies `<ITR>` functions for all boxes that support them\. Is not a trait, adds a fixed amount of functions for all boxes\.[src/to\_string\.h](src/to_string.h): `<STR>` trait functions require `<name>[<trait>]to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.[src/compare\.h](src/compare.h): `<CMP>` trait functions require `<name>[<trait>]compare` to be declared as [&lt;PCMP&gt;compare_fn](#user-content-typedef-2c6ed2db) or `<name>[<trait>]is_equal` to be declared as [&lt;PCMP&gt;bipredicate_fn](#user-content-typedef-82edbc04), respectfully, \(but not both\.\)
 
  * Parameter: LIST\_NAME  
    `<L>` that satisfies `C` naming conventions when mangled; required\. `<PL>` is private, whose names are prefixed in a manner to avoid collisions\.
- * Parameter: LIST\_EXPECT\_TRAIT  
-   Do not un\-define certain variables for subsequent inclusion in a trait\.
- * Parameter: LIST\_COMPARE\_NAME, LIST\_COMPARE, LIST\_IS\_EQUAL  
-   Compare trait contained in [src/list\_coda\.h](src/list_coda.h)\. An optional mangled name for uniqueness and a function implementing either [&lt;PCMP&gt;compare_fn](#user-content-typedef-2c6ed2db) or [&lt;PCMP&gt;bipredicate_fn](#user-content-typedef-82edbc04)\.
- * Parameter: LIST\_TO\_STRING\_NAME, LIST\_TO\_STRING  
-   To string trait contained in [src/to\_string\.h](src/to_string.h)\. An optional mangled name for uniqueness and function implementing [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
+ * Parameter: LIST\_COMPARE, LIST\_IS\_EQUAL  
+   Compare trait contained in [src/compare\.h](src/compare.h)\.
+ * Parameter: LIST\_TO\_STRING  
+   To string trait contained in [src/to\_string\.h](src/to_string.h)\.
+ * Parameter: LIST\_EXPECT\_TRAIT, LIST\_TRAIT  
+   Named traits are obtained by including `array.h` multiple times with `LIST_EXPECT_TRAIT` and then subsequently including the name in `LIST_TRAIT`\.
  * Standard:  
    C89
 
@@ -87,7 +87,7 @@ In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Th
 
 <code>struct <strong>&lt;L&gt;listlink</strong> { struct &lt;L&gt;listlink *next, *prev; };</code>
 
-Storage of this structure is the responsibility of the caller, who must provide a stable pointer while in a list\. Generally, one encloses this in a host `struct` or `union`\. The contents of this structure should be treated as read\-only while in the list\.
+Storage of this structure is the responsibility of the caller, who must provide a stable pointer while in a list\. Generally, one encloses this in a host `struct` or `union`\.
 
 ![States.](doc/node-states.png)
 

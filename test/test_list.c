@@ -492,14 +492,11 @@ finally:
 }
 
 
-#if 0
 /* Animals, see <../web/animals.gv>. Id is the list that holds all the animals
  together. */
 struct id_listlink;
 static void id_to_string(const struct id_listlink *, char (*)[12]);
 #define LIST_NAME id
-#define LIST_EXPECT_TRAIT
-#include "../src/list.h"
 #define LIST_TO_STRING &id_to_string
 #include "../src/list.h"
 
@@ -766,7 +763,7 @@ static struct mount_info *bear_mount_info(struct bear *const bear) {
  is always the first item in every animal, we can cast them. This is not really
  a good design choice, in hindsight, (should have accepted all `Animal` and
  upcast.) */
-/* fixme: this is technically UB, and doesn't have to be. Fix. */
+/* fixme: this is UB, and doesn't have to be. Fix. */
 static struct animal_vt sloth_vt = {
 	"Sloth",
 	(animal_action_fn)&sloth_delete,
@@ -1013,7 +1010,6 @@ static int animals_tests(void) {
 	return is_success;
 }
 
-#endif
 
 int main(void) {
 	struct permutelink_pool permutes = permutelink_pool();
@@ -1044,6 +1040,6 @@ int main(void) {
 	layer2_list_compare_test(&l2_from_pool, &skips), skip_pool_(&skips);
 	pandas_tests();
 	skips_tests();
-	/*animals_tests();*/
+	animals_tests();
 	return EXIT_SUCCESS;
 }

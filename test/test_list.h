@@ -42,14 +42,16 @@ static void PL_(subgraph)(struct L_(list) *const list, FILE *const fp,
 	PL_(colour) = colour;
 	PL_(offset) = offset;
 	fprintf(fp, "\tlist_%s [label=<\n"
-		"<TABLE BORDER=\"0\">\n"
-		"\t<TR><TD ALIGN=\"LEFT\"><FONT COLOR=\"Gray85\">&lt;" QUOTE(LIST_NAME)
-		"&gt;list</FONT></TD></TR>\n"
-		"\t<TR><TD PORT=\"tail\" BORDER=\"0\" ALIGN=\"LEFT\""
-		" BGCOLOR=\"Gray90\">tail</TD></TR>\n"
-		"\t<TR><TD PORT=\"head\" BORDER=\"0\" ALIGN=\"LEFT\">"
-		"head</TD></TR>\n"
-		"</TABLE>>];\n", PL_(colour));
+		"<table border=\"0\" cellspacing=\"0\">\n"
+		"\t<tr><td align=\"left\" border=\"0\"><font color=\"Gray75\">&lt;"
+		QUOTE(LIST_NAME) "&gt;list</font></td></tr>\n"
+		"\t<hr/>\n"
+		"\t<tr><td port=\"tail\" border=\"0\" align=\"left\">tail</td></tr>\n"
+		"\t<tr><td port=\"head\" border=\"0\" align=\"left\""
+		" bgcolor=\"Grey95\">head</td></tr>\n"
+		"\t<hr/>\n"
+		"\t<tr><td></td></tr>\n"
+		"</table>>, style=none, shape=plain];\n", PL_(colour));
 	assert(list->u.flat.next && !list->u.flat.zero && list->u.flat.prev);
 	if(!list->u.flat.next->prev) { /* Empty: drawing has to make an exception. */
 		assert(!list->u.flat.prev->next);
@@ -85,8 +87,9 @@ static void PL_(graph)(struct L_(list) *const list, const char *const fn) {
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	printf("*** Opening graph \"%s\".\n", fn);
 	fprintf(fp, "digraph {\n"
-		"\tgraph [truecolor=true, bgcolor=transparent, fontface=modern];\n"
-		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n");
+		"\tgraph [truecolor=true, bgcolor=transparent, fontname=modern];\n"
+		"\tnode [fillcolor=\"Gray95\", fontname=modern,"
+		" style=filled, shape=box];\n");
 	PL_(subgraph)(list, fp, "royalblue", 0, 1);
 	fprintf(fp, "\tnode [colour=\"Red\"];\n"
 		"}\n");
