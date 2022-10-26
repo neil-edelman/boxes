@@ -144,8 +144,7 @@ static PA_(type) *PA_(at)(const struct A_(array) *a, const size_t idx)
 static void PA_(tell_size)(struct A_(array) *a, const size_t size)
 	{ assert(a); a->size = size; }
 
-/** Cursor; may become invalid after a topological change to any items
- previous. */
+/** May become invalid after a topological change to any items previous. */
 struct A_(array_iterator);
 struct A_(array_iterator) { struct PA_(iterator) _; };
 

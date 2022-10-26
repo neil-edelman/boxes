@@ -105,7 +105,7 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <code>struct <strong>&lt;A&gt;array_iterator</strong>;</code>
 
-Cursor; may become invalid after a topological change to any items previous\.
+May become invalid after a topological change to any items previous\.
 
 
 
