@@ -318,7 +318,8 @@ static int PN_(equal_buckets)(PN_(key_c) a, PN_(key_c) b) {
 #ifdef TABLE_INVERSE
 	return (void)a, (void)b, 1;
 #else
-	return PN_(equal)(a, b);
+	/* Must have this function declared. */
+	return N_(is_equal)(a, b);
 #endif
 }
 
@@ -882,9 +883,7 @@ static void N_(to_string_thunk)(const struct PN_(bucket) *const bucket,
 #define N_D_(n, m) TABLE_CAT(N_(n), m)
 #define PN_D_(n, m) TABLE_CAT(table, N_D_(n, m))
 #endif
-#ifdef TABLE_TEST /* <!-- test */
-#include "../test/test_table_default.h"
-#endif /* test --> */
+/* #include "../test/test_table_default.h", just test manually. */
 /** This is functionally identical to <fn:<N>table_get_or>, but a with a trait
  specifying a constant default value.
  @return The value associated with `key` in `table`, (which can be null.) If

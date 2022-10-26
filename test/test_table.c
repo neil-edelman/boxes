@@ -11,8 +11,10 @@
 #include "orcish.h"
 
 
-/* Zodiac is a bounded set of `enum`. An X-macro allows printing. This is
- preferable to `TABLE_KEY const char *`, (which leads to duplicate `const`.) */
+/* Zodiac is a bounded set of `enum`, set. */
+
+/* An X-macro allows printing. This is preferable to `TABLE_KEY const char *`,
+ (which leads to duplicate `const`.) */
 #define ZODIAC(X) X(Aries), X(Taurus), X(Gemini), X(Cancer), X(Leo), X(Virgo), \
 	X(Libra), X(Scorpio), X(Sagittarius), X(Capricorn), X(Aquarius), X(Pisces),\
 	X(ZodiacCount)
@@ -36,58 +38,21 @@ static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
 	{ strcpy(*a, zodiac[z]); /* strlen z < 12 */ }
 /* For testing; there is no extra memory required to generate random `enum`.
  @implements <zodiac>action_fn */
-static int zodiac_filler(void *const zero, enum zodiac *const z) {
+static void zodiac_filler(void *const zero, enum zodiac *const z) {
 	(void)zero, assert(!zero);
 	*z = (enum zodiac)(rand() / (RAND_MAX / ZodiacCount + 1));
-	return 1;
 }
 #define TABLE_NAME zodiac
 #define TABLE_KEY enum zodiac
-/* Generally, if you can, inverse is less space and simpler than equals. */
-#define TABLE_INVERSE
-/* There are less than 256/2 keys, so a byte would suffice, but speed-wise, we
- expect type coercion between different sizes to be slower. */
-#define TABLE_UINT unsigned
+#define TABLE_INVERSE /* If you can, inverse is less space and simpler. */
+#define TABLE_UINT unsigned /* `size_t` overkill. */
 #define TABLE_TEST /* Testing requires to string. */
 #define TABLE_TO_STRING /* Requires <../src/to_string.h>. */
 #include "../src/table.h"
 
 
-#if 0
 /* String set. */
 
-/** One must supply the hash: djb2 <http://www.cse.yorku.ca/~oz/hash.html> is
- a simple one that is mostly `size_t`-length agnostic. It's not the greatest,
- but it doesn't need to be. @implements <string>hash_fn */
-static size_t djb2_hash(const char *s) {
-	const unsigned char *str = (const unsigned char *)s;
-	size_t hash = 5381, c;
-	while(c = *str++) hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
-	return hash;
-}
-/** @implements <string>is_equal_fn */
-static int string_is_equal(const char *const a, const char *const b)
-	{ return !strcmp(a, b); }
-/** @implements <string>to_string_fn */
-static void string_to_string(const char *const s, char (*const a)[12])
-	{ strncpy(*a, s, sizeof(*a) - 1), (*a)[sizeof(*a) - 1] = '\0'; }
-#define TABLE_NAME string
-#define TABLE_KEY char * /* Parameter of <fn:djb2_hash> (without `const`.) */
-#define TABLE_HASH &djb2_hash /* Default returns `size_t`. */
-#define TABLE_IS_EQUAL &string_is_equal
-#define TABLE_TEST /* Testing requires to string. */
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
-/* Enables `string_get`; this is just a convenient function that saves
- `string_get_or(..., 0)`. The reason we have to do this is the key is opaque;
- does *not* assume 0 is a special meaning. (We can get away with this because
- `next` stores the sentinel values.) One has to tell it that we want null to
- indicate not found. */
-#define TABLE_DEFAULT 0
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
-#define TABLE_TO_STRING &string_to_string
-#include "../src/table.h"
 /* A pool is convenient for testing because it allows deletion at random. */
 struct str16 { char str[16]; };
 #define POOL_NAME str16
@@ -96,16 +61,43 @@ struct str16 { char str[16]; };
 /** For testing: `s16s` is a pool of `str16`. */
 static char *str16_from_pool(struct str16_pool *const s16s) {
 	struct str16 *s16 = str16_pool_new(s16s);
-	if(!s16) return 0;
+	assert(s16);
 	orcish(s16->str, sizeof s16->str);
 	return s16->str;
 }
 /** @implements <string>test_new_fn */
-static int str16_from_void(void *const s16s, char **const string) {
-	return !!(*string = str16_from_pool(s16s));
+static void string_filler(void *const s16s, char **const string)
+	{ *string = str16_from_pool(s16s); }
+/** One must supply the hash: djb2 <http://www.cse.yorku.ca/~oz/hash.html> is
+ a simple one that is mostly `size_t`-length agnostic. It's not the greatest,
+ but it doesn't need to be. @implements <string>hash_fn */
+static size_t djb2(const char *s) {
+	const unsigned char *str = (const unsigned char *)s;
+	size_t hash = 5381, c;
+	while(c = *str++) hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+	return hash;
 }
+static size_t string_hash(const char *s) { return djb2(s); }
+/** @implements <string>is_equal_fn */
+static int string_is_equal(const char *const a, const char *const b)
+	{ return !strcmp(a, b); }
+/** @implements <string>to_string_fn */
+static void string_to_string(const char *const s, char (*const a)[12])
+	{ strncpy(*a, s, sizeof(*a) - 1), (*a)[sizeof(*a) - 1] = '\0'; }
+#define TABLE_NAME string
+#define TABLE_KEY char *
+#define TABLE_HASH
+#define TABLE_DEFAULT 0 /* Enables `string_get`, do not assume 0 meaning. */
+#define TABLE_TO_STRING
+#define TABLE_TEST
+#include "../src/table.h"
 
 
+
+
+
+
+#if 0
 /* Integer set with inverse hash to avoid storing the hash at all. */
 #if UINT_MAX >= 4294967295 /* >= 32-bits */
 /** <https://nullprogram.com/blog/2018/07/31/>
@@ -807,11 +799,11 @@ finally:
 
 
 int main(void) {
-	/*struct str16_pool strings = str16_pool();
-	struct vec4_pool vec4s = vec4_pool();*/
+	struct str16_pool strings = str16_pool();
+	/*struct vec4_pool vec4s = vec4_pool();*/
 	zodiac_table_test(0); /* Don't require any space. */
-	/*string_table_test(&str16_from_void, &strings), str16_pool_(&strings);
-	uint_table_test(&uint_from_void, 0);
+	string_table_test(&strings), str16_pool_(&strings);
+	/*uint_table_test(&uint_from_void, 0);
 	int_table_test(&int_from_void, 0);
 	vec4_table_test(&vec4_from_void, &vec4s), vec4_pool_(&vec4s);
 	star_table_test(&fill_star, 0);

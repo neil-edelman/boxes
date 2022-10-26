@@ -230,7 +230,7 @@ static int PN_(eq_en)(PN_(entry) a, PN_(entry) b) {
 #ifdef TABLE_INVERSE /* Compare in <typedef:<PN>uint> space. */
 	return N_(hash)(ka) == N_(hash)(kb);
 #else
-	return PN_(equal)(ka, kb);
+	return N_(is_equal)(ka, kb);
 #endif
 }
 
@@ -283,7 +283,7 @@ static void PN_(test_basic)(void *const parent) {
 /*#ifdef TABLE_VALUE
 		s->entry.value = &s.temp_value;
 #endif*/
-		if(!N_(filler)(parent, &s->entry)) { assert(0); return; }
+		N_(filler)(parent, &s->entry);
 		N_(to_string)(PN_(entry_key)(s->entry), &z);
 		s->is_in = 0;
 		for(j = 0; j < i && !PN_(eq_en)(s->entry, trials.sample[j].entry);
