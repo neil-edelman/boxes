@@ -21,9 +21,9 @@ static void PH_(graph)(const struct H_(heap) *const heap,
 	assert(heap && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	fprintf(fp, "digraph {\n"
-		"\tgraph [truecolor=true, bgcolor=transparent];\n"
-		"\tfontface=modern;\n"
-		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
+		"\tgraph [truecolor=true, bgcolor=transparent, fontname=modern];\n"
+		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\","
+		" fontname=modern];\n"
 		/* Google search / Wikipedia says we should draw them with the top down.
 		"\trankdir = BT;\n" */
 		"\tedge [arrowhead = none];\n");
