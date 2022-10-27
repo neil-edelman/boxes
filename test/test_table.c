@@ -323,7 +323,6 @@ finally:
 }
 
 
-#if 0
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
  Sol. As a real example, this is silly; it would be much better suited to
  `gperf` because the data is known beforehand. Also, see <fn:hash_zodiac>.
@@ -355,40 +354,41 @@ finally:
 	X(Sabik, 88), X(Phecda, 84), X(Aludra, 2000), X(Markeb, 540), \
 	X(Navi, 610), X(Markab, 140), X(Aljanah, 72), X(Acrab, 404)
 #define X(n, m) #n
-static /*const is not supported*/ char *star_names[] = { STARS };
+/* const is not supported; duplicate; fixme */
+static char *star_names[] = { STARS };
 #undef X
 static const size_t stars_size = sizeof star_names / sizeof *star_names;
 #define X(n, m) m
 static const double star_distances[] = { STARS };
 #undef X
+struct star_table_entry;
+static void star_filler(void *const zero, struct star_table_entry *const star);
 /** Big numbers are hard to understand and useless to explain in an article.
  @implements <star>hash */
-static unsigned char djb2_restrict(const char *const s)
-	{ return (unsigned char)djb2_hash(s); }
+static unsigned char star_hash(const char *const s)
+	{ return (unsigned char)djb2(s); }
+static int star_is_equal(const char *const a, const char *const b) {
+	return string_is_equal(a, b);
+}
+static void star_to_string(const char *const s, char (*const a)[12])
+	{ string_to_string(s, a); }
 #define TABLE_NAME star
 #define TABLE_KEY char *
 #define TABLE_VALUE double
 #define TABLE_UINT unsigned char
-#define TABLE_HASH &djb2_restrict
-#define TABLE_IS_EQUAL &string_is_equal
-#define TABLE_TEST
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
 #define TABLE_DEFAULT 0
-#define TABLE_EXPECT_TRAIT
+#define TABLE_TEST
+#define TABLE_TO_STRING
 #include "../src/table.h"
-#define TABLE_TO_STRING &string_to_string
-#include "../src/table.h"
-/* @implements <zodiac>fill_fn */
-static int fill_star(void *const zero, struct star_table_entry *const star) {
+static void star_filler(void *const zero, struct star_table_entry *const star) {
 	size_t r = (size_t)rand() / (RAND_MAX / stars_size + 1);
 	(void)zero, assert(!zero);
 	star->key = star_names[r];
 	star->value = star_distances[r];
-	return 1;
 }
 
 
+#if 0
 /* Linked dictionary: linked-list with a comparison order indexed by a map.
  This is just the thing we said in `TABLE_VALUE` to avoid, and probably is the
  worst-case in terms of design of the table. It's associated, so we don't
@@ -398,8 +398,6 @@ struct dict_listlink;
 static int dict_compare(const struct dict_listlink *,
 	const struct dict_listlink *);
 #define LIST_NAME dict
-#define LIST_EXPECT_TRAIT
-#include "list.h"
 #define LIST_COMPARE &dict_compare
 #include "list.h"
 /** Associated with the word and a link to other words. */
@@ -450,6 +448,11 @@ finally:
 	if(fp) fclose(fp);
 	return success;
 }
+static size_t dict_hash(const char *const d) { return djb2(d); }
+static int dict_is_equal(const char *const a, const char *const b)
+	{ return string_is_equal(a, b); }
+static void dict_to_string(const char *const d, char (*const a)[12])
+	{ string_to_string(d, a); }
 /* A string set with a pointer to dict map. It duplicates data from `key` and
  `value->word`, but table is complicated enough as it is. It has to be a
  pointer because a table is not stable, (not guaranteed stability even looking
@@ -459,13 +462,8 @@ finally:
 #define TABLE_NAME dict
 #define TABLE_KEY char *
 #define TABLE_VALUE struct dict *
-#define TABLE_HASH &djb2_hash
 #define TABLE_IS_EQUAL &string_is_equal
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
 #define TABLE_DEFAULT 0
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
 #define TABLE_TO_STRING &string_to_string
 #include "../src/table.h"
 /* `re2c` is very useful for file input. */
@@ -535,6 +533,7 @@ finally:
 	char_array_(&english);
 	printf("\n");
 }
+#endif
 
 
 /* Int set that is a subclass of a larger parent using a pointer. */
@@ -542,28 +541,21 @@ struct year;
 typedef void (*year_to_string_fn)(const struct year *, char (*)[12]);
 struct year_vt { year_to_string_fn to_string; };
 struct year { int year, unused; struct year_vt vt; };
-/** @implements <year>hash_fn */
 static unsigned year_hash(const int *const year) { return int_hash(*year); }
-/** @implements <year>is_equal_fn */
 static int year_is_equal(const int *const a, const int *const b)
 	{ return *a == *b; }
 /** `container_of` integer `year`, which is `struct year`. */
 static const struct year *year_upcast(const int *const year)
 	{ return (const struct year *)(const void *)
 	((const char *)year - offsetof(struct year, year)); }
-/** @implements <thing>to_string_fn */
 static void year_to_string(const int *const year, char (*const a)[12])
 	{ year_upcast(year)->vt.to_string(year_upcast(year), a); }
-#define TABLE_NAME year
-#define TABLE_KEY int *
-#define TABLE_UINT unsigned
-#define TABLE_HASH &year_hash
 /* Can not use `TABLE_INVERSE` because it's not a bijection; the child is also
  part of the data. Arguably, `TABLE_DO_NOT_CACHE` would be useful in this
  situation, but I took it out. Too many options. */
-#define TABLE_IS_EQUAL &year_is_equal
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
+#define TABLE_NAME year
+#define TABLE_KEY int *
+#define TABLE_UINT unsigned
 #define TABLE_TO_STRING &year_to_string
 #include "../src/table.h"
 #define COLOUR /* Max 11 letters. */ \
@@ -670,6 +662,7 @@ finally:
 }
 
 
+#if 0
 /* A histogram of lengths' defined as a map with the pointers to the keys
  recorded as a linked-list. */
 struct nato_list { const char *alpha; struct nato_list *next; };
@@ -749,6 +742,7 @@ finally:
 	nato_table_(&nato);
 	printf("\n");
 }
+#endif
 
 
 /** Contrived example for paper. */
@@ -765,7 +759,7 @@ static void stars(void) {
 			goto catch;
 	}
 	printf("%s.\n", star_table_to_string(&stars));
-	table_star_graph(&stars, "web/table-precursor/star-raw.gv");
+	table_star_graph(&stars, "doc/table-precursor/star-raw.gv");
 	goto finally;
 catch:
 	assert(0);
@@ -773,7 +767,6 @@ finally:
 	star_table_(&stars);
 	printf("\n");
 }
-#endif
 
 
 int main(void) {
@@ -784,14 +777,14 @@ int main(void) {
 	uint_table_test(0);
 	int_table_test(0);
 	vec4_table_test(&vec4s), vec4_pool_(&vec4s);
-	/*star_table_test(&fill_star, 0);*/
+	star_table_test(0);
 	test_default();
 	test_it();
-	/*stars();*/
+	stars();
 	boat_club();
-	/*linked_dict();
+	/*linked_dict();*/
 	year_of();
-	nato();*/
+	/*nato();*/
 	return EXIT_SUCCESS;
 }
 
