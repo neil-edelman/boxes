@@ -662,18 +662,17 @@ finally:
 }
 
 
-#if 0
 /* A histogram of lengths' defined as a map with the pointers to the keys
  recorded as a linked-list. */
 struct nato_list { const char *alpha; struct nato_list *next; };
 struct nato_value { size_t occurrences; struct nato_list *head; };
 /** Symmetric bijection. @implements <nato>hash_fn, <nato>inverse_hash_fn */
 static size_t nato_hash(const size_t n) { return n; }
+static size_t nato_inverse_hash(const size_t h) { return h; }
 #define TABLE_NAME nato
 #define TABLE_KEY size_t
 #define TABLE_VALUE struct nato_value
-#define TABLE_INVERSE &nato_hash
-#define TABLE_HASH &nato_hash
+#define TABLE_INVERSE
 #include "../src/table.h" /* (Manual testing.) */
 /** Counts code-points except non-alnums of `s`, being careful.
  (You are working in UTF-8, right?) <https://stackoverflow.com/a/32936928> */
@@ -742,7 +741,6 @@ finally:
 	nato_table_(&nato);
 	printf("\n");
 }
-#endif
 
 
 /** Contrived example for paper. */
@@ -784,7 +782,7 @@ int main(void) {
 	boat_club();
 	/*linked_dict();*/
 	year_of();
-	/*nato();*/
+	nato();
 	return EXIT_SUCCESS;
 }
 
