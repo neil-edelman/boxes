@@ -876,8 +876,8 @@ static void N_(to_string_thunk)(const struct PN_(bucket) *const bucket,
 
 
 #ifdef TABLE_DEFAULT /* <!-- default trait */
-#ifdef TABLE_DEFAULT_NAME
-#define N_D_(n, m) TABLE_CAT(N_(n), TABLE_CAT(TABLE_DEFAULT_NAME, m))
+#ifdef TABLE_TRAIT
+#define N_D_(n, m) TABLE_CAT(N_(n), TABLE_CAT(TABLE_TRAIT, m))
 #define PN_D_(n, m) TABLE_CAT(table, N_D_(n, m))
 #else
 #define N_D_(n, m) TABLE_CAT(N_(n), m)

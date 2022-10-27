@@ -93,11 +93,6 @@ static void string_to_string(const char *const s, char (*const a)[12])
 #include "../src/table.h"
 
 
-
-
-
-
-#if 0
 /* Integer set with inverse hash to avoid storing the hash at all. */
 #if UINT_MAX >= 4294967295 /* >= 32-bits */
 /** <https://nullprogram.com/blog/2018/07/31/>
@@ -128,96 +123,58 @@ static unsigned lowbias32(unsigned x) { return x; }
 /** @implements <int>inverse_hash_fn */
 static unsigned lowbias32_r(unsigned x) { return x; }
 #endif /* < 32 bits */
+static unsigned uint_hash(const unsigned x) { return lowbias32(x); }
+static unsigned uint_inverse_hash(const unsigned x) { return lowbias32_r(x); }
 /** @implements <int>to_string_fn */
 static void uint_to_string(const unsigned x, char (*const a)[12])
 	{ sprintf(*a, "%u", x); }
+static void uint_filler(void *const zero, unsigned *const u) {
+	(void)zero, assert(!zero && RAND_MAX <= 99999999999l); /* For printing. */
+	*u = (unsigned)rand();
+}
 #define TABLE_NAME uint
 #define TABLE_KEY unsigned /* Parameter of <fn:lowbias32>. */
 #define TABLE_UINT unsigned /* Return key of <fn:lowbias32>. */
-#define TABLE_HASH &lowbias32
-#define TABLE_INVERSE &lowbias32_r /* Invertible means no key storage at all. */
+#define TABLE_INVERSE /* Invertible means no key storage at all. */
 #define TABLE_TEST
-#define TABLE_EXPECT_TRAIT
+#define TABLE_TO_STRING
 #include "../src/table.h"
-#define TABLE_TO_STRING &uint_to_string
-#include "../src/table.h"
-/** @implements <int>test_new_fn */
-static int uint_from_void(void *const zero, unsigned *const u) {
-	(void)zero, assert(!zero && RAND_MAX <= 99999999999l); /* For printing. */
-	*u = (unsigned)rand();
-	return 1;
-}
 
 
 /* Check to see that the prototypes are correct by making a signed integer.
  Also testing `TABLE_DEFAULT`. */
-/** @implements <int>hash_fn */
-static unsigned int_hash(int d)
+static unsigned int_hash(const int d)
 	{ return lowbias32((unsigned)d - (unsigned)INT_MIN); }
-/** @implements <int>inverse_hash_fn */
-static int int_inv_hash(unsigned u)
+static int int_inverse_hash(unsigned u)
 	{ return (int)(lowbias32_r(u) + (unsigned)INT_MIN); }
-/** @implements <int>to_string_fn */
 static void int_to_string(const int d, char (*const a)[12])
 	{ sprintf(*a, "%d", d); }
+static void int_filler(void *const zero, int *const s) {
+	(void)zero, assert(!zero && RAND_MAX <= 9999999999l); /* With '-'. */
+	*s = rand() - RAND_MAX / 2;
+}
 #define TABLE_NAME int
 #define TABLE_KEY int
 #define TABLE_UINT unsigned
-#define TABLE_HASH &int_hash
-#define TABLE_INVERSE &int_inv_hash
+#define TABLE_INVERSE
+#define TABLE_TO_STRING &int_to_string
+#define TABLE_DEFAULT 0
 #define TABLE_TEST
 #define TABLE_EXPECT_TRAIT
 #include "../src/table.h"
-#define TABLE_DEFAULT 0
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
+#define TABLE_TRAIT 42
 #define TABLE_DEFAULT 42
-#define TABLE_DEFAULT_NAME 42
-#define TABLE_EXPECT_TRAIT
 #include "../src/table.h"
-#define TABLE_TO_STRING &int_to_string
-#include "../src/table.h"
-/** @implements <int>test_new_fn */
-static int int_from_void(void *const zero, int *const s) {
-	(void)zero, assert(!zero && RAND_MAX <= 9999999999l); /* With '-'. */
-	*s = rand() - RAND_MAX / 2;
-	return 1;
-}
 
 
 /** Vector hash implemented as a pointer. This is kind of a silly example
  because it's easily homomorphic to a set of integers, but pretend we had a big
  problem space, (such an example would be difficult to describe succinctly.) */
-struct vec4 { char a[2], unused[2]; int n[2]; };
-/** @implements <vec4>hash_fn */
-static unsigned vec4_hash(const struct vec4 *const v4) {
-	return (unsigned)(1 * v4->n[0] + 10 * v4->n[1]
-		+ 100 * (v4->a[0] - 'A') + 26000 * (v4->a[1] - 'a'));
-}
-/** @implements <vec4>is_equal_fn */
-static int vec4_is_equal(const struct vec4 *a, const struct vec4 *const b) {
-	return a->a[0] == b->a[0] && a->a[1] == b->a[1]
-		&& a->n[0] == b->n[0] && a->n[1] == b->n[1];
-}
-/** @implements <vec4>to_string_fn */
-static void vec4_to_string(const struct vec4 *const v4, char (*const a)[12])
-	{ sprintf(*a, "%c%d%c%d",
-	v4->a[0], v4->n[0] % 100, v4->a[1], v4->n[1] % 100); }
-#define TABLE_NAME vec4
-#define TABLE_KEY struct vec4 *
-#define TABLE_HASH &vec4_hash
-#define TABLE_IS_EQUAL &vec4_is_equal
-/* Because of alignment, doesn't buy anything in terms of space savings. */
-#define TABLE_UINT unsigned
-#define TABLE_TEST
-#define TABLE_EXPECT_TRAIT
-#include "../src/table.h"
-#define TABLE_TO_STRING &vec4_to_string
-#include "../src/table.h"
+struct vec4 { char a[2]; int n[2]; };
+/* Testing. */
 #define POOL_NAME vec4
 #define POOL_TYPE struct vec4
 #include "pool.h"
-/** For testing: `s4s` is a pool of vectors. */
 static struct vec4 *vec4_from_pool(struct vec4_pool *const v4s) {
 	struct vec4 *v4 = vec4_pool_new(v4s);
 	if(!v4) return 0;
@@ -227,11 +184,31 @@ static struct vec4 *vec4_from_pool(struct vec4_pool *const v4s) {
 	v4->n[1] = rand() / (RAND_MAX / 9 + 1);
 	return v4;
 }
-/** @implements <vec4>test_new_fn */
-static int vec4_from_void(void *const vec4s, struct vec4 **const v)
-	{ return assert(vec4s), !!(*v = vec4_from_pool(vec4s)); }
+static void vec4_filler(void *const vec4s, struct vec4 **const v)
+	{ assert(vec4s), *v = vec4_from_pool(vec4s), assert(*v); }
+/* Hash table. */
+static unsigned vec4_hash(const struct vec4 *const v4) {
+	return (unsigned)(1 * v4->n[0] + 10 * v4->n[1]
+		+ 100 * (v4->a[0] - 'A') + 26000 * (v4->a[1] - 'a'));
+}
+static int vec4_is_equal(const struct vec4 *a, const struct vec4 *const b) {
+	return a->a[0] == b->a[0] && a->a[1] == b->a[1]
+		&& a->n[0] == b->n[0] && a->n[1] == b->n[1];
+}
+static void vec4_to_string(const struct vec4 *const v4, char (*const a)[12]) {
+	sprintf(*a, "%c%d%c%d", v4->a[0], v4->n[0] % 100, v4->a[1], v4->n[1] % 100);
+}
+#define TABLE_NAME vec4
+#define TABLE_KEY struct vec4 *
+#define TABLE_IS_EQUAL
+/* Because of alignment, doesn't buy anything in terms of space savings. */
+#define TABLE_UINT unsigned
+#define TABLE_TEST
+#define TABLE_TO_STRING
+#include "../src/table.h"
 
 
+#if 0
 /** Too lazy to do separate tests. */
 static void test_default(void) {
 	struct int_table t = int_table();
@@ -800,13 +777,13 @@ finally:
 
 int main(void) {
 	struct str16_pool strings = str16_pool();
-	/*struct vec4_pool vec4s = vec4_pool();*/
+	struct vec4_pool vec4s = vec4_pool();
 	zodiac_table_test(0); /* Don't require any space. */
 	string_table_test(&strings), str16_pool_(&strings);
-	/*uint_table_test(&uint_from_void, 0);
-	int_table_test(&int_from_void, 0);
-	vec4_table_test(&vec4_from_void, &vec4s), vec4_pool_(&vec4s);
-	star_table_test(&fill_star, 0);
+	uint_table_test(0);
+	int_table_test(0);
+	vec4_table_test(&vec4s), vec4_pool_(&vec4s);
+	/*star_table_test(&fill_star, 0);
 	test_default();
 	test_it();
 	stars();
