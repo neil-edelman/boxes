@@ -208,7 +208,6 @@ static void vec4_to_string(const struct vec4 *const v4, char (*const a)[12]) {
 #include "../src/table.h"
 
 
-#if 0
 /** Too lazy to do separate tests. */
 static void test_default(void) {
 	struct int_table t = int_table();
@@ -270,12 +269,13 @@ finally:
 
 /** This is stored in the map value of `<boat>table`. */
 struct boat_record { int best_time, points; };
+static unsigned boat_hash(const int x) { return int_hash(x); }
+static int boat_inverse_hash(const unsigned h) { return int_inverse_hash(h); }
 #define TABLE_NAME boat
 #define TABLE_KEY int
 #define TABLE_UINT unsigned
 #define TABLE_VALUE struct boat_record
-#define TABLE_HASH &int_hash
-#define TABLE_INVERSE &int_inv_hash
+#define TABLE_INVERSE
 #include "../src/table.h"
 /** <https://stackoverflow.com/q/59091226/2472827>. */
 static void boat_club(void) {
@@ -323,6 +323,7 @@ finally:
 }
 
 
+#if 0
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
  Sol. As a real example, this is silly; it would be much better suited to
  `gperf` because the data is known beforehand. Also, see <fn:hash_zodiac>.
@@ -783,12 +784,12 @@ int main(void) {
 	uint_table_test(0);
 	int_table_test(0);
 	vec4_table_test(&vec4s), vec4_pool_(&vec4s);
-	/*star_table_test(&fill_star, 0);
+	/*star_table_test(&fill_star, 0);*/
 	test_default();
 	test_it();
-	stars();
+	/*stars();*/
 	boat_club();
-	linked_dict();
+	/*linked_dict();
 	year_of();
 	nato();*/
 	return EXIT_SUCCESS;

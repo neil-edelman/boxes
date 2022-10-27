@@ -344,6 +344,7 @@ static struct PN_(bucket) *PN_(query)(struct N_(table) *const table,
 	}
 #ifdef TABLE_DONT_SPLAY /* <!-- !splay: (No reason not to, practically.) */
 	return bucket1;
+#undef TABLE_DONT_SPLAY
 #else /* !splay --><!-- splay: bring the MRU to the front. */
 	if(b0 == TABLE_NULL) return bucket1;
 	{
@@ -750,7 +751,7 @@ static enum table_result N_(table_update)(struct N_(table) *const table,
 static enum table_result PN_(compute)(struct N_(table) *const table,
 	PN_(key) key, PN_(value) **const value) {
 	struct PN_(bucket) *bucket;
-	const PN_(uint) hash = PN_(hash)(key);
+	const PN_(uint) hash = N_(hash)(key);
 	enum table_result result;
 	assert(table && value);
 	if(table->buckets && (bucket = PN_(query)(table, key, hash))) {
@@ -826,6 +827,7 @@ static void PN_(unused_base_coda)(void);
 static void PN_(unused_base)(void) {
 	PN_(entry) e; PN_(key) k; PN_(value) v;
 	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
+	PN_(is_element)(0);
 	N_(table)(); N_(table_)(0); N_(table_begin)(0); N_(table_next)(0, 0);
 	N_(table_buffer)(0, 0); N_(table_clear)(0); N_(table_is)(0, k);
 	N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v); N_(table_try)(0, e);
@@ -906,9 +908,6 @@ static void PN_D_(unused, default_coda)(void) { PN_D_(unused, default)(); }
 #undef N_D_
 #undef PN_D_
 #undef TABLE_DEFAULT
-#ifdef TABLE_DEFAULT_NAME
-#undef TABLE_DEFAULT_NAME
-#endif
 #endif /* default trait --> */
 
 
@@ -931,6 +930,12 @@ static void PN_D_(unused, default_coda)(void) { PN_D_(unused, default)(); }
 #endif
 #ifdef TABLE_VALUE
 #undef TABLE_VALUE
+#endif
+#ifdef TABLE_HAS_TO_STRING
+#undef TABLE_HAS_TO_STRING
+#endif
+#ifdef TABLE_TEST
+#undef TABLE_TEST
 #endif
 #endif /* done --> */
 #ifdef TABLE_TRAIT
