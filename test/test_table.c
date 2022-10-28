@@ -388,29 +388,28 @@ static void star_filler(void *const zero, struct star_table_entry *const star) {
 }
 
 
-#if 0
 /* Linked dictionary: linked-list with a comparison order indexed by a map.
  This is just the thing we said in `TABLE_VALUE` to avoid, and probably is the
  worst-case in terms of design of the table. It's associated, so we don't
  really have a nice choice; were we to aggregate it, then it would be a fixed
  size or face alignment issues. */
-struct dict_listlink;
-static int dict_compare(const struct dict_listlink *,
-	const struct dict_listlink *);
-#define LIST_NAME dict
-#define LIST_COMPARE &dict_compare
+struct dictlist_listlink;
+static int dictlist_compare(const struct dictlist_listlink *,
+	const struct dictlist_listlink *);
+#define LIST_NAME dictlist
+#define LIST_COMPARE
 #include "list.h"
 /** Associated with the word and a link to other words. */
-struct dict { struct dict_listlink link; char *word; };
+struct dict { struct dictlist_listlink link; char *word; };
 /** `container_of` `link`; `offsetof`, in this case, is zero; we could have
  used a cast. */
-static const struct dict *link_upcast(const struct dict_listlink *const link)
-	{ return (const struct dict *)(const void *)
+static const struct dict *dictlink_upcast(const struct dictlist_listlink *const
+	link) { return (const struct dict *)(const void *)
 	((const char *)link - offsetof(struct dict, link)); }
 /** Compare `a` and `b`. */
-static int dict_compare(const struct dict_listlink *const a,
-	const struct dict_listlink *const b)
-	{ return strcmp(link_upcast(a)->word, link_upcast(b)->word); }
+static int dictlist_compare(const struct dictlist_listlink *const a,
+	const struct dictlist_listlink *const b)
+	{ return strcmp(dictlink_upcast(a)->word, dictlink_upcast(b)->word); }
 /* We take them on-line as they come, so we need a stable pool. */
 #define POOL_NAME dict
 #define POOL_TYPE struct dict
@@ -449,10 +448,10 @@ finally:
 	return success;
 }
 static size_t dict_hash(const char *const d) { return djb2(d); }
-static int dict_is_equal(const char *const a, const char *const b)
-	{ return string_is_equal(a, b); }
 static void dict_to_string(const char *const d, char (*const a)[12])
 	{ string_to_string(d, a); }
+static int dict_is_equal(const char *const a, const char *const b)
+	{ return !strcmp(a, b); }
 /* A string set with a pointer to dict map. It duplicates data from `key` and
  `value->word`, but table is complicated enough as it is. It has to be a
  pointer because a table is not stable, (not guaranteed stability even looking
@@ -474,11 +473,11 @@ static void linked_dict(void) {
 	const char *const inglesi_fn = "test/Tutte_le_parole_inglesi.txt";
 	struct dict_table words = dict_table();
 	struct dict_pool backing = dict_pool();
-	struct dict_list order;
+	struct dictlist_list order;
 	struct lex_state state = { 0, 0, 0 }; /* Defined in <lex.h>. */
 	printf("Testing linked-dictionary.\n");
 	if(!append_file(&english, inglesi_fn)) goto catch;
-	dict_list_clear(&order);
+	dictlist_list_clear(&order);
 	state.cursor = english.data, state.line = 1;
 	while(lex_dict(&state)) { /* Cut off the string in the `char` array. */
 		struct dict **ptr, *d;
@@ -490,12 +489,12 @@ static void linked_dict(void) {
 		case TABLE_UNIQUE:
 			if(!(d = *ptr = dict_pool_new(&backing))) goto catch;
 			d->word = state.word;
-			dict_list_push(&order, &d->link);
+			dictlist_list_push(&order, &d->link);
 		}
 	}
 	/* Natural merge sort, `O(n)` when it's (almost?) in order. (They are
 	 presumably already sorted.) */
-	dict_list_sort(&order);
+	dictlist_list_sort(&order);
 	printf("Dictionary: %s.\n", dict_table_to_string(&words));
 	/* Print all.
 	for(i = dict_list_head(&order); i; i = dict_list_next(i))
@@ -514,9 +513,9 @@ static void linked_dict(void) {
 				"That's weird; \"%s\" wasn't found in the dictionary.\n", look);
 				assert(0); continue; }
 			before = found->link.prev
-				? link_upcast(found->link.prev)->word : "start";
+				? dictlink_upcast(found->link.prev)->word : "start";
 			after = found->link.next
-				? link_upcast(found->link.next)->word : "end";
+				? dictlink_upcast(found->link.next)->word : "end";
 			printf("Found \"%s\" between …%s, %s, %s…\n",
 				look, before, found->word, after);
 			assert(!strcmp(look, found->word)
@@ -533,7 +532,6 @@ finally:
 	char_array_(&english);
 	printf("\n");
 }
-#endif
 
 
 /* Int set that is a subclass of a larger parent using a pointer. */
@@ -780,7 +778,7 @@ int main(void) {
 	test_it();
 	stars();
 	boat_club();
-	/*linked_dict();*/
+	linked_dict();
 	year_of();
 	nato();
 	return EXIT_SUCCESS;
