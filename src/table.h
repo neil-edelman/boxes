@@ -856,8 +856,8 @@ static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 
 
 #ifdef TABLE_TO_STRING /* <!-- to string trait */
-/** Private <tag:<PN>bucket> would be a confusing thing with which to call
- to string. Insert an extra level of indirection to call this with the key. */
+/** Private `bucket` would be a confusing thing with which to call to string to
+ convert `z`. Insert an extra level of indirection to call this with the key. */
 static void N_(to_string_thunk)(const struct PN_(bucket) *const bucket,
 	char (*const z)[12]) {
 	/* This function must be defined by the user. */

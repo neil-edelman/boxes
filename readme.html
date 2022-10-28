@@ -50,7 +50,7 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of &lt;string&gt;table." src = "doc/table.png" width = 388 height = 391></p>
+<p><img alt = "Example of &lt;string&gt;table." src = "doc/table.png" width = 349 height = 407></p>
 
 <p><a href = "#tag:&lt;N&gt;table">&lt;N&gt;table</a> implements a set or map of <a href = "#typedef:&lt;PN&gt;entry">&lt;PN&gt;entry</a> as a hash table. It must be supplied a <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> and, <a href = "#typedef:&lt;PN&gt;is_equal_fn">&lt;PN&gt;is_equal_fn</a> or <a href = "#typedef:&lt;PN&gt;inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a>.</p>
 
@@ -101,9 +101,9 @@
 
 <h3><a id = "typedef:<PN>hash_fn" name = "typedef:<PN>hash_fn">&lt;PN&gt;hash_fn</a></h3>
 
-<p><code>typedef &lt;PN&gt;uint(*<strong>&lt;PN&gt;hash_fn</strong>)(&lt;PN&gt;key_c);</code></p>
+<p><code>typedef &lt;PN&gt;uint(*<strong>&lt;PN&gt;hash_fn</strong>)(const &lt;PN&gt;key);</code></p>
 
-<p>A map from <a href = "#typedef:&lt;PN&gt;key_c">&lt;PN&gt;key_c</a> onto <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a> that, ideally, should be easy to compute while minimizing duplicate addresses. Must be consistent for each value while in the table. If <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> is a pointer, one is permitted to have null in the domain.</p>
+<p>A map from <a href = "#typedef:&lt;PN&gt;key_c">&lt;PN&gt;key_c</a> onto <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a>, called <code>&lt;N&gt;hash</code>, that, ideally, should be easy to compute while minimizing duplicate addresses. Must be consistent for each value while in the table. If <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> is a pointer, one is permitted to have null in the domain.</p>
 
 </div>
 
@@ -113,7 +113,7 @@
 
 <p><code>typedef &lt;PN&gt;key(*<strong>&lt;PN&gt;inverse_hash_fn</strong>)(&lt;PN&gt;uint);</code></p>
 
-<p>Defining <code>TABLE_INVERSE</code> says <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> forms a bijection between the range in <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> and the image in <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a>. Keys are not stored in the hash table, rather they are generated using this inverse-mapping.</p>
+<p>Defining <code>TABLE_INVERSE</code> says <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> forms a bijection between the range in <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> and the image in <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a>, and the inverse is called <code>&lt;N&gt;inverse_hash</code>. In this case, keys are not stored in the hash table, rather they are generated using this inverse-mapping.</p>
 
 </div>
 
@@ -123,7 +123,7 @@
 
 <p><code>typedef int(*<strong>&lt;PN&gt;is_equal_fn</strong>)(&lt;PN&gt;key_c a, &lt;PN&gt;key_c b);</code></p>
 
-<p>Equivalence relation between <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> that satisfies <code>&lt;PN&gt;is_equal_fn(a, b) -&gt; &lt;PN&gt;hash(a) == &lt;PN&gt;hash(b)</code>. Can not be set if <code>TABLE_INVERSE</code>, because the comparison is done directly in hash space, in that case.</p>
+<p>Equivalence relation between <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> that satisfies <code>&lt;PN&gt;is_equal_fn(a, b) -&gt; &lt;PN&gt;hash(a) == &lt;PN&gt;hash(b)</code>, called <code>&lt;N&gt;is_equal</code>. If <code>TABLE_INVERSE</code> is set, there is no need for this function because the comparison is done directly in hash space.</p>
 
 </div>
 
@@ -291,9 +291,9 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<ITR>trim">&lt;ITR&gt;trim</a></td><td>box, predicate</td></tr>
 
-<tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#fn:<N>table<D>get">&lt;N&gt;table&lt;D&gt;get</a></td><td>table, key</td></tr>
-
 <tr><td align = right>static const char *</td><td><a href = "#fn:<STR>to_string">&lt;STR&gt;to_string</a></td><td>box</td></tr>
+
+<tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#fn:<N>table<D>get">&lt;N&gt;table&lt;D&gt;get</a></td><td>table, key</td></tr>
 
 </table>
 
@@ -681,23 +681,6 @@
 
 <div>
 
-<h3><a id = "fn:<N>table<D>get" name = "fn:<N>table<D>get">&lt;N&gt;table&lt;D&gt;get</a></h3>
-
-<p><code>static &lt;PN&gt;value <strong>&lt;N&gt;table&lt;D&gt;get</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code></p>
-
-<p>This is functionally identical to <a href = "#fn:&lt;N&gt;table_get_or">&lt;N&gt;table_get_or</a>, but a with a trait specifying a constant default value.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>The value associated with <code>key</code> in <code>table</code>, (which can be null.) If no such value exists, the <code>TABLE_DEFAULT</code> is returned.</dd>
-	<dt>Order:</dt>
-	<dd>Average &#927;(1); worst &#927;(n).</dd>
-</dl>
-
-</div>
-
-<div>
-
 <h3><a id = "fn:<STR>to_string" name = "fn:<STR>to_string">&lt;STR&gt;to_string</a></h3>
 
 <p><code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code></p>
@@ -709,6 +692,23 @@
 	<dd>Address of the static buffer.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>table<D>get" name = "fn:<N>table<D>get">&lt;N&gt;table&lt;D&gt;get</a></h3>
+
+<p><code>static &lt;PN&gt;value <strong>&lt;N&gt;table&lt;D&gt;get</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code></p>
+
+<p>This is functionally identical to <a href = "#fn:&lt;N&gt;table_get_or">&lt;N&gt;table_get_or</a>, but a with a trait specifying a constant default value.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The value associated with <code>key</code> in <code>table</code>, (which can be null.) If no such value exists, the <code>TABLE_DEFAULT</code> is returned.</dd>
+	<dt>Order:</dt>
+	<dd>Average &#927;(1); worst &#927;(n).</dd>
 </dl>
 
 </div>

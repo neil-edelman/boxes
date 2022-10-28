@@ -57,9 +57,9 @@ Valid tag type defined by `TABLE_KEY` used for keys\. If `TABLE_INVERSE` is not 
 
 ### <a id = "user-content-typedef-5e79a292" name = "user-content-typedef-5e79a292">&lt;PN&gt;hash_fn</a> ###
 
-<code>typedef &lt;PN&gt;uint(*<strong>&lt;PN&gt;hash_fn</strong>)(&lt;PN&gt;key_c);</code>
+<code>typedef &lt;PN&gt;uint(*<strong>&lt;PN&gt;hash_fn</strong>)(const &lt;PN&gt;key);</code>
 
-A map from [&lt;PN&gt;key_c](#user-content-typedef-46bcab6a) onto [&lt;PN&gt;uint](#user-content-typedef-c13937ad) that, ideally, should be easy to compute while minimizing duplicate addresses\. Must be consistent for each value while in the table\. If [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) is a pointer, one is permitted to have null in the domain\.
+A map from [&lt;PN&gt;key_c](#user-content-typedef-46bcab6a) onto [&lt;PN&gt;uint](#user-content-typedef-c13937ad), called `<N>hash`, that, ideally, should be easy to compute while minimizing duplicate addresses\. Must be consistent for each value while in the table\. If [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) is a pointer, one is permitted to have null in the domain\.
 
 
 
@@ -67,7 +67,7 @@ A map from [&lt;PN&gt;key_c](#user-content-typedef-46bcab6a) onto [&lt;PN&gt;uin
 
 <code>typedef &lt;PN&gt;key(*<strong>&lt;PN&gt;inverse_hash_fn</strong>)(&lt;PN&gt;uint);</code>
 
-Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) forms a bijection between the range in [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) and the image in [&lt;PN&gt;uint](#user-content-typedef-c13937ad)\. Keys are not stored in the hash table, rather they are generated using this inverse\-mapping\.
+Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) forms a bijection between the range in [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) and the image in [&lt;PN&gt;uint](#user-content-typedef-c13937ad), and the inverse is called `<N>inverse_hash`\. In this case, keys are not stored in the hash table, rather they are generated using this inverse\-mapping\.
 
 
 
@@ -75,7 +75,7 @@ Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292
 
 <code>typedef int(*<strong>&lt;PN&gt;is_equal_fn</strong>)(&lt;PN&gt;key_c a, &lt;PN&gt;key_c b);</code>
 
-Equivalence relation between [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) that satisfies `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`\. Can not be set if `TABLE_INVERSE`, because the comparison is done directly in hash space, in that case\.
+Equivalence relation between [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) that satisfies `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`, called `<N>is_equal`\. If `TABLE_INVERSE` is set, there is no need for this function because the comparison is done directly in hash space\.
 
 
 
@@ -221,9 +221,9 @@ Adding, deleting, successfully looking up entries, or any modification of the ta
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-108e9df6">&lt;ITR&gt;trim</a></td><td>box, predicate</td></tr>
 
-<tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#user-content-fn-92774ccb">&lt;N&gt;table&lt;D&gt;get</a></td><td>table, key</td></tr>
-
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
+
+<tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#user-content-fn-92774ccb">&lt;N&gt;table&lt;D&gt;get</a></td><td>table, key</td></tr>
 
 </table>
 
@@ -537,20 +537,6 @@ Removes `key` from `table` \(which could be null\.\)
 
 
 
-### <a id = "user-content-fn-92774ccb" name = "user-content-fn-92774ccb">&lt;N&gt;table&lt;D&gt;get</a> ###
-
-<code>static &lt;PN&gt;value <strong>&lt;N&gt;table&lt;D&gt;get</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code>
-
-This is functionally identical to [&lt;N&gt;table_get_or](#user-content-fn-638dcc26), but a with a trait specifying a constant default value\.
-
- * Return:  
-   The value associated with `key` in `table`, \(which can be null\.\) If no such value exists, the `TABLE_DEFAULT` is returned\.
- * Order:  
-   Average &#927;\(1\); worst &#927;\(n\)\.
-
-
-
-
 ### <a id = "user-content-fn-751c6337" name = "user-content-fn-751c6337">&lt;STR&gt;to_string</a> ###
 
 <code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
@@ -561,6 +547,20 @@ This is functionally identical to [&lt;N&gt;table_get_or](#user-content-fn-638dc
    Address of the static buffer\.
  * Order:  
    &#920;\(1\)
+
+
+
+
+### <a id = "user-content-fn-92774ccb" name = "user-content-fn-92774ccb">&lt;N&gt;table&lt;D&gt;get</a> ###
+
+<code>static &lt;PN&gt;value <strong>&lt;N&gt;table&lt;D&gt;get</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code>
+
+This is functionally identical to [&lt;N&gt;table_get_or](#user-content-fn-638dcc26), but a with a trait specifying a constant default value\.
+
+ * Return:  
+   The value associated with `key` in `table`, \(which can be null\.\) If no such value exists, the `TABLE_DEFAULT` is returned\.
+ * Order:  
+   Average &#927;\(1\); worst &#927;\(n\)\.
 
 
 
