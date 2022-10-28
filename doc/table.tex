@@ -106,160 +106,157 @@ Thus, the {\it data} part of the {\it data structure} is similar to that of coal
 	\centering
 	\subcaptionbox{Separate-chaining.\label{types:separate}}{%
 		\digraph[scale=\Scale]{separate}{
-	rankdir=LR;
-	graph [truecolor=true, bgcolor=transparent];
-	fontface=modern;
-	node [shape=box, style=filled, fillcolor="Gray95"];
-	hash [label=<<TABLE BORDER="0">
-	<TR>
-		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">next</FONT></TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x0</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x1</TD>
-		<TD PORT="1">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x2</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x3</TD>
-		<TD PORT="3">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4</TD>
-		<TD PORT="4" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x5</TD>
-		<TD PORT="5">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x6</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x7</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x8</TD>
-		<TD PORT="8" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x9</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xa</TD>
-		<TD PORT="10" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BORDER="0">0xb</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xc</TD>
-		<TD PORT="12" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0xd</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xe</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0xf</TD>
-		<TD PORT="15">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e1 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x91</TD>
-		<TD ALIGN="LEFT">Castor</TD>
-		<TD ALIGN="RIGHT">52</TD>
-		<TD PORT="1">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e3 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x3</TD>
-		<TD ALIGN="LEFT">Deneb</TD>
-		<TD ALIGN="RIGHT">2615</TD>
-		<TD PORT="3">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e4 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x44</TD>
-		<TD ALIGN="LEFT">Sirius</TD>
-		<TD ALIGN="RIGHT">8.6</TD>
-		<TD PORT="4">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e5 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x35</TD>
-		<TD ALIGN="LEFT">Spica</TD>
-		<TD ALIGN="RIGHT">250</TD>
-		<TD PORT="5">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e8 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xd8</TD>
-		<TD ALIGN="LEFT">Rigel</TD>
-		<TD ALIGN="RIGHT">860</TD>
-		<TD PORT="8">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e10 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4a</TD>
-		<TD ALIGN="LEFT">Betelgeuse</TD>
-		<TD ALIGN="RIGHT">700</TD>
-		<TD PORT="10">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e11 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4f</TD>
-		<TD ALIGN="LEFT">Procyon</TD>
-		<TD ALIGN="RIGHT">11</TD>
-		<TD PORT="11">\detokenize{◯}</TD>
-	</TR>
-</TABLE>>];
-	e12 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xec</TD>
-		<TD ALIGN="LEFT">Regulus</TD>
-		<TD ALIGN="RIGHT">79</TD>
-		<TD PORT="12">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
-	e13 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x33</TD>
-		<TD ALIGN="LEFT">Antares</TD>
-		<TD ALIGN="RIGHT">550</TD>
-		<TD PORT="13">\detokenize{◯}</TD>
-	</TR>
-</TABLE>>];
-	e14 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xb3</TD>
-		<TD ALIGN="LEFT">Sol</TD>
-		<TD ALIGN="RIGHT">0</TD>
-		<TD PORT="14">\detokenize{◯}</TD>
-	</TR>
-</TABLE>>];
-	e15 [label=<<TABLE BORDER="0">
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x9f</TD>
-		<TD ALIGN="LEFT">Polaris</TD>
-		<TD ALIGN="RIGHT">430</TD>
-		<TD PORT="15">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	hash [label=<
+<table border="0" cellspacing="0">
+	<tr><td colspan="2"></td></tr>
+	<hr/>
+	<tr>
+		<td BORDER="0"><FONT FACE="Times-Italic">i</FONT></td>
+		<td BORDER="0"><FONT FACE="Times-Italic">next</FONT></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0x0</font></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x1</font></td>
+		<td PORT="1" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0x2</font></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x3</font></td>
+		<td PORT="3" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0x4</font></td>
+		<td PORT="4">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x5</font></td>
+		<td PORT="5" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0x6</font></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x7</font></td>
+		<td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0x8</font></td>
+		<td PORT="8">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x9</font></td>
+		<td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0xa</font></td>
+		<td PORT="10">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" BORDER="0" bgcolor="Gray95"><font face="Times-Italic">0xb</font></td>
+		<td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0xc</font></td>
+		<td PORT="12">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0xd</font></td>
+		<td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0xe</font></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0xf</font></td>
+		<td PORT="15" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<hr/>
+	<tr><td colspan="2"></td></tr>
+</table>>];
+	e1 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x91</td>
+		<td ALIGN="LEFT">Castor</td>
+		<td PORT="1">\detokenize{⬤}</td>
+	</tr>
+</table>>];
+	e3 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x3</td>
+		<td ALIGN="LEFT">Deneb</td>
+		<td PORT="3">\detokenize{⬤}</td>
+	</tr>
+</table>>];
+	e4 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x44</td>
+		<td ALIGN="LEFT">Sirius</td>
+		<td PORT="4">\detokenize{⬤}</td>
+	</tr>
+</table>>];
+	e5 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x35</td>
+		<td ALIGN="LEFT">Spica</td>
+		<td PORT="5">\detokenize{⬤}</td>
+	</tr>
+</table>>];
+	e8 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0xd8</td>
+		<td ALIGN="LEFT">Rigel</td>
+		<td PORT="8">\detokenize{⬤}</td>
+	</tr>
+</table>>];
+	e10 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x4a</td>
+		<td ALIGN="LEFT">Betelgeuse</td>
+		<td PORT="10">\detokenize{⬤}</td>
+	</tr>
+</table>>];
+	e11 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x4f</td>
+		<td ALIGN="LEFT">Procyon</td>
+		<td PORT="11">\detokenize{◯}</td>
+	</tr>
+</table>>];
+	e12 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0xec</td>
+		<td ALIGN="LEFT">Regulus</td>
+		<td PORT="12">\detokenize{⬤}</td>
+	</tr>
+</table>>];
+	e13 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x33</td>
+		<td ALIGN="LEFT">Antares</td>
+		<td PORT="13">\detokenize{◯}</td>
+	</tr>
+</table>>];
+	e14 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0xb3</td>
+		<td ALIGN="LEFT">Sol</td>
+		<td PORT="14">\detokenize{◯}</td>
+	</tr>
+</table>>];
+	e15 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x9f</td>
+		<td ALIGN="LEFT">Polaris</td>
+		<td PORT="15">\detokenize{⬤}</td>
+	</tr>
+</table>>];
 	node [shape=plain, fillcolor=none, headclip = false, tailclip=false]
 	hash:1 -> e1;
 	hash:3 -> e3 -> e13 -> e14;
@@ -270,234 +267,229 @@ Thus, the {\it data} part of the {\it data structure} is similar to that of coal
 	hash:12 -> e12;
 	hash:15 -> e15;
 	e15 -> e11;
+	node [color=red];
 		}
 	}
 	\subcaptionbox{Open-addressing.\label{types:open}}{%
 		\digraph[scale=\Scale]{open}{
-	rankdir=LR;
-	graph [truecolor=true, bgcolor=transparent];
-	fontface=modern;
-	node [shape=box, style=filled, fillcolor="Gray95"];
-	hash [label=<<TABLE BORDER="0">
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	hash [label=<
+<table border="0" cellspacing="0">
+	<tr><td colspan="4"></td></tr>
+	<hr/>
 	<TR>
 		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
 		<TD BORDER="0"><FONT FACE="Times-Italic">disp.</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">hash</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">key</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">value</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Italic">hash</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Italic">key</FONT></TD>
+	</TR>
+	<hr/>
+	<TR>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0x0</font></TD>
+		<TD><font face="Times-Italic">1</font></TD>
+		<TD ALIGN="RIGHT">0x4f</TD>
+		<TD ALIGN="LEFT">Procyon</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x0</TD>
-		<TD BGCOLOR="Gray90">1</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4f</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Procyon</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">11</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x1</font></TD>
+		<TD bgcolor="Gray95"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95">0x91</TD>
+		<TD ALIGN="LEFT" bgcolor="Gray95">Castor</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT">0x1</TD>
-		<TD>0</TD>
-		<TD ALIGN="RIGHT">0x91</TD>
-		<TD ALIGN="LEFT">Castor</TD>
-		<TD ALIGN="RIGHT">52</TD>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0x2</font></TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x2</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x3</font></TD>
+		<TD bgcolor="Gray95"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95">0x3</TD>
+		<TD ALIGN="LEFT" bgcolor="Gray95">Deneb</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT">0x3</TD>
-		<TD>0</TD>
-		<TD ALIGN="RIGHT">0x3</TD>
-		<TD ALIGN="LEFT">Deneb</TD>
-		<TD ALIGN="RIGHT">2615</TD>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0x4</font></TD>
+		<TD><font face="Times-Italic">1</font></TD>
+		<TD ALIGN="RIGHT">0x33</TD>
+		<TD ALIGN="LEFT">Antares</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4</TD>
-		<TD BGCOLOR="Gray90">1</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x33</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Antares</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">550</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x5</font></TD>
+		<TD PORT="14" bgcolor="Gray95"><font face="Times-Italic">2</font></TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95">0xb3</TD>
+		<TD ALIGN="LEFT" bgcolor="Gray95">Sol</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT">0x5</TD>
-		<TD PORT="14">2</TD>
-		<TD ALIGN="RIGHT">0xb3</TD>
-		<TD ALIGN="LEFT">Sol</TD>
-		<TD ALIGN="RIGHT">0</TD>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0x6</font></TD>
+		<TD><font face="Times-Italic">2</font></TD>
+		<TD ALIGN="RIGHT">0x44</TD>
+		<TD ALIGN="LEFT">Sirius</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x6</TD>
-		<TD BGCOLOR="Gray90">2</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x44</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sirius</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">8.6</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x7</font></TD>
+		<TD bgcolor="Gray95"><font face="Times-Italic">2</font></TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95">0x35</TD>
+		<TD ALIGN="LEFT" bgcolor="Gray95">Spica</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT">0x7</TD>
-		<TD>2</TD>
-		<TD ALIGN="RIGHT">0x35</TD>
-		<TD ALIGN="LEFT">Spica</TD>
-		<TD ALIGN="RIGHT">250</TD>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0x8</font></TD>
+		<TD PORT="8"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT">0xd8</TD>
+		<TD ALIGN="LEFT">Rigel</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x8</TD>
-		<TD PORT="8" BGCOLOR="Gray90">0</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xd8</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Rigel</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">860</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x9</font></TD>
+		<td bgcolor="Gray95"></td><td bgcolor="Gray95"></td><td bgcolor="Gray95"></td>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT">0x9</TD>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0xa</font></TD>
+		<TD PORT="10"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT">0x4a</TD>
+		<TD ALIGN="LEFT">Betelgeuse</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xa</TD>
-		<TD PORT="10" BGCOLOR="Gray90">0</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4a</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Betelgeuse</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">700</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0xb</font></TD>
+		<td bgcolor="Gray95"></td><td bgcolor="Gray95"></td><td bgcolor="Gray95"></td>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT">0xb</TD>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0xc</font></TD>
+		<TD PORT="12"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT">0xec</TD>
+		<TD ALIGN="LEFT">Regulus</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xc</TD>
-		<TD PORT="12" BGCOLOR="Gray90">0</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xec</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Regulus</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">79</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0xd</font></TD>
+		<td bgcolor="Gray95"></td><td bgcolor="Gray95"></td><td bgcolor="Gray95"></td>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT">0xd</TD>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0xe</font></TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xe</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0xf</font></TD>
+		<TD PORT="15" bgcolor="Gray95"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95">0x9f</TD>
+		<TD ALIGN="LEFT" bgcolor="Gray95">Polaris</TD>
 	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0xf</TD>
-		<TD PORT="15">0</TD>
-		<TD ALIGN="RIGHT">0x9f</TD>
-		<TD ALIGN="LEFT">Polaris</TD>
-		<TD ALIGN="RIGHT">430</TD>
-	</TR>
-</TABLE>>];
+	<hr/>
+	<tr><td colspan="4"></td></tr>
+</table>>];
 	node [shape=plain, fillcolor=none]
+	node [color=red];
 		}
 	}
 	\subcaptionbox{Inline-chaining.\label{types:inline}}{%
 		\digraph[scale=\Scale]{inline}{
-	rankdir=LR;
-	graph [truecolor=true, bgcolor=transparent];
-	fontface=modern;
-	node [shape=box, style=filled, fillcolor="Gray95"];
-	hash [label=<<TABLE BORDER="0">
-	<TR>
-		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">hash</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">key</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">value</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">next</FONT></TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x0</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x1</TD>
-		<TD ALIGN="RIGHT">0x91</TD>
-		<TD ALIGN="LEFT">Castor</TD>
-		<TD ALIGN="RIGHT">52</TD>
-		<TD PORT="1">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x2</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x3</TD>
-		<TD ALIGN="RIGHT">0x3</TD>
-		<TD ALIGN="LEFT">Deneb</TD>
-		<TD ALIGN="RIGHT">2615</TD>
-		<TD PORT="3">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x44</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sirius</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">8.6</TD>
-		<TD PORT="4" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x5</TD>
-		<TD ALIGN="RIGHT">0x35</TD>
-		<TD ALIGN="LEFT">Spica</TD>
-		<TD ALIGN="RIGHT">250</TD>
-		<TD PORT="5">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x6</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x7</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x8</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xd8</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Rigel</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">860</TD>
-		<TD PORT="8" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0x9</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xa</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4a</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Betelgeuse</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">700</TD>
-		<TD PORT="10" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BORDER="2">0xb</TD>
-		<TD ALIGN="RIGHT">0x4f</TD>
-		<TD ALIGN="LEFT">Procyon</TD>
-		<TD ALIGN="RIGHT">11</TD>
-		<TD PORT="11">\detokenize{◯}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xc</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xec</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Regulus</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">79</TD>
-		<TD PORT="12" BGCOLOR="Gray90">\detokenize{⬤}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0xd</TD>
-		<TD ALIGN="RIGHT">0x33</TD>
-		<TD ALIGN="LEFT">Antares</TD>
-		<TD ALIGN="RIGHT">550</TD>
-		<TD PORT="13">\detokenize{◯}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xe</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xb3</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sol</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0</TD>
-		<TD PORT="14" BGCOLOR="Gray90">\detokenize{◯}</TD>
-	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0xf</TD>
-		<TD ALIGN="RIGHT">0x9f</TD>
-		<TD ALIGN="LEFT">Polaris</TD>
-		<TD ALIGN="RIGHT">430</TD>
-		<TD PORT="15">\detokenize{⬤}</TD>
-	</TR>
-</TABLE>>];
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	data [label=<
+<table border="0" cellspacing="0">
+	<tr><td colspan="4"></td></tr>
+	<hr/>
+	<tr>
+		<td border="0"><font face="Times-Italic">i</font></td>
+		<td border="0"><font face="Times-Italic">hash</font></td>
+		<td border="0"><font face="Times-Italic">key</font></td>
+		<td border="0"><font face="Times-Italic">next</font></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td align="right"><font face="Times-Italic">0x0</font></td>
+		<td></td><td></td><td></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0x1</font></td>
+		<td align="right" bgcolor="Gray95">0x91</td>
+		<td align="left" bgcolor="Gray95">Castor</td>
+		<td port="1" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0x2</font></td>
+		<td></td><td></td><td></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0x3</font></td>
+		<td align="right" bgcolor="Gray95">0x3</td>
+		<td align="left" bgcolor="Gray95">Deneb</td>
+		<td port="3" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0x4</font></td>
+		<td align="right">0x44</td>
+		<td align="left">Sirius</td>
+		<td port="4">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0x5</font></td>
+		<td align="right" bgcolor="Gray95">0x35</td>
+		<td align="left" bgcolor="Gray95">Spica</td>
+		<td port="5" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0x6</font></td>
+		<td></td><td></td><td></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0x7</font></td>
+		<td bgcolor="Gray95"></td><td bgcolor="Gray95"></td><td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0x8</font></td>
+		<td align="right">0xd8</td>
+		<td align="left">Rigel</td>
+		<td port="8">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0x9</font></td>
+		<td bgcolor="Gray95"></td><td bgcolor="Gray95"></td><td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0xa</font></td>
+		<td align="right">0x4a</td>
+		<td align="left">Betelgeuse</td>
+		<td port="10">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td align="right" border="2" bgcolor="Gray95"><font face="Times-Italic">0xb</font></td>
+		<td align="right" bgcolor="Gray95">0x4f</td>
+		<td align="left" bgcolor="Gray95">Procyon</td>
+		<td port="11" bgcolor="Gray95">\detokenize{◯}</td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0xc</font></td>
+		<td align="right">0xec</td>
+		<td align="left">Regulus</td>
+		<td port="12">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0xd</font></td>
+		<td align="right" bgcolor="Gray95">0x33</td>
+		<td align="left" bgcolor="Gray95">Antares</td>
+		<td port="13" bgcolor="Gray95">\detokenize{◯}</td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0xe</font></td>
+		<td align="right">0xb3</td>
+		<td align="left">Sol</td>
+		<td port="14">\detokenize{◯}</td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0xf</font></td>
+		<td align="right" bgcolor="Gray95">0x9f</td>
+		<td align="left" bgcolor="Gray95">Polaris</td>
+		<td port="15" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<hr/>
+	<tr><td colspan="4"></td></tr>
+</table>>];
 	node [shape=plain, fillcolor=none]
 	e13 [label="0xd"];
-	hash:3 -> e13 [tailclip=false];
+	data:3 -> e13 [tailclip=false];
 	e14 [label="0xe"];
 	e13 -> e14;
 	i0xe [label="0xe", fontcolor="Gray"];
-	hash:13 -> i0xe [color="Gray"];
+	data:13 -> i0xe [color="Gray"];
 	e11 [label="0xb"];
-	hash:15 -> e11 [tailclip=false];
+	data:15 -> e11 [tailclip=false];
+	node [color=red];
 		}
 	}
 	\caption{A map from some star names to light-year distance using different collision-resolution schemes. Load factor \sfrac{11}{16} = 0.69. Expected value: chained number of queries, 1.4(7);
@@ -527,22 +519,20 @@ The same data is used for each replica across different methods, thus the same n
 \begin{figure}%
 \centering%
 \begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
-set style line 1 lt 5 lw 2 lc rgb '#0072bd' pointtype 1 pointsize 0.5
-set style line 2 lt 5 lw 2 lc rgb '#ff0000' pointtype 2 pointsize 0.5
-set style line 3 lt 5 lw 2 lc rgb '#00ac33' pointtype 5 pointsize 0.5
-set style line 4 lt 5 lw 2 lc rgb '#19d3f5' pointtype 5 pointsize 0.5
-set grid
-set xlabel "insertions"
-set ylabel "time per insertion, $t$ (ns)"
-set yrange [0:1000]
-set log x
 set format x '\tiny %g'
 set format y '\tiny %g'
-#set tics font "Modern, 8" #rotate by 20 right # ineffectual
+set key font "modern,20"
+set grid
+set monochrome
+set xlabel "insertions"
+set ylabel 'amortized time {\it per} key, (µs)'
+set yrange [0:1]
+set log x
+set xrange [1:33554432]
 plot \
-"../timing/graph/closed.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "separate-chaining" ls 1, \
-"../timing/graph/open.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "inline-chaining" ls 2, \
-"../timing/graph/unordered.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "std$\:\:$unordered\\_set" ls 3
+"../timing/graph/open.tsv" using 1:($2/$1):($3/$1) with errorlines title "inline-chaining", \
+"../timing/graph/closed.tsv" using 1:($2/$1):($3/$1) with errorlines title "separate-chaining", \
+"../timing/graph/unordered.tsv" using 1:($2/$1):($3/$1) with errorlines title "std$\:\:$unordered\\_set"
 \end{gnuplot}
 \caption{A comparison of chained techniques in a $C^{++}$ benchmark with a log-$x$ scale.}%
 \label{timing}%

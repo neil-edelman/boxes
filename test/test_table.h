@@ -76,74 +76,92 @@ static void PN_(graph)(const struct N_(table) *const table,
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	printf("*** %s\n", fn);
 	fprintf(fp, "digraph {\n"
-		"\trankdir=LR;\n"
-		"\tgraph [truecolor=true, bgcolor=transparent];\n"
-		"\tfontface=modern;\n");
-	if(!table->buckets) { fprintf(fp, "\tidle [shape=none]\n"); goto end; }
+		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
+		" fontname=modern];\n"
+		"\tnode [shape=none, fontname=modern];\n");
+	if(!table->buckets) { fprintf(fp, "\tidle;\n"); goto end; }
 	PN_(collect)(table), assert((size_t)table->size >= PN_(stats).n);
 	fprintf(fp,
-		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n"
-		"\thash [label=<<TABLE BORDER=\"0\">\n"
-		"\t<TR><TD COLSPAN=\"3\" ALIGN=\"LEFT\"><FONT COLOR=\"Gray85\">&lt;"
-		QUOTE(TABLE_NAME) "&gt;table: " QUOTE(TABLE_KEY) "</FONT></TD></TR>\n"
-		"\t<TR>\n"
-		"\t\t<TD>&nbsp;</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">load"
-		" factor</TD>\n");
+		"\thash [label=<\n"
+		"<table border=\"0\" cellspacing=\"0\">\n"
+		"\t<tr><td colspan=\"2\" align=\"left\">"
+		"<font color=\"Gray75\">&lt;" QUOTE(TABLE_NAME)
+		"&gt;table: " QUOTE(TABLE_KEY) "</font></td></tr>\n"
+		"\t<hr/>\n"
+		"\t<tr>\n"
+		"\t\t<td border=\"0\" align=\"right\">load factor</td>\n");
 	fprintf(fp,
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu/%lu</TD>\n"
-		"\t</TR>\n"
-		"\t<TR>\n"
-		"\t\t<TD>&nbsp;</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">E[no bucket]</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\">%.2f(%.1f)</TD>\n"
-		"\t</TR>\n"
-		"\t<TR>\n"
-		"\t\t<TD>&nbsp;</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">max"
-		" bucket</TD>\n"
-		"\t\t<TD BORDER=\"0\" ALIGN=\"RIGHT\" BGCOLOR=\"Gray90\">%lu</TD>\n"
-		"\t</TR>\n",
+		"\t\t<td border=\"0\" align=\"right\">%lu/%lu</td>\n"
+		"\t</tr>\n"
+		"\t<tr>\n"
+		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Gray95\">"
+		"E[no bucket]</td>\n"
+		"\t\t<td border=\"0\" align=\"right\" bgcolor=\"Gray95\">"
+		"%.2f(%.1f)</td>\n"
+		"\t</tr>\n"
+		"\t<tr>\n"
+		"\t\t<td border=\"0\" align=\"right\">max bucket</td>\n"
+		"\t\t<td border=\"0\" align=\"right\">%lu</td>\n"
+		"\t</tr>\n"
+		"\t<hr/>\n"
+		"\t<tr><td></td></tr>\n"
+		"</table>>];\n"
+		"\thash -> data;\n"
+		"\t{ rank=same; hash; data; }\n",
 		(unsigned long)PN_(stats).n,
 		table->buckets ? (unsigned long)PN_(capacity)(table) : 0,
 		PN_(stats).n ? PN_(stats).mean : (double)NAN, PN_(stats).n > 1
 		? sqrt(PN_(stats).ssdm / (double)(PN_(stats).n - 1)) : (double)NAN,
 		(unsigned long)PN_(stats).max);
-	fprintf(fp, "\t<TR>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Italic\">i</FONT></TD>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Bold\">hash</FONT></TD>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"%s\">key</FONT></TD>\n"
-		"\t\t<TD BORDER=\"0\"><FONT FACE=\"Times-Bold\">next</FONT></TD>\n"
-		"\t</TR>\n",
-#ifdef TABLE_INVERSE
-		"Times-Italic"
-#else
-		"Times-Bold"
-#endif
-		);
+	fprintf(fp,
+		"\tdata [label=<\n"
+		"<table border=\"0\" cellspacing=\"0\">\n"
+		"\t<tr><td colspan=\"4\"></td></tr>\n"
+		"\t<hr/>\n"
+		"\t<tr>\n"
+		"\t\t<td border=\"0\"><font face=\"Times-Italic\">i</font></td>\n"
+		"\t\t<td border=\"0\"><font face=\"Times-Italic\">hash</font></td>\n"
+		"\t\t<td border=\"0\"><font face=\"Times-Italic\">key</font></td>\n"
+		"\t\t<td border=\"0\"><font face=\"Times-Italic\">next</font></td>\n"
+		"\t</tr>\n"
+		"\t<hr/>\n");
 	for(i = 0, i_end = PN_(capacity)(table); i < i_end; i++) {
-		const char *const bgc = i & 1 ? "" : " BGCOLOR=\"Gray90\"",
+		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "",
 			*const top = (table->top & ~TABLE_HIGH) == i
-			? (table->top & TABLE_HIGH) ? " BORDER=\"1\"" : " BORDER=\"2\"" : "";
+			? (table->top & TABLE_HIGH) ? " border=\"1\"" : " border=\"2\"" : "";
 		struct PN_(bucket) *b = table->buckets + i;
-		fprintf(fp, "\t<TR>\n"
-			"\t\t<TD ALIGN=\"RIGHT\"%s%s>0x%lx</TD>\n",
+		fprintf(fp, "\t<tr>\n"
+			"\t\t<td align=\"right\"%s%s>"
+			"<font face=\"Times-Italic\">0x%lx</font></td>\n",
 			top, bgc, (unsigned long)i);
 		if(b->next != TABLE_NULL) {
 			const char *const closed
 				= PN_(to_bucket_no)(table, b->hash) == i ? "⬤" : "◯";
 			char z[12];
 			N_(to_string)(PN_(bucket_key)(b), &z);
-			fprintf(fp, "\t\t<TD ALIGN=\"RIGHT\"%s>0x%lx</TD>\n"
-				"\t\t<TD ALIGN=\"LEFT\"%s>%s</TD>\n"
-				"\t\t<TD PORT=\"%lu\"%s>%s</TD>\n",
+			fprintf(fp, "\t\t<td align=\"right\"%s>0x%lx</td>\n"
+				"\t\t<td align=\"left\"%s>"
+#ifdef TABLE_INVERSE
+		"<font face=\"Times-Italic\">"
+#endif
+				"%s"
+#ifdef TABLE_INVERSE
+		"</font>"
+#endif
+				"</td>\n"
+				"\t\t<td port=\"%lu\"%s>%s</td>\n",
 				bgc, (unsigned long)b->hash,
 				bgc, z,
 				(unsigned long)i, bgc, closed);
+		} else {
+			fprintf(fp, "\t\t<td%s></td><td%s></td><td%s></td>\n",
+				bgc, bgc, bgc);
 		}
-		fprintf(fp, "\t</TR>\n");
+		fprintf(fp, "\t</tr>\n");
 	}
-	fprintf(fp, "</TABLE>>];\n");
+	fprintf(fp, "\t<hr/>\n"
+		"\t<tr><td colspan=\"4\"></td></tr>\n"
+		"</table>>];\n");
 	fprintf(fp, "\tnode [shape=plain, fillcolor=none]\n");
 	for(i = 0, i_end = PN_(capacity)(table); i < i_end; i++) {
 		struct PN_(bucket) *b = table->buckets + i;
@@ -151,14 +169,14 @@ static void PN_(graph)(const struct N_(table) *const table,
 		if((right = b->next) == TABLE_NULL || right == TABLE_END) continue;
 		if(PN_(to_bucket_no)(table, b->hash) != i) {
 			fprintf(fp, "\ti0x%lx [label=\"0x%lx\", fontcolor=\"Gray\"];\n"
-				"\thash:%lu -> i0x%lx [color=\"Gray\"];\n",
+				"\tdata:%lu -> i0x%lx [color=\"Gray\"];\n",
 				(unsigned long)right, (unsigned long)right,
 				i, (unsigned long)right);
 			continue;
 		}
 		fprintf(fp,
 			"\te%lu [label=\"0x%lx\"];\n"
-			"\thash:%lu -> e%lu [tailclip=false];\n",
+			"\tdata:%lu -> e%lu [tailclip=false];\n",
 			(unsigned long)right, (unsigned long)right,
 			(unsigned long)i, (unsigned long)right);
 		while(left = right, b = table->buckets + left,

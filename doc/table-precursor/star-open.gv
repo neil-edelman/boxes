@@ -1,109 +1,104 @@
 digraph {
-	rankdir=LR;
-	graph [truecolor=true, bgcolor=transparent];
-	fontface=modern;
-	node [shape=box, style=filled, fillcolor="Gray95"];
-	hash [label=<<TABLE BORDER="0">
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	hash [label=<
+<table border="0" cellspacing="0">
+	<tr><td colspan="4"></td></tr>
+	<hr/>
 	<TR>
 		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
 		<TD BORDER="0"><FONT FACE="Times-Italic">disp.</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">hash</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">key</FONT></TD>
-		<TD BORDER="0"><FONT FACE="Times-Bold">value</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Italic">hash</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Italic">key</FONT></TD>
+	</TR>
+	<hr/>
+	<TR>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0x0</font></TD>
+		<TD><font face="Times-Italic">1</font></TD>
+		<TD ALIGN="RIGHT">0x4f</TD>
+		<TD ALIGN="LEFT">Procyon</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x0</TD>
-		<TD BGCOLOR="Gray90">1</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4f</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Procyon</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">11</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x1</font></TD>
+		<TD bgcolor="Gray95"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95">0x91</TD>
+		<TD ALIGN="LEFT" bgcolor="Gray95">Castor</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT">0x1</TD>
-		<TD>0</TD>
-		<TD ALIGN="RIGHT">0x91</TD>
-		<TD ALIGN="LEFT">Castor</TD>
-		<TD ALIGN="RIGHT">52</TD>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0x2</font></TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x2</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x3</font></TD>
+		<TD bgcolor="Gray95"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95">0x3</TD>
+		<TD ALIGN="LEFT" bgcolor="Gray95">Deneb</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT">0x3</TD>
-		<TD>0</TD>
-		<TD ALIGN="RIGHT">0x3</TD>
-		<TD ALIGN="LEFT">Deneb</TD>
-		<TD ALIGN="RIGHT">2615</TD>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0x4</font></TD>
+		<TD><font face="Times-Italic">1</font></TD>
+		<TD ALIGN="RIGHT">0x33</TD>
+		<TD ALIGN="LEFT">Antares</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4</TD>
-		<TD BGCOLOR="Gray90">1</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x33</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Antares</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">550</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x5</font></TD>
+		<TD PORT="14" bgcolor="Gray95"><font face="Times-Italic">2</font></TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95">0xb3</TD>
+		<TD ALIGN="LEFT" bgcolor="Gray95">Sol</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT">0x5</TD>
-		<TD PORT="14">2</TD>
-		<TD ALIGN="RIGHT">0xb3</TD>
-		<TD ALIGN="LEFT">Sol</TD>
-		<TD ALIGN="RIGHT">0</TD>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0x6</font></TD>
+		<TD><font face="Times-Italic">2</font></TD>
+		<TD ALIGN="RIGHT">0x44</TD>
+		<TD ALIGN="LEFT">Sirius</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x6</TD>
-		<TD BGCOLOR="Gray90">2</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x44</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Sirius</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">8.6</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x7</font></TD>
+		<TD bgcolor="Gray95"><font face="Times-Italic">2</font></TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95">0x35</TD>
+		<TD ALIGN="LEFT" bgcolor="Gray95">Spica</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT">0x7</TD>
-		<TD>2</TD>
-		<TD ALIGN="RIGHT">0x35</TD>
-		<TD ALIGN="LEFT">Spica</TD>
-		<TD ALIGN="RIGHT">250</TD>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0x8</font></TD>
+		<TD PORT="8"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT">0xd8</TD>
+		<TD ALIGN="LEFT">Rigel</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x8</TD>
-		<TD PORT="8" BGCOLOR="Gray90">0</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xd8</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Rigel</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">860</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x9</font></TD>
+		<td bgcolor="Gray95"></td><td bgcolor="Gray95"></td><td bgcolor="Gray95"></td>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT">0x9</TD>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0xa</font></TD>
+		<TD PORT="10"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT">0x4a</TD>
+		<TD ALIGN="LEFT">Betelgeuse</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xa</TD>
-		<TD PORT="10" BGCOLOR="Gray90">0</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0x4a</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Betelgeuse</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">700</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0xb</font></TD>
+		<td bgcolor="Gray95"></td><td bgcolor="Gray95"></td><td bgcolor="Gray95"></td>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT">0xb</TD>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0xc</font></TD>
+		<TD PORT="12"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT">0xec</TD>
+		<TD ALIGN="LEFT">Regulus</TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xc</TD>
-		<TD PORT="12" BGCOLOR="Gray90">0</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xec</TD>
-		<TD ALIGN="LEFT" BGCOLOR="Gray90">Regulus</TD>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">79</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0xd</font></TD>
+		<td bgcolor="Gray95"></td><td bgcolor="Gray95"></td><td bgcolor="Gray95"></td>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT">0xd</TD>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0xe</font></TD>
 	</TR>
 	<TR>
-		<TD ALIGN="RIGHT" BGCOLOR="Gray90">0xe</TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0xf</font></TD>
+		<TD PORT="15" bgcolor="Gray95"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95">0x9f</TD>
+		<TD ALIGN="LEFT" bgcolor="Gray95">Polaris</TD>
 	</TR>
-	<TR>
-		<TD ALIGN="RIGHT">0xf</TD>
-		<TD PORT="15">0</TD>
-		<TD ALIGN="RIGHT">0x9f</TD>
-		<TD ALIGN="LEFT">Polaris</TD>
-		<TD ALIGN="RIGHT">430</TD>
-	</TR>
-</TABLE>>];
+	<hr/>
+	<tr><td colspan="4"></td></tr>
+</table>>];
 	node [shape=plain, fillcolor=none]
 	node [color=red];
 }
