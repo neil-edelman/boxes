@@ -29,9 +29,8 @@
  `uintptr_t` is recommended because of it's implementation-defined instead of
  undefined-behaviour when comparing pointers from different objects. */
 
-/* `POOL_EXPECT_TRAIT`, `POOL_TO_STRING_NAME`, `POOL_TO_STRING` are
- undocumented because this container is only iterable in the first slab, so
- this is not very useful except for debugging. */
+/* `POOL_TO_STRING` is undocumented because this container is only iterable in
+ the first slab, so this is not very useful except for debugging. */
 
 #if !defined(POOL_NAME) || !defined(POOL_TYPE)
 #error Name or tag type undefined.
@@ -86,9 +85,8 @@ struct PP_(slot) { size_t size; PP_(type) *slab; };
 #define ARRAY_TYPE struct PP_(slot)
 #include "array.h"
 
-/** This is a slab memory-manager and free-heap for slab zero. A zeroed pool is
- a valid state. To instantiate to an idle state, see <fn:<P>pool>, `{0}`
- (`C99`,) or being `static`.
+/** A zeroed pool is a valid state. To instantiate to an idle state, see
+ <fn:<P>pool>, `{0}` (`C99`,) or being `static`.
 
  ![States.](../doc/states.png) */
 struct P_(pool) {
@@ -281,8 +279,10 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
 	return slot0->slab + slot0->size++;
 }
 
-/** Deletes `data` from `pool`. Do not remove data that is not in `pool`.
- @return Success. @order \O(\log \log `items`) (maybe?) @allow */
+/** Deletes `data` from `pool`. (Do not remove data that is not in `pool`.)
+ @return Success. @order \O(\log (`slab0-free-heap` | `slabs`))
+ @throws[malloc] Because of lazy deletion, remove can actually demand memory
+ when `data` requires adding to the free-heap. @allow */
 static int P_(pool_remove)(struct P_(pool) *const pool,
 	PP_(type) *const data) { return PP_(remove)(pool, data); }
 
