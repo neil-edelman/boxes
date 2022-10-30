@@ -229,42 +229,38 @@ static const char *PT_(sample)(const struct PT_(tree) *const tree,
 	return PT_(key_string)(PT_(entry_key)(&ref.tree->leaf[ref.lf].as_entry));
 }
 
-/* If `ref.tree` is null, starts iteration.
+/** If `ref.tree` is null, starts iteration.
  @return Does `ref` have a successor in `root`? If yes, sets it to that. */
-#define SUCCESSOR(to_successor_c, ref_c, lower_entry_c, CONSTSTRUCT) \
-static int PT_(to_successor_c)(CONSTSTRUCT PT_(tree) *const root, \
-	struct PT_(ref_c) *const ref) { \
-	assert(ref); \
-	if(!root || root->bsize == USHRT_MAX) return 0; /* Empty. */ \
-	if(!ref->tree) { ref->tree = root, ref->lf = 0; } /* Start. */ \
-	else if(++ref->lf > ref->tree->bsize) { /* Gone off the end. */ \
-		const struct PT_(tree) *const old = ref->tree; \
-		const char *const sample = PT_(sample)(old, ref->lf - 1); \
-		CONSTSTRUCT PT_(tree) *tree = root; \
-		size_t bit = 0; \
-		for(ref->tree = 0, ref->lf = 0; tree != old; ) { \
-			unsigned br0 = 0, br1 = tree->bsize, lf = 0; \
-			while(br0 < br1) { \
-				const struct trie_branch *const branch = tree->branch + br0; \
-				bit += branch->skip; \
-				if(!TRIE_QUERY(sample, bit)) \
-					br1 = ++br0 + branch->left; \
-				else \
-					br0 += branch->left + 1, lf += branch->left + 1; \
-				bit++; \
-			} \
-			if(lf < tree->bsize) ref->tree = tree, ref->lf = lf + 1; \
-			assert(trie_bmp_test(&tree->bmp, lf)); \
-			tree = tree->leaf[lf].as_link; \
-		} \
-		if(!ref->tree) return 0; /* End of iteration. */ \
-	} \
-	PT_(lower_entry_c)(ref); \
-	return 1; \
+static int PT_(to_successor)(struct PT_(tree) *const root,
+	struct PT_(ref) *const ref) {
+	assert(ref);
+	if(!root || root->bsize == USHRT_MAX) return 0; /* Empty. */
+	if(!ref->tree) { ref->tree = root, ref->lf = 0; } /* Start. */
+	else if(++ref->lf > ref->tree->bsize) { /* Gone off the end. */
+		const struct PT_(tree) *const old = ref->tree;
+		const char *const sample = PT_(sample)(old, ref->lf - 1);
+		struct PT_(tree) *tree = root;
+		size_t bit = 0;
+		for(ref->tree = 0, ref->lf = 0; tree != old; ) {
+			unsigned br0 = 0, br1 = tree->bsize, lf = 0;
+			while(br0 < br1) {
+				const struct trie_branch *const branch = tree->branch + br0;
+				bit += branch->skip;
+				if(!TRIE_QUERY(sample, bit))
+					br1 = ++br0 + branch->left;
+				else
+					br0 += branch->left + 1, lf += branch->left + 1;
+				bit++;
+			}
+			if(lf < tree->bsize) ref->tree = tree, ref->lf = lf + 1;
+			assert(trie_bmp_test(&tree->bmp, lf));
+			tree = tree->leaf[lf].as_link;
+		}
+		if(!ref->tree) return 0; /* End of iteration. */
+	}
+	PT_(lower_entry)(ref);
+	return 1;
 }
-SUCCESSOR(to_successor, ref, lower_entry, struct)
-SUCCESSOR(to_successor_c, ref_c, lower_entry_c, const struct)
-#undef SUCCESSOR
 
 /** @return Is `e` not null. */
 static int PT_(is_element)(const PT_(entry) *const e) { return !!e; }
