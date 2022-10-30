@@ -19,7 +19,7 @@ typedef void (*PT_(action_fn))(PT_(key) *, PT_(value) *);
 typedef void (*PT_(action_fn))(PT_(value) *);
 #endif /* custom --> */
 
-typedef void (*PT_(tree_file_fn))(const struct PT_(tree) *, size_t, FILE *);
+typedef void (*PT_(tree_file_fn))(struct PT_(tree) *, size_t, FILE *);
 
 /** Outputs a direction string for `lf` in `tr`, `{ "", "r", "l" }`. */
 static const char *PT_(leaf_to_dir)(const struct PT_(tree) *const tr,
@@ -71,27 +71,27 @@ static unsigned PT_(left_leaf)(const struct PT_(tree) *const tr,
 
 /** Graphs `tr` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
-static void PT_(graph_tree_bits)(const struct PT_(tree) *const tr,
+static void PT_(graph_tree_bits)(struct PT_(tree) *const tree,
 	const size_t treebit, FILE *const fp) {
 	unsigned b, i;
-	assert(tr && fp);
+	assert(tree && fp);
 	fprintf(fp, "\ttree%pbranch0 [label = <\n"
-		"<table border=\"0\" cellspacing=\"0\">\n", (const void *)tr);
+		"<table border=\"0\" cellspacing=\"0\">\n", (const void *)tree);
 	/*"<table BORDER=\"0\" CELLBORDER=\"0\">\n"*/
-	for(i = 0; i <= tr->bsize; i++) {
-		const char *key = PT_(sample)(tr, i);
-		const struct trie_branch *branch = tr->branch;
+	for(i = 0; i <= tree->bsize; i++) {
+		const char *key = PT_(sample)(tree, i);
+		const struct trie_branch *branch = tree->branch;
 		size_t next_branch = treebit + branch->skip;
 		const char *params, *start, *end;
 		struct { unsigned br0, br1; } in_tree;
-		const unsigned is_link = trie_bmp_test(&tr->bmp, i);
+		const unsigned is_link = trie_bmp_test(&tree->bmp, i);
 		/* 0-width joiner "&#8288;": GraphViz gets upset when tag closed
 		 immediately. */
 		fprintf(fp, "\t<tr>\n"
 			"\t\t<td align=\"left\" port=\"%u\">%s%s%s⊔</font></td>\n",
 			i, is_link ? "↓<font color=\"Grey75\">" : "", key,
 			is_link ? "" : "<font color=\"Grey75\">");
-		in_tree.br0 = 0, in_tree.br1 = tr->bsize;
+		in_tree.br0 = 0, in_tree.br1 = tree->bsize;
 		for(b = 0; in_tree.br0 < in_tree.br1; b++) {
 			const unsigned bit = !!TRIE_QUERY(key, b);
 			if(next_branch) {
@@ -108,7 +108,7 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tr,
 						= " bgcolor=\"Black\" color=\"White\" border=\"1\"";
 					start = "<font color=\"White\">", end = "</font>";
 				}
-				next_branch = (branch = tr->branch + in_tree.br0)->skip;
+				next_branch = (branch = tree->branch + in_tree.br0)->skip;
 			}
 			if(b && !(b & 7)) fprintf(fp, "\t\t<td>&nbsp;</td>\n");
 			fprintf(fp, "\t\t<td%s>%s%u%s</td>\n", params, start, bit, end);
@@ -117,18 +117,18 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tr,
 	}
 	fprintf(fp, "</table>>];\n");
 	/* Draw the lines between trees. */
-	for(i = 0; i <= tr->bsize; i++) if(trie_bmp_test(&tr->bmp, i))
+	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->bmp, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[style = dashed, arrowhead = %snormal];\n", (const void *)tr, i,
-		(const void *)tr->leaf[i].as_link, PT_(leaf_to_dir)(tr, i));
+		"[style = dashed, arrowhead = %snormal];\n", (const void *)tree, i,
+		(const void *)tree->leaf[i].as_link, PT_(leaf_to_dir)(tree, i));
 	/* Recurse. */
-	for(i = 0; i <= tr->bsize; i++) {
+	for(i = 0; i <= tree->bsize; i++) {
 		struct { unsigned br0, br1, lf; } in_tree;
 		size_t bit = treebit;
-		if(!trie_bmp_test(&tr->bmp, i)) continue;
-		in_tree.br0 = 0, in_tree.br1 = tr->bsize, in_tree.lf = 0;
+		if(!trie_bmp_test(&tree->bmp, i)) continue;
+		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
 		while(in_tree.br0 < in_tree.br1) {
-			const struct trie_branch *branch = tr->branch + in_tree.br0;
+			const struct trie_branch *branch = tree->branch + in_tree.br0;
 			bit += branch->skip;
 			if(i <= in_tree.lf + branch->left)
 				in_tree.br1 = ++in_tree.br0 + branch->left;
@@ -136,18 +136,18 @@ static void PT_(graph_tree_bits)(const struct PT_(tree) *const tr,
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 			bit++;
 		}
-		PT_(graph_tree_bits)(tr->leaf[i].as_link, bit, fp);
+		PT_(graph_tree_bits)(tree->leaf[i].as_link, bit, fp);
 	}
 }
 
 /** Graphs `tr` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
-static void PT_(graph_tree_mem)(const struct PT_(tree) *const tr,
+static void PT_(graph_tree_mem)(struct PT_(tree) *const tree,
 	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
 	unsigned i;
 	(void)treebit;
-	assert(tr && fp);
+	assert(tree && fp);
 	/* Tree is one record node in memory -- GraphViz says html is
 	 case-insensitive, but no. */
 	fprintf(fp, "\ttree%pbranch0 [label = <\n"
@@ -160,13 +160,13 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tr,
 		"\t\t<td><font face=\"Times-Italic\">skip</font></td>\n"
 		"\t\t<td><font face=\"Times-Italic\">leaves</font></td>\n"
 		"\t</tr>\n"
-		"\t<hr/>\n", (const void *)tr, orcify(tr), (unsigned long)treebit);
-	for(i = 0; i <= tr->bsize; i++) {
+		"\t<hr/>\n", (const void *)tree, orcify(tree), (unsigned long)treebit);
+	for(i = 0; i <= tree->bsize; i++) {
 		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
-		const char *key = PT_(sample)(tr, i);
-		const unsigned is_link = trie_bmp_test(&tr->bmp, i);
-		if(i < tr->bsize) {
-			branch = tr->branch + i;
+		const char *key = PT_(sample)(tree, i);
+		const unsigned is_link = trie_bmp_test(&tree->bmp, i);
+		if(i < tree->bsize) {
+			branch = tree->branch + i;
 			fprintf(fp, "\t<tr>\n"
 				"\t\t<td align=\"right\"%s>%u</td>\n"
 				"\t\t<td align=\"right\"%s>%u</td>\n",
@@ -188,18 +188,18 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tr,
 		"\t<tr><td></td></tr>\n"
 		"</table>>];\n");
 	/* Draw the lines between trees. */
-	for(i = 0; i <= tr->bsize; i++) if(trie_bmp_test(&tr->bmp, i))
+	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->bmp, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[style = dashed, arrowhead = %snormal];\n", (const void *)tr, i,
-		(const void *)tr->leaf[i].as_link, PT_(leaf_to_dir)(tr, i));
+		"[style = dashed, arrowhead = %snormal];\n", (const void *)tree, i,
+		(const void *)tree->leaf[i].as_link, PT_(leaf_to_dir)(tree, i));
 	/* Recurse. */
-	for(i = 0; i <= tr->bsize; i++) {
+	for(i = 0; i <= tree->bsize; i++) {
 		struct { unsigned br0, br1, lf; } in_tree;
 		size_t bit = treebit;
-		if(!trie_bmp_test(&tr->bmp, i)) continue;
-		in_tree.br0 = 0, in_tree.br1 = tr->bsize, in_tree.lf = 0;
+		if(!trie_bmp_test(&tree->bmp, i)) continue;
+		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
 		while(in_tree.br0 < in_tree.br1) {
-			branch = tr->branch + in_tree.br0;
+			branch = tree->branch + in_tree.br0;
 			bit += branch->skip;
 			if(i <= in_tree.lf + branch->left)
 				in_tree.br1 = ++in_tree.br0 + branch->left;
@@ -207,13 +207,13 @@ static void PT_(graph_tree_mem)(const struct PT_(tree) *const tr,
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 			bit++;
 		}
-		PT_(graph_tree_mem)(tr->leaf[i].as_link, bit, fp);
+		PT_(graph_tree_mem)(tree->leaf[i].as_link, bit, fp);
 	}
 }
 
 /** Graphs `tr` on `fp`.`treebit` is the number of bits currently
  (recursive.) */
-static void PT_(graph_tree_logic)(const struct PT_(tree) *const tr,
+static void PT_(graph_tree_logic)(struct PT_(tree) *const tr,
 	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
 	unsigned left, right, b, i;

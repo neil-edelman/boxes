@@ -201,18 +201,13 @@ struct PT_(tree) {
 struct T_(trie);
 struct T_(trie) { struct PT_(tree) *root; };
 struct PT_(ref) { struct PT_(tree) *tree; unsigned lf; };
-struct PT_(ref_c) { const struct PT_(tree) *tree; unsigned lf; };
 
-/* Fall through `ref` until hit the first entry. Must be pointing at
+/** Fall through `ref` until hit the first entry. Must be pointing at
  something. */
-#define LOWER(lower_entry_c, ref_c) \
-static void PT_(lower_entry_c)(struct PT_(ref_c) *ref) { \
-	while(trie_bmp_test(&ref->tree->bmp, ref->lf)) \
-		ref->tree = ref->tree->leaf[ref->lf].as_link, ref->lf = 0; \
+static void PT_(lower_entry)(struct PT_(ref) *ref) {
+	while(trie_bmp_test(&ref->tree->bmp, ref->lf))
+		ref->tree = ref->tree->leaf[ref->lf].as_link, ref->lf = 0;
 }
-LOWER(lower_entry, ref)
-LOWER(lower_entry_c, ref_c)
-#undef LOWER
 /** Fall through `ref` until hit the last entry. Must be pointing at
  something. */
 static void PT_(higher_entry)(struct PT_(ref) *ref) {
@@ -222,10 +217,10 @@ static void PT_(higher_entry)(struct PT_(ref) *ref) {
 }
 /** This is a convince function.
  @return The leftmost entry string at `lf` of `tree`. */
-static const char *PT_(sample)(const struct PT_(tree) *const tree,
+static const char *PT_(sample)(struct PT_(tree) *const tree,
 	const unsigned lf) {
-	struct PT_(ref_c) ref; ref.tree = tree, ref.lf = lf;
-	PT_(lower_entry_c)(&ref);
+	struct PT_(ref) ref; ref.tree = tree, ref.lf = lf;
+	PT_(lower_entry)(&ref);
 	return PT_(key_string)(PT_(entry_key)(&ref.tree->leaf[ref.lf].as_entry));
 }
 
@@ -237,7 +232,7 @@ static int PT_(to_successor)(struct PT_(tree) *const root,
 	if(!root || root->bsize == USHRT_MAX) return 0; /* Empty. */
 	if(!ref->tree) { ref->tree = root, ref->lf = 0; } /* Start. */
 	else if(++ref->lf > ref->tree->bsize) { /* Gone off the end. */
-		const struct PT_(tree) *const old = ref->tree;
+		struct PT_(tree) *const old = ref->tree;
 		const char *const sample = PT_(sample)(old, ref->lf - 1);
 		struct PT_(tree) *tree = root;
 		size_t bit = 0;
