@@ -21,7 +21,7 @@ The worse\-case run\-time of querying or modifying the trie is generally &#927;\
 
 ![Bit view of the trie.](doc/trie-bits.png)
 
-
+[src/to\_string\.h](src/to_string.h): `<STR>` trait functions require `<name>[<trait>]to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
 
  * Parameter: TRIE\_NAME  
    Required `<T>` that satisfies `C` naming conventions when mangled\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
@@ -33,6 +33,8 @@ The worse\-case run\-time of querying or modifying the trie is generally &#927;\
    Defining this includes [src/to\_string\.h](src/to_string.h), with the key strings\.
  * Parameter: TRIE\_DEFAULT\_NAME, TRIE\_DEFAULT  
    Get or default set default\. FIXME: upcoming\.
+ * Parameter: TRIE\_EXPECT\_TRAIT, TRIE\_TRAIT  
+   Named traits are obtained by including `trie.h` multiple times with `TRIE_EXPECT_TRAIT` and then subsequently including the name in `TRIE_TRAIT`\.
  * Standard:  
    C89 \(Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ\.\)
  * Caveat:  
@@ -67,9 +69,9 @@ If `TRIE_KEY_IN_VALUE`, extracts the key from `TRIE_VALUE`; in this case, the us
 
 ### <a id = "user-content-typedef-8a8349ca" name = "user-content-typedef-8a8349ca">&lt;PSTR&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element_c, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element, char(*)[12]);</code>
 
-[src/to\_string\.h](src/to_string.h): responsible for turning the argument into a 12\-`char` null\-terminated output string\.
+[src/to\_string\.h](src/to_string.h): responsible for turning the read\-only argument into a 12\-`char` null\-terminated output string\. The first argument should be a read\-only reference to an element and the second a pointer to the bytes\.
 
 
 
@@ -307,7 +309,7 @@ Tries to remove `string` from `trie`\.
 
 <code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\. `<STR>` is loosely contracted to be a name `<X>box[<X_TO_STRING_NAME>]`\.
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\.
 
  * Return:  
    Address of the static buffer\.

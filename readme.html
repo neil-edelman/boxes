@@ -58,7 +58,7 @@
 
 <p><img alt = "Bit view of the trie." src = "doc/trie-bits.png" width = 1136 height = 416></p>
 
-</div>
+<a href = "src/to_string.h">src/to_string.h</a>: <code>&lt;STR&gt;</code> trait functions require <code>&lt;name&gt;[&lt;trait&gt;]to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</div>
 
 <dl>
 	<dt>Parameter: TRIE_NAME</dt>
@@ -71,6 +71,8 @@
 	<dd>Defining this includes <a href = "src/to_string.h">src/to_string.h</a>, with the key strings.</dd>
 	<dt>Parameter: TRIE_DEFAULT_NAME, TRIE_DEFAULT</dt>
 	<dd>Get or default set default. FIXME: upcoming.</dd>
+	<dt>Parameter: TRIE_EXPECT_TRAIT, TRIE_TRAIT</dt>
+	<dd>Named traits are obtained by including <code>trie.h</code> multiple times with <code>TRIE_EXPECT_TRAIT</code> and then subsequently including the name in <code>TRIE_TRAIT</code>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89 (Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ.)</dd>
 	<dt>Caveat:</dt>
@@ -113,9 +115,9 @@
 
 <h3><a id = "typedef:<PSTR>to_string_fn" name = "typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element_c, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element, char(*)[12]);</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the argument into a 12-<code>char</code> null-terminated output string.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the read-only argument into a 12-<code>char</code> null-terminated output string. The first argument should be a read-only reference to an element and the second a pointer to the bytes.</p>
 
 </div>
 
@@ -400,7 +402,7 @@
 
 <p><code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time. <code>&lt;STR&gt;</code> is loosely contracted to be a name <code>&lt;X&gt;box[&lt;X_TO_STRING_NAME&gt;]</code>.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time.</p>
 
 <dl>
 	<dt>Return:</dt>

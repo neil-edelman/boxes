@@ -24,7 +24,7 @@ static struct str32_pool str_pool;
  *Unless one only wants to use <fn:<T>trie_match>, which only looks at the
  index and not the keys themselves; the key strings are not accessed, then. */
 /** Generate a random name from `global_pool` and assign it to `key`. */
-static void str32_filler(const char **const key) {
+static void str_filler(const char **const key) {
 	struct str32 *backing = str32_pool_new(&str_pool);
 	/* Unlikely to fail, but for tests, we don't have recourse to back out. */
 	assert(backing && key);
@@ -33,10 +33,10 @@ static void str32_filler(const char **const key) {
 }
 #define TRIE_NAME str
 #define TRIE_TO_STRING /* Uses the keys as strings. For test. */
-#define TRIE_TEST &str32_filler
+#define TRIE_TEST
 #include "../src/trie.h"
 
-
+#if 0
 /* This is a custom key; uses `TRIE_KEY` and `TRIE_KEY_TO_STRING` to forward
  the keys to `colours`. Internally, a trie is a collection of fixed trees that
  have `union` leaves with a pointer-to-tree; there therefore is no optimization
@@ -349,16 +349,17 @@ static void article_test(void) {
 	trie_star_graph(&trie, "graph/article.gv", 1);
 	star_trie_(&trie);
 }
-
+#endif
 /* fixme: why is it going 3x slower than yesterday for no good reason? */
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
-	contrived_test(), str32_pool_clear(&str_pool);
-	fixed_colour_test();
+	/*contrived_test(), str32_pool_clear(&str_pool);
+	fixed_colour_test();*/
 #if 1
 	str_trie_test(), str32_pool_clear(&str_pool); /* Key set. */
+#if 0
 	colour_trie_test(); /* Custom key set with enum string backing. */
 	mapint_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */
 	foo_trie_test(), str32_pool_clear(&str_pool); /* Custom value. */
@@ -366,7 +367,8 @@ int main(void) {
 	keyval_trie_test(), keyval_pool_(&kv_pool); /* Pointer to index. */
 	star_trie_test(); /* Custom value with enum strings backing. */
 #endif
-	article_test();
+#endif
+	/*article_test();*/
 	str32_pool_(&str_pool);
 	return EXIT_SUCCESS;
 }

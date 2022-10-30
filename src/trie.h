@@ -47,19 +47,17 @@
  @param[TRIE_DEFAULT_NAME, TRIE_DEFAULT]
  Get or default set default. FIXME: upcoming.
 
+ @param[TRIE_EXPECT_TRAIT, TRIE_TRAIT]
+ Named traits are obtained by including `trie.h` multiple times with
+ `TRIE_EXPECT_TRAIT` and then subsequently including the name in `TRIE_TRAIT`.
+
  @std C89 (Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ.) */
 
 #ifndef TRIE_NAME
 #error Name TRIE_NAME undefined.
 #endif
-#if defined(TRIE_DEFAULT_NAME) || defined(TRIE_DEFAULT)
-#define TRIE_DEFAULT_TRAIT 1
-#else
-#define TRIE_DEFAULT_TRAIT 0
-#endif
-#define TRIE_TRAITS TRIE_DEFAULT_TRAIT
-#if TRIE_TRAITS > 1
-#error Only one trait per include is allowed; use TRIE_EXPECT_TRAIT.
+#if defined(TRIE_TRAIT) ^ defined(BOX_TYPE)
+#error TRIE_TRAIT name must come after TRIE_EXPECT_TRAIT.
 #endif
 #if defined(TRIE_KEY) ^ defined(TRIE_KEY_TO_STRING)
 #error TRIE_KEY and TRIE_KEY_TO_STRING have to be mutually defined.
@@ -67,11 +65,9 @@
 #if defined(TRIE_KEY_IN_VALUE) && !defined(TRIE_VALUE)
 #error TRIE_KEY_IN_VALUE requires TRIE_VALUE.
 #endif
-#if defined(TRIE_DEFAULT_NAME) && !defined(TRIE_DEFAULT)
-#error TRIE_DEFAULT_NAME requires TRIE_DEFAULT.
-#endif
-#if defined(TRIE_TEST) && !defined(TRIE_TO_STRING)
-#error TRIE_TEST requires TRIE_TO_STRING.
+#if defined(TRIE_TEST) && (!defined(TRIE_TRAIT) && !defined(TRIE_TO_STRING) \
+	|| defined(TRIE_TRAIT) && !defined(TRIE_HAS_TO_STRING))
+#error Test requires to string.
 #endif
 
 #ifndef TRIE_H /* <!-- idempotent */
@@ -133,8 +129,7 @@ static int trie_is_prefix(const char *prefix, const char *word) {
 #endif /* idempotent --> */
 
 
-#if TRIE_TRAITS == 0 /* <!-- base trie */
-
+#ifndef TRIE_TRAIT /* <!-- base trie */
 
 #ifdef TRIE_KEY /* <!-- custom key */
 /** The default is assignable `const char *`. If one sets `TRIE_KEY` to
@@ -156,7 +151,6 @@ static PT_(key_to_string_fn) PT_(key_string) = (TRIE_KEY_TO_STRING);
 static const char *PT_(string_to_string)(const char *const key) { return key; }
 static PT_(key_to_string_fn) PT_(key_string) = &PT_(string_to_string);
 #endif /* string key --> */
-
 
 #ifndef TRIE_VALUE /* <!-- key set */
 typedef PT_(key) PT_(entry);
@@ -190,7 +184,6 @@ static const char *PT_(entry_key)(const PT_(value) *const v)
 /* static PT_(value) *PT_(entry_value)(PT_(value) *const v) { return v; } */
 #endif /* key in value --> */
 
-
 union PT_(leaf) { PT_(entry) as_entry; struct PT_(tree) *as_link; };
 /* Node already has conflicting meaning, so we use tree. Such that a trie is a
  forest of non-empty complete binary trees. In a B-tree, described using
@@ -209,7 +202,6 @@ struct T_(trie);
 struct T_(trie) { struct PT_(tree) *root; };
 struct PT_(ref) { struct PT_(tree) *tree; unsigned lf; };
 struct PT_(ref_c) { const struct PT_(tree) *tree; unsigned lf; };
-
 
 /* Fall through `ref` until hit the first entry. Must be pointing at
  something. */
@@ -275,34 +267,16 @@ SUCCESSOR(to_successor_c, ref_c, lower_entry_c, const struct)
 #undef SUCCESSOR
 
 /** @return Is `e` not null. */
-static int PT_(is_element_c)(const PT_(entry) *const e) { return !!e; }
-struct PT_(forward) { const struct PT_(tree) *root; struct PT_(ref_c) cur; };
-/** @return A constructed forward iterator at the start of `trie`. */
-static struct PT_(forward) PT_(forward)(const struct T_(trie) *const trie) {
-	struct PT_(forward) it;
-	it.root = trie ? trie->root : 0, it.cur.tree = 0;
-	return it;
-}
-/** @return Next entry of `it` or null. */
-static const PT_(entry) *PT_(next_c)(struct PT_(forward) *const it) {
-	return assert(it), PT_(to_successor_c)(it->root, &it->cur)
-		? &it->cur.tree->leaf[it->cur.lf].as_entry : 0;
-}
-
-#if 0 /* That's weird? */
-/** @return Is `e` not null. */
 static int PT_(is_element)(const PT_(entry) *const e) { return !!e; }
-#endif
 /* A range of words from `[cur, end]`. */
 struct PT_(iterator) {
 	const struct T_(trie) *trie; /* Valid, rest must be, too, or ignore rest. */
 	struct PT_(ref) cur, end;
 	int seen;
 };
-#if 0 /* Use prefix. */
 /** Loads the first element of `trie` (can be null) into `it`.
  @implements begin */
-static void PT_(begin)(struct PT_(iterator) *const it,
+static void PT_(iterator)(struct PT_(iterator) *const it,
 	const struct T_(trie) *const trie) {
 	/* This is exactly what is happening, but we can shorten it.
 	 PT_(match_prefix)(trie, "", cur); (not code, file size.) */
@@ -317,7 +291,6 @@ static void PT_(begin)(struct PT_(iterator) *const it,
 	}
 	it->seen = 0;
 }
-#endif
 /** Advances `it`. @return The previous value or null. @implements next */
 static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
 	assert(it);
@@ -334,7 +307,6 @@ static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
 	assert(!trie_bmp_test(&it->cur.tree->bmp, it->cur.lf));
 	return &it->cur.tree->leaf[it->cur.lf].as_entry;
 }
-
 
 /** Represents a range of in-order keys in \O(1) space. */
 struct T_(trie_iterator);
@@ -867,49 +839,8 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
 	const char *const string)
 	{ return trie && string && PT_(remove)(trie, string); }
 
-
-#ifdef TRIE_TEST /* <!-- test */
-#include "../test/test_trie.h" /* This includes boxes, must BOX_ after. */
-#endif /* test --> */
-
-
-/* Box override information. */
-#define BOX_CONTENT_C const PT_(entry) *
-#define BOX_CONTENT PT_(entry) *
-#define BOX_ PT_
-#define BOX struct T_(trie)
-
-
-#ifdef TRIE_TO_STRING /* <!-- str: _sic_, have a natural string. */
-#define STR_(n) TRIE_CAT(T_(trie), n)
-/** Uses the natural `e` -> `z` that is defined by the key string. */
-static void PT_(to_string)(const PT_(entry) *const e,
-	char (*const z)[12]) {
-	const char *string = PT_(key_string(PT_(entry_key)(e)));
-	unsigned i;
-	char *y = *z;
-	assert(e && z);
-	for(i = 0; i < 11; string++, i++) {
-		*y++ = *string;
-		if(*string == '\0') return;
-	}
-	*y = '\0';
-}
-#define TO_STRING &PT_(to_string)
-#define TO_STRING_LEFT '{'
-#define TO_STRING_RIGHT '}'
-#include "to_string.h" /** \include */
-#ifdef TRIE_TEST /* <!-- expect: nothing is forward-declared. */
-#undef TRIE_TEST
-#endif /* expect --> */
-#undef STR_
-#undef TRIE_TO_STRING
-#endif /* str --> */
-
-
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
-	PT_(forward)(0); PT_(is_element_c)(0); PT_(next_c)(0);
 	T_(trie)(); T_(trie_)(0); T_(trie_clear)(0);
 	T_(trie_match)(0, 0); T_(trie_get)(0, 0);
 #ifndef TRIE_VALUE
@@ -923,22 +854,65 @@ static void PT_(unused_base)(void) {
 }
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
+/* Box override information. */
+#define BOX_TYPE struct T_(trie)
+#define BOX_CONTENT PT_(entry) *
+#define BOX_ PT_
+#define BOX_MAJOR_NAME trie
+#define BOX_MINOR_NAME TRIE_NAME
 
-#elif defined(TABLE_DEFAULT) /* base --><!-- default */
+#endif /* base code --> */
 
 
-#error Not there yet.
+#ifdef TRIE_TRAIT /* <-- trait: Will be different on different includes. */
+#define BOX_TRAIT_NAME TRIE_TRAIT
+#endif /* trait --> */
 
 
-#endif /* traits --> */
-
-
-#ifdef TRIE_EXPECT_TRAIT /* <!-- trait */
-#undef TRIE_EXPECT_TRAIT
-#else /* trait --><!-- !trait */
-#ifdef TRIE_TEST
-#error No TRIE_TO_STRING trait defined for TRIE_TEST.
+#ifdef TRIE_TO_STRING /* <!-- to string trait */
+#ifndef TREE_TRAIT /* <!-- natural default */
+/** Uses the natural `e` -> `z` that is defined by the key string. */
+static void T_(to_string)(const PT_(entry) *const e,
+	char (*const z)[12]) {
+	const char *string = PT_(key_string(PT_(entry_key)(e)));
+	unsigned i;
+	char *y = *z;
+	assert(e && z);
+	for(i = 0; i < 11; string++, i++) {
+		*y++ = *string;
+		if(*string == '\0') return;
+	}
+	*y = '\0';
+}
+#endif /* natural --> */
+#define TO_STRING_LEFT '{'
+#define TO_STRING_RIGHT '}'
+#include "to_string.h" /** \include */
+#undef TRIE_TO_STRING
+#ifndef TRIE_TRAIT
+#define TRIE_HAS_TO_STRING
 #endif
+#endif /* to string trait --> */
+
+
+#if defined(TRIE_TEST) && !defined(TRIE_TRAIT) /* <!-- test */
+#include "../test/test_trie.h"
+#endif /* test --> */
+
+
+#ifdef TRIE_DEFAULT /* <!-- default trait */
+#error Not there yet.
+#endif /* default trait --> */
+
+
+#ifdef TRIE_EXPECT_TRAIT /* <!-- more */
+#undef TRIE_EXPECT_TRAIT
+#else /* more --><!-- done */
+#undef BOX_TYPE
+#undef BOX_CONTENT
+#undef BOX_
+#undef BOX_MAJOR_NAME
+#undef BOX_MINOR_NAME
 #undef TRIE_NAME
 #ifdef TRIE_VALUE
 #undef TRIE_VALUE
@@ -950,10 +924,14 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #ifdef TRIE_KEY_IN_VALUE
 #undef TRIE_KEY_IN_VALUE
 #endif
-#undef BOX_
-#undef BOX
-#undef BOX_CONTENT_C
-#undef BOX_CONTENT
-#endif /* !trait --> */
-#undef TRIE_DEFAULT_TRAIT
-#undef TRIE_TRAITS
+#ifdef TRIE_HAS_TO_STRING
+#undef TRIE_HAS_TO_STRING
+#endif
+#ifdef TRIE_TEST
+#undef TRIE_TEST
+#endif
+#endif /* done --> */
+#ifdef TRIE_TRAIT
+#undef TRIE_TRAIT
+#undef BOX_TRAIT_NAME
+#endif
