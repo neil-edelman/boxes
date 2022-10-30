@@ -49,7 +49,7 @@ Valid assignable type used for priority in [&lt;PH&gt;node](#user-content-typede
 
 <code>typedef int(*<strong>&lt;PH&gt;compare_fn</strong>)(&lt;PH&gt;priority_c a, &lt;PH&gt;priority_c b);</code>
 
-Returns a positive result if `a` is out\-of\-order with respect to `b`, inducing a strict total order\. This is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\.
+Returns a positive result if `a` is out\-of\-order with respect to `b`, inducing a strict weak order\. This is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\.
 
 
 
