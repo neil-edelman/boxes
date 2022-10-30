@@ -8,7 +8,6 @@
 #define TREE_NAME foo
 #include "../src/tree.h"
 
-
 /* Unsigned numbers: testing framework. */
 /** @implements <typedef:<PB>action_fn> */
 static void int_filler(unsigned *x)
@@ -16,14 +15,12 @@ static void int_filler(unsigned *x)
 /** @implements <typedef:<PSZ>to_string_fn> */
 static void int_to_string(const unsigned *x, char (*const z)[12])
 	{ /*assert(*x < 10000000000),*/ sprintf(*z, "%u", *x); }
-
 #define TREE_NAME int
-#define TREE_TEST &int_filler
-#define TREE_EXPECT_TRAIT
-#include "../src/tree.h"
-#define TREE_TO_STRING &int_to_string
+#define TREE_TO_STRING
+#define TREE_TEST
 #include "../src/tree.h"
 
+#if 0
 #define TREE_NAME order3
 #define TREE_TEST &int_filler
 #define TREE_ORDER 3
@@ -674,21 +671,21 @@ static void typical_filler(unsigned *const x, struct typical_value **y)
 	{ int_filler(x); *y = 0; }
 static void typical_to_string(const struct typical_tree_entry_c e,
 	char (*const z)[12]) { sprintf(*z, "%u", *e.key); }
-
+#endif
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	order3();
+	int_tree_test();
+	/*order3();
 	redblack();
 	loop();
 	order3_tree_test();
 	redblack_tree_test();
-	int_tree_test();
 	loop_tree_test();
 	pair_tree_test();
 	star_tree_test();
 	entry_tree_test();
-	typical_tree_test();
+	typical_tree_test();*/
 	return EXIT_SUCCESS;
 }

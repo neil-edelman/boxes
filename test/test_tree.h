@@ -44,11 +44,6 @@ static PB_(key) PB_(entry_to_key)(const PB_(entry) e) {
 #endif
 }
 
-/** `TREE_TEST` must be a function that implements <typedef:<PT>action_fn>.
- The value pointer is valid, if it exists, and should be filled; this will copy
- the value on successful creation. */
-static const PB_(action_fn) PB_(filler) = (TREE_TEST);
-
 /* Debug number, which is the number printed next to the graphs, _etc_. */
 static unsigned PB_(no);
 
@@ -67,7 +62,7 @@ static void PB_(subgraph)(const struct PB_(tree) *const sub, FILE *fp) {
 		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
 		char z[12];
 		PB_(entry_c) e = PB_(cons_entry_c)(sub->node, i);
-		PB_(to_string)(e, &z);
+		B_(to_string)(e, &z);
 		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
 			" port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
 	}
@@ -104,8 +99,7 @@ static void PB_(graph)(const struct B_(tree) *const tree,
 	fprintf(fp, "digraph {\n"
 		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
 		" fontname=modern, splines=false];\n"
-		"\tnode [shape=none, fontname=modern];\n"
-		"\n");
+		"\tnode [shape=none, fontname=modern];\n");
 	if(!tree->root.node)
 		fprintf(fp, "\tidle [shape=plaintext];\n");
 	else if(tree->root.height == UINT_MAX)
@@ -139,7 +133,7 @@ static void PB_(subgraph_usual)(const struct PB_(tree) *const sub, FILE *fp) {
 	for(i = 0; i < sub->node->size; i++) {
 		char z[12];
 		PB_(entry_c) e = PB_(cons_entry_c)(sub->node, i);
-		PB_(to_string)(e, &z);
+		B_(to_string)(e, &z);
 		fprintf(fp, "\t<td border=\"0\" align=\"center\""
 			" port=\"%u\">%s</td>\n", i, z);
 	}
@@ -273,7 +267,7 @@ static PB_(entry_c) PB_(to_const)(const PB_(entry) e) {
 
 static void PB_(test)(void) {
 	struct B_(tree) tree = B_(tree)(), empty = B_(tree)();
-	struct B_(tree_cursor) cur;
+	struct B_(tree_iterator) it;
 	struct PB_(tree_test) n[80];
 	const size_t n_size = sizeof n / sizeof *n;
 #ifdef TREE_VALUE
@@ -290,10 +284,11 @@ static void PB_(test)(void) {
 	for(i = 0; i < n_size; i++) {
 		struct PB_(tree_test) *const t = n + i;
 		t->in = 0;
+		/* This function must exist. */
 #ifdef TREE_VALUE
-		PB_(filler)(&t->key, &t->value);
+		B_(filler)(&t->key, &t->value);
 #else
-		PB_(filler)(&t->key);
+		B_(filler)(&t->key);
 #endif
 	}
 	PB_(sort)(n, n_size);
@@ -303,8 +298,8 @@ static void PB_(test)(void) {
 	PB_(valid)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
-	cur = B_(tree_begin_at)(0, n[0].key), assert(!cur._.root);
-	cur = B_(tree_begin_at)(&tree, n[0].key), assert(!cur._.ref.node);
+	it = B_(tree_begin_at)(0, n[0].key), assert(!it._.root);
+	it = B_(tree_begin_at)(&tree, n[0].key), assert(!it._.ref.node);
 
 	/* Bulk, (simple.) */
 	for(i = 0; i < n_size; i++) {
@@ -355,12 +350,12 @@ static void PB_(test)(void) {
 	printf("Finalize again. This should be idempotent.\n");
 	B_(tree_bulk_finish)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-bulk-finish.gv");
-	printf("Tree: %s.\n", PB_(tree_to_string)(&tree));
+	printf("Tree: %s.\n", B_(tree_to_string)(&tree));
 
 	/* Iteration; checksum. */
 	memset(&k, 0, sizeof k);
-	cur = B_(tree_begin)(&tree), i = 0;
-	while(entry = B_(tree_next)(&cur), PB_(contents)(&entry)) {
+	it = B_(tree_begin)(&tree), i = 0;
+	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
 		/*char z[12];
 		PB_(to_string)(PB_(to_const)(entry), &z);
 		printf("<%s>\n", z);*/
@@ -373,8 +368,8 @@ static void PB_(test)(void) {
 	}
 	assert(i == n_unique);
 	/*printf("\n");*/
-	cur = B_(tree_end)(&tree), i = 0;
-	while(entry = B_(tree_previous)(&cur), PB_(contents)(&entry)) {
+	it = B_(tree_end)(&tree), i = 0;
+	while(entry = B_(tree_previous)(&it), PB_(contents)(&entry)) {
 		/*char z[12];
 		PB_(to_string)(PB_(to_const)(entry), &z);
 		printf("<%s>\n", z);*/
@@ -386,14 +381,14 @@ static void PB_(test)(void) {
 		if(++i > n_size) assert(0); /* Avoids loops. */
 	}
 	assert(i == n_unique);
-	while(entry = B_(tree_next)(&cur), PB_(contents)(&entry)) {
+	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
 		/*char z[12];*/
 		int succ;
 		/*PB_(to_string)(PB_(to_const)(entry), &z);
 		printf("removing <%s>\n", z);*/
-		succ = B_(tree_cursor_remove)(&cur);
+		succ = B_(tree_iterator_remove)(&it);
 		assert(succ);
-		succ = B_(tree_cursor_remove)(&cur);
+		succ = B_(tree_iterator_remove)(&it);
 		assert(!succ);
 	}
 	assert(tree.root.height == UINT_MAX);
@@ -409,10 +404,11 @@ static void PB_(test)(void) {
 	for(i = 0; i < n_size; i++) {
 		struct PB_(tree_test) *const t = n + i;
 		t->in = 0;
+		/* This function must exist. */
 #ifdef TREE_VALUE
-		PB_(filler)(&t->key, &t->value);
+		B_(filler)(&t->key, &t->value);
 #else
-		PB_(filler)(&t->key);
+		B_(filler)(&t->key);
 #endif
 	}
 
@@ -422,7 +418,7 @@ static void PB_(test)(void) {
 		char z[12];
 		struct PB_(tree_test) *const t = n + i;
 		ent = PB_(test_to_entry_c)(t);
-		PB_(to_string)(ent, &z);
+		B_(to_string)(ent, &z);
 		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);
 #ifdef TREE_VALUE
 		switch(B_(tree_try)(&tree, t->key, &value))
@@ -451,8 +447,8 @@ static void PB_(test)(void) {
 	/* Iteration; checksum. No. We can not do this because deletion invalidates
 	 the cursor. */
 	i = 0;
-	while(cur = B_(tree_begin)(&tree),
-		entry = B_(tree_next)(&cur),
+	while(it = B_(tree_begin)(&tree),
+		entry = B_(tree_next)(&it),
 		PB_(contents)(&entry)) {
 		/*char z[12];
 		PB_(to_string)(PB_(to_const)(entry), &z);
@@ -478,17 +474,17 @@ static void PB_(test)(void) {
 	for(i = 0; i < n_size; i++) {
 		struct PB_(tree_test) *const t = n + i;
 		if(i % 3 == 0) {
-			cur = B_(tree_begin)(&tree);
+			it = B_(tree_begin)(&tree);
 		} else if(i % 3 == 1) {
-			cur = B_(tree_end)(&tree);
+			it = B_(tree_end)(&tree);
 		} else {
-			cur = B_(tree_begin)(&tree);
-			B_(tree_next)(&cur);
+			it = B_(tree_begin)(&tree);
+			B_(tree_next)(&it);
 		}
 #ifdef TREE_VALUE
-		switch(B_(tree_cursor_try)(&cur, t->key, &value))
+		switch(B_(tree_iterator_try)(&cur, t->key, &value))
 #else
-		switch(B_(tree_cursor_try)(&cur, t->key))
+		switch(B_(tree_iterator_try)(&it, t->key))
 #endif
 		{
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
@@ -507,9 +503,9 @@ static void PB_(test)(void) {
 	assert(i == n_unique);
 
 	/* Remove every 2nd. */
-	for(cur = B_(tree_begin)(&tree); B_(tree_next)(&cur),
-		entry = B_(tree_next)(&cur), PB_(contents)(&entry); )
-		B_(tree_cursor_remove)(&cur), n_unique--;
+	for(it = B_(tree_begin)(&tree); B_(tree_next)(&it),
+		entry = B_(tree_next)(&it), PB_(contents)(&entry); )
+		B_(tree_iterator_remove)(&it), n_unique--;
 	i = B_(tree_count)(&tree);
 	printf("remove every 2nd: %lu\n", (unsigned long)i);
 	assert(i == n_unique);
