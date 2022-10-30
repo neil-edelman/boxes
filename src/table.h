@@ -868,7 +868,9 @@ static void N_(to_string_thunk)(const struct PN_(bucket) *const bucket,
 #define TO_STRING_RIGHT '}'
 #include "to_string.h" /** \include */
 #undef TABLE_TO_STRING
+#ifndef TABLE_TRAIT
 #define TABLE_HAS_TO_STRING
+#endif
 #endif /* to string trait --> */
 
 
