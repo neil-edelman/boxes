@@ -274,23 +274,7 @@ struct PT_(iterator) {
 	struct PT_(ref) cur, end;
 	int seen;
 };
-/** Loads the first element of `trie` (can be null) into `it`.
- @implements begin */
-static void PT_(iterator)(struct PT_(iterator) *const it,
-	const struct T_(trie) *const trie) {
-	/* This is exactly what is happening, but we can shorten it.
-	 PT_(match_prefix)(trie, "", cur); (not code, file size.) */
-	if(it->trie = trie) {
-		if(it->cur.tree = it->end.tree = trie->root) {
-			it->cur.lf = 0, it->end.lf = trie->root->bsize + 1;
-			PT_(lower_entry)(&it->cur);
-			PT_(higher_entry)(&it->end);
-		}
-	} else {
-		it->cur.tree = it->end.tree = 0;
-	}
-	it->seen = 0;
-}
+/* Begin is after match. */
 /** Advances `it`. @return The previous value or null. @implements next */
 static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
 	assert(it);
@@ -410,14 +394,15 @@ static PT_(entry) *T_(trie_get)(const struct T_(trie) *const trie,
 	{ return trie && string ? PT_(get)(trie, string) : 0; }
 /** Looks at only the index of `trie` (which can be null) for potential
  `prefix` matches, and stores them in `it`. */
-static void PT_(match_prefix)(const struct T_(trie) *const trie,
-	const char *const prefix, struct PT_(iterator) *it) {
+static struct PT_(iterator) PT_(match_prefix)
+	(const struct T_(trie) *const trie, const char *const prefix) {
+	struct PT_(iterator) it;
 	struct PT_(tree) *tree;
 	size_t bit;
 	struct { size_t cur, next; } byte;
-	assert(trie && prefix && it);
-	it->trie = 0;
-	if(!(tree = trie->root) || tree->bsize == USHRT_MAX) return;
+	assert(trie && prefix);
+	it.trie = 0;
+	if(!(tree = trie->root) || tree->bsize == USHRT_MAX) return it;
 	for(bit = 0, byte.cur = 0; ; ) {
 		unsigned br0 = 0, br1 = tree->bsize, lf = 0;
 		while(br0 < br1) {
@@ -436,24 +421,31 @@ static void PT_(match_prefix)(const struct T_(trie) *const trie,
 			{ tree = tree->leaf[lf].as_link; continue; } /* Link. */
 finally:
 		assert(br0 <= br1 && lf - br0 + br1 <= tree->bsize);
-		it->trie = trie;
-		it->cur.tree = it->end.tree = tree;
-		it->cur.lf = lf, PT_(lower_entry)(&it->cur);
-		it->end.lf = lf + br1 - br0, PT_(higher_entry)(&it->end);
-		it->seen = 0;
+		it.trie = trie;
+		it.cur.tree = it.end.tree = tree;
+		it.cur.lf = lf, PT_(lower_entry)(&it.cur);
+		it.end.lf = lf + br1 - br0, PT_(higher_entry)(&it.end);
+		it.seen = 0;
 		break;
 	}
+	return it;
 }
+/** Loads the first element of `trie` (can be null) into `it`.
+ @implements begin */
+static struct PT_(iterator) PT_(iterator)(const struct T_(trie) *const trie)
+	{ return PT_(match_prefix)(trie, ""); }
 /** Stores all `prefix` matches in `trie` in `it`. */
-static void PT_(prefix)(struct T_(trie) *const trie,
-	const char *const prefix, struct PT_(iterator) *it) {
-	assert(trie && prefix && it);
-	PT_(match_prefix)(trie, prefix, it);
+static struct PT_(iterator) PT_(prefix)(struct T_(trie) *const trie,
+	const char *const prefix) {
+	struct PT_(iterator) it;
+	assert(trie && prefix);
+	it = PT_(match_prefix)(trie, prefix);
 	/* Make sure actually a prefix. */
-	if(it->trie && !trie_is_prefix(prefix,
+	if(it.trie && !trie_is_prefix(prefix,
 		PT_(key_string)(PT_(entry_key)(
-		&it->cur.tree->leaf[it->cur.lf].as_entry))))
-		it->trie = 0;
+		&it.cur.tree->leaf[it.cur.lf].as_entry))))
+		it.trie = 0;
+	return it;
 }
 /** @return An iterator set to strings that start with `prefix` in `trie`.
  It is valid until a topological change to `trie`. Calling <fn:<T>trie_next>
@@ -462,7 +454,9 @@ static void PT_(prefix)(struct T_(trie) *const trie,
  @order \O(|`prefix`|) @allow */
 static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
 	const char *const prefix) {
-	struct T_(trie_iterator) it; PT_(prefix)(trie, prefix, &it._); return it;
+	struct T_(trie_iterator) it;
+	it._ = PT_(prefix)(trie, prefix);
+	return it;
 }
 /** @return Advances `it` and returns the entry, or, at the end, returns null.
  @order \O(\log |`trie`|) @allow */
