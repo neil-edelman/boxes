@@ -214,7 +214,6 @@ static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 
 typedef PB_(key) PB_(value);
 typedef PB_(key) *PB_(entry);
-//typedef PB_(key_c) *PB_(entry_c);
 static PB_(entry) PB_(null_entry)(void) { return 0; }
 /** Constructs entry from `node` and `i`. */
 static PB_(entry) PB_(cons_entry)(struct PB_(node) *const node,
@@ -264,7 +263,7 @@ static int PB_(to_predecessor)(struct PB_(tree) tree,
 	*ref = prev;
 }	return 1; /* Jumped nodes. */
 }
-/* @return If `ref_c` in `tree` has a successor, then it increments. */
+/** @return If `ref` in `tree` has a successor, then it increments. */
 static int PB_(to_successor)(struct PB_(tree) tree,
 	struct PB_(ref) *const ref) {
 	assert(ref);
@@ -306,7 +305,7 @@ static int PB_(is_element)(const PB_(entry) e) {
 #endif
 }
 struct PB_(iterator) { struct PB_(tree) *root; struct PB_(ref) ref; int seen; };
-/** Eliminates code-re-use from <fn:<PB>begin> and <fn:<PB>end>.
+/** Eliminates code-re-use from <fn:<PB>iterator> and <fn:<PB>end>.
  @return Fills `it` and returns if `tree` has contents, in which case, `idx`
  is uninitialized. */
 static int PB_(iterator_fill_part)(struct PB_(iterator) *const it,
@@ -1555,8 +1554,8 @@ static PB_(entry) B_(tree_previous)(struct B_(tree_iterator) *const cur)
 	{ return PB_(previous)(&cur->_); }
 
 #ifdef TREE_VALUE /* <!-- map */
-/** Adds `key` and returns `value` to tree in iterator `cur`. See
- <fn:<B>tree_try>. @return If `cur` is not pointing at a valid tree, returns
+/** Adds `key` and returns `value` to tree in iterator `it`. See
+ <fn:<B>tree_try>. @return If `it` is not pointing at a valid tree, returns
  `TREE_ERROR` and doesn't set `errno`, otherwise the same. */
 static enum tree_result B_(tree_iterator_try)(struct B_(tree_iterator) *const
 	it, const PB_(key) key, PB_(value) **const value) {
@@ -1607,9 +1606,9 @@ static enum tree_result B_(tree_iterator_try)(struct B_(tree_iterator) *const
 }
 #endif
 
-/** Removes the last entry returned by a valid `cur`. All other iterators on the
+/** Removes the last entry returned by a valid `it`. All other iterators on the
  same object are invalidated, but `cur` is now between on the removed node.
- @return Success, otherwise `cur` is not at a valid element.
+ @return Success, otherwise `it` is not at a valid element.
  @order \Theta(\log |`tree`|) */
 static int B_(tree_iterator_remove)(struct B_(tree_iterator) *const it) {
 	PB_(key) remove;
@@ -1663,6 +1662,7 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 #ifdef TREE_TO_STRING /* <!-- to string trait */
 #define TO_STRING_LEFT '{'
 #define TO_STRING_RIGHT '}'
+#define TO_STRING_CAST
 #include "to_string.h" /** \include */
 #undef TREE_TO_STRING
 #ifndef TREE_TRAIT
@@ -1698,7 +1698,6 @@ static PB_(value) B_D_(tree, get)(const struct B_(tree) *const tree,
 		&& (ref = PB_(find)(&tree->root, key)).node
 		? *PB_(ref_to_valuep)(ref) : PB_D_(default, value);
 }
-
 /** This is functionally identical to <fn:<B>tree_at_or>, but a with a trait
  specifying a constant default value.
  @return The value associated with `key` in `tree`, (which can be null.) If

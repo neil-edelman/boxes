@@ -6,7 +6,7 @@ Stand\-alone header [src/tree\.h](src/tree.h); examples [test/test\_tree\.c](tes
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;PB&gt;key](#user-content-typedef-9d1494bc), [&lt;PB&gt;value](#user-content-typedef-1740653a), [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31), [&lt;PB&gt;entry](#user-content-typedef-8e330c63), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [tree_result](#user-content-tag-9c3f99d7), [&lt;B&gt;tree](#user-content-tag-a36433e3), [&lt;B&gt;tree_entry](#user-content-tag-9e3caf18), [&lt;B&gt;tree_cursor](#user-content-tag-1718ca86)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [tree_result](#user-content-tag-9c3f99d7), [&lt;B&gt;tree](#user-content-tag-a36433e3), [&lt;B&gt;tree_entry](#user-content-tag-9e3caf18), [&lt;B&gt;tree_iterator](#user-content-tag-18b8c30e)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -27,12 +27,12 @@ A [&lt;B&gt;tree](#user-content-tag-a36433e3) is an ordered set or map contained
    A function satisfying [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31)\. Defaults to ascending order\. Required if `TREE_KEY` is changed to an incomparable type\.
  * Parameter: TREE\_ORDER  
    Sets the branching factor, or order as [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3), to the range `[3, UINT_MAX+1]`\. Default 65 is tuned to an integer to pointer map, and should be okay for most variations\. 4 is isomorphic to left\-leaning red\-black tree, [Sedgewick, 2008, LLRB](https://scholar.google.ca/scholar?q=Sedgewick%2C+2008%2C+LLRB)\. The above illustration is 5\.
- * Parameter: TREE\_EXPECT\_TRAIT  
-   Do not un\-define certain variables for subsequent inclusion in a parameterized trait\.
- * Parameter: TREE\_DEFAULT\_NAME, TREE\_DEFAULT  
-   Default trait; a name that satisfies `C` naming conventions when mangled and a [&lt;PB&gt;value](#user-content-typedef-1740653a) used in [&lt;B&gt;tree&lt;D&gt;get](#user-content-fn-16ee74a9)\. There can be multiple defaults, but only one can omit `TREE_DEFAULT_NAME`\.
- * Parameter: TREE\_TO\_STRING\_NAME, TREE\_TO\_STRING  
-   To string trait contained in [src/to\_string\.h](src/to_string.h); an optional unique `<SZ>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
+ * Parameter: TREE\_DEFAULT  
+   Default trait; a name that satisfies `C` naming conventions when mangled and a [&lt;PB&gt;value](#user-content-typedef-1740653a) used in [&lt;B&gt;tree&lt;D&gt;get](#user-content-fn-16ee74a9)\.
+ * Parameter: TREE\_TO\_STRING  
+   To string trait contained in [src/to\_string\.h](src/to_string.h)\.
+ * Parameter: TREE\_EXPECT\_TRAIT, TREE\_TRAIT  
+   Named traits are obtained by including `tree.h` multiple times with `TREE_EXPECT_TRAIT` and then subsequently including the name in `TREE_TRAIT`\.
  * Standard:  
    C89
  * Caveat:  
@@ -111,9 +111,9 @@ On `TREE_VALUE`, creates a map from pointer\-to\-[&lt;PB&gt;key](#user-content-t
 
 
 
-### <a id = "user-content-tag-1718ca86" name = "user-content-tag-1718ca86">&lt;B&gt;tree_cursor</a> ###
+### <a id = "user-content-tag-18b8c30e" name = "user-content-tag-18b8c30e">&lt;B&gt;tree_iterator</a> ###
 
-<code>struct <strong>&lt;B&gt;tree_cursor</strong>;</code>
+<code>struct <strong>&lt;B&gt;tree_iterator</strong>;</code>
 
 Adding, deleting, or changes in the topology of the tree invalidate it\.
 
@@ -151,21 +151,21 @@ Adding, deleting, or changes in the topology of the tree invalidate it\.
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-b3495ae9">&lt;B&gt;tree_clone</a></td><td>tree, source</td></tr>
 
-<tr><td align = right>static struct &lt;B&gt;tree_cursor</td><td><a href = "#user-content-fn-903f4e29">&lt;B&gt;tree_begin</a></td><td>tree</td></tr>
+<tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#user-content-fn-903f4e29">&lt;B&gt;tree_begin</a></td><td>tree</td></tr>
 
-<tr><td align = right>static struct &lt;B&gt;tree_cursor</td><td><a href = "#user-content-fn-52203017">&lt;B&gt;tree_begin_at</a></td><td>tree, x</td></tr>
+<tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#user-content-fn-52203017">&lt;B&gt;tree_begin_at</a></td><td>tree, x</td></tr>
 
-<tr><td align = right>static struct &lt;B&gt;tree_cursor</td><td><a href = "#user-content-fn-6b449fc9">&lt;B&gt;tree_end</a></td><td>tree</td></tr>
+<tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#user-content-fn-6b449fc9">&lt;B&gt;tree_end</a></td><td>tree</td></tr>
 
 <tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#user-content-fn-6828a06d">&lt;B&gt;tree_next</a></td><td>cur</td></tr>
 
 <tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#user-content-fn-30771909">&lt;B&gt;tree_previous</a></td><td>cur</td></tr>
 
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
+
 <tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#user-content-fn-16ee74a9">&lt;B&gt;tree&lt;D&gt;get</a></td><td>tree, key</td></tr>
 
 <tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#user-content-fn-40687c3a">&lt;B&gt;tree&lt;D&gt;at</a></td><td>tree, key</td></tr>
-
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -367,7 +367,7 @@ Tries to remove `key` from `tree`\.
 
 ### <a id = "user-content-fn-903f4e29" name = "user-content-fn-903f4e29">&lt;B&gt;tree_begin</a> ###
 
-<code>static struct &lt;B&gt;tree_cursor <strong>&lt;B&gt;tree_begin</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code>
+<code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_begin</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code>
 
  * Return:  
    Cursor before the first element of `tree`\. Can be null\.
@@ -379,7 +379,7 @@ Tries to remove `key` from `tree`\.
 
 ### <a id = "user-content-fn-52203017" name = "user-content-fn-52203017">&lt;B&gt;tree_begin_at</a> ###
 
-<code>static struct &lt;B&gt;tree_cursor <strong>&lt;B&gt;tree_begin_at</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code>
+<code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_begin_at</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code>
 
  * Parameter: _tree_  
    Can be null\.
@@ -393,7 +393,7 @@ Tries to remove `key` from `tree`\.
 
 ### <a id = "user-content-fn-6b449fc9" name = "user-content-fn-6b449fc9">&lt;B&gt;tree_end</a> ###
 
-<code>static struct &lt;B&gt;tree_cursor <strong>&lt;B&gt;tree_end</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code>
+<code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_end</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code>
 
  * Return:  
    Cursor after the last element of `tree`\. Can be null\.
@@ -405,7 +405,7 @@ Tries to remove `key` from `tree`\.
 
 ### <a id = "user-content-fn-6828a06d" name = "user-content-fn-6828a06d">&lt;B&gt;tree_next</a> ###
 
-<code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_next</strong>(struct &lt;B&gt;tree_cursor *const <em>cur</em>)</code>
+<code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_next</strong>(struct &lt;B&gt;tree_iterator *const <em>cur</em>)</code>
 
 Advances `cur` to the next element\.
 
@@ -419,7 +419,7 @@ Advances `cur` to the next element\.
 
 ### <a id = "user-content-fn-30771909" name = "user-content-fn-30771909">&lt;B&gt;tree_previous</a> ###
 
-<code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_previous</strong>(struct &lt;B&gt;tree_cursor *const <em>cur</em>)</code>
+<code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_previous</strong>(struct &lt;B&gt;tree_iterator *const <em>cur</em>)</code>
 
 Reverses `cur` to the previous element\.
 
@@ -427,6 +427,20 @@ Reverses `cur` to the previous element\.
    A pointer to the previous element, or null if it ran out of elements\. The type is either a set pointer\-to\-key or a map [&lt;B&gt;tree_entry](#user-content-tag-9e3caf18) \(with `TREE_VALUE`, both fields are null if null\)\.
  * Order:  
    &#927;\(log |`tree`|\)
+
+
+
+
+### <a id = "user-content-fn-751c6337" name = "user-content-fn-751c6337">&lt;STR&gt;to_string</a> ###
+
+<code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
+
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\.
+
+ * Return:  
+   Address of the static buffer\.
+ * Order:  
+   &#920;\(1\)
 
 
 
@@ -455,20 +469,6 @@ This is functionally identical to [&lt;B&gt;tree_at_or](#user-content-fn-7bd69fa
    The value associated with `key` in `tree`, \(which can be null\.\) If no such value exists, the `TREE_DEFAULT` is returned\.
  * Order:  
    &#927;\(log |`tree`|\)\.
-
-
-
-
-### <a id = "user-content-fn-751c6337" name = "user-content-fn-751c6337">&lt;STR&gt;to_string</a> ###
-
-<code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
-
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\.
-
- * Return:  
-   Address of the static buffer\.
- * Order:  
-   &#920;\(1\)
 
 
 
