@@ -346,7 +346,9 @@ static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 #ifdef LIST_TO_STRING /* <!-- to string trait */
 #include "to_string.h" /** \include */
 #undef LIST_TO_STRING
+#ifndef LIST_TRAIT
 #define LIST_HAS_TO_STRING
+#endif
 #endif /* to string trait --> */
 
 
