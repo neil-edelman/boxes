@@ -1577,7 +1577,7 @@ static enum tree_result B_(tree_iterator_try)(struct B_(tree_iterator) *const
 	if(where == ITERATING) anchor = it->_.ref.node->key[it->_.ref.idx];
 	if(where == NONODE || where == END) it->_.seen = 0; /* Should be already. */
 #ifdef TREE_VALUE
-	ret = PB_(update)(cur->_.root, key, 0, value);
+	ret = PB_(update)(it->_.root, key, 0, value);
 #else
 	ret = PB_(update)(it->_.root, key, 0);
 #endif
@@ -1665,10 +1665,13 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 #define TO_STRING_RIGHT '}'
 #include "to_string.h" /** \include */
 #undef TREE_TO_STRING
+#ifndef TREE_TRAIT
+#define TREE_HAS_TO_STRING
+#endif
 #endif /* to string trait --> */
 
 
-#if defined(TREE_TEST) && !defined(HEAP_TRAIT) /* <!-- test base */
+#if defined(TREE_TEST) && !defined(TREE_TRAIT) /* <!-- test base */
 #include "../test/test_tree.h"
 #endif /* test base --> */
 
@@ -1682,7 +1685,7 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 #define PB_D_(n, m) TREE_CAT(tree, B_D_(n, m))
 #endif
 /* `TREE_DEFAULT` is a valid <tag:<PB>value>. */
-static const PN_(value) PN_D_(default, value) = (TABLE_DEFAULT);
+static const PB_(value) PB_D_(default, value) = (TREE_DEFAULT);
 /** This is functionally identical to <fn:<B>tree_get_or>, but a with a trait
  specifying a constant default value.
  @return The value associated with `key` in `tree`, (which can be null.) If
@@ -1735,6 +1738,9 @@ static void PB_D_(unused, default_coda)(void) { PB_D_(unused, default)(); }
 #undef TREE_COMPARE
 #ifdef TREE_VALUE
 #undef TREE_VALUE
+#endif
+#ifdef TREE_HAS_TO_STRING
+#undef TREE_HAS_TO_STRING
 #endif
 #ifdef TREE_TEST
 #undef TREE_TEST

@@ -482,7 +482,7 @@ static void PB_(test)(void) {
 			B_(tree_next)(&it);
 		}
 #ifdef TREE_VALUE
-		switch(B_(tree_iterator_try)(&cur, t->key, &value))
+		switch(B_(tree_iterator_try)(&it, t->key, &value))
 #else
 		switch(B_(tree_iterator_try)(&it, t->key))
 #endif

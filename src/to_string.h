@@ -119,7 +119,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	*b++ = left;
 	while(BOX_(is_element)(x = BOX_(next)(&it))) {
 		/* One must have this function declared! */
-		STREXTERN_(to_string)((void *)x, (char (*)[12])b);
+		STREXTERN_(to_string)(/*(void *) FIXME!*/x, (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
