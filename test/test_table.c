@@ -393,22 +393,22 @@ static void star_filler(void *const zero, struct star_table_entry *const star) {
  worst-case in terms of design of the table. It's associated, so we don't
  really have a nice choice; were we to aggregate it, then it would be a fixed
  size or face alignment issues. */
-struct dictlist_listlink;
-static int dictlist_compare(const struct dictlist_listlink *,
-	const struct dictlist_listlink *);
-#define LIST_NAME dictlist
+struct word_listlink;
+static int word_compare(const struct word_listlink *,
+	const struct word_listlink *);
+#define LIST_NAME word
 #define LIST_COMPARE
 #include "list.h"
 /** Associated with the word and a link to other words. */
-struct dict { struct dictlist_listlink link; char *word; };
+struct dict { struct word_listlink link; char *word; };
 /** `container_of` `link`; `offsetof`, in this case, is zero; we could have
  used a cast. */
-static const struct dict *dictlink_upcast(const struct dictlist_listlink *const
+static const struct dict *dictlink_upcast(const struct word_listlink *const
 	link) { return (const struct dict *)(const void *)
 	((const char *)link - offsetof(struct dict, link)); }
 /** Compare `a` and `b`. */
-static int dictlist_compare(const struct dictlist_listlink *const a,
-	const struct dictlist_listlink *const b)
+static int word_compare(const struct word_listlink *const a,
+	const struct word_listlink *const b)
 	{ return strcmp(dictlink_upcast(a)->word, dictlink_upcast(b)->word); }
 /* We take them on-line as they come, so we need a stable pool. */
 #define POOL_NAME dict
@@ -471,31 +471,31 @@ static int dict_is_equal(const char *const a, const char *const b)
 static void linked_dict(void) {
 	struct char_array english = char_array();
 	const char *const inglesi_fn = "test/Tutte_le_parole_inglesi.txt";
-	struct dict_table words = dict_table();
-	struct dict_pool backing = dict_pool();
-	struct dictlist_list order;
+	struct dict_table dict = dict_table();
+	struct dict_pool pool = dict_pool();
+	struct word_list order;
 	struct lex_state state = { 0, 0, 0 }; /* Defined in <lex.h>. */
 	printf("Testing linked-dictionary.\n");
 	if(!append_file(&english, inglesi_fn)) goto catch;
-	dictlist_list_clear(&order);
+	word_list_clear(&order);
 	state.cursor = english.data, state.line = 1;
 	while(lex_dict(&state)) { /* Cut off the string in the `char` array. */
 		struct dict **ptr, *d;
-		switch(dict_table_compute(&words, state.word, &ptr)) {
+		switch(dict_table_compute(&dict, state.word, &ptr)) {
 		case TABLE_ERROR: goto catch;
 		case TABLE_REPLACE: assert(0); break; /* This can never happen. */
 		case TABLE_YIELD: printf("Next line %lu: duplicate \"%s\"; ignoring.\n",
 			(unsigned long)state.line, state.word); continue;
 		case TABLE_UNIQUE:
-			if(!(d = *ptr = dict_pool_new(&backing))) goto catch;
+			if(!(d = *ptr = dict_pool_new(&pool))) goto catch;
 			d->word = state.word;
-			dictlist_list_push(&order, &d->link);
+			word_list_push(&order, &d->link);
 		}
 	}
 	/* Natural merge sort, `O(n)` when it's (almost?) in order. (They are
 	 presumably already sorted.) */
-	dictlist_list_sort(&order);
-	printf("Dictionary: %s.\n", dict_table_to_string(&words));
+	word_list_sort(&order);
+	printf("Dictionary: %s.\n", dict_table_to_string(&dict));
 	/* Print all.
 	for(i = dict_list_head(&order); i; i = dict_list_next(i))
 		printf("%s\n", link_upcast(i)->word); */
@@ -509,7 +509,7 @@ static void linked_dict(void) {
 			r < r_end; r++) {
 			struct dict *found;
 			char *look = *r, *before, *after;
-			if(!(found = dict_table_get(&words, look))) { printf(
+			if(!(found = dict_table_get(&dict, look))) { printf(
 				"That's weird; \"%s\" wasn't found in the dictionary.\n", look);
 				assert(0); continue; }
 			before = found->link.prev
@@ -527,8 +527,8 @@ static void linked_dict(void) {
 catch:
 	perror("dict"), assert(0);
 finally:
-	dict_table_(&words);
-	dict_pool_(&backing);
+	dict_table_(&dict);
+	dict_pool_(&pool);
 	char_array_(&english);
 	printf("\n");
 }
