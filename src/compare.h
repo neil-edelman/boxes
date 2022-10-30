@@ -17,8 +17,7 @@
 
 #if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
 	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME) \
-	|| defined(CMP_) || !(defined(COMPARE_IS_EQUAL) ^ defined(COMPARE)) \
-	|| !defined(BOX_CONTIGUOUS)
+	|| defined(CMP_) || !(defined(COMPARE_IS_EQUAL) ^ defined(COMPARE))
 #error Unexpected preprocessor symbols.
 #endif
 
