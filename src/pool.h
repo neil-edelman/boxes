@@ -29,9 +29,8 @@
  `uintptr_t` is recommended because of it's implementation-defined instead of
  undefined-behaviour when comparing pointers from different objects. */
 
-/* `POOL_EXPECT_TRAIT`, `POOL_TO_STRING_NAME`, `POOL_TO_STRING` are
- undocumented because this container is only iterable in the first slab, so
- this is not very useful except for debugging. */
+/* `POOL_TO_STRING` is undocumented because this container is only iterable in
+ the first slab, so this is not very useful except for debugging. */
 
 #if !defined(POOL_NAME) || !defined(POOL_TYPE)
 #error Name or tag type undefined.

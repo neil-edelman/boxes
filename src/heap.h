@@ -84,7 +84,7 @@ typedef HEAP_TYPE PH_(priority);
 typedef const HEAP_TYPE PH_(priority_c); /* This is assuming a lot. */
 
 /** Returns a positive result if `a` is out-of-order with respect to `b`,
- inducing a strict total order. This is compatible, but less strict then the
+ inducing a strict weak order. This is compatible, but less strict then the
  comparators from `bsearch` and `qsort`; it only needs to divide entries into
  two instead of three categories. */
 typedef int (*PH_(compare_fn))(PH_(priority_c) a, PH_(priority_c) b);
@@ -129,7 +129,6 @@ struct H_(heap) { struct PH_(node_array) as_array; };
 #define PAH_(n) HEAP_CAT(HEAP_CAT(array, PH_(node)), n)
 /** Is `x` not null? @implements `is_element` */
 static int PH_(is_element)(PH_(node) *const x) { return !!x; }
-/* @implements `forward` */
 struct PH_(iterator) { struct PAH_(iterator) _; };
 /** @return Before `h`. @implements `forward` */
 static struct PH_(iterator) PH_(iterator)(struct H_(heap) *const h) {
@@ -363,7 +362,9 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #ifdef HEAP_TO_STRING /* <!-- to string trait */
 #include "to_string.h" /** \include */
 #undef HEAP_TO_STRING
+#ifndef HEAP_TRAIT
 #define HEAP_HAS_TO_STRING
+#endif
 #endif /* to string trait --> */
 
 
