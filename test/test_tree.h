@@ -24,8 +24,8 @@ typedef void (*PB_(action_fn))(PB_(key) *, PB_(value) *);
 typedef void (*PB_(action_fn))(PB_(key) *);
 #endif
 
-static PB_(entry_c) PB_(test_to_entry_c)(const struct PB_(tree_test) *const t) {
-	PB_(entry_c) e;
+static PB_(entry) PB_(test_to_entry)(struct PB_(tree_test) *const t) {
+	PB_(entry) e;
 	assert(t);
 #ifdef TREE_VALUE
 	e.key = &t->key;
@@ -61,7 +61,7 @@ static void PB_(subgraph)(const struct PB_(tree) *const sub, FILE *fp) {
 	for(i = 0; i < sub->node->size; i++) {
 		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
 		char z[12];
-		PB_(entry_c) e = PB_(cons_entry_c)(sub->node, i);
+		PB_(entry) e = PB_(cons_entry)(sub->node, i);
 		B_(to_string)(e, &z);
 		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
 			" port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
@@ -132,7 +132,7 @@ static void PB_(subgraph_usual)(const struct PB_(tree) *const sub, FILE *fp) {
 		sub->node->size ? sub->node->size : 1, orcify(sub->node));
 	for(i = 0; i < sub->node->size; i++) {
 		char z[12];
-		PB_(entry_c) e = PB_(cons_entry_c)(sub->node, i);
+		PB_(entry) e = PB_(cons_entry)(sub->node, i);
 		B_(to_string)(e, &z);
 		fprintf(fp, "\t<td border=\"0\" align=\"center\""
 			" port=\"%u\">%s</td>\n", i, z);
@@ -414,10 +414,10 @@ static void PB_(test)(void) {
 
 	/* Add. */
 	for(i = 0; i < n_size; i++) {
-		PB_(entry_c) ent;
+		PB_(entry) ent;
 		char z[12];
 		struct PB_(tree_test) *const t = n + i;
-		ent = PB_(test_to_entry_c)(t);
+		ent = PB_(test_to_entry)(t);
 		B_(to_string)(ent, &z);
 		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);
 #ifdef TREE_VALUE

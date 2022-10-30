@@ -182,7 +182,6 @@ static const struct PB_(branch) *PB_(as_branch_c)(const struct PB_(node) *
 /* Address of a specific key by node. There is a need for node plus index
  without height, but we'll just let height be unused. */
 struct PB_(ref) { struct PB_(node) *node; unsigned height, idx; };
-struct PB_(ref_c) { const struct PB_(node) *node; unsigned height, idx; };
 /* Node plus height is a sub-tree. A <tag:<B>tree> is a sub-tree of the tree. */
 struct PB_(tree) { struct PB_(node) *node; unsigned height; };
 /** To initialize it to an idle state, see <fn:<B>tree>, `{0}` (`C99`), or
@@ -198,25 +197,14 @@ struct B_(tree) { struct PB_(tree) root; };
  pointer-to-<typedef:<PB>value>. The reason these are pointers is because it
  is not contiguous in memory. */
 struct B_(tree_entry) { PB_(key) *key; PB_(value) *value; };
-/* FIXME: are you sure that this doesn't allow you to modify keys? we do not
- want modification of keys (right?? otoh, it is the *placement* not the actual
- value that is fixed.) */
-struct B_(tree_entry_c) { PB_(key_c) *key; const PB_(value) *value; };
 /** On `TREE_VALUE`, otherwise it's just an alias for
  pointer-to-<typedef:<PB>key>. */
 typedef struct B_(tree_entry) PB_(entry);
-typedef struct B_(tree_entry_c) PB_(entry_c);
 static PB_(entry) PB_(null_entry)(void)
 	{ const PB_(entry) e = { 0, 0 }; return e; }
-static PB_(entry_c) PB_(null_entry_c)(void)
-	{ const PB_(entry_c) e = { 0, 0 }; return e; }
 /** Constructs entry from `node` and `i`. */
 static PB_(entry) PB_(cons_entry)(struct PB_(node) *const node,
 	const unsigned i) { PB_(entry) e;
-	e.key = node->key + i, e.value = node->value + i; return e; }
-/** Constructs entry from `node` and `i`. */
-static PB_(entry_c) PB_(cons_entry_c)(const struct PB_(node) *const node,
-	const unsigned i) { PB_(entry_c) e;
 	e.key = node->key + i, e.value = node->value + i; return e; }
 /** Gets the value of `ref`. */
 static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
@@ -226,14 +214,10 @@ static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 
 typedef PB_(key) PB_(value);
 typedef PB_(key) *PB_(entry);
-typedef PB_(key_c) *PB_(entry_c);
-static PB_(entry_c) PB_(null_entry_c)(void) { return 0; }
+//typedef PB_(key_c) *PB_(entry_c);
 static PB_(entry) PB_(null_entry)(void) { return 0; }
 /** Constructs entry from `node` and `i`. */
 static PB_(entry) PB_(cons_entry)(struct PB_(node) *const node,
-	const unsigned i) { return node->key + i; }
-/** Constructs entry from `node` and `i`. */
-static PB_(entry_c) PB_(cons_entry_c)(const struct PB_(node) *const node,
 	const unsigned i) { return node->key + i; }
 /** Gets the value of `ref`. */
 static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
@@ -281,41 +265,37 @@ static int PB_(to_predecessor)(struct PB_(tree) tree,
 }	return 1; /* Jumped nodes. */
 }
 /* @return If `ref_c` in `tree` has a successor, then it increments. */
-#define TREE_TO_SUCCESSOR(to_successor_c, ref_c) \
-static int PB_(to_successor_c)(struct PB_(tree) tree, \
-	struct PB_(ref_c) *const ref) { \
-	assert(ref); \
-	if(!tree.node || tree.height == UINT_MAX) return 0; /* Empty. */ \
-	if(!ref->node) \
-		ref->node = tree.node, ref->height = tree.height, ref->idx = 0; \
-	else \
-		ref->idx++; \
-	while(ref->height) ref->height--, \
-		ref->node = PB_(as_branch_c)(ref->node)->child[ref->idx], ref->idx = 0; \
-	if(ref->idx < ref->node->size) return 1; /* Likely. */ \
-	if(!ref->node->size) return 0; /* When bulk-loading. */ \
-{ /* Re-descend; pick the minimum height node that has a next key. */ \
-	struct PB_(ref_c) next; \
-	unsigned a0; \
-	PB_(key) x; \
-	for(next.node = 0, x = ref->node->key[ref->node->size - 1]; tree.height; \
-		tree.node = PB_(as_branch_c)(tree.node)->child[a0], tree.height--) { \
-		unsigned a1 = tree.node->size; \
-		a0 = 0; \
-		while(a0 < a1) { \
-			const unsigned m = (a0 + a1) / 2; \
-			if(PB_(compare)(x, tree.node->key[m]) > 0) a0 = m + 1; else a1 = m;\
-		} \
-		if(a0 < tree.node->size) \
-			next.node = tree.node, next.height = tree.height, next.idx = a0; \
-	} \
-	if(!next.node) return 0; /* Off right. */ \
-	*ref = next; \
-}	return 1; /* Jumped nodes. */ \
+static int PB_(to_successor)(struct PB_(tree) tree,
+	struct PB_(ref) *const ref) {
+	assert(ref);
+	if(!tree.node || tree.height == UINT_MAX) return 0; /* Empty. */
+	if(!ref->node)
+		ref->node = tree.node, ref->height = tree.height, ref->idx = 0;
+	else
+		ref->idx++;
+	while(ref->height) ref->height--,
+		ref->node = PB_(as_branch_c)(ref->node)->child[ref->idx], ref->idx = 0;
+	if(ref->idx < ref->node->size) return 1; /* Likely. */
+	if(!ref->node->size) return 0; /* When bulk-loading. */
+{ /* Re-descend; pick the minimum height node that has a next key. */
+	struct PB_(ref) next;
+	unsigned a0;
+	PB_(key) x;
+	for(next.node = 0, x = ref->node->key[ref->node->size - 1]; tree.height;
+		tree.node = PB_(as_branch_c)(tree.node)->child[a0], tree.height--) {
+		unsigned a1 = tree.node->size;
+		a0 = 0;
+		while(a0 < a1) {
+			const unsigned m = (a0 + a1) / 2;
+			if(PB_(compare)(x, tree.node->key[m]) > 0) a0 = m + 1; else a1 = m;
+		}
+		if(a0 < tree.node->size)
+			next.node = tree.node, next.height = tree.height, next.idx = a0;
+	}
+	if(!next.node) return 0; /* Off right. */
+	*ref = next;
+}	return 1; /* Jumped nodes. */
 }
-TREE_TO_SUCCESSOR(to_successor, ref) /* For iterator. */
-TREE_TO_SUCCESSOR(to_successor_c, ref_c) /* For forward iteration. */
-#undef TREE_TO_SUCCESSOR
 
 /** Is `e` not null? @implements `is_element` */
 static int PB_(is_element)(const PB_(entry) e) {
