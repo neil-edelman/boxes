@@ -53,9 +53,6 @@
 #if defined(TREE_TRAIT) ^ defined(BOX_TYPE)
 #error TREE_TRAIT name must come after TREE_EXPECT_TRAIT.
 #endif
-#if defined(TREE_DEFAULT_NAME) && !defined(TREE_DEFAULT)
-#error TREE_DEFAULT_NAME requires TREE_DEFAULT.
-#endif
 #if defined(TREE_TEST) && (!defined(TREE_TRAIT) && !defined(TREE_TO_STRING) \
 	|| defined(TREE_TRAIT) && !defined(TREE_HAS_TO_STRING))
 #error Test requires to string.
