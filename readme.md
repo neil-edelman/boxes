@@ -15,9 +15,9 @@ Header [src/trie\.h](src/trie.h) requires [src/bmp\.h](src/bmp.h); examples [tes
 
 ![Example of trie.](doc/trie.png)
 
-A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, or trie: an ordered set or map of byte null\-terminated immutable key strings allowing efficient prefix queries\. The implementation is as [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) that acts as an index, only storing the where the key bits are different\. The keys are grouped in fixed\-size nodes in a relaxed version of [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large), where the height is dynamic\.
+A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, or trie: an ordered set or map of byte null\-terminated immutable key strings allowing efficient prefix queries\. The implementation is as [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) that acts as an index, only storing the where the key bits are different\. The keys are grouped in fixed\-size nodes in a relaxed version of a B\-tree, as [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large), where the height is no longer fixed\.
 
-The worse\-case run\-time of querying or modifying the trie is generally &#927;\(|`string`|\); however, this presumes that the string is packed with decision bits, something it's very hard to engineer in practice\. In reality, the bottleneck is more the density of looked\-at bits\. An iid model, [Tong, Goebel, Lin, 2015, Smoothed](https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed), is &#927;\(log |`trie`|\), which is very much what we see in practice, and what is reported here\.
+The worse\-case run\-time of querying or modifying, &#927;\(|`string`|\); however, this presumes that the string is packed with decision bits\. In reality, the bottleneck is more the density of looked\-at bits\. In an iid model, [Tong, Goebel, Lin, 2015, Smoothed](https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed) showed that the performance was &#927;\(log |`trie`|\)\.
 
 ![Bit view of the trie.](doc/trie-bits.png)
 
@@ -26,13 +26,13 @@ The worse\-case run\-time of querying or modifying the trie is generally &#927;\
  * Parameter: TRIE\_NAME  
    Required `<T>` that satisfies `C` naming conventions when mangled\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: TRIE\_KEY, TRIE\_KEY\_TO\_STRING  
-   Normally, the key is compatible with `const char *`\. Optionally, one can set `TRIE_KEY` to a custom type [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) needing `TRIE_KEY_TO_STRING` as an indirection function satisfying [&lt;PT&gt;key_to_string_fn](#user-content-typedef-b2d72b0f)\.
+   Normally, the key is compatible with `const char *`\. Optionally, one can set `TRIE_KEY` to a custom type [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) needing `TRIE_KEY_TO_STRING` as an indirection function satisfying [&lt;PT&gt;key_to_string_fn](#user-content-typedef-b2d72b0f)\. \(fixme: This should be just `<T>key_to_string`; too much complication\.\)
  * Parameter: TRIE\_VALUE, TRIE\_KEY\_IN\_VALUE  
-   `TRIE_VALUE` is an optional payload type to go with the key\. Further, `TRIE_KEY_IN_VALUE` is an optional [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f) that picks out the key from the [&lt;PT&gt;value](#user-content-typedef-cc753b30), otherwise it is an associative array from a key to value, [&lt;T&gt;trie_entry](#user-content-tag-1422bb56)\.
+   `TRIE_VALUE` is an optional payload type to go with the key\. Further, `TRIE_KEY_IN_VALUE` is an optional [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f) that picks out the key from the [&lt;PT&gt;value](#user-content-typedef-cc753b30), otherwise it is an associative array from a key to value, [&lt;T&gt;trie_entry](#user-content-tag-1422bb56)\. \(fixme: This should be also `<T>key_in_value`\.\)
  * Parameter: TRIE\_TO\_STRING  
-   Defining this includes [src/to\_string\.h](src/to_string.h), with the key strings\.
+   Defining this includes [src/to\_string\.h](src/to_string.h), with the key strings\. \(fixme: Only on unnamed trait\.\)
  * Parameter: TRIE\_DEFAULT\_NAME, TRIE\_DEFAULT  
-   Get or default set default\. FIXME: upcoming\.
+   Get or default set default\. \(fixme: upcoming\.\)
  * Parameter: TRIE\_EXPECT\_TRAIT, TRIE\_TRAIT  
    Named traits are obtained by including `trie.h` multiple times with `TRIE_EXPECT_TRAIT` and then subsequently including the name in `TRIE_TRAIT`\.
  * Standard:  

@@ -14,15 +14,14 @@
  queries. The implementation is as <Morrison, 1968 PATRICiA>: a compact
  [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) that acts as an
  index, only storing the where the key bits are different. The keys are grouped
- in fixed-size nodes in a relaxed version of
- <Bayer, McCreight, 1972 Large>, where the height is dynamic.
+ in fixed-size nodes in a relaxed version of a B-tree, as
+ <Bayer, McCreight, 1972 Large>, where the height is no longer fixed.
 
- The worse-case run-time of querying or modifying the trie is generally
- \O(|`string`|); however, this presumes that the string is packed with decision
- bits, something it's very hard to engineer in practice. In reality, the
- bottleneck is more the density of looked-at bits. An iid model,
- <Tong, Goebel, Lin, 2015, Smoothed>, is \O(\log |`trie`|), which is very much
- what we see in practice, and what is reported here.
+ The worse-case run-time of querying or modifying, \O(|`string`|); however,
+ this presumes that the string is packed with decision bits. In reality, the
+ bottleneck is more the density of looked-at bits. In an iid model,
+ <Tong, Goebel, Lin, 2015, Smoothed> showed that the performance was
+ \O(\log |`trie`|).
 
  ![Bit view of the trie.](../doc/trie-bits.png)
 
@@ -33,19 +32,22 @@
  @param[TRIE_KEY, TRIE_KEY_TO_STRING]
  Normally, the key is compatible with `const char *`. Optionally, one can set
  `TRIE_KEY` to a custom type <typedef:<PT>key> needing `TRIE_KEY_TO_STRING` as
- an indirection function satisfying <typedef:<PT>key_to_string_fn>.
+ an indirection function satisfying <typedef:<PT>key_to_string_fn>. (fixme:
+ This should be just `<T>key_to_string`; too much complication.)
 
  @param[TRIE_VALUE, TRIE_KEY_IN_VALUE]
  `TRIE_VALUE` is an optional payload type to go with the key. Further,
  `TRIE_KEY_IN_VALUE` is an optional <typedef:<PT>key_fn> that picks out the key
  from the <typedef:<PT>value>, otherwise it is an associative array from a
- key to value, <tag:<T>trie_entry>.
+ key to value, <tag:<T>trie_entry>. (fixme: This should be also
+ `<T>key_in_value`.)
 
  @param[TRIE_TO_STRING]
- Defining this includes <src/to_string.h>, with the key strings.
+ Defining this includes <src/to_string.h>, with the key strings. (fixme: Only
+ on unnamed trait.)
 
  @param[TRIE_DEFAULT_NAME, TRIE_DEFAULT]
- Get or default set default. FIXME: upcoming.
+ Get or default set default. (fixme: upcoming.)
 
  @param[TRIE_EXPECT_TRAIT, TRIE_TRAIT]
  Named traits are obtained by including `trie.h` multiple times with

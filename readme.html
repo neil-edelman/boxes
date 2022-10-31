@@ -52,9 +52,9 @@
 
 <p><img alt = "Example of trie." src = "doc/trie.png" width = 999 height = 642></p>
 
-<p>A <a href = "#tag:&lt;T&gt;trie">&lt;T&gt;trie</a> is a prefix-tree, digital-tree, or trie: an ordered set or map of byte null-terminated immutable key strings allowing efficient prefix queries. The implementation is as <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a> that acts as an index, only storing the where the key bits are different. The keys are grouped in fixed-size nodes in a relaxed version of <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large">Bayer, McCreight, 1972 Large</a>, where the height is dynamic.</p>
+<p>A <a href = "#tag:&lt;T&gt;trie">&lt;T&gt;trie</a> is a prefix-tree, digital-tree, or trie: an ordered set or map of byte null-terminated immutable key strings allowing efficient prefix queries. The implementation is as <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a> that acts as an index, only storing the where the key bits are different. The keys are grouped in fixed-size nodes in a relaxed version of a B-tree, as <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large">Bayer, McCreight, 1972 Large</a>, where the height is no longer fixed.</p>
 
-<p>The worse-case run-time of querying or modifying the trie is generally &#927;(|<code>string</code>|); however, this presumes that the string is packed with decision bits, something it's very hard to engineer in practice. In reality, the bottleneck is more the density of looked-at bits. An iid model, <a href = "https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed">Tong, Goebel, Lin, 2015, Smoothed</a>, is &#927;(log |<code>trie</code>|), which is very much what we see in practice, and what is reported here.</p>
+<p>The worse-case run-time of querying or modifying, &#927;(|<code>string</code>|); however, this presumes that the string is packed with decision bits. In reality, the bottleneck is more the density of looked-at bits. In an iid model, <a href = "https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed">Tong, Goebel, Lin, 2015, Smoothed</a> showed that the performance was &#927;(log |<code>trie</code>|).</p>
 
 <p><img alt = "Bit view of the trie." src = "doc/trie-bits.png" width = 1136 height = 416></p>
 
@@ -64,13 +64,13 @@
 	<dt>Parameter: TRIE_NAME</dt>
 	<dd>Required <code>&lt;T&gt;</code> that satisfies <code>C</code> naming conventions when mangled. <code>&lt;PT&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: TRIE_KEY, TRIE_KEY_TO_STRING</dt>
-	<dd>Normally, the key is compatible with <code>const char *</code>. Optionally, one can set <code>TRIE_KEY</code> to a custom type <a href = "#typedef:&lt;PT&gt;key">&lt;PT&gt;key</a> needing <code>TRIE_KEY_TO_STRING</code> as an indirection function satisfying <a href = "#typedef:&lt;PT&gt;key_to_string_fn">&lt;PT&gt;key_to_string_fn</a>.</dd>
+	<dd>Normally, the key is compatible with <code>const char *</code>. Optionally, one can set <code>TRIE_KEY</code> to a custom type <a href = "#typedef:&lt;PT&gt;key">&lt;PT&gt;key</a> needing <code>TRIE_KEY_TO_STRING</code> as an indirection function satisfying <a href = "#typedef:&lt;PT&gt;key_to_string_fn">&lt;PT&gt;key_to_string_fn</a>. (fixme: This should be just <code>&lt;T&gt;key_to_string</code>; too much complication.)</dd>
 	<dt>Parameter: TRIE_VALUE, TRIE_KEY_IN_VALUE</dt>
-	<dd><code>TRIE_VALUE</code> is an optional payload type to go with the key. Further, <code>TRIE_KEY_IN_VALUE</code> is an optional <a href = "#typedef:&lt;PT&gt;key_fn">&lt;PT&gt;key_fn</a> that picks out the key from the <a href = "#typedef:&lt;PT&gt;value">&lt;PT&gt;value</a>, otherwise it is an associative array from a key to value, <a href = "#tag:&lt;T&gt;trie_entry">&lt;T&gt;trie_entry</a>.</dd>
+	<dd><code>TRIE_VALUE</code> is an optional payload type to go with the key. Further, <code>TRIE_KEY_IN_VALUE</code> is an optional <a href = "#typedef:&lt;PT&gt;key_fn">&lt;PT&gt;key_fn</a> that picks out the key from the <a href = "#typedef:&lt;PT&gt;value">&lt;PT&gt;value</a>, otherwise it is an associative array from a key to value, <a href = "#tag:&lt;T&gt;trie_entry">&lt;T&gt;trie_entry</a>. (fixme: This should be also <code>&lt;T&gt;key_in_value</code>.)</dd>
 	<dt>Parameter: TRIE_TO_STRING</dt>
-	<dd>Defining this includes <a href = "src/to_string.h">src/to_string.h</a>, with the key strings.</dd>
+	<dd>Defining this includes <a href = "src/to_string.h">src/to_string.h</a>, with the key strings. (fixme: Only on unnamed trait.)</dd>
 	<dt>Parameter: TRIE_DEFAULT_NAME, TRIE_DEFAULT</dt>
-	<dd>Get or default set default. FIXME: upcoming.</dd>
+	<dd>Get or default set default. (fixme: upcoming.)</dd>
 	<dt>Parameter: TRIE_EXPECT_TRAIT, TRIE_TRAIT</dt>
 	<dd>Named traits are obtained by including <code>trie.h</code> multiple times with <code>TRIE_EXPECT_TRAIT</code> and then subsequently including the name in <code>TRIE_TRAIT</code>.</dd>
 	<dt>Standard:</dt>
