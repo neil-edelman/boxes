@@ -26,19 +26,19 @@
 	<td></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/pool">pool</a></td>
-	<td>stable memory pool</td>
+	<td>stable pool</td>
 	<td><a href = "https://github.com/neil-edelman/pool/blob/master/doc/pool.pdf">A slab-allocator for similar objects</a></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/table">table</a></td>
-	<td>hash table implementing set or map</td>
+	<td>hash table</td>
 	<td><a href = "https://github.com/neil-edelman/table/blob/master/doc/table.pdf">Allocation-conscious chained hash-table</a></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/tree">tree</a></td>
-	<td>B-tree implementing set or map</td>
+	<td>B-tree</td>
 	<td><a href = "https://github.com/neil-edelman/tree/blob/master/doc/tree.pdf">Practical in-memory B-tree design</a></td>
 </tr><tr>
 	<td><a href = "https://github.com/neil-edelman/trie">trie</a></td>
-	<td>prefix tree implementing string set or map</td>
+	<td>prefix tree</td>
 	<td><a href = "https://github.com/neil-edelman/trie/blob/master/doc/trie.pdf">Compact binary prefix trees</a></td>
 </tr></table>
 
