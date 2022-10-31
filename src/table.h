@@ -10,42 +10,37 @@
  ![Example of <string>table.](../doc/table.png)
 
  <tag:<N>table> implements a set or map of <typedef:<PN>entry> as a hash table.
- It must be supplied a <typedef:<PN>hash_fn> and, <typedef:<PN>is_equal_fn> or
- <typedef:<PN>inverse_hash_fn>.
+ It must be supplied <typedef:<PN>hash_fn> `<N>hash` and,
+ <typedef:<PN>is_equal_fn> `<N>is_equal` or <typedef:<PN>inverse_hash_fn>
+ `<N>inverse_hash`.
 
  @param[TABLE_NAME, TABLE_KEY]
  `<N>` that satisfies `C` naming conventions when mangled and a valid
  <typedef:<PN>key> associated therewith; required. `<PN>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
- @param[TABLE_HASH, TABLE_IS_EQUAL, TABLE_INVERSE]
- `TABLE_HASH`, and either `TABLE_IS_EQUAL` or `TABLE_INVERSE`, but not both,
- are required. Function satisfying <typedef:<PN>hash_fn>, and
- <typedef:<PN>is_equal_fn> or <typedef:<PN>inverse_hash_fn>.
+ @param[TABLE_INVERSE]
+ By default it assumes that `<N>is_equal` is supplied; with this, instead
+ requires `<N>inverse_hash` satisfying <typedef:<PN>inverse_hash_fn>.
 
  @param[TABLE_VALUE]
  An optional type that is the payload of the key, thus making this a map or
- associative array. (If the key is part of an aggregate pointer, it will be
- more efficient and robust to use a set with a type conversion instead of
- storing related pointers in a map.)
+ associative array.
 
  @param[TABLE_UINT]
  This is <typedef:<PN>uint>, the unsigned type of hash hash of the key given by
  <typedef:<PN>hash_fn>; defaults to `size_t`.
 
- @param[TABLE_EXPECT_TRAIT]
- Do not un-define certain variables for subsequent inclusion in a trait.
+ @param[TABLE_DEFAULT]
+ Default trait; a <typedef:<PN>value> used in <fn:<N>table<D>get>.
 
- @param[TABLE_DEFAULT_NAME, TABLE_DEFAULT]
- Default trait; a name that satisfies `C` naming conventions when mangled and a
- <typedef:<PN>value> used in <fn:<N>table<D>get>. There can be multiple
- defaults, but only one can omit `TABLE_DEFAULT_NAME`.
+ @param[TABLE_TO_STRING]
+ To string trait contained in <src/to_string.h>.
 
- @param[TABLE_TO_STRING_NAME, TABLE_TO_STRING]
- To string trait contained in <to_string.h>; `<STR>` that satisfies `C` naming
- conventions when mangled and function implementing
- <typedef:<PSTR>to_string_fn>. There can be multiple to string traits, but only
- one can omit `TABLE_TO_STRING_NAME`.
+ @param[TABLE_EXPECT_TRAIT, TABLE_TRAIT]
+ Named traits are obtained by including `table.h` multiple times with
+ `TABLE_EXPECT_TRAIT` and then subsequently including the name in
+ `TABLE_TRAIT`.
 
  @std C89 */
 
@@ -76,8 +71,8 @@
 #define PN_(n) TABLE_CAT(table, N_(n))
 /* Use the sign bit to store out-of-band flags when a <typedef:<PN>uint>
  represents an address in the table, (such that range of an index is one bit
- less.) Choose representations that probably save power. We cannot save this in
- an `enum` because we don't know maximum. */
+ less.) Choose representations that may save power? We cannot save this in an
+ `enum` because we don't know maximum. */
 #define TABLE_M1 ((PN_(uint))~(PN_(uint))0) /* 2's compliment -1. */
 #define TABLE_HIGH ((TABLE_M1 >> 1) + 1) /* Cardinality must be 1111... */
 #define TABLE_END (TABLE_HIGH)

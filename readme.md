@@ -15,24 +15,24 @@ Stand\-alone header [src/table\.h](src/table.h); examples [test/test\_table\.c](
 
 ![Example of &lt;string&gt;table.](doc/table.png)
 
-[&lt;N&gt;table](#user-content-tag-8f317be5) implements a set or map of [&lt;PN&gt;entry](#user-content-typedef-a9017e7) as a hash table\. It must be supplied a [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) and, [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb) or [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded)\.
+[&lt;N&gt;table](#user-content-tag-8f317be5) implements a set or map of [&lt;PN&gt;entry](#user-content-typedef-a9017e7) as a hash table\. It must be supplied [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) `<N>hash` and, [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb) `<N>is_equal` or [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded) `<N>inverse_hash`\.
 
 [src/iterate\.h](src/iterate.h): defining `HAVE_ITERATE_H` supplies `<ITR>` functions for all boxes that support them\. Is not a trait, adds a fixed amount of functions for all boxes\.[src/to\_string\.h](src/to_string.h): `<STR>` trait functions require `<name>[<trait>]to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
 
  * Parameter: TABLE\_NAME, TABLE\_KEY  
    `<N>` that satisfies `C` naming conventions when mangled and a valid [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) associated therewith; required\. `<PN>` is private, whose names are prefixed in a manner to avoid collisions\.
- * Parameter: TABLE\_HASH, TABLE\_IS\_EQUAL, TABLE\_INVERSE  
-   `TABLE_HASH`, and either `TABLE_IS_EQUAL` or `TABLE_INVERSE`, but not both, are required\. Function satisfying [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292), and [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb) or [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded)\.
+ * Parameter: TABLE\_INVERSE  
+   By default it assumes that `<N>is_equal` is supplied; with this, instead requires `<N>inverse_hash` satisfying [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded)\.
  * Parameter: TABLE\_VALUE  
-   An optional type that is the payload of the key, thus making this a map or associative array\. \(If the key is part of an aggregate pointer, it will be more efficient and robust to use a set with a type conversion instead of storing related pointers in a map\.\)
+   An optional type that is the payload of the key, thus making this a map or associative array\.
  * Parameter: TABLE\_UINT  
    This is [&lt;PN&gt;uint](#user-content-typedef-c13937ad), the unsigned type of hash hash of the key given by [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292); defaults to `size_t`\.
- * Parameter: TABLE\_EXPECT\_TRAIT  
-   Do not un\-define certain variables for subsequent inclusion in a trait\.
- * Parameter: TABLE\_DEFAULT\_NAME, TABLE\_DEFAULT  
-   Default trait; a name that satisfies `C` naming conventions when mangled and a [&lt;PN&gt;value](#user-content-typedef-218ce716) used in [&lt;N&gt;table&lt;D&gt;get](#user-content-fn-92774ccb)\. There can be multiple defaults, but only one can omit `TABLE_DEFAULT_NAME`\.
- * Parameter: TABLE\_TO\_STRING\_NAME, TABLE\_TO\_STRING  
-   To string trait contained in [to\_string\.h](to_string.h); `<STR>` that satisfies `C` naming conventions when mangled and function implementing [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\. There can be multiple to string traits, but only one can omit `TABLE_TO_STRING_NAME`\.
+ * Parameter: TABLE\_DEFAULT  
+   Default trait; a [&lt;PN&gt;value](#user-content-typedef-218ce716) used in [&lt;N&gt;table&lt;D&gt;get](#user-content-fn-92774ccb)\.
+ * Parameter: TABLE\_TO\_STRING  
+   To string trait contained in [src/to\_string\.h](src/to_string.h)\.
+ * Parameter: TABLE\_EXPECT\_TRAIT, TABLE\_TRAIT  
+   Named traits are obtained by including `table.h` multiple times with `TABLE_EXPECT_TRAIT` and then subsequently including the name in `TABLE_TRAIT`\.
  * Standard:  
    C89
 
