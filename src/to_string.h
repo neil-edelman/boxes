@@ -18,8 +18,6 @@
  @fixme `extern` untested.
 
  @std C89 */
-/** <src/to_string.h>: `<STR>` trait functions require
- `<name>[<trait>]to_string` be declared as <typedef:<PSTR>to_string_fn>. */
 
 #if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
 	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME) \

@@ -17,14 +17,14 @@ Stand\-alone header [src/array\.h](src/array.h); examples [test/test\_array\.c](
 
 [&lt;A&gt;array](#user-content-tag-8049be0d) is a dynamic array that stores contiguous [&lt;PA&gt;type](#user-content-typedef-a8a4b08a)\. Resizing may be necessary when increasing the size of the array; this incurs amortised cost, and any pointers to this memory may become stale\.
 
-[src/iterate\.h](src/iterate.h): defining `HAVE_ITERATE_H` supplies `<ITR>` functions for all boxes that support them\. Is not a trait, adds a fixed amount of functions for all boxes\.[src/to\_string\.h](src/to_string.h): `<STR>` trait functions require `<name>[<trait>]to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.[src/compare\.h](src/compare.h): `<CMP>` trait functions require `<name>[<trait>]compare` to be declared as [&lt;PCMP&gt;compare_fn](#user-content-typedef-2c6ed2db) or `<name>[<trait>]is_equal` to be declared as [&lt;PCMP&gt;bipredicate_fn](#user-content-typedef-82edbc04), respectfully, \(but not both\.\)
+\* [src/iterate\.h](src/iterate.h): defining `HAVE_ITERATE_H` supplies `<ITR>` functions\.
 
  * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
    `<A>` that satisfies `C` naming conventions when mangled and a valid tag\-type, [&lt;PA&gt;type](#user-content-typedef-a8a4b08a), associated therewith; required\. `<PA>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: ARRAY\_COMPARE, ARRAY\_IS\_EQUAL  
-   Compare trait contained in [src/compare\.h](src/compare.h)\.
+   Compare `<CMP>` trait contained in [src/compare\.h](src/compare.h)\. Requires `<name>[<trait>]compare` to be declared as [&lt;PCMP&gt;compare_fn](#user-content-typedef-2c6ed2db) or `<name>[<trait>]is_equal` to be declared as [&lt;PCMP&gt;bipredicate_fn](#user-content-typedef-82edbc04), respectfully, \(but not both\.\)
  * Parameter: ARRAY\_TO\_STRING  
-   To string trait contained in [src/to\_string\.h](src/to_string.h)\.
+   To string `<STR>` trait contained in [src/to\_string\.h](src/to_string.h)\. Requires `<name>[<trait>]to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
  * Parameter: ARRAY\_EXPECT\_TRAIT, ARRAY\_TRAIT  
    Named traits are obtained by including `array.h` multiple times with `ARRAY_EXPECT_TRAIT` and then subsequently including the name in `ARRAY_TRAIT`\.
  * Standard:  
