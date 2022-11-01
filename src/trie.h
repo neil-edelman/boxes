@@ -41,8 +41,10 @@
  array from a key to value, <tag:<T>trie_entry>.
 
  @param[TRIE_TO_STRING]
- Defining this includes <src/to_string.h>, with the key strings. (fixme: Only
- on unnamed trait.)
+ To string trait `<STR>` contained in <src/to_string.h>. The unnamed trait is
+ automatically supplied by the string, but others require
+`<name><trait>to_string` be declared as <typedef:<PSTR>to_string_fn>. (fixme:
+ only unnamed trait works.)
 
  @param[TRIE_DEFAULT]
  Get or default set default. (fixme: upcoming.)

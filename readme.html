@@ -58,7 +58,7 @@
 
 <p><img alt = "Bit view of the trie." src = "doc/trie-bits.png" width = 1136 height = 416></p>
 
-<a href = "src/to_string.h">src/to_string.h</a>: <code>&lt;STR&gt;</code> trait functions require <code>&lt;name&gt;[&lt;trait&gt;]to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</div>
+</div>
 
 <dl>
 	<dt>Parameter: TRIE_NAME</dt>
@@ -68,7 +68,7 @@
 	<dt>Parameter: TRIE_VALUE, TRIE_KEY_IN_VALUE</dt>
 	<dd><code>TRIE_VALUE</code> is an optional payload type to go with the key. Further, defining <code>TRIE_KEY_IN_VALUE</code> says that <a href = "#typedef:&lt;PT&gt;key_fn">&lt;PT&gt;key_fn</a> <code>&lt;T&gt;key</code> picks out <a href = "#typedef:&lt;PT&gt;key">&lt;PT&gt;key</a> from <a href = "#typedef:&lt;PT&gt;value">&lt;PT&gt;value</a>. Otherwise it is an associative array from a key to value, <a href = "#tag:&lt;T&gt;trie_entry">&lt;T&gt;trie_entry</a>.</dd>
 	<dt>Parameter: TRIE_TO_STRING</dt>
-	<dd>Defining this includes <a href = "src/to_string.h">src/to_string.h</a>, with the key strings. (fixme: Only on unnamed trait.)</dd>
+	<dd>To string trait <code>&lt;STR&gt;</code> contained in <a href = "src/to_string.h">src/to_string.h</a>. The unnamed trait is automatically supplied by the string, but others require <code>&lt;name&gt;&lt;trait&gt;to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>. (fixme: only unnamed trait works.)</dd>
 	<dt>Parameter: TRIE_DEFAULT</dt>
 	<dd>Get or default set default. (fixme: upcoming.)</dd>
 	<dt>Parameter: TRIE_EXPECT_TRAIT, TRIE_TRAIT</dt>

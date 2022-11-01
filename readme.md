@@ -21,7 +21,7 @@ The worse\-case run\-time of querying or modifying, &#927;\(|`string`|\); howeve
 
 ![Bit view of the trie.](doc/trie-bits.png)
 
-[src/to\_string\.h](src/to_string.h): `<STR>` trait functions require `<name>[<trait>]to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
+
 
  * Parameter: TRIE\_NAME  
    Required `<T>` that satisfies `C` naming conventions when mangled\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
@@ -30,7 +30,7 @@ The worse\-case run\-time of querying or modifying, &#927;\(|`string`|\); howeve
  * Parameter: TRIE\_VALUE, TRIE\_KEY\_IN\_VALUE  
    `TRIE_VALUE` is an optional payload type to go with the key\. Further, defining `TRIE_KEY_IN_VALUE` says that [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f) `<T>key` picks out [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) from [&lt;PT&gt;value](#user-content-typedef-cc753b30)\. Otherwise it is an associative array from a key to value, [&lt;T&gt;trie_entry](#user-content-tag-1422bb56)\.
  * Parameter: TRIE\_TO\_STRING  
-   Defining this includes [src/to\_string\.h](src/to_string.h), with the key strings\. \(fixme: Only on unnamed trait\.\)
+   To string trait `<STR>` contained in [src/to\_string\.h](src/to_string.h)\. The unnamed trait is automatically supplied by the string, but others require `<name><trait>to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\. \(fixme: only unnamed trait works\.\)
  * Parameter: TRIE\_DEFAULT  
    Get or default set default\. \(fixme: upcoming\.\)
  * Parameter: TRIE\_EXPECT\_TRAIT, TRIE\_TRAIT  
