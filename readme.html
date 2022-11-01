@@ -54,7 +54,7 @@
 
 <p>A <a href = "#tag:&lt;B&gt;tree">&lt;B&gt;tree</a> is an ordered set or map contained in a tree. For memory locality, this is implemented B-tree, described in <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972%2C+Large">Bayer, McCreight, 1972, Large</a>.</p>
 
-<a href = "src/to_string.h">src/to_string.h</a>: <code>&lt;STR&gt;</code> trait functions require <code>&lt;name&gt;[&lt;trait&gt;]to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</div>
+</div>
 
 <dl>
 	<dt>Parameter: TREE_NAME, TREE_KEY</dt>
@@ -68,7 +68,7 @@
 	<dt>Parameter: TREE_DEFAULT</dt>
 	<dd>Default trait; a name that satisfies <code>C</code> naming conventions when mangled and a <a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a> used in <a href = "#fn:&lt;B&gt;tree&lt;D&gt;get">&lt;B&gt;tree&lt;D&gt;get</a>.</dd>
 	<dt>Parameter: TREE_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>.</dd>
+	<dd>To string trait <code>&lt;STR&gt;</code> contained in <a href = "src/to_string.h">src/to_string.h</a>. Require <code>&lt;name&gt;[&lt;trait&gt;]to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</dd>
 	<dt>Parameter: TREE_EXPECT_TRAIT, TREE_TRAIT</dt>
 	<dd>Named traits are obtained by including <code>tree.h</code> multiple times with <code>TREE_EXPECT_TRAIT</code> and then subsequently including the name in <code>TREE_TRAIT</code>.</dd>
 	<dt>Standard:</dt>

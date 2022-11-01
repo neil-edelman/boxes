@@ -37,7 +37,8 @@
  <typedef:<PB>value> used in <fn:<B>tree<D>get>.
 
  @param[TREE_TO_STRING]
- To string trait contained in <src/to_string.h>.
+ To string trait `<STR>` contained in <src/to_string.h>. Require
+ `<name>[<trait>]to_string` be declared as <typedef:<PSTR>to_string_fn>.
 
  @param[TREE_EXPECT_TRAIT, TREE_TRAIT]
  Named traits are obtained by including `tree.h` multiple times with
