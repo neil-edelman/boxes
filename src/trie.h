@@ -43,8 +43,7 @@
  @param[TRIE_TO_STRING]
  To string trait `<STR>` contained in <src/to_string.h>. The unnamed trait is
  automatically supplied by the string, but others require
-`<name><trait>to_string` be declared as <typedef:<PSTR>to_string_fn>. (fixme:
- only unnamed trait works.)
+`<name><trait>to_string` be declared as <typedef:<PSTR>to_string_fn>.
 
  @param[TRIE_DEFAULT]
  Get or default set default. (fixme: upcoming.)
@@ -880,7 +879,28 @@ static void T_(to_string)(const PT_(entry) *const e,
 
 
 #ifdef TRIE_DEFAULT /* <!-- default trait */
-#error Not there yet.
+#error Unfinished.
+#ifdef TREE_TRAIT
+#define T_D_(n, m) TREE_CAT(T_(n), TREE_CAT(TREE_TRAIT, m))
+#define PT_D_(n, m) TREE_CAT(tree, B_T_(n, m))
+#else
+#define T_D_(n, m) TREE_CAT(T_(n), m)
+#define PT_D_(n, m) TREE_CAT(tree, T_D_(n, m))
+#endif
+/** This is functionally identical to <fn:<B>tree_get_or>, but a with a trait
+ specifying a constant default value.
+ @return The value associated with `key` in `tree`, (which can be null.) If
+ no such value exists, the `TREE_DEFAULT` is returned.
+ @order \O(\log |`tree`|). @allow */
+static PT_(value) T_D_(tree, get)(const struct T_(trie) *const trie,
+	const PT_(key) key) {
+	struct PT_(ref) ref;
+	/* `TREE_DEFAULT` is a valid <tag:<PB>value>. */
+	static const PT_(value) PT_D_(default, value) = (TREE_DEFAULT);
+	return tree && tree->root.node && tree->root.height != UINT_MAX
+		&& (ref = PT_(find)(&tree->root, key)).node
+		? *PT_(ref_to_valuep)(ref) : PT_D_(default, value);
+}
 #endif /* default trait --> */
 
 
