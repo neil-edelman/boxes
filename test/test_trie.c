@@ -37,10 +37,10 @@ static void str_filler(const char **const key) {
 #include "../src/trie.h"
 
 
-/* This is a custom key; uses `TRIE_KEY` and `TRIE_KEY_TO_STRING` to forward
- the keys to `colours`. Internally, a trie is a collection of fixed trees that
- have `union` leaves with a pointer-to-tree; there therefore is no optimization
- to shrinking the size of the data past a pointer. */
+/* This is a custom key; uses `TRIE_KEY` to forward the keys to `colours`.
+ Internally, a trie is a collection of fixed trees that have `union` leaves
+ with a pointer-to-tree; there therefore is no optimization to shrinking the
+ size of the data past a pointer. */
 #define COLOUR \
 	X(White), X(Silver), X(Gray), X(Black), X(Red), X(Maroon), X(Bisque), \
 	X(Wheat), X(Tan), X(Sienna), X(Brown), X(Yellow), X(Khaki), X(Gold), \
@@ -60,10 +60,9 @@ static const char *colour_string(const enum colour c)
 static void colour_filler(enum colour *const c)
 	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
 #define TRIE_NAME colour
-#define TRIE_KEY enum colour /* This and . . . */
-#define TRIE_KEY_TO_STRING &colour_string /* this must be mutually set. FIXME */
-#define TRIE_TEST
+#define TRIE_KEY enum colour
 #define TRIE_TO_STRING
+#define TRIE_TEST
 #include "../src/trie.h"
 
 
@@ -86,13 +85,13 @@ static void mapint_filler(const char **const key, unsigned *const value) {
  pointer. The key is now part of the value, so one has to define projection
  functions. */
 struct foo { int foo; const char *key; };
-static const char *foo_read_key(const struct foo *const foo)
+static const char *foo_key(const struct foo *const foo)
 	{ return foo->key; }
 static void foo_filler(struct foo *const foo)
 	{ foo->foo = 42; str_filler(&foo->key); }
 #define TRIE_NAME foo
 #define TRIE_VALUE struct foo
-#define TRIE_KEY_IN_VALUE &foo_read_key
+#define TRIE_KEY_IN_VALUE &foo_key
 #define TRIE_TO_STRING
 #define TRIE_TEST
 #include "../src/trie.h"

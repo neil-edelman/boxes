@@ -628,8 +628,7 @@ finally:
 static void T_(trie_test)(void) {
 	printf("<" QUOTE(TRIE_NAME) ">trie"
 #ifdef TRIE_KEY
-		" custom key <" QUOTE(TRIE_KEY) "> with string function <"
-		QUOTE(TRIE_KEY_TO_STRING) ">"
+		" custom key <" QUOTE(TRIE_KEY) ">"
 #endif
 #ifdef TRIE_VALUE
 		" value <" QUOTE(TRIE_VALUE) ">"

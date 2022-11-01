@@ -29,11 +29,10 @@
  Required `<T>` that satisfies `C` naming conventions when mangled. `<PT>` is
  private, whose names are prefixed in a manner to avoid collisions.
 
- @param[TRIE_KEY, TRIE_KEY_TO_STRING]
- Normally, the key is compatible with `const char *`. Optionally, one can set
- `TRIE_KEY` to a custom type <typedef:<PT>key> needing `TRIE_KEY_TO_STRING` as
- an indirection function satisfying <typedef:<PT>key_to_string_fn>. (fixme:
- This should be just `<T>key_to_string`; too much complication.)
+ @param[TRIE_KEY]
+ Normally, the key is directly compatible with `const char *`. Optionally, one
+ can set `TRIE_KEY` to a custom type,
+ <typedef:<PT>key>, needing <typedef:<PT>string_fn> `<T>string`.
 
  @param[TRIE_VALUE, TRIE_KEY_IN_VALUE]
  `TRIE_VALUE` is an optional payload type to go with the key. Further,
@@ -46,7 +45,7 @@
  Defining this includes <src/to_string.h>, with the key strings. (fixme: Only
  on unnamed trait.)
 
- @param[TRIE_DEFAULT_NAME, TRIE_DEFAULT]
+ @param[TRIE_DEFAULT]
  Get or default set default. (fixme: upcoming.)
 
  @param[TRIE_EXPECT_TRAIT, TRIE_TRAIT]
@@ -60,9 +59,6 @@
 #endif
 #if defined(TRIE_TRAIT) ^ defined(BOX_TYPE)
 #error TRIE_TRAIT name must come after TRIE_EXPECT_TRAIT.
-#endif
-#if defined(TRIE_KEY) ^ defined(TRIE_KEY_TO_STRING)
-#error TRIE_KEY and TRIE_KEY_TO_STRING have to be mutually defined.
 #endif
 #if defined(TRIE_KEY_IN_VALUE) && !defined(TRIE_VALUE)
 #error TRIE_KEY_IN_VALUE requires TRIE_VALUE.
@@ -135,23 +131,23 @@ static int trie_is_prefix(const char *prefix, const char *word) {
 
 #ifdef TRIE_KEY /* <!-- custom key */
 /** The default is assignable `const char *`. If one sets `TRIE_KEY` to
- something other then that, then one must also set
- <typedef:<PT>key_to_string_fn> by `TRIE_KEY_TO_STRING`. */
+ something other then that, then one must also declare `<P>string` as a
+ <typedef:<PT>string_fn>. */
 typedef TRIE_KEY PT_(key);
 #else /* custom key --><!-- string key */
 typedef const char *PT_(key);
 #endif /* string key --> */
-/** Transforms a <typedef:<PT>key> into a `const char *` for
- `TRIE_KEY_TO_STRING`. */
-typedef const char *(*PT_(key_to_string_fn))(PT_(key));
-#ifdef TRIE_KEY_TO_STRING /* <!-- custom key */
+/** Transforms a <typedef:<PT>key> into a `const char *`, if `TRIE_KEY` has
+ been set. */
+typedef const char *(*PT_(string_fn))(PT_(key));
+#ifdef TRIE_KEY /* <!-- custom key */
 /* Valid <typedef:<PT>key_to_string_fn>. */
-static PT_(key_to_string_fn) PT_(key_string) = (TRIE_KEY_TO_STRING);
+static PT_(string_fn) PT_(key_string) = &T_(string);
 #else /* custom key --><!-- string key */
 /** @return The string of `key` is itself, by default.
- @implements <typedef:<PT>key_to_string_fn> */
-static const char *PT_(string_to_string)(const char *const key) { return key; }
-static PT_(key_to_string_fn) PT_(key_string) = &PT_(string_to_string);
+ @implements <typedef:<PT>string_fn> */
+static const char *PT_(string_string)(const char *const key) { return key; }
+static PT_(string_fn) PT_(key_string) = &PT_(string_string);
 #endif /* string key --> */
 
 #ifndef TRIE_VALUE /* <!-- key set */
@@ -906,7 +902,6 @@ static void T_(to_string)(const PT_(entry) *const e,
 #endif
 #ifdef TRIE_KEY
 #undef TRIE_KEY
-#undef TRIE_KEY_TO_STRING
 #endif
 #ifdef TRIE_KEY_IN_VALUE
 #undef TRIE_KEY_IN_VALUE

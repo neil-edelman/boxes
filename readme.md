@@ -5,7 +5,7 @@ Header [src/trie\.h](src/trie.h) requires [src/bmp\.h](src/bmp.h); examples [tes
 ## Prefix tree ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;key](#user-content-typedef-eeee1b4a), [&lt;PT&gt;key_to_string_fn](#user-content-typedef-b2d72b0f), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;key](#user-content-typedef-eeee1b4a), [&lt;PT&gt;string_fn](#user-content-typedef-fda6adfb), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [trie_result](#user-content-tag-eb9850a3), [&lt;T&gt;trie_entry](#user-content-tag-1422bb56), [&lt;T&gt;trie](#user-content-tag-754a10a5), [&lt;T&gt;trie_iterator](#user-content-tag-854250a4)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -25,13 +25,13 @@ The worse\-case run\-time of querying or modifying, &#927;\(|`string`|\); howeve
 
  * Parameter: TRIE\_NAME  
    Required `<T>` that satisfies `C` naming conventions when mangled\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
- * Parameter: TRIE\_KEY, TRIE\_KEY\_TO\_STRING  
-   Normally, the key is compatible with `const char *`\. Optionally, one can set `TRIE_KEY` to a custom type [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) needing `TRIE_KEY_TO_STRING` as an indirection function satisfying [&lt;PT&gt;key_to_string_fn](#user-content-typedef-b2d72b0f)\. \(fixme: This should be just `<T>key_to_string`; too much complication\.\)
+ * Parameter: TRIE\_KEY  
+   Normally, the key is directly compatible with `const char *`\. Optionally, one can set `TRIE_KEY` to a custom type, [&lt;PT&gt;key](#user-content-typedef-eeee1b4a), needing [&lt;PT&gt;string_fn](#user-content-typedef-fda6adfb) `<T>string`\.
  * Parameter: TRIE\_VALUE, TRIE\_KEY\_IN\_VALUE  
    `TRIE_VALUE` is an optional payload type to go with the key\. Further, `TRIE_KEY_IN_VALUE` is an optional [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f) that picks out the key from the [&lt;PT&gt;value](#user-content-typedef-cc753b30), otherwise it is an associative array from a key to value, [&lt;T&gt;trie_entry](#user-content-tag-1422bb56)\. \(fixme: This should be also `<T>key_in_value`\.\)
  * Parameter: TRIE\_TO\_STRING  
    Defining this includes [src/to\_string\.h](src/to_string.h), with the key strings\. \(fixme: Only on unnamed trait\.\)
- * Parameter: TRIE\_DEFAULT\_NAME, TRIE\_DEFAULT  
+ * Parameter: TRIE\_DEFAULT  
    Get or default set default\. \(fixme: upcoming\.\)
  * Parameter: TRIE\_EXPECT\_TRAIT, TRIE\_TRAIT  
    Named traits are obtained by including `trie.h` multiple times with `TRIE_EXPECT_TRAIT` and then subsequently including the name in `TRIE_TRAIT`\.
@@ -47,15 +47,15 @@ The worse\-case run\-time of querying or modifying, &#927;\(|`string`|\); howeve
 
 <code>typedef TRIE_KEY <strong>&lt;PT&gt;key</strong>;</code>
 
-The default is assignable `const char *`\. If one sets `TRIE_KEY` to something other then that, then one must also set [&lt;PT&gt;key_to_string_fn](#user-content-typedef-b2d72b0f) by `TRIE_KEY_TO_STRING`\.
+The default is assignable `const char *`\. If one sets `TRIE_KEY` to something other then that, then one must also declare `<P>string` as a [&lt;PT&gt;string_fn](#user-content-typedef-fda6adfb)\.
 
 
 
-### <a id = "user-content-typedef-b2d72b0f" name = "user-content-typedef-b2d72b0f">&lt;PT&gt;key_to_string_fn</a> ###
+### <a id = "user-content-typedef-fda6adfb" name = "user-content-typedef-fda6adfb">&lt;PT&gt;string_fn</a> ###
 
-<code>typedef const char *(*<strong>&lt;PT&gt;key_to_string_fn</strong>)(&lt;PT&gt;key);</code>
+<code>typedef const char *(*<strong>&lt;PT&gt;string_fn</strong>)(&lt;PT&gt;key);</code>
 
-Transforms a [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) into a `const char *` for `TRIE_KEY_TO_STRING`\.
+Transforms a [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) into a `const char *`, if `TRIE_KEY` has been set\.
 
 
 
