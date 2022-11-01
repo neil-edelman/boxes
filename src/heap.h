@@ -32,7 +32,8 @@
  <tag:<H>heapnode>, which is <typedef:<PH>value>.
 
  @param[HEAP_TO_STRING]
- To string trait contained in <src/to_string.h>.
+ To string trait `<STR>` contained in <src/to_string.h>. Require
+ `<name>[<trait>]to_string` be declared as <typedef:<PSTR>to_string_fn>.
 
  @param[HEAP_EXPECT_TRAIT, HEAP_TRAIT]
  Named traits are obtained by including `heap.h` multiple times with

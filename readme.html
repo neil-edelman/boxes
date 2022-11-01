@@ -54,7 +54,7 @@
 
 <p>A <a href = "#tag:&lt;H&gt;heap">&lt;H&gt;heap</a> is a binary heap, proposed by <a href = "https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347">Williams, 1964, Heapsort, p. 347</a> using terminology of <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting">Knuth, 1973, Sorting</a>. It can be used as an implementation of a priority queue. Internally, it is an array with implicit heap properties on <a href = "#typedef:&lt;PH&gt;priority">&lt;PH&gt;priority</a> and an optional <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a> that is associated with the value.</p>
 
-<a href = "src/to_string.h">src/to_string.h</a>: <code>&lt;STR&gt;</code> trait functions require <code>&lt;name&gt;[&lt;trait&gt;]to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</div>
+</div>
 
 <dl>
 	<dt>Parameter: HEAP_NAME, HEAP_TYPE</dt>
@@ -64,7 +64,7 @@
 	<dt>Parameter: HEAP_VALUE</dt>
 	<dd>Optional value <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>, that, on <code>HEAP_VALUE</code>, is stored in <a href = "#tag:&lt;H&gt;heapnode">&lt;H&gt;heapnode</a>, which is <a href = "#typedef:&lt;PH&gt;value">&lt;PH&gt;value</a>.</dd>
 	<dt>Parameter: HEAP_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>.</dd>
+	<dd>To string trait <code>&lt;STR&gt;</code> contained in <a href = "src/to_string.h">src/to_string.h</a>. Require <code>&lt;name&gt;[&lt;trait&gt;]to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</dd>
 	<dt>Parameter: HEAP_EXPECT_TRAIT, HEAP_TRAIT</dt>
 	<dd>Named traits are obtained by including <code>heap.h</code> multiple times with <code>HEAP_EXPECT_TRAIT</code> and then subsequently including the name in <code>HEAP_TRAIT</code>.</dd>
 	<dt>Standard:</dt>
