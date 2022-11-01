@@ -54,7 +54,7 @@
 
 <p><a href = "#tag:&lt;N&gt;table">&lt;N&gt;table</a> implements a set or map of <a href = "#typedef:&lt;PN&gt;entry">&lt;PN&gt;entry</a> as a hash table. It must be supplied <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> <code>&lt;N&gt;hash</code> and, <a href = "#typedef:&lt;PN&gt;is_equal_fn">&lt;PN&gt;is_equal_fn</a> <code>&lt;N&gt;is_equal</code> or <a href = "#typedef:&lt;PN&gt;inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a> <code>&lt;N&gt;inverse_hash</code>.</p>
 
-<a href = "src/iterate.h">src/iterate.h</a>: defining <code>HAVE_ITERATE_H</code> supplies <code>&lt;ITR&gt;</code> functions for all boxes that support them. Is not a trait, adds a fixed amount of functions for all boxes.<a href = "src/to_string.h">src/to_string.h</a>: <code>&lt;STR&gt;</code> trait functions require <code>&lt;name&gt;[&lt;trait&gt;]to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</div>
+* <a href = "src/iterate.h">src/iterate.h</a>: defining <code>HAVE_ITERATE_H</code> supplies <code>&lt;ITR&gt;</code> functions.</div>
 
 <dl>
 	<dt>Parameter: TABLE_NAME, TABLE_KEY</dt>
@@ -68,7 +68,7 @@
 	<dt>Parameter: TABLE_DEFAULT</dt>
 	<dd>Default trait; a <a href = "#typedef:&lt;PN&gt;value">&lt;PN&gt;value</a> used in <a href = "#fn:&lt;N&gt;table&lt;D&gt;get">&lt;N&gt;table&lt;D&gt;get</a>.</dd>
 	<dt>Parameter: TABLE_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>.</dd>
+	<dd>To string trait <code>&lt;STR&gt;</code> contained in <a href = "src/to_string.h">src/to_string.h</a>. Require <code>&lt;name&gt;[&lt;trait&gt;]to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</dd>
 	<dt>Parameter: TABLE_EXPECT_TRAIT, TABLE_TRAIT</dt>
 	<dd>Named traits are obtained by including <code>table.h</code> multiple times with <code>TABLE_EXPECT_TRAIT</code> and then subsequently including the name in <code>TABLE_TRAIT</code>.</dd>
 	<dt>Standard:</dt>

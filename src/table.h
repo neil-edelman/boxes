@@ -35,7 +35,8 @@
  Default trait; a <typedef:<PN>value> used in <fn:<N>table<D>get>.
 
  @param[TABLE_TO_STRING]
- To string trait contained in <src/to_string.h>.
+ To string trait `<STR>` contained in <src/to_string.h>. Require
+ `<name>[<trait>]to_string` be declared as <typedef:<PSTR>to_string_fn>.
 
  @param[TABLE_EXPECT_TRAIT, TABLE_TRAIT]
  Named traits are obtained by including `table.h` multiple times with

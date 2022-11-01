@@ -19,10 +19,14 @@
  private, whose names are prefixed in a manner to avoid collisions.
 
  @param[LIST_COMPARE, LIST_IS_EQUAL]
- Compare trait contained in <src/compare.h>.
+ Compare `<CMP>` trait contained in <src/compare.h>. Requires
+ `<name>[<trait>]compare` to be declared as <typedef:<PCMP>compare_fn> or
+ `<name>[<trait>]is_equal` to be declared as <typedef:<PCMP>bipredicate_fn>,
+ respectfully, (but not both.)
 
  @param[LIST_TO_STRING]
- To string trait contained in <src/to_string.h>.
+ To string trait `<STR>` contained in <src/to_string.h>. Require
+ `<name>[<trait>]to_string` be declared as <typedef:<PSTR>to_string_fn>.
 
  @param[LIST_EXPECT_TRAIT, LIST_TRAIT]
  Named traits are obtained by including `array.h` multiple times with
