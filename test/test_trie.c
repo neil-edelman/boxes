@@ -91,7 +91,7 @@ static void foo_filler(struct foo *const foo)
 	{ foo->foo = 42; str_filler(&foo->key); }
 #define TRIE_NAME foo
 #define TRIE_VALUE struct foo
-#define TRIE_KEY_IN_VALUE &foo_key
+#define TRIE_KEY_IN_VALUE
 #define TRIE_TO_STRING
 #define TRIE_TEST
 #include "../src/trie.h"
@@ -103,7 +103,7 @@ static void foo_filler(struct foo *const foo)
  that it is faster, but it's convenient to not store keys somewhere else,
  (somewhere bigger.) */
 struct str8 { char str[8]; };
-static const char *str8_read_key(const struct str8 *const s) { return s->str; }
+static const char *str8_key(const struct str8 *const s) { return s->str; }
 static void str8_filler(struct str8 *const s) {
 #if 0
 	/* This is not enough range. */
@@ -119,7 +119,7 @@ static void str8_filler(struct str8 *const s) {
 }
 #define TRIE_NAME str8
 #define TRIE_VALUE struct str8
-#define TRIE_KEY_IN_VALUE &str8_read_key
+#define TRIE_KEY_IN_VALUE &str8_key
 #define TRIE_TO_STRING
 #define TRIE_TEST
 #include "../src/trie.h"
@@ -132,7 +132,7 @@ struct keyval { char key[12]; int value; };
 #define POOL_TYPE struct keyval
 #include "pool.h"
 static struct keyval_pool kv_pool;
-static const char *keyval_read_key(/*fixme! If possible? const*/
+static const char *keyval_key(/* fixme: const */
 	struct keyval *const*const kv_ptr)
 	{ return (*kv_ptr)->key; }
 static void keyval_filler(struct keyval **const kv_ptr) {
@@ -144,7 +144,7 @@ static void keyval_filler(struct keyval **const kv_ptr) {
 }
 #define TRIE_NAME keyval
 #define TRIE_VALUE struct keyval *
-#define TRIE_KEY_IN_VALUE &keyval_read_key
+#define TRIE_KEY_IN_VALUE
 #define TRIE_TO_STRING
 #define TRIE_TEST
 #include "../src/trie.h"
@@ -183,7 +183,7 @@ struct star { const char *name; double distance; };
 static const struct star stars[] = { STARS };
 #undef X
 static const size_t stars_size = sizeof stars / sizeof *stars;
-static const char *star_read_key(const struct star *const star)
+static const char *star_key(const struct star *const star)
 	{ return star->name; }
 static void star_filler(struct star *const star) {
 	const struct star *table = stars
@@ -193,7 +193,7 @@ static void star_filler(struct star *const star) {
 }
 #define TRIE_NAME star
 #define TRIE_VALUE struct star
-#define TRIE_KEY_IN_VALUE &star_read_key
+#define TRIE_KEY_IN_VALUE
 #define TRIE_TEST
 #define TRIE_TO_STRING
 #include "../src/trie.h"

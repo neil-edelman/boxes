@@ -66,7 +66,7 @@
 	<dt>Parameter: TRIE_KEY</dt>
 	<dd>Normally, the key is directly compatible with <code>const char *</code>. Optionally, one can set <code>TRIE_KEY</code> to a custom type, <a href = "#typedef:&lt;PT&gt;key">&lt;PT&gt;key</a>, needing <a href = "#typedef:&lt;PT&gt;string_fn">&lt;PT&gt;string_fn</a> <code>&lt;T&gt;string</code>.</dd>
 	<dt>Parameter: TRIE_VALUE, TRIE_KEY_IN_VALUE</dt>
-	<dd><code>TRIE_VALUE</code> is an optional payload type to go with the key. Further, <code>TRIE_KEY_IN_VALUE</code> is an optional <a href = "#typedef:&lt;PT&gt;key_fn">&lt;PT&gt;key_fn</a> that picks out the key from the <a href = "#typedef:&lt;PT&gt;value">&lt;PT&gt;value</a>, otherwise it is an associative array from a key to value, <a href = "#tag:&lt;T&gt;trie_entry">&lt;T&gt;trie_entry</a>. (fixme: This should be also <code>&lt;T&gt;key_in_value</code>.)</dd>
+	<dd><code>TRIE_VALUE</code> is an optional payload type to go with the key. Further, defining <code>TRIE_KEY_IN_VALUE</code> says that <a href = "#typedef:&lt;PT&gt;key_fn">&lt;PT&gt;key_fn</a> <code>&lt;T&gt;key</code> picks out <a href = "#typedef:&lt;PT&gt;key">&lt;PT&gt;key</a> from <a href = "#typedef:&lt;PT&gt;value">&lt;PT&gt;value</a>. Otherwise it is an associative array from a key to value, <a href = "#tag:&lt;T&gt;trie_entry">&lt;T&gt;trie_entry</a>.</dd>
 	<dt>Parameter: TRIE_TO_STRING</dt>
 	<dd>Defining this includes <a href = "src/to_string.h">src/to_string.h</a>, with the key strings. (fixme: Only on unnamed trait.)</dd>
 	<dt>Parameter: TRIE_DEFAULT</dt>

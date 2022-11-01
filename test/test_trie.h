@@ -634,8 +634,7 @@ static void T_(trie_test)(void) {
 		" value <" QUOTE(TRIE_VALUE) ">"
 #endif
 #ifdef TRIE_KEY_IN_VALUE
-		" and the key is in the value with projection function <"
-		QUOTE(TRIE_KEY_IN_VALUE) ">"
+		" and the key is in the value"
 #endif
 		" testing using <" QUOTE(TRIE_TEST) ">:\n");
 	PT_(test)();

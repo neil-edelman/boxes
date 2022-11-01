@@ -28,7 +28,7 @@ The worse\-case run\-time of querying or modifying, &#927;\(|`string`|\); howeve
  * Parameter: TRIE\_KEY  
    Normally, the key is directly compatible with `const char *`\. Optionally, one can set `TRIE_KEY` to a custom type, [&lt;PT&gt;key](#user-content-typedef-eeee1b4a), needing [&lt;PT&gt;string_fn](#user-content-typedef-fda6adfb) `<T>string`\.
  * Parameter: TRIE\_VALUE, TRIE\_KEY\_IN\_VALUE  
-   `TRIE_VALUE` is an optional payload type to go with the key\. Further, `TRIE_KEY_IN_VALUE` is an optional [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f) that picks out the key from the [&lt;PT&gt;value](#user-content-typedef-cc753b30), otherwise it is an associative array from a key to value, [&lt;T&gt;trie_entry](#user-content-tag-1422bb56)\. \(fixme: This should be also `<T>key_in_value`\.\)
+   `TRIE_VALUE` is an optional payload type to go with the key\. Further, defining `TRIE_KEY_IN_VALUE` says that [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f) `<T>key` picks out [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) from [&lt;PT&gt;value](#user-content-typedef-cc753b30)\. Otherwise it is an associative array from a key to value, [&lt;T&gt;trie_entry](#user-content-tag-1422bb56)\.
  * Parameter: TRIE\_TO\_STRING  
    Defining this includes [src/to\_string\.h](src/to_string.h), with the key strings\. \(fixme: Only on unnamed trait\.\)
  * Parameter: TRIE\_DEFAULT  

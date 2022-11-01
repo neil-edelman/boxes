@@ -35,11 +35,10 @@
  <typedef:<PT>key>, needing <typedef:<PT>string_fn> `<T>string`.
 
  @param[TRIE_VALUE, TRIE_KEY_IN_VALUE]
- `TRIE_VALUE` is an optional payload type to go with the key. Further,
- `TRIE_KEY_IN_VALUE` is an optional <typedef:<PT>key_fn> that picks out the key
- from the <typedef:<PT>value>, otherwise it is an associative array from a
- key to value, <tag:<T>trie_entry>. (fixme: This should be also
- `<T>key_in_value`.)
+ `TRIE_VALUE` is an optional payload type to go with the key. Further, defining
+ `TRIE_KEY_IN_VALUE` says that <typedef:<PT>key_fn> `<T>key` picks out
+ <typedef:<PT>key> from <typedef:<PT>value>. Otherwise it is an associative
+ array from a key to value, <tag:<T>trie_entry>.
 
  @param[TRIE_TO_STRING]
  Defining this includes <src/to_string.h>, with the key strings. (fixme: Only
@@ -162,9 +161,6 @@ typedef struct T_(trie_entry) PT_(entry);
 /** @return Key of `e` in a map. */
 static PT_(key) PT_(entry_key)(const struct T_(trie_entry) *const e)
 	{ return e->key; }
-/* @return Value of `e` in a map. */
-/* static PT_(value) *PT_(entry_value)(struct T_(trie_entry) *const e)
-	{ return &e->value; } */
 #else /* key value map --><!-- key in value */
 /* The entry is the value. */
 typedef TRIE_VALUE PT_(value);
@@ -174,12 +170,10 @@ typedef PT_(value) PT_(entry);
  again, (mostly, can still match, but not reliably modify the topology.) */
 typedef PT_(key) (*PT_(key_fn))(const PT_(value) *);
 /* Valid <typedef:<PT>key_fn>. */
-static PT_(key_fn) PT_(read_key) = (TRIE_KEY_IN_VALUE);
+static PT_(key_fn) PT_(read_key) = &T_(key);
 /** @return A key-in-value `v`. */
 static const char *PT_(entry_key)(const PT_(value) *const v)
 	{ return PT_(read_key)(v); }
-/* @return A value-in-value `v`, which is itself. */
-/* static PT_(value) *PT_(entry_value)(PT_(value) *const v) { return v; } */
 #endif /* key in value --> */
 
 union PT_(leaf) { PT_(entry) as_entry; struct PT_(tree) *as_link; };
