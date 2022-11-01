@@ -6,9 +6,7 @@
  Interface defined by box. Singleton.
 
  @std C89 */
-/** <src/iterate.h>: defining `HAVE_ITERATE_H` supplies `<ITR>` functions for
- all boxes that support them. Is not a trait, adds a fixed amount of functions
- for all boxes. */
+/** * <src/iterate.h>: defining `HAVE_ITERATE_H` supplies `<ITR>` functions. */
 
 #if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
 	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME)

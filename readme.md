@@ -17,14 +17,14 @@ Stand\-alone header [src/list\.h](src/list.h); examples [test/test\_list\.c](tes
 
 In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Thareja+2014%2C+Structures), [&lt;L&gt;list](#user-content-tag-eb84971d) is a circular header, or sentinel, to a doubly\-linked list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list\. The links will be generally in a larger container type\.
 
-[src/iterate\.h](src/iterate.h): defining `HAVE_ITERATE_H` supplies `<ITR>` functions for all boxes that support them\. Is not a trait, adds a fixed amount of functions for all boxes\.[src/to\_string\.h](src/to_string.h): `<STR>` trait functions require `<name>[<trait>]to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.[src/compare\.h](src/compare.h): `<CMP>` trait functions require `<name>[<trait>]compare` to be declared as [&lt;PCMP&gt;compare_fn](#user-content-typedef-2c6ed2db) or `<name>[<trait>]is_equal` to be declared as [&lt;PCMP&gt;bipredicate_fn](#user-content-typedef-82edbc04), respectfully, \(but not both\.\)
+\* [src/iterate\.h](src/iterate.h): defining `HAVE_ITERATE_H` supplies `<ITR>` functions\.
 
  * Parameter: LIST\_NAME  
    `<L>` that satisfies `C` naming conventions when mangled; required\. `<PL>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: LIST\_COMPARE, LIST\_IS\_EQUAL  
-   Compare trait contained in [src/compare\.h](src/compare.h)\.
+   Compare `<CMP>` trait contained in [src/compare\.h](src/compare.h)\. Requires `<name>[<trait>]compare` to be declared as [&lt;PCMP&gt;compare_fn](#user-content-typedef-2c6ed2db) or `<name>[<trait>]is_equal` to be declared as [&lt;PCMP&gt;bipredicate_fn](#user-content-typedef-82edbc04), respectfully, \(but not both\.\)
  * Parameter: LIST\_TO\_STRING  
-   To string trait contained in [src/to\_string\.h](src/to_string.h)\.
+   To string trait `<STR>` contained in [src/to\_string\.h](src/to_string.h)\. Require `<name>[<trait>]to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
  * Parameter: LIST\_EXPECT\_TRAIT, LIST\_TRAIT  
    Named traits are obtained by including `array.h` multiple times with `LIST_EXPECT_TRAIT` and then subsequently including the name in `LIST_TRAIT`\.
  * Standard:  

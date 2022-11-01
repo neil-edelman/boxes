@@ -54,15 +54,15 @@
 
 <p>In parlance of <a href = "https://scholar.google.ca/scholar?q=Thareja+2014%2C+Structures">Thareja 2014, Structures</a>, <a href = "#tag:&lt;L&gt;list">&lt;L&gt;list</a> is a circular header, or sentinel, to a doubly-linked list of <a href = "#tag:&lt;L&gt;listlink">&lt;L&gt;listlink</a>. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list. The links will be generally in a larger container type.</p>
 
-<a href = "src/iterate.h">src/iterate.h</a>: defining <code>HAVE_ITERATE_H</code> supplies <code>&lt;ITR&gt;</code> functions for all boxes that support them. Is not a trait, adds a fixed amount of functions for all boxes.<a href = "src/to_string.h">src/to_string.h</a>: <code>&lt;STR&gt;</code> trait functions require <code>&lt;name&gt;[&lt;trait&gt;]to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.<a href = "src/compare.h">src/compare.h</a>: <code>&lt;CMP&gt;</code> trait functions require <code>&lt;name&gt;[&lt;trait&gt;]compare</code> to be declared as <a href = "#typedef:&lt;PCMP&gt;compare_fn">&lt;PCMP&gt;compare_fn</a> or <code>&lt;name&gt;[&lt;trait&gt;]is_equal</code> to be declared as <a href = "#typedef:&lt;PCMP&gt;bipredicate_fn">&lt;PCMP&gt;bipredicate_fn</a>, respectfully, (but not both.)</div>
+* <a href = "src/iterate.h">src/iterate.h</a>: defining <code>HAVE_ITERATE_H</code> supplies <code>&lt;ITR&gt;</code> functions.</div>
 
 <dl>
 	<dt>Parameter: LIST_NAME</dt>
 	<dd><code>&lt;L&gt;</code> that satisfies <code>C</code> naming conventions when mangled; required. <code>&lt;PL&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: LIST_COMPARE, LIST_IS_EQUAL</dt>
-	<dd>Compare trait contained in <a href = "src/compare.h">src/compare.h</a>.</dd>
+	<dd>Compare <code>&lt;CMP&gt;</code> trait contained in <a href = "src/compare.h">src/compare.h</a>. Requires <code>&lt;name&gt;[&lt;trait&gt;]compare</code> to be declared as <a href = "#typedef:&lt;PCMP&gt;compare_fn">&lt;PCMP&gt;compare_fn</a> or <code>&lt;name&gt;[&lt;trait&gt;]is_equal</code> to be declared as <a href = "#typedef:&lt;PCMP&gt;bipredicate_fn">&lt;PCMP&gt;bipredicate_fn</a>, respectfully, (but not both.)</dd>
 	<dt>Parameter: LIST_TO_STRING</dt>
-	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>.</dd>
+	<dd>To string trait <code>&lt;STR&gt;</code> contained in <a href = "src/to_string.h">src/to_string.h</a>. Require <code>&lt;name&gt;[&lt;trait&gt;]to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</dd>
 	<dt>Parameter: LIST_EXPECT_TRAIT, LIST_TRAIT</dt>
 	<dd>Named traits are obtained by including <code>array.h</code> multiple times with <code>LIST_EXPECT_TRAIT</code> and then subsequently including the name in <code>LIST_TRAIT</code>.</dd>
 	<dt>Standard:</dt>
