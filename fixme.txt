@@ -1,1 +1,0 @@
-I do not like that extra space waster at the top of the page for traits that won't be used 90% of the time; figure out another way.
