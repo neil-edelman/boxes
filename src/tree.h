@@ -1561,18 +1561,20 @@ static enum tree_result B_(tree_iterator_try)(struct B_(tree_iterator) *const
 static enum tree_result B_(tree_iterator_try)(struct B_(tree_iterator) *const
 	it, const PB_(key) key) {
 #endif /* set --> */
-	enum { NONODE, ITERATING, END } where;
+	enum { TREE_NONODE, TREE_ITERATING, TREE_END } where;
 	PB_(key) anchor;
 	enum tree_result ret;
 	memset(&anchor, 0, sizeof anchor); /* Silence warnings. */
 	if(!it || !it->_.root) return TREE_ERROR; /* No tree. */
 	if(it->_.ref.node && it->_.root->height != UINT_MAX) {
-		where = (it->_.ref.idx < it->_.ref.node->size) ? ITERATING : END;
+		where = (it->_.ref.idx < it->_.ref.node->size)
+			? TREE_ITERATING : TREE_END;
 	} else {
-		where = NONODE;
+		where = TREE_NONODE;
 	}
-	if(where == ITERATING) anchor = it->_.ref.node->key[it->_.ref.idx];
-	if(where == NONODE || where == END) it->_.seen = 0; /* Should be already. */
+	if(where == TREE_ITERATING) anchor = it->_.ref.node->key[it->_.ref.idx];
+	/* Should be already. */
+	if(where == TREE_NONODE || where == TREE_END) it->_.seen = 0;
 #ifdef TREE_VALUE
 	ret = PB_(update)(it->_.root, key, 0, value);
 #else
@@ -1581,9 +1583,9 @@ static enum tree_result B_(tree_iterator_try)(struct B_(tree_iterator) *const
 	if(ret == TREE_ERROR) return TREE_ERROR;
 	assert(it->_.root->height != UINT_MAX); /* Can't be empty. */
 	switch(where) {
-	case NONODE: it->_.ref.node = 0; it->_.seen = 0; break;
-	case ITERATING: it->_.ref = PB_(lower)(*it->_.root, anchor); break;
-	case END:
+	case TREE_NONODE: it->_.ref.node = 0; it->_.seen = 0; break;
+	case TREE_ITERATING: it->_.ref = PB_(lower)(*it->_.root, anchor); break;
+	case TREE_END:
 		assert(it->_.root->node);
 		it->_.ref.node = it->_.root->node;
 		it->_.ref.height = it->_.root->height;
