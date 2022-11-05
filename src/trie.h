@@ -889,7 +889,7 @@ static void T_(to_string)(const PT_(entry) *const e,
 #endif
 /** This is functionally identical to <fn:<B>tree_get_or>, but a with a trait
  specifying a constant default value.
- @return The value associated with `key` in `tree`, (which can be null.) If
+ @return The value associated with `key` in `trie`, (which can be null.) If
  no such value exists, the `TREE_DEFAULT` is returned.
  @order \O(\log |`tree`|). @allow */
 static PT_(value) T_D_(tree, get)(const struct T_(trie) *const trie,

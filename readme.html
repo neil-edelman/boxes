@@ -68,7 +68,7 @@
 	<dt>Parameter: TRIE_VALUE, TRIE_KEY_IN_VALUE</dt>
 	<dd><code>TRIE_VALUE</code> is an optional payload type to go with the key. Further, defining <code>TRIE_KEY_IN_VALUE</code> says that <a href = "#typedef:&lt;PT&gt;key_fn">&lt;PT&gt;key_fn</a> <code>&lt;T&gt;key</code> picks out <a href = "#typedef:&lt;PT&gt;key">&lt;PT&gt;key</a> from <a href = "#typedef:&lt;PT&gt;value">&lt;PT&gt;value</a>. Otherwise it is an associative array from a key to value, <a href = "#tag:&lt;T&gt;trie_entry">&lt;T&gt;trie_entry</a>.</dd>
 	<dt>Parameter: TRIE_TO_STRING</dt>
-	<dd>To string trait <code>&lt;STR&gt;</code> contained in <a href = "src/to_string.h">src/to_string.h</a>. The unnamed trait is automatically supplied by the string, but others require <code>&lt;name&gt;&lt;trait&gt;to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>. (fixme: only unnamed trait works.)</dd>
+	<dd>To string trait <code>&lt;STR&gt;</code> contained in <a href = "src/to_string.h">src/to_string.h</a>. The unnamed trait is automatically supplied by the string, but others require <code>&lt;name&gt;&lt;trait&gt;to_string</code> be declared as <a href = "#typedef:&lt;PSTR&gt;to_string_fn">&lt;PSTR&gt;to_string_fn</a>.</dd>
 	<dt>Parameter: TRIE_DEFAULT</dt>
 	<dd>Get or default set default. (fixme: upcoming.)</dd>
 	<dt>Parameter: TRIE_EXPECT_TRAIT, TRIE_TRAIT</dt>
@@ -198,6 +198,8 @@
 <tr><td align = right>static int</td><td><a href = "#fn:<T>trie_remove">&lt;T&gt;trie_remove</a></td><td>trie, string</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<STR>to_string">&lt;STR&gt;to_string</a></td><td>box</td></tr>
+
+<tr><td align = right>static &lt;PT&gt;value</td><td><a href = "#fn:<T>tree<D>get">&lt;T&gt;tree&lt;D&gt;get</a></td><td>trie, key</td></tr>
 
 </table>
 
@@ -409,6 +411,23 @@
 	<dd>Address of the static buffer.</dd>
 	<dt>Order:</dt>
 	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>tree<D>get" name = "fn:<T>tree<D>get">&lt;T&gt;tree&lt;D&gt;get</a></h3>
+
+<p><code>static &lt;PT&gt;value <strong>&lt;T&gt;tree&lt;D&gt;get</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const &lt;PT&gt;key <em>key</em>)</code></p>
+
+<p>This is functionally identical to <a href = "#fn:&lt;B&gt;tree_get_or">&lt;B&gt;tree_get_or</a>, but a with a trait specifying a constant default value.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The value associated with <code>key</code> in <code>trie</code>, (which can be null.) If no such value exists, the <code>TREE_DEFAULT</code> is returned.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>tree</code>|).</dd>
 </dl>
 
 </div>

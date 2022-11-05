@@ -30,7 +30,7 @@ The worse\-case run\-time of querying or modifying, &#927;\(|`string`|\); howeve
  * Parameter: TRIE\_VALUE, TRIE\_KEY\_IN\_VALUE  
    `TRIE_VALUE` is an optional payload type to go with the key\. Further, defining `TRIE_KEY_IN_VALUE` says that [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f) `<T>key` picks out [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) from [&lt;PT&gt;value](#user-content-typedef-cc753b30)\. Otherwise it is an associative array from a key to value, [&lt;T&gt;trie_entry](#user-content-tag-1422bb56)\.
  * Parameter: TRIE\_TO\_STRING  
-   To string trait `<STR>` contained in [src/to\_string\.h](src/to_string.h)\. The unnamed trait is automatically supplied by the string, but others require `<name><trait>to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\. \(fixme: only unnamed trait works\.\)
+   To string trait `<STR>` contained in [src/to\_string\.h](src/to_string.h)\. The unnamed trait is automatically supplied by the string, but others require `<name><trait>to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
  * Parameter: TRIE\_DEFAULT  
    Get or default set default\. \(fixme: upcoming\.\)
  * Parameter: TRIE\_EXPECT\_TRAIT, TRIE\_TRAIT  
@@ -142,6 +142,8 @@ Represents a range of in\-order keys in &#927;\(1\) space\.
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-7b28a4ea">&lt;T&gt;trie_remove</a></td><td>trie, string</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
+
+<tr><td align = right>static &lt;PT&gt;value</td><td><a href = "#user-content-fn-36398d67">&lt;T&gt;tree&lt;D&gt;get</a></td><td>trie, key</td></tr>
 
 </table>
 
@@ -315,6 +317,20 @@ Tries to remove `string` from `trie`\.
    Address of the static buffer\.
  * Order:  
    &#920;\(1\)
+
+
+
+
+### <a id = "user-content-fn-36398d67" name = "user-content-fn-36398d67">&lt;T&gt;tree&lt;D&gt;get</a> ###
+
+<code>static &lt;PT&gt;value <strong>&lt;T&gt;tree&lt;D&gt;get</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const &lt;PT&gt;key <em>key</em>)</code>
+
+This is functionally identical to [&lt;B&gt;tree_get_or](#user-content-fn-e460356c), but a with a trait specifying a constant default value\.
+
+ * Return:  
+   The value associated with `key` in `trie`, \(which can be null\.\) If no such value exists, the `TREE_DEFAULT` is returned\.
+ * Order:  
+   &#927;\(log |`tree`|\)\.
 
 
 
