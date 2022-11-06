@@ -232,9 +232,9 @@ Figure~\ref{star-0:tree} shows the conventional full binary tree view of the sam
 
 Only when the algorithm arrives at a leaf will it go outside the \code{left, skip}. This suggests that these be placed in a contiguous index. This index should be compact as possible to fit the maximum into cache.
 
-However, in establishing a maximum \code{skip} value, one limits the contiguous bits that can be skipped; this has an effect on both on insertion and deletion. One octet provides 255 bits skip, usually enough for approximately 32 bytes. More noticeably, the maximum \code{left} plus one is the maximum number of leaves in the worst-case of all-left. It is also inefficient to modify the trie with more and more keys; this requires more branches to be changed and an array insertion of the leaf.
+However, in establishing a maximum \code{skip} value, one limits the contiguous bits that can be skipped; this has an effect on both on insertion and deletion. One octet provides a maximum 255 skip bits, usually enough for approximately 32 bytes. More noticeably, the maximum \code{left} plus one is the maximum number of leaves in the worst-case of all-left. It is also inefficient to modify the trie with more and more keys; this requires more branches to be changed and an array insertion of the leaf.
 
-To combat these two contradictory requirements, we have broken up the trie in much the same manner as \cite{bayer1972organization}. Except in tries, contrary to B-trees, the data can not be rotated at will; instead, it relaxes the rules and instead uses a bitmap of which leaves are links to other structures, called trees. Thus a trie is a forest of non-empty full binary trees. A tree corresponds to a B-tree node\cite{knuth1997sorting}, that is, a contiguous area in memory. This would conflict with the terminology of a key as a leaf and individual branches, which are longer implicit.
+To combat these two contradictory requirements, we have broken up the trie in much the same manner as \cite{bayer1972organization}. Except in tries, contrary to B-trees, the data can not be rotated at will; instead, our trie relaxes the rules and instead uses a bitmap of which leaves are links to other structures, called trees. Thus a trie is a forest of non-empty full binary trees. A tree corresponds to a B-tree node\cite{knuth1997sorting}, that is, a contiguous area in memory. This would conflict with the terminology of a key as a leaf and individual branches, which are longer implicit.
 
 Thus, on adding to a tree in a trie that has the maximum number of keys, we must split it into two trees. We use the fact that a binary tree of $n \ge 2$ nodes can be split into two trees not exceeding $\left\lceil \frac{2n-1}{3} \right\rceil$ nodes by starting \code{daughter} tree at the root and choosing the subtree that is larger until the bound is achieved. The \code{mother} will have an extra linking leaf.
 
@@ -735,21 +735,25 @@ A more complex example is given in Figure~\ref{star-1}. This trie has 3 fixed tr
 	\caption{A trie as a forest of 3 trees of order-7.\label{star-1}}
 \end{figure}
 
-The grey \code{Altair} and \code{Polaris} in the root tree, \code{Vakgimbat}, in Figure~\ref{star-1}, are samples of the the trees that are links. We could get any sample from the sub-tree, because all the bits up to bit 6 and 4, respectively, are the same in the sub-tree. Any time we are Faced with an ambiguity, we arbitrarily and conveniently select the very left.
+The grey \code{Altair} and \code{Polaris} in the root tree, \code{Vakgimbat}, in Figure~\ref{star-1}, are samples of the the trees that are links. We could get any sample from the sub-tree, because all the bits up to bit 6 and 4, respectively, are the same in the sub-tree. Any time we are faced with an ambiguity, we arbitrarily and conveniently select the very lower of the range.
 
-Picking a sample is also important when calculating asymptotic run time of adding keys. The worse case would be an engineered trie, (not with randomly distributed keys,) which with many left-links at once. On addition of a short key to the right, the algorithm must go though all the left-links to arrive at a key for comparison. This leads to worst-case performance $\mathcal{O}(|\text{trie}|)$, something we don't see in practice. We argue that the length of a key should be amortized for future samples in insertions; while there can be multiple insertions with the same trie structure, it becomes less important as the trie grows. Amortized $\mathcal{O}(|\text{key}|)$ is more what we see in practice, which is related to amortized $\mathcal{O}(\log |\text{trie}|)$\cite{shannon1948mathematical}. \textcolor{red}{Not applicable anymore. Dubious. Move to run-time.}
+\subsection{One-pass or two-pass insertion}
+
+In a one-pass algorithm, each bit of the new key is compared to a sample from the trie before the new decision bit is reached. In a two-pass algorithm, the decision bits are followed all the way to the end with the new key, and that forms an exemplar for comparison with the new key.
+
+These were tried separately, and the two-pass was superior. This only became evident only at 10~million keys; the two-pass algorithm was $\mathcal{O}(\log \text{size})$ iid, while the one-pass was more. This is because every time the right branch is taken, one must update the sample. This usually is quite fast, but asymptotically, it is $\mathcal{O}(\log \text{size})$ iid, as well. In practice, the new key will be checked against the trie for duplicates anyway; it makes sense to combine the check with the first pass.
 
 \subsection{Inserting and deleting keys}
 
-To add a key to an existing trie, first we match the key's bits with the tree. If it doesn't have enough length to pick out one key, we arbitrarily choose the left-most alphabetically. We call this the ...
+Then, to add a key to an existing trie, first we match the key's decision bits with the tree. If it doesn't have enough length to pick out one tree-key, we arbitrarily choose the left-most alphabetically. We call this the exemplar. The decision bit is found by comparing the new key and exemplar.
 
-It was tried doing this is one pass by updating the sample . . .
+Deleting a non-leaf key involves merging \code{skips}. However, a key can be necessary to break up the entries in the trie into sub-maximum sized skips. In this implementation, one can not delete keys that have this property.
 
 \subsection{Hysteresis}
 
 The non-empty criteria of the trees avoids the pathological case where empty trees from deletion pop-up. Further, we can always join a single leaf with its parent except the in the root.
 
-With smaller, dynamic tries, it is more important to not free resources which could be used in the future. Anything less than greedy merging on deletion will have hysteresis. We also should have a zero-key-state with resources.
+With smaller, dynamic tries, it is more important to not free resources which could be used in the future. Anything less than greedy merging on deletion will have hysteresis. We also should have a zero-key-state with resources, achieved with a flag on the tree size. In the implementation, this is branch size max, but it could be leaf size zero.
 
 \subsection{Data size and order}
 
