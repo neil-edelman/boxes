@@ -747,25 +747,19 @@ These were tried separately, and the two-pass was superior. This only became evi
 
 Then, to add a key to an existing trie, first we match the key's decision bits with the tree. If it doesn't have enough length to pick out one tree-key, we arbitrarily choose the left-most alphabetically. We call this the exemplar. The decision bit is found by comparing the new key and exemplar.
 
-Deleting a non-leaf key involves merging \code{skips}. However, a key can be necessary to break up the entries in the trie into sub-maximum sized skips. In this implementation, one can not delete keys that have this property.
+Deleting a non-leaf key involves merging \code{skips}. However, a key can be necessary to break up the entries in the trie into sub-maximum sized \code{skips}. In this implementation, one can not delete a key that causes the rest of the trie to go into an inconsistent state. This only matters if one has longer than 32~bytes the same in adjacent keys, (it is very possible.)
 
 \subsection{Hysteresis}
 
 The non-empty criteria of the trees avoids the pathological case where empty trees from deletion pop-up. Further, we can always join a single leaf with its parent except the in the root.
 
-With smaller, dynamic tries, it is more important to not free resources which could be used in the future. Anything less than greedy merging on deletion will have hysteresis. We also should have a zero-key-state with resources, achieved with a flag on the tree size. In the implementation, this is branch size max, but it could be leaf size zero.
+With smaller, dynamic tries, it is more important to not free resources which could be used in the future. Anything less than greedy merging on deletion will have hysteresis. We also should have a zero-key-state with resources, achieved with a flag on the tree size. In the implementation, this is branch size max, but it could be leaf size zero, for example.
 
 \subsection{Data size and order}
 
 We will push the index to be as small as possible, but no more. The order, or branching factor, is the number of leaves, which is bounded by $\max(\code{left}) + 2$. We should have a zero-length flag on the length for empty but active. This is not onerous because the alignment supports a size, then $2^n-1$ index entries, then $2^n$ leaves and bits in the bitmap.
 
 \section{Analysis}
-
-\subsection{Run-time}
-
-We are compressing by prefix.\cite{shannon1948mathematical}
-
-It was shown in \cite{tong2016smoothed}
 
 \subsection{Size of a tree}
 
@@ -792,9 +786,7 @@ plot \
 
 Figure~\ref{timing} shows straight insertion of different numbers of keys. It uses two-octet size for each of the branches on the index, divided evenly between \code{left} and \code{skip}. The order is how many leaves each tree holds, either keys or links.
 
-The smaller the order, the more links; this adversely affects the performance because the contents of the next index must be fetched into cache, and the trees split more often. The larger the order, the more updates to the local tree on insertion.\cite{sinha2004cache} In Figure~\ref{timing}, we see a very shallow maximum performance, corresponding to a minimum time. However, at low orders, the performance noticeably suffers. Specifically, when we don't fill 64\,kB of our cache lines.
-
-\subsection{Performance}
+The smaller the order, the more links; this adversely affects the performance because the contents of the next index must be fetched into cache, and the trees split more often. The larger the order, the more updates to the local tree on insertion.\cite{sinha2004cache} In Figure~\ref{timing}, we see the performance noticeably suffers at low orders. Specifically, when we don't fill 64\,kB of our cache lines. A very shallow maximum performance, however, the larger the order, the more efficient use of space.
 
 \begin{figure}\centering
 \begin{subcaptionblock}{\textwidth}
@@ -843,15 +835,21 @@ plot \
 \label{compare}%
 \end{figure}%
 
-Figure~\ref{compare}\ldots
+\subsection{Run-time performance}
 
-We do a second run down the trie, one for calculating which exemplar we are using, finding the difference, and restarting to add.
+We are compressing by prefix, so generally \cite{shannon1948mathematical} should apply. In fact, \cite{tong2016smoothed} shows explicitly that, in the case where the key encoding is independent and identically distributed, the height of the trie is $\mathcal{O}(\log \text{size})$. The sufficiently iid encoding assumption is quite safe to make in practice because the strings are assumed to be a reasonably finite size.
 
-For an unordered set, a hash table is still hard to beat. If order is needed, then a B-tree. This is seen practice in, for example, \code{C$^{++}$23} where \code{std::unordered\_set} is commonly a hash table and \code{std::ordered\_set} is commonly a red-black tree. On top of that, if prefix matching is at all convenient, a Patricia trie is a really competitive solution.
+Figure~\ref{compare} shows a comparison of a hash table, a B-tree, and a trie. Each replica, a set of random ASCII non-sense syllables created with $\lambda = 16$ Poisson-distributed length.
+
+For an unordered set, a hash table is hard to beat. The hash function used is {\it djb2}, a very simple multiplicative hash. Still, the bottleneck is almost entirely in calculating the hash. Thus, the performance will be almost entirely dependent of the average length of the string times the complexity of the hash function. Using this hash table loses all the information on the relative order.
+
+If order is needed, then a B-tree is justified. This is seen practice in, for example, \code{C$^{++}$17} where \code{std::unordered\_set} is commonly a hash table and \code{std::ordered\_set} is commonly a red-black tree. Adding to the tree in Figure~\ref{compare:add} shows $\mathcal{O}(\log \text{size})$ behaviour.
+
+Figure~\ref{compare:look} shows that prefix-matching is not any slower than a B-tree at look-up, in this case. In insertion, Figure~\ref{compare:add}, it is also $\mathcal{O}(\log \text{size})$, but it appears slower by a constant amount. Possibly because we are doing multiple descents.
 
 \section{Conclusion}
 
-It's okay.
+A Patricia trie with B-tree-like allocation is a really competitive solution in it's own right. It is especially suitable if prefix matching is at all convenient, or necessary, as long as the strings fit within the maximum allowed similarity.
 
 \bibliography{trie}
 
