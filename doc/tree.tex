@@ -99,9 +99,10 @@ A tree is used as an ordered set or map. For memory locality, this is implemente
 
 \subsection{Branching factor}
 
-The branching factor, or order as \cite{knuth1998sorting}, is a fixed value between $[3,\text{UINT\_MAX}+1]$. The implementation has no buffering or middle-memory management. Thus, a high-order means greater memory allocation granularity, leading to asymptotically desirable caching. Small values produce much more compact trees. The default order is 65, a value arrived at experimentally in Section~\ref{default}.
+The branching factor, or order as \cite{knuth1998sorting}, is a fixed value between $[3,\text{UINT\_MAX}+1]$. The implementation has no buffering or middle-memory management. Thus, a high-order means greater memory allocation granularity, leading to asymptotically desirable caching. This conflicts with small values, which produce much more compact trees. The default order is 65, a value arrived at experimentally in Section~\ref{default}.
 
-In general, it is left-leaning where convenient because keys on the right side are faster to move because of the array configuration of the nodes.
+In general, it is left-leaning where convenient. This is
+because keys on the right side are faster to move because of the array configuration of the nodes.
 
 \subsection{Minimum and maximum keys}
 
@@ -312,7 +313,7 @@ Initially, this will efficiently produce a more compact tree. For example, Figur
 	\label{add}%
 \end{figure}%
 
-In \cite{bayer1972organization, knuth1998sorting, comer1979ubiquitous}, insertion is a $\mathcal{O}(\log_{\text{minimum}+1} \text{size})$ operation. In theory, the key is inserted in a leaf node. If this operation causes the leaf to be overfull, the leaf is split into two, with the median element promoted. This repeats until all the nodes are within the specified key maximum. If implemented directly, this requires an extra temporary element to be added to each node and double-linking to access the parent node.
+In \cite{bayer1972organization, knuth1998sorting, comer1979ubiquitous}, insertion is a $\mathcal{O}(\log \text{size})$ operation. In theory, the key is inserted in a leaf node. If this operation causes the leaf to be overfull, the leaf is split into two, with the median element promoted. This repeats until all the nodes are within the specified key maximum. If implemented directly, this requires an extra temporary element to be added to each node and double-linking to access the parent node.
 
 It is advantageous, then, to flip the insertion and keep track of the hole, getting rid of the temporary size overload and moving the intermediate keys only once. A potential state machine is shown schematically in Figure~\ref{add}. \code{idle} is no dynamic memory; \code{empty} contains an unused node. \code{ERROR} from \code{idle} and \code{grow} is a memory error; the state of the tree remains unchanged.
 
@@ -1254,7 +1255,7 @@ Figure~\ref{remove} shows a schematic diagram of removal of one key. This has be
 
 We require a leaf node for removal. In the event that the key is in a branch, we move the predecessor or successor, which is in a leaf, to the current spot and delete the leaf key. We must be careful to replace the provisional upwards-bubbling key with the predecessor or successor.
 
-This is relying on being the only process which modifies the tree during deletion. A potentially more robust way would be from the top-down, like insertion. However, it is not clear what the starting point is, and one would probably have to queue two temporary nodes. More work is needed to determine the optimal way of removing keys.
+This is relying on being the only process which modifies the tree during deletion. A potentially more robust way would be from the top-down, like insertion. More work is needed to determine the optimal way of removing keys.
 
 
 \section{Performance}
@@ -1281,7 +1282,8 @@ set yrange [0:2000]
 set log x
 set format x '\tiny %g'
 set format y '\tiny %g'
-set key font ",15"
+set key font "modern,15"
+set xrange [1:33554432]
 set for [i=1:8] linetype i dashtype i
 plot \
 "timing-std.tsv" using 1:($2/$1*1000):($3/$1*1000) with errorlines title "std$\:\:$map" ls 1, \
@@ -1295,7 +1297,7 @@ plot \
 \label{timing}%
 \end{figure}%
 
-Figure~\ref{timing} shows the common case where one has an ordered map of \code{unsigned int} to pointer. It is of straight insertion of random elements, (not in any order.) The keys are drawn from \code{rand} in $[0, 2\,147\,483\,647]$. This causes some probability of collision, which can be much faster than insertion.
+Figure~\ref{timing} shows the common case where one has an ordered map of \code{unsigned int} to pointer. It is of straight insertion of random elements, (not in any order.) The keys are drawn from \code{rand} in $[0, 2\,147\,483\,647]$. (This causes some probability of collision.)
 
 \code{std::map} is a red-black tree in \code{C++}. Though order~4 produces an isomorphism with left-leaning red-black trees\cite{sedgewick2008left}, it is very close in performance to an order-3 tree. This is probably because of the importance of caching: locality-of-reference in order-3 trees, which have up to 2 elements grouped together is very similar to having single, stable, elements.
 
@@ -1326,7 +1328,7 @@ We expect that this is on the low-end of size in use-cases. We would also expect
 
 \section{Conclusion}
 
-A B-tree can be superior to a one key node-based approach used in red-black or AVL trees used by many languages to implement ordered sets or maps. It is not without cost, since this is now not a stable data-structure. However, we expect that the majority of use-cases do not require it to be stable.
+A B-tree can be superior to a single node-based approach used in red-black or AVL trees, used by many languages to implement ordered sets or maps. It is not without cost, since this is now not a stable data-structure.
 
 \bibliography{tree}
 
