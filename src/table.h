@@ -11,8 +11,7 @@
 
  <tag:<N>table> implements a set or map of <typedef:<PN>entry> as a hash table.
  It must be supplied <typedef:<PN>hash_fn> `<N>hash` and,
- <typedef:<PN>is_equal_fn> `<N>is_equal` or <typedef:<PN>inverse_hash_fn>
- `<N>inverse_hash`.
+ <typedef:<PN>is_equal_fn> `<N>is_equal` or <typedef:<PN>unhash_fn> `<N>unhash`.
 
  @param[TABLE_NAME, TABLE_KEY]
  `<N>` that satisfies `C` naming conventions when mangled and a valid
@@ -21,7 +20,7 @@
 
  @param[TABLE_INVERSE]
  By default it assumes that `<N>is_equal` is supplied; with this, instead
- requires `<N>inverse_hash` satisfying <typedef:<PN>inverse_hash_fn>.
+ requires `<N>unhash` satisfying <typedef:<PN>unhash_fn>.
 
  @param[TABLE_VALUE]
  An optional type that is the payload of the key, thus making this a map or
@@ -117,9 +116,9 @@ typedef PN_(uint) (*PN_(hash_fn))(const PN_(key));
 #ifdef TABLE_INVERSE /* <!-- inv */
 /** Defining `TABLE_INVERSE` says <typedef:<PN>hash_fn> forms a bijection
  between the range in <typedef:<PN>key> and the image in <typedef:<PN>uint>,
- and the inverse is called `<N>inverse_hash`. In this case, keys are not stored
+ and the inverse is called `<N>unhash`. In this case, keys are not stored
  in the hash table, rather they are generated using this inverse-mapping. */
-typedef PN_(key) (*PN_(inverse_hash_fn))(PN_(uint));
+typedef PN_(key) (*PN_(unhash_fn))(PN_(uint));
 #else /* inv --><!-- !inv */
 /** Equivalence relation between <typedef:<PN>key> that satisfies
  `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`, called `<N>is_equal`.
@@ -173,7 +172,7 @@ static PN_(key) PN_(bucket_key)(const struct PN_(bucket) *const bucket) {
 	assert(bucket && bucket->next != TABLE_NULL);
 #ifdef TABLE_INVERSE
 	/* On `TABLE_INVERSE`, this function must be defined by the user. */
-	return N_(inverse_hash)(bucket->hash);
+	return N_(unhash)(bucket->hash);
 #else
 	return bucket->key;
 #endif

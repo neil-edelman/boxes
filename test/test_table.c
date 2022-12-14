@@ -30,8 +30,8 @@ static unsigned zodiac_hash(const enum zodiac z) { return z; }
 /** This is a discrete set with a simple homomorphism between keys and hash
  values, therefore it's simpler to work in hash space. This saves us from
  having to define <typedef:<PN>is_equal_fn> and saves the key from even being
- stored. @implements <zodiac>inverse_hash_fn */
-static enum zodiac zodiac_inverse_hash(const unsigned z) { return z; }
+ stored. @implements <zodiac>unhash_fn */
+static enum zodiac zodiac_unhash(const unsigned z) { return z; }
 /** This is not necessary except for testing, because that is how we see what
  we're testing. @implements <zodiac>to_string_fn */
 static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
@@ -107,7 +107,7 @@ static unsigned lowbias32(unsigned x) {
 	x ^= x >> 16;
 	return x;
 }
-/** @implements <int>inverse_hash_fn */
+/** @implements <int>unhash_fn */
 static unsigned lowbias32_r(unsigned x) {
 	x ^= x >> 16;
 	x *= 0x43021123U;
@@ -120,11 +120,11 @@ static unsigned lowbias32_r(unsigned x) {
 /** Uniform values don't really need a hash, and I'm lazy.
  @implements <int>hash_fn */
 static unsigned lowbias32(unsigned x) { return x; }
-/** @implements <int>inverse_hash_fn */
+/** @implements <int>unhash_fn */
 static unsigned lowbias32_r(unsigned x) { return x; }
 #endif /* < 32 bits */
 static unsigned uint_hash(const unsigned x) { return lowbias32(x); }
-static unsigned uint_inverse_hash(const unsigned x) { return lowbias32_r(x); }
+static unsigned uint_unhash(const unsigned x) { return lowbias32_r(x); }
 /** @implements <int>to_string_fn */
 static void uint_to_string(const unsigned x, char (*const a)[12])
 	{ sprintf(*a, "%u", x); }
@@ -145,7 +145,7 @@ static void uint_filler(void *const zero, unsigned *const u) {
  Also testing `TABLE_DEFAULT`. */
 static unsigned int_hash(const int d)
 	{ return lowbias32((unsigned)d - (unsigned)INT_MIN); }
-static int int_inverse_hash(unsigned u)
+static int int_unhash(unsigned u)
 	{ return (int)(lowbias32_r(u) + (unsigned)INT_MIN); }
 static void int_to_string(const int d, char (*const a)[12])
 	{ sprintf(*a, "%d", d); }
@@ -270,7 +270,7 @@ finally:
 /** This is stored in the map value of `<boat>table`. */
 struct boat_record { int best_time, points; };
 static unsigned boat_hash(const int x) { return int_hash(x); }
-static int boat_inverse_hash(const unsigned h) { return int_inverse_hash(h); }
+static int boat_unhash(const unsigned h) { return int_unhash(h); }
 #define TABLE_NAME boat
 #define TABLE_KEY int
 #define TABLE_UINT unsigned
@@ -664,9 +664,9 @@ finally:
  recorded as a linked-list. */
 struct nato_list { const char *alpha; struct nato_list *next; };
 struct nato_value { size_t occurrences; struct nato_list *head; };
-/** Symmetric bijection. @implements <nato>hash_fn, <nato>inverse_hash_fn */
+/** Symmetric bijection. @implements <nato>hash_fn, <nato>unhash_fn */
 static size_t nato_hash(const size_t n) { return n; }
-static size_t nato_inverse_hash(const size_t h) { return h; }
+static size_t nato_unhash(const size_t h) { return h; }
 #define TABLE_NAME nato
 #define TABLE_KEY size_t
 #define TABLE_VALUE struct nato_value
