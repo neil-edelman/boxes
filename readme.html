@@ -39,7 +39,7 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PN>uint">&lt;PN&gt;uint</a>, <a href = "#typedef:<PN>key">&lt;PN&gt;key</a>, <a href = "#typedef:<PN>hash_fn">&lt;PN&gt;hash_fn</a>, <a href = "#typedef:<PN>inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a>, <a href = "#typedef:<PN>is_equal_fn">&lt;PN&gt;is_equal_fn</a>, <a href = "#typedef:<PN>value">&lt;PN&gt;value</a>, <a href = "#typedef:<PN>entry">&lt;PN&gt;entry</a>, <a href = "#typedef:<PN>policy_fn">&lt;PN&gt;policy_fn</a>, <a href = "#typedef:<PITR>action_fn">&lt;PITR&gt;action_fn</a>, <a href = "#typedef:<PITR>predicate_fn">&lt;PITR&gt;predicate_fn</a>, <a href = "#typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PN>uint">&lt;PN&gt;uint</a>, <a href = "#typedef:<PN>key">&lt;PN&gt;key</a>, <a href = "#typedef:<PN>hash_fn">&lt;PN&gt;hash_fn</a>, <a href = "#typedef:<PN>unhash_fn">&lt;PN&gt;unhash_fn</a>, <a href = "#typedef:<PN>is_equal_fn">&lt;PN&gt;is_equal_fn</a>, <a href = "#typedef:<PN>value">&lt;PN&gt;value</a>, <a href = "#typedef:<PN>entry">&lt;PN&gt;entry</a>, <a href = "#typedef:<PN>policy_fn">&lt;PN&gt;policy_fn</a>, <a href = "#typedef:<PITR>action_fn">&lt;PITR&gt;action_fn</a>, <a href = "#typedef:<PITR>predicate_fn">&lt;PITR&gt;predicate_fn</a>, <a href = "#typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></li>
 	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:table_result">table_result</a>, <a href = "#tag:<N>table_entry">&lt;N&gt;table_entry</a>, <a href = "#tag:<N>table">&lt;N&gt;table</a>, <a href = "#tag:<N>table_iterator">&lt;N&gt;table_iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
@@ -52,7 +52,7 @@
 
 <p><img alt = "Example of &lt;string&gt;table." src = "doc/table.png" width = 349 height = 407></p>
 
-<p><a href = "#tag:&lt;N&gt;table">&lt;N&gt;table</a> implements a set or map of <a href = "#typedef:&lt;PN&gt;entry">&lt;PN&gt;entry</a> as a hash table. It must be supplied <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> <code>&lt;N&gt;hash</code> and, <a href = "#typedef:&lt;PN&gt;is_equal_fn">&lt;PN&gt;is_equal_fn</a> <code>&lt;N&gt;is_equal</code> or <a href = "#typedef:&lt;PN&gt;inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a> <code>&lt;N&gt;inverse_hash</code>.</p>
+<p><a href = "#tag:&lt;N&gt;table">&lt;N&gt;table</a> implements a set or map of <a href = "#typedef:&lt;PN&gt;entry">&lt;PN&gt;entry</a> as a hash table. It must be supplied <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> <code>&lt;N&gt;hash</code> and, <a href = "#typedef:&lt;PN&gt;is_equal_fn">&lt;PN&gt;is_equal_fn</a> <code>&lt;N&gt;is_equal</code> or <a href = "#typedef:&lt;PN&gt;unhash_fn">&lt;PN&gt;unhash_fn</a> <code>&lt;N&gt;unhash</code>.</p>
 
 * <a href = "src/iterate.h">src/iterate.h</a>: defining <code>HAVE_ITERATE_H</code> supplies <code>&lt;ITR&gt;</code> functions.</div>
 
@@ -60,7 +60,7 @@
 	<dt>Parameter: TABLE_NAME, TABLE_KEY</dt>
 	<dd><code>&lt;N&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> associated therewith; required. <code>&lt;PN&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: TABLE_INVERSE</dt>
-	<dd>By default it assumes that <code>&lt;N&gt;is_equal</code> is supplied; with this, instead requires <code>&lt;N&gt;inverse_hash</code> satisfying <a href = "#typedef:&lt;PN&gt;inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a>.</dd>
+	<dd>By default it assumes that <code>&lt;N&gt;is_equal</code> is supplied; with this, instead requires <code>&lt;N&gt;unhash</code> satisfying <a href = "#typedef:&lt;PN&gt;unhash_fn">&lt;PN&gt;unhash_fn</a>.</dd>
 	<dt>Parameter: TABLE_VALUE</dt>
 	<dd>An optional type that is the payload of the key, thus making this a map or associative array.</dd>
 	<dt>Parameter: TABLE_UINT</dt>
@@ -109,11 +109,11 @@
 
 <div>
 
-<h3><a id = "typedef:<PN>inverse_hash_fn" name = "typedef:<PN>inverse_hash_fn">&lt;PN&gt;inverse_hash_fn</a></h3>
+<h3><a id = "typedef:<PN>unhash_fn" name = "typedef:<PN>unhash_fn">&lt;PN&gt;unhash_fn</a></h3>
 
-<p><code>typedef &lt;PN&gt;key(*<strong>&lt;PN&gt;inverse_hash_fn</strong>)(&lt;PN&gt;uint);</code></p>
+<p><code>typedef &lt;PN&gt;key(*<strong>&lt;PN&gt;unhash_fn</strong>)(&lt;PN&gt;uint);</code></p>
 
-<p>Defining <code>TABLE_INVERSE</code> says <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> forms a bijection between the range in <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> and the image in <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a>, and the inverse is called <code>&lt;N&gt;inverse_hash</code>. In this case, keys are not stored in the hash table, rather they are generated using this inverse-mapping.</p>
+<p>Defining <code>TABLE_INVERSE</code> says <a href = "#typedef:&lt;PN&gt;hash_fn">&lt;PN&gt;hash_fn</a> forms a bijection between the range in <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> and the image in <a href = "#typedef:&lt;PN&gt;uint">&lt;PN&gt;uint</a>, and the inverse is called <code>&lt;N&gt;unhash</code>. In this case, keys are not stored in the hash table, rather they are generated using this inverse-mapping.</p>
 
 </div>
 

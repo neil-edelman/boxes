@@ -5,7 +5,7 @@ Stand\-alone header [src/table\.h](src/table.h); examples [test/test\_table\.c](
 ## Hash table ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;uint](#user-content-typedef-c13937ad), [&lt;PN&gt;key](#user-content-typedef-e7af8dc0), [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292), [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded), [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb), [&lt;PN&gt;value](#user-content-typedef-218ce716), [&lt;PN&gt;entry](#user-content-typedef-a9017e7), [&lt;PN&gt;policy_fn](#user-content-typedef-1244a528), [&lt;PITR&gt;action_fn](#user-content-typedef-49d9168b), [&lt;PITR&gt;predicate_fn](#user-content-typedef-c5016dba), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PN&gt;uint](#user-content-typedef-c13937ad), [&lt;PN&gt;key](#user-content-typedef-e7af8dc0), [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292), [&lt;PN&gt;unhash_fn](#user-content-typedef-ca7574d7), [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb), [&lt;PN&gt;value](#user-content-typedef-218ce716), [&lt;PN&gt;entry](#user-content-typedef-a9017e7), [&lt;PN&gt;policy_fn](#user-content-typedef-1244a528), [&lt;PITR&gt;action_fn](#user-content-typedef-49d9168b), [&lt;PITR&gt;predicate_fn](#user-content-typedef-c5016dba), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [table_result](#user-content-tag-4f1ea759), [&lt;N&gt;table_entry](#user-content-tag-b491b196), [&lt;N&gt;table](#user-content-tag-8f317be5), [&lt;N&gt;table_iterator](#user-content-tag-f67540e4)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -15,14 +15,14 @@ Stand\-alone header [src/table\.h](src/table.h); examples [test/test\_table\.c](
 
 ![Example of &lt;string&gt;table.](doc/table.png)
 
-[&lt;N&gt;table](#user-content-tag-8f317be5) implements a set or map of [&lt;PN&gt;entry](#user-content-typedef-a9017e7) as a hash table\. It must be supplied [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) `<N>hash` and, [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb) `<N>is_equal` or [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded) `<N>inverse_hash`\.
+[&lt;N&gt;table](#user-content-tag-8f317be5) implements a set or map of [&lt;PN&gt;entry](#user-content-typedef-a9017e7) as a hash table\. It must be supplied [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) `<N>hash` and, [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb) `<N>is_equal` or [&lt;PN&gt;unhash_fn](#user-content-typedef-ca7574d7) `<N>unhash`\.
 
 \* [src/iterate\.h](src/iterate.h): defining `HAVE_ITERATE_H` supplies `<ITR>` functions\.
 
  * Parameter: TABLE\_NAME, TABLE\_KEY  
    `<N>` that satisfies `C` naming conventions when mangled and a valid [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) associated therewith; required\. `<PN>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: TABLE\_INVERSE  
-   By default it assumes that `<N>is_equal` is supplied; with this, instead requires `<N>inverse_hash` satisfying [&lt;PN&gt;inverse_hash_fn](#user-content-typedef-a239fded)\.
+   By default it assumes that `<N>is_equal` is supplied; with this, instead requires `<N>unhash` satisfying [&lt;PN&gt;unhash_fn](#user-content-typedef-ca7574d7)\.
  * Parameter: TABLE\_VALUE  
    An optional type that is the payload of the key, thus making this a map or associative array\.
  * Parameter: TABLE\_UINT  
@@ -63,11 +63,11 @@ A map from [&lt;PN&gt;key_c](#user-content-typedef-46bcab6a) onto [&lt;PN&gt;uin
 
 
 
-### <a id = "user-content-typedef-a239fded" name = "user-content-typedef-a239fded">&lt;PN&gt;inverse_hash_fn</a> ###
+### <a id = "user-content-typedef-ca7574d7" name = "user-content-typedef-ca7574d7">&lt;PN&gt;unhash_fn</a> ###
 
-<code>typedef &lt;PN&gt;key(*<strong>&lt;PN&gt;inverse_hash_fn</strong>)(&lt;PN&gt;uint);</code>
+<code>typedef &lt;PN&gt;key(*<strong>&lt;PN&gt;unhash_fn</strong>)(&lt;PN&gt;uint);</code>
 
-Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) forms a bijection between the range in [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) and the image in [&lt;PN&gt;uint](#user-content-typedef-c13937ad), and the inverse is called `<N>inverse_hash`\. In this case, keys are not stored in the hash table, rather they are generated using this inverse\-mapping\.
+Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) forms a bijection between the range in [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) and the image in [&lt;PN&gt;uint](#user-content-typedef-c13937ad), and the inverse is called `<N>unhash`\. In this case, keys are not stored in the hash table, rather they are generated using this inverse\-mapping\.
 
 
 
