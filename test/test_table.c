@@ -157,7 +157,7 @@ static void int_filler(void *const zero, int *const s) {
 #define TABLE_KEY int
 #define TABLE_UINT unsigned
 #define TABLE_INVERSE
-#define TABLE_TO_STRING &int_to_string
+#define TABLE_TO_STRING
 #define TABLE_DEFAULT 0
 #define TABLE_TEST
 #define TABLE_EXPECT_TRAIT
@@ -290,10 +290,10 @@ static void boat_club(void) {
 		struct boat_record *record;
 		/*printf("Boat #%d had a time of %d, giving them %d points.\n",
 			id, time, points);*/
-		switch(boat_table_compute(&boats, id, &record)) {
-		case TABLE_UNIQUE:
+		switch(boat_table_assign(&boats, id, &record)) {
+		case TABLE_ABSENT:
 			record->best_time = time; record->points = points; break;
-		case TABLE_YIELD:
+		case TABLE_PRESENT:
 			if(time < record->best_time) {
 				printf("#%d best time %d -> %d.\n", id, record->best_time, time);
 				record->best_time = time;
@@ -302,7 +302,7 @@ static void boat_club(void) {
 				id, record->points, record->points + points);*/
 			record->points += points;
 			break;
-		case TABLE_ERROR: case TABLE_REPLACE: goto catch;
+		case TABLE_ERROR: goto catch;
 		}
 	}
 	{
@@ -481,12 +481,11 @@ static void linked_dict(void) {
 	state.cursor = english.data, state.line = 1;
 	while(lex_dict(&state)) { /* Cut off the string in the `char` array. */
 		struct dict **ptr, *d;
-		switch(dict_table_compute(&dict, state.word, &ptr)) {
+		switch(dict_table_assign(&dict, state.word, &ptr)) {
 		case TABLE_ERROR: goto catch;
-		case TABLE_REPLACE: assert(0); break; /* This can never happen. */
-		case TABLE_YIELD: printf("Next line %lu: duplicate \"%s\"; ignoring.\n",
+		case TABLE_PRESENT: printf("Next line %lu: duplicate \"%s\"; ignoring.\n",
 			(unsigned long)state.line, state.word); continue;
-		case TABLE_UNIQUE:
+		case TABLE_ABSENT:
 			if(!(d = *ptr = dict_pool_new(&pool))) goto catch;
 			d->word = state.word;
 			word_list_push(&order, &d->link);
@@ -635,16 +634,16 @@ static void year_of(void) {
 			if(!(a = letter_pool_new(&letterpool))) goto catch;
 			fill_letter(a), y = &a->year; } break;
 		}
-		switch(year_table_replace(&year, &y->year, &eject)) {
-		case TABLE_ERROR: case TABLE_YIELD: goto catch;
-		case TABLE_REPLACE: { char e[12], z[12];
+		switch(year_table_update(&year, &y->year, &eject)) {
+		case TABLE_ERROR: goto catch;
+		case TABLE_PRESENT: { char e[12], z[12];
 			year_to_string(eject, &e);
 			year_to_string(&y->year, &z);
 			printf("Replaced %s with %s.\n", e, z);
 			/* We could have a `delete` in the virtual table which frees
 			 unneeded memory. This is just an example, we'll allow it all to be
 			 deleted later; it just sits there unused, now. */ } break;
-		case TABLE_UNIQUE: break;
+		case TABLE_ABSENT: break;
 		}
 	}
 	printf("Year of %s.\n", year_table_to_string(&year));
@@ -694,13 +693,10 @@ static void nato(void) {
 		size_t length = utf_alnum_count(alphabet[i]);
 		struct nato_value *value = 0;
 		struct nato_list *item = list + i;
-		switch(nato_table_compute(&nato, length, &value)) {
+		switch(nato_table_assign(&nato, length, &value)) {
 		case TABLE_ERROR: goto catch;
-			/* PutIfAbsent */
-		case TABLE_UNIQUE: value->occurrences = 1, value->head = 0; break;
-			/* PutIfPresent */
-		case TABLE_YIELD: value->occurrences++; break;
-		case TABLE_REPLACE: assert(0); /* Impossible, <fn:<N>table_compute>. */
+		case TABLE_ABSENT: value->occurrences = 1, value->head = 0; break;
+		case TABLE_PRESENT: value->occurrences++; break;
 		}
 		item->alpha = alphabet[i];
 		item->next = value->head, value->head = item; /* Linked-list append. */
@@ -751,7 +747,7 @@ static void stars(void) {
 		size_t s = s_array[i];
 		e.key = star_names[s], e.value = star_distances[s];
 		printf("%lu: %s -> %f\n", (unsigned long)s, e.key, e.value);
-		if(star_table_try(&stars, e) != TABLE_UNIQUE)
+		if(star_table_try(&stars, e) != TABLE_ABSENT)
 			goto catch;
 	}
 	printf("%s.\n", star_table_to_string(&stars));

@@ -303,6 +303,7 @@ static void PN_(test_basic)(void *const parent) {
 #endif*/
 		N_(filler)(parent, &s->entry);
 		N_(to_string)(PN_(entry_key)(s->entry), &z);
+		/* Is supposed to be in set. */
 		s->is_in = 0;
 		for(j = 0; j < i && !PN_(eq_en)(s->entry, trials.sample[j].entry);
 			j++);
@@ -339,11 +340,14 @@ static void PN_(test_basic)(void *const parent) {
 		memset(&eject, 0, sizeof eject);
 		memset(&zero, 0, sizeof zero);
 		size.before = table.size;
-		result = N_(table_update)(&table, s->entry, &eject, 0);
+		result = N_(table_policy)(&table, s->entry, &eject, 0);
 		size.after = table.size;
-		assert(s->is_in && !memcmp(&eject, &zero, sizeof zero)
-			&& result == TABLE_UNIQUE && size.after == size.before + 1
-			|| !s->is_in && result == TABLE_YIELD && size.before == size.after);
+		if(s->is_in) {
+			assert(!memcmp(&eject, &zero, sizeof zero)
+				&& result == TABLE_ABSENT && size.after == size.before + 1);
+		} else {
+			assert(result == TABLE_PRESENT && size.before == size.after);
+		}
 		success = N_(table_query)(&table, PN_(entry_key)(s->entry), &entry);
 		assert(success && PN_(eq_en)(s->entry, entry));
 		if(table.size < max_graph && !(i & (i - 1)) || i + 1 == trial_size) {
@@ -417,8 +421,8 @@ static void PN_(test_basic)(void *const parent) {
 	for(i = 0; i < trial_size; i++) { /* Make sure to test it again. */
 		const struct sample *s = trials.sample + i;
 		enum table_result result;
-		result = N_(table_update)(&table, s->entry, 0, 0);
-		assert(result == TABLE_YIELD || result == TABLE_UNIQUE);
+		result = N_(table_policy)(&table, s->entry, 0, 0);
+		assert(result == TABLE_PRESENT || result == TABLE_ABSENT);
 	}
 	N_(table_)(&table);
 	assert(!table.buckets && !table.log_capacity && !table.size);

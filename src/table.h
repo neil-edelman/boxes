@@ -77,7 +77,7 @@
 #define TABLE_HIGH ((TABLE_M1 >> 1) + 1) /* Cardinality must be 1111... */
 #define TABLE_END (TABLE_HIGH)
 #define TABLE_NULL (TABLE_HIGH + 1)
-#define TABLE_RESULT X(ERROR), X(UNIQUE), X(YIELD), X(REPLACE)
+#define TABLE_RESULT X(ERROR), X(ABSENT), X(PRESENT)
 #define X(n) TABLE_##n
 /** A result of modifying the table, of which `TABLE_ERROR` is false.
  
@@ -506,12 +506,13 @@ static enum table_result PN_(put)(struct N_(table) *const table,
 	enum table_result result;
 	assert(table);
 	if(table->buckets && (bucket = PN_(query)(table, key, hash))) {
-		if(!policy || !policy(PN_(bucket_key)(bucket), key)) return TABLE_YIELD;
+		if(!policy || !policy(PN_(bucket_key)(bucket), key))
+			return TABLE_PRESENT;
 		if(eject) *eject = PN_(to_entry)(bucket);
-		result = TABLE_REPLACE;
+		result = TABLE_PRESENT;
 	} else {
 		if(!(bucket = PN_(evict)(table, hash))) return TABLE_ERROR;
-		result = TABLE_UNIQUE;
+		result = TABLE_ABSENT;
 	}
 	PN_(replace_entry)(bucket, entry, hash);
 	return result;
@@ -702,38 +703,38 @@ static PN_(value) N_(table_get_or)(struct N_(table) *const table,
 }
 
 /** Puts `entry` in `table` only if absent.
- @return One of: `TABLE_ERROR`, the table is not modified; `TABLE_YIELD`, not
- modified if there is another entry with the same key; `TABLE_UNIQUE`, put an
- entry in the table.
+ @return One of: `TABLE_ERROR`, tried putting the entry in the table but
+ failed, the table is not modified; `TABLE_PRESENT`, does nothing if there is
+ another entry with the same key; `TABLE_ABSENT`, put an entry in the table.
  @throws[realloc, ERANGE] On `TABLE_ERROR`.
  @order Average amortised \O(1); worst \O(n). @allow */
 static enum table_result N_(table_try)(struct N_(table) *const table,
 	PN_(entry) entry) { return PN_(put)(table, entry, 0, 0); }
 
-/** Callback in <fn:<N>table_replace>.
+/** Callback in <fn:<N>table_update>.
  @return `original` and `replace` ignored, true.
  @implements <typedef:<PN>policy_fn> */
 static int PN_(always_replace)(const PN_(key) original,
 	const PN_(key) replace) { return (void)original, (void)replace, 1; }
 
 /** Puts `entry` in `table`.
- @return One of: `TABLE_ERROR`, the table is not modified; `TABLE_REPLACE`, the
- `entry` is put if the table, and, if non-null, `eject` will be filled;
- `TABLE_UNIQUE`, on a unique entry.
+ @return One of: `TABLE_ERROR`, the table is not modified; `TABLE_ABSENT`, the
+ `entry` is put if the table; `TABLE_PRESENT` if non-null, `eject` will be
+ filled with the previous entry.
  @throws[realloc, ERANGE] On `TABLE_ERROR`.
  @order Average amortised \O(1); worst \O(n). @allow */
-static enum table_result N_(table_replace)(struct N_(table) *const table,
+static enum table_result N_(table_update)(struct N_(table) *const table,
 	PN_(entry) entry, PN_(entry) *eject) {
 	return PN_(put)(table, entry, eject, &PN_(always_replace));
 }
 
 /** Puts `entry` in `table` only if absent or if calling `policy` returns true.
- @return One of: `TABLE_ERROR`, the table is not modified; `TABLE_REPLACE`, if
- `update` is non-null and returns true, if non-null, `eject` will be filled;
- `TABLE_YIELD`, if `update` is null or false; `TABLE_UNIQUE`, on unique entry.
+ @return One of: `TABLE_ERROR`, the table is not modified; `TABLE_ABSENT`, the
+ `entry` is new; `TABLE_PRESENT`, the entry has the same key as some other
+ entry. If `policy` returns true, `eject` will be filled;
  @throws[realloc, ERANGE] On `TABLE_ERROR`.
  @order Average amortised \O(1); worst \O(n). @allow */
-static enum table_result N_(table_update)(struct N_(table) *const table,
+static enum table_result N_(table_policy)(struct N_(table) *const table,
 	PN_(entry) entry, PN_(entry) *eject, const PN_(policy_fn) policy)
 	{ return PN_(put)(table, entry, eject, policy); }
 
@@ -742,32 +743,33 @@ static enum table_result N_(table_update)(struct N_(table) *const table,
 /** On `TABLE_VALUE`, try to put `key` into `table`, and update `value` to be
  a pointer to the current value.
  @return `TABLE_ERROR` does not set `value`; `TABLE_ABSENT`, the `value` will
- be uninitialized; `TABLE_YIELD`, gets the current `value`. @throws[malloc] */
-static enum table_result PN_(compute)(struct N_(table) *const table,
+ be uninitialized; `TABLE_PRESENT`, gets the current `value`. @throws[malloc] */
+static enum table_result PN_(assign)(struct N_(table) *const table,
 	PN_(key) key, PN_(value) **const value) {
 	struct PN_(bucket) *bucket;
 	const PN_(uint) hash = N_(hash)(key);
 	enum table_result result;
 	assert(table && value);
 	if(table->buckets && (bucket = PN_(query)(table, key, hash))) {
-		result = TABLE_YIELD;
+		result = TABLE_PRESENT;
 	} else {
 		if(!(bucket = PN_(evict)(table, hash))) return TABLE_ERROR;
 		PN_(replace_key)(bucket, key, hash);
-		result = TABLE_UNIQUE;
+		result = TABLE_ABSENT;
 	}
 	*value = &bucket->value;
 	return result;
 }
 
-/** If `TABLE_VALUE` is defined. Try to put `key` into `table`, and store the
- associated value in a pointer `value`.
- @return `TABLE_ERROR` does not set `value`; `TABLE_GROW`, the `value` will
- point to uninitialized memory; `TABLE_YIELD`, gets the current `value` but
- doesn't use the `key`. @throws[malloc, ERANGE] On `TABLE_ERROR`. @allow */
-static enum table_result N_(table_compute)(struct N_(table) *const table,
+/** If `TABLE_VALUE` is defined. Try (see <fn:<N>table_try>) to put `key` into
+ `table`, and store the associated value in a pointer `value`.
+ @return `TABLE_ERROR` does not set `value`; `TABLE_ABSENT`, the `value` will
+ point to uninitialized memory; `TABLE_PRESENT`, gets the current `value`, (but
+ doesn't use the `key`.)
+ @throws[malloc, ERANGE] On `TABLE_ERROR`. @allow */
+static enum table_result N_(table_assign)(struct N_(table) *const table,
 	PN_(key) key, PN_(value) **const value)
-	{ return PN_(compute)(table, key, value); }
+	{ return PN_(assign)(table, key, value); }
 
 #endif /* value --> */
 
@@ -826,11 +828,11 @@ static void PN_(unused_base)(void) {
 	N_(table)(); N_(table_)(0); N_(table_begin)(0); N_(table_next)(0, 0);
 	N_(table_buffer)(0, 0); N_(table_clear)(0); N_(table_is)(0, k);
 	N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v); N_(table_try)(0, e);
-	N_(table_replace)(0, e, 0); N_(table_update)(0,e,0,0);
+	N_(table_update)(0, e, 0); N_(table_policy)(0,e,0,0);
 	N_(table_remove)(0, k); N_(table_begin)(0); N_(table_next)(0, 0);
 	N_(table_has_next)(0); N_(table_iterator_remove)(0);
 #ifdef TABLE_VALUE
-	N_(table_compute)(0, k, 0); N_(table_next_key)(0); N_(table_next_value)(0);
+	N_(table_assign)(0, k, 0); N_(table_next_key)(0); N_(table_next_value)(0);
 #endif
 	PN_(unused_base_coda)();
 }
