@@ -247,8 +247,7 @@ static void test_it(void) {
 	table_int_graph(&t, "graph/it0.gv");
 	assert(t.size == ko2);
 	printf("Remove: ");
-	for(it = int_table_begin(&t); int_table_has_next(&it); ) {
-		int_table_next(&it, &i);
+	for(it = int_table_begin(&t); int_table_next(&it, &i); ) {
 		if(i & 1) continue; /* Odd ones left. */
 		int_table_iterator_remove(&it);
 		assert(int_table_iterator_remove(&it) == 0);
@@ -256,8 +255,7 @@ static void test_it(void) {
 	printf("done.\n");
 	table_int_graph(&t, "graph/it1.gv");
 	assert(t.size == ko);
-	for(it = int_table_begin(&t); int_table_has_next(&it); )
-		int_table_next(&it, &i), assert(i & 1);
+	for(it = int_table_begin(&t); int_table_next(&it, &i); ) assert(i & 1);
 	goto finally;
 catch:
 	perror("it"), assert(0);
@@ -306,13 +304,14 @@ static void boat_club(void) {
 		}
 	}
 	{
-		struct boat_table_entry e;
 		struct boat_table_iterator it;
+		int key;
+		struct boat_record *value;
 		printf("Final score:\n"
 			"id\tbest\tpoints\n");
 		it = boat_table_begin(&boats);
-		while(boat_table_next(&it, &e))
-			printf("%d\t%d\t%d\n", e.key, e.value.best_time, e.value.points);
+		while(boat_table_next(&it, &key, &value))
+			printf("%d\t%d\t%d\n", key, value->best_time, value->points);
 	}
 	{ goto finally; }
 catch:
@@ -661,14 +660,14 @@ finally:
 
 /* A histogram of lengths' defined as a map with the pointers to the keys
  recorded as a linked-list. */
-struct nato_list { const char *alpha; struct nato_list *next; };
-struct nato_value { size_t occurrences; struct nato_list *head; };
+struct nato_node { const char *alpha; struct nato_node *next; };
+struct nato_value { size_t occurrences; struct nato_node *head; };
 /** Symmetric bijection. @implements <nato>hash_fn, <nato>unhash_fn */
 static size_t nato_hash(const size_t n) { return n; }
 static size_t nato_unhash(const size_t h) { return h; }
 #define TABLE_NAME nato
-#define TABLE_KEY size_t
-#define TABLE_VALUE struct nato_value
+#define TABLE_KEY size_t /* Number of letters. */
+#define TABLE_VALUE struct nato_value /* Count and letters. */
 #define TABLE_INVERSE
 #include "../src/table.h" /* (Manual testing.) */
 /** Counts code-points except non-alnums of `s`, being careful.
@@ -684,30 +683,33 @@ static void nato(void) {
 		"Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliet", "Kilo", "Lima",
 		"Mike", "November", "Oscar", "Papa", "Québec", "Romeo", "Sierra",
 		"Tango", "Uniform", "Victor", "Whisky", "X-ray", "Yankee", "Zulu" };
-	struct nato_list list[sizeof alphabet / sizeof *alphabet];
+	/* Pre-allocate one node for each letter. */
+	struct nato_node list[sizeof alphabet / sizeof *alphabet];
 	struct nato_table nato = nato_table();
 	struct nato_table_iterator it;
-	struct nato_table_entry entry;
+	size_t length_of_word;
+	struct nato_value *value;
 	size_t i;
 	for(i = 0; i < sizeof alphabet / sizeof *alphabet; i++) {
-		size_t length = utf_alnum_count(alphabet[i]);
-		struct nato_value *value = 0;
-		struct nato_list *item = list + i;
-		switch(nato_table_assign(&nato, length, &value)) {
+		length_of_word = utf_alnum_count(alphabet[i]);
+		struct nato_node *const item = list + i;
+		switch(nato_table_assign(&nato, length_of_word, &value)) {
 		case TABLE_ERROR: goto catch;
 		case TABLE_ABSENT: value->occurrences = 1, value->head = 0; break;
 		case TABLE_PRESENT: value->occurrences++; break;
 		}
 		item->alpha = alphabet[i];
-		item->next = value->head, value->head = item; /* Linked-list append. */
+		item->next = value->head, value->head = item; /* Linked append. */
 	}
 	printf("NATO phonetic alphabet letter count histogram\n"
 		"length\tcount\twords\n");
-	for(it = nato_table_begin(&nato); nato_table_next(&it, &entry); ) {
-		struct nato_list *const head = entry.value.head, *w = head;
-		printf("%lu\t%lu\t{", (unsigned long)entry.key,
-			(unsigned long)entry.value.occurrences);
-		do printf("%s%s", head == w ? "" : ",", w->alpha); while(w = w->next);
+	it = nato_table_begin(&nato);
+	while(nato_table_next(&it, &length_of_word, &value)) {
+		struct nato_node *w = value->head;
+		printf("%lu\t%lu\t{", (unsigned long)length_of_word,
+			(unsigned long)value->occurrences);
+		do printf("%s%s", value->head == w ? "" : ",", w->alpha);
+		while(w = w->next);
 		printf("}\n");
 	}
 	{ /* Check. */

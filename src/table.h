@@ -607,40 +607,26 @@ static void N_(table_)(struct N_(table) *const table)
 static struct N_(table_iterator) N_(table_begin)(struct N_(table) *const
 	table) { struct N_(table_iterator) it; it._ = PN_(iterator)(table);
 	return it; }
-/** Advances `it`. The awkwardness of this function because <typedef:<PN>entry>
- is not necessarily nullifyable, so we are not guaranteed to have an
- out-of-band entry to indicate completion. (May be changed in the future.)
- @param[entry] If non-null, the entry is filled with the next element only if
- it has a next. @return Whether it had a next element. @allow */
+#ifdef TABLE_VALUE /* <!-- map */
+/** Advances `it`. @param[key, value] If non-null, the key or value is filled
+ with the next element on return true. `value` is only there if it is a map,
+ otherwise a set leaves it out. @return Whether it had a next element. @allow */
 static int N_(table_next)(struct N_(table_iterator) *const it,
-	PN_(entry) *entry) {
-	struct PN_(bucket) *b = PN_(next)(&it->_);
-	if(!b) return 0;
-	if(entry) *entry = PN_(to_entry)(b);
+	PN_(key) *key, PN_(value) **value) {
+	struct PN_(bucket) *bucket = PN_(next)(&it->_);
+	if(!bucket) return 0;
+	if(key) *key = PN_(bucket_key)(bucket);
+	if(value) *value = &bucket->value;
 	return 1;
 }
-/** Especially for tables that can have zero as a valid value, this is used to
- differentiate between zero and null.
- @return Whether the table specified to `it` in <fn:<N>table_begin> has a
- next element. @order Amortized on the capacity, \O(1). @allow */
-static int N_(table_has_next)(struct N_(table_iterator) *const it) {
-	assert(it);
-	return it->_.table && it->_.table->buckets && PN_(skip)(&it->_);
+#else /* map --><!-- set */
+static int N_(table_next)(struct N_(table_iterator) *const it, PN_(key) *key) {
+	struct PN_(bucket) *bucket = PN_(next)(&it->_);
+	if(!bucket) return 0;
+	if(key) *key = PN_(bucket_key)(bucket);
+	return 1;
 }
-#ifdef TABLE_VALUE /* <!-- value */
-/** Defined if `TABLE_VALUE`. Advances `it` only when <fn:<N>table_has_next>.
- @return The next key. @allow */
-static PN_(key) N_(table_next_key)(struct N_(table_iterator) *const it) {
-	struct PN_(bucket) *b = PN_(next)(&it->_);
-	return PN_(bucket_key)(b);
-}
-/** Defined if `TABLE_VALUE`. Advances `it` only when <fn:<N>table_has_next>.
- @return The next value. @allow */
-static PN_(value) N_(table_next_value)(struct N_(table_iterator) *const it) {
-	struct PN_(bucket) *b = PN_(next)(&it->_);
-	return b->value;
-}
-#endif /* value --> */
+#endif /* set --> */
 /** Removes the entry at `it`. Whereas <fn:<N>table_remove> invalidates the
  iterator, this corrects for a signal `it`.
  @return Success, or there was no entry at the iterator's position, (anymore.)
@@ -825,14 +811,15 @@ static void PN_(unused_base)(void) {
 	PN_(entry) e; PN_(key) k; PN_(value) v;
 	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
 	PN_(is_element)(0);
-	N_(table)(); N_(table_)(0); N_(table_begin)(0); N_(table_next)(0, 0);
+	N_(table)(); N_(table_)(0); N_(table_begin)(0);
 	N_(table_buffer)(0, 0); N_(table_clear)(0); N_(table_is)(0, k);
 	N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v); N_(table_try)(0, e);
 	N_(table_update)(0, e, 0); N_(table_policy)(0,e,0,0);
-	N_(table_remove)(0, k); N_(table_begin)(0); N_(table_next)(0, 0);
-	N_(table_has_next)(0); N_(table_iterator_remove)(0);
+	N_(table_remove)(0, k); N_(table_iterator_remove)(0);
 #ifdef TABLE_VALUE
-	N_(table_assign)(0, k, 0); N_(table_next_key)(0); N_(table_next_value)(0);
+	N_(table_next)(0, 0, 0); N_(table_assign)(0, k, 0);
+#else
+	N_(table_next)(0, 0);
 #endif
 	PN_(unused_base_coda)();
 }
