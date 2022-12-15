@@ -13,6 +13,8 @@
  It must be supplied <typedef:<PN>hash_fn> `<N>hash` and,
  <typedef:<PN>is_equal_fn> `<N>is_equal` or <typedef:<PN>unhash_fn> `<N>unhash`.
 
+ (Fixme: remove entry as public struct, this should be entirely private.)
+
  @param[TABLE_NAME, TABLE_KEY]
  `<N>` that satisfies `C` naming conventions when mangled and a valid
  <typedef:<PN>key> associated therewith; required. `<PN>` is private, whose
@@ -609,8 +611,9 @@ static struct N_(table_iterator) N_(table_begin)(struct N_(table) *const
 	return it; }
 #ifdef TABLE_VALUE /* <!-- map */
 /** Advances `it`. @param[key, value] If non-null, the key or value is filled
- with the next element on return true. `value` is only there if it is a map,
- otherwise a set leaves it out. @return Whether it had a next element. @allow */
+ with the next element on return true. `value` is a pointer to the actual value
+ in the map, only there if it is a map.
+ @return Whether it had a next element. @allow */
 static int N_(table_next)(struct N_(table_iterator) *const it,
 	PN_(key) *key, PN_(value) **value) {
 	struct PN_(bucket) *bucket = PN_(next)(&it->_);
