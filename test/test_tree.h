@@ -236,7 +236,7 @@ static void PB_(sort)(struct PB_(tree_test) *a, const size_t size) {
 	size_t i;
 	for(i = 1; i < size; i++) {
 		size_t j;
-		for(j = i; j && PB_(compare)(a[j - 1].key, a[i].key) > 0; j--);
+		for(j = i; j && B_(compare)(a[j - 1].key, a[i].key) > 0; j--);
 		if(j == i) continue;
 		temp = a[i];
 		memmove(a + j + 1, a + j, sizeof *a * (i - j));
@@ -360,7 +360,7 @@ static void PB_(test)(void) {
 		PB_(to_string)(PB_(to_const)(entry), &z);
 		printf("<%s>\n", z);*/
 		if(i) {
-			const int cmp = PB_(compare)(PB_(entry_to_key)(entry), k);
+			const int cmp = B_(compare)(PB_(entry_to_key)(entry), k);
 			assert(cmp > 0);
 		}
 		k = PB_(entry_to_key)(entry);
@@ -374,7 +374,7 @@ static void PB_(test)(void) {
 		PB_(to_string)(PB_(to_const)(entry), &z);
 		printf("<%s>\n", z);*/
 		if(i) {
-			const int cmp = PB_(compare)(k, PB_(entry_to_key)(entry));
+			const int cmp = B_(compare)(k, PB_(entry_to_key)(entry));
 			assert(cmp > 0);
 		}
 		k = PB_(entry_to_key)(entry);
@@ -454,7 +454,7 @@ static void PB_(test)(void) {
 		PB_(to_string)(PB_(to_const)(entry), &z);
 		printf("<%s>\n", z);*/
 		if(i) {
-			const int cmp = PB_(compare)(PB_(entry_to_key)(entry), k);
+			const int cmp = B_(compare)(PB_(entry_to_key)(entry), k);
 			assert(cmp > 0);
 		}
 		k = PB_(entry_to_key)(entry);

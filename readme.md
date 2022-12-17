@@ -24,7 +24,7 @@ A [&lt;B&gt;tree](#user-content-tag-a36433e3) is an ordered set or map contained
  * Parameter: TREE\_VALUE  
    Optional payload to go with the type, [&lt;PB&gt;value](#user-content-typedef-1740653a)\. The makes it a map of [&lt;B&gt;tree_entry](#user-content-tag-9e3caf18) instead of a set\.
  * Parameter: TREE\_COMPARE  
-   A function satisfying [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31)\. Defaults to ascending order\. Required if `TREE_KEY` is changed to an incomparable type\.
+   This will define [&lt;B&gt;compare](#user-content-fn-7286e7be), a [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31) that compares keys as integer\-types that results in ascending order, `a > b`\. If `TREE_COMPARE` is specified, the user most specify their own [&lt;B&gt;compare](#user-content-fn-7286e7be)\.
  * Parameter: TREE\_ORDER  
    Sets the branching factor, or order as [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3), to the range `[3, UINT_MAX+1]`\. Default 65 is tuned to an integer to pointer map, and should be okay for most variations\. 4 is isomorphic to left\-leaning red\-black tree, [Sedgewick, 2008, LLRB](https://scholar.google.ca/scholar?q=Sedgewick%2C+2008%2C+LLRB)\. The above illustration is 5\.
  * Parameter: TREE\_DEFAULT  

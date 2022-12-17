@@ -23,8 +23,9 @@
  of <tag:<B>tree_entry> instead of a set.
 
  @param[TREE_COMPARE]
- A function satisfying <typedef:<PB>compare_fn>. Defaults to ascending order.
- Required if `TREE_KEY` is changed to an incomparable type.
+ This will define <fn:<B>compare>, a <typedef:<PB>compare_fn> that compares
+ keys as integer-types that results in ascending order, `a > b`. If
+ `TREE_COMPARE` is specified, the user most specify their own <fn:<B>compare>.
 
  @param[TREE_ORDER]
  Sets the branching factor, or order as <Knuth, 1998 Art 3>, to the range
@@ -133,13 +134,10 @@ typedef int (*PB_(compare_fn))(PB_(key_c) a, PB_(key_c) b);
 #ifndef TREE_COMPARE /* <!-- !cmp */
 /** The default `TREE_COMPARE` on `a` and `b` is integer comparison that
  results in ascending order, `a > b`. @implements <typedef:<PB>compare_fn> */
-static int PB_(default_compare)(PB_(key_c) a, PB_(key_c) b)
+static int B_(compare)(PB_(key_c) a, PB_(key_c) b)
 	{ return a > b; }
 #define TREE_COMPARE &PB_(default_compare)
 #endif /* !cmp --> */
-/* Check that `TREE_COMPARE` is a function implementing
- <typedef:<PB>compare_fn>, if defined. */
-static const PB_(compare_fn) PB_(compare) = (TREE_COMPARE);
 
 /* These rules are more lazy than the original so as to not exhibit worst-case
  behaviour in small trees, as <Johnson, Shasha, 1993, Free-at-Empty>, (lookup
@@ -252,7 +250,7 @@ static int PB_(to_predecessor)(struct PB_(tree) tree,
 		a0 = 0;
 		while(a0 < a1) {
 			const unsigned m = (a0 + a1) / 2;
-			if(PB_(compare)(x, tree.node->key[m]) > 0) a0 = m + 1; else a1 = m;
+			if(B_(compare)(x, tree.node->key[m]) > 0) a0 = m + 1; else a1 = m;
 		}
 		if(a0)
 			prev.node = tree.node, prev.height = tree.height, prev.idx = a0 - 1;
@@ -284,7 +282,7 @@ static int PB_(to_successor)(struct PB_(tree) tree,
 		a0 = 0;
 		while(a0 < a1) {
 			const unsigned m = (a0 + a1) / 2;
-			if(PB_(compare)(x, tree.node->key[m]) > 0) a0 = m + 1; else a1 = m;
+			if(B_(compare)(x, tree.node->key[m]) > 0) a0 = m + 1; else a1 = m;
 		}
 		if(a0 < tree.node->size)
 			next.node = tree.node, next.height = tree.height, next.idx = a0;
@@ -369,10 +367,10 @@ static PB_(entry) PB_(previous)(struct PB_(iterator) *const it) {
 #define TREE_START(i) unsigned hi = i.node->size; i.idx = 0;
 #define TREE_FORNODE(i) do { \
 	const unsigned m = (i.idx + hi) / 2; \
-	if(PB_(compare)(key, i.node->key[m]) > 0) i.idx = m + 1; \
+	if(B_(compare)(key, i.node->key[m]) > 0) i.idx = m + 1; \
 	else hi = m; \
 } while(i.idx < hi);
-#define TREE_FLIPPED(i) PB_(compare)(i.node->key[i.idx], key) <= 0
+#define TREE_FLIPPED(i) B_(compare)(i.node->key[i.idx], key) <= 0
 /** Finds `key` in `lo` one node at a time. */
 static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 	TREE_START((*lo))
@@ -631,8 +629,8 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 			if(!scout.height) break;
 		}
 		assert(last), max = last->key[last->size - 1];
-		if(PB_(compare)(max, key) > 0) return errno = EDOM, TREE_ERROR;
-		if(PB_(compare)(key, max) <= 0) {
+		if(B_(compare)(max, key) > 0) return errno = EDOM, TREE_ERROR;
+		if(B_(compare)(key, max) <= 0) {
 #ifdef TREE_VALUE
 			if(value) {
 				struct PB_(ref) max_ref;

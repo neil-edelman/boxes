@@ -62,7 +62,7 @@
 	<dt>Parameter: TREE_VALUE</dt>
 	<dd>Optional payload to go with the type, <a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a>. The makes it a map of <a href = "#tag:&lt;B&gt;tree_entry">&lt;B&gt;tree_entry</a> instead of a set.</dd>
 	<dt>Parameter: TREE_COMPARE</dt>
-	<dd>A function satisfying <a href = "#typedef:&lt;PB&gt;compare_fn">&lt;PB&gt;compare_fn</a>. Defaults to ascending order. Required if <code>TREE_KEY</code> is changed to an incomparable type.</dd>
+	<dd>This will define <a href = "#fn:&lt;B&gt;compare">&lt;B&gt;compare</a>, a <a href = "#typedef:&lt;PB&gt;compare_fn">&lt;PB&gt;compare_fn</a> that compares keys as integer-types that results in ascending order, <code>a &gt; b</code>. If <code>TREE_COMPARE</code> is specified, the user most specify their own <a href = "#fn:&lt;B&gt;compare">&lt;B&gt;compare</a>.</dd>
 	<dt>Parameter: TREE_ORDER</dt>
 	<dd>Sets the branching factor, or order as <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3">Knuth, 1998 Art 3</a>, to the range <code>[3, UINT_MAX+1]</code>. Default 65 is tuned to an integer to pointer map, and should be okay for most variations. 4 is isomorphic to left-leaning red-black tree, <a href = "https://scholar.google.ca/scholar?q=Sedgewick%2C+2008%2C+LLRB">Sedgewick, 2008, LLRB</a>. The above illustration is 5.</dd>
 	<dt>Parameter: TREE_DEFAULT</dt>

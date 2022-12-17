@@ -143,7 +143,7 @@ struct entry_tree_entry;
 static void entry_to_string(struct entry_tree_entry, char (*)[12]);
 #define TREE_NAME entry
 #define TREE_KEY union date32
-#define TREE_COMPARE &entry_compare
+#define TREE_COMPARE
 #define TREE_VALUE int
 #define TREE_TEST
 #define TREE_TO_STRING
@@ -578,7 +578,7 @@ static void loop_to_string(const unsigned int *const x, char (*const z)[12])
 	{ int_to_string(x, z); }
 #define TREE_NAME loop
 #define TREE_TEST
-#define TREE_COMPARE &loop_compare
+#define TREE_COMPARE
 #define TREE_ORDER 5
 #define TREE_DEFAULT 0
 #define TREE_TO_STRING
