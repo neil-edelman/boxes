@@ -363,16 +363,26 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 #ifdef ARRAY_TRAIT /* <-- trait: Will be different on different includes. */
 #define BOX_TRAIT_NAME ARRAY_TRAIT
-#endif /* trait --> */
+#define PAT_(n) PA_(ARRAY_CAT(ARRAY_TRAIT, n))
+#define AT_(n) A_(ARRAY_CAT(ARRAY_TRAIT, n))
+#else /* trait --><!-- !trait */
+#define PAT_(n) PA_(n)
+#define AT_(n) A_(n)
+#endif /* !trait --> */
 
 
 #ifdef ARRAY_TO_STRING /* <!-- to string trait */
+/** Thunk `e` -> `a`. */
+static void PAT_(to_string)(const PA_(type) *e, char (*const a)[12])
+	{ AT_(to_string)((const void *)e, a); }
 #include "to_string.h" /** \include */
 #undef ARRAY_TO_STRING
 #ifndef ARRAY_TRAIT
 #define ARRAY_HAS_TO_STRING
 #endif
 #endif /* to string trait --> */
+#undef PAT_
+#undef AT_
 
 
 #if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT) /* <!-- test base */
