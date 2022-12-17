@@ -73,23 +73,14 @@ static unsigned to_string_buffer_i;
 
 #ifndef BOX_TRAIT_NAME /* <!-- !trait */
 #define STR_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), n)
-#define STREXTERN_(n) TO_STRING_CAT(BOX_MINOR_NAME, n)
+#define STRTHUNK_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MAJOR_NAME, \
+	BOX_MINOR_NAME), n)
 #else /* !trait --><!-- trait */
 #define STR_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), \
 	TO_STRING_CAT(BOX_TRAIT_NAME, n))
-#define STREXTERN_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, \
-	BOX_TRAIT_NAME), n)
+#define STRTHUNK_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MAJOR_NAME, \
+	BOX_MINOR_NAME), TO_STRING_CAT(BOX_TRAIT_NAME, n))
 #endif /* trait --> */
-
-/* Provides an extra level of indirection for boxes if they need it. */
-#ifndef TO_STRING_THUNK_
-#define TO_STRING_THUNK_(n) n
-#endif
-
-/* Hopefully gets rid of any nestled-qualifiers, but only when appropriate. */
-#ifndef TO_STRING_CAST
-#define TO_STRING_CAST (void *)
-#endif
 
 typedef BOX_TYPE PSTR_(box);
 typedef BOX_CONTENT PSTR_(element);
@@ -126,9 +117,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	}
 	*b++ = left;
 	while(BOX_(is_element)(x = BOX_(next)(&it))) {
-		/* One must have this function declared! */
-		TO_STRING_THUNK_(STREXTERN_(to_string))(TO_STRING_CAST
-			x, (char (*)[12])b);
+		STRTHUNK_(to_string)(x, (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
@@ -158,9 +147,7 @@ static void PSTR_(unused_to_string)(void)
 static void PSTR_(unused_to_string_coda)(void) { PSTR_(unused_to_string)(); }
 
 #undef STR_
-#undef STREXTERN_
-#undef TO_STRING_CAST
-#undef TO_STRING_THUNK_
+#undef STRTHUNK_
 #ifdef TO_STRING_EXTERN
 #undef TO_STRING_EXTERN
 #endif
