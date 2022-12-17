@@ -357,16 +357,26 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 
 #ifdef HEAP_TRAIT /* <-- trait: Will be different on different includes. */
 #define BOX_TRAIT_NAME HEAP_TRAIT
-#endif /* trait --> */
+#define PHT_(n) PH_(ARRAY_CAT(HEAP_TRAIT, n))
+#define HT_(n) H_(ARRAY_CAT(HEAP_TRAIT, n))
+#else /* trait --><!-- !trait */
+#define PHT_(n) PH_(n)
+#define HT_(n) H_(n)
+#endif /* !trait --> */
 
 
 #ifdef HEAP_TO_STRING /* <!-- to string trait */
+/** Thunk `n` -> `a`. */
+static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12])
+	{ HT_(to_string)((const void *)n, a); }
 #include "to_string.h" /** \include */
 #undef HEAP_TO_STRING
 #ifndef HEAP_TRAIT
 #define HEAP_HAS_TO_STRING
 #endif
 #endif /* to string trait --> */
+#undef PHT_
+#undef HT_
 
 
 #if defined(HEAP_TEST) && !defined(HEAP_TRAIT) /* <!-- test base */
