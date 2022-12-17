@@ -500,26 +500,38 @@ static struct PN_(bucket) *PN_(evict)(struct N_(table) *const table,
  @return A <tag:table_result>. @throws[malloc]
  @order Amortized \O(max bucket length); the key to another bucket may have to
  be moved to the top; the table might be full and have to be resized. */
-static enum table_result PN_(put)(struct N_(table) *const table,
-	PN_(entry) entry, PN_(entry) *eject, const PN_(policy_fn) policy) {
+static enum table_result PN_(put_key)(struct N_(table) *const table,
+	const PN_(key) key, PN_(key) *eject, const PN_(policy_fn) policy) {
 	struct PN_(bucket) *bucket;
-	const PN_(key) key = PN_(entry_key)(entry);
-	/* This function must be defined by the user. */
 	const PN_(uint) hash = N_(hash)(key);
 	enum table_result result;
 	assert(table);
 	if(table->buckets && (bucket = PN_(query)(table, key, hash))) {
 		if(!policy || !policy(PN_(bucket_key)(bucket), key))
 			return TABLE_PRESENT;
-		if(eject) *eject = PN_(to_entry)(bucket);
+		if(eject) *eject = PN_(bucket_key)(bucket);
 		result = TABLE_PRESENT;
 	} else {
 		if(!(bucket = PN_(evict)(table, hash))) return TABLE_ERROR;
 		result = TABLE_ABSENT;
 	}
-	PN_(replace_entry)(bucket, entry, hash);
+	PN_(replace_key)(bucket, key, hash);
 	return result;
 }
+#ifdef TABLE_VALUE /* <!-- map */
+static enum table_result PN_(put_entry)(struct N_(table) *const table,
+	PN_(entry) entry) {
+	struct PN_(bucket) *bucket;
+	const PN_(key) key = PN_(entry_key)(entry);
+	/* This function must be defined by the user. */
+	const PN_(uint) hash = N_(hash)(key);
+	assert(table);
+	if(table->buckets && PN_(query)(table, key, hash)) return TABLE_PRESENT;
+	if(!(bucket = PN_(evict)(table, hash))) return TABLE_ERROR;
+	PN_(replace_entry)(bucket, entry, hash);
+	return TABLE_ABSENT;
+}
+#endif /* map --> */
 
 /** Is `x` not null? @implements `is_content` */
 static int PN_(is_element)(const struct PN_(bucket) *const x) { return !!x; }
@@ -668,18 +680,33 @@ static int N_(table_is)(struct N_(table) *const table, const PN_(key) key) {
 		? !!PN_(query)(table, key, N_(hash)(key)) : 0;
 }
 
-/** @param[result] If null, behaves like <fn:<N>table_is>, otherwise, a
- <typedef:<PN>entry> which gets filled on true.
+#ifdef TABLE_VALUE /* <!-- map */
+/** If the entire entry space is filled, use this. Otherwise, a more convenient
+ function is <fn:<N>table_get_or>.
+ @param[result] If null, behaves like <fn:<N>table_is>, otherwise, a
+ <typedef:<PN>key> which gets filled on true.
+ @param[value] Only on a map with `TABLE_VALUE`. If not-null, stores the value.
  @return Whether `key` is in `table` (which can be null.) @allow */
 static int N_(table_query)(struct N_(table) *const table, const PN_(key) key,
-	PN_(entry) *result) {
+	PN_(key) *result, PN_(value) *value) {
 	struct PN_(bucket) *bucket;
-	/* This function must be defined by the user. */
 	if(!table || !table->buckets
 		|| !(bucket = PN_(query)(table, key, N_(hash)(key)))) return 0;
-	if(result) *result = PN_(to_entry)(bucket);
+	if(result) *result = PN_(bucket_key)(bucket);
+	if(value) *value = bucket->value;
 	return 1;
 }
+#else
+/** `key` from `table` is stored in `result`. */
+static int N_(table_query)(struct N_(table) *const table, const PN_(key) key,
+	PN_(key) *result) {
+	struct PN_(bucket) *bucket;
+	if(!table || !table->buckets
+		|| !(bucket = PN_(query)(table, key, N_(hash)(key)))) return 0;
+	if(result) *result = PN_(bucket_key)(bucket);
+	return 1;
+}
+#endif
 
 /** @return The value associated with `key` in `table`, (which can be null.) If
  no such value exists, `default_value` is returned.
@@ -693,54 +720,27 @@ static PN_(value) N_(table_get_or)(struct N_(table) *const table,
 		? PN_(bucket_value)(bucket) : default_value;
 }
 
-/** Puts `entry` in `table` only if absent.
+#ifndef TABLE_VALUE /* <!-- set */
+
+/** Only if not `TABLE_VALUE`; see <fn:<N>table_assign> for a map. Puts `key`
+ in set `table` only if absent.
  @return One of: `TABLE_ERROR`, tried putting the entry in the table but
  failed, the table is not modified; `TABLE_PRESENT`, does nothing if there is
  another entry with the same key; `TABLE_ABSENT`, put an entry in the table.
  @throws[realloc, ERANGE] On `TABLE_ERROR`.
  @order Average amortised \O(1); worst \O(n). @allow */
 static enum table_result N_(table_try)(struct N_(table) *const table,
-	PN_(entry) entry) { return PN_(put)(table, entry, 0, 0); }
+	PN_(key) key) { return PN_(put_key)(table, key, 0, 0); }
 
-/** Callback in <fn:<N>table_update>.
- @return `original` and `replace` ignored, true.
- @implements <typedef:<PN>policy_fn> */
-static int PN_(always_replace)(const PN_(key) original,
-	const PN_(key) replace) { return (void)original, (void)replace, 1; }
+#else /* set --><!-- map */
 
-/** Puts `entry` in `table`.
- @return One of: `TABLE_ERROR`, the table is not modified; `TABLE_ABSENT`, the
- `entry` is put if the table; `TABLE_PRESENT` if non-null, `eject` will be
- filled with the previous entry.
- @throws[realloc, ERANGE] On `TABLE_ERROR`.
- @order Average amortised \O(1); worst \O(n). @allow */
-static enum table_result N_(table_update)(struct N_(table) *const table,
-	PN_(entry) entry, PN_(entry) *eject) {
-	return PN_(put)(table, entry, eject, &PN_(always_replace));
-}
-
-/** Puts `entry` in `table` only if absent or if calling `policy` returns true.
- @return One of: `TABLE_ERROR`, the table is not modified; `TABLE_ABSENT`, the
- `entry` is new; `TABLE_PRESENT`, the entry has the same key as some other
- entry. If `policy` returns true, `eject` will be filled;
- @throws[realloc, ERANGE] On `TABLE_ERROR`.
- @order Average amortised \O(1); worst \O(n). @allow */
-static enum table_result N_(table_policy)(struct N_(table) *const table,
-	PN_(entry) entry, PN_(entry) *eject, const PN_(policy_fn) policy)
-	{ return PN_(put)(table, entry, eject, policy); }
-
-#ifdef TABLE_VALUE /* <!-- value */
-
-/** On `TABLE_VALUE`, try to put `key` into `table`, and update `value` to be
- a pointer to the current value.
- @return `TABLE_ERROR` does not set `value`; `TABLE_ABSENT`, the `value` will
- be uninitialized; `TABLE_PRESENT`, gets the current `value`. @throws[malloc] */
+/** Puts `key` in the map `table` and update `content`. @throws[malloc] */
 static enum table_result PN_(assign)(struct N_(table) *const table,
-	PN_(key) key, PN_(value) **const value) {
+	PN_(key) key, PN_(value) **const content) {
 	struct PN_(bucket) *bucket;
 	const PN_(uint) hash = N_(hash)(key);
 	enum table_result result;
-	assert(table && value);
+	assert(table && content);
 	if(table->buckets && (bucket = PN_(query)(table, key, hash))) {
 		result = TABLE_PRESENT;
 	} else {
@@ -748,21 +748,47 @@ static enum table_result PN_(assign)(struct N_(table) *const table,
 		PN_(replace_key)(bucket, key, hash);
 		result = TABLE_ABSENT;
 	}
-	*value = &bucket->value;
+	*content = &bucket->value;
 	return result;
 }
 
-/** If `TABLE_VALUE` is defined. Try (see <fn:<N>table_try>) to put `key` into
- `table`, and store the associated value in a pointer `value`.
- @return `TABLE_ERROR` does not set `value`; `TABLE_ABSENT`, the `value` will
- point to uninitialized memory; `TABLE_PRESENT`, gets the current `value`, (but
- doesn't use the `key`.)
+/** Only if `TABLE_VALUE`; see <fn:<N>table_try> for a set. Puts `key` in the
+ map `table` and store the associated value in `content`.
+ @return `TABLE_ERROR` does not set `content`; `TABLE_ABSENT`, the `content`
+ will be a pointer to uninitialized memory; `TABLE_PRESENT`, gets the current
+ `content`, (does not alter the keys, if they are distinguishable.)
  @throws[malloc, ERANGE] On `TABLE_ERROR`. @allow */
 static enum table_result N_(table_assign)(struct N_(table) *const table,
-	PN_(key) key, PN_(value) **const value)
-	{ return PN_(assign)(table, key, value); }
+	PN_(key) key, PN_(value) **const content)
+	{ return PN_(assign)(table, key, content); }
 
 #endif /* value --> */
+
+/** Callback in <fn:<N>table_update>.
+ @return `original` and `replace` ignored, true.
+ @implements <typedef:<PN>policy_fn> */
+static int PN_(always_replace)(const PN_(key) original,
+	const PN_(key) replace) { return (void)original, (void)replace, 1; }
+
+/** Puts `key` in `table`, replacing an equal-valued key.
+ @return One of: `TABLE_ERROR`, the table is not modified; `TABLE_ABSENT`, the
+ `key` is new; `TABLE_PRESENT`, the `key` displaces another, and if non-null,
+ `eject` will be filled with the previous entry.
+ @throws[realloc, ERANGE] On `TABLE_ERROR`.
+ @order Average amortised \O(1); worst \O(n). @allow */
+static enum table_result N_(table_update)(struct N_(table) *const table,
+	PN_(key) key, PN_(key) *eject)
+	{ return PN_(put_key)(table, key, eject, &PN_(always_replace)); }
+
+/** Puts `key` in `table` only if absent or if calling `policy` returns true.
+ @return One of: `TABLE_ERROR`, the table is not modified; `TABLE_ABSENT`, the
+ `key` is new; `TABLE_PRESENT`, `key` collides, if `policy` returns true,
+ `eject`, if non-null, will be filled;
+ @throws[realloc, ERANGE] On `TABLE_ERROR`.
+ @order Average amortised \O(1); worst \O(n). @allow */
+static enum table_result N_(table_policy)(struct N_(table) *const table,
+	PN_(key) key, PN_(key) *eject, const PN_(policy_fn) policy)
+	{ return PN_(put_key)(table, key, eject, policy); }
 
 /** Removes `key` from `table` (which could be null.)
  @return Whether that `key` was in `table`. @order Average \O(1), (hash
@@ -818,13 +844,14 @@ static void PN_(unused_base)(void) {
 	PN_(is_element)(0);
 	N_(table)(); N_(table_)(0); N_(table_begin)(0);
 	N_(table_buffer)(0, 0); N_(table_clear)(0); N_(table_is)(0, k);
-	N_(table_query)(0, k, 0); N_(table_get_or)(0, k, v); N_(table_try)(0, e);
-	N_(table_update)(0, e, 0); N_(table_policy)(0,e,0,0);
+	N_(table_get_or)(0, k, v);
+	N_(table_update)(0, k, 0); N_(table_policy)(0, k, 0, 0);
 	N_(table_remove)(0, k); N_(table_iterator_remove)(0);
 #ifdef TABLE_VALUE
-	N_(table_next)(0, 0, 0); N_(table_assign)(0, k, 0);
+	N_(table_query)(0, k, 0, 0); N_(table_next)(0, 0, 0);
+	N_(table_assign)(0, k, 0);
 #else
-	N_(table_next)(0, 0);
+	N_(table_query)(0, k, 0); N_(table_next)(0, 0); N_(table_try)(0, e);
 #endif
 	PN_(unused_base_coda)();
 }

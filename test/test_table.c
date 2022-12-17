@@ -692,8 +692,8 @@ static void nato(void) {
 	struct nato_value *value;
 	size_t i;
 	for(i = 0; i < sizeof alphabet / sizeof *alphabet; i++) {
-		length_of_word = utf_alnum_count(alphabet[i]);
 		struct nato_node *const item = list + i;
+		length_of_word = utf_alnum_count(alphabet[i]);
 		switch(nato_table_assign(&nato, length_of_word, &value)) {
 		case TABLE_ERROR: goto catch;
 		case TABLE_ABSENT: value->occurrences = 1, value->head = 0; break;
@@ -714,22 +714,31 @@ static void nato(void) {
 		printf("}\n");
 	}
 	{ /* Check. */
-		struct nato_table_entry e;
+		size_t count;
 		int success;
-		success = nato_table_query(&nato, 0, &e);
+		const struct nato_value zero = { 0, 0 };
+		struct nato_value v;
+		success = nato_table_query(&nato, 0, &count, &v);
 		assert(!success);
-		success = nato_table_query(&nato, 3, &e);
+		success = nato_table_query(&nato, 3, &count, &v);
 		assert(!success);
-		success = nato_table_query(&nato, 4, &e);
-		assert(success && e.value.occurrences == 8);
-		success = nato_table_query(&nato, 5, &e);
-		assert(success && e.value.occurrences == 8);
-		success = nato_table_query(&nato, 6, &e);
-		assert(success && e.value.occurrences == 6);
-		success = nato_table_query(&nato, 7, &e);
-		assert(success && e.value.occurrences == 3);
-		success = nato_table_query(&nato, 8, &e);
-		assert(success && e.value.occurrences == 1);
+		success = nato_table_query(&nato, 4, &count, &v);
+		assert(success && count == 4 && v.occurrences == 8);
+		success = nato_table_query(&nato, 5, &count, &v);
+		assert(success && count == 5 && v.occurrences == 8);
+		success = nato_table_query(&nato, 6, &count, &v);
+		assert(success && count == 6 && v.occurrences == 6);
+		success = nato_table_query(&nato, 7, &count, &v);
+		assert(success && count == 7 && v.occurrences == 3);
+		success = nato_table_query(&nato, 8, &count, &v);
+		assert(success && count == 8 && v.occurrences == 1);
+		v.occurrences =  0;
+		v = nato_table_get_or(&nato, 0, zero), assert(v.occurrences == 0);
+		v = nato_table_get_or(&nato, 4, zero), assert(v.occurrences == 8);
+		v = nato_table_get_or(&nato, 5, zero), assert(v.occurrences == 8);
+		v = nato_table_get_or(&nato, 6, zero), assert(v.occurrences == 6);
+		v = nato_table_get_or(&nato, 7, zero), assert(v.occurrences == 3);
+		v = nato_table_get_or(&nato, 8, zero), assert(v.occurrences == 1);
 	}
 	goto finally;
 catch:
@@ -746,12 +755,13 @@ static void stars(void) {
 	const size_t s_array[] = { 0, 1, 8, 9, 11, 16, 17, 20, 22, 25, 49 };
 	size_t i;
 	for(i = 0; i < sizeof s_array / sizeof *s_array; i++) {
-		struct star_table_entry e;
 		size_t s = s_array[i];
-		e.key = star_names[s], e.value = star_distances[s];
-		printf("%lu: %s -> %f\n", (unsigned long)s, e.key, e.value);
-		if(star_table_try(&stars, e) != TABLE_ABSENT)
-			goto catch;
+		char *key = star_names[s];
+		double distance = star_distances[s], *content;
+		printf("%lu: %s -> %f\n", (unsigned long)s, key, distance);
+		if(star_table_assign(&stars, key, &content) != TABLE_ABSENT)
+			goto catch; /* Unique names. */
+		*content = distance;
 	}
 	printf("%s.\n", star_table_to_string(&stars));
 	table_star_graph(&stars, "doc/table-precursor/star-raw.gv");

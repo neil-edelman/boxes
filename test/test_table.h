@@ -247,12 +247,11 @@ static void PN_(histogram)(const struct N_(table) *const table,
 }
 
 /** @return Equality of entries `a` and `b`. */
-static int PN_(eq_en)(PN_(entry) a, PN_(entry) b) {
-	PN_(key_c) ka = PN_(entry_key)(a), kb = PN_(entry_key)(b);
+static int PN_(eq_key)(PN_(key_c) a, PN_(key_c) b) {
 #ifdef TABLE_INVERSE /* Compare in <typedef:<PN>uint> space. */
-	return N_(hash)(ka) == N_(hash)(kb);
+	return N_(hash)(a) == N_(hash)(b);
 #else
-	return N_(is_equal)(ka, kb);
+	return N_(is_equal)(a, b);
 #endif
 }
 
@@ -282,9 +281,6 @@ static void PN_(test_basic)(void *const parent) {
 	struct {
 		struct sample {
 			PN_(entry) entry;
-/*#ifdef TABLE_VALUE
-			PN_(value) temp_value;
-#endif*/
 			int is_in;
 		} sample[1000];
 		size_t count;
@@ -313,8 +309,8 @@ static void PN_(test_basic)(void *const parent) {
 #endif
 		/* Is supposed to be in set. */
 		s->is_in = 0;
-		for(j = 0; j < i && !PN_(eq_en)(s->entry, trials.sample[j].entry);
-			j++);
+		for(j = 0; j < i && !PN_(eq_key)(PN_(entry_key)(s->entry),
+			PN_(entry_key)(trials.sample[j].entry)); j++);
 		if(j == i) s->is_in = 1;
 	}
 	/* Test idle. */
@@ -344,11 +340,11 @@ static void PN_(test_basic)(void *const parent) {
 		struct { PN_(uint) before, after; } size;
 		enum table_result result;
 		const struct sample *s = trials.sample + i;
-		PN_(entry) eject, zero, entry;
+		PN_(key) key, eject, zero;
 		memset(&eject, 0, sizeof eject);
 		memset(&zero, 0, sizeof zero);
 		size.before = table.size;
-		result = N_(table_policy)(&table, s->entry, &eject, 0);
+		result = N_(table_policy)(&table, PN_(entry_key)(s->entry), &eject, 0);
 		size.after = table.size;
 		if(s->is_in) {
 			assert(!memcmp(&eject, &zero, sizeof zero)
@@ -356,8 +352,12 @@ static void PN_(test_basic)(void *const parent) {
 		} else {
 			assert(result == TABLE_PRESENT && size.before == size.after);
 		}
-		success = N_(table_query)(&table, PN_(entry_key)(s->entry), &entry);
-		assert(success && PN_(eq_en)(s->entry, entry));
+#ifdef TABLE_VALUE
+		success = N_(table_query)(&table, PN_(entry_key)(s->entry), &key, 0);
+#else
+		success = N_(table_query)(&table, PN_(entry_key)(s->entry), &key);
+#endif
+		assert(success && PN_(eq_key)(PN_(entry_key)(s->entry), key));
 		if(table.size < max_graph && !(i & (i - 1)) || i + 1 == trial_size) {
 			char fn[64];
 #ifdef TABLE_VALUE
@@ -384,14 +384,18 @@ static void PN_(test_basic)(void *const parent) {
 		for(i = 0; i < trial_size; i++) {
 		const struct sample *s = trials.sample + i;
 		const PN_(key) key = PN_(entry_key)(s->entry);
-		PN_(entry) result;
+		PN_(key) result;
 		PN_(value) value;
 		const PN_(value) *sample_value;
 		int /*cmp,*/ is;
 		is = N_(table_is)(&table, key);
 		assert(is);
+#ifdef TABLE_VALUE
+		is = N_(table_query)(&table, key, &result, &value);
+#else
 		is = N_(table_query)(&table, key, &result);
-		assert(is && PN_(eq_en)(s->entry, result));
+#endif
+		assert(is && PN_(eq_key)(PN_(entry_key)(s->entry), result));
 		value = N_(table_get_or)(&table, key, def);
 #ifdef TABLE_VALUE
 		sample_value = &s->entry.value;
@@ -445,7 +449,7 @@ static void PN_(test_basic)(void *const parent) {
 	for(i = 0; i < trial_size; i++) { /* Make sure to test it again. */
 		const struct sample *s = trials.sample + i;
 		enum table_result result;
-		result = N_(table_policy)(&table, s->entry, 0, 0);
+		result = N_(table_policy)(&table, PN_(entry_key)(s->entry), 0, 0);
 		assert(result == TABLE_PRESENT || result == TABLE_ABSENT);
 	}
 	N_(table_)(&table);
