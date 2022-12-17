@@ -13,8 +13,6 @@
  It must be supplied <typedef:<PN>hash_fn> `<N>hash` and,
  <typedef:<PN>is_equal_fn> `<N>is_equal` or <typedef:<PN>unhash_fn> `<N>unhash`.
 
- (Fixme: remove entry as public struct, this should be entirely private.)
-
  @param[TABLE_NAME, TABLE_KEY]
  `<N>` that satisfies `C` naming conventions when mangled and a valid
  <typedef:<PN>key> associated therewith; required. `<PN>` is private, whose
@@ -44,6 +42,9 @@
  `TABLE_EXPECT_TRAIT` and then subsequently including the name in
  `TABLE_TRAIT`.
 
+ @fixme Remove entry as public struct, this should be entirely private.
+ @fixme Why not have two `to_string` arguments on map? It's C, after all. This
+ would be useful in some practical cases.
  @std C89 */
 
 #if !defined(TABLE_NAME) || !defined(TABLE_KEY)
@@ -623,6 +624,7 @@ static int N_(table_next)(struct N_(table_iterator) *const it,
 	return 1;
 }
 #else /* map --><!-- set */
+/** Advances `it`, sets `key` on true. */
 static int N_(table_next)(struct N_(table_iterator) *const it, PN_(key) *key) {
 	struct PN_(bucket) *bucket = PN_(next)(&it->_);
 	if(!bucket) return 0;
@@ -833,7 +835,13 @@ static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 
 #ifdef TABLE_TRAIT /* <-- trait: Will be different on different includes. */
 #define BOX_TRAIT_NAME TABLE_TRAIT
-#endif /* trait --> */
+#define PNT_(n) PN_(ARRAY_CAT(TABLE_TRAIT, n))
+#define NT_(n) N_(ARRAY_CAT(TABLE_TRAIT, n))
+#else /* trait --><!-- !trait */
+#define PNT_(n) PN_(n)
+#define NT_(n) N_(n)
+#endif /* !trait --> */
+
 /* #ifdef TABLE_TRAIT
 #define N_D_(n, m) TABLE_CAT(N_(n), TABLE_CAT(TABLE_TRAIT, m))
 #else
@@ -843,14 +851,14 @@ static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 
 
 #ifdef TABLE_TO_STRING /* <!-- to string trait */
-/** Private `bucket` would be a confusing thing with which to call to string to
- convert `z`. Insert an extra level of indirection to call this with the key. */
-static void N_(to_string_thunk)(const struct PN_(bucket) *const bucket,
-	char (*const z)[12]) {
-	/* This function must be defined by the user. */
-	N_(to_string)(PN_(bucket_key)(bucket), z);
+static void PNT_(to_string)(const struct PN_(bucket) *const b,
+	char (*const a)[12]) {
+#ifdef TABLE_VALUE
+	NT_(to_string)(PN_(bucket_key)(b), PN_(bucket_value)(b), a);
+#else
+	NT_(to_string)(PN_(bucket_key)(b), a);
+#endif
 }
-#define TO_STRING_THUNK_(n) TABLE_CAT(n, thunk)
 #define TO_STRING_LEFT '{'
 #define TO_STRING_RIGHT '}'
 #include "to_string.h" /** \include */
@@ -859,6 +867,8 @@ static void N_(to_string_thunk)(const struct PN_(bucket) *const bucket,
 #define TABLE_HAS_TO_STRING
 #endif
 #endif /* to string trait --> */
+#undef PNT_
+#undef NT_
 
 
 #if defined(TABLE_TEST) && !defined(TABLE_TRAIT) /* <!-- test base */

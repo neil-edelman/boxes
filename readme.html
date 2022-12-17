@@ -73,6 +73,8 @@
 	<dd>Named traits are obtained by including <code>table.h</code> multiple times with <code>TABLE_EXPECT_TRAIT</code> and then subsequently including the name in <code>TABLE_TRAIT</code>.</dd>
 	<dt>Standard:</dt>
 	<dd>C89</dd>
+	<dt>Caveat:</dt>
+	<dd>Remove entry as public struct, this should be entirely private. Why not have two <code>to_string</code> arguments on map? It's C, after all. This would be useful in some practical cases.</dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
@@ -249,13 +251,7 @@
 
 <tr><td align = right>static struct &lt;N&gt;table_iterator</td><td><a href = "#fn:<N>table_begin">&lt;N&gt;table_begin</a></td><td>table</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<N>table_next">&lt;N&gt;table_next</a></td><td>it, entry</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#fn:<N>table_has_next">&lt;N&gt;table_has_next</a></td><td>it</td></tr>
-
-<tr><td align = right>static &lt;PN&gt;key</td><td><a href = "#fn:<N>table_next_key">&lt;N&gt;table_next_key</a></td><td>it</td></tr>
-
-<tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#fn:<N>table_next_value">&lt;N&gt;table_next_value</a></td><td>it</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<N>table_next">&lt;N&gt;table_next</a></td><td>it, key, value</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<N>table_iterator_remove">&lt;N&gt;table_iterator_remove</a></td><td>it</td></tr>
 
@@ -344,62 +340,17 @@
 
 <h3><a id = "fn:<N>table_next" name = "fn:<N>table_next">&lt;N&gt;table_next</a></h3>
 
-<p><code>static int <strong>&lt;N&gt;table_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, &lt;PN&gt;entry *<em>entry</em>)</code></p>
+<p><code>static int <strong>&lt;N&gt;table_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, &lt;PN&gt;key *<em>key</em>, &lt;PN&gt;value **<em>value</em>)</code></p>
 
-<p>Advances <code>it</code>. The awkwardness of this function because <a href = "#typedef:&lt;PN&gt;entry">&lt;PN&gt;entry</a> is not necessarily nullifyable, so we are not guaranteed to have an out-of-band entry to indicate completion. (May be changed in the future.)</p>
+<p>Advances <code>it</code>.</p>
 
 <dl>
-	<dt>Parameter: <em>entry</em></dt>
-	<dd>If non-null, the entry is filled with the next element only if it has a next.</dd>
+	<dt>Parameter: <em>key</em></dt>
+	<dd>If non-null, the key or value is filled with the next element on return true. <code>value</code> is a pointer to the actual value in the map, only there if it is a map.</dd>
+	<dt>Parameter: <em>value</em></dt>
+	<dd>If non-null, the key or value is filled with the next element on return true. <code>value</code> is a pointer to the actual value in the map, only there if it is a map.</dd>
 	<dt>Return:</dt>
 	<dd>Whether it had a next element.</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<N>table_has_next" name = "fn:<N>table_has_next">&lt;N&gt;table_has_next</a></h3>
-
-<p><code>static int <strong>&lt;N&gt;table_has_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
-
-<p>Especially for tables that can have zero as a valid value, this is used to differentiate between zero and null.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>Whether the table specified to <code>it</code> in <a href = "#fn:&lt;N&gt;table_begin">&lt;N&gt;table_begin</a> has a next element.</dd>
-	<dt>Order:</dt>
-	<dd>Amortized on the capacity, &#927;(1).</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<N>table_next_key" name = "fn:<N>table_next_key">&lt;N&gt;table_next_key</a></h3>
-
-<p><code>static &lt;PN&gt;key <strong>&lt;N&gt;table_next_key</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
-
-<p>Defined if <code>TABLE_VALUE</code>. Advances <code>it</code> only when <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a>.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>The next key.</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<N>table_next_value" name = "fn:<N>table_next_value">&lt;N&gt;table_next_value</a></h3>
-
-<p><code>static &lt;PN&gt;value <strong>&lt;N&gt;table_next_value</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code></p>
-
-<p>Defined if <code>TABLE_VALUE</code>. Advances <code>it</code> only when <a href = "#fn:&lt;N&gt;table_has_next">&lt;N&gt;table_has_next</a>.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd>The next value.</dd>
 </dl>
 
 </div>

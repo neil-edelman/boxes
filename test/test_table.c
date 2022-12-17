@@ -369,8 +369,8 @@ static unsigned char star_hash(const char *const s)
 static int star_is_equal(const char *const a, const char *const b) {
 	return string_is_equal(a, b);
 }
-static void star_to_string(const char *const s, char (*const a)[12])
-	{ string_to_string(s, a); }
+static void star_to_string(const char *const s, const double d,
+	char (*const a)[12]) { string_to_string(s, a); (void)d; }
 #define TABLE_NAME star
 #define TABLE_KEY char *
 #define TABLE_VALUE double
@@ -447,8 +447,9 @@ finally:
 	return success;
 }
 static size_t dict_hash(const char *const d) { return djb2(d); }
-static void dict_to_string(const char *const d, char (*const a)[12])
-	{ string_to_string(d, a); }
+static void dict_to_string(const char *const key,
+	const struct dict *const defn, char (*const a)[12])
+	{ string_to_string(key, a); (void)defn; }
 static int dict_is_equal(const char *const a, const char *const b)
 	{ return !strcmp(a, b); }
 /* A string set with a pointer to dict map. It duplicates data from `key` and

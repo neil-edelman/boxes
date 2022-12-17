@@ -35,6 +35,8 @@ Stand\-alone header [src/table\.h](src/table.h); examples [test/test\_table\.c](
    Named traits are obtained by including `table.h` multiple times with `TABLE_EXPECT_TRAIT` and then subsequently including the name in `TABLE_TRAIT`\.
  * Standard:  
    C89
+ * Caveat:  
+   Remove entry as public struct, this should be entirely private\. Why not have two `to_string` arguments on map? It's C, after all\. This would be useful in some practical cases\.
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -179,13 +181,7 @@ Adding, deleting, successfully looking up entries, or any modification of the ta
 
 <tr><td align = right>static struct &lt;N&gt;table_iterator</td><td><a href = "#user-content-fn-89645eb3">&lt;N&gt;table_begin</a></td><td>table</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-f5d778c3">&lt;N&gt;table_next</a></td><td>it, entry</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-cbb7429a">&lt;N&gt;table_has_next</a></td><td>it</td></tr>
-
-<tr><td align = right>static &lt;PN&gt;key</td><td><a href = "#user-content-fn-69407e33">&lt;N&gt;table_next_key</a></td><td>it</td></tr>
-
-<tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#user-content-fn-df072cd">&lt;N&gt;table_next_value</a></td><td>it</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-f5d778c3">&lt;N&gt;table_next</a></td><td>it, key, value</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-c384e71">&lt;N&gt;table_iterator_remove</a></td><td>it</td></tr>
 
@@ -263,52 +259,16 @@ Loads `table` \(can be null\) into `it`\.
 
 ### <a id = "user-content-fn-f5d778c3" name = "user-content-fn-f5d778c3">&lt;N&gt;table_next</a> ###
 
-<code>static int <strong>&lt;N&gt;table_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, &lt;PN&gt;entry *<em>entry</em>)</code>
+<code>static int <strong>&lt;N&gt;table_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, &lt;PN&gt;key *<em>key</em>, &lt;PN&gt;value **<em>value</em>)</code>
 
-Advances `it`\. The awkwardness of this function because [&lt;PN&gt;entry](#user-content-typedef-a9017e7) is not necessarily nullifyable, so we are not guaranteed to have an out\-of\-band entry to indicate completion\. \(May be changed in the future\.\)
+Advances `it`\.
 
- * Parameter: _entry_  
-   If non\-null, the entry is filled with the next element only if it has a next\.
+ * Parameter: _key_  
+   If non\-null, the key or value is filled with the next element on return true\. `value` is a pointer to the actual value in the map, only there if it is a map\.
+ * Parameter: _value_  
+   If non\-null, the key or value is filled with the next element on return true\. `value` is a pointer to the actual value in the map, only there if it is a map\.
  * Return:  
    Whether it had a next element\.
-
-
-
-
-### <a id = "user-content-fn-cbb7429a" name = "user-content-fn-cbb7429a">&lt;N&gt;table_has_next</a> ###
-
-<code>static int <strong>&lt;N&gt;table_has_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
-
-Especially for tables that can have zero as a valid value, this is used to differentiate between zero and null\.
-
- * Return:  
-   Whether the table specified to `it` in [&lt;N&gt;table_begin](#user-content-fn-89645eb3) has a next element\.
- * Order:  
-   Amortized on the capacity, &#927;\(1\)\.
-
-
-
-
-### <a id = "user-content-fn-69407e33" name = "user-content-fn-69407e33">&lt;N&gt;table_next_key</a> ###
-
-<code>static &lt;PN&gt;key <strong>&lt;N&gt;table_next_key</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
-
-Defined if `TABLE_VALUE`\. Advances `it` only when [&lt;N&gt;table_has_next](#user-content-fn-cbb7429a)\.
-
- * Return:  
-   The next key\.
-
-
-
-
-### <a id = "user-content-fn-df072cd" name = "user-content-fn-df072cd">&lt;N&gt;table_next_value</a> ###
-
-<code>static &lt;PN&gt;value <strong>&lt;N&gt;table_next_value</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
-
-Defined if `TABLE_VALUE`\. Advances `it` only when [&lt;N&gt;table_has_next](#user-content-fn-cbb7429a)\.
-
- * Return:  
-   The next value\.
 
 
 

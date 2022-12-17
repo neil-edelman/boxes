@@ -138,7 +138,11 @@ static void PN_(graph)(const struct N_(table) *const table,
 			const char *const closed
 				= PN_(to_bucket_no)(table, b->hash) == i ? "⬤" : "◯";
 			char z[12];
+#ifdef TABLE_VALUE
+			N_(to_string)(PN_(bucket_key)(b), PN_(bucket_value)(b), &z);
+#else
 			N_(to_string)(PN_(bucket_key)(b), &z);
+#endif
 			fprintf(fp, "\t\t<td align=\"right\"%s>0x%lx</td>\n"
 				"\t\t<td align=\"left\"%s>"
 #ifdef TABLE_INVERSE
@@ -302,7 +306,11 @@ static void PN_(test_basic)(void *const parent) {
 		s->entry.value = &s.temp_value;
 #endif*/
 		N_(filler)(parent, &s->entry);
+#ifdef TABLE_VALUE
+		N_(to_string)(PN_(entry_key)(s->entry), s->entry.value, &z);
+#else
 		N_(to_string)(PN_(entry_key)(s->entry), &z);
+#endif
 		/* Is supposed to be in set. */
 		s->is_in = 0;
 		for(j = 0; j < i && !PN_(eq_en)(s->entry, trials.sample[j].entry);
@@ -352,7 +360,11 @@ static void PN_(test_basic)(void *const parent) {
 		assert(success && PN_(eq_en)(s->entry, entry));
 		if(table.size < max_graph && !(i & (i - 1)) || i + 1 == trial_size) {
 			char fn[64];
+#ifdef TABLE_VALUE
+			N_(to_string)(PN_(entry_key)(s->entry), s->entry.value, &z);
+#else
 			N_(to_string)(PN_(entry_key)(s->entry), &z);
+#endif
 			printf("%lu. Store \"%s\" result %s, table %s.\n", (unsigned long)i,
 				z, table_result_str[result], N_(table_to_string)(&table));
 			sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-%lu.gv",
