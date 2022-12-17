@@ -344,16 +344,26 @@ static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 
 #ifdef LIST_TRAIT /* <-- trait: Will be different on different includes. */
 #define BOX_TRAIT_NAME LIST_TRAIT
-#endif /* trait --> */
+#define PLT_(n) PL_(LIST_CAT(LIST_TRAIT, n))
+#define LT_(n) H_(LIST_CAT(LIST_TRAIT, n))
+#else /* trait --><!-- !trait */
+#define PLT_(n) PL_(n)
+#define LT_(n) L_(n)
+#endif /* !trait --> */
 
 
 #ifdef LIST_TO_STRING /* <!-- to string trait */
+/** Thunk `l` -> `a`. */
+static void PLT_(to_string)(const struct L_(listlink) *l, char (*const a)[12])
+	{ LT_(to_string)((const void *)l, a); }
 #include "to_string.h" /** \include */
 #undef LIST_TO_STRING
 #ifndef LIST_TRAIT
 #define LIST_HAS_TO_STRING
 #endif
 #endif /* to string trait --> */
+#undef PLT_
+#undef LT_
 
 
 #if defined(LIST_TEST) && !defined(LIST_TRAIT) /* <!-- test base */
