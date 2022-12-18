@@ -22,3 +22,10 @@ end here
 
 
 iterator -> begin
+
+iterator begin()
+[iterator end()]
+int cursor(it, *key[, *value])
+void next(it)
+[void previous(it)]
+
