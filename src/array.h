@@ -89,28 +89,33 @@ typedef ARRAY_TYPE PA_(type);
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
-/** Returns null. */
-static PA_(type) *PA_(null)(void) { return 0; }
-/** Is `x` not null? @implements `is_element` */
-static int PA_(is_element)(const PA_(type) *const x) { return !!x; }
-/* @implements `iterator` */
-struct PA_(iterator) { struct A_(array) *a; size_t i; int seen; };
-/** @return A pointer to null in `a`. @implements `iterator` */
-static struct PA_(iterator) PA_(iterator)(struct A_(array) *const a) {
-	struct PA_(iterator) it; it.a = a, it.i = 0, it.seen = 0;
+struct PA_(iterator) { struct A_(array) *a; size_t i; };
+/** @return Initialize at beginning of a valid `a`. */
+static struct PA_(iterator) PA_(begin)(struct A_(array) *const a) {
+	struct PA_(iterator) it; it.a = a, it.i = 0;
 	return it;
 }
-/** Move to next `it`. @return Element or null on end. @implements `next` */
-static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
-	size_t i;
-	assert(it);
-	if(!it->a || (i = it->i + !!it->seen) >= it->a->size)
-		{ *it = PA_(iterator)(it->a); return 0; }
-	return it->a->data + (it->seen = 1, it->i = i);
+/** @return Initialize after the end of a valid `a`. */
+static struct PA_(iterator) PA_(end)(struct A_(array) *const a) {
+	struct PA_(iterator) it; it.a = a, it.i = a && a->size ? a->size - 1 : 0;
+	return it;
 }
-/** Move to previous `it`. @return Element or null on end.
+/** @return True and retrieves a pointer `e` from the current initialized `it`,
+ or false if `it` is not pointing at any data. */
+static int PA_(fetch)(struct PA_(iterator) *const it, PA_(type) **const e) {
+	assert(it && it->a && e);
+	return it->i < it->a->size
+		? (*e = it->a->data + it->i, 1) : (it->i = it->a->size, 0);
+}
+/** Move to next element in the initialized `it`. */
+static void PA_(next)(struct PA_(iterator) *const it) {
+	assert(it && it->a);
+	if(it->i < it->a->size) it->i++;
+	else it->i = it->a->size;
+}
+/** Move to previous element in the initialized `it`. @return Element or null on end.
  @implements `previous` */
-static PA_(type) *PA_(previous)(struct PA_(iterator) *const it) {
+static int PA_(previous)(struct PA_(iterator) *const it) {
 	size_t i, size;
 	assert(it);
 	if(!it->a || !(size = it->a->size)) goto reset;
