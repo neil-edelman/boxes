@@ -516,8 +516,8 @@ static int PN_(next)(struct PN_(iterator) *const it,
 	assert(it);
 	if(!it->table || !it->table->buckets) return 0;
 	if(!PN_(skip)(it)) return it->table = 0, it->cur = 0, 0;
-	it->prev = it->cur, it->cur++;
 	if(v) *v = it->table->buckets + it->cur;
+	it->prev = it->cur, it->cur++;
 	return 1;
 }
 /** Removes the entry at `it`. @return Success. */

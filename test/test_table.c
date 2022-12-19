@@ -45,7 +45,7 @@ static void zodiac_filler(void *const zero, enum zodiac *const z) {
 #define TABLE_NAME zodiac
 #define TABLE_KEY enum zodiac
 #define TABLE_INVERSE /* If you can, inverse is less space and simpler. */
-#define TABLE_UINT unsigned /* `size_t` overkill. */
+#define TABLE_UINT unsigned char /*unsigned*/ /* `size_t` overkill. */
 #define TABLE_TEST /* Testing requires to string. */
 #define TABLE_TO_STRING /* Requires <../src/to_string.h>. */
 #include "../src/table.h"
@@ -792,43 +792,3 @@ int main(void) {
 	nato();
 	return EXIT_SUCCESS;
 }
-
-#if 0
-
-/** <https://github.com/skeeto/hash-prospector>; it doesn't say the inverse. */
-uint16_t hash16_xm2(uint16_t x) {
-	x ^= x >> 8; x *= 0x88b5u;
-	x ^= x >> 7; x *= 0xdb2du;
-	x ^= x >> 9;
-	return x;
-}
-
-/* We never did use this hash, but it's cool. Also:
- <https://github.com/aappleby/smhasher/>. */
-#if 0x8000 * 2 == 0
-#error 16-bit max length is not supported in this test.
-#elif 0x80000000 * 2 == 0
-/** We support 32 and 64-bit `size_t` but only if `size_t` is used as the
- maximum for integer constants, (not guaranteed.)
- <http://www.isthe.com/chongo/tech/comp/fnv/>
- <https://github.com/sindresorhus/fnv1a>. This is a very popular hash, I like
- it. Didn't make it in because a don't have a 16-bit machine to test it with. */
-static size_t fnv_32a_str(const char *const str) {
-	const unsigned char *s = (const unsigned char *)str;
-	unsigned hval = 0x811c9dc5;
-	while(*s) hval ^= *s++, hval *= 0x01000193;
-	return hval;
-}
-static size_t fnv_a_str(const char *const str) { return fnv_32a_str(str); }
-#else /* 0x8000000000000000 * 2 == 0? doesn't matter; it's max 64bit. */
-/** <http://www.isthe.com/chongo/tech/comp/fnv/> */
-static size_t fnv_64a_str(const char *const str) {
-	const unsigned char *s = (const unsigned char *)str;
-	size_t hval = 0xcbf29ce484222325;
-	while(*s) hval ^= *s++, hval *= 0x100000001b3;
-	return hval;
-}
-static size_t fnv_a_str(const char *const str) { return fnv_64a_str(str); }
-#endif
-
-#endif

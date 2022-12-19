@@ -374,8 +374,8 @@ static void PN_(test_basic)(void *const parent) {
 #else
 			N_(to_string)(PN_(entry_key)(s->entry), &z);
 #endif
-			printf("%lu. Store \"%s\" result %s, table %s.\n", (unsigned long)i,
-				z, table_result_str[result], N_(table_to_string)(&table));
+			/*fix printf("%lu. Store \"%s\" result %s, table %s.\n", (unsigned long)i,
+				z, table_result_str[result], N_(table_to_string)(&table));*/
 			sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-%lu.gv",
 				(unsigned long)i+1);
 			PN_(graph)(&table, fn);
