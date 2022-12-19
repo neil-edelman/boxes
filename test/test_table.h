@@ -255,6 +255,15 @@ static int PN_(eq_key)(PN_(key_c) a, PN_(key_c) b) {
 #endif
 }
 
+/** @return Key from `e`. */
+static PN_(key) PN_(entry_key)(PN_(entry) e) {
+#ifdef TABLE_VALUE
+	return e.key;
+#else
+	return e;
+#endif
+}
+
 /** Assertion function for seeing if `hash` is in a valid state.
  @order \O(|`hash.bins`| + |`hash.items`|) */
 static void PN_(legit)(const struct N_(table) *const table) {

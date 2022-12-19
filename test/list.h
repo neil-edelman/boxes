@@ -98,35 +98,38 @@ struct L_(list) {
 	} u;
 };
 
-/** Returns null. */
-static struct L_(listlink) *PL_(null)(void) { return 0; }
-/** Is `x` not null? @implements `is_content` */
-static int PL_(is_element)(struct L_(listlink) *const x)
-	{ return assert(x ? x->next && x->prev : 1), !!x; }
 /* Since this is a permutation, the iteration is defined by none other then
  itself. @implements `iterator` */
 struct PL_(iterator) { struct L_(listlink) *link; int seen; };
 /** @return A pointer to null in `l`. @implements `iterator` */
-static struct PL_(iterator) PL_(iterator)(struct L_(list) *const l)
+static struct PL_(iterator) PL_(begin)(struct L_(list) *const l)
 	{ struct PL_(iterator) it; it.link = l ? &l->u.as_head.head : 0;
 	it.seen = 0; return it; }
+/** @return A pointer to null in `l`. @implements `iterator` */
+static struct PL_(iterator) PL_(end)(struct L_(list) *const l)
+	{ struct PL_(iterator) it; it.link = l ? &l->u.as_tail.tail : 0;
+	it.seen = 0; return it; }
 /** Advances `it`. @implements `next` */
-static struct L_(listlink) *PL_(next)(struct PL_(iterator) *const it) {
-	struct L_(listlink) *next; assert(it);
+static int PL_(next)(struct PL_(iterator) *const it,
+	struct L_(listlink) **const v) {
+	struct L_(listlink) *next;
+	assert(it);
 	if(!it->link || !(next = it->link->next)) return 0; /* Unattached? */
 	if(!next->next) { it->seen = 0; return 0; } /* End of list. */
-	return it->seen = 1, it->link = next;
+	it->seen = 1, it->link = next;
+	if(v) *v = next;
+	return 1;
 }
 /** Reverses `it`. @implements `previous` */
-static struct L_(listlink) *PL_(previous)(struct PL_(iterator) *const it) {
-	struct L_(listlink) *prev; assert(it);
+static int PL_(previous)(struct PL_(iterator) *const it,
+	struct L_(listlink) **const v) {
+	struct L_(listlink) *prev;
+	assert(it);
 	if(!it->link || !(prev = it->link->prev)) return 0; /* Unattached? */
 	if(!prev->prev) { it->seen = 0; return 0; } /* Beginning of list. */
-	/* Header has `prev = 0`, special case when must not have seen because
-	 there is nothing to see; (should not enter this state, but recoverable.) */
-	/* if(it->seen || !it->link->next) it->link = prev;
-	else prev = it->link; wtf? */
-	return it->seen = 1, it->link = prev;
+	it->seen = 1, it->link = prev;
+	if(v) *v = prev;
+	return 1;
 }
 #if 0
 /** Removes the element last returned by `it`. (Untested and unused.)
@@ -300,7 +303,7 @@ static void L_(list_self_correct)(struct L_(list) *const list) {
 
 /* Box override information. */
 #define BOX_TYPE struct L_(list)
-#define BOX_CONTENT struct L_(listlink) *
+#define BOX_VALUE struct L_(listlink)
 #define BOX_ PL_
 #define BOX_MAJOR_NAME list
 #define BOX_MINOR_NAME LIST_NAME
@@ -325,8 +328,7 @@ static void ITR_(to_if)(struct L_(list) *restrict const from,
 
 static void PL_(unused_base_coda)(void);
 static void PL_(unused_base)(void) {
-	PL_(null)(); PL_(is_element)(0); PL_(iterator)(0); PL_(previous)(0);
-	PL_(next)(0); /*PL_(remove)(0);*/
+	PL_(begin)(0); PL_(end)(0); PL_(previous)(0, 0); PL_(next)(0, 0);
 	L_(list_head)(0); L_(list_tail)(0); L_(list_previous)(0); L_(list_next)(0);
 	L_(list_clear)(0); L_(list_add_before)(0, 0); L_(list_add_after)(0, 0);
 	L_(list_unshift)(0, 0); L_(list_push)(0, 0); L_(list_remove)(0);
@@ -344,16 +346,26 @@ static void PL_(unused_base_coda)(void) { PL_(unused_base)(); }
 
 #ifdef LIST_TRAIT /* <-- trait: Will be different on different includes. */
 #define BOX_TRAIT_NAME LIST_TRAIT
-#endif /* trait --> */
+#define PLT_(n) PL_(LIST_CAT(LIST_TRAIT, n))
+#define LT_(n) H_(LIST_CAT(LIST_TRAIT, n))
+#else /* trait --><!-- !trait */
+#define PLT_(n) PL_(n)
+#define LT_(n) L_(n)
+#endif /* !trait --> */
 
 
 #ifdef LIST_TO_STRING /* <!-- to string trait */
+/** Thunk `l` -> `a`. */
+static void PLT_(to_string)(const struct L_(listlink) *l, char (*const a)[12])
+	{ LT_(to_string)(l, a); }
 #include "to_string.h" /** \include */
 #undef LIST_TO_STRING
 #ifndef LIST_TRAIT
 #define LIST_HAS_TO_STRING
 #endif
 #endif /* to string trait --> */
+#undef PLT_
+#undef LT_
 
 
 #if defined(LIST_TEST) && !defined(LIST_TRAIT) /* <!-- test base */
@@ -655,7 +667,7 @@ static void PL_(unused_extra_compare_coda)(void){ PL_(unused_extra_compare)(); }
 #undef LIST_EXPECT_TRAIT
 #else /* trait --><!-- done */
 #undef BOX_TYPE
-#undef BOX_CONTENT
+#undef BOX_VALUE
 #undef BOX_
 #undef BOX_MAJOR_NAME
 #undef BOX_MINOR_NAME

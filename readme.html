@@ -261,17 +261,17 @@
 
 <tr><td align = right>static int</td><td><a href = "#fn:<N>table_is">&lt;N&gt;table_is</a></td><td>table, key</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#fn:<N>table_query">&lt;N&gt;table_query</a></td><td>table, key, result</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<N>table_query">&lt;N&gt;table_query</a></td><td>table, key, result, value</td></tr>
 
 <tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#fn:<N>table_get_or">&lt;N&gt;table_get_or</a></td><td>table, key, default_value</td></tr>
 
-<tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_try">&lt;N&gt;table_try</a></td><td>table, entry</td></tr>
+<tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_try">&lt;N&gt;table_try</a></td><td>table, key</td></tr>
 
-<tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_update">&lt;N&gt;table_update</a></td><td>table, entry, eject</td></tr>
+<tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_assign">&lt;N&gt;table_assign</a></td><td>table, key, content</td></tr>
 
-<tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_policy">&lt;N&gt;table_policy</a></td><td>table, entry, eject, policy</td></tr>
+<tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_update">&lt;N&gt;table_update</a></td><td>table, key, eject</td></tr>
 
-<tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_assign">&lt;N&gt;table_assign</a></td><td>table, key, value</td></tr>
+<tr><td align = right>static enum table_result</td><td><a href = "#fn:<N>table_policy">&lt;N&gt;table_policy</a></td><td>table, key, eject, policy</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#fn:<N>table_remove">&lt;N&gt;table_remove</a></td><td>table, key</td></tr>
 
@@ -420,11 +420,15 @@
 
 <h3><a id = "fn:<N>table_query" name = "fn:<N>table_query">&lt;N&gt;table_query</a></h3>
 
-<p><code>static int <strong>&lt;N&gt;table_query</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>, &lt;PN&gt;entry *<em>result</em>)</code></p>
+<p><code>static int <strong>&lt;N&gt;table_query</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>, &lt;PN&gt;key *<em>result</em>, &lt;PN&gt;value *<em>value</em>)</code></p>
+
+<p>If the entire entry space is filled, use this. Otherwise, a more convenient function is <a href = "#fn:&lt;N&gt;table_get_or">&lt;N&gt;table_get_or</a>.</p>
 
 <dl>
 	<dt>Parameter: <em>result</em></dt>
-	<dd>If null, behaves like <a href = "#fn:&lt;N&gt;table_is">&lt;N&gt;table_is</a>, otherwise, a <a href = "#typedef:&lt;PN&gt;entry">&lt;PN&gt;entry</a> which gets filled on true.</dd>
+	<dd>If null, behaves like <a href = "#fn:&lt;N&gt;table_is">&lt;N&gt;table_is</a>, otherwise, a <a href = "#typedef:&lt;PN&gt;key">&lt;PN&gt;key</a> which gets filled on true.</dd>
+	<dt>Parameter: <em>value</em></dt>
+	<dd>Only on a map with <code>TABLE_VALUE</code>. If not-null, stores the value.</dd>
 	<dt>Return:</dt>
 	<dd>Whether <code>key</code> is in <code>table</code> (which can be null.)</dd>
 </dl>
@@ -450,9 +454,9 @@
 
 <h3><a id = "fn:<N>table_try" name = "fn:<N>table_try">&lt;N&gt;table_try</a></h3>
 
-<p><code>static enum table_result <strong>&lt;N&gt;table_try</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;entry <em>entry</em>)</code></p>
+<p><code>static enum table_result <strong>&lt;N&gt;table_try</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>)</code></p>
 
-<p>Puts <code>entry</code> in <code>table</code> only if absent.</p>
+<p>Only if not <code>TABLE_VALUE</code>; see <a href = "#fn:&lt;N&gt;table_assign">&lt;N&gt;table_assign</a> for a map. Puts <code>key</code> in set <code>table</code> only if absent.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -467,15 +471,32 @@
 
 <div>
 
-<h3><a id = "fn:<N>table_update" name = "fn:<N>table_update">&lt;N&gt;table_update</a></h3>
+<h3><a id = "fn:<N>table_assign" name = "fn:<N>table_assign">&lt;N&gt;table_assign</a></h3>
 
-<p><code>static enum table_result <strong>&lt;N&gt;table_update</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;entry <em>entry</em>, &lt;PN&gt;entry *<em>eject</em>)</code></p>
+<p><code>static enum table_result <strong>&lt;N&gt;table_assign</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>, &lt;PN&gt;value **const <em>content</em>)</code></p>
 
-<p>Puts <code>entry</code> in <code>table</code>.</p>
+<p>Only if <code>TABLE_VALUE</code>; see <a href = "#fn:&lt;N&gt;table_try">&lt;N&gt;table_try</a> for a set. Puts <code>key</code> in the map <code>table</code> and store the associated value in <code>content</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>One of: <code>TABLE_ERROR</code>, the table is not modified; <code>TABLE_ABSENT</code>, the <code>entry</code> is put if the table; <code>TABLE_PRESENT</code> if non-null, <code>eject</code> will be filled with the previous entry.</dd>
+	<dd><code>TABLE_ERROR</code> does not set <code>content</code>; <code>TABLE_ABSENT</code>, the <code>content</code> will be a pointer to uninitialized memory; <code>TABLE_PRESENT</code>, gets the current <code>content</code>, (does not alter the keys, if they are distinguishable.)</dd>
+	<dt>Exceptional return: malloc, ERANGE</dt>
+	<dd>On <code>TABLE_ERROR</code>.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<N>table_update" name = "fn:<N>table_update">&lt;N&gt;table_update</a></h3>
+
+<p><code>static enum table_result <strong>&lt;N&gt;table_update</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>, &lt;PN&gt;key *<em>eject</em>)</code></p>
+
+<p>Puts <code>key</code> in <code>table</code>, replacing an equal-valued key.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>One of: <code>TABLE_ERROR</code>, the table is not modified; <code>TABLE_ABSENT</code>, the <code>key</code> is new; <code>TABLE_PRESENT</code>, the <code>key</code> displaces another, and if non-null, <code>eject</code> will be filled with the previous entry.</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
 	<dd>On <code>TABLE_ERROR</code>.</dd>
 	<dt>Order:</dt>
@@ -488,34 +509,17 @@
 
 <h3><a id = "fn:<N>table_policy" name = "fn:<N>table_policy">&lt;N&gt;table_policy</a></h3>
 
-<p><code>static enum table_result <strong>&lt;N&gt;table_policy</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;entry <em>entry</em>, &lt;PN&gt;entry *<em>eject</em>, const &lt;PN&gt;policy_fn <em>policy</em>)</code></p>
+<p><code>static enum table_result <strong>&lt;N&gt;table_policy</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>, &lt;PN&gt;key *<em>eject</em>, const &lt;PN&gt;policy_fn <em>policy</em>)</code></p>
 
-<p>Puts <code>entry</code> in <code>table</code> only if absent or if calling <code>policy</code> returns true.</p>
+<p>Puts <code>key</code> in <code>table</code> only if absent or if calling <code>policy</code> returns true.</p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>One of: <code>TABLE_ERROR</code>, the table is not modified; <code>TABLE_ABSENT</code>, the <code>entry</code> is new; <code>TABLE_PRESENT</code>, the entry has the same key as some other entry. If <code>policy</code> returns true, <code>eject</code> will be filled;</dd>
+	<dd>One of: <code>TABLE_ERROR</code>, the table is not modified; <code>TABLE_ABSENT</code>, the <code>key</code> is new; <code>TABLE_PRESENT</code>, <code>key</code> collides, if <code>policy</code> returns true, <code>eject</code>, if non-null, will be filled;</dd>
 	<dt>Exceptional return: realloc, ERANGE</dt>
 	<dd>On <code>TABLE_ERROR</code>.</dd>
 	<dt>Order:</dt>
 	<dd>Average amortised &#927;(1); worst &#927;(n).</dd>
-</dl>
-
-</div>
-
-<div>
-
-<h3><a id = "fn:<N>table_assign" name = "fn:<N>table_assign">&lt;N&gt;table_assign</a></h3>
-
-<p><code>static enum table_result <strong>&lt;N&gt;table_assign</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>, &lt;PN&gt;value **const <em>value</em>)</code></p>
-
-<p>If <code>TABLE_VALUE</code> is defined. Try (see <a href = "#fn:&lt;N&gt;table_try">&lt;N&gt;table_try</a>) to put <code>key</code> into <code>table</code>, and store the associated value in a pointer <code>value</code>.</p>
-
-<dl>
-	<dt>Return:</dt>
-	<dd><code>TABLE_ERROR</code> does not set <code>value</code>; <code>TABLE_ABSENT</code>, the <code>value</code> will point to uninitialized memory; <code>TABLE_PRESENT</code>, gets the current <code>value</code>, (but doesn't use the <code>key</code>.)</dd>
-	<dt>Exceptional return: malloc, ERANGE</dt>
-	<dd>On <code>TABLE_ERROR</code>.</dd>
 </dl>
 
 </div>

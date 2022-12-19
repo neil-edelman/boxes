@@ -146,15 +146,6 @@ typedef PN_(key) PN_(value);
 typedef PN_(key) PN_(entry);
 #endif /* !value --> */
 
-/** @return Key from `e`. */
-static PN_(key) PN_(entry_key)(PN_(entry) e) {
-#ifdef TABLE_VALUE
-	return e.key;
-#else
-	return e;
-#endif
-}
-
 /* Address is hash modulo size of table. Any occupied buckets at the head of
  the linked structure are closed, that is, the address equals the index. These
  form a linked table, possibly with other, open buckets that have the same
@@ -190,19 +181,6 @@ static PN_(value) PN_(bucket_value)(const struct PN_(bucket) *const bucket) {
 #else
 	return PN_(bucket_key)(bucket);
 #endif
-}
-
-/** Fills `entry` with the information of `bucket`. */
-static PN_(entry) PN_(to_entry)(struct PN_(bucket) *const bucket) {
-	PN_(entry) e;
-	assert(bucket);
-#ifdef TABLE_VALUE /* entry { <PN>key key; <PN>value value; } */
-	e.key = PN_(bucket_key)(bucket);
-	e.value = bucket->value;
-#else /* entry <PN>key */
-	e = PN_(bucket_key)(bucket);
-#endif
-	return e;
 }
 
 /** Returns true if the `replace` replaces the `original`.
@@ -467,15 +445,6 @@ static void PN_(replace_key)(struct PN_(bucket) *const bucket,
 #endif
 }
 
-/** Replace the entire `entry` and `hash` of `bucket`. Don't touch next. */
-static void PN_(replace_entry)(struct PN_(bucket) *const bucket,
-	const PN_(entry) entry, const PN_(uint) hash) {
-	PN_(replace_key)(bucket, PN_(entry_key)(entry), hash);
-#ifdef TABLE_VALUE
-	bucket->value = entry.value;
-#endif
-}
-
 /** Evicts the spot where `hash` goes in `table`. This results in a space in
  the table. */
 static struct PN_(bucket) *PN_(evict)(struct N_(table) *const table,
@@ -495,7 +464,7 @@ static struct PN_(bucket) *PN_(evict)(struct N_(table) *const table,
 	return bucket;
 }
 
-/** Put `entry` in `table`. For collisions, only if `policy` exists and returns
+/** Put `key` in `table`. For collisions, only if `policy` exists and returns
  true do and displace it to `eject`, if non-null.
  @return A <tag:table_result>. @throws[malloc]
  @order Amortized \O(max bucket length); the key to another bucket may have to
@@ -518,23 +487,7 @@ static enum table_result PN_(put_key)(struct N_(table) *const table,
 	PN_(replace_key)(bucket, key, hash);
 	return result;
 }
-#ifdef TABLE_VALUE /* <!-- map */
-static enum table_result PN_(put_entry)(struct N_(table) *const table,
-	PN_(entry) entry) {
-	struct PN_(bucket) *bucket;
-	const PN_(key) key = PN_(entry_key)(entry);
-	/* This function must be defined by the user. */
-	const PN_(uint) hash = N_(hash)(key);
-	assert(table);
-	if(table->buckets && PN_(query)(table, key, hash)) return TABLE_PRESENT;
-	if(!(bucket = PN_(evict)(table, hash))) return TABLE_ERROR;
-	PN_(replace_entry)(bucket, entry, hash);
-	return TABLE_ABSENT;
-}
-#endif /* map --> */
 
-/** Is `x` not null? @implements `is_content` */
-static int PN_(is_element)(const struct PN_(bucket) *const x) { return !!x; }
 /* In no particular order, usually, but deterministic up to topology changes.
  @implements `iterator` */
 struct PN_(iterator) { struct N_(table) *table; PN_(uint) cur, prev; };
@@ -552,19 +505,20 @@ static int PN_(skip)(struct PN_(iterator) *const it) {
 	return 0;
 }
 /** @return Before `table`. @implements `begin` */
-static struct PN_(iterator) PN_(iterator)(struct N_(table) *const table) {
+static struct PN_(iterator) PN_(begin)(struct N_(table) *const table) {
 	struct PN_(iterator) it; it.table = table, it.cur = 0; it.prev = TABLE_NULL;
 	return it;
 }
 /** Advances `it` to the next element. @return Pointer to the current element
  or null. @implements `next` */
-static struct PN_(bucket) *PN_(next)(struct PN_(iterator) *const it) {
+static int PN_(next)(struct PN_(iterator) *const it,
+	struct PN_(bucket) **const v) {
 	assert(it);
 	if(!it->table || !it->table->buckets) return 0;
-	if(PN_(skip)(it))
-		return it->prev = it->cur, it->table->buckets + it->cur++;
-	it->table = 0, it->cur = 0;
-	return 0;
+	if(!PN_(skip)(it)) return it->table = 0, it->cur = 0, 0;
+	it->prev = it->cur, it->cur++;
+	if(v) *v = it->table->buckets + it->cur;
+	return 1;
 }
 /** Removes the entry at `it`. @return Success. */
 static int PN_(remove)(struct PN_(iterator) *const it) {
@@ -620,7 +574,7 @@ static void N_(table_)(struct N_(table) *const table)
 
 /** Loads `table` (can be null) into `it`. @allow */
 static struct N_(table_iterator) N_(table_begin)(struct N_(table) *const
-	table) { struct N_(table_iterator) it; it._ = PN_(iterator)(table);
+	table) { struct N_(table_iterator) it; it._ = PN_(begin)(table);
 	return it; }
 #ifdef TABLE_VALUE /* <!-- map */
 /** Advances `it`. @param[key, value] If non-null, the key or value is filled
@@ -629,8 +583,8 @@ static struct N_(table_iterator) N_(table_begin)(struct N_(table) *const
  @return Whether it had a next element. @allow */
 static int N_(table_next)(struct N_(table_iterator) *const it,
 	PN_(key) *key, PN_(value) **value) {
-	struct PN_(bucket) *bucket = PN_(next)(&it->_);
-	if(!bucket) return 0;
+	struct PN_(bucket) *bucket;
+	if(!PN_(next)(&it->_, &bucket)) return 0;
 	if(key) *key = PN_(bucket_key)(bucket);
 	if(value) *value = &bucket->value;
 	return 1;
@@ -638,8 +592,8 @@ static int N_(table_next)(struct N_(table_iterator) *const it,
 #else /* map --><!-- set */
 /** Advances `it`, sets `key` on true. */
 static int N_(table_next)(struct N_(table_iterator) *const it, PN_(key) *key) {
-	struct PN_(bucket) *bucket = PN_(next)(&it->_);
-	if(!bucket) return 0;
+	struct PN_(bucket) *bucket;
+	if(!PN_(next)(&it->_, &bucket)) return 0;
 	if(key) *key = PN_(bucket_key)(bucket);
 	return 1;
 }
@@ -828,7 +782,7 @@ static int N_(table_remove)(struct N_(table) *const table,
 
 /* Box override information. */
 #define BOX_TYPE struct N_(table)
-#define BOX_CONTENT struct PN_(bucket) *
+#define BOX_VALUE struct PN_(bucket)
 #define BOX_ PN_
 #define BOX_MAJOR_NAME table
 #define BOX_MINOR_NAME TABLE_NAME
@@ -841,7 +795,6 @@ static void PN_(unused_base_coda)(void);
 static void PN_(unused_base)(void) {
 	PN_(entry) e; PN_(key) k; PN_(value) v;
 	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
-	PN_(is_element)(0);
 	N_(table)(); N_(table_)(0); N_(table_begin)(0);
 	N_(table_buffer)(0, 0); N_(table_clear)(0); N_(table_is)(0, k);
 	N_(table_get_or)(0, k, v);
@@ -878,6 +831,7 @@ static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 
 
 #ifdef TABLE_TO_STRING /* <!-- to string trait */
+/** Thunk `b` -> `a`. */
 static void PNT_(to_string)(const struct PN_(bucket) *const b,
 	char (*const a)[12]) {
 #ifdef TABLE_VALUE
@@ -941,7 +895,7 @@ static void PN_D_(unused, default_coda)(void) { PN_D_(unused, default)(); }
 #undef TABLE_EXPECT_TRAIT
 #else /* more --><!-- done */
 #undef BOX_TYPE
-#undef BOX_CONTENT
+#undef BOX_VALUE
 #undef BOX_
 #undef BOX_MAJOR_NAME
 #undef BOX_MINOR_NAME

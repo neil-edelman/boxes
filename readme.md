@@ -191,17 +191,17 @@ Adding, deleting, successfully looking up entries, or any modification of the ta
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-a8bd2b22">&lt;N&gt;table_is</a></td><td>table, key</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-72aa7b72">&lt;N&gt;table_query</a></td><td>table, key, result</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-72aa7b72">&lt;N&gt;table_query</a></td><td>table, key, result, value</td></tr>
 
 <tr><td align = right>static &lt;PN&gt;value</td><td><a href = "#user-content-fn-638dcc26">&lt;N&gt;table_get_or</a></td><td>table, key, default_value</td></tr>
 
-<tr><td align = right>static enum table_result</td><td><a href = "#user-content-fn-1680bdf7">&lt;N&gt;table_try</a></td><td>table, entry</td></tr>
+<tr><td align = right>static enum table_result</td><td><a href = "#user-content-fn-1680bdf7">&lt;N&gt;table_try</a></td><td>table, key</td></tr>
 
-<tr><td align = right>static enum table_result</td><td><a href = "#user-content-fn-cea327b7">&lt;N&gt;table_update</a></td><td>table, entry, eject</td></tr>
+<tr><td align = right>static enum table_result</td><td><a href = "#user-content-fn-7c006237">&lt;N&gt;table_assign</a></td><td>table, key, content</td></tr>
 
-<tr><td align = right>static enum table_result</td><td><a href = "#user-content-fn-33008770">&lt;N&gt;table_policy</a></td><td>table, entry, eject, policy</td></tr>
+<tr><td align = right>static enum table_result</td><td><a href = "#user-content-fn-cea327b7">&lt;N&gt;table_update</a></td><td>table, key, eject</td></tr>
 
-<tr><td align = right>static enum table_result</td><td><a href = "#user-content-fn-7c006237">&lt;N&gt;table_assign</a></td><td>table, key, value</td></tr>
+<tr><td align = right>static enum table_result</td><td><a href = "#user-content-fn-33008770">&lt;N&gt;table_policy</a></td><td>table, key, eject, policy</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-f3d5d82a">&lt;N&gt;table_remove</a></td><td>table, key</td></tr>
 
@@ -324,10 +324,14 @@ Clears and removes all buckets from `table`\. The capacity and memory of the `ta
 
 ### <a id = "user-content-fn-72aa7b72" name = "user-content-fn-72aa7b72">&lt;N&gt;table_query</a> ###
 
-<code>static int <strong>&lt;N&gt;table_query</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>, &lt;PN&gt;entry *<em>result</em>)</code>
+<code>static int <strong>&lt;N&gt;table_query</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>, &lt;PN&gt;key *<em>result</em>, &lt;PN&gt;value *<em>value</em>)</code>
+
+If the entire entry space is filled, use this\. Otherwise, a more convenient function is [&lt;N&gt;table_get_or](#user-content-fn-638dcc26)\.
 
  * Parameter: _result_  
-   If null, behaves like [&lt;N&gt;table_is](#user-content-fn-a8bd2b22), otherwise, a [&lt;PN&gt;entry](#user-content-typedef-a9017e7) which gets filled on true\.
+   If null, behaves like [&lt;N&gt;table_is](#user-content-fn-a8bd2b22), otherwise, a [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) which gets filled on true\.
+ * Parameter: _value_  
+   Only on a map with `TABLE_VALUE`\. If not\-null, stores the value\.
  * Return:  
    Whether `key` is in `table` \(which can be null\.\)
 
@@ -348,9 +352,9 @@ Clears and removes all buckets from `table`\. The capacity and memory of the `ta
 
 ### <a id = "user-content-fn-1680bdf7" name = "user-content-fn-1680bdf7">&lt;N&gt;table_try</a> ###
 
-<code>static enum table_result <strong>&lt;N&gt;table_try</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;entry <em>entry</em>)</code>
+<code>static enum table_result <strong>&lt;N&gt;table_try</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>)</code>
 
-Puts `entry` in `table` only if absent\.
+Only if not `TABLE_VALUE`; see [&lt;N&gt;table_assign](#user-content-fn-7c006237) for a map\. Puts `key` in set `table` only if absent\.
 
  * Return:  
    One of: `TABLE_ERROR`, tried putting the entry in the table but failed, the table is not modified; `TABLE_PRESENT`, does nothing if there is another entry with the same key; `TABLE_ABSENT`, put an entry in the table\.
@@ -362,14 +366,28 @@ Puts `entry` in `table` only if absent\.
 
 
 
-### <a id = "user-content-fn-cea327b7" name = "user-content-fn-cea327b7">&lt;N&gt;table_update</a> ###
+### <a id = "user-content-fn-7c006237" name = "user-content-fn-7c006237">&lt;N&gt;table_assign</a> ###
 
-<code>static enum table_result <strong>&lt;N&gt;table_update</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;entry <em>entry</em>, &lt;PN&gt;entry *<em>eject</em>)</code>
+<code>static enum table_result <strong>&lt;N&gt;table_assign</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>, &lt;PN&gt;value **const <em>content</em>)</code>
 
-Puts `entry` in `table`\.
+Only if `TABLE_VALUE`; see [&lt;N&gt;table_try](#user-content-fn-1680bdf7) for a set\. Puts `key` in the map `table` and store the associated value in `content`\.
 
  * Return:  
-   One of: `TABLE_ERROR`, the table is not modified; `TABLE_ABSENT`, the `entry` is put if the table; `TABLE_PRESENT` if non\-null, `eject` will be filled with the previous entry\.
+   `TABLE_ERROR` does not set `content`; `TABLE_ABSENT`, the `content` will be a pointer to uninitialized memory; `TABLE_PRESENT`, gets the current `content`, \(does not alter the keys, if they are distinguishable\.\)
+ * Exceptional return: malloc, ERANGE  
+   On `TABLE_ERROR`\.
+
+
+
+
+### <a id = "user-content-fn-cea327b7" name = "user-content-fn-cea327b7">&lt;N&gt;table_update</a> ###
+
+<code>static enum table_result <strong>&lt;N&gt;table_update</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>, &lt;PN&gt;key *<em>eject</em>)</code>
+
+Puts `key` in `table`, replacing an equal\-valued key\.
+
+ * Return:  
+   One of: `TABLE_ERROR`, the table is not modified; `TABLE_ABSENT`, the `key` is new; `TABLE_PRESENT`, the `key` displaces another, and if non\-null, `eject` will be filled with the previous entry\.
  * Exceptional return: realloc, ERANGE  
    On `TABLE_ERROR`\.
  * Order:  
@@ -380,30 +398,16 @@ Puts `entry` in `table`\.
 
 ### <a id = "user-content-fn-33008770" name = "user-content-fn-33008770">&lt;N&gt;table_policy</a> ###
 
-<code>static enum table_result <strong>&lt;N&gt;table_policy</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;entry <em>entry</em>, &lt;PN&gt;entry *<em>eject</em>, const &lt;PN&gt;policy_fn <em>policy</em>)</code>
+<code>static enum table_result <strong>&lt;N&gt;table_policy</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>, &lt;PN&gt;key *<em>eject</em>, const &lt;PN&gt;policy_fn <em>policy</em>)</code>
 
-Puts `entry` in `table` only if absent or if calling `policy` returns true\.
+Puts `key` in `table` only if absent or if calling `policy` returns true\.
 
  * Return:  
-   One of: `TABLE_ERROR`, the table is not modified; `TABLE_ABSENT`, the `entry` is new; `TABLE_PRESENT`, the entry has the same key as some other entry\. If `policy` returns true, `eject` will be filled;
+   One of: `TABLE_ERROR`, the table is not modified; `TABLE_ABSENT`, the `key` is new; `TABLE_PRESENT`, `key` collides, if `policy` returns true, `eject`, if non\-null, will be filled;
  * Exceptional return: realloc, ERANGE  
    On `TABLE_ERROR`\.
  * Order:  
    Average amortised &#927;\(1\); worst &#927;\(n\)\.
-
-
-
-
-### <a id = "user-content-fn-7c006237" name = "user-content-fn-7c006237">&lt;N&gt;table_assign</a> ###
-
-<code>static enum table_result <strong>&lt;N&gt;table_assign</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>, &lt;PN&gt;value **const <em>value</em>)</code>
-
-If `TABLE_VALUE` is defined\. Try \(see [&lt;N&gt;table_try](#user-content-fn-1680bdf7)\) to put `key` into `table`, and store the associated value in a pointer `value`\.
-
- * Return:  
-   `TABLE_ERROR` does not set `value`; `TABLE_ABSENT`, the `value` will point to uninitialized memory; `TABLE_PRESENT`, gets the current `value`, \(but doesn't use the `key`\.\)
- * Exceptional return: malloc, ERANGE  
-   On `TABLE_ERROR`\.
 
 
 
