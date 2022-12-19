@@ -5,8 +5,8 @@
 #define QUOTE(name) QUOTE_(name)
 
 /** Fills `fill` that is not equal to `neq` if possible. */
-static int PCMP_(fill_unique)(PA_(value) *const fill,
-	const PA_(value) *const neq) {
+static int PCMP_(fill_unique)(PA_(type) *const fill,
+	const PA_(type) *const neq) {
 	size_t i;
 	assert(fill);
 	for(i = 0; i < 1000; i++) {
@@ -18,7 +18,7 @@ static int PCMP_(fill_unique)(PA_(value) *const fill,
 
 #if 0 /* <!-- 0: I don't think we use this anymore? */
 #ifdef ARRAY_COMPARE /* <!-- comp */
-static int PCMP_(unique_array)(PA_(value) *const fill, const size_t size) {
+static int PCMP_(unique_array)(PA_(type) *const fill, const size_t size) {
 	const size_t no_try = 5000;
 	size_t attempt, i = 0;
 	for(attempt = 0; attempt < no_try; attempt++) {
@@ -45,7 +45,7 @@ static int PCMP_(unique_array)(PA_(value) *const fill, const size_t size) {
 
 static void PCMP_(test_compactify)(void) {
 	struct A_(array) a = A_(array)();
-	PA_(value) ts[9], *t, *t1, *t_prev;
+	PA_(type) ts[9], *t, *t1, *t_prev;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	/* `valgrind` is giving me grief if I don't do this? */
 	memset(ts, 0, sizeof ts);
@@ -78,7 +78,7 @@ static void PCMP_(test_compactify)(void) {
 static void PCMP_(test_compare)(void) {
 	struct A_(array) a = A_(array)(), b = A_(array)();
 	struct A_(array_iterator) it;
-	PA_(value) ts[9], *t, *t1;
+	PA_(type) ts[9], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	size_t i;
 	int cmp;
@@ -136,7 +136,7 @@ static void PCMP_(test_sort)(void) {
 	/* Random array of Arrays. */
 	for(a = as; a < as_end; a++) {
 		size_t size = (unsigned)rand() / (RAND_MAX / 5 + 1), i;
-		PA_(value) *x, *x_end;
+		PA_(type) *x, *x_end;
 		*a = A_(array)();
 		x = A_(array_append)(a, size);
 		x_end = x + size;
@@ -167,7 +167,7 @@ static void PCMP_(test_bounds)(void) {
 	struct A_(array) a = A_(array)();
 	const size_t size = 10;
 	size_t i, low, high;
-	PA_(value) elem, *cont;
+	PA_(type) elem, *cont;
 	int ret;
 	char z[12];
 	printf("\ntest bounds:\n");
