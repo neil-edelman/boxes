@@ -24,7 +24,7 @@ typedef void (*PB_(action_fn))(PB_(key) *, PB_(value) *);
 typedef void (*PB_(action_fn))(PB_(key) *);
 #endif
 
-static PB_(entry) PB_(test_to_entry)(struct PB_(tree_test) *const t) {
+/*static PB_(entry) PB_(test_to_entry)(struct PB_(tree_test) *const t) {
 	PB_(entry) e;
 	assert(t);
 #ifdef TREE_VALUE
@@ -42,7 +42,7 @@ static PB_(key) PB_(entry_to_key)(const PB_(entry) e) {
 #else
 	return *e;
 #endif
-}
+}*/
 
 /* Debug number, which is the number printed next to the graphs, _etc_. */
 static unsigned PB_(no);
@@ -253,13 +253,13 @@ static void PB_(sort)(struct PB_(tree_test) *a, const size_t size) {
 /** Is `e` pointing at a valid thing? Either directly or with entry. The reason
  we don't define `struct entry` is because we don't want to have to reference
  key in set. It makes the set unbearable. */
-static int PB_(contents)(const PB_(entry) *const e) {
+/*static int PB_(contents)(const PB_(entry) *const e) {
 #ifdef TREE_VALUE
 	return !!e->key;
 #else
 	return !!*e;
 #endif
-}
+}*/
 
 /* Used in print spam.
 static PB_(entry_c) PB_(to_const)(const PB_(entry) e) {
@@ -274,8 +274,8 @@ static PB_(entry_c) PB_(to_const)(const PB_(entry) e) {
 static void PB_(test)(void) {
 	struct B_(tree) tree = B_(tree)(), empty = B_(tree)();
 	struct B_(tree_iterator) it;
-	struct PB_(tree_test) n[8];
-	const size_t n_size = sizeof n / sizeof *n;
+	struct PB_(tree_test) test[8];
+	const size_t test_size = sizeof test / sizeof *test;
 #ifdef TREE_VALUE
 	PB_(value) *v;
 #endif
@@ -286,8 +286,8 @@ static void PB_(test)(void) {
 	errno = 0;
 
 	/* Fill. */
-	for(i = 0; i < n_size; i++) {
-		struct PB_(tree_test) *const t = n + i;
+	for(i = 0; i < test_size; i++) {
+		struct PB_(tree_test) *const t = test + i;
 		t->in = 0;
 		/* This function must exist. */
 #ifdef TREE_VALUE
@@ -296,21 +296,21 @@ static void PB_(test)(void) {
 		B_(filler)(&t->key);
 #endif
 	}
-	PB_(sort)(n, n_size);
+	PB_(sort)(test, test_size);
 
 	/* Idle. */
 	PB_(valid)(0);
 	PB_(valid)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
-	it = B_(tree_begin_at)(0, n[0].key), assert(!it._.root);
-	it = B_(tree_begin_at)(&tree, n[0].key), assert(!it._.ref.node);
+	it = B_(tree_begin_at)(0, test[0].key), assert(!it._.root);
+	it = B_(tree_begin_at)(&tree, test[0].key), assert(!it._.ref.node);
 
 	/* Bulk, (simple.) */
-	for(i = 0; i < n_size; i++) {
+	for(i = 0; i < test_size; i++) {
 		/*PB_(entry_c) e;
 		char z[12];*/
-		struct PB_(tree_test) *const t = n + i;
+		struct PB_(tree_test) *const t = test + i;
 		/*e = PB_(test_to_entry_c)(t);
 		PB_(to_string)(e, &z);
 		printf("%lu -- bulk adding <%s>.\n", (unsigned long)i, z);*/
@@ -345,7 +345,7 @@ static void PB_(test)(void) {
 		}
 #endif
 #endif
-		if(!(i & (i + 1)) || i == n_size - 1) {
+		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-bulk-%lu.gv", i + 1);
 			PB_(graph)(&tree, fn);
 		}
@@ -366,7 +366,7 @@ static void PB_(test)(void) {
 		printf("<%s>\n", z);*/
 		if(i) { const int cmp = B_(compare)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
-		if(++i > n_size) assert(0); /* Avoids loops. */
+		if(++i > test_size) assert(0); /* Avoids loops. */
 	}
 	assert(i == n_unique);
 	/*printf("\n");*/
@@ -377,7 +377,7 @@ static void PB_(test)(void) {
 		printf("<%s>\n", z);*/
 		if(i) { const int cmp = B_(compare)(k_prev, k); assert(cmp > 0); }
 		k_prev = k;
-		if(++i > n_size) assert(0); /* Avoids loops. */
+		if(++i > test_size) assert(0); /* Avoids loops. */
 	}
 	assert(i == n_unique);
 	while(B_(tree_next)(&it, &k)) {
@@ -400,8 +400,8 @@ static void PB_(test)(void) {
 	n_unique = 0;
 
 	/* Fill again, this time, don't sort. */
-	for(i = 0; i < n_size; i++) {
-		struct PB_(tree_test) *const t = n + i;
+	for(i = 0; i < test_size; i++) {
+		struct PB_(tree_test) *const t = test + i;
 		t->in = 0;
 		/* This function must exist. */
 #ifdef TREE_VALUE
@@ -412,15 +412,13 @@ static void PB_(test)(void) {
 	}
 
 	/* Add. */
-	for(i = 0; i < n_size; i++) {
-		PB_(entry) e;
+	for(i = 0; i < test_size; i++) {
 		char z[12];
-		struct PB_(tree_test) *const t = n + i;
-		e = PB_(test_to_entry)(t);
+		struct PB_(tree_test) *const t = test + i;
 #ifdef TREE_VALUE
-		B_(to_string)(e.key, e.value, &z);
+		B_(to_string)(&t->key, &t->value, &z);
 #else
-		B_(to_string)(e, &z);
+		B_(to_string)(&t->key, &z);
 #endif
 		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);
 #ifdef TREE_VALUE
@@ -439,13 +437,13 @@ static void PB_(test)(void) {
 			t->in = 1;
 			printf("<%s> added\n", z); break;
 		}
-		if(!(i & (i + 1)) || i == n_size - 1) {
+		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-add-%lu.gv", i + 1);
 			PB_(graph)(&tree, fn);
 		}
 	}
 	printf("Number of entries in the tree: %lu/%lu.\n",
-		(unsigned long)n_unique, (unsigned long)n_size);
+		(unsigned long)n_unique, (unsigned long)test_size);
 
 	/* Iteration; checksum. No. We can not do this because deletion invalidates
 	 the cursor. */
@@ -457,11 +455,11 @@ static void PB_(test)(void) {
 		printf("<%s>\n", z);*/
 		if(i) { const int cmp = B_(compare)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
-		if(++i > n_size) assert(0); /* Avoids loops. */
+		if(++i > test_size) assert(0); /* Avoids loops. */
 		assert(B_(tree_contains)(&tree, k));
 		B_(tree_remove)(&tree, k);
 		assert(!B_(tree_contains)(&tree, k));
-		if(!(i & (i + 1)) || i == n_size - 1) {
+		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-rm-%lu.gv", i);
 			PB_(graph)(&tree, fn);
 		}
@@ -470,8 +468,8 @@ static void PB_(test)(void) {
 
 	/* Using a cursor and building the tree. */
 	n_unique2 = 0;
-	for(i = 0; i < n_size; i++) {
-		struct PB_(tree_test) *const t = n + i;
+	for(i = 0; i < test_size; i++) {
+		struct PB_(tree_test) *const t = test + i;
 		if(i % 3 == 0) {
 			it = B_(tree_begin)(&tree);
 		} else if(i % 3 == 1) {

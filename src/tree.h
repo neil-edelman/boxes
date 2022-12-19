@@ -193,7 +193,7 @@ struct B_(tree) { struct PB_(tree) root; };
 /** On `TREE_VALUE`, creates a map from pointer-to-<typedef:<PB>key> to
  pointer-to-<typedef:<PB>value>. The reason these are pointers is because it
  is not contiguous in memory. */
-struct B_(tree_entry) { PB_(key) *key; PB_(value) *value; };
+//struct B_(tree_entry) { PB_(key) *key; PB_(value) *value; };
 /** On `TREE_VALUE`, otherwise it's just an alias for
  pointer-to-<typedef:<PB>key>. */
 typedef struct B_(tree_entry) PB_(entry);
@@ -204,7 +204,7 @@ static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 #else /* value --><!-- !value */
 
 typedef PB_(key) PB_(value);
-typedef PB_(key) *PB_(entry);
+//typedef PB_(key) *PB_(entry);
 /** Gets the value of `ref`. */
 static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->key + ref.idx : 0; }
