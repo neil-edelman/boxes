@@ -316,6 +316,9 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 
 
 #ifdef POOL_TO_STRING /* <!-- string */
+/** Thunk `p` -> `a`. */
+static void PP_(to_string)(const PP_(type) *p, char (*const a)[12])
+	{ P_(to_string)((const void *)p, a); }
 #include "to_string.h"
 #undef POOL_TO_STRING
 #endif

@@ -46,8 +46,8 @@ static unsigned orc_filler(struct orc **const orc_ptr) {
 }
 #define HEAP_NAME orc
 #define HEAP_VALUE struct orc *
-#define HEAP_TEST
 #define HEAP_TO_STRING
+#define HEAP_TEST
 #include "../src/heap.h"
 
 

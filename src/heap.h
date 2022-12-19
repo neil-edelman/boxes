@@ -128,15 +128,13 @@ typedef PH_(priority_c) PH_(node_c);
 struct H_(heap) { struct PH_(node_array) as_array; };
 
 #define PAH_(n) HEAP_CAT(HEAP_CAT(array, PH_(node)), n)
-/** Is `x` not null? @implements `is_element` */
-static int PH_(is_element)(PH_(node) *const x) { return !!x; }
 struct PH_(iterator) { struct PAH_(iterator) _; };
 /** @return Before `h`. @implements `forward` */
-static struct PH_(iterator) PH_(iterator)(struct H_(heap) *const h) {
-	struct PH_(iterator) it; it._ = PAH_(iterator)(&h->as_array); return it; }
+static struct PH_(iterator) PH_(begin)(struct H_(heap) *const h) {
+	struct PH_(iterator) it; it._ = PAH_(begin)(&h->as_array); return it; }
 /** @return The next `it` or null. @implements `next_c` */
-static PH_(node) *PH_(next)(struct PH_(iterator) *const it)
-	{ return PAH_(next)(&it->_); }
+static int PH_(next)(struct PH_(iterator) *const it, PH_(node) **const v)
+	{ return PAH_(next)(&it->_, v); }
 #undef PAH_
 
 /** Extracts the <typedef:<PH>priority> of `node`, which must not be null. */
@@ -180,8 +178,8 @@ static void PH_(sift_up)(struct H_(heap) *const heap, PH_(node) *const node) {
  element. @param[heap] At least one entry. The head is popped, and the size
  will be one less. */
 static void PH_(sift_down)(struct H_(heap) *const heap) {
-	const size_t size = (assert(heap && heap->as_array.size), --heap->as_array.size),
-		half = size >> 1;
+	const size_t size = (assert(heap && heap->as_array.size),
+		--heap->as_array.size), half = size >> 1;
 	size_t i = 0, c;
 	PH_(node) *const n0 = heap->as_array.data,
 		*const down = n0 + size /* Put it at the top. */, *child;
@@ -234,8 +232,8 @@ static void PH_(sift_down_i)(struct H_(heap) *const heap, size_t i) {
 static void PH_(heapify)(struct H_(heap) *const heap) {
 	size_t i;
 	assert(heap);
-	if(heap->as_array.size > 1)
-		for(i = heap->as_array.size / 2 - 1; (PH_(sift_down_i)(heap, i), i); i--);
+	if(heap->as_array.size > 1) for(i = heap->as_array.size / 2 - 1;
+		(PH_(sift_down_i)(heap, i), i); i--);
 }
 
 /** Removes from `heap`. Must have a non-zero size. */
@@ -337,7 +335,7 @@ static int H_(heap_affix)(struct H_(heap) *restrict const heap,
 static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
 	PH_(node) unused; memset(&unused, 0, sizeof unused);
-	PH_(is_element)(0); PH_(iterator)(0); PH_(next)(0);
+	PH_(begin)(0); PH_(next)(0, 0);
 	H_(heap)(); H_(heap_)(0); H_(heap_clear)(0); H_(heap_size)(0);
 	H_(heap_add)(0, unused); H_(heap_peek)(0); H_(heap_pop)(0);
 	H_(heap_buffer)(0, 0); H_(heap_append)(0, 0); H_(heap_affix)(0, 0);
@@ -347,7 +345,7 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 
 /* Box override information. */
 #define BOX_TYPE struct H_(heap)
-#define BOX_CONTENT PH_(node) *
+#define BOX_VALUE PH_(node)
 #define BOX_ PH_
 #define BOX_MAJOR_NAME heap
 #define BOX_MINOR_NAME HEAP_NAME
@@ -388,7 +386,7 @@ static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12])
 #undef HEAP_EXPECT_TRAIT
 #else /* more --><!-- done */
 #undef BOX_TYPE
-#undef BOX_CONTENT
+#undef BOX_VALUE
 #undef BOX_
 #undef BOX_MAJOR_NAME
 #undef BOX_MINOR_NAME
