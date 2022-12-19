@@ -25,7 +25,7 @@ iterator -> begin
 
 iterator begin()
 [iterator end()]
-int cursor(it, *key[, *value])
+int fetch(it, *key[, *value])
 void next(it)
 [void previous(it)]
-
+[int remove(it)]
