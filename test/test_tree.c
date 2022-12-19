@@ -248,7 +248,7 @@ static void order3(void) {
 		switch(order3_tree_try(&rnd, x)) {
 		case TREE_ERROR: goto catch;
 		case TREE_PRESENT: printf("%u already in tree\n", x); break;
-		case TREE_UNIQUE: printf("%u added\n", x); break;
+		case TREE_ABSENT: printf("%u added\n", x); break;
 		}
 		if(!(i & (i + 1)) || i == size_rnd - 1) {
 			char fn[64];
@@ -446,7 +446,7 @@ static void order3(void) {
 			switch(order3_tree_try(&consecutive, x)) {
 			case TREE_ERROR: goto catch;
 			case TREE_PRESENT: /*printf("%u already in tree\n", x);*/ break;
-			case TREE_UNIQUE: /*printf("%u added\n", x);*/ break;
+			case TREE_ABSENT: /*printf("%u added\n", x);*/ break;
 			}
 			sprintf(fn, "graph/consecutive-%u.gv", (unsigned)i);
 			tree_order3_graph(&consecutive, fn);
@@ -497,7 +497,7 @@ static void redblack(void) {
 		switch(redblack_tree_try(&tree, rnd[i].x, &value)) {
 		case TREE_ERROR: goto catch;
 		case TREE_PRESENT: printf("%u already in tree\n", rnd[i].x); break;
-		case TREE_UNIQUE: *value = rnd[i].x; rnd[i].in = 1; n++; break;
+		case TREE_ABSENT: *value = rnd[i].x; rnd[i].in = 1; n++; break;
 		}
 		if(!(i & (i + 1)) || i == rnd_size - 1) {
 			char fn[64];
@@ -573,9 +573,9 @@ static void loop(void) {
 	struct loop_tree tree = loop_tree();
 	enum tree_result status;
 	unsigned ret, eject;
-	status = loop_tree_try(&tree, 1), assert(status == TREE_UNIQUE);
-	status = loop_tree_try(&tree, 2), assert(status == TREE_UNIQUE);
-	status = loop_tree_try(&tree, 3), assert(status == TREE_UNIQUE);
+	status = loop_tree_try(&tree, 1), assert(status == TREE_ABSENT);
+	status = loop_tree_try(&tree, 2), assert(status == TREE_ABSENT);
+	status = loop_tree_try(&tree, 3), assert(status == TREE_ABSENT);
 	status = loop_tree_try(&tree, 101), assert(status == TREE_PRESENT);
 	ret = loop_tree_get_or(&tree, 1, 0), assert(ret == 1);
 	tree_loop_graph_horiz(&tree, "graph/loop1.gv");

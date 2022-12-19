@@ -87,7 +87,7 @@
  chosen to provide hysteresis. (Except `TREE_MAX 2`, it's fixed.) */
 #define TREE_MIN (TREE_MAX / 3 ? TREE_MAX / 3 : 1)
 #define TREE_SPLIT (TREE_ORDER / 2) /* Split index: even order left-leaning. */
-#define TREE_RESULT X(ERROR), X(UNIQUE), X(PRESENT)
+#define TREE_RESULT X(ERROR), X(ABSENT), X(PRESENT)
 #define X(n) TREE_##n
 /** A result of modifying the tree, of which `TREE_ERROR` is false.
 
@@ -123,7 +123,6 @@ typedef const TREE_KEY PB_(key_c);
 /** On `TREE_VALUE`, this creates a map, otherwise a set of
  <typedef:<PB>key>. */
 typedef TREE_VALUE PB_(value);
-typedef const TREE_VALUE PB_(value_c);
 #endif
 
 /** Returns a positive result if `a` is out-of-order with respect to `b`,
@@ -133,7 +132,8 @@ typedef const TREE_VALUE PB_(value_c);
 typedef int (*PB_(compare_fn))(PB_(key_c) a, PB_(key_c) b);
 #ifndef TREE_COMPARE /* <!-- !cmp */
 /** The default `TREE_COMPARE` on `a` and `b` is integer comparison that
- results in ascending order, `a > b`. @implements <typedef:<PB>compare_fn> */
+ results in ascending order, `a > b`. Use `TREE_COMPARE` to supply one's own.
+ @implements <typedef:<PB>compare_fn> */
 static int B_(compare)(PB_(key_c) a, PB_(key_c) b)
 	{ return a > b; }
 #define TREE_COMPARE &PB_(default_compare)
@@ -581,7 +581,7 @@ static PB_(value) B_(tree_at_or)(const struct B_(tree) *const tree,
  uninitialized. This parameter is not there if one didn't specify `TREE_VALUE`.
  @return One of <tag:tree_result>: `TREE_ERROR` and `errno` will be set,
  `TREE_PRESENT` if the key is already (the highest) in the tree, and
- `TREE_UNIQUE`, added, the `value` (if applicable) is uninitialized.
+ `TREE_ABSENT`, added, the `value` (if applicable) is uninitialized.
  @throws[EDOM] `x` is smaller than the largest key in `tree`. @throws[malloc]
  @order \O(\log |`tree`|) @allow */
 static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
@@ -671,7 +671,7 @@ static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
 	}
 #endif
 	node->size++;
-	return TREE_UNIQUE;
+	return TREE_ABSENT;
 catch: /* Didn't work. Reset. */
 	free(node);
 	while(head) {
@@ -815,7 +815,7 @@ insert: /* Leaf has space to spare; usually end up here. */
 #ifdef TREE_VALUE
 	if(value) *value = PB_(ref_to_valuep)(add);
 #endif
-	return TREE_UNIQUE;
+	return TREE_ABSENT;
 grow: /* Leaf is full. */ {
 	unsigned new_no = hole.node ? hole.height : root->height + 2;
 	struct PB_(node) **new_next = &new_head, *new_leaf;
@@ -945,7 +945,7 @@ grow: /* Leaf is full. */ {
 	if(value) *value = PB_(ref_to_valuep)(hole);
 #endif
 	assert(!new_head);
-	return TREE_UNIQUE;
+	return TREE_ABSENT;
 } catch: /* Didn't work. Reset. */
 	while(new_head) {
 		struct PB_(branch) *const top = PB_(as_branch)(new_head);
@@ -968,9 +968,9 @@ grow: /* Leaf is full. */ {
  parameter is non-null and a return value other then `TREE_ERROR`, this
  receives the address of the value associated with the `key`. This pointer is
  only guaranteed to be valid only while the `tree` doesn't undergo
- structural changes, (such as calling <fn:<B>tree_try> with `TREE_UNIQUE`
+ structural changes, (such as calling <fn:<B>tree_try> with `TREE_ABSENT`
  again.)
- @return Either `TREE_ERROR` (false) and doesn't touch `tree`, `TREE_UNIQUE`
+ @return Either `TREE_ERROR` (false) and doesn't touch `tree`, `TREE_ABSENT`
  and adds a new key with `key`, or `TREE_PRESENT` there was already an existing
  key. @throws[malloc] @order \Theta(\log |`tree`|) @allow */
 static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
@@ -993,7 +993,7 @@ static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
  parameter is non-null and a return value other then `TREE_ERROR`, this
  receives the address of the value associated with the key.
  @return Either `TREE_ERROR` (false,) `errno` is set and doesn't touch `tree`;
- `TREE_UNIQUE`, adds a new key; or `TREE_PRESENT`, there was already an
+ `TREE_ABSENT`, adds a new key; or `TREE_PRESENT`, there was already an
  existing key. @throws[malloc] @order \Theta(\log |`tree`|) @allow */
 static enum tree_result B_(tree_assign)(struct B_(tree) *const tree,
 	const PB_(key) key, PB_(key) *const eject, PB_(value) **const value)

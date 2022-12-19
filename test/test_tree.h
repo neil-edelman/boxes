@@ -328,7 +328,7 @@ static void PB_(test)(void) {
 		case TREE_PRESENT:
 			/*assert(B_(tree_get)(&tree, PB_(test_to_key)(t)));*/
 			break;
-		case TREE_UNIQUE:
+		case TREE_ABSENT:
 			n_unique++;
 #ifdef TREE_VALUE
 			*value = t->value;
@@ -440,7 +440,7 @@ static void PB_(test)(void) {
 		{
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
 		case TREE_PRESENT: printf("<%s> already in tree\n", z); break;
-		case TREE_UNIQUE:
+		case TREE_ABSENT:
 			n_unique++;
 #ifdef TREE_VALUE
 			*value = t->value;
@@ -501,7 +501,7 @@ static void PB_(test)(void) {
 		{
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
 		case TREE_PRESENT: break;
-		case TREE_UNIQUE: n_unique2++; break;
+		case TREE_ABSENT: n_unique2++; break;
 		}
 #ifdef TREE_VALUE
 		*value = t->value;
