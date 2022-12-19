@@ -120,7 +120,7 @@ static int pointer_compare(const int *const*const a, const int *const*const b)
 
 /** Tests; assert crashes on failed test. @return `EXIT_SUCCESS`. */
 int main(void) {
-	unsigned seed = (unsigned)clock();
+	unsigned seed = /*(unsigned)clock();*/ 2394;
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;

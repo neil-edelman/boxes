@@ -395,7 +395,7 @@ static void PAT_(to_string)(const PA_(type) *e, char (*const a)[12])
 #include "../test/test_array_compare.h"
 #endif /* test --> */
 #undef CMP_ /* From <compare.h>. */
-#undef CMPEXTERN_
+#undef CMPCALL_
 #ifdef ARRAY_COMPARE
 #undef ARRAY_COMPARE
 #else
