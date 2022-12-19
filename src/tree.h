@@ -178,6 +178,7 @@ static const struct PB_(branch) *PB_(as_branch_c)(const struct PB_(node) *
 /* Address of a specific key by node. There is a need for node plus index
  without height, but we'll just let height be unused. */
 struct PB_(ref) { struct PB_(node) *node; unsigned height, idx; };
+//struct PB_(noderef) { struct PB_(node) *node; unsigned idx; }
 /* Node plus height is a sub-tree. A <tag:<B>tree> is a sub-tree of the tree. */
 struct PB_(tree) { struct PB_(node) *node; unsigned height; };
 /** To initialize it to an idle state, see <fn:<B>tree>, `{0}` (`C99`), or
@@ -196,10 +197,6 @@ struct B_(tree_entry) { PB_(key) *key; PB_(value) *value; };
 /** On `TREE_VALUE`, otherwise it's just an alias for
  pointer-to-<typedef:<PB>key>. */
 typedef struct B_(tree_entry) PB_(entry);
-/** Constructs entry from `node` and `i`. */
-static PB_(entry) PB_(cons_entry)(struct PB_(node) *const node,
-	const unsigned i) { PB_(entry) e;
-	e.key = node->key + i, e.value = node->value + i; return e; }
 /** Gets the value of `ref`. */
 static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->value + ref.idx : 0; }
@@ -208,9 +205,6 @@ static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 
 typedef PB_(key) PB_(value);
 typedef PB_(key) *PB_(entry);
-/** Constructs entry from `node` and `i`. */
-static PB_(entry) PB_(cons_entry)(struct PB_(node) *const node,
-	const unsigned i) { return node->key + i; }
 /** Gets the value of `ref`. */
 static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->key + ref.idx : 0; }
@@ -331,20 +325,25 @@ static struct PB_(iterator) PB_(end)(struct B_(tree) *const tree) {
 	return it;
 }
 /** Advances `it`. @implements `next` */
-static int PB_(next)(struct PB_(iterator) *const it, PB_(entry) *const v) {
-	assert(it && it->root);
-	if((it->seen || !it->ref.node) && !PB_(to_successor)(*it->root, &it->ref))
-		return /*it->ref.node = 0,?*/ it->seen = 0, 0;
+static int PB_(next)(struct PB_(iterator) *const it,
+	struct PB_(ref) **const v) {
+	assert(it && it->root && it->ref.node);
+	if((it->seen || it->ref.node->size >= it->ref.idx)
+		&& !PB_(to_successor)(*it->root, &it->ref))
+		return it->seen = 0, 0;
 	it->seen = 1;
-	if(v) *v = PB_(cons_entry)(it->ref.node, it->ref.idx);
+	if(v) *v = &it->ref;
 	return 1;
 }
 /** Move to previous `it`. @return Element or null. @implements `previous` */
-static PB_(entry) PB_(previous)(struct PB_(iterator) *const it) {
-	assert(it);
-	/*if(!it->root || !PB_(to_predecessor)(*it->root, &it->ref))
-		return it->ref.node = 0, it->seen = 0, PB_(null_entry)();*/
-	return it->seen = 1, PB_(cons_entry)(it->ref.node, it->ref.idx);
+static int PB_(previous)(struct PB_(iterator) *const it,
+	struct PB_(ref) **const v) {
+	assert(it && it->root && it->ref.node);
+	if((it->seen || !it->ref.node)
+		&& !PB_(to_predecessor)(*it->root, &it->ref))
+		return it->seen = 0, 0;
+	if(v) *v = &it->ref;
+	return 1;
 }
 
 /* Want to find slightly different things; code re-use is bad. Confusing.
@@ -1522,30 +1521,54 @@ static struct B_(tree_iterator) B_(tree_begin_at)(struct B_(tree) *const tree,
 /** @return Cursor after the last element of `tree`. Can be null.
  @order \Theta(\log |`tree`|) @allow */
 static struct B_(tree_iterator) B_(tree_end)(struct B_(tree) *const tree)
-	{ struct B_(tree_iterator) cur; cur._ = PB_(end)(tree); return cur; }
-#ifdef TREE_VALUE
+	{ struct B_(tree_iterator) it; it._ = PB_(end)(tree); return it; }
+#ifdef TREE_VALUE /* <!-- map */
 /** Advances `cur` to the next element. @return A pointer to the current
  element, or null if it ran out of elements. The type is either a set
  pointer-to-key or a map <tag:<B>tree_entry> (with `TREE_VALUE`, both fields
  are null if null). @order \O(\log |`tree`|) @allow */
-static int B_(tree_next)(struct B_(tree_iterator) *const cur,
+static int B_(tree_next)(struct B_(tree_iterator) *const it,
 	PB_(key) *const k, PB_(value) **v) {
-	PB_(entry) e;
-	if(!PB_(next)(&cur->_, &e)) return 0;
-	if(k) *k = *e.key; /*?*/
-	if(v) *v = e.value;
+#else /* map --><!-- set */
+static int B_(tree_next)(struct B_(tree_iterator) *const it,
+	PB_(key) *const k) {
+#endif /* set --> */
+	struct PB_(ref) *r;
+	if(!PB_(next)(&it->_, &r)) return 0;
+	if(k) *k = r->node->key[r->idx];
+#ifdef TREE_VALUE
+	if(v) *v = r->node->value[r->idx];
+#endif
 	return 1;
+#ifdef TREE_VALUE
 }
 #else
-static int B_(tree_next)(struct B_(tree_iterator) *const cur, PB_(key) *k)
-	{ return PB_(next)(&cur->_, &k); }
+}
 #endif
+#ifdef TREE_VALUE /* <!-- map */
 /** Reverses `cur` to the previous element. @return A pointer to the previous
  element, or null if it ran out of elements. The type is either a set
  pointer-to-key or a map <tag:<B>tree_entry> (with `TREE_VALUE`, both fields
  are null if null). @order \O(\log |`tree`|) @allow */
-static PB_(entry) B_(tree_previous)(struct B_(tree_iterator) *const cur)
-	{ return PB_(previous)(&cur->_); }
+static int B_(tree_previous)(struct B_(tree_iterator) *const it,
+	PB_(key) *const k, PB_(value) **v) {
+#else /* map --><!-- set */
+static int B_(tree_previous)(struct B_(tree_iterator) *const it,
+	PB_(key) *const k) {
+#endif /* set --> */
+	struct PB_(ref) *r;
+	if(!PB_(next)(&it->_, &r)) return 0;
+	if(k) *k = r->node->key[r->idx];
+#ifdef TREE_VALUE
+	if(v) *v = r->node->value[r->idx];
+#endif
+	return 1;
+#ifdef TREE_VALUE
+}
+#else
+}
+#endif
+
 
 #ifdef TREE_VALUE /* <!-- map */
 /** Adds `key` and returns `value` to tree in iterator `it`. See
@@ -1627,15 +1650,14 @@ static void PB_(unused_base)(void) {
 #ifdef TREE_VALUE
 	B_(tree_bulk_add)(0, k, 0); B_(tree_try)(0, k, 0);
 	B_(tree_assign)(0, k, 0, 0); B_(tree_iterator_try)(0, k, 0);
-	B_(tree_next)(0, 0, 0);
+	B_(tree_next)(0, 0, 0); B_(tree_previous)(0, 0, 0);
 #else
 	B_(tree_bulk_add)(0, k); B_(tree_try)(0, k);
 	B_(tree_assign)(0, k, 0); B_(tree_iterator_try)(0, k);
-	B_(tree_next)(0, 0);
+	B_(tree_next)(0, 0); B_(tree_previous)(0, 0);
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
 	B_(tree_begin)(0); B_(tree_begin_at)(0, k); B_(tree_end)(0);
-	B_(tree_previous)(0);
 	B_(tree_iterator_remove)(0);
 	PB_(unused_base_coda)();
 }
@@ -1643,7 +1665,7 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 
 /* Box override information. */
 #define BOX_TYPE struct B_(tree)
-#define BOX_CONTENT PB_(entry)
+#define BOX_CONTENT struct PB_(ref)
 #define BOX_ PB_
 #define BOX_MAJOR_NAME tree
 #define BOX_MINOR_NAME TREE_NAME
@@ -1663,11 +1685,11 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 
 #ifdef TREE_TO_STRING /* <!-- to string trait */
 /** Thunk `b` -> `a`. */
-static void PBT_(to_string)(const PB_(entry) e, char (*const a)[12]) {
+static void PBT_(to_string)(const struct PB_(ref) *const r, char (*const a)[12]) {
 #ifdef TREE_VALUE
-	BT_(to_string)(*e.key, e.value, a);
+	BT_(to_string)(r->node->key + r->idx, r->node->value + r->idx, a);
 #else
-	BT_(to_string)(e, a);
+	BT_(to_string)(r->node->key + r->idx, a);
 #endif
 }
 #define TO_STRING_LEFT '{'
