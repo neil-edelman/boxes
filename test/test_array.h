@@ -4,12 +4,6 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-#if 0
-/** <../test/test_array.h>: operates by side-effects on <typedef:<PA>type>.
- (This is not used; but filler is this.) */
-typedef void (*PA_(action_fn))(PA_(type) *);
-#endif
-
 /** @return Is `a` in a valid state? */
 static void PA_(valid_state)(const struct A_(array) *const a) {
 	const size_t max_size = (size_t)~0 / sizeof *a->data;
@@ -75,7 +69,7 @@ static void PA_(test_basic)(void) {
 	struct A_(array) a = A_(array)();
 	struct A_(array_iterator) it;
 	char z[12];
-	PA_(type) items[5], *item, *item1;
+	PA_(value) items[5], *item, *item1;
 	const size_t items_size = sizeof items / sizeof *items, big = 1000;
 	size_t i;
 
@@ -116,31 +110,30 @@ static void PA_(test_basic)(void) {
 		assert(item);
 		memcpy(item, items + i, sizeof *item);
 	}
-	printf("Testing iteration, a = %s.\n",
-		A_(array_to_string)(&a));
-	for(it = A_(array_iterator)(&a), i = 0; item = A_(array_next)(&it); i++)
+	printf("Testing iteration, a = %s.\n", A_(array_to_string)(&a));
+	for(it = A_(array_begin)(&a), i = 0; item = A_(array_next)(&it); i++)
 		assert(!memcmp(item, items + i, sizeof *item));
 	assert(i == 3);
 	printf("Backwards:\n");
-	for(it = A_(array_iterator)(&a), i = 0; item = A_(array_previous)(&it); i++)
+	for(it = A_(array_end)(&a), i = 0; item = A_(array_previous)(&it); i++)
 		A_(to_string)((void *)item, &z), printf("%s\n", z),
 		assert(!memcmp(item, items + 2 - i, sizeof *item));
 	assert(i == 3);
-	it = A_(array_iterator)(&a);
+	it = A_(array_begin)(&a);
 	item = A_(array_next)(&it), assert(item), A_(to_string)((void *)item, &z);
 	A_(array_next)(&it), item = A_(array_previous)(&it);
 	assert(!memcmp(item, items + 0, sizeof *item));
 	for(i = 0; i < 3; i++) {
-		it = A_(array_iterator_at)(&a, i);
+		it = A_(array_at)(&a, i);
 		item = A_(array_next)(&it), assert(item);
 		A_(to_string)((void *)item, &z);
 		printf("a[%lu] = %s\n", (unsigned long)i, z);
 		assert(!memcmp(item, items + i, sizeof *item));
 	}
-	it = A_(array_iterator_at)(&a,i/*3*/), item = A_(array_next)(&it);
+	it = A_(array_at)(&a,i/*3*/), item = A_(array_next)(&it);
 	assert(!item);
 	/* Iteration and back. */
-	it = A_(array_iterator)(&a);
+	it = A_(array_begin)(&a);
 	item = A_(array_next)(&it), assert(!memcmp(item, items + 0, sizeof *item));
 	item = A_(array_previous)(&it), assert(!item);
 	/* Two iterations and back. */
@@ -150,10 +143,9 @@ static void PA_(test_basic)(void) {
 		assert(!memcmp(item, items + 0, sizeof *item));
 	item = A_(array_previous)(&it), assert(!item);
 	/* Iteration and back. */
-	it = A_(array_iterator)(&a);
-	item = A_(array_previous)(&it),
-		assert(!memcmp(item, items + 2, sizeof *item));
-	item = A_(array_next)(&it), assert(!item);
+	it = A_(array_begin)(&a);
+	item = A_(array_previous)(&it), assert(!item);
+	item = A_(array_next)(&it), assert(!memcmp(item, items + 0, sizeof *item));
 
 	printf("Testing lazy remove.\n");
 	A_(array_lazy_remove)(&a, a.data);
@@ -222,7 +214,7 @@ static void PA_(test_random)(void) {
 	size_t i, i_end = 1000 * mult, size = 0;
 	/* Random. */
 	for(i = 0; i < i_end; i++) {
-		PA_(type) *data;
+		PA_(value) *data;
 		char str[12];
 		unsigned r = (unsigned)rand();
 		int is_print = !(rand() / (RAND_MAX / 50 + 1));
@@ -267,10 +259,10 @@ static void PA_(test_random)(void) {
 }
 
 static void PA_(test_replace)(void) {
-	PA_(type) ts[5], *t, *t1;
+	PA_(value) ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	struct A_(array) a = A_(array)(), b = A_(array)();
-	PA_(type) *e;
+	PA_(value) *e;
 	int success;
 
 	/* valgrind does not like this. */
@@ -356,7 +348,7 @@ static void PA_(test_replace)(void) {
 #ifdef HAVE_ITERATE_H /* <!-- iterate */
 /** @implements <PA>Predicate
  @return A set sequence of ones and zeros, independant of `data`. */
-static int PA_(keep_deterministic)(const PA_(type) *const data) {
+static int PA_(keep_deterministic)(const PA_(value) *const data) {
 	static size_t i;
 	static const int things[] = { 1,0,0,0,0,1,0,0,1,1, 0,1,0,1,0,1,0 };
 	const int predicate = things[i++];
@@ -366,18 +358,18 @@ static int PA_(keep_deterministic)(const PA_(type) *const data) {
 }
 static int PA_(num);
 /** Increments a global variable, independent of `t`. @implements <PA>action */
-static void PA_(increment)(PA_(type) *const t) {
+static void PA_(increment)(PA_(value) *const t) {
 	(void)t;
 	PA_(num)++;
 }
 /** True, independent of `t`.
  @implements <PA>Predicate */
-static int PA_(true)(const PA_(type) *const t) {
+static int PA_(true)(const PA_(value) *const t) {
 	(void)t;
 	return 1;
 }
 /** @implements <PA>Predicate @return Is `t` zero-filled? */
-static int PA_(zero_filled)(const PA_(type) *const t) {
+static int PA_(zero_filled)(const PA_(value) *const t) {
 	const char *c = (const char *)t, *const end = (const char *)(t + 1);
 	assert(t);
 	while(c < end) if(*c++) return 0;
@@ -387,7 +379,7 @@ static int PA_(zero_filled)(const PA_(type) *const t) {
 
 static void PA_(test_keep)(void) {
 #ifdef HAVE_ITERATE_H
-	PA_(type) ts[17], *t, *t1, *e;
+	PA_(value) ts[17], *t, *t1, *e;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	struct A_(array) a = A_(array)(), b = A_(array)();
 	int ret;
@@ -424,7 +416,7 @@ static void PA_(test_keep)(void) {
 static void PA_(test_each)(void) {
 #ifdef HAVE_ITERATE_H
 	struct A_(array) empty = A_(array)(), one = A_(array)();
-	const PA_(type) *t;
+	const PA_(value) *t;
 	t = A_(array_new)(&one);
 	assert(t);
 	if(!t) return;
@@ -450,7 +442,7 @@ static void PA_(test_each)(void) {
 static void PA_(test_trim)(void) {
 #ifdef HAVE_ITERATE_H
 	struct A_(array) a = A_(array)();
-	PA_(type) *item;
+	PA_(value) *item;
 	int is_zero;
 	/* Trim 1. */
 	item = A_(array_new)(&a);
@@ -477,7 +469,7 @@ static void PA_(test_trim)(void) {
 
 static void PA_(test_insert)(void) {
 	struct A_(array) a = A_(array)();
-	PA_(type) original[17], solitary, *t, *t1, *e;
+	PA_(value) original[17], solitary, *t, *t1, *e;
 	const size_t original_size = sizeof original / sizeof *original;
 	size_t i;
 	printf("Test insert:\n");
