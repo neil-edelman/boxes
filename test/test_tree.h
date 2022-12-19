@@ -62,7 +62,11 @@ static void PB_(subgraph)(const struct PB_(tree) *const sub, FILE *fp) {
 		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
 		char z[12];
 		PB_(entry) e = PB_(cons_entry)(sub->node, i);
+#ifdef TREE_VALUE
+		B_(to_string)(*e.key, e.value, &z);
+#else
 		B_(to_string)(e, &z);
+#endif
 		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
 			" port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
 	}
@@ -133,7 +137,11 @@ static void PB_(subgraph_usual)(const struct PB_(tree) *const sub, FILE *fp) {
 	for(i = 0; i < sub->node->size; i++) {
 		char z[12];
 		PB_(entry) e = PB_(cons_entry)(sub->node, i);
+#ifdef TREE_VALUE
+		B_(to_string)(*e.key, e.value, &z);
+#else
 		B_(to_string)(e, &z);
+#endif
 		fprintf(fp, "\t<td border=\"0\" align=\"center\""
 			" port=\"%u\">%s</td>\n", i, z);
 	}
@@ -355,7 +363,7 @@ static void PB_(test)(void) {
 	/* Iteration; checksum. */
 	memset(&k, 0, sizeof k);
 	it = B_(tree_begin)(&tree), i = 0;
-	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
+	while(B_(tree_next)(&it, &entry)) {
 		/*char z[12];
 		PB_(to_string)(PB_(to_const)(entry), &z);
 		printf("<%s>\n", z);*/
@@ -381,7 +389,7 @@ static void PB_(test)(void) {
 		if(++i > n_size) assert(0); /* Avoids loops. */
 	}
 	assert(i == n_unique);
-	while(entry = B_(tree_next)(&it), PB_(contents)(&entry)) {
+	while(B_(tree_next)(&it, entry)) {
 		/*char z[12];*/
 		int succ;
 		/*PB_(to_string)(PB_(to_const)(entry), &z);
@@ -414,11 +422,15 @@ static void PB_(test)(void) {
 
 	/* Add. */
 	for(i = 0; i < n_size; i++) {
-		PB_(entry) ent;
+		PB_(entry) e;
 		char z[12];
 		struct PB_(tree_test) *const t = n + i;
-		ent = PB_(test_to_entry)(t);
-		B_(to_string)(ent, &z);
+		e = PB_(test_to_entry)(t);
+#ifdef TREE_VALUE
+		B_(to_string)(e.key, e.value, &z);
+#else
+		B_(to_string)(e, &z);
+#endif
 		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);
 #ifdef TREE_VALUE
 		switch(B_(tree_try)(&tree, t->key, &value))
@@ -448,7 +460,7 @@ static void PB_(test)(void) {
 	 the cursor. */
 	i = 0;
 	while(it = B_(tree_begin)(&tree),
-		entry = B_(tree_next)(&it),
+		B_(tree_next)(&it, entry), /*wtf?*/
 		PB_(contents)(&entry)) {
 		/*char z[12];
 		PB_(to_string)(PB_(to_const)(entry), &z);
@@ -479,7 +491,7 @@ static void PB_(test)(void) {
 			it = B_(tree_end)(&tree);
 		} else {
 			it = B_(tree_begin)(&tree);
-			B_(tree_next)(&it);
+			B_(tree_next)(&it, 0);
 		}
 #ifdef TREE_VALUE
 		switch(B_(tree_iterator_try)(&it, t->key, &value))
@@ -503,8 +515,8 @@ static void PB_(test)(void) {
 	assert(i == n_unique);
 
 	/* Remove every 2nd. */
-	for(it = B_(tree_begin)(&tree); B_(tree_next)(&it),
-		entry = B_(tree_next)(&it), PB_(contents)(&entry); )
+	for(it = B_(tree_begin)(&tree); B_(tree_next)(&it, 0),
+		B_(tree_next)(&it, entry); )
 		B_(tree_iterator_remove)(&it), n_unique--;
 	i = B_(tree_count)(&tree);
 	printf("remove every 2nd: %lu\n", (unsigned long)i);
