@@ -184,7 +184,7 @@ static int CMPEXTERN_(is_equal)(const PCMP_(value) *const restrict a,
 static int CMP_(is_equal)(const PCMP_(box) *restrict const a,
 	const PCMP_(box) *restrict const b) {
 	struct BOX_(iterator) ia, ib;
-	if(!a) return !b || !b->size;
+	if(!a) return !b /*|| !b->size <- Null is less than empty? Easier. */;
 	if(!b) return 0;
 	{ /* We do not modify, but the compiler doesn't know that. */
 		const PCMP_(box) *const rm_restrict = a;

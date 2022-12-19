@@ -112,7 +112,7 @@ static void PCMP_(test_compare)(void) {
 		"b: %s.\n", A_(array_to_string)(&a), A_(array_to_string)(&b));
 	cmp = CMP_(is_equal)(&a, &b), assert(!cmp);
 	cmp = CMP_(is_equal)(&a, 0), assert(!cmp);
-	cmp = CMP_(is_equal)(0, &b), assert(cmp); /* Null == size 0. */
+	cmp = CMP_(is_equal)(0, &b), /*assert(cmp)*/assert(!cmp); /* Null == size 0. <- nah */
 	if(!A_(array_append)(&b, ts_size)) { assert(0); return; }
 	memcpy(b.data, ts, sizeof *t * ts_size);
 	printf("now b: %s.\n", A_(array_to_string)(&b));
