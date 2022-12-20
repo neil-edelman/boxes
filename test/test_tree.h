@@ -38,9 +38,9 @@ static void PB_(subgraph)(const struct PB_(tree) *const sub, FILE *fp) {
 		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
 		char z[12];
 #ifdef TREE_VALUE
-		B_(to_string)(sub->node->key + , e.value, &z);
+		B_(to_string)(sub->node->key[i], sub->node->value + i, &z);
 #else
-		B_(to_string)(sub->node->key + i, &z);
+		B_(to_string)(sub->node->key[i], &z);
 #endif
 		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
 			" port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
@@ -114,7 +114,7 @@ static void PB_(subgraph_usual)(const struct PB_(tree) *const sub, FILE *fp) {
 #ifdef TREE_VALUE
 		B_(to_string)(*e.key, e.value, &z);
 #else
-		B_(to_string)(sub->node->key + i, &z);
+		B_(to_string)(sub->node->key[i], &z);
 #endif
 		fprintf(fp, "\t<td border=\"0\" align=\"center\""
 			" port=\"%u\">%s</td>\n", i, z);
@@ -338,7 +338,7 @@ static void PB_(test)(void) {
 #ifdef TREE_VALUE
 		B_(to_string)(&t->key, &t->value, &z);
 #else
-		B_(to_string)(&t->key, &z);
+		B_(to_string)(t->key, &z);
 #endif
 		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);
 #ifdef TREE_VALUE
@@ -369,7 +369,7 @@ static void PB_(test)(void) {
 	i = 0;
 	while(it = B_(tree_begin)(&tree), B_(tree_next)(&it, &k)) {
 		char z[12];
-		B_(to_string)(&k, &z);
+		B_(to_string)(k, &z);
 		printf("Targeting <%s> for removal.\n", z);
 		if(i) { const int cmp = B_(compare)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;

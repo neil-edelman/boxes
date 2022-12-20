@@ -1648,9 +1648,9 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 /** Thunk `b` -> `a`. */
 static void PBT_(to_string)(const struct PB_(ref) *const r, char (*const a)[12]) {
 #ifdef TREE_VALUE
-	BT_(to_string)(r->node->key + r->idx, r->node->value + r->idx, a);
+	BT_(to_string)(r->node->key[r->idx], r->node->value + r->idx, a);
 #else
-	BT_(to_string)(r->node->key + r->idx, a);
+	BT_(to_string)(r->node->key[r->idx], a);
 #endif
 }
 #define TO_STRING_LEFT '{'

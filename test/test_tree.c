@@ -4,14 +4,16 @@
 #include <errno.h>  /* errno */
 #include <time.h>   /* clock time */
 
+
 /* Unsigned numbers: this is the minimum tree, but not useful to test. */
 #define TREE_NAME foo
 #include "../src/tree.h"
 
+
 /* Unsigned numbers: testing framework. */
 /** @implements <typedef:<PSZ>to_string_fn> */
-static void int_to_string(const unsigned *const x, char (*const z)[12])
-	{ /*assert(*x < 10000000000),*/ sprintf(*z, "%u", *x); }
+static void int_to_string(const unsigned x, char (*const z)[12])
+	{ /*assert(*x < 10000000000),*/ sprintf(*z, "%u", x); }
 /** @implements <typedef:<PB>action_fn> */
 static void int_filler(unsigned *x)
 	{ *x = (unsigned)rand() / (RAND_MAX / 1000 + 1); }
@@ -20,14 +22,16 @@ static void int_filler(unsigned *x)
 #define TREE_TEST
 #include "../src/tree.h"
 
+
 static void order3_filler(unsigned *x) { int_filler(x); }
-static void order3_to_string(const unsigned *x, char (*const z)[12])
+static void order3_to_string(const unsigned x, char (*const z)[12])
 	{ int_to_string(x, z); }
 #define TREE_NAME order3
 #define TREE_TEST
 #define TREE_ORDER 3
 #define TREE_TO_STRING
 #include "../src/tree.h"
+
 
 #if 0
 /* Unsigned numbers: testing framework. */
@@ -157,7 +161,7 @@ static void order3(void) {
 	unsigned i;
 	const unsigned size_rnd = 100;
 	struct order3_tree_iterator it;
-	unsigned *val, v;
+	unsigned v;
 	int ret;
 	const size_t order3_order
 		= sizeof rnd.root.node->key / sizeof *rnd.root.node->key + 1;
@@ -642,8 +646,8 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	int_tree_test();
 	order3_tree_test();
-	/*redblack_tree_test();
-	pair_tree_test();
+	//redblack_tree_test();
+	/*pair_tree_test();
 	star_tree_test();
 	entry_tree_test();*/
 	order3();
