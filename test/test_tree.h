@@ -361,20 +361,20 @@ static void PB_(test)(void) {
 	memset(&k_prev, 0, sizeof k_prev);
 	it = B_(tree_begin)(&tree), i = 0;
 	while(B_(tree_next)(&it, &k)) {
-		/*char z[12];
-		PB_(to_string)(PB_(to_const)(entry), &z);
-		printf("<%s>\n", z);*/
+		/**/char z[12];
+		B_(to_string)(&k, &z);
+		printf("<%s>\n", z);/**/
 		if(i) { const int cmp = B_(compare)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
 	}
 	assert(i == n_unique);
-	/*printf("\n");*/
+	/**/printf("\n");/**/
 	it = B_(tree_end)(&tree), i = 0;
 	while(B_(tree_previous)(&it, &k)) {
-		/*char z[12];
-		PB_(to_string)(PB_(to_const)(entry), &z);
-		printf("<%s>\n", z);*/
+		/**/char z[12];
+		B_(to_string)(&k, &z);
+		printf("<%s>\n", z);/**/
 		if(i) { const int cmp = B_(compare)(k_prev, k); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */

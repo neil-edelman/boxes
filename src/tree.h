@@ -179,7 +179,8 @@ static const struct PB_(branch) *PB_(as_branch_c)(const struct PB_(node) *
  without height, but we'll just let height be unused. */
 struct PB_(ref) { struct PB_(node) *node; unsigned height, idx; };
 //struct PB_(noderef) { struct PB_(node) *node; unsigned idx; }
-/* Node plus height is a sub-tree. A <tag:<B>tree> is a sub-tree of the tree. */
+/* Node plus height is a sub-tree. A <tag:<B>tree> is a sub-tree of the tree.
+ fixme: 0-based height is problematic. UINT_MAX? No. */
 struct PB_(tree) { struct PB_(node) *node; unsigned height; };
 /** To initialize it to an idle state, see <fn:<B>tree>, `{0}` (`C99`), or
  being `static`.
@@ -190,13 +191,6 @@ struct B_(tree) { struct PB_(tree) root; };
 
 #ifdef TREE_VALUE /* <!-- value */
 
-/** On `TREE_VALUE`, creates a map from pointer-to-<typedef:<PB>key> to
- pointer-to-<typedef:<PB>value>. The reason these are pointers is because it
- is not contiguous in memory. */
-//struct B_(tree_entry) { PB_(key) *key; PB_(value) *value; };
-/** On `TREE_VALUE`, otherwise it's just an alias for
- pointer-to-<typedef:<PB>key>. */
-typedef struct B_(tree_entry) PB_(entry);
 /** Gets the value of `ref`. */
 static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->value + ref.idx : 0; }
@@ -204,7 +198,6 @@ static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 #else /* value --><!-- !value */
 
 typedef PB_(key) PB_(value);
-//typedef PB_(key) *PB_(entry);
 /** Gets the value of `ref`. */
 static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->key + ref.idx : 0; }
@@ -250,88 +243,76 @@ static int PB_(to_predecessor)(struct PB_(tree) tree,
 	*ref = prev;
 }	return 1; /* Jumped nodes. */
 }
-/** @return If `ref` in `tree` has a successor, then it increments. */
-static int PB_(to_successor)(struct PB_(tree) tree,
-	struct PB_(ref) *const ref) {
-	assert(ref);
-	if(!tree.node || tree.height == UINT_MAX) return 0; /* Empty. */
-	if(!ref->node)
-		ref->node = tree.node, ref->height = tree.height, ref->idx = 0;
-	else
-		ref->idx++;
-	while(ref->height) ref->height--,
-		ref->node = PB_(as_branch_c)(ref->node)->child[ref->idx], ref->idx = 0;
-	if(ref->idx < ref->node->size) return 1; /* Likely. */
-	if(!ref->node->size) return 0; /* When bulk-loading. */
-{ /* Re-descend; pick the minimum height node that has a next key. */
-	struct PB_(ref) next;
-	unsigned a0;
-	PB_(key) x;
-	for(next.node = 0, x = ref->node->key[ref->node->size - 1]; tree.height;
-		tree.node = PB_(as_branch_c)(tree.node)->child[a0], tree.height--) {
-		unsigned a1 = tree.node->size;
-		a0 = 0;
-		while(a0 < a1) {
-			const unsigned m = (a0 + a1) / 2;
-			if(B_(compare)(x, tree.node->key[m]) > 0) a0 = m + 1; else a1 = m;
-		}
-		if(a0 < tree.node->size)
-			next.node = tree.node, next.height = tree.height, next.idx = a0;
-	}
-	if(!next.node) return 0; /* Off right. */
-	*ref = next;
-}	return 1; /* Jumped nodes. */
-}
 
 struct PB_(iterator) { struct PB_(tree) *root; struct PB_(ref) ref; int seen; };
-/** Eliminates code-re-use from <fn:<PB>iterator> and <fn:<PB>end>.
- @return Fills `it` and returns if `tree` has contents, in which case, `idx`
- is uninitialized. */
-static int PB_(iterator_fill_part)(struct PB_(iterator) *const it,
-	struct B_(tree) *const tree) {
-	assert(it);
-	it->seen = 0;
-	if(!(it->root = tree ? &tree->root : 0)
-		|| !(it->ref.node = tree->root.node)
-		|| (it->ref.height = tree->root.height) == UINT_MAX) {
-		it->ref.node = 0;
-		it->ref.height = 0;
-		it->ref.idx = 0;
-		return 0;
-	}
-	return 1;
-}
 /** @return Before the start of `tree`, (can be null.) @implements `begin` */
 static struct PB_(iterator) PB_(begin)(struct B_(tree) *const tree) {
 	struct PB_(iterator) it;
-	if(PB_(iterator_fill_part)(&it, tree)) {
+	it.root = tree ? &tree->root : 0;
+	it.ref.height = tree ? tree->root.height : 0;
+	if(tree && tree->root.height != UINT_MAX)
 		for(it.ref.node = tree->root.node; it.ref.height;
-			it.ref.node = PB_(as_branch)(it.ref.node)->child[0],
-			it.ref.height--);
-		it.ref.idx = 0;
-	}
+		it.ref.node = PB_(as_branch)(it.ref.node)->child[0], it.ref.height--);
+	else it.ref.node = 0;
+	it.ref.idx = 0;
+	it.seen = 0;
 	return it;
 }
-/** @return Iterator after the end of `tree`, (can be null.)
- @implements `end` */
+/** @return After the end of `tree`, (can be null.) @implements `end` */
 static struct PB_(iterator) PB_(end)(struct B_(tree) *const tree) {
 	struct PB_(iterator) it;
-	if(PB_(iterator_fill_part)(&it, tree)) {
+	it.root = tree ? &tree->root : 0;
+	it.ref.height = tree ? tree->root.height : 0;
+	if(tree && tree->root.height != UINT_MAX)
 		for(it.ref.node = tree->root.node; it.ref.height;
-			it.ref.node = PB_(as_branch)(it.ref.node)->child[it.ref.node->size],
-			it.ref.height--);
-		it.ref.idx = it.ref.node->size;
-	}
+		it.ref.node = PB_(as_branch)(it.ref.node)->child[it.ref.node->size],
+		it.ref.height--);
+	else it.ref.node = 0;
+	it.ref.idx = it.ref.node ? it.ref.node->size : 0;
+	it.seen = 0;
 	return it;
 }
-/** Advances `it`. @implements `next` */
+/** Advances `it` to it's successor. @implements `next` */
 static int PB_(next)(struct PB_(iterator) *const it,
 	struct PB_(ref) **const v) {
-	assert(it && it->root && it->ref.node);
-	if((it->seen || it->ref.node->size >= it->ref.idx)
-		&& !PB_(to_successor)(*it->root, &it->ref))
-		return it->seen = 0, 0;
+	struct PB_(ref) adv;
+	assert(it);
+	if(!it->root || !it->ref.node) return 0;
+	if(!it->root->node || it->root->height == UINT_MAX)
+		return it->ref.node = 0, 0; /* Concurrent modification? */
+	adv = it->ref; /* Shorten keystrokes and work with a copy. */
+	if(!it->seen && adv.idx < adv.node->size) goto be_seen;
+	adv.idx++;
+	if(adv.height && adv.idx > adv.node->size)
+		return it->ref.node = 0, 0; /* Concurrent modification? */
+	while(adv.height) adv.height--,
+		adv.node = PB_(as_branch)(adv.node)->child[adv.idx], adv.idx = 0;
+	if(adv.idx < adv.node->size) goto be_seen; /* Likely. */
+	/* Bulk-loading or concurrent modification? */
+	if(adv.idx > adv.node->size) return it->ref.node = 0, 0;
+	{ /* Re-descend; pick the minimum height node that has a next key. */
+		struct PB_(ref) next;
+		struct PB_(tree) tree = *it->root;
+		unsigned a0;
+		const PB_(key) x = adv.node->key[adv.node->size - 1]; /* Target. */
+		for(next.node = 0; it->root->height;
+			tree.node = PB_(as_branch)(tree.node)->child[a0], tree.height--) {
+			unsigned a1 = tree.node->size;
+			a0 = 0;
+			while(a0 < a1) {
+				const unsigned m = (a0 + a1) / 2;
+				if(B_(compare)(x, tree.node->key[m]) > 0) a0 = m + 1;
+				else a1 = m;
+			}
+			if(a0 < tree.node->size)
+				next.node = tree.node, next.height = tree.height, next.idx = a0;
+		}
+		if(!next.node) return it->seen = 0, 0; /* Off right. */
+		adv = next;
+	} /* Jumped nodes. */
+be_seen:
 	it->seen = 1;
+	it->ref = adv;
 	if(v) *v = &it->ref;
 	return 1;
 }
@@ -339,9 +320,10 @@ static int PB_(next)(struct PB_(iterator) *const it,
 static int PB_(previous)(struct PB_(iterator) *const it,
 	struct PB_(ref) **const v) {
 	assert(it && it->root && it->ref.node);
-	if((it->seen || !it->ref.node)
+	if((it->seen || !it->ref.node || !it->ref.idx)
 		&& !PB_(to_predecessor)(*it->root, &it->ref))
 		return it->seen = 0, 0;
+	assert(it->ref.idx), it->ref.idx--;
 	if(v) *v = &it->ref;
 	return 1;
 }
@@ -1557,7 +1539,7 @@ static int B_(tree_previous)(struct B_(tree_iterator) *const it,
 	PB_(key) *const k) {
 #endif /* set --> */
 	struct PB_(ref) *r;
-	if(!PB_(next)(&it->_, &r)) return 0;
+	if(!PB_(previous)(&it->_, &r)) return 0;
 	if(k) *k = r->node->key[r->idx];
 #ifdef TREE_VALUE
 	if(v) *v = r->node->value[r->idx];
