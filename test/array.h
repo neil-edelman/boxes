@@ -81,9 +81,7 @@
 typedef ARRAY_TYPE PA_(type);
 
 /** Manages the array field `data` which has `size` elements. The space is
- indexed up to `capacity`, which is at least `size`. The fields should be
- treated as read-only; any modification is liable to cause the array to go into
- an invalid state.
+ indexed up to `capacity`, which is at least `size`.
 
  ![States.](../doc/states.png) */
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
@@ -111,33 +109,29 @@ static struct PA_(iterator) PA_(iterator_at)(struct A_(array) *a, size_t i) {
 	assert(a);
 	it.a = a, it.i = i > a->size ? a->size : i, it.seen = 0; return it;
 }
-/** Move to the next cursor position in the initialized `it`.
- @return If it moves, `e` will be filled with the position it
- moves though, if not-null, and it will return true, if not false. */
-static int PA_(next)(struct PA_(iterator) *const it, PA_(type) **const v) {
+/** @return Whether it moved `it` forwards and picked-up `e`. */
+static int PA_(next)(struct PA_(iterator) *const it, PA_(type) **const e) {
 	assert(it && it->a);
 	it->i += !!it->seen, it->seen = 1;
 	if(it->i >= it->a->size) return it->i = it->a->size, it->seen = 0, 0;
-	if(v) *v = it->a->data + it->i;
+	if(e) *e = it->a->data + it->i;
 	return 1;
 }
-/** Move to the previous cursor position in the initialized `it`.
- @return Whether it moved; if it moves, `e` will be filled with the position it
- moves though, if not null. */
-static int PA_(previous)(struct PA_(iterator) *const it, PA_(type) **const v) {
+/** @return Whether it moved `it` backwards and picked-up `e`. */
+static int PA_(previous)(struct PA_(iterator) *const it, PA_(type) **const e) {
 	assert(it && it->a);
 	if(it->i > it->a->size) it->i = it->a->size, it->seen = 0; /* Clip. */
 	if(!it->i) return it->seen = 0, 0; /* First. */
 	it->i--, it->seen = 1;
-	if(v) *v = it->a->data + it->i;
+	if(e) *e = it->a->data + it->i;
 	return 1;
 }
 /* fixme: static int PA_(remove)(struct PA_(iterator) *const it) */
 /** Size of `a`. @implements `size` */
 static size_t PA_(size)(const struct A_(array) *a) { return a ? a->size : 0; }
 /** @return Element `idx` of `a`. @implements `at` */
-static PA_(type) *PA_(at)(const struct A_(array) *a, const size_t i)
-	{ return a->data + i; }
+static PA_(type) *PA_(at)(const struct A_(array) *a, const size_t idx)
+	{ return a->data + idx; }
 /** Writes `size` to `a`. @implements `tell_size` */
 static void PA_(tell_size)(struct A_(array) *a, const size_t size)
 	{ assert(a); a->size = size; }
@@ -155,18 +149,21 @@ static struct A_(array) A_(array)(void)
 static void A_(array_)(struct A_(array) *const a)
 	{ if(a) free(a->data), *a = A_(array)(); }
 
-/** @return An iterator of `a`. */
+/** @return An iterator before the start of `a`. */
 static struct A_(array_iterator) A_(array_begin)(struct A_(array) *a)
 	{ struct A_(array_iterator) it; it._ = PA_(begin)(a); return it; }
+/** @return An iterator after the end of `a`. */
 static struct A_(array_iterator) A_(array_end)(struct A_(array) *a)
 	{ struct A_(array_iterator) it; it._ = PA_(end)(a); return it; }
-/** @return An iterator at `idx` of `a`. */
-static struct A_(array_iterator) A_(array_at)(struct A_(array) *a, size_t i)
-	{ struct A_(array_iterator) it; it._ = PA_(iterator_at)(a, i); return it; }
-/** @return `it` next element. */
+/** @return An iterator before `idx` of `a`. */
+static struct A_(array_iterator) A_(array_at)(struct A_(array) *a, size_t idx)
+	{ struct A_(array_iterator) it; it._ = PA_(iterator_at)(a, idx); return it; }
+/** Move initialized `it` to the next cursor position. @return Pointer to the
+ element through which it moved, or null if at the end. */
 static PA_(type) *A_(array_next)(struct A_(array_iterator) *const it)
 	{ PA_(type) *v; return assert(it), PA_(next)(&it->_, &v) ? v : 0; }
-/** @return `it` previous element. */
+/** Move initialized `it` to the previous cursor position. @return Pointer to
+ the element through which it moved, or null if at the beginning. */
 static PA_(type) *A_(array_previous)(struct A_(array_iterator) *const it)
 	{ PA_(type) *v; return assert(it), PA_(previous)(&it->_, &v) ? v : 0; }
 
@@ -327,7 +324,7 @@ static int A_(array_splice)(struct A_(array) *restrict const a,
 
 /* Box override information. */
 #define BOX_TYPE struct A_(array)
-#define BOX_VALUE PA_(type)
+#define BOX_CONTENT PA_(type)
 #define BOX_ PA_
 #define BOX_MAJOR_NAME array
 #define BOX_MINOR_NAME ARRAY_NAME
@@ -395,7 +392,7 @@ static void PAT_(to_string)(const PA_(type) *e, char (*const a)[12])
 #include "../test/test_array_compare.h"
 #endif /* test --> */
 #undef CMP_ /* From <compare.h>. */
-#undef CMPEXTERN_
+#undef CMPCALL_
 #ifdef ARRAY_COMPARE
 #undef ARRAY_COMPARE
 #else
@@ -408,7 +405,7 @@ static void PAT_(to_string)(const PA_(type) *e, char (*const a)[12])
 #undef ARRAY_EXPECT_TRAIT
 #else /* more --><!-- done */
 #undef BOX_TYPE
-#undef BOX_VALUE
+#undef BOX_CONTENT
 #undef BOX_
 #undef BOX_MAJOR_NAME
 #undef BOX_MINOR_NAME

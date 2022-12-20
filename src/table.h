@@ -509,8 +509,7 @@ static struct PN_(iterator) PN_(begin)(struct N_(table) *const table) {
 	struct PN_(iterator) it; it.table = table, it.cur = 0; it.prev = TABLE_NULL;
 	return it;
 }
-/** Advances `it` to the next element. @return Pointer to the current element
- or null. @implements `next` */
+/** @return Whether `it` advances and `v`. */
 static int PN_(next)(struct PN_(iterator) *const it,
 	struct PN_(bucket) **const v) {
 	assert(it);
@@ -782,7 +781,7 @@ static int N_(table_remove)(struct N_(table) *const table,
 
 /* Box override information. */
 #define BOX_TYPE struct N_(table)
-#define BOX_VALUE struct PN_(bucket)
+#define BOX_CONTENT struct PN_(bucket)
 #define BOX_ PN_
 #define BOX_MAJOR_NAME table
 #define BOX_MINOR_NAME TABLE_NAME
@@ -895,7 +894,7 @@ static void PN_D_(unused, default_coda)(void) { PN_D_(unused, default)(); }
 #undef TABLE_EXPECT_TRAIT
 #else /* more --><!-- done */
 #undef BOX_TYPE
-#undef BOX_VALUE
+#undef BOX_CONTENT
 #undef BOX_
 #undef BOX_MAJOR_NAME
 #undef BOX_MINOR_NAME

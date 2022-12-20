@@ -107,7 +107,7 @@ Returns true if the `replace` replaces the `original`\. \(Shouldn't it be entry?
 
 ### <a id = "user-content-typedef-49d9168b" name = "user-content-typedef-49d9168b">&lt;PITR&gt;action_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PITR&gt;action_fn</strong>)(&lt;PITR&gt;element);</code>
+<code>typedef void(*<strong>&lt;PITR&gt;action_fn</strong>)(&lt;PITR&gt;element *);</code>
 
 [src/iterate\.h](src/iterate.h): Operates by side\-effects\.
 
@@ -115,7 +115,7 @@ Returns true if the `replace` replaces the `original`\. \(Shouldn't it be entry?
 
 ### <a id = "user-content-typedef-c5016dba" name = "user-content-typedef-c5016dba">&lt;PITR&gt;predicate_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PITR&gt;predicate_fn</strong>)(const &lt;PITR&gt;element_c);</code>
+<code>typedef int(*<strong>&lt;PITR&gt;predicate_fn</strong>)(const &lt;PITR&gt;element *);</code>
 
 [src/iterate\.h](src/iterate.h): Returns a boolean given read\-only\.
 
@@ -123,9 +123,9 @@ Returns true if the `replace` replaces the `original`\. \(Shouldn't it be entry?
 
 ### <a id = "user-content-typedef-8a8349ca" name = "user-content-typedef-8a8349ca">&lt;PSTR&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element *, char(*)[12]);</code>
 
-[src/to\_string\.h](src/to_string.h): responsible for turning the read\-only argument into a 12\-`char` null\-terminated output string\. The first argument should be a read\-only reference to an element and the second a pointer to the bytes\.
+[src/to\_string\.h](src/to_string.h): responsible for turning the read\-only argument into a 12\-`char` null\-terminated output string, passed as a pointer in the last argument\. This function can have 2 or 3 arguments, where `<PSTR>element` might be a map with a key\-value pair\.
 
 
 
@@ -205,7 +205,7 @@ Adding, deleting, successfully looking up entries, or any modification of the ta
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-f3d5d82a">&lt;N&gt;table_remove</a></td><td>table, key</td></tr>
 
-<tr><td align = right>static &lt;PITR&gt;element</td><td><a href = "#user-content-fn-73c52918">&lt;ITR&gt;any</a></td><td>box, predicate</td></tr>
+<tr><td align = right>static &lt;PITR&gt;element *</td><td><a href = "#user-content-fn-73c52918">&lt;ITR&gt;any</a></td><td>box, predicate</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-96abfbdb">&lt;ITR&gt;each</a></td><td>box, action</td></tr>
 
@@ -428,7 +428,7 @@ Removes `key` from `table` \(which could be null\.\)
 
 ### <a id = "user-content-fn-73c52918" name = "user-content-fn-73c52918">&lt;ITR&gt;any</a> ###
 
-<code>static &lt;PITR&gt;element <strong>&lt;ITR&gt;any</strong>(const &lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code>
+<code>static &lt;PITR&gt;element *<strong>&lt;ITR&gt;any</strong>(const &lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code>
 
 [src/iterate\.h](src/iterate.h): Iterates through `box` and calls `predicate` until it returns true\.
 

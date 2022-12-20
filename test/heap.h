@@ -132,7 +132,7 @@ struct PH_(iterator) { struct PAH_(iterator) _; };
 /** @return Before `h`. @implements `forward` */
 static struct PH_(iterator) PH_(begin)(struct H_(heap) *const h) {
 	struct PH_(iterator) it; it._ = PAH_(begin)(&h->as_array); return it; }
-/** @return The next `it` or null. @implements `next_c` */
+/** @return The next `it` is stored in `v` or false. @implements `next` */
 static int PH_(next)(struct PH_(iterator) *const it, PH_(node) **const v)
 	{ return PAH_(next)(&it->_, v); }
 #undef PAH_
@@ -201,8 +201,8 @@ static void PH_(sift_down)(struct H_(heap) *const heap) {
  slightly more complex than <fn:<PH>sift_down>, but the same thing.
  @param[heap] At least `i + 1` entries. */
 static void PH_(sift_down_i)(struct H_(heap) *const heap, size_t i) {
-	const size_t size = (assert(heap && i < heap->as_array.size), heap->as_array.size),
-		half = size >> 1;
+	const size_t size = (assert(heap && i < heap->as_array.size),
+		heap->as_array.size), half = size >> 1;
 	size_t c;
 	/* Uninitialized variable warning suppression. */
 	PH_(node) *const n0 = heap->as_array.data, *child, temp = *(&temp);
@@ -345,7 +345,7 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 
 /* Box override information. */
 #define BOX_TYPE struct H_(heap)
-#define BOX_VALUE PH_(node)
+#define BOX_CONTENT PH_(node)
 #define BOX_ PH_
 #define BOX_MAJOR_NAME heap
 #define BOX_MINOR_NAME HEAP_NAME
@@ -391,7 +391,7 @@ static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12]) {
 #undef HEAP_EXPECT_TRAIT
 #else /* more --><!-- done */
 #undef BOX_TYPE
-#undef BOX_VALUE
+#undef BOX_CONTENT
 #undef BOX_
 #undef BOX_MAJOR_NAME
 #undef BOX_MINOR_NAME

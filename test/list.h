@@ -109,7 +109,7 @@ static struct PL_(iterator) PL_(begin)(struct L_(list) *const l)
 static struct PL_(iterator) PL_(end)(struct L_(list) *const l)
 	{ struct PL_(iterator) it; it.link = l ? &l->u.as_tail.tail : 0;
 	it.seen = 0; return it; }
-/** Advances `it`. @implements `next` */
+/** @return Advances `it` into `v` or false. @implements `next` */
 static int PL_(next)(struct PL_(iterator) *const it,
 	struct L_(listlink) **const v) {
 	struct L_(listlink) *next;
@@ -120,7 +120,7 @@ static int PL_(next)(struct PL_(iterator) *const it,
 	if(v) *v = next;
 	return 1;
 }
-/** Reverses `it`. @implements `previous` */
+/** @return Reverses `it` into `v` or false. @implements `previous` */
 static int PL_(previous)(struct PL_(iterator) *const it,
 	struct L_(listlink) **const v) {
 	struct L_(listlink) *prev;
@@ -303,7 +303,7 @@ static void L_(list_self_correct)(struct L_(list) *const list) {
 
 /* Box override information. */
 #define BOX_TYPE struct L_(list)
-#define BOX_VALUE struct L_(listlink)
+#define BOX_CONTENT struct L_(listlink)
 #define BOX_ PL_
 #define BOX_MAJOR_NAME list
 #define BOX_MINOR_NAME LIST_NAME
@@ -667,7 +667,7 @@ static void PL_(unused_extra_compare_coda)(void){ PL_(unused_extra_compare)(); }
 #undef LIST_EXPECT_TRAIT
 #else /* trait --><!-- done */
 #undef BOX_TYPE
-#undef BOX_VALUE
+#undef BOX_CONTENT
 #undef BOX_
 #undef BOX_MAJOR_NAME
 #undef BOX_MINOR_NAME

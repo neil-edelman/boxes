@@ -26,12 +26,14 @@ static const char *zodiac[] = { ZODIAC(X) };
 #undef X
 /** Sequential monotonic values make a pretty good hash.
  @implements <zodiac>hash_fn */
-static unsigned zodiac_hash(const enum zodiac z) { return z; }
+static unsigned char zodiac_hash(const enum zodiac z)
+	{ return (unsigned char)z; }
 /** This is a discrete set with a simple homomorphism between keys and hash
  values, therefore it's simpler to work in hash space. This saves us from
  having to define <typedef:<PN>is_equal_fn> and saves the key from even being
- stored. @implements <zodiac>unhash_fn */
-static enum zodiac zodiac_unhash(const unsigned z) { return z; }
+ stored. (Still, this uses 16 bits to store 1 bit of information, it would be
+ better as a bit-vector.) @implements <zodiac>unhash_fn */
+static enum zodiac zodiac_unhash(const unsigned char z) { return z; }
 /** This is not necessary except for testing, because that is how we see what
  we're testing. @implements <zodiac>to_string_fn */
 static void zodiac_to_string(const enum zodiac z, char (*const a)[12])
@@ -45,7 +47,7 @@ static void zodiac_filler(void *const zero, enum zodiac *const z) {
 #define TABLE_NAME zodiac
 #define TABLE_KEY enum zodiac
 #define TABLE_INVERSE /* If you can, inverse is less space and simpler. */
-#define TABLE_UINT unsigned char /*unsigned*/ /* `size_t` overkill. */
+#define TABLE_UINT unsigned char /*<-small unsigned*/ /* `size_t` overkill. */
 #define TABLE_TEST /* Testing requires to string. */
 #define TABLE_TO_STRING /* Requires <../src/to_string.h>. */
 #include "../src/table.h"
