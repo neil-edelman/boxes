@@ -29,7 +29,8 @@ static void PH_(graph)(const struct H_(heap) *const heap,
 		"\tedge [arrowhead = none];\n");
 	for(i = 0; i < heap->as_array.size; i++) {
 #ifdef HEAP_VALUE
-		H_(to_string)(heap->as_array.data[i].value, &a);
+		H_(to_string)(heap->as_array.data[i].priority,
+			heap->as_array.data[i].value, &a);
 #else
 		H_(to_string)(heap->as_array.data + i, &a);
 #endif
@@ -62,9 +63,9 @@ static void PH_(valid)(const struct H_(heap) *const heap) {
 /** Fills `node` whether it has `HEAP_VALUE` or not. */
 static void PH_(fill)(PH_(node) *const node) {
 #ifdef HEAP_VALUE
-	node->priority = H_(filler)(&node->value);
+	H_(filler)(&node->priority, &node->value);
 #else
-	*node = H_(filler)();
+	H_(filler)(node);
 #endif
 }
 
@@ -166,7 +167,7 @@ static void PH_(test_basic)(void) {
 		node = H_(heap_peek)(&heap);
 		assert(node);
 #ifdef HEAP_VALUE
-		H_(to_string)(node->value, &z);
+		H_(to_string)(node->priority, node->value, &z);
 #else
 		H_(to_string)(node, &z);
 #endif

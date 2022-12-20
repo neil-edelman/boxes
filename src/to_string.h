@@ -19,7 +19,7 @@
 
  @std C89 */
 
-#if !defined(BOX_TYPE) || !defined(BOX_VALUE) || !defined(BOX_) \
+#if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
 	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME) \
 	|| defined(STR_) || defined(STREXTERN_)
 #error Unexpected preprocessor symbols.
@@ -73,12 +73,12 @@ static unsigned to_string_buffer_i;
 
 #ifndef BOX_TRAIT_NAME /* <!-- !trait */
 #define STR_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), n)
-#define STRTHUNK_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MAJOR_NAME, \
+#define STRCALL_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MAJOR_NAME, \
 	BOX_MINOR_NAME), n)
 #else /* !trait --><!-- trait */
 #define STR_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), \
 	TO_STRING_CAT(BOX_TRAIT_NAME, n))
-#define STRTHUNK_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MAJOR_NAME, \
+#define STRCALL_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MAJOR_NAME, \
 	BOX_MINOR_NAME), TO_STRING_CAT(BOX_TRAIT_NAME, n))
 #endif /* trait --> */
 
@@ -87,14 +87,14 @@ typedef BOX_TYPE PSTR_(box);
 typedef BOX_KEY PSTR_(key);
 #error
 #endif
-typedef BOX_VALUE PSTR_(value);
+typedef BOX_CONTENT PSTR_(element);
 
 #if 0 /* <!-- documentation. */
 /** <src/to_string.h>: responsible for turning the read-only argument into a
  12-`char` null-terminated output string, passed as a pointer in the last
- argument. This function can have 2 or 3 arguments, where `<PSTR>value` is
- actually a map with a key-value pair.  */
-typedef void (*PSTR_(to_string_fn))(const PSTR_(value) *, char (*)[12]);
+ argument. This function can have 2 or 3 arguments, where `<PSTR>element` might
+ be a map with a key-value pair.  */
+typedef void (*PSTR_(to_string_fn))(const PSTR_(element) *, char (*)[12]);
 #endif /* documentation --> */
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
@@ -106,7 +106,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	const size_t ellipsis_len = sizeof ellipsis - 1;
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance;
-	PSTR_(value) *v;
+	PSTR_(element) *v;
 	struct BOX_(iterator) it;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
@@ -121,7 +121,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	}
 	*b++ = left;
 	while(BOX_(next)(&it, &v)) {
-		STRTHUNK_(to_string)(v, (char (*)[12])b);
+		STRCALL_(to_string)(v, (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
@@ -149,7 +149,7 @@ static void PSTR_(unused_to_string)(void)
 static void PSTR_(unused_to_string_coda)(void) { PSTR_(unused_to_string)(); }
 
 #undef STR_
-#undef STRTHUNK_
+#undef STRCALL_
 #ifdef TO_STRING_EXTERN
 #undef TO_STRING_EXTERN
 #endif

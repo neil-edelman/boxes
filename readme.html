@@ -109,9 +109,9 @@
 
 <h3><a id = "typedef:<PSTR>to_string_fn" name = "typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element *, char(*)[12]);</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the read-only argument into a 12-<code>char</code> null-terminated output string. The first argument should be a read-only reference to an element and the second a pointer to the bytes.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the read-only argument into a 12-<code>char</code> null-terminated output string, passed as a pointer in the last argument. This function can have 2 or 3 arguments, where <code>&lt;PSTR&gt;element</code> might be a map with a key-value pair.</p>
 
 </div>
 

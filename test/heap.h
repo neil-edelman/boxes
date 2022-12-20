@@ -345,7 +345,7 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 
 /* Box override information. */
 #define BOX_TYPE struct H_(heap)
-#define BOX_VALUE PH_(node)
+#define BOX_CONTENT PH_(node)
 #define BOX_ PH_
 #define BOX_MAJOR_NAME heap
 #define BOX_MINOR_NAME HEAP_NAME
@@ -386,7 +386,7 @@ static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12])
 #undef HEAP_EXPECT_TRAIT
 #else /* more --><!-- done */
 #undef BOX_TYPE
-#undef BOX_VALUE
+#undef BOX_CONTENT
 #undef BOX_
 #undef BOX_MAJOR_NAME
 #undef BOX_MINOR_NAME
