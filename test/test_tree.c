@@ -20,8 +20,6 @@ static void int_filler(unsigned *x)
 #define TREE_TEST
 #include "../src/tree.h"
 
-#if 0
-
 static void order3_filler(unsigned *x) { int_filler(x); }
 static void order3_to_string(const unsigned *x, char (*const z)[12])
 	{ int_to_string(x, z); }
@@ -31,6 +29,7 @@ static void order3_to_string(const unsigned *x, char (*const z)[12])
 #define TREE_TO_STRING
 #include "../src/tree.h"
 
+#if 0
 /* Unsigned numbers: testing framework. */
 static void redblack_to_string(const unsigned key, const unsigned value,
 	char (*const a)[12])
@@ -146,6 +145,7 @@ static void entry_to_string(const union date32 k, const int *const v,
 #include "../src/tree.h"
 
 
+#endif
 /** Order 3 integer tree set; it's hard to make a simpler example. */
 static void order3(void) {
 	struct order3_tree between = order3_tree(),
@@ -186,38 +186,38 @@ static void order3(void) {
 	it = order3_tree_begin_at(&between, 50);
 	printf("between(50) %s:%u %sseen.\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
-	val = order3_tree_next(&it), assert(val && *val == 100);
-	printf("next %u.\n", *val);
+	ret = order3_tree_next(&it, &v), assert(ret && v == 100);
+	printf("next %u.\n", v);
 	it = order3_tree_begin_at(&between, 50);
-	val = order3_tree_previous(&it), assert(!val);
+	ret = order3_tree_previous(&it, &v), assert(!ret);
 	printf("previous dne.\n");
 
 	it = order3_tree_begin_at(&between, 150);
 	printf("between(150) %s:%u %sseen.\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
-	val = order3_tree_next(&it), assert(val && *val == 200);
-	printf("next %u.\n", *val);
+	ret = order3_tree_next(&it, &v), assert(ret && v == 200);
+	printf("next %u.\n", v);
 	it = order3_tree_begin_at(&between, 150);
-	val = order3_tree_previous(&it), assert(val && *val == 100);
-	printf("previous %u.\n", *val);
+	ret = order3_tree_previous(&it, &v), assert(ret && v == 100);
+	printf("previous %u.\n", v);
 
 	it = order3_tree_begin_at(&between, 250);
 	printf("between(250) %s:%u %sseen.\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
-	val = order3_tree_next(&it), assert(val && *val == 300);
-	printf("next %u.\n", *val);
+	ret = order3_tree_next(&it, &v), assert(ret && v == 300);
+	printf("next %u.\n", v);
 	it = order3_tree_begin_at(&between, 250);
-	val = order3_tree_previous(&it), assert(val && *val == 200);
-	printf("previous %u.\n", *val);
+	ret = order3_tree_previous(&it, &v), assert(ret && v == 200);
+	printf("previous %u.\n", v);
 
 	it = order3_tree_begin_at(&between, 350);
 	printf("between(350) %s:%u %sseen\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
-	val = order3_tree_next(&it), assert(!val);
+	ret = order3_tree_next(&it, &v), assert(!ret);
 	printf("next dne.\n");
 	it = order3_tree_begin_at(&between, 350);
-	val = order3_tree_previous(&it), assert(val && *val == 300);
-	printf("previous %u.\n", *val);
+	ret = order3_tree_previous(&it, &v), assert(ret && v == 300);
+	printf("previous %u.\n", v);
 
 	/* The value of the cursor. */
 	v = order3_tree_at_or(&between, 50, 0), assert(v == 100);
@@ -473,6 +473,7 @@ finally:
 	order3_tree_(&copy);
 }
 
+#if 0
 /** This tests the order 4 tree map. */
 static void redblack(void) {
 	struct redblack_tree tree = redblack_tree();
@@ -640,13 +641,13 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	int_tree_test();
-	/*order3_tree_test();
-	redblack_tree_test();
+	order3_tree_test();
+	/*redblack_tree_test();
 	pair_tree_test();
 	star_tree_test();
-	entry_tree_test();
+	entry_tree_test();*/
 	order3();
-	redblack();
+	/*redblack();
 	loop_tree_test();
 	loop();
 	typical_tree_test();*/
