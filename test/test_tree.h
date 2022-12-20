@@ -194,7 +194,7 @@ static void PB_(sort)(struct PB_(tree_test) *a, const size_t size) {
 static void PB_(test)(void) {
 	struct B_(tree) tree = B_(tree)(), empty = B_(tree)();
 	struct B_(tree_iterator) it;
-	struct PB_(tree_test) test[80];
+	struct PB_(tree_test) test[8000];
 	const size_t test_size = sizeof test / sizeof *test;
 #ifdef TREE_VALUE
 	PB_(value) *v;

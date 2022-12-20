@@ -255,7 +255,7 @@ static int PB_(next)(struct PB_(iterator) *const it,
 		struct PB_(tree) tree = *it->root;
 		unsigned a0;
 		const PB_(key) x = adv.node->key[adv.node->size - 1]; /* Target. */
-		for(next.node = 0; it->root->height;
+		for(next.node = 0; tree.height;
 			tree.node = PB_(as_branch)(tree.node)->child[a0], tree.height--) {
 			unsigned a1 = tree.node->size;
 			a0 = 0;
@@ -286,11 +286,15 @@ static int PB_(previous)(struct PB_(iterator) *const it,
 	if(!it->root->node || it->root->height == UINT_MAX
 		|| prd.idx > prd.node->size)
 		return it->ref.node = 0, 0; /* Concurrent modification? */
-	if(!it->seen && prd.idx < prd.node->size) goto predecessor;
+	if(prd.idx > prd.node->size) prd.idx = prd.node->size; /* Clip. */
+	if(!it->seen) {
+		if(prd.idx) { prd.idx--; goto predecessor; }
+		return 0; /* Already first. */
+	}
 	while(prd.height) prd.height--,
 		prd.node = PB_(as_branch)(prd.node)->child[prd.idx],
 		prd.idx = prd.node->size;
-	if(prd.idx) goto predecessor; /* Likely. */
+	if(prd.idx) { prd.idx--; goto predecessor; } /* Likely. */
 	{ /* Re-descend; pick the minimum height node that has a previous key. */
 		struct PB_(ref) prev;
 		struct PB_(tree) tree = *it->root;
@@ -313,7 +317,7 @@ static int PB_(previous)(struct PB_(iterator) *const it,
 	} /* Jumped nodes. */
 predecessor:
 	it->seen = 1;
-	assert(prd.idx), it->ref.idx = prd.idx - 1;
+	it->ref = prd;
 	if(v) *v = &it->ref;
 	return 1;
 }
