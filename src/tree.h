@@ -117,7 +117,6 @@ struct tree_node_count { size_t branches, leaves; };
 
 /** Ordered type used by <typedef:<PB>compare_fn>; defaults to `unsigned`. */
 typedef TREE_KEY PB_(key);
-typedef const TREE_KEY PB_(key_c);
 
 #ifdef TREE_VALUE
 /** On `TREE_VALUE`, this creates a map, otherwise a set of
@@ -129,12 +128,12 @@ typedef TREE_VALUE PB_(value);
  inducing a strict weak order. This is compatible, but less strict then the
  comparators from `bsearch` and `qsort`; it only needs to divide entries into
  two instead of three categories. */
-typedef int (*PB_(compare_fn))(PB_(key_c) a, PB_(key_c) b);
+typedef int (*PB_(compare_fn))(const PB_(key) a, const PB_(key) b);
 #ifndef TREE_COMPARE /* <!-- !cmp */
 /** The default `TREE_COMPARE` on `a` and `b` is integer comparison that
  results in ascending order, `a > b`. Use `TREE_COMPARE` to supply one's own.
  @implements <typedef:<PB>compare_fn> */
-static int B_(compare)(PB_(key_c) a, PB_(key_c) b)
+static int B_(compare)(const PB_(key) a, const PB_(key) b)
 	{ return a > b; }
 #define TREE_COMPARE &PB_(default_compare)
 #endif /* !cmp --> */
