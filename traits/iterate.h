@@ -8,7 +8,7 @@
  @std C89 */
 /** * <src/iterate.h>: defining `HAVE_ITERATE_H` supplies `<ITR>` functions. */
 
-#if !defined(BOX_TYPE) || !defined(BOX_VALUE) || !defined(BOX_) \
+#if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
 	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME)
 #error Unexpected preprocessor symbols.
 #endif
@@ -29,21 +29,21 @@
 #endif /* idempotent --> */
 
 typedef BOX_TYPE PITR_(box);
-typedef BOX_VALUE PITR_(value);
+typedef BOX_CONTENT PITR_(element);
 
 /** <src/iterate.h>: Operates by side-effects. */
-typedef void (*PITR_(action_fn))(PITR_(value) *);
+typedef void (*PITR_(action_fn))(PITR_(element) *);
 /** <src/iterate.h>: Returns a boolean given read-only. */
-typedef int (*PITR_(predicate_fn))(const PITR_(value) *);
+typedef int (*PITR_(predicate_fn))(const PITR_(element) *);
 
 /** <src/iterate.h>: Iterates through `box` and calls `predicate` until it
  returns true. @return The first `predicate` that returned true, or, if the
  statement is false on all, null.
  @order \O(`box.size`) \times \O(`predicate`) @allow */
-static PITR_(value) *ITR_(any)(const PITR_(box) *const box,
+static PITR_(element) *ITR_(any)(const PITR_(box) *const box,
 	const PITR_(predicate_fn) predicate) {
 	struct BOX_(iterator) it;
-	PITR_(value) *i;
+	PITR_(element) *i;
 	assert(box && predicate);
 	{ /* We do not modify `box`, but the compiler doesn't know that. */
 		PITR_(box) *promise_box;
@@ -58,7 +58,7 @@ static PITR_(value) *ITR_(any)(const PITR_(box) *const box,
  elements. @order \O(|`box`|) \times \O(`action`) @allow */
 static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
 	struct BOX_(iterator) it;
-	PITR_(value) *v;
+	PITR_(element) *v;
 	assert(box && action);
 	/* fixme: Could we remove `v` from the list? */
 	for(it = BOX_(begin)(box); BOX_(next)(&it, &v); ) action(v);
@@ -70,7 +70,7 @@ static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
 static void ITR_(if_each)(PITR_(box) *const box,
 	const PITR_(predicate_fn) predicate, const PITR_(action_fn) action) {
 	struct BOX_(iterator) it;
-	PITR_(value) *v;
+	PITR_(element) *v;
 	assert(box && predicate && action);
 	/* fixme: Could be to remove `i` from the list? */
 	for(it = BOX_(begin)(box); BOX_(next)(&it, &v); )
@@ -85,7 +85,7 @@ static void ITR_(if_each)(PITR_(box) *const box,
  @order \O(|`src`|) \times \O(`copy`) @throws[realloc] @allow */
 static int ITR_(copy_if)(PITR_(box) *restrict const dst,
 	const PITR_(box) *restrict const src, const PITR_(predicate_fn) copy) {
-	PITR_(value) *v, *fresh, *end, *rise = 0;
+	PITR_(element) *v, *fresh, *end, *rise = 0;
 	size_t add;
 	int difcpy = 0;
 	assert(dst && copy && dst != src);
@@ -116,7 +116,7 @@ static int ITR_(copy_if)(PITR_(box) *restrict const dst,
  deleting. @order \O(|`box`|) (\times O(`keep`) + O(`destruct`)) @allow */
 static void ITR_(keep_if)(PITR_(box) *const box,
 	const PITR_(predicate_fn) keep, const PITR_(action_fn) destruct) {
-	PITR_(value) *erase = 0, *v, *retain = 0, *end;
+	PITR_(element) *erase = 0, *v, *retain = 0, *end;
 	int keep0 = 1, keep1 = 0;
 	assert(box && keep);
 	for(v = BOX_(at)(box, 0), end = v + BOX_(size)(box); v < end;
@@ -155,7 +155,7 @@ static void ITR_(keep_if)(PITR_(box) *const box,
 static void ITR_(trim)(PITR_(box) *const box,
 	const PITR_(predicate_fn) predicate) {
 	size_t right, left;
-	PITR_(value) *first;
+	PITR_(element) *first;
 	assert(box);
 	if(!predicate) return;
 	right = BOX_(size)(box);
