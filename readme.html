@@ -39,8 +39,8 @@
 
 <ul>
 	<li><a href = "#preamble:">Description</a></li>
-	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PB>key">&lt;PB&gt;key</a>, <a href = "#typedef:<PB>value">&lt;PB&gt;value</a>, <a href = "#typedef:<PB>compare_fn">&lt;PB&gt;compare_fn</a>, <a href = "#typedef:<PB>entry">&lt;PB&gt;entry</a>, <a href = "#typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></li>
-	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:tree_result">tree_result</a>, <a href = "#tag:<B>tree">&lt;B&gt;tree</a>, <a href = "#tag:<B>tree_entry">&lt;B&gt;tree_entry</a>, <a href = "#tag:<B>tree_iterator">&lt;B&gt;tree_iterator</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<PB>key">&lt;PB&gt;key</a>, <a href = "#typedef:<PB>value">&lt;PB&gt;value</a>, <a href = "#typedef:<PB>compare_fn">&lt;PB&gt;compare_fn</a>, <a href = "#typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:tree_result">tree_result</a>, <a href = "#tag:<B>tree">&lt;B&gt;tree</a>, <a href = "#tag:<B>tree_iterator">&lt;B&gt;tree_iterator</a></li>
 	<li><a href = "#summary:">Function Summary</a></li>
 	<li><a href = "#fn:">Function Definitions</a></li>
 	<li><a href = "#license:">License</a></li>
@@ -60,7 +60,7 @@
 	<dt>Parameter: TREE_NAME, TREE_KEY</dt>
 	<dd><code>&lt;B&gt;</code> that satisfies <code>C</code> naming conventions when mangled, required, and <code>TREE_KEY</code>, a type, <a href = "#typedef:&lt;PB&gt;key">&lt;PB&gt;key</a>, whose default is <code>unsigned int</code>. <code>&lt;PB&gt;</code> is private, whose names are prefixed in a manner to avoid collisions.</dd>
 	<dt>Parameter: TREE_VALUE</dt>
-	<dd>Optional payload to go with the type, <a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a>. The makes it a map of <a href = "#tag:&lt;B&gt;tree_entry">&lt;B&gt;tree_entry</a> instead of a set.</dd>
+	<dd>Optional payload to go with the type, <a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a>, thus making it a map instead of a set.</dd>
 	<dt>Parameter: TREE_COMPARE</dt>
 	<dd>This will define <a href = "#fn:&lt;B&gt;compare">&lt;B&gt;compare</a>, a <a href = "#typedef:&lt;PB&gt;compare_fn">&lt;PB&gt;compare_fn</a> that compares keys as integer-types that results in ascending order, <code>a &gt; b</code>. If <code>TREE_COMPARE</code> is specified, the user most specify their own <a href = "#fn:&lt;B&gt;compare">&lt;B&gt;compare</a>.</dd>
 	<dt>Parameter: TREE_ORDER</dt>
@@ -111,21 +111,11 @@
 
 <div>
 
-<h3><a id = "typedef:<PB>entry" name = "typedef:<PB>entry">&lt;PB&gt;entry</a></h3>
-
-<p><code>typedef struct &lt;B&gt;tree_entry <strong>&lt;PB&gt;entry</strong>;</code></p>
-
-<p>On <code>TREE_VALUE</code>, otherwise it's just an alias for pointer-to-<a href = "#typedef:&lt;PB&gt;key">&lt;PB&gt;key</a>.</p>
-
-</div>
-
-<div>
-
 <h3><a id = "typedef:<PSTR>to_string_fn" name = "typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element *, char(*)[12]);</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the read-only argument into a 12-<code>char</code> null-terminated output string. The first argument should be a read-only reference to an element and the second a pointer to the bytes.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the read-only argument into a 12-<code>char</code> null-terminated output string, passed as a pointer in the last argument. This function can have 2 or 3 arguments, where <code>&lt;PSTR&gt;element</code> might be a map with a key-value pair.</p>
 
 </div>
 
@@ -152,16 +142,6 @@
 <p>To initialize it to an idle state, see <a href = "#fn:&lt;B&gt;tree">&lt;B&gt;tree</a>, <code>{0}</code> (<code>C99</code>), or being <code>static</code>.</p>
 
 <p><img alt = "States." src = "doc/states.png" width = 1237 height = 223></p>
-
-</div>
-
-<div>
-
-<h3><a id = "tag:<B>tree_entry" name = "tag:<B>tree_entry">&lt;B&gt;tree_entry</a></h3>
-
-<p><code>struct <strong>&lt;B&gt;tree_entry</strong> { &lt;PB&gt;key *key; &lt;PB&gt;value *value; };</code></p>
-
-<p>On <code>TREE_VALUE</code>, creates a map from pointer-to-<a href = "#typedef:&lt;PB&gt;key">&lt;PB&gt;key</a> to pointer-to-<a href = "#typedef:&lt;PB&gt;value">&lt;PB&gt;value</a>. The reason these are pointers is because it is not contiguous in memory.</p>
 
 </div>
 
@@ -211,13 +191,13 @@
 
 <tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#fn:<B>tree_begin">&lt;B&gt;tree_begin</a></td><td>tree</td></tr>
 
-<tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#fn:<B>tree_begin_at">&lt;B&gt;tree_begin_at</a></td><td>tree, x</td></tr>
-
 <tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#fn:<B>tree_end">&lt;B&gt;tree_end</a></td><td>tree</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#fn:<B>tree_next">&lt;B&gt;tree_next</a></td><td>cur</td></tr>
+<tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#fn:<B>tree_begin_at">&lt;B&gt;tree_begin_at</a></td><td>tree, x</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#fn:<B>tree_previous">&lt;B&gt;tree_previous</a></td><td>cur</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<B>tree_next">&lt;B&gt;tree_next</a></td><td>it, k, v</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<B>tree_previous">&lt;B&gt;tree_previous</a></td><td>it, k, v</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#fn:<STR>to_string">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
@@ -354,7 +334,7 @@
 	<dt>Parameter: <em>value</em></dt>
 	<dd>A pointer to the key's value which is set by the function on returning true. A null pointer in this parameter causes the value to go uninitialized. This parameter is not there if one didn't specify <code>TREE_VALUE</code>.</dd>
 	<dt>Return:</dt>
-	<dd>One of <a href = "#tag:tree_result">tree_result</a>: <code>TREE_ERROR</code> and <code>errno</code> will be set, <code>TREE_PRESENT</code> if the key is already (the highest) in the tree, and <code>TREE_UNIQUE</code>, added, the <code>value</code> (if applicable) is uninitialized.</dd>
+	<dd>One of <a href = "#tag:tree_result">tree_result</a>: <code>TREE_ERROR</code> and <code>errno</code> will be set, <code>TREE_PRESENT</code> if the key is already (the highest) in the tree, and <code>TREE_ABSENT</code>, added, the <code>value</code> (if applicable) is uninitialized.</dd>
 	<dt>Exceptional return: EDOM</dt>
 	<dd><code>x</code> is smaller than the largest key in <code>tree</code>.</dd>
 	<dt>Exceptional return: malloc</dt>
@@ -391,9 +371,9 @@
 
 <dl>
 	<dt>Parameter: <em>valuep</em></dt>
-	<dd>Only present if <code>TREE_VALUE</code> (map) was specified. If this parameter is non-null and a return value other then <code>TREE_ERROR</code>, this receives the address of the value associated with the <code>key</code>. This pointer is only guaranteed to be valid only while the <code>tree</code> doesn't undergo structural changes, (such as calling <a href = "#fn:&lt;B&gt;tree_try">&lt;B&gt;tree_try</a> with <code>TREE_UNIQUE</code> again.)</dd>
+	<dd>Only present if <code>TREE_VALUE</code> (map) was specified. If this parameter is non-null and a return value other then <code>TREE_ERROR</code>, this receives the address of the value associated with the <code>key</code>. This pointer is only guaranteed to be valid only while the <code>tree</code> doesn't undergo structural changes, (such as calling <a href = "#fn:&lt;B&gt;tree_try">&lt;B&gt;tree_try</a> with <code>TREE_ABSENT</code> again.)</dd>
 	<dt>Return:</dt>
-	<dd>Either <code>TREE_ERROR</code> (false) and doesn't touch <code>tree</code>, <code>TREE_UNIQUE</code> and adds a new key with <code>key</code>, or <code>TREE_PRESENT</code> there was already an existing key.</dd>
+	<dd>Either <code>TREE_ERROR</code> (false) and doesn't touch <code>tree</code>, <code>TREE_ABSENT</code> and adds a new key with <code>key</code>, or <code>TREE_PRESENT</code> there was already an existing key.</dd>
 	<dt>Exceptional return: malloc</dt>
 	<dt>Order:</dt>
 	<dd>&#920;(log |<code>tree</code>|)</dd>
@@ -415,7 +395,7 @@
 	<dt>Parameter: <em>value</em></dt>
 	<dd>Only present if <code>TREE_VALUE</code> (map) was specified. If this parameter is non-null and a return value other then <code>TREE_ERROR</code>, this receives the address of the value associated with the key.</dd>
 	<dt>Return:</dt>
-	<dd>Either <code>TREE_ERROR</code> (false,) <code>errno</code> is set and doesn't touch <code>tree</code>; <code>TREE_UNIQUE</code>, adds a new key; or <code>TREE_PRESENT</code>, there was already an existing key.</dd>
+	<dd>Either <code>TREE_ERROR</code> (false,) <code>errno</code> is set and doesn't touch <code>tree</code>; <code>TREE_ABSENT</code>, adds a new key; or <code>TREE_PRESENT</code>, there was already an existing key.</dd>
 	<dt>Exceptional return: malloc</dt>
 	<dt>Order:</dt>
 	<dd>&#920;(log |<code>tree</code>|)</dd>
@@ -481,23 +461,6 @@
 
 <div>
 
-<h3><a id = "fn:<B>tree_begin_at" name = "fn:<B>tree_begin_at">&lt;B&gt;tree_begin_at</a></h3>
-
-<p><code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_begin_at</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
-
-<dl>
-	<dt>Parameter: <em>tree</em></dt>
-	<dd>Can be null.</dd>
-	<dt>Return:</dt>
-	<dd>Cursor in <code>tree</code> between elements, such that if <a href = "#fn:&lt;B&gt;tree_next">&lt;B&gt;tree_next</a> is called, it will be smallest key that is not smaller than <code>x</code>, or, <a href = "#fn:&lt;B&gt;tree_end">&lt;B&gt;tree_end</a> if <code>x</code> is greater than all in <code>tree</code>.</dd>
-	<dt>Order:</dt>
-	<dd>&#920;(log |<code>tree</code>|)</dd>
-</dl>
-
-</div>
-
-<div>
-
 <h3><a id = "fn:<B>tree_end" name = "fn:<B>tree_end">&lt;B&gt;tree_end</a></h3>
 
 <p><code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_end</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code></p>
@@ -513,15 +476,28 @@
 
 <div>
 
-<h3><a id = "fn:<B>tree_next" name = "fn:<B>tree_next">&lt;B&gt;tree_next</a></h3>
+<h3><a id = "fn:<B>tree_begin_at" name = "fn:<B>tree_begin_at">&lt;B&gt;tree_begin_at</a></h3>
 
-<p><code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_next</strong>(struct &lt;B&gt;tree_iterator *const <em>cur</em>)</code></p>
-
-<p>Advances <code>cur</code> to the next element.</p>
+<p><code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_begin_at</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>A pointer to the current element, or null if it ran out of elements. The type is either a set pointer-to-key or a map <a href = "#tag:&lt;B&gt;tree_entry">&lt;B&gt;tree_entry</a> (with <code>TREE_VALUE</code>, both fields are null if null).</dd>
+	<dd>Cursor in <code>tree</code> between elements, such that if <a href = "#fn:&lt;B&gt;tree_next">&lt;B&gt;tree_next</a> is called, it will be smallest key that is not smaller than <code>x</code>, or, <a href = "#fn:&lt;B&gt;tree_end">&lt;B&gt;tree_end</a> if <code>x</code> is greater than all in <code>tree</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<B>tree_next" name = "fn:<B>tree_next">&lt;B&gt;tree_next</a></h3>
+
+<p><code>static int <strong>&lt;B&gt;tree_next</strong>(struct &lt;B&gt;tree_iterator *const <em>it</em>, &lt;PB&gt;key *const <em>k</em>, &lt;PB&gt;value **<em>v</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Whether advancing <code>it</code> to the next element and filling <code>k</code>, (and <code>v</code> if a map, otherwise absent,) if not-null.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(log |<code>tree</code>|)</dd>
 </dl>
@@ -532,13 +508,11 @@
 
 <h3><a id = "fn:<B>tree_previous" name = "fn:<B>tree_previous">&lt;B&gt;tree_previous</a></h3>
 
-<p><code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_previous</strong>(struct &lt;B&gt;tree_iterator *const <em>cur</em>)</code></p>
-
-<p>Reverses <code>cur</code> to the previous element.</p>
+<p><code>static int <strong>&lt;B&gt;tree_previous</strong>(struct &lt;B&gt;tree_iterator *const <em>it</em>, &lt;PB&gt;key *const <em>k</em>, &lt;PB&gt;value **<em>v</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>A pointer to the previous element, or null if it ran out of elements. The type is either a set pointer-to-key or a map <a href = "#tag:&lt;B&gt;tree_entry">&lt;B&gt;tree_entry</a> (with <code>TREE_VALUE</code>, both fields are null if null).</dd>
+	<dd>Whether reversing <code>it</code> to the previous element and filling <code>k</code>, (and <code>v</code> if a map, otherwise absent,) if not-null.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(log |<code>tree</code>|)</dd>
 </dl>

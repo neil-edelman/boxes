@@ -5,8 +5,8 @@ Stand\-alone header [src/tree\.h](src/tree.h); examples [test/test\_tree\.c](tes
 ## Ordered tree ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PB&gt;key](#user-content-typedef-9d1494bc), [&lt;PB&gt;value](#user-content-typedef-1740653a), [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31), [&lt;PB&gt;entry](#user-content-typedef-8e330c63), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [tree_result](#user-content-tag-9c3f99d7), [&lt;B&gt;tree](#user-content-tag-a36433e3), [&lt;B&gt;tree_entry](#user-content-tag-9e3caf18), [&lt;B&gt;tree_iterator](#user-content-tag-18b8c30e)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PB&gt;key](#user-content-typedef-9d1494bc), [&lt;PB&gt;value](#user-content-typedef-1740653a), [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [tree_result](#user-content-tag-9c3f99d7), [&lt;B&gt;tree](#user-content-tag-a36433e3), [&lt;B&gt;tree_iterator](#user-content-tag-18b8c30e)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -22,7 +22,7 @@ A [&lt;B&gt;tree](#user-content-tag-a36433e3) is an ordered set or map contained
  * Parameter: TREE\_NAME, TREE\_KEY  
    `<B>` that satisfies `C` naming conventions when mangled, required, and `TREE_KEY`, a type, [&lt;PB&gt;key](#user-content-typedef-9d1494bc), whose default is `unsigned int`\. `<PB>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: TREE\_VALUE  
-   Optional payload to go with the type, [&lt;PB&gt;value](#user-content-typedef-1740653a)\. The makes it a map of [&lt;B&gt;tree_entry](#user-content-tag-9e3caf18) instead of a set\.
+   Optional payload to go with the type, [&lt;PB&gt;value](#user-content-typedef-1740653a), thus making it a map instead of a set\.
  * Parameter: TREE\_COMPARE  
    This will define [&lt;B&gt;compare](#user-content-fn-7286e7be), a [&lt;PB&gt;compare_fn](#user-content-typedef-35616b31) that compares keys as integer\-types that results in ascending order, `a > b`\. If `TREE_COMPARE` is specified, the user most specify their own [&lt;B&gt;compare](#user-content-fn-7286e7be)\.
  * Parameter: TREE\_ORDER  
@@ -65,19 +65,11 @@ Returns a positive result if `a` is out\-of\-order with respect to `b`, inducing
 
 
 
-### <a id = "user-content-typedef-8e330c63" name = "user-content-typedef-8e330c63">&lt;PB&gt;entry</a> ###
-
-<code>typedef struct &lt;B&gt;tree_entry <strong>&lt;PB&gt;entry</strong>;</code>
-
-On `TREE_VALUE`, otherwise it's just an alias for pointer\-to\-[&lt;PB&gt;key](#user-content-typedef-9d1494bc)\.
-
-
-
 ### <a id = "user-content-typedef-8a8349ca" name = "user-content-typedef-8a8349ca">&lt;PSTR&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element *, char(*)[12]);</code>
 
-[src/to\_string\.h](src/to_string.h): responsible for turning the read\-only argument into a 12\-`char` null\-terminated output string\. The first argument should be a read\-only reference to an element and the second a pointer to the bytes\.
+[src/to\_string\.h](src/to_string.h): responsible for turning the read\-only argument into a 12\-`char` null\-terminated output string, passed as a pointer in the last argument\. This function can have 2 or 3 arguments, where `<PSTR>element` might be a map with a key\-value pair\.
 
 
 
@@ -100,14 +92,6 @@ A result of modifying the tree, of which `TREE_ERROR` is false\.
 To initialize it to an idle state, see [&lt;B&gt;tree](#user-content-fn-a36433e3), `{0}` \(`C99`\), or being `static`\.
 
 ![States.](doc/states.png)
-
-
-
-### <a id = "user-content-tag-9e3caf18" name = "user-content-tag-9e3caf18">&lt;B&gt;tree_entry</a> ###
-
-<code>struct <strong>&lt;B&gt;tree_entry</strong> { &lt;PB&gt;key *key; &lt;PB&gt;value *value; };</code>
-
-On `TREE_VALUE`, creates a map from pointer\-to\-[&lt;PB&gt;key](#user-content-typedef-9d1494bc) to pointer\-to\-[&lt;PB&gt;value](#user-content-typedef-1740653a)\. The reason these are pointers is because it is not contiguous in memory\.
 
 
 
@@ -153,13 +137,13 @@ Adding, deleting, or changes in the topology of the tree invalidate it\.
 
 <tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#user-content-fn-903f4e29">&lt;B&gt;tree_begin</a></td><td>tree</td></tr>
 
-<tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#user-content-fn-52203017">&lt;B&gt;tree_begin_at</a></td><td>tree, x</td></tr>
-
 <tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#user-content-fn-6b449fc9">&lt;B&gt;tree_end</a></td><td>tree</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#user-content-fn-6828a06d">&lt;B&gt;tree_next</a></td><td>cur</td></tr>
+<tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#user-content-fn-52203017">&lt;B&gt;tree_begin_at</a></td><td>tree, x</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;entry</td><td><a href = "#user-content-fn-30771909">&lt;B&gt;tree_previous</a></td><td>cur</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-6828a06d">&lt;B&gt;tree_next</a></td><td>it, k, v</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-30771909">&lt;B&gt;tree_previous</a></td><td>it, k, v</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
@@ -270,7 +254,7 @@ Packs `key` on the right side of `tree` without doing the usual restructuring\. 
  * Parameter: _value_  
    A pointer to the key's value which is set by the function on returning true\. A null pointer in this parameter causes the value to go uninitialized\. This parameter is not there if one didn't specify `TREE_VALUE`\.
  * Return:  
-   One of [tree_result](#user-content-tag-9c3f99d7): `TREE_ERROR` and `errno` will be set, `TREE_PRESENT` if the key is already \(the highest\) in the tree, and `TREE_UNIQUE`, added, the `value` \(if applicable\) is uninitialized\.
+   One of [tree_result](#user-content-tag-9c3f99d7): `TREE_ERROR` and `errno` will be set, `TREE_PRESENT` if the key is already \(the highest\) in the tree, and `TREE_ABSENT`, added, the `value` \(if applicable\) is uninitialized\.
  * Exceptional return: EDOM  
    `x` is smaller than the largest key in `tree`\.
  * Exceptional return: malloc  
@@ -301,9 +285,9 @@ Distributes `tree` \(can be null\) on the right side so that, after a series of 
 Adds or gets `key` in `tree`\. If `key` is already in `tree`, uses the old value, _vs_ [&lt;B&gt;tree_assign](#user-content-fn-4b04ca55)\. \(This is only significant in trees with distinguishable keys\.\)
 
  * Parameter: _valuep_  
-   Only present if `TREE_VALUE` \(map\) was specified\. If this parameter is non\-null and a return value other then `TREE_ERROR`, this receives the address of the value associated with the `key`\. This pointer is only guaranteed to be valid only while the `tree` doesn't undergo structural changes, \(such as calling [&lt;B&gt;tree_try](#user-content-fn-2c43561d) with `TREE_UNIQUE` again\.\)
+   Only present if `TREE_VALUE` \(map\) was specified\. If this parameter is non\-null and a return value other then `TREE_ERROR`, this receives the address of the value associated with the `key`\. This pointer is only guaranteed to be valid only while the `tree` doesn't undergo structural changes, \(such as calling [&lt;B&gt;tree_try](#user-content-fn-2c43561d) with `TREE_ABSENT` again\.\)
  * Return:  
-   Either `TREE_ERROR` \(false\) and doesn't touch `tree`, `TREE_UNIQUE` and adds a new key with `key`, or `TREE_PRESENT` there was already an existing key\.
+   Either `TREE_ERROR` \(false\) and doesn't touch `tree`, `TREE_ABSENT` and adds a new key with `key`, or `TREE_PRESENT` there was already an existing key\.
  * Exceptional return: malloc  
  * Order:  
    &#920;\(log |`tree`|\)
@@ -322,7 +306,7 @@ Adds or updates `key` in `tree`\.
  * Parameter: _value_  
    Only present if `TREE_VALUE` \(map\) was specified\. If this parameter is non\-null and a return value other then `TREE_ERROR`, this receives the address of the value associated with the key\.
  * Return:  
-   Either `TREE_ERROR` \(false,\) `errno` is set and doesn't touch `tree`; `TREE_UNIQUE`, adds a new key; or `TREE_PRESENT`, there was already an existing key\.
+   Either `TREE_ERROR` \(false,\) `errno` is set and doesn't touch `tree`; `TREE_ABSENT`, adds a new key; or `TREE_PRESENT`, there was already an existing key\.
  * Exceptional return: malloc  
  * Order:  
    &#920;\(log |`tree`|\)
@@ -377,20 +361,6 @@ Tries to remove `key` from `tree`\.
 
 
 
-### <a id = "user-content-fn-52203017" name = "user-content-fn-52203017">&lt;B&gt;tree_begin_at</a> ###
-
-<code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_begin_at</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code>
-
- * Parameter: _tree_  
-   Can be null\.
- * Return:  
-   Cursor in `tree` between elements, such that if [&lt;B&gt;tree_next](#user-content-fn-6828a06d) is called, it will be smallest key that is not smaller than `x`, or, [&lt;B&gt;tree_end](#user-content-fn-6b449fc9) if `x` is greater than all in `tree`\.
- * Order:  
-   &#920;\(log |`tree`|\)
-
-
-
-
 ### <a id = "user-content-fn-6b449fc9" name = "user-content-fn-6b449fc9">&lt;B&gt;tree_end</a> ###
 
 <code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_end</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code>
@@ -403,14 +373,24 @@ Tries to remove `key` from `tree`\.
 
 
 
-### <a id = "user-content-fn-6828a06d" name = "user-content-fn-6828a06d">&lt;B&gt;tree_next</a> ###
+### <a id = "user-content-fn-52203017" name = "user-content-fn-52203017">&lt;B&gt;tree_begin_at</a> ###
 
-<code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_next</strong>(struct &lt;B&gt;tree_iterator *const <em>cur</em>)</code>
-
-Advances `cur` to the next element\.
+<code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_begin_at</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code>
 
  * Return:  
-   A pointer to the current element, or null if it ran out of elements\. The type is either a set pointer\-to\-key or a map [&lt;B&gt;tree_entry](#user-content-tag-9e3caf18) \(with `TREE_VALUE`, both fields are null if null\)\.
+   Cursor in `tree` between elements, such that if [&lt;B&gt;tree_next](#user-content-fn-6828a06d) is called, it will be smallest key that is not smaller than `x`, or, [&lt;B&gt;tree_end](#user-content-fn-6b449fc9) if `x` is greater than all in `tree`\.
+ * Order:  
+   &#920;\(log |`tree`|\)
+
+
+
+
+### <a id = "user-content-fn-6828a06d" name = "user-content-fn-6828a06d">&lt;B&gt;tree_next</a> ###
+
+<code>static int <strong>&lt;B&gt;tree_next</strong>(struct &lt;B&gt;tree_iterator *const <em>it</em>, &lt;PB&gt;key *const <em>k</em>, &lt;PB&gt;value **<em>v</em>)</code>
+
+ * Return:  
+   Whether advancing `it` to the next element and filling `k`, \(and `v` if a map, otherwise absent,\) if not\-null\.
  * Order:  
    &#927;\(log |`tree`|\)
 
@@ -419,12 +399,10 @@ Advances `cur` to the next element\.
 
 ### <a id = "user-content-fn-30771909" name = "user-content-fn-30771909">&lt;B&gt;tree_previous</a> ###
 
-<code>static &lt;PB&gt;entry <strong>&lt;B&gt;tree_previous</strong>(struct &lt;B&gt;tree_iterator *const <em>cur</em>)</code>
-
-Reverses `cur` to the previous element\.
+<code>static int <strong>&lt;B&gt;tree_previous</strong>(struct &lt;B&gt;tree_iterator *const <em>it</em>, &lt;PB&gt;key *const <em>k</em>, &lt;PB&gt;value **<em>v</em>)</code>
 
  * Return:  
-   A pointer to the previous element, or null if it ran out of elements\. The type is either a set pointer\-to\-key or a map [&lt;B&gt;tree_entry](#user-content-tag-9e3caf18) \(with `TREE_VALUE`, both fields are null if null\)\.
+   Whether reversing `it` to the previous element and filling `k`, \(and `v` if a map, otherwise absent,\) if not\-null\.
  * Order:  
    &#927;\(log |`tree`|\)
 

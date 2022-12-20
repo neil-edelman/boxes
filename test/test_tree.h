@@ -194,7 +194,7 @@ static void PB_(sort)(struct PB_(tree_test) *a, const size_t size) {
 static void PB_(test)(void) {
 	struct B_(tree) tree = B_(tree)(), empty = B_(tree)();
 	struct B_(tree_iterator) it;
-	struct PB_(tree_test) test[8000];
+	struct PB_(tree_test) test[800];
 	const size_t test_size = sizeof test / sizeof *test;
 #ifdef TREE_VALUE
 	PB_(value) *v;
@@ -365,7 +365,7 @@ static void PB_(test)(void) {
 #else
 		B_(to_string)(t->key, &z);
 #endif
-		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);
+		/*printf("%lu -- adding <%s>.\n", (unsigned long)i, z);*/
 #ifdef TREE_VALUE
 		switch(B_(tree_try)(&tree, t->key, &v))
 #else
@@ -373,14 +373,14 @@ static void PB_(test)(void) {
 #endif
 		{
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
-		case TREE_PRESENT: printf("<%s> already in tree\n", z); break;
+		case TREE_PRESENT: /*printf("<%s> already in tree\n", z);*/ break;
 		case TREE_ABSENT:
 			n_unique++;
 #ifdef TREE_VALUE
 			*v = t->value;
 #endif
 			t->in = 1;
-			printf("<%s> added\n", z); break;
+			/*printf("<%s> added\n", z);*/ break;
 		}
 		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-add-%lu.gv", i + 1);
@@ -399,13 +399,13 @@ static void PB_(test)(void) {
 		B_(tree_next)(&it, &k)
 #endif
 		) {
-		char z[12];
+		/*char z[12];
 #ifdef TREE_VALUE
 		B_(to_string)(k, v, &z);
 #else
 		B_(to_string)(k, &z);
 #endif
-		printf("Targeting <%s> for removal.\n", z);
+		printf("Targeting <%s> for removal.\n", z);*/
 		if(i) { const int cmp = B_(compare)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */

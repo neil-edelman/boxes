@@ -87,14 +87,14 @@ typedef BOX_TYPE PSTR_(box);
 typedef BOX_KEY PSTR_(key);
 #error
 #endif
-typedef BOX_CONTENT PSTR_(value);
+typedef BOX_CONTENT PSTR_(element);
 
 #if 0 /* <!-- documentation. */
 /** <src/to_string.h>: responsible for turning the read-only argument into a
  12-`char` null-terminated output string, passed as a pointer in the last
- argument. This function can have 2 or 3 arguments, where `<PSTR>value` is
- actually a map with a key-value pair.  */
-typedef void (*PSTR_(to_string_fn))(const PSTR_(value) *, char (*)[12]);
+ argument. This function can have 2 or 3 arguments, where `<PSTR>element` might
+ be a map with a key-value pair.  */
+typedef void (*PSTR_(to_string_fn))(const PSTR_(element) *, char (*)[12]);
 #endif /* documentation --> */
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
@@ -106,7 +106,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	const size_t ellipsis_len = sizeof ellipsis - 1;
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance;
-	PSTR_(value) *v;
+	PSTR_(element) *v;
 	struct BOX_(iterator) it;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
