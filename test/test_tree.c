@@ -33,7 +33,6 @@ static void order3_to_string(const unsigned x, char (*const z)[12])
 #include "../src/tree.h"
 
 
-#if 0
 /* Unsigned numbers: testing framework. */
 static void redblack_to_string(const unsigned key, const unsigned *const value,
 	char (*const a)[12])
@@ -46,10 +45,8 @@ static void redblack_filler(unsigned *const k, unsigned *const v) {
 #define TREE_TO_STRING
 #define TREE_TEST
 #include "../src/tree.h"
-#endif
 
 
-#if 0
 /* Unsigned numbers and values. Prototype a value. */
 static void pair_filler(unsigned *const x, unsigned *const y) {
 	int_filler(x);
@@ -151,7 +148,6 @@ static void entry_to_string(const union date32 k, const int *const v,
 #include "../src/tree.h"
 
 
-#endif
 /** Order 3 integer tree set; it's hard to make a simpler example. */
 static void order3(void) {
 	struct order3_tree between = order3_tree(),
@@ -479,7 +475,6 @@ finally:
 	order3_tree_(&copy);
 }
 
-#if 0
 /** This tests the order 4 tree map. */
 static void redblack(void) {
 	struct redblack_tree tree = redblack_tree();
@@ -562,7 +557,7 @@ static void loop_filler(unsigned *const x)
 	{ *x = (unsigned)rand() / (RAND_MAX / 100000 + 1); }
 static int loop_compare(const unsigned a, const unsigned b)
 	{ return (a % 100) > (b % 100); }
-static void loop_to_string(const unsigned int *const x, char (*const z)[12])
+static void loop_to_string(const unsigned x, char (*const z)[12])
 	{ int_to_string(x, z); }
 #define TREE_NAME loop
 #define TREE_TEST
@@ -632,7 +627,7 @@ struct typical_value { int a, b; };
 static void typical_filler(unsigned *const k, struct typical_value **v)
 	{ int_filler(k); *v = 0; }
 static void typical_to_string(const unsigned k,
-	const struct typical_value *const v, char (*const z)[12])
+	/*fixme :[*/struct typical_value *const*const v, char (*const z)[12])
 	{ sprintf(*z, "%u", k); (void)v; }
 #define TREE_NAME typical
 #define TREE_VALUE struct typical_value *
@@ -640,22 +635,20 @@ static void typical_to_string(const unsigned k,
 #define TREE_TEST
 #include "../src/tree.h"
 
-#endif
-
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	int_tree_test();
 	order3_tree_test();
-	//redblack_tree_test();
-	/*pair_tree_test();
+	redblack_tree_test();
+	pair_tree_test();
 	star_tree_test();
-	entry_tree_test();*/
+	entry_tree_test();
 	order3();
-	/*redblack();
+	redblack();
 	loop_tree_test();
 	loop();
-	typical_tree_test();*/
+	typical_tree_test();
 	return EXIT_SUCCESS;
 }
