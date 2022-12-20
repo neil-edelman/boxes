@@ -8,7 +8,6 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-
 /** This makes the key-value in the same place; will have to copy. */
 struct PB_(tree_test) {
 	int in;
@@ -23,29 +22,6 @@ typedef void (*PB_(action_fn))(PB_(key) *, PB_(value) *);
 #else
 typedef void (*PB_(action_fn))(PB_(key) *);
 #endif
-
-/*static PB_(entry) PB_(test_to_entry)(struct PB_(tree_test) *const t) {
-	PB_(entry) e;
-	assert(t);
-#ifdef TREE_VALUE
-	e.key = &t->key;
-	e.value = &t->value;
-#else
-	e = &t->key;
-#endif
-	return e;
-}
-
-static PB_(key) PB_(entry_to_key)(const PB_(entry) e) {
-#ifdef TREE_VALUE
-	return *e.key;
-#else
-	return *e;
-#endif
-}*/
-
-/* Debug number, which is the number printed next to the graphs, _etc_. */
-static unsigned PB_(no);
 
 /** Recursively draws `outer` in `fp` with the actual `height`. */
 static void PB_(subgraph)(const struct PB_(tree) *const sub, FILE *fp) {
@@ -155,7 +131,8 @@ static void PB_(subgraph_usual)(const struct PB_(tree) *const sub, FILE *fp) {
 	branch = PB_(as_branch_c)(sub->node);
 	for(i = 0; i <= branch->base.size; i++)
 		fprintf(fp, "\ttrunk%p:%s -> trunk%p;\n",
-		(const void *)sub->node, PB_(usual_port)(i), (const void *)branch->child[i]);
+		(const void *)sub->node, PB_(usual_port)(i),
+		(const void *)branch->child[i]);
 	/* Recurse. */
 	for(i = 0; i <= branch->base.size; i++) {
 		struct PB_(tree) child;
@@ -187,42 +164,6 @@ static void PB_(graph_horiz)(const struct B_(tree) *const tree,
 	fclose(fp);
 }
 
-/*static void PB_(print_r)(const struct PB_(tree) sub) {
-	struct PB_(tree) child = { 0, 0 };
-	const struct PB_(branch) *branch = 0;
-	unsigned i;
-	assert(sub.node);
-	printf("/");
-	if(sub.height) {
-		branch = PB_(as_branch_c)(sub.node);
-		child.height = sub.height - 1;
-	}
-	for(i = 0; ; i++) {
-		char z[12];
-		PB_(entry_c) e;
-		if(sub.height) child.node = branch->child[i], PB_(print_r)(child);
-		if(i == sub.node->size) break;
-		e = PB_(leaf_to_entry_c)(sub.node, i);
-		PB_(to_string)(e, &z);
-		printf("%s%s", i ? ", " : "", z);
-	}
-	printf("\\");
-}
-static void PB_(print)(const struct B_(tree) *const tree) {
-	printf("Inorder: ");
-	if(!tree) {
-		printf("null");
-	} else if(!tree->root.node) {
-		assert(!tree->root.height);
-		printf("idle");
-	} else if(tree->root.height == UINT_MAX) {
-		printf("empty");
-	} else {
-		PB_(print_r)(tree->root);
-	}
-	printf("\n");
-}*/
-
 /** Makes sure the `tree` is in a valid state. */
 static void PB_(valid)(const struct B_(tree) *const tree) {
 	if(!tree) return; /* Null. */
@@ -250,31 +191,10 @@ static void PB_(sort)(struct PB_(tree_test) *a, const size_t size) {
 	}
 }
 
-/** Is `e` pointing at a valid thing? Either directly or with entry. The reason
- we don't define `struct entry` is because we don't want to have to reference
- key in set. It makes the set unbearable. */
-/*static int PB_(contents)(const PB_(entry) *const e) {
-#ifdef TREE_VALUE
-	return !!e->key;
-#else
-	return !!*e;
-#endif
-}*/
-
-/* Used in print spam.
-static PB_(entry_c) PB_(to_const)(const PB_(entry) e) {
-#ifdef TREE_VALUE
-	PB_(entry_c) c; c.key = e.key, c.value = e.value;
-	return c;
-#else
-	return e;
-#endif
-}*/
-
 static void PB_(test)(void) {
 	struct B_(tree) tree = B_(tree)(), empty = B_(tree)();
 	struct B_(tree_iterator) it;
-	struct PB_(tree_test) test[8];
+	struct PB_(tree_test) test[80];
 	const size_t test_size = sizeof test / sizeof *test;
 #ifdef TREE_VALUE
 	PB_(value) *v;
@@ -361,20 +281,20 @@ static void PB_(test)(void) {
 	memset(&k_prev, 0, sizeof k_prev);
 	it = B_(tree_begin)(&tree), i = 0;
 	while(B_(tree_next)(&it, &k)) {
-		/**/char z[12];
+		/*char z[12];
 		B_(to_string)(&k, &z);
-		printf("<%s>\n", z);/**/
+		printf("<%s>\n", z);*/
 		if(i) { const int cmp = B_(compare)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
 	}
 	assert(i == n_unique);
-	/**/printf("\n");/**/
+	/*printf("\n");*/
 	it = B_(tree_end)(&tree), i = 0;
 	while(B_(tree_previous)(&it, &k)) {
-		/**/char z[12];
+		/*char z[12];
 		B_(to_string)(&k, &z);
-		printf("<%s>\n", z);/**/
+		printf("<%s>\n", z);*/
 		if(i) { const int cmp = B_(compare)(k_prev, k); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
@@ -445,14 +365,12 @@ static void PB_(test)(void) {
 	printf("Number of entries in the tree: %lu/%lu.\n",
 		(unsigned long)n_unique, (unsigned long)test_size);
 
-	/* Iteration; checksum. No. We can not do this because deletion invalidates
-	 the cursor. */
+	/* Delete all. Start again each time; removal invalidates iterator. */
 	i = 0;
-	it = B_(tree_begin)(&tree);
-	while(B_(tree_next)(&it, &k)) {
-		/*char z[12];
-		PB_(to_string)(PB_(to_const)(entry), &z);
-		printf("<%s>\n", z);*/
+	while(it = B_(tree_begin)(&tree), B_(tree_next)(&it, &k)) {
+		char z[12];
+		B_(to_string)(&k, &z);
+		printf("Targeting <%s> for removal.\n", z);
 		if(i) { const int cmp = B_(compare)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
