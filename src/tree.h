@@ -506,17 +506,6 @@ static int B_(tree_contains)(const struct B_(tree) *const tree,
 	return tree && tree->root.node && tree->root.height != UINT_MAX
 		&& PB_(find)(&tree->root, x).node ? 1 : 0;
 }
-
-/* @return Get the value of `x` in `tree`, or if no `x`, null. The map type is
- a pointer to `TREE_VALUE` and the set type is a pointer to `TREE_KEY`.
- @order \O(\log |`tree`|) @allow */
-/*static PB_(value) *B_(tree_get)(const struct B_(tree) *const tree,
-	const PB_(key) x) {
-	struct PB_(ref) ref;
-	if(!tree || !tree->root.node || tree->root.height == UINT_MAX
-		|| !(ref = PB_(find)(&tree->root, x)).node) return 0;
-	return PB_(ref_to_valuep)(ref);
-}*/
 /* fixme: entry <B>tree_query -- there is no functionality that returns the
  key. */
 
@@ -881,8 +870,8 @@ grow: /* Leaf is full. */ {
 #ifdef TREE_VALUE
 		memcpy(sibling->value, iterator.node->value + TREE_SPLIT + 1,
 			sizeof *sibling->value * hole.idx);
-		memcpy(sibling->value + hole.idx + 1, iterator.node->value + iterator.idx,
-			sizeof *sibling->value * (TREE_MAX - iterator.idx));
+		memcpy(sibling->value + hole.idx + 1, iterator.node->value
+			+ iterator.idx, sizeof *sibling->value * (TREE_MAX - iterator.idx));
 #endif
 		if(iterator.height) {
 			struct PB_(branch) *const cb = PB_(as_branch)(iterator.node),
