@@ -97,7 +97,7 @@ struct P_(pool) {
 
 /** Is `x` not null? @implements `is_content` */
 static int PP_(is_element)(PP_(type) *const x) { return !!x; }
-/* It is very useful in debugging, is required for `BOX_VALUE`. Only iterates
+/* It is very useful in debugging, is required for `BOX_CONTENT`. Only iterates
  on `slot0` and ignores the free-heap. This is a memory-manager, we don't have
  enough information to do otherwise. Only goes one-way. */
 struct PP_(iterator) { struct PP_(slot) *slot0; size_t i; };
@@ -105,7 +105,7 @@ struct PP_(iterator) { struct PP_(slot) *slot0; size_t i; };
 static struct PP_(iterator) PP_(begin)(const struct P_(pool) *const p)
 	{ struct PP_(iterator) it; it.slot0 = p && p->slots.size
 	? p->slots.data + 0 : 0, it.i = 0; return it; }
-/** Move to next `it`. @return Element or null. @implements `next_c` */
+/** @return Whether moved to next `it` and put in `v`. @implements `next` */
 static int PP_(next)(struct PP_(iterator) *const it, PP_(type) **const v) {
 	assert(it);
 	if(it->slot0 && it->i >= it->slot0->size) return 0;
@@ -312,7 +312,7 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 
 /* Box override information. */
 #define BOX_TYPE struct P_(pool)
-#define BOX_VALUE PP_(type)
+#define BOX_CONTENT PP_(type)
 #define BOX_ PP_
 #define BOX_MAJOR_NAME pool
 #define BOX_MINOR_NAME POOL_NAME
@@ -334,7 +334,7 @@ static void PP_(to_string)(const PP_(type) *p, char (*const a)[12])
 
 
 #undef BOX_TYPE
-#undef BOX_VALUE
+#undef BOX_CONTENT
 #undef BOX_
 #undef BOX_MAJOR_NAME
 #undef BOX_MINOR_NAME
