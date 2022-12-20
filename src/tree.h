@@ -1646,7 +1646,8 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 
 #ifdef TREE_TO_STRING /* <!-- to string trait */
 /** Thunk `b` -> `a`. */
-static void PBT_(to_string)(const struct PB_(ref) *const r, char (*const a)[12]) {
+static void PBT_(to_string)(const struct PB_(ref) *const r,
+	char (*const a)[12]) {
 #ifdef TREE_VALUE
 	BT_(to_string)(r->node->key[r->idx], r->node->value + r->idx, a);
 #else

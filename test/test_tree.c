@@ -627,7 +627,7 @@ struct typical_value { int a, b; };
 static void typical_filler(unsigned *const k, struct typical_value **v)
 	{ int_filler(k); *v = 0; }
 static void typical_to_string(const unsigned k,
-	/*fixme :[*/struct typical_value *const*const v, char (*const z)[12])
+	/*const:[*/struct typical_value *const*const v, char (*const z)[12])
 	{ sprintf(*z, "%u", k); (void)v; }
 #define TREE_NAME typical
 #define TREE_VALUE struct typical_value *
