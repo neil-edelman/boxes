@@ -35,7 +35,7 @@ static void order3_to_string(const unsigned x, char (*const z)[12])
 
 #if 0
 /* Unsigned numbers: testing framework. */
-static void redblack_to_string(const unsigned key, const unsigned value,
+static void redblack_to_string(const unsigned key, const unsigned *const value,
 	char (*const a)[12])
 	{ /*assert(*x < 10000000000),*/ sprintf(*a, "%u", key); (void)value; }
 static void redblack_filler(unsigned *const k, unsigned *const v) {
@@ -46,8 +46,10 @@ static void redblack_filler(unsigned *const k, unsigned *const v) {
 #define TREE_TO_STRING
 #define TREE_TEST
 #include "../src/tree.h"
+#endif
 
 
+#if 0
 /* Unsigned numbers and values. Prototype a value. */
 static void pair_filler(unsigned *const x, unsigned *const y) {
 	int_filler(x);

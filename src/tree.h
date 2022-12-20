@@ -1498,7 +1498,7 @@ static int B_(tree_next)(struct B_(tree_iterator) *const it,
 	if(!PB_(next)(&it->_, &r)) return 0;
 	if(k) *k = r->node->key[r->idx];
 #ifdef TREE_VALUE
-	if(v) *v = r->node->value[r->idx];
+	if(v) *v = r->node->value + r->idx;
 #endif
 	return 1;
 #ifdef TREE_VALUE
@@ -1521,7 +1521,7 @@ static int B_(tree_previous)(struct B_(tree_iterator) *const it,
 	if(!PB_(previous)(&it->_, &r)) return 0;
 	if(k) *k = r->node->key[r->idx];
 #ifdef TREE_VALUE
-	if(v) *v = r->node->value[r->idx];
+	if(v) *v = r->node->value + r->idx;
 #endif
 	return 1;
 #ifdef TREE_VALUE
