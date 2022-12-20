@@ -67,7 +67,7 @@ static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
 		for(link_a = 0, link_b = L_(list_head)(list); link_b;
 			link_a = link_b, link_b = L_(list_next)(link_b)) {
 			if(!link_a) continue;
-			cmp = CMPEXTERN_(compare)(link_a, link_b);
+			cmp = CMPCALL_(compare)(link_a, link_b);
 			assert(cmp <= 0);
 		}
 	}
@@ -153,12 +153,12 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 			/* `x = (A,...,B,C,D,...)` and `y = {[A],B,...}`. */
 			if(!(a = L_(list_head)(&x))) continue;
 			if(!(b = L_(list_head)(&y))) continue;
-			if(CMPEXTERN_(compare)(a, b) == 0 && !(b = L_(list_next)(b)))
+			if(CMPCALL_(compare)(a, b) == 0 && !(b = L_(list_next)(b)))
 				continue;
-			assert(CMPEXTERN_(compare)(a, b) < 0);
-			for(c = L_(list_next)(a); c && CMPEXTERN_(compare)(c, b) < 0;
+			assert(CMPCALL_(compare)(a, b) < 0);
+			for(c = L_(list_next)(a); c && CMPCALL_(compare)(c, b) < 0;
 				c = L_(list_next)(c));
-			assert(c && CMPEXTERN_(compare)(c, b) == 0);
+			assert(c && CMPCALL_(compare)(c, b) == 0);
 			b_alt = c;
 			if(!(c = L_(list_next)(c)) || !(d = L_(list_next)(c))) continue;
 			break;

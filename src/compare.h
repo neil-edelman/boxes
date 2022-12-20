@@ -32,31 +32,29 @@
 
 #ifndef BOX_TRAIT_NAME /* <!-- !trait */
 #define CMP_(n) COMPARE_CAT(COMPARE_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), n)
-#define CMPEXTERN_(n) COMPARE_CAT(BOX_MINOR_NAME, n)
+#define CMPCALL_(n) COMPARE_CAT(BOX_MINOR_NAME, n)
 #else /* !trait --><!-- trait */
 #define CMP_(n) COMPARE_CAT(COMPARE_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), \
 	COMPARE_CAT(BOX_TRAIT_NAME, n))
-#define CMPEXTERN_(n) COMPARE_CAT(COMPARE_CAT(BOX_MINOR_NAME, \
+#define CMPCALL_(n) COMPARE_CAT(COMPARE_CAT(BOX_MINOR_NAME, \
 	BOX_TRAIT_NAME), n)
 #endif /* trait --> */
 
 typedef BOX_TYPE PCMP_(box);
 typedef BOX_CONTENT PCMP_(element);
-/* fixme: Assumes non-const pointer. */
-typedef const BOX_CONTENT PCMP_(element_c);
 
 /* fixme: Restrict not defined everywhere. Only works in _eg_ array. */
 /** <src/compare.h>: Returns a boolean given two read-only elements. */
-typedef int (*PCMP_(bipredicate_fn))(PCMP_(element_c) restrict,
-	PCMP_(element_c) restrict);
+typedef int (*PCMP_(bipredicate_fn))(PCMP_(element) *restrict,
+	PCMP_(element) *restrict);
 /** <src/compare.h>: Three-way comparison on a totally order set; returns an
  integer value less than, equal to, greater than zero, if `a < b`, `a == b`,
  `a > b`, respectively. */
-typedef int (*PCMP_(compare_fn))(const PCMP_(element_c) restrict a,
-	const PCMP_(element_c) restrict b);
+typedef int (*PCMP_(compare_fn))(const PCMP_(element) *restrict a,
+	const PCMP_(element) *restrict b);
 /** <src/compare.h>: Returns a boolean given two modifiable arguments. */
-typedef int (*PCMP_(biaction_fn))(PCMP_(element) restrict,
-	PCMP_(element) restrict);
+typedef int (*PCMP_(biaction_fn))(PCMP_(element) *restrict,
+	PCMP_(element) *restrict);
 
 #ifdef COMPARE /* <!-- compare: <typedef:<PCMP>compare_fn>. */
 
@@ -71,20 +69,20 @@ static int CMP_(compare)(const PCMP_(box) *restrict const a,
 		const PCMP_(box) *const rm_restrict = a;
 		PCMP_(box) *promise_box;
 		memcpy(&promise_box, &rm_restrict, sizeof a);
-		ia = BOX_(iterator)(promise_box);
+		ia = BOX_(begin)(promise_box);
 	} {
 		const PCMP_(box) *const rm_restrict = b;
 		PCMP_(box) *promise_box;
 		memcpy(&promise_box, &rm_restrict, sizeof b);
-		ib = BOX_(iterator)(promise_box);
+		ib = BOX_(begin)(promise_box);
 	}
 	for( ; ; ) {
-		const PCMP_(element) x = BOX_(next)(&ia), y = BOX_(next)(&ib);
+		/*const*/ PCMP_(element) *x, *y;
 		int diff;
-		if(!BOX_(is_element)(x)) return BOX_(is_element)(y) ? -1 : 0;
-		else if(!BOX_(is_element)(y)) return 1;
+		if(!BOX_(next)(&ia, &x)) return BOX_(next)(&ib, 0) ? -1 : 0;
+		else if(!BOX_(next)(&ib, &y)) return 1;
 		/* Must have this function declared. */
-		if(diff = CMPEXTERN_(compare)((void *)x, (void *)y)) return diff;
+		if(diff = CMPCALL_(compare)((void *)x, (void *)y)) return diff;
 	}
 }
 
@@ -94,10 +92,10 @@ static int CMP_(compare)(const PCMP_(box) *restrict const a,
  true/false with less-then `element`. @return The first index of `a` that is
  not less than `cursor`. @order \O(log `a.size`) @allow */
 static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
-	PCMP_(element_c) element) {
+	const PCMP_(element) *const element) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(CMPEXTERN_(compare)((const void *)element, (const void *)
+		if(CMPCALL_(compare)((const void *)element, (const void *)
 			BOX_(at)(box, mid = low + (high - low) / 2)) <= 0) high = mid;
 		else low = mid + 1;
 	return low;
@@ -108,10 +106,10 @@ static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
  @return The first index of `box` that is greater than `element`.
  @order \O(log |`box`|) @allow */
 static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
-	PCMP_(element_c) element) {
+	const PCMP_(element) *const element) {
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
-		if(CMPEXTERN_(compare)((const void *)element,
+		if(CMPCALL_(compare)((const void *)element,
 			(const void *)BOX_(at)(box, mid = low + (high - low) / 2)) >= 0)
 			low = mid + 1;
 		else high = mid;
@@ -124,7 +122,7 @@ static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
  bound of a sorted `box`.
  @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] @allow */
 static int CMP_(insert_after)(PCMP_(box) *const box,
-	const PCMP_(element_c) element) {
+	const PCMP_(element) *const element) {
 	size_t bound;
 	assert(box && element);
 	bound = CMP_(upper_bound)(box, element);
@@ -137,32 +135,32 @@ static int CMP_(insert_after)(PCMP_(box) *const box,
 
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
 static int PCMP_(vcompar)(const void *restrict const a,
-	const void *restrict const b) { return CMPEXTERN_(compare)(a, b); }
+	const void *restrict const b) { return CMPCALL_(compare)(a, b); }
 
 /** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`,
  (which has a high-context-switching cost, but is easy.)
  @order \O(|`box`| \log |`box`|) @allow */
 static void CMP_(sort)(PCMP_(box) *const box) {
 	const size_t size = BOX_(size)(box);
-	PCMP_(element) first;
+	PCMP_(element) *first;
 	if(!size) return;
 	first = BOX_(at)(box, 0);
-	if(!BOX_(is_element)(first)) return; /* That was weird. */
+	/*if(!BOX_(is_element)(first)) return;*/ /* That was weird. */
 	qsort(first, size, sizeof *first, &PCMP_(vcompar));
 }
 
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
 static int PCMP_(vrevers)(const void *restrict const a,
-	const void *restrict const b) { return CMPEXTERN_(compare)(b, a); }
+	const void *restrict const b) { return CMPCALL_(compare)(b, a); }
 
 /** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` in reverse by
  `qsort`. @order \O(|`box`| \log |`box`|) @allow */
 static void CMP_(reverse)(PCMP_(box) *const box) {
 	const size_t size = BOX_(size)(box);
-	PCMP_(element) first;
+	PCMP_(element) *first;
 	if(!size) return;
 	first = BOX_(at)(box, 0);
-	if(!BOX_(is_element)(first)) return; /* That was weird. */
+	/*if(!BOX_(is_element)(first)) return;*/ /* That was weird. */
 	qsort(first, size, sizeof *first, &PCMP_(vrevers));
 }
 
@@ -174,9 +172,9 @@ static void CMP_(reverse)(PCMP_(box) *const box) {
  (This makes `COMPARE` encompass `COMPARE_IS_EQUAL`.) However, it can not
  collide with another function!
  @implements <typedef:<PCMP>bipredicate_fn> */
-static int CMPEXTERN_(is_equal)(const PCMP_(element_c) restrict a,
-	const PCMP_(element_c) restrict b) {
-	return !CMPEXTERN_(compare)((const void *)a, (const void *)b);
+static int CMPCALL_(is_equal)(const PCMP_(element) *const restrict a,
+	const PCMP_(element) *const restrict b) {
+	return !CMPCALL_(compare)((const void *)a, (const void *)b);
 }
 
 #endif /* compare --> */
@@ -186,24 +184,25 @@ static int CMPEXTERN_(is_equal)(const PCMP_(element_c) restrict a,
 static int CMP_(is_equal)(const PCMP_(box) *restrict const a,
 	const PCMP_(box) *restrict const b) {
 	struct BOX_(iterator) ia, ib;
+	if(!a) return !b /*|| !b->size <- Null is less than empty? Easier. */;
+	if(!b) return 0;
 	{ /* We do not modify, but the compiler doesn't know that. */
 		const PCMP_(box) *const rm_restrict = a;
 		PCMP_(box) *promise_box;
 		memcpy(&promise_box, &rm_restrict, sizeof a);
-		ia = BOX_(iterator)(promise_box);
+		ia = BOX_(begin)(promise_box);
 	} {
 		const PCMP_(box) *const rm_restrict = b;
 		PCMP_(box) *promise_box;
 		memcpy(&promise_box, &rm_restrict, sizeof b);
-		ib = BOX_(iterator)(promise_box);
+		ib = BOX_(begin)(promise_box);
 	}
 	for( ; ; ) {
-		const PCMP_(element) x = BOX_(next)(&ia),
-			y = BOX_(next)(&ib);
-		if(!BOX_(is_element)(x)) return !BOX_(is_element)(y);
-		else if(!BOX_(is_element)(y)) return 0;
+		/*const*/ PCMP_(element) *x, *y;
+		if(!BOX_(next)(&ia, &x)) return !BOX_(next)(&ib, 0);
+		else if(!BOX_(next)(&ib, &y)) return 0;
 		/* Must have this function declared! */
-		if(!CMPEXTERN_(is_equal)(x, y)) return 0;
+		if(!CMPCALL_(is_equal)(x, y)) return 0;
 	}
 	return 1;
 }
@@ -223,14 +222,14 @@ static void CMP_(unique_merge)(PCMP_(box) *const box,
 	size_t target, from, cursor, choice, next, move;
 	const size_t last = BOX_(size)(box);
 	int is_first, is_last;
-	PCMP_(element) dst, src;
+	PCMP_(element) *dst, *src;
 	assert(box);
 	for(target = from = cursor = 0; cursor < last; cursor += next) {
 		/* Bijective `[from, cursor)` is moved lazily. */
 		for(choice = 0, next = 1; cursor + next < last; next++) {
-			const PCMP_(element) a = BOX_(at)(box, cursor + choice),
-				b = BOX_(at)(box, cursor + next);
-			if(!CMPEXTERN_(is_equal)(a, b)) break;
+			/*const*/ PCMP_(element) *a = BOX_(at)(box, cursor + choice),
+				*b = BOX_(at)(box, cursor + next);
+			if(!CMPCALL_(is_equal)(a, b)) break;
 			if(merge && merge(a, b)) choice = next;
 		}
 		if(next == 1) continue;
@@ -288,4 +287,4 @@ static void PCMP_(unused_compare_coda)(void) { PCMP_(unused_compare)(); }
 #undef BOX_COMPARE_NAME
 #endif
 /*#undef CMP_ Need for tests. */
-/*#undef CMPEXTERN_ */
+/*#undef CMPCALL_ */

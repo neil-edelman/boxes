@@ -30,43 +30,38 @@
 
 typedef BOX_TYPE PITR_(box);
 typedef BOX_CONTENT PITR_(element);
-typedef const BOX_CONTENT PITR_(element_c); /* Sketchy. */
 
 /** <src/iterate.h>: Operates by side-effects. */
-typedef void (*PITR_(action_fn))(PITR_(element));
+typedef void (*PITR_(action_fn))(PITR_(element) *);
 /** <src/iterate.h>: Returns a boolean given read-only. */
-typedef int (*PITR_(predicate_fn))(const PITR_(element_c));
-/* This is duplicate const? */
+typedef int (*PITR_(predicate_fn))(const PITR_(element) *);
 
 /** <src/iterate.h>: Iterates through `box` and calls `predicate` until it
  returns true. @return The first `predicate` that returned true, or, if the
  statement is false on all, null.
  @order \O(`box.size`) \times \O(`predicate`) @allow */
-static PITR_(element) ITR_(any)(const PITR_(box) *const box,
+static PITR_(element) *ITR_(any)(const PITR_(box) *const box,
 	const PITR_(predicate_fn) predicate) {
 	struct BOX_(iterator) it;
-	PITR_(element) i;
+	PITR_(element) *i;
 	assert(box && predicate);
 	{ /* We do not modify `box`, but the compiler doesn't know that. */
 		PITR_(box) *promise_box;
 		memcpy(&promise_box, &box, sizeof box);
-		it = BOX_(iterator)(promise_box);
+		it = BOX_(begin)(promise_box);
 	}
-	while(BOX_(is_element)(i = BOX_(next)(&it))) if(predicate(i)) return i;
-	return BOX_(null)();
+	while(BOX_(next)(&it, &i)) if(predicate(i)) return i;
+	return 0;
 }
 
 /** <src/iterate.h>: Iterates through `box` and calls `action` on all the
  elements. @order \O(|`box`|) \times \O(`action`) @allow */
 static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
 	struct BOX_(iterator) it;
-	PITR_(element) i;
+	PITR_(element) *v;
 	assert(box && action);
-	for(it = BOX_(iterator)(box), i = BOX_(next)(&it); BOX_(is_element)(i); ) {
-		PITR_(element) j = BOX_(next)(&it);
-		action(i);
-		i = j; /* Could be to remove `i` from the list. */
-	}
+	/* fixme: Could we remove `v` from the list? */
+	for(it = BOX_(begin)(box); BOX_(next)(&it, &v); ) action(v);
 }
 
 /** <src/iterate.h>: Iterates through `box` and calls `action` on all the
@@ -75,13 +70,11 @@ static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
 static void ITR_(if_each)(PITR_(box) *const box,
 	const PITR_(predicate_fn) predicate, const PITR_(action_fn) action) {
 	struct BOX_(iterator) it;
-	PITR_(element) i;
+	PITR_(element) *v;
 	assert(box && predicate && action);
-	for(it = BOX_(iterator)(box), i = BOX_(next)(&it); BOX_(is_element)(i); ) {
-		PITR_(element) j = BOX_(next)(&it);
-		if(predicate(i)) action(i);
-		i = j; /* Could be to remove `i` from the list. */
-	}
+	/* fixme: Could be to remove `i` from the list? */
+	for(it = BOX_(begin)(box); BOX_(next)(&it, &v); )
+		if(predicate(v)) action(v);
 }
 
 #ifdef BOX_CONTIGUOUS /* <!-- contiguous */
@@ -92,27 +85,27 @@ static void ITR_(if_each)(PITR_(box) *const box,
  @order \O(|`src`|) \times \O(`copy`) @throws[realloc] @allow */
 static int ITR_(copy_if)(PITR_(box) *restrict const dst,
 	const PITR_(box) *restrict const src, const PITR_(predicate_fn) copy) {
-	PITR_(element) i, fresh, end, rise = 0;
+	PITR_(element) *v, *fresh, *end, *rise = 0;
 	size_t add;
 	int difcpy = 0;
 	assert(dst && copy && dst != src);
 	if(!src) return 1;
-	for(i = BOX_(at)(src, 0), end = i + BOX_(size)(src); i < end; i++) {
+	for(v = BOX_(at)(src, 0), end = v + BOX_(size)(src); v < end; v++) {
 		/* Not falling/rising. */
-		if(!(!!rise ^ (difcpy = copy(i)))) continue;
+		if(!(!!rise ^ (difcpy = copy(v)))) continue;
 		if(difcpy) { /* Rising edge. */
 			assert(!rise);
-			rise = i;
+			rise = v;
 		} else { /* Falling edge. */
-			assert(rise && !difcpy && rise < i);
-			if(!(fresh = BOX_(append)(dst, add = (size_t)(i - rise)))) return 0;
+			assert(rise && !difcpy && rise < v);
+			if(!(fresh = BOX_(append)(dst, add = (size_t)(v - rise)))) return 0;
 			memcpy(fresh, rise, sizeof *fresh * add);
 			rise = 0;
 		}
 	}
 	if(rise) { /* Delayed copy. */
-		assert(!difcpy && rise < i);
-		if(!(fresh = BOX_(append)(dst, add = (size_t)(i - rise)))) return 0;
+		assert(!difcpy && rise < v);
+		if(!(fresh = BOX_(append)(dst, add = (size_t)(v - rise)))) return 0;
 		memcpy(fresh, rise, sizeof *fresh * add);
 	}
 	return 1;
@@ -123,32 +116,32 @@ static int ITR_(copy_if)(PITR_(box) *restrict const dst,
  deleting. @order \O(|`box`|) (\times O(`keep`) + O(`destruct`)) @allow */
 static void ITR_(keep_if)(PITR_(box) *const box,
 	const PITR_(predicate_fn) keep, const PITR_(action_fn) destruct) {
-	PITR_(element) erase = 0, i, retain = 0, end;
+	PITR_(element) *erase = 0, *v, *retain = 0, *end;
 	int keep0 = 1, keep1 = 0;
 	assert(box && keep);
-	for(i = BOX_(at)(box, 0), end = i + BOX_(size)(box); i < end;
-		keep0 = keep1, i++) {
-		if(!(keep1 = !!keep(i)) && destruct)
-			destruct(i);
+	for(v = BOX_(at)(box, 0), end = v + BOX_(size)(box); v < end;
+		keep0 = keep1, v++) {
+		if(!(keep1 = !!keep(v)) && destruct)
+			destruct(v);
 		if(!(keep0 ^ keep1)) continue; /* Not a falling/rising edge. */
 		if(keep1) { /* Rising edge. */
 			assert(erase && !retain);
-			retain = i;
+			retain = v;
 		} else if(erase) { /* Falling edge. */
-			size_t n = (size_t)(i - retain);
-			assert(erase < retain && retain < i);
-			memmove(erase, retain, sizeof *i * n);
+			size_t n = (size_t)(v - retain);
+			assert(erase < retain && retain < v);
+			memmove(erase, retain, sizeof *v * n);
 			erase += n;
 			retain = 0;
 		} else { /* Falling edge, (first time only.) */
-			erase = i;
+			erase = v;
 		}
 	}
 	if(!erase) return; /* All elements were kept. */
 	if(keep1) { /* Delayed move when the iteration ended; repeat. */
-		size_t n = (size_t)(i - retain);
-		assert(retain && erase < retain && retain < i);
-		memmove(erase, retain, sizeof *i * n);
+		size_t n = (size_t)(v - retain);
+		assert(retain && erase < retain && retain < v);
+		memmove(erase, retain, sizeof *v * n);
 		erase += n;
 	}
 	/* Adjust the size. */
@@ -162,7 +155,7 @@ static void ITR_(keep_if)(PITR_(box) *const box,
 static void ITR_(trim)(PITR_(box) *const box,
 	const PITR_(predicate_fn) predicate) {
 	size_t right, left;
-	PITR_(element) first;
+	PITR_(element) *first;
 	assert(box);
 	if(!predicate) return;
 	right = BOX_(size)(box);

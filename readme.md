@@ -35,7 +35,7 @@ In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Th
 
 ### <a id = "user-content-typedef-49d9168b" name = "user-content-typedef-49d9168b">&lt;PITR&gt;action_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PITR&gt;action_fn</strong>)(&lt;PITR&gt;element);</code>
+<code>typedef void(*<strong>&lt;PITR&gt;action_fn</strong>)(&lt;PITR&gt;element *);</code>
 
 [src/iterate\.h](src/iterate.h): Operates by side\-effects\.
 
@@ -43,7 +43,7 @@ In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Th
 
 ### <a id = "user-content-typedef-c5016dba" name = "user-content-typedef-c5016dba">&lt;PITR&gt;predicate_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PITR&gt;predicate_fn</strong>)(const &lt;PITR&gt;element_c);</code>
+<code>typedef int(*<strong>&lt;PITR&gt;predicate_fn</strong>)(const &lt;PITR&gt;element *);</code>
 
 [src/iterate\.h](src/iterate.h): Returns a boolean given read\-only\.
 
@@ -51,15 +51,15 @@ In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Th
 
 ### <a id = "user-content-typedef-8a8349ca" name = "user-content-typedef-8a8349ca">&lt;PSTR&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element *, char(*)[12]);</code>
 
-[src/to\_string\.h](src/to_string.h): responsible for turning the read\-only argument into a 12\-`char` null\-terminated output string\. The first argument should be a read\-only reference to an element and the second a pointer to the bytes\.
+[src/to\_string\.h](src/to_string.h): responsible for turning the read\-only argument into a 12\-`char` null\-terminated output string, passed as a pointer in the last argument\. This function can have 2 or 3 arguments, where `<PSTR>element` might be a map with a key\-value pair\.
 
 
 
 ### <a id = "user-content-typedef-82edbc04" name = "user-content-typedef-82edbc04">&lt;PCMP&gt;bipredicate_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PCMP&gt;bipredicate_fn</strong>)(&lt;PCMP&gt;element_c restrict, &lt;PCMP&gt;element_c restrict);</code>
+<code>typedef int(*<strong>&lt;PCMP&gt;bipredicate_fn</strong>)(&lt;PCMP&gt;element *restrict, &lt;PCMP&gt;element *restrict);</code>
 
 [src/compare\.h](src/compare.h): Returns a boolean given two read\-only elements\.
 
@@ -67,7 +67,7 @@ In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Th
 
 ### <a id = "user-content-typedef-2c6ed2db" name = "user-content-typedef-2c6ed2db">&lt;PCMP&gt;compare_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PCMP&gt;compare_fn</strong>)(const &lt;PCMP&gt;element_c restrict a, const &lt;PCMP&gt;element_c restrict b);</code>
+<code>typedef int(*<strong>&lt;PCMP&gt;compare_fn</strong>)(const &lt;PCMP&gt;element *restrict a, const &lt;PCMP&gt;element *restrict b);</code>
 
 [src/compare\.h](src/compare.h): Three\-way comparison on a totally order set; returns an integer value less than, equal to, greater than zero, if `a < b`, `a == b`, `a > b`, respectively\.
 
@@ -75,7 +75,7 @@ In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Th
 
 ### <a id = "user-content-typedef-f8efb17d" name = "user-content-typedef-f8efb17d">&lt;PCMP&gt;biaction_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PCMP&gt;biaction_fn</strong>)(&lt;PCMP&gt;element restrict, &lt;PCMP&gt;element restrict);</code>
+<code>typedef int(*<strong>&lt;PCMP&gt;biaction_fn</strong>)(&lt;PCMP&gt;element *restrict, &lt;PCMP&gt;element *restrict);</code>
 
 [src/compare\.h](src/compare.h): Returns a boolean given two modifiable arguments\.
 
@@ -131,7 +131,7 @@ Serves as head and tail sentinel for a linked\-list of [&lt;L&gt;listlink](#user
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-1ce0c229">&lt;L&gt;list_self_correct</a></td><td>list</td></tr>
 
-<tr><td align = right>static &lt;PITR&gt;element</td><td><a href = "#user-content-fn-73c52918">&lt;ITR&gt;any</a></td><td>box, predicate</td></tr>
+<tr><td align = right>static &lt;PITR&gt;element *</td><td><a href = "#user-content-fn-73c52918">&lt;ITR&gt;any</a></td><td>box, predicate</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-96abfbdb">&lt;ITR&gt;each</a></td><td>box, action</td></tr>
 
@@ -321,7 +321,7 @@ Corrects `list` ends to compensate for memory relocation of the list head itself
 
 ### <a id = "user-content-fn-73c52918" name = "user-content-fn-73c52918">&lt;ITR&gt;any</a> ###
 
-<code>static &lt;PITR&gt;element <strong>&lt;ITR&gt;any</strong>(const &lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code>
+<code>static &lt;PITR&gt;element *<strong>&lt;ITR&gt;any</strong>(const &lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code>
 
 [src/iterate\.h](src/iterate.h): Iterates through `box` and calls `predicate` until it returns true\.
 
@@ -438,7 +438,7 @@ HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if `predicate` i
 
 ### <a id = "user-content-fn-620cbec1" name = "user-content-fn-620cbec1">&lt;CMP&gt;lower_bound</a> ###
 
-<code>static size_t <strong>&lt;CMP&gt;lower_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, &lt;PCMP&gt;element_c <em>element</em>)</code>
+<code>static size_t <strong>&lt;CMP&gt;lower_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;element *const <em>element</em>)</code>
 
 [src/compare\.h](src/compare.h), `COMPARE`, `BOX_ACCESS`: `box` should be partitioned true/false with less\-then `element`\.
 
@@ -452,7 +452,7 @@ HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if `predicate` i
 
 ### <a id = "user-content-fn-b6f29e84" name = "user-content-fn-b6f29e84">&lt;CMP&gt;upper_bound</a> ###
 
-<code>static size_t <strong>&lt;CMP&gt;upper_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, &lt;PCMP&gt;element_c <em>element</em>)</code>
+<code>static size_t <strong>&lt;CMP&gt;upper_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;element *const <em>element</em>)</code>
 
 [src/compare\.h](src/compare.h), `COMPARE`, `BOX_ACCESS`: `box` should be partitioned false/true with greater\-than or equal\-to `element`\.
 
@@ -466,7 +466,7 @@ HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if `predicate` i
 
 ### <a id = "user-content-fn-c57ffcf5" name = "user-content-fn-c57ffcf5">&lt;CMP&gt;insert_after</a> ###
 
-<code>static int <strong>&lt;CMP&gt;insert_after</strong>(&lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;element_c <em>element</em>)</code>
+<code>static int <strong>&lt;CMP&gt;insert_after</strong>(&lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;element *const <em>element</em>)</code>
 
 [src/compare\.h](src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Copies `element` at the upper bound of a sorted `box`\.
 

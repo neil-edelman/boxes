@@ -75,7 +75,7 @@
 
 <h3><a id = "typedef:<PITR>action_fn" name = "typedef:<PITR>action_fn">&lt;PITR&gt;action_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PITR&gt;action_fn</strong>)(&lt;PITR&gt;element);</code></p>
+<p><code>typedef void(*<strong>&lt;PITR&gt;action_fn</strong>)(&lt;PITR&gt;element *);</code></p>
 
 <p><a href = "src/iterate.h">src/iterate.h</a>: Operates by side-effects.</p>
 
@@ -85,7 +85,7 @@
 
 <h3><a id = "typedef:<PITR>predicate_fn" name = "typedef:<PITR>predicate_fn">&lt;PITR&gt;predicate_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PITR&gt;predicate_fn</strong>)(const &lt;PITR&gt;element_c);</code></p>
+<p><code>typedef int(*<strong>&lt;PITR&gt;predicate_fn</strong>)(const &lt;PITR&gt;element *);</code></p>
 
 <p><a href = "src/iterate.h">src/iterate.h</a>: Returns a boolean given read-only.</p>
 
@@ -95,9 +95,9 @@
 
 <h3><a id = "typedef:<PSTR>to_string_fn" name = "typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element *, char(*)[12]);</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the read-only argument into a 12-<code>char</code> null-terminated output string. The first argument should be a read-only reference to an element and the second a pointer to the bytes.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the read-only argument into a 12-<code>char</code> null-terminated output string, passed as a pointer in the last argument. This function can have 2 or 3 arguments, where <code>&lt;PSTR&gt;element</code> might be a map with a key-value pair.</p>
 
 </div>
 
@@ -105,7 +105,7 @@
 
 <h3><a id = "typedef:<PCMP>bipredicate_fn" name = "typedef:<PCMP>bipredicate_fn">&lt;PCMP&gt;bipredicate_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PCMP&gt;bipredicate_fn</strong>)(&lt;PCMP&gt;element_c restrict, &lt;PCMP&gt;element_c restrict);</code></p>
+<p><code>typedef int(*<strong>&lt;PCMP&gt;bipredicate_fn</strong>)(&lt;PCMP&gt;element *restrict, &lt;PCMP&gt;element *restrict);</code></p>
 
 <p><a href = "src/compare.h">src/compare.h</a>: Returns a boolean given two read-only elements.</p>
 
@@ -115,7 +115,7 @@
 
 <h3><a id = "typedef:<PCMP>compare_fn" name = "typedef:<PCMP>compare_fn">&lt;PCMP&gt;compare_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PCMP&gt;compare_fn</strong>)(const &lt;PCMP&gt;element_c restrict a, const &lt;PCMP&gt;element_c restrict b);</code></p>
+<p><code>typedef int(*<strong>&lt;PCMP&gt;compare_fn</strong>)(const &lt;PCMP&gt;element *restrict a, const &lt;PCMP&gt;element *restrict b);</code></p>
 
 <p><a href = "src/compare.h">src/compare.h</a>: Three-way comparison on a totally order set; returns an integer value less than, equal to, greater than zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
 
@@ -125,7 +125,7 @@
 
 <h3><a id = "typedef:<PCMP>biaction_fn" name = "typedef:<PCMP>biaction_fn">&lt;PCMP&gt;biaction_fn</a></h3>
 
-<p><code>typedef int(*<strong>&lt;PCMP&gt;biaction_fn</strong>)(&lt;PCMP&gt;element restrict, &lt;PCMP&gt;element restrict);</code></p>
+<p><code>typedef int(*<strong>&lt;PCMP&gt;biaction_fn</strong>)(&lt;PCMP&gt;element *restrict, &lt;PCMP&gt;element *restrict);</code></p>
 
 <p><a href = "src/compare.h">src/compare.h</a>: Returns a boolean given two modifiable arguments.</p>
 
@@ -187,7 +187,7 @@
 
 <tr><td align = right>static void</td><td><a href = "#fn:<L>list_self_correct">&lt;L&gt;list_self_correct</a></td><td>list</td></tr>
 
-<tr><td align = right>static &lt;PITR&gt;element</td><td><a href = "#fn:<ITR>any">&lt;ITR&gt;any</a></td><td>box, predicate</td></tr>
+<tr><td align = right>static &lt;PITR&gt;element *</td><td><a href = "#fn:<ITR>any">&lt;ITR&gt;any</a></td><td>box, predicate</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#fn:<ITR>each">&lt;ITR&gt;each</a></td><td>box, action</td></tr>
 
@@ -414,7 +414,7 @@
 
 <h3><a id = "fn:<ITR>any" name = "fn:<ITR>any">&lt;ITR&gt;any</a></h3>
 
-<p><code>static &lt;PITR&gt;element <strong>&lt;ITR&gt;any</strong>(const &lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code></p>
+<p><code>static &lt;PITR&gt;element *<strong>&lt;ITR&gt;any</strong>(const &lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>predicate</em>)</code></p>
 
 <p><a href = "src/iterate.h">src/iterate.h</a>: Iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
 
@@ -558,7 +558,7 @@
 
 <h3><a id = "fn:<CMP>lower_bound" name = "fn:<CMP>lower_bound">&lt;CMP&gt;lower_bound</a></h3>
 
-<p><code>static size_t <strong>&lt;CMP&gt;lower_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, &lt;PCMP&gt;element_c <em>element</em>)</code></p>
+<p><code>static size_t <strong>&lt;CMP&gt;lower_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;element *const <em>element</em>)</code></p>
 
 <p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_ACCESS</code>: <code>box</code> should be partitioned true/false with less-then <code>element</code>.</p>
 
@@ -575,7 +575,7 @@
 
 <h3><a id = "fn:<CMP>upper_bound" name = "fn:<CMP>upper_bound">&lt;CMP&gt;upper_bound</a></h3>
 
-<p><code>static size_t <strong>&lt;CMP&gt;upper_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, &lt;PCMP&gt;element_c <em>element</em>)</code></p>
+<p><code>static size_t <strong>&lt;CMP&gt;upper_bound</strong>(const &lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;element *const <em>element</em>)</code></p>
 
 <p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_ACCESS</code>: <code>box</code> should be partitioned false/true with greater-than or equal-to <code>element</code>.</p>
 
@@ -592,7 +592,7 @@
 
 <h3><a id = "fn:<CMP>insert_after" name = "fn:<CMP>insert_after">&lt;CMP&gt;insert_after</a></h3>
 
-<p><code>static int <strong>&lt;CMP&gt;insert_after</strong>(&lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;element_c <em>element</em>)</code></p>
+<p><code>static int <strong>&lt;CMP&gt;insert_after</strong>(&lt;PCMP&gt;box *const <em>box</em>, const &lt;PCMP&gt;element *const <em>element</em>)</code></p>
 
 <p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_CONTIGUOUS</code>: Copies <code>element</code> at the upper bound of a sorted <code>box</code>.</p>
 
