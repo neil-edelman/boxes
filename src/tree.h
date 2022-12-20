@@ -282,15 +282,11 @@ static int PB_(previous)(struct PB_(iterator) *const it,
 	struct PB_(ref) prd;
 	assert(it);
 	if(!it->root || !it->ref.node) return it->seen = 0, 0;
-	prd = it->ref; /* Shorten keystrokes and work with a copy. */
-	if(!it->root->node || it->root->height == UINT_MAX
-		|| prd.idx > prd.node->size)
+	if(!it->root->node || it->root->height == UINT_MAX)
 		return it->ref.node = 0, 0; /* Concurrent modification? */
+	prd = it->ref; /* Shorten keystrokes and work with a copy. */
 	if(prd.idx > prd.node->size) prd.idx = prd.node->size; /* Clip. */
-	if(!it->seen) {
-		if(prd.idx) { prd.idx--; goto predecessor; }
-		return 0; /* Already first. */
-	}
+	if(!it->seen && prd.idx) { prd.idx--; goto predecessor; }
 	while(prd.height) prd.height--,
 		prd.node = PB_(as_branch)(prd.node)->child[prd.idx],
 		prd.idx = prd.node->size;
