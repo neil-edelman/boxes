@@ -281,13 +281,13 @@ static int PB_(next)(struct PB_(iterator) *const it,
 	if(!it->root->node || it->root->height == UINT_MAX)
 		return it->ref.node = 0, 0; /* Concurrent modification? */
 	adv = it->ref; /* Shorten keystrokes and work with a copy. */
-	if(!it->seen && adv.idx < adv.node->size) goto be_seen;
+	if(!it->seen && adv.idx < adv.node->size) goto successor;
 	adv.idx++;
 	if(adv.height && adv.idx > adv.node->size)
 		return it->ref.node = 0, 0; /* Concurrent modification? */
 	while(adv.height) adv.height--,
 		adv.node = PB_(as_branch)(adv.node)->child[adv.idx], adv.idx = 0;
-	if(adv.idx < adv.node->size) goto be_seen; /* Likely. */
+	if(adv.idx < adv.node->size) goto successor; /* Likely. */
 	/* Bulk-loading or concurrent modification? */
 	if(adv.idx > adv.node->size) return it->ref.node = 0, 0;
 	{ /* Re-descend; pick the minimum height node that has a next key. */
@@ -310,7 +310,7 @@ static int PB_(next)(struct PB_(iterator) *const it,
 		if(!next.node) return it->seen = 0, 0; /* Off right. */
 		adv = next;
 	} /* Jumped nodes. */
-be_seen:
+successor:
 	it->seen = 1;
 	it->ref = adv;
 	if(v) *v = &it->ref;
