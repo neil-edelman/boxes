@@ -99,7 +99,7 @@
 #define TRIE_ORDER (TRIE_BRANCHES + 1) /* Maximum branching factor/leaves. */
 /* `⌈(2n-1)/3⌉` nodes. */
 #define TRIE_SPLIT ((2 * (TRIE_ORDER + TRIE_BRANCHES) - 1 + 2) / 3)
-#define TRIE_RESULT X(ERROR), X(UNIQUE), X(PRESENT)
+#define TRIE_RESULT X(ERROR), X(ABSENT), X(PRESENT)
 #define X(n) TRIE_##n
 /** A result of modifying the table, of which `TRIE_ERROR` is false.
 
@@ -690,7 +690,7 @@ assign:
 	/* Do not have enough information; rely on user to do it. */
 #endif /* key in value --> */
 	if(entry) *entry = &leaf->as_entry;
-	return TRIE_UNIQUE;
+	return TRIE_ABSENT;
 catch:
 	if(!errno) errno = ERANGE; /* `malloc` only has to set it in POSIX. */
 	return TRIE_ERROR;
@@ -707,9 +707,9 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
  @param[value] Only if `TRIE_VALUE` is set will this parameter exist. Output
  pointer. Can be null only if `TRIE_KEY_IN_VALUE` was not defined.
  @return One of, `TRIE_ERROR`, `errno` is set and `value` is not;
- `TRIE_UNIQUE`, added to `trie`, and uninitialized `value` is associated with
+ `TRIE_ABSENT`, added to `trie`, and uninitialized `value` is associated with
  `key`; `TRIE_PRESENT`, the value associated with `key`. If `TRIE_IN_VALUE`,
- was specified and the return is `TRIE_UNIQUE`, the trie is in an invalid state
+ was specified and the return is `TRIE_ABSENT`, the trie is in an invalid state
  until filling in the key in value by `key`.
  @order \O(\log |`trie`|)
  @throws[EILSEQ] The string has a distinguishing run of bytes with a

@@ -225,13 +225,13 @@ static void contrived_test(void) {
 	assert(CHAR_BIT == 8 && ' ' ^ '!' == 1); /* Assumed UTF-8 for tests. */
 	errno = 0;
 	trlt = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ");
-	assert(trlt == TRIE_UNIQUE);
+	assert(trlt == TRIE_ABSENT);
 	trlt = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 256 */
 	assert(trlt == TRIE_ERROR && errno == EILSEQ), errno = 0;
 	trlt = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa!"); /* 255 */
-	assert(trlt == TRIE_UNIQUE);
+	assert(trlt == TRIE_ABSENT);
 	trlt = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 0 */
-	assert(trlt == TRIE_UNIQUE);
+	assert(trlt == TRIE_ABSENT);
 	result = str_trie_remove(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa!");
 	assert(!result && errno == EILSEQ), errno = 0;
 	trie_str_graph(&t, "graph/contrived-max.gv", 0);
@@ -241,7 +241,7 @@ static void contrived_test(void) {
 		/* printf("word: %s\n", word); */
 		switch(str_trie_try(&t, word)) {
 		case TRIE_ERROR: perror("trie"); assert(0); break;
-		case TRIE_UNIQUE: count++, letters[(unsigned char)*word]++; break;
+		case TRIE_ABSENT: count++, letters[(unsigned char)*word]++; break;
 		case TRIE_PRESENT: printf("\"%s\" already there.\n", word);
 			continue;
 		}
@@ -277,7 +277,7 @@ static void contrived_test(void) {
 		trie_str_entry *e;
 		enum trie_result r;
 		r = trie_str_add(&t, "a", &e), assert(r == TRIE_PRESENT);
-		r = trie_str_add(&t, "yo", &e), assert(r == TRIE_UNIQUE);
+		r = trie_str_add(&t, "yo", &e), assert(r == TRIE_ABSENT);
 		trie_str_graph(&t, "graph/yo.gv", 0);
 		result = str_trie_remove(&t, "yo");
 		assert(result);

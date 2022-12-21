@@ -432,7 +432,7 @@ static void PT_(test)(void) {
 #endif /* map --> */
 		) {
 		case TRIE_ERROR: perror("trie"); assert(0); return;
-		case TRIE_UNIQUE: test->is_in = 1; unique++;
+		case TRIE_ABSENT: test->is_in = 1; unique++;
 			letter_counts[(unsigned char)*PT_(key_string)(key)]++;
 #ifndef TRIE_VALUE /* <!-- set */
 #elif !defined(TRIE_KEY_IN_VALUE) /* set --><!-- map */
@@ -566,7 +566,7 @@ static void PT_(test_random)(void) {
 			case TRIE_ERROR:
 				/*printf("error.\n");*/
 				goto catch;
-			case TRIE_UNIQUE:
+			case TRIE_ABSENT:
 				/*printf("unique.\n");*/
 				size++;
 #ifdef TRIE_KEY_IN_VALUE
