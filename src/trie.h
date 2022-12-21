@@ -928,8 +928,7 @@ static void PTT_(to_string)(const struct PT_(ref) *const r,
 #define T_D_(n, m) TREE_CAT(T_(n), m)
 #define PT_D_(n, m) TREE_CAT(tree, T_D_(n, m))
 #endif
-/** This is functionally identical to <fn:<B>trie_get_or>, but a with a trait
- specifying a constant default value.
+/** This is not finished.
  @return The value associated with `key` in `trie`, (which can be null.) If
  no such value exists, the `TREE_DEFAULT` is returned.
  @order \O(\log |`tree`|). @allow */

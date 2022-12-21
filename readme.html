@@ -54,7 +54,7 @@
 
 <p>A <a href = "#tag:&lt;T&gt;trie">&lt;T&gt;trie</a> is a prefix-tree, digital-tree, or trie: an ordered set or map of byte null-terminated immutable key strings allowing efficient prefix queries. The implementation is as <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a> that acts as an index, only storing the where the key bits are different. The keys are grouped in fixed-size nodes in a relaxed version of a B-tree, as <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large">Bayer, McCreight, 1972 Large</a>, where the height is no longer fixed.</p>
 
-<p>The worse-case run-time of querying or modifying, &#927;(|<code>string</code>|); however, this presumes that the string is packed with decision bits. In reality, the bottleneck is more the density of looked-at bits. In an iid model, <a href = "https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed">Tong, Goebel, Lin, 2015, Smoothed</a> showed that the performance was &#927;(log |<code>trie</code>|).</p>
+<p>The worse-case run-time of querying or modifying is bounded by &#927;(|<code>string</code>|). <a href = "https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed">Tong, Goebel, Lin, 2015, Smoothed</a> show that, in an iid model, a better fit is &#927;(log |<code>trie</code>|), which is reported here.</p>
 
 <p><img alt = "Bit view of the trie." src = "doc/trie-bits.png" width = 1136 height = 416></p>
 
@@ -76,7 +76,7 @@
 	<dt>Standard:</dt>
 	<dd>C89 (Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ.)</dd>
 	<dt>Caveat:</dt>
-	<dd>(<a href = "#fn:&lt;T&gt;trie_from_array">&amp;lt;T&amp;gt;trie_from_array</a>, <a href = "#fn:&lt;T&gt;trie_size">&amp;lt;T&amp;gt;trie_size</a>)</dd>
+	<dd>This is a confusing interface. TRIE<em>NAME,andoptionallyTRIE</em>VALUE, where custom <code>const char *to_string(value *)</code>, would allow maps. (<a href = "#fn:&lt;T&gt;trie_from_array">&amp;lt;T&amp;gt;trie_from_array</a>, <a href = "#fn:&lt;T&gt;trie_size">&amp;lt;T&amp;gt;trie_size</a>)</dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
@@ -421,7 +421,7 @@
 
 <p><code>static &lt;PT&gt;value <strong>&lt;T&gt;tree&lt;D&gt;get</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const &lt;PT&gt;key <em>key</em>)</code></p>
 
-<p>This is functionally identical to <a href = "#fn:&lt;B&gt;trie_get_or">&lt;B&gt;trie_get_or</a>, but a with a trait specifying a constant default value.</p>
+<p>This is not finished.</p>
 
 <dl>
 	<dt>Return:</dt>
