@@ -69,9 +69,9 @@ If `TRIE_KEY_IN_VALUE`, extracts the key from `TRIE_VALUE`; in this case, the us
 
 ### <a id = "user-content-typedef-8a8349ca" name = "user-content-typedef-8a8349ca">&lt;PSTR&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;value *, char(*)[12]);</code>
 
-[src/to\_string\.h](src/to_string.h): responsible for turning the read\-only argument into a 12\-`char` null\-terminated output string\. The first argument should be a read\-only reference to an element and the second a pointer to the bytes\.
+[src/to\_string\.h](src/to_string.h): responsible for turning the read\-only argument into a 12\-`char` null\-terminated output string, passed as a pointer in the last argument\. This function can have 2 or 3 arguments, where `<PSTR>value` is actually a map with a key\-value pair\.
 
 
 

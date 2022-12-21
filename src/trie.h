@@ -130,24 +130,34 @@ static int trie_is_prefix(const char *prefix, const char *word) {
 #ifndef TRIE_TRAIT /* <!-- base trie */
 
 #ifdef TRIE_KEY /* <!-- custom key */
+
 /** The default is assignable `const char *`. If one sets `TRIE_KEY` to
- something other then that, then one must also declare `<P>string` as a
+ something other than that, then one must also declare `<P>string` as a
  <typedef:<PT>string_fn>. */
 typedef TRIE_KEY PT_(key);
+
 #else /* custom key --><!-- string key */
+
 typedef const char *PT_(key);
+
 #endif /* string key --> */
+
 /** Transforms a <typedef:<PT>key> into a `const char *`, if `TRIE_KEY` has
  been set. */
 typedef const char *(*PT_(string_fn))(PT_(key));
+
 #ifdef TRIE_KEY /* <!-- custom key */
+
 /* Valid <typedef:<PT>key_to_string_fn>. */
 static PT_(string_fn) PT_(key_string) = &T_(string);
+
 #else /* custom key --><!-- string key */
+
 /** @return The string of `key` is itself, by default.
  @implements <typedef:<PT>string_fn> */
 static const char *PT_(string_string)(const char *const key) { return key; }
 static PT_(string_fn) PT_(key_string) = &PT_(string_string);
+
 #endif /* string key --> */
 
 #ifndef TRIE_VALUE /* <!-- key set */
@@ -193,6 +203,7 @@ struct PT_(tree) {
  ![States.](../doc/states.png) */
 struct T_(trie);
 struct T_(trie) { struct PT_(tree) *root; };
+
 struct PT_(ref) { struct PT_(tree) *tree; unsigned lf; };
 
 /** Fall through `ref` until hit the first entry. Must be pointing at
@@ -216,6 +227,55 @@ static const char *PT_(sample)(struct PT_(tree) *const tree,
 	PT_(lower_entry)(&ref);
 	return PT_(key_string)(PT_(entry_key)(&ref.tree->leaf[ref.lf].as_entry));
 }
+
+/* A range of words from `[cur, end]`. */
+struct PT_(iterator) {
+	const struct T_(trie) *trie;
+	struct PT_(ref) cur, end;
+	int seen;
+};
+/** Looks at only the index of `trie` (which can be null) for potential
+ `prefix` matches, and stores them in `it`. */
+static struct PT_(iterator) PT_(match_prefix)
+	(const struct T_(trie) *const trie, const char *const prefix) {
+	struct PT_(iterator) it;
+	struct PT_(tree) *tree;
+	size_t bit;
+	struct { size_t cur, next; } byte;
+	assert(trie && prefix);
+	it.trie = 0;
+	if(!(tree = trie->root) || tree->bsize == USHRT_MAX) return it;
+	for(bit = 0, byte.cur = 0; ; ) {
+		unsigned br0 = 0, br1 = tree->bsize, lf = 0;
+		while(br0 < br1) {
+			const struct trie_branch *const branch = tree->branch + br0;
+			/* _Sic_; '\0' is _not_ included for partial match. */
+			for(byte.next = (bit += branch->skip) / CHAR_BIT;
+				byte.cur <= byte.next; byte.cur++)
+				if(prefix[byte.cur] == '\0') goto finally;
+			if(!TRIE_QUERY(prefix, bit))
+				br1 = ++br0 + branch->left;
+			else
+				br0 += branch->left + 1, lf += branch->left + 1;
+			bit++;
+		}
+		if(trie_bmp_test(&tree->bmp, lf))
+			{ tree = tree->leaf[lf].as_link; continue; } /* Link. */
+finally:
+		assert(br0 <= br1 && lf - br0 + br1 <= tree->bsize);
+		it.trie = trie;
+		it.cur.tree = it.end.tree = tree;
+		it.cur.lf = lf, PT_(lower_entry)(&it.cur);
+		it.end.lf = lf + br1 - br0, PT_(higher_entry)(&it.end);
+		it.seen = 0;
+		break;
+	}
+	return it;
+}
+/** Loads the first element of `trie` (can be null) into `it`.
+ @implements begin */
+static struct PT_(iterator) PT_(begin)(const struct T_(trie) *const trie)
+	{ return PT_(match_prefix)(trie, ""); }
 
 /** If `ref.tree` is null, starts iteration.
  @return Does `ref` have a successor in `root`? If yes, sets it to that. */
@@ -249,18 +309,9 @@ static int PT_(to_successor)(struct PT_(tree) *const root,
 	PT_(lower_entry)(ref);
 	return 1;
 }
-
-/** @return Is `e` not null. */
-static int PT_(is_element)(const PT_(entry) *const e) { return !!e; }
-/* A range of words from `[cur, end]`. */
-struct PT_(iterator) {
-	const struct T_(trie) *trie; /* Valid, rest must be, too, or ignore rest. */
-	struct PT_(ref) cur, end;
-	int seen;
-};
-/* Begin is after match. */
 /** Advances `it`. @return The previous value or null. @implements next */
-static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
+static int PT_(next)(struct PT_(iterator) *const it,
+	struct PT_(ref) **const ref) {
 	assert(it);
 	/* Possibly this is still valid? */
 	if(!it->trie || !it->cur.tree || it->cur.tree->bsize < it->cur.lf
@@ -273,15 +324,10 @@ static PT_(entry) *PT_(next)(struct PT_(iterator) *const it) {
 		it->seen = 1;
 	}
 	assert(!trie_bmp_test(&it->cur.tree->bmp, it->cur.lf));
-	return &it->cur.tree->leaf[it->cur.lf].as_entry;
+	if(ref) *ref = &it->cur;
+	return 1;
 }
 
-/** Represents a range of in-order keys in \O(1) space. */
-struct T_(trie_iterator);
-struct T_(trie_iterator) { struct PT_(iterator) _; };
-
-
-/* Constructors. */
 
 /** Zeroed data (not all-bits-zero) is initialized. @return An idle tree.
  @order \Theta(1) @allow */
@@ -376,48 +422,6 @@ static PT_(entry) *PT_(get)(const struct T_(trie) *const trie,
 static PT_(entry) *T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const string)
 	{ return trie && string ? PT_(get)(trie, string) : 0; }
-/** Looks at only the index of `trie` (which can be null) for potential
- `prefix` matches, and stores them in `it`. */
-static struct PT_(iterator) PT_(match_prefix)
-	(const struct T_(trie) *const trie, const char *const prefix) {
-	struct PT_(iterator) it;
-	struct PT_(tree) *tree;
-	size_t bit;
-	struct { size_t cur, next; } byte;
-	assert(trie && prefix);
-	it.trie = 0;
-	if(!(tree = trie->root) || tree->bsize == USHRT_MAX) return it;
-	for(bit = 0, byte.cur = 0; ; ) {
-		unsigned br0 = 0, br1 = tree->bsize, lf = 0;
-		while(br0 < br1) {
-			const struct trie_branch *const branch = tree->branch + br0;
-			/* _Sic_; '\0' is _not_ included for partial match. */
-			for(byte.next = (bit += branch->skip) / CHAR_BIT;
-				byte.cur <= byte.next; byte.cur++)
-				if(prefix[byte.cur] == '\0') goto finally;
-			if(!TRIE_QUERY(prefix, bit))
-				br1 = ++br0 + branch->left;
-			else
-				br0 += branch->left + 1, lf += branch->left + 1;
-			bit++;
-		}
-		if(trie_bmp_test(&tree->bmp, lf))
-			{ tree = tree->leaf[lf].as_link; continue; } /* Link. */
-finally:
-		assert(br0 <= br1 && lf - br0 + br1 <= tree->bsize);
-		it.trie = trie;
-		it.cur.tree = it.end.tree = tree;
-		it.cur.lf = lf, PT_(lower_entry)(&it.cur);
-		it.end.lf = lf + br1 - br0, PT_(higher_entry)(&it.end);
-		it.seen = 0;
-		break;
-	}
-	return it;
-}
-/** Loads the first element of `trie` (can be null) into `it`.
- @implements begin */
-static struct PT_(iterator) PT_(iterator)(const struct T_(trie) *const trie)
-	{ return PT_(match_prefix)(trie, ""); }
 /** Stores all `prefix` matches in `trie` in `it`. */
 static struct PT_(iterator) PT_(prefix)(struct T_(trie) *const trie,
 	const char *const prefix) {
@@ -431,6 +435,9 @@ static struct PT_(iterator) PT_(prefix)(struct T_(trie) *const trie,
 		it.trie = 0;
 	return it;
 }
+/** Represents a range of in-order keys in \O(1) space. */
+struct T_(trie_iterator);
+struct T_(trie_iterator) { struct PT_(iterator) _; };
 /** @return An iterator set to strings that start with `prefix` in `trie`.
  It is valid until a topological change to `trie`. Calling <fn:<T>trie_next>
  will iterate them in order.
@@ -442,10 +449,35 @@ static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
 	it._ = PT_(prefix)(trie, prefix);
 	return it;
 }
-/** @return Advances `it` and returns the entry, or, at the end, returns null.
+
+#ifdef TRIE_VALUE /* <!-- map */
+/** @return Whether advancing `it` to the next element and filling `k`, (and
+ `v` if a map, otherwise absent,) if not-null.
  @order \O(\log |`trie`|) @allow */
-static PT_(entry) *T_(trie_next)(struct T_(trie_iterator) *const it)
-	{ return PT_(next)(&it->_); }
+static int T_(trie_next)(struct T_(trie_iterator) *const it,
+	PT_(key) *const k, PT_(value) **v) {
+#else /* map --><!-- set */
+static int T_(trie_next)(struct T_(trie_iterator) *const it,
+	PT_(key) *const k) {
+#endif /* set --> */
+	struct PT_(ref) *r;
+	if(!PT_(next)(&it->_, &r)) return 0;
+	if(k) *k = PT_(entry_key)(&r->tree->leaf[r->lf].as_entry);
+#ifdef TRIE_VALUE
+#ifdef TRIE_KEY_IN_VALUE
+	if(v) *v = &r->tree->leaf[r->lf].as_entry;
+#else
+	if(v) *v = &r->tree->leaf[r->lf].as_entry.value;
+#endif
+#endif
+	return 1;
+#ifdef TRIE_VALUE
+}
+#else
+}
+#endif
+
+
 #if 0
 /** @return The number of elements in `it`. */
 static size_t PT_(size_r)(const struct PT_(iterator) *const it) {
@@ -822,19 +854,19 @@ static void PT_(unused_base)(void) {
 	T_(trie)(); T_(trie_)(0); T_(trie_clear)(0);
 	T_(trie_match)(0, 0); T_(trie_get)(0, 0);
 #ifndef TRIE_VALUE
-	T_(trie_try)(0, 0);
+	T_(trie_try)(0, 0); T_(trie_next)(0, 0);
 #else
-	T_(trie_try)(0, 0, 0);
+	T_(trie_try)(0, 0, 0); T_(trie_next)(0, 0, 0);
 #endif
 	T_(trie_remove)(0, 0);
-	T_(trie_prefix)(0, 0); T_(trie_next)(0); /*T_(trie_size)(0);*/
+	T_(trie_prefix)(0, 0); /*T_(trie_size)(0);*/
 	PT_(unused_base_coda)();
 }
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 /* Box override information. */
 #define BOX_TYPE struct T_(trie)
-#define BOX_CONTENT PT_(entry) *
+#define BOX_CONTENT struct PT_(ref)
 #define BOX_ PT_
 #define BOX_MAJOR_NAME trie
 #define BOX_MINOR_NAME TRIE_NAME
@@ -844,18 +876,24 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 #ifdef TRIE_TRAIT /* <-- trait: Will be different on different includes. */
 #define BOX_TRAIT_NAME TRIE_TRAIT
-#endif /* trait --> */
+#define PTT_(n) PT_(TRIE_CAT(TRIE_TRAIT, n))
+#define TT_(n) T_(TRIE_CAT(TRIE_TRAIT, n))
+#else /* trait --><!-- !trait */
+#define PTT_(n) PT_(n)
+#define TT_(n) T_(n)
+#endif /* !trait --> */
 
 
 #ifdef TRIE_TO_STRING /* <!-- to string trait */
 #ifndef TREE_TRAIT /* <!-- natural default */
 /** Uses the natural `e` -> `z` that is defined by the key string. */
-static void T_(to_string)(const PT_(entry) *const e,
+static void PTT_(to_string)(const struct PT_(ref) *const r,
 	char (*const z)[12]) {
-	const char *string = PT_(key_string(PT_(entry_key)(e)));
+	const char *string
+		= PT_(key_string)(PT_(entry_key)(&r->tree->leaf[r->lf].as_entry));
 	unsigned i;
 	char *y = *z;
-	assert(e && z);
+	assert(r && z);
 	for(i = 0; i < 11; string++, i++) {
 		*y++ = *string;
 		if(*string == '\0') return;
@@ -871,6 +909,8 @@ static void T_(to_string)(const PT_(entry) *const e,
 #define TRIE_HAS_TO_STRING
 #endif
 #endif /* to string trait --> */
+#undef PTT_
+#undef TT_
 
 
 #if defined(TRIE_TEST) && !defined(TRIE_TRAIT) /* <!-- test */

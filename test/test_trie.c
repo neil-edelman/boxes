@@ -256,12 +256,12 @@ static void contrived_test(void) {
 		char letter[2];
 		unsigned count_letter = 0;
 		struct str_trie_iterator it;
-		const char *const*pstr;
+		const char *str;
 		int output = 0;
 		letter[0] = (char)i, letter[1] = '\0';
 		it = str_trie_prefix(&t, letter);
-		while(pstr = str_trie_next(&it)) printf("%s<%s>",
-			output ? "" : letter, *pstr), count_letter++, output = 1;
+		while(str_trie_next(&it, &str)) printf("%s<%s>",
+			output ? "" : letter, str), count_letter++, output = 1;
 		if(output) printf("\n");
 		if(i) {
 			assert(count_letter == letters[i]);
@@ -300,7 +300,8 @@ static void contrived_test(void) {
 static void fixed_colour_test(void) {
 	struct colour_trie trie = colour_trie();
 	struct colour_trie_iterator it;
-	enum colour *c;
+	enum colour c;
+	int ret;
 	if(!colour_trie_try(&trie, Black)
 		|| !colour_trie_try(&trie, Red)
 		|| !colour_trie_try(&trie, Yellow)
@@ -310,11 +311,11 @@ static void fixed_colour_test(void) {
 	colour_trie_remove(&trie, "Steel");
 	trie_colour_graph(&trie, "graph/colour-fixed.gv", 1);
 	it = colour_trie_prefix(&trie, "");
-	c = colour_trie_next(&it), assert(c && *c == Black);
-	c = colour_trie_next(&it), assert(c && *c == Lime);
-	c = colour_trie_next(&it), assert(c && *c == Red);
-	c = colour_trie_next(&it), assert(c && *c == Yellow);
-	c = colour_trie_next(&it), assert(!c);
+	ret = colour_trie_next(&it, &c), assert(ret && c == Black);
+	ret = colour_trie_next(&it, &c), assert(ret && c == Lime);
+	ret = colour_trie_next(&it, &c), assert(ret && c == Red);
+	ret = colour_trie_next(&it, &c), assert(ret && c == Yellow);
+	ret = colour_trie_next(&it, &c), assert(!ret);
 	goto finally;
 catch:
 	perror("fixed colour trie");

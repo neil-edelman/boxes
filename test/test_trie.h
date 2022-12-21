@@ -382,7 +382,11 @@ static void PT_(test)(void) {
 		= sizeof letter_counts / sizeof *letter_counts;
 	struct { PT_(entry) entry; int is_in; } tests[2000], *test_end, *test;
 	const size_t tests_size = sizeof tests / sizeof *tests;
-	PT_(entry) *e;
+	PT_(entry) *e; //fix
+	PT_(key) k;
+#ifdef TRIE_VALUE
+	PT_(value) *v;
+#endif
 
 	/* Idle. */
 	errno = 0;
@@ -464,7 +468,13 @@ static void PT_(test)(void) {
 		int output = 0;
 		letter[0] = (char)i, letter[1] = '\0';
 		it = T_(trie_prefix)(&trie, letter);
-		while(e = T_(trie_next)(&it)) {
+		while(
+#ifdef TRIE_VALUE
+			T_(trie_next)(&it, &k, &v)
+#else
+			T_(trie_next)(&it, &k)
+#endif
+			) {
 			/*printf("%s<%s>", output ? "" : letter,
 				PT_(key_string)(PT_(entry_key)(e)));*/
 			count_letter++, output = 1;
@@ -484,7 +494,11 @@ static void PT_(test)(void) {
 	T_(trie_clear)(&trie);
 	{
 		struct T_(trie_iterator) it = T_(trie_prefix)(&trie, "");
-		assert(!T_(trie_next)(&it));
+#ifdef TRIE_VALUE
+		assert(!T_(trie_next)(&it, 0, 0));
+#else
+		assert(!T_(trie_next)(&it, 0));
+#endif
 	}
 	T_(trie_)(&trie), assert(!trie.root), PT_(valid)(&trie);
 	assert(!errno);

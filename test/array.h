@@ -81,64 +81,52 @@
 typedef ARRAY_TYPE PA_(type);
 
 /** Manages the array field `data` which has `size` elements. The space is
- indexed up to `capacity`, which is at least `size`. The fields should be
- treated as read-only; any modification is liable to cause the array to go into
- an invalid state.
+ indexed up to `capacity`, which is at least `size`.
 
  ![States.](../doc/states.png) */
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
-/** Returns null. */
-static PA_(type) *PA_(null)(void) { return 0; }
-/** Is `x` not null? @implements `is_element` */
-static int PA_(is_element)(const PA_(type) *const x) { return !!x; }
-/* @implements `iterator` */
+/* Size 3 iterator: |_ |_ |_ |. Size 0: |. `size` and `!up` is invalid. */
 struct PA_(iterator) { struct A_(array) *a; size_t i; int seen; };
-/** @return A pointer to null in `a`. @implements `iterator` */
-static struct PA_(iterator) PA_(iterator)(struct A_(array) *const a) {
-	struct PA_(iterator) it; it.a = a, it.i = 0, it.seen = 0;
+/** @return Initialize before beginning of a valid `a`. */
+static struct PA_(iterator) PA_(begin)(struct A_(array) *const a) {
+	struct PA_(iterator) it;
+	assert(a);
+	it.a = a, it.i = 0, it.seen = 0;
 	return it;
 }
-/** Move to next `it`. @return Element or null on end. @implements `next` */
-static PA_(type) *PA_(next)(struct PA_(iterator) *const it) {
-	size_t i;
-	assert(it);
-	if(!it->a || (i = it->i + !!it->seen) >= it->a->size)
-		{ *it = PA_(iterator)(it->a); return 0; }
-	return it->a->data + (it->seen = 1, it->i = i);
+/** @return Initialize after the end of a valid `a`. */
+static struct PA_(iterator) PA_(end)(struct A_(array) *const a) {
+	struct PA_(iterator) it;
+	assert(a);
+	it.a = a, it.i = a->size, it.seen = 0;
+	return it;
 }
-/** Move to previous `it`. @return Element or null on end.
- @implements `previous` */
-static PA_(type) *PA_(previous)(struct PA_(iterator) *const it) {
-	size_t i, size;
-	assert(it);
-	if(!it->a || !(size = it->a->size)) goto reset;
-	if(i = it->i) {
-		if(i > size) i = size;
-		i--;
-	} else {
-		if(!it->seen) i = it->a->size - 1;
-		else goto reset;
-	}
-	return it->a->data + (it->seen = 1, it->i = i);
-reset:
-	*it = PA_(iterator)(it->a);
-	return 0;
+/** @return Iterator before element `i` of `a`. */
+static struct PA_(iterator) PA_(iterator_at)(struct A_(array) *a, size_t i) {
+	struct PA_(iterator) it;
+	assert(a);
+	it.a = a, it.i = i > a->size ? a->size : i, it.seen = 0; return it;
 }
-/** Removes the element last returned by `it`. (Untested. Unused.)
- @return There was an element. @order \O(`a.size`). @implements `remove` */
-static int PA_(remove)(struct PA_(iterator) *const it) {
-	assert(0 && 1);
-	if(!it->a || !it->seen || it->a->size <= it->i) return 0;
-	memmove(it->a->data + it->i, it->a->data + it->i + 1,
-		sizeof *it->a->data * (--it->a->size - it->i));
+/** @return Whether it moved `it` forwards and picked-up `e`. */
+static int PA_(next)(struct PA_(iterator) *const it, PA_(type) **const e) {
+	assert(it && it->a);
+	it->i += !!it->seen, it->seen = 1;
+	if(it->i >= it->a->size) return it->i = it->a->size, it->seen = 0, 0;
+	if(e) *e = it->a->data + it->i;
 	return 1;
 }
-/** @return Iterator at element `idx` of `a`.
- @implements `iterator_at` */
-static struct PA_(iterator) PA_(iterator_at)(struct A_(array) *a, size_t idx)
-	{ struct PA_(iterator) it; it.a = a, it.i = idx, it.seen = 0; return it; }
+/** @return Whether it moved `it` backwards and picked-up `e`. */
+static int PA_(previous)(struct PA_(iterator) *const it, PA_(type) **const e) {
+	assert(it && it->a);
+	if(it->i > it->a->size) it->i = it->a->size, it->seen = 0; /* Clip. */
+	if(!it->i) return it->seen = 0, 0; /* First. */
+	it->i--, it->seen = 1;
+	if(e) *e = it->a->data + it->i;
+	return 1;
+}
+/* fixme: static int PA_(remove)(struct PA_(iterator) *const it) */
 /** Size of `a`. @implements `size` */
 static size_t PA_(size)(const struct A_(array) *a) { return a ? a->size : 0; }
 /** @return Element `idx` of `a`. @implements `at` */
@@ -161,19 +149,23 @@ static struct A_(array) A_(array)(void)
 static void A_(array_)(struct A_(array) *const a)
 	{ if(a) free(a->data), *a = A_(array)(); }
 
-/** @return An iterator of `a`. */
-static struct A_(array_iterator) A_(array_iterator)(struct A_(array) *a)
-	{ struct A_(array_iterator) it; it._ = PA_(iterator)(a); return it; }
-/** @return An iterator at `idx` of `a`. */
-static struct A_(array_iterator) A_(array_iterator_at)(struct A_(array) *a,
-	size_t idx) { struct A_(array_iterator) it;
-	it._ = PA_(iterator_at)(a, idx); return it; }
-/** @return `it` next element. */
+/** @return An iterator before the start of `a`. */
+static struct A_(array_iterator) A_(array_begin)(struct A_(array) *a)
+	{ struct A_(array_iterator) it; it._ = PA_(begin)(a); return it; }
+/** @return An iterator after the end of `a`. */
+static struct A_(array_iterator) A_(array_end)(struct A_(array) *a)
+	{ struct A_(array_iterator) it; it._ = PA_(end)(a); return it; }
+/** @return An iterator before `idx` of `a`. */
+static struct A_(array_iterator) A_(array_at)(struct A_(array) *a, size_t idx)
+	{ struct A_(array_iterator) it; it._ = PA_(iterator_at)(a, idx); return it; }
+/** Move initialized `it` to the next cursor position. @return Pointer to the
+ element through which it moved, or null if at the end. */
 static PA_(type) *A_(array_next)(struct A_(array_iterator) *const it)
-	{ return assert(it), PA_(next)(&it->_); }
-/** @return `it` previous element. */
+	{ PA_(type) *v; return assert(it), PA_(next)(&it->_, &v) ? v : 0; }
+/** Move initialized `it` to the previous cursor position. @return Pointer to
+ the element through which it moved, or null if at the beginning. */
 static PA_(type) *A_(array_previous)(struct A_(array_iterator) *const it)
-	{ return assert(it), PA_(previous)(&it->_); }
+	{ PA_(type) *v; return assert(it), PA_(previous)(&it->_, &v) ? v : 0; }
 
 /** Ensures `min` capacity of `a`. Invalidates pointers in `a`. @param[min] If
  zero, does nothing. @return Success; otherwise, `errno` will be set.
@@ -332,7 +324,7 @@ static int A_(array_splice)(struct A_(array) *restrict const a,
 
 /* Box override information. */
 #define BOX_TYPE struct A_(array)
-#define BOX_CONTENT PA_(type) *
+#define BOX_CONTENT PA_(type)
 #define BOX_ PA_
 #define BOX_MAJOR_NAME array
 #define BOX_MINOR_NAME ARRAY_NAME
@@ -345,10 +337,9 @@ static int A_(array_splice)(struct A_(array) *restrict const a,
 
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
-	PA_(null)(); PA_(is_element)(0); PA_(remove)(0); PA_(size)(0);
-	PA_(at)(0, 0); PA_(tell_size)(0, 0);
+	PA_(size)(0); PA_(at)(0, 0); PA_(tell_size)(0, 0);
 	A_(array)(); A_(array_)(0);
-	A_(array_iterator)(0); A_(array_iterator_at)(0, 0);
+	A_(array_begin)(0); A_(array_end)(0); A_(array_at)(0, 0);
 	A_(array_previous)(0); A_(array_next)(0); A_(array_previous)(0);
 	A_(array_insert)(0, 0, 0); A_(array_new)(0);
 	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
@@ -363,16 +354,26 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
 #ifdef ARRAY_TRAIT /* <-- trait: Will be different on different includes. */
 #define BOX_TRAIT_NAME ARRAY_TRAIT
-#endif /* trait --> */
+#define PAT_(n) PA_(ARRAY_CAT(ARRAY_TRAIT, n))
+#define AT_(n) A_(ARRAY_CAT(ARRAY_TRAIT, n))
+#else /* trait --><!-- !trait */
+#define PAT_(n) PA_(n)
+#define AT_(n) A_(n)
+#endif /* !trait --> */
 
 
 #ifdef ARRAY_TO_STRING /* <!-- to string trait */
+/** Thunk `e` -> `a`. */
+static void PAT_(to_string)(const PA_(type) *e, char (*const a)[12])
+	{ AT_(to_string)((const void *)e, a); }
 #include "to_string.h" /** \include */
 #undef ARRAY_TO_STRING
 #ifndef ARRAY_TRAIT
 #define ARRAY_HAS_TO_STRING
 #endif
 #endif /* to string trait --> */
+#undef PAT_
+#undef AT_
 
 
 #if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT) /* <!-- test base */
@@ -391,7 +392,7 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #include "../test/test_array_compare.h"
 #endif /* test --> */
 #undef CMP_ /* From <compare.h>. */
-#undef CMPEXTERN_
+#undef CMPCALL_
 #ifdef ARRAY_COMPARE
 #undef ARRAY_COMPARE
 #else

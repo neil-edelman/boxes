@@ -73,34 +73,29 @@ static unsigned to_string_buffer_i;
 
 #ifndef BOX_TRAIT_NAME /* <!-- !trait */
 #define STR_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), n)
-#define STREXTERN_(n) TO_STRING_CAT(BOX_MINOR_NAME, n)
+#define STRCALL_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MAJOR_NAME, \
+	BOX_MINOR_NAME), n)
 #else /* !trait --><!-- trait */
 #define STR_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), \
 	TO_STRING_CAT(BOX_TRAIT_NAME, n))
-#define STREXTERN_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, \
-	BOX_TRAIT_NAME), n)
+#define STRCALL_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MAJOR_NAME, \
+	BOX_MINOR_NAME), TO_STRING_CAT(BOX_TRAIT_NAME, n))
 #endif /* trait --> */
 
-/* Provides an extra level of indirection for boxes if they need it. */
-#ifndef TO_STRING_THUNK_
-#define TO_STRING_THUNK_(n) n
-#endif
-
-/* Hopefully gets rid of any nestled-qualifiers, but only when appropriate. */
-#ifndef TO_STRING_CAST
-#define TO_STRING_CAST (void *)
-#endif
-
 typedef BOX_TYPE PSTR_(box);
+#ifdef BOX_KEY
+typedef BOX_KEY PSTR_(key);
+#error
+#endif
 typedef BOX_CONTENT PSTR_(element);
-typedef const BOX_CONTENT PSTR_(element_c); /* Assumes a lot. */
 
+#if 0 /* <!-- documentation. */
 /** <src/to_string.h>: responsible for turning the read-only argument into a
- 12-`char` null-terminated output string. The first argument should be a
- read-only reference to an element and the second a pointer to the bytes. */
-typedef void (*PSTR_(to_string_fn))(const PSTR_(element), char (*)[12]);
-/* _Nb_: this is for documentation only; there is no way to get a general
- read-only type which what we are supplied. Think of nested pointers. */
+ 12-`char` null-terminated output string, passed as a pointer in the last
+ argument. This function can have 2 or 3 arguments, where `<PSTR>element` might
+ be a map with a key-value pair.  */
+typedef void (*PSTR_(to_string_fn))(const PSTR_(element) *, char (*)[12]);
+#endif /* documentation --> */
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
  256 bytes, with limitations of only printing 4 things at a time.
@@ -111,7 +106,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	const size_t ellipsis_len = sizeof ellipsis - 1;
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance;
-	PSTR_(element) x;
+	PSTR_(element) *v;
 	struct BOX_(iterator) it;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
@@ -122,22 +117,18 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	{ /* We do not modify `box`, but the compiler doesn't know that. */
 		PSTR_(box) *promise_box;
 		memcpy(&promise_box, &box, sizeof box);
-		it = BOX_(iterator)(promise_box);
+		it = BOX_(begin)(promise_box);
 	}
 	*b++ = left;
-	while(BOX_(is_element)(x = BOX_(next)(&it))) {
-		/* One must have this function declared! */
-		TO_STRING_THUNK_(STREXTERN_(to_string))(TO_STRING_CAST
-			x, (char (*)[12])b);
+	while(BOX_(next)(&it, &v)) {
+		STRCALL_(to_string)(v, (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
-		if((size_t)(b - buffer)
-			> to_string_buffer_size - 11 - 1 - ellipsis_len - 1 - 1) {
-			if(BOX_(is_element)(BOX_(next)(&it))) goto ellipsis;
-			else break;
-		}
+		if((size_t)(b - buffer) > to_string_buffer_size - 11 - 1
+			- ellipsis_len - 1 - 1)
+			{ if(BOX_(next)(&it, 0)) goto ellipsis; else break; }
 	}
 	if(is_sep) b -= 2;
 	*b++ = right;
@@ -158,9 +149,7 @@ static void PSTR_(unused_to_string)(void)
 static void PSTR_(unused_to_string_coda)(void) { PSTR_(unused_to_string)(); }
 
 #undef STR_
-#undef STREXTERN_
-#undef TO_STRING_CAST
-#undef TO_STRING_THUNK_
+#undef STRCALL_
 #ifdef TO_STRING_EXTERN
 #undef TO_STRING_EXTERN
 #endif
