@@ -132,7 +132,7 @@ struct PH_(iterator) { struct PAH_(iterator) _; };
 /** @return Before `h`. @implements `forward` */
 static struct PH_(iterator) PH_(begin)(struct H_(heap) *const h) {
 	struct PH_(iterator) it; it._ = PAH_(begin)(&h->as_array); return it; }
-/** @return The next `it` or null. @implements `next_c` */
+/** @return The next `it` is stored in `v` or false. @implements `next` */
 static int PH_(next)(struct PH_(iterator) *const it, PH_(node) **const v)
 	{ return PAH_(next)(&it->_, v); }
 #undef PAH_
@@ -178,8 +178,8 @@ static void PH_(sift_up)(struct H_(heap) *const heap, PH_(node) *const node) {
  element. @param[heap] At least one entry. The head is popped, and the size
  will be one less. */
 static void PH_(sift_down)(struct H_(heap) *const heap) {
-	const size_t size = (assert(heap && heap->as_array.size), --heap->as_array.size),
-		half = size >> 1;
+	const size_t size = (assert(heap && heap->as_array.size),
+		--heap->as_array.size), half = size >> 1;
 	size_t i = 0, c;
 	PH_(node) *const n0 = heap->as_array.data,
 		*const down = n0 + size /* Put it at the top. */, *child;
@@ -201,8 +201,8 @@ static void PH_(sift_down)(struct H_(heap) *const heap) {
  slightly more complex than <fn:<PH>sift_down>, but the same thing.
  @param[heap] At least `i + 1` entries. */
 static void PH_(sift_down_i)(struct H_(heap) *const heap, size_t i) {
-	const size_t size = (assert(heap && i < heap->as_array.size), heap->as_array.size),
-		half = size >> 1;
+	const size_t size = (assert(heap && i < heap->as_array.size),
+		heap->as_array.size), half = size >> 1;
 	size_t c;
 	/* Uninitialized variable warning suppression. */
 	PH_(node) *const n0 = heap->as_array.data, *child, temp = *(&temp);
@@ -232,8 +232,8 @@ static void PH_(sift_down_i)(struct H_(heap) *const heap, size_t i) {
 static void PH_(heapify)(struct H_(heap) *const heap) {
 	size_t i;
 	assert(heap);
-	if(heap->as_array.size > 1)
-		for(i = heap->as_array.size / 2 - 1; (PH_(sift_down_i)(heap, i), i); i--);
+	if(heap->as_array.size > 1) for(i = heap->as_array.size / 2 - 1;
+		(PH_(sift_down_i)(heap, i), i); i--);
 }
 
 /** Removes from `heap`. Must have a non-zero size. */
@@ -365,8 +365,13 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 
 #ifdef HEAP_TO_STRING /* <!-- to string trait */
 /** Thunk `n` -> `a`. */
-static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12])
-	{ HT_(to_string)((const void *)n, a); }
+static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12]) {
+#ifdef HEAP_VALUE
+	HT_(to_string)(n->priority, 0, a);
+#else
+	HT_(to_string)(n, a);
+#endif
+}
 #include "to_string.h" /** \include */
 #undef HEAP_TO_STRING
 #ifndef HEAP_TRAIT

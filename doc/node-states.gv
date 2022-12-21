@@ -1,0 +1,10 @@
+digraph {
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans"];
+	node [shape=record, style=filled, fillcolor="Grey95", fontname="Bitstream Vera Sans"];
+	edge [fontname="Bitstream Vera Sans"];
+	not [label="not in a list\l|free\l", fillcolor = pink];
+	//zero [label="{not in a list\l|null}"];
+	in [ label = "in a list\l|bound\l" ];
+	not -> in [ label = "<L>list_push\n<L>list_unshift\n..." ];
+	in -> not [ label = "<L>list_clear\n<L>list_remove\n..." ];
+}

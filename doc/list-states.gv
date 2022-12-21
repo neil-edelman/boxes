@@ -1,0 +1,15 @@
+digraph {
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans"];
+	node [shape=record, style=filled, fillcolor="Grey95", fontname="Bitstream Vera Sans"];
+	edge [fontname="Bitstream Vera Sans"];
+	null [ label = "uninitialized\l|undetermined state\l", fillcolor = pink ];
+	empty;
+	full [label="non-empty"];
+	null -> empty [label="<L>list_clear"];
+	#empty -> empty [style=invis];
+	empty -> empty [label="<L>list_clear\n..."];
+	empty -> full [label="<L>list_push\n<L>list_unshift\n..."];
+	full -> empty [label="<L>list_clear\n<L>list_remove\n..."];
+	full -> full [label="<L>list_push\n<L>list_unshift\n<L>list_remove\n..."];
+	#{ rank=same; empty; full; }
+}
