@@ -1,0 +1,13 @@
+digraph {
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans"];
+	node [shape=record, style=filled, fillcolor="Grey95", fontname="Bitstream Vera Sans"];
+	edge [fontname="Bitstream Vera Sans"];
+	null [label = "uninitialized\l|no dynamic memory;\lundetermined state\l", fillcolor = pink];
+	static [ label = "idle\l|no dynamic memory;\l\{0\} or POOL_IDLE\l" ];
+	dynamic [ label = "active\l|memory allocated;\lcould have size zero\l" ];
+	null -> static [ label = "<P>pool" ];
+	static -> dynamic [ label = "<P>pool_new\l<P>pool_buffer" ];
+	dynamic -> static [ label = "<P>pool_" ];
+	static -> static [label = "<P>pool_clear"]
+	dynamic -> dynamic [label = "<P>pool_clear"]
+}

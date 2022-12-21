@@ -83,7 +83,7 @@ typedef ARRAY_TYPE PA_(type);
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`.
 
- ![States.](../doc/array-states.png) */
+ ![States.](../doc/states.png) */
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 

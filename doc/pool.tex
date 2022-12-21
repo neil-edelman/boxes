@@ -1,0 +1,289 @@
+\documentclass[12pt]{article}
+
+% input
+\bibliographystyle{ieeetr}
+\usepackage[utf8]{inputenc}
+%\usepackage{times} % font
+\usepackage{lmodern} % scalable font
+\usepackage[pdftex]{graphicx} % include graphics
+\usepackage{amsmath} % align, nobreakdash
+\usepackage[pdf,tmpdir]{graphviz} % digraph
+\usepackage{fullpage} % book margins -> std margins
+\usepackage{wrapfig} % wrapfigure
+%\usepackage{moreverb} % verbatimtabinput
+\usepackage{subcaption} % subcaptionbox
+\usepackage[colorlinks]{hyperref} % pdf links
+\usepackage{url} % url support
+%\usepackage{comment} % comment
+\usepackage{xfrac}
+\usepackage[table]{xcolor}
+
+\usepackage{siunitx}
+%\usepackage{graphicx} already
+\usepackage{latexsym}
+\usepackage{keyval}
+\usepackage{ifthen}
+\usepackage{moreverb}
+\usepackage[siunitx, subfolder]{gnuplottex}
+
+\newcommand{\code}[1]{\colorbox{light-gray}{\texttt{#1}}}
+\def\Scale{0.5}
+
+% colourize titles
+\definecolor{light-gray}{gray}{0.95}
+\definecolor{ilrblue}{RGB}{79,166,220}
+\usepackage{titling}
+\pretitle{\vspace{-3em}\fontfamily{\sfdefault}\fontsize{18bp}{18bp}\color{ilrblue}\selectfont}
+\posttitle{\par\vspace{18bp}}
+\preauthor{\normalfont\bfseries\selectfont\MakeUppercase}
+\postauthor{\par\vspace{4bp}}
+\predate{\normalfont\selectfont}
+\postdate{\par\vspace{-8bp}}
+\usepackage{titlesec}
+\titleformat{\section}{\fontfamily{\sfdefault}\selectfont\normalsize\bfseries\color{ilrblue}\MakeUppercase}{\thesection}{1em}{}
+\titleformat{\subsection}{\fontfamily{\sfdefault}\normalsize\bfseries\color{ilrblue}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\fontfamily{\sfdefault}\normalsize\bfseries\color{ilrblue}\it}{\thesubsubsection}{1em}{}
+\makeatletter
+\renewenvironment{abstract}{%
+    \if@twocolumn
+      \section*{\abstractname}%
+    \else \small %
+      \begin{center}%
+        {\bfseries\color{ilrblue} \abstractname\vspace{\z@}\vspace{-6bp}}%
+      \end{center}%
+      \quotation
+    \fi}
+    {\if@twocolumn\else\endquotation\fi}
+\makeatother
+
+% for hyperref
+\hypersetup{
+  linkcolor=ilrblue, % internal (figure) links
+  urlcolor=ilrblue,
+  filecolor=ilrblue,
+  citecolor=ilrblue, % bibliography links
+  pdfauthor={\@author},
+  pdftitle={\@title},
+  pdfsubject={\@title},
+  pdfpagemode=UseNone
+}
+
+\author{Neil A. Edelman}
+\title{A slab-allocator for similar objects}
+\date{2022-03-01}
+
+\begin{document}
+
+\maketitle
+
+\abstract{Our pool is a slab allocator parameterized to one type, offering packed random-access insertion and deletion. Pointers to valid items in the pool are stable, but not generally in any order. When removal is ongoing and uniformly sampled while reaching a steady-state size, it will eventually settle in one contiguous region.}
+
+\section{Motivation}
+
+In many applications, we would like a stream of one type of many objects address' to be stable throughout each of their lifetimes. We can not tell, {\it a priori} how many objects at one time will be needed. We would like to cache these objects for re-use instead of allocating and freeing them every time. Dynamic arrays are not suited for this because, in order there to be a contiguity guarantee, the pointers are not guaranteed to be stable. $C^{++}$'s \code{std::deqeue} is close, but it only allows deletion from the ends. The pool, therefore, must not be contiguous, but we want blocks of data to be in one section of memory for fast cached-access and low storage-overhead.
+
+\section{Details}
+
+We only need to worry about one parametrized type and size, simplifying matters greatly. This suggests an an array of slabs\cite{bonwick1994slab}, where each slab is a fixed size array. When any slab gets full, another, exponentially bigger, slab is created.
+
+To reach the ideal contiguous slab of memory, we only allocate memory to an item from the slab of largest capacity, active slab$_0$. When data is deleted from a secondary slab, it is unused until all the data is gone. When the slab's object count goes to zero, it is freed.
+
+\subsection{Marking Entries as Deleted}
+
+We face a similar problem as garbage collection: in the active slab$_0$, we need some way to tell which are deleted. The first choice is a free-list. When adding an entry, check if the free-list is not empty, and if it is not, we recycle deleted entries by shifting the list. Alternately, popping the free-list works, too, but on average, shifting yields lower, more compact addresses.
+
+The free-list is $\mathcal{O}(1)$ amortized run-time, but could take up to $\Theta(\sum_n\text{capacity of slab}_n)$
+%\cite{knuth1976big}
+space requirement, depending on the design of the free-list. Alternately, we could use an implicit complete binary-tree free-heap\cite{williams1964heap}. This will negatively affect the run-time, $\mathcal{O}(\log \text{slab}_0)$, but space requirement is much more reasonable, $\mathcal{O}(\text{slab}_0)$. A reference count suffices on the secondary slabs. Also, the free-heap will serve up, on average, elements that are closer to the front.
+
+\begin{figure}%
+	\centering%
+	\begin{subfigure}[b]{0.5\textwidth}
+\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 3.1,3.4}]
+set style line 1 lt 5 lw 2 lc black pointtype 1 pointsize 0.5 dt 1
+set style line 2 lt 5 lw 2 lc black pointtype 2 pointsize 0.5 dt 4
+set grid
+set xlabel "elements"
+set ylabel "time (µs)"
+set xtics rotate
+set format x '\tiny %g'
+set format y '\tiny %g'
+set xrange [0:83886080]
+set key font "modern,20"
+plot \
+"../timing/pool_vs_pool_time.data" using 1:2 with lines title "free-heap" ls 1, \
+"../timing/pool_vs_pool_time.data" using 1:3 with lines title "free-list" ls 2
+\end{gnuplot}%
+	\caption{Run-time.\label{compare:time}}%
+	\end{subfigure}%
+	\begin{subfigure}[b]{0.5\textwidth}%
+\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 3.1,3.4}]
+set style line 1 lt 5 lw 2 lc black pointtype 1 pointsize 0.5 dt 1
+set style line 2 lt 5 lw 2 lc black pointtype 2 pointsize 0.5 dt 4
+set grid
+set xlabel "elements"
+set ylabel "space, (bytes)"
+set xtics rotate
+set format x '\tiny %g'
+set format y '\tiny %g'
+set xrange [0:83886080]
+set key font "modern,20"
+plot \
+"../timing/pool_vs_pool_space.data" using 1:2 with lines title "free-heap" ls 1, \
+"../timing/pool_vs_pool_space.data" using 1:3 with lines title "free-list" ls 2
+\end{gnuplot}
+		\caption{Space.\label{compare:space}}
+	\end{subfigure}
+	\caption{Time and space to inserting and deleting $n$ random, but linearly stable about 50~items.}%
+	\label{compare}%
+\end{figure}%
+
+Figure~\ref{compare} compares a hypothetical \code{struct keyval} with an \code{int} and a string of 12 \code{char} both in run-time, Figure~\ref{compare:time}, and total space, Figure~\ref{compare:space}. It was decided that the space requirement of using a free-list is too great for, what turned out to be, a very modest performance gain in this region.
+
+With a free-list, all the items in a block that are non-deleted have a null pointer attached to them. A free-heap saves initializing and reading the list, and only needs the space for what one has deleted. This is not without a downside: there is no guarantee that one will be able to expand the heap to account for a deletion; it could be that deleting an item fails.
+
+\subsection{Which slab are they in?}
+
+Except primary slab$_0$, we maintain the slabs sorted by memory location. Whenever we allocate a new slab$_0$ in response to the old slab$_0$ being full, it requires that we binary search the array of slabs and insert the old, $\mathcal{O}(\log \text{slabs} + \text{slabs}) = \mathcal{O}(\text{slabs})$. Similarly for deleting a slab. Because the exponential growth of slabs, this happens $\mathcal{O}(\log \text{items})$. Thus, the worst-case time to delete is, $\mathcal{O}(\text{slabs} + \log \text{items in slab$_0$}) = \mathcal{O}(\log \text{items})$.
+
+Insertion is amortized $\mathcal{O}(1)$. In the case where slab$_0$ is full, we allocate a new slab for at least $(1+\epsilon)n$ new entries, and each entry bears a transfer of constant time. In practice, we use an approximation to golden ratio for the growth factor.
+
+In the case where the free-heap is empty, return slab$_0[$size$_0]$. If there's any addresses in the maximum free-heap, pop an address from the array of which the heap is made and return it; we know that it is lower in the binary-tree heap than those higher up. We prefer to have low-numbers, but any number would do.
+
+%\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
+\begin{figure}
+	\centering
+	\digraph[scale=0.6]{pool}{
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	free0_0 [label=<<font color="Gray50" face="Times-Italic">12</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_1 [label=<<font color="Gray50" face="Times-Italic">10</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_1 -> free0_0 [dir=back];
+	free0_2 [label=<<font color="Gray50" face="Times-Italic">11</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_2 -> free0_0 [dir=back];
+	free0_3 [label=<<font color="Gray50" face="Times-Italic">7</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_3 -> free0_1 [dir=back];
+	free0_4 [label=<<font color="Gray50" face="Times-Italic">0</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_4 -> free0_1 [dir=back];
+	free0_5 [label=<<font color="Gray50" face="Times-Italic">2</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_5 -> free0_2 [dir=back];
+	free0_6 [label=<<font color="Gray50" face="Times-Italic">4</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_6 -> free0_2 [dir=back];
+	{rank=same; free0_0; pool; slots; }
+	free0_0 -> pool:free [dir=back];
+	pool [label=<
+<table border="0" cellspacing="0">
+	<tr><td colspan="3" align="left"><font color="Grey75">&lt;colour&gt;pool: enum colour</font></td></tr>
+	<hr/>
+	<tr>
+		<td border="0" align="right">freeheap0</td>
+		<td border="0" align="right">7</td>
+		<td port="free" border="0" align="right">9</td>
+	</tr>
+	<tr>
+		<td border="0" align="right" bgcolor="Gray95">capacity0</td>
+		<td border="0" bgcolor="Gray95"></td>
+		<td border="0" align="right" bgcolor="Gray95">20</td>
+	</tr>
+	<tr>
+		<td border="0" align="right">slots</td>
+		<td border="0" align="right">3</td>
+		<td port="slots" border="0" align="right">3</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	pool:slots -> slots;
+	slots [label = <
+<table border="0" cellspacing="0">
+	<tr><td></td></tr>
+	<hr/>
+	<tr>
+		<td border="0"><font face="Times-Italic">i</font></td>
+		<td border="0"><font face="Times-Italic">slab</font></td>
+		<td border="0"><font face="Times-Italic">size</font></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td align="right">0</td>
+		<td align="left">Ith-izg</td>
+		<td port="0" align="right">14</td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Grey95">1</td>
+		<td align="left" bgcolor="Grey95">Omedurb</td>
+		<td port="1" align="right" bgcolor="Grey95">6</td>
+	</tr>
+	<tr>
+		<td align="right">2</td>
+		<td align="left">Gratbul</td>
+		<td port="2" align="right">1</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	slots:0 -> slab0;
+	slab0 [label=<
+<table border="0" cellspacing="0">
+	<tr><td align="left"><font color="Gray75">Ith-izg</font></td></tr>
+	<hr/>
+	<tr><td port="0" align="left"><font color="Gray50" face="Times-Italic">0</font></td></tr>
+	<tr><td port="1" align="left" bgcolor="Grey95">Olive</td></tr>
+	<tr><td port="2" align="left"><font color="Gray50" face="Times-Italic">2</font></td></tr>
+	<tr><td port="3" align="left" bgcolor="Grey95">Wheat</td></tr>
+	<tr><td port="4" align="left"><font color="Gray50" face="Times-Italic">4</font></td></tr>
+	<tr><td port="5" align="left" bgcolor="Grey95">Yellow</td></tr>
+	<tr><td port="6" align="left">Gold</td></tr>
+	<tr><td port="7" align="left" bgcolor="Grey95"><font color="Gray50" face="Times-Italic">7</font></td></tr>
+	<tr><td port="8" align="left">Gold</td></tr>
+	<tr><td port="9" align="left" bgcolor="Grey95">Gold</td></tr>
+	<tr><td port="10" align="left"><font color="Gray50" face="Times-Italic">10</font></td></tr>
+	<tr><td port="11" align="left" bgcolor="Grey95"><font color="Gray50" face="Times-Italic">11</font></td></tr>
+	<tr><td port="12" align="left"><font color="Gray50" face="Times-Italic">12</font></td></tr>
+	<tr><td port="13" align="left" bgcolor="Grey95">Tan</td></tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	slots:1 -> slab1;
+	slab1 [label=<
+<table border="0" cellspacing="0">
+	<tr><td align="left"><font color="Gray75">Omedurb</font></td></tr>
+	<hr/>
+	<tr><td align="left"><font face="Times-Italic">count 6</font></td></tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	slots:2 -> slab2;
+	slab2 [label=<
+<table border="0" cellspacing="0">
+	<tr><td align="left"><font color="Gray75">Gratbul</font></td></tr>
+	<hr/>
+	<tr><td align="left"><font face="Times-Italic">count 1</font></td></tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	node [fillcolour=red];
+	}
+	\caption{A pool consists of several slabs of packed data managed by an array, and a free-heap for slab$_0$, and reference-counting for the rest.}
+	\label{pool}
+\end{figure}
+
+Figure~\ref{pool} shows a diagram of a pool. This is the {\it free-heap} design from Figure~\ref{compare}.
+
+\subsection{Heap implementation}
+
+This implements an invariant that the end of the list is never deleted. A maximum-heap with which we can compare the data in the maximum position in slab$_0$ on deletion. If it matches, we decrement the max value and pop from the stack until $\text{top} < \text{address}_\text{end}$. The procedure is amortized. For example, in Figure~\ref{pool}, if we deleted the data at slab$_0$, index 13, \code{Tan}, then the free heap would also pop-max 12, 11, and 10.
+
+%This can be seen as a form of path-compression\cite{tarjan1979compression}, where the compressed nodes are deleted. But is it?
+
+\subsection{Segmented Architectures}
+
+The C standard purposefully makes comparing pointers from different objects undefined. So this makes this approach dubious on some machines. With the introduction of \code{uintptr\_t} as an optional type in \code{C99}, this makes it implementation-defined.
+
+\section{Conclusion}
+
+Solely focusing on one object only, we can make a simple memory pool. To ensure random-access deletion, we use a free-maximum-heap to ensure that the end is never deleted.
+
+\bibliography{pool}
+
+\end{document}

@@ -1,0 +1,111 @@
+digraph {
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	free0_0 [label=<<font color="Gray50" face="Times-Italic">12</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_1 [label=<<font color="Gray50" face="Times-Italic">10</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_1 -> free0_0 [dir=back];
+	free0_2 [label=<<font color="Gray50" face="Times-Italic">11</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_2 -> free0_0 [dir=back];
+	free0_3 [label=<<font color="Gray50" face="Times-Italic">7</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_3 -> free0_1 [dir=back];
+	free0_4 [label=<<font color="Gray50" face="Times-Italic">0</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_4 -> free0_1 [dir=back];
+	free0_5 [label=<<font color="Gray50" face="Times-Italic">2</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_5 -> free0_2 [dir=back];
+	free0_6 [label=<<font color="Gray50" face="Times-Italic">4</font>>, width=0, height=0, margin=0.03, shape=circle, style=filled, fillcolor="Gray95"];
+	free0_6 -> free0_2 [dir=back];
+	{rank=same; free0_0; pool; slots; }
+	free0_0 -> pool:free [dir=back];
+	pool [label=<
+<table border="0" cellspacing="0">
+	<tr><td colspan="3" align="left"><font color="Grey75">&lt;colour&gt;pool: enum colour</font></td></tr>
+	<hr/>
+	<tr>
+		<td border="0" align="right">freeheap0</td>
+		<td border="0" align="right">7</td>
+		<td port="free" border="0" align="right">9</td>
+	</tr>
+	<tr>
+		<td border="0" align="right" bgcolor="Gray95">capacity0</td>
+		<td border="0" bgcolor="Gray95"></td>
+		<td border="0" align="right" bgcolor="Gray95">20</td>
+	</tr>
+	<tr>
+		<td border="0" align="right">slots</td>
+		<td border="0" align="right">3</td>
+		<td port="slots" border="0" align="right">3</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	pool:slots -> slots;
+	slots [label = <
+<table border="0" cellspacing="0">
+	<tr><td></td></tr>
+	<hr/>
+	<tr>
+		<td border="0"><font face="Times-Italic">i</font></td>
+		<td border="0"><font face="Times-Italic">slab</font></td>
+		<td border="0"><font face="Times-Italic">size</font></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td align="right">0</td>
+		<td align="left">Ith-izg</td>
+		<td port="0" align="right">14</td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Grey95">1</td>
+		<td align="left" bgcolor="Grey95">Omedurb</td>
+		<td port="1" align="right" bgcolor="Grey95">6</td>
+	</tr>
+	<tr>
+		<td align="right">2</td>
+		<td align="left">Gratbul</td>
+		<td port="2" align="right">1</td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	slots:0 -> slab0;
+	slab0 [label=<
+<table border="0" cellspacing="0">
+	<tr><td align="left"><font color="Gray75">Ith-izg</font></td></tr>
+	<hr/>
+	<tr><td port="0" align="left"><font color="Gray50" face="Times-Italic">0</font></td></tr>
+	<tr><td port="1" align="left" bgcolor="Grey95">Olive</td></tr>
+	<tr><td port="2" align="left"><font color="Gray50" face="Times-Italic">2</font></td></tr>
+	<tr><td port="3" align="left" bgcolor="Grey95">Wheat</td></tr>
+	<tr><td port="4" align="left"><font color="Gray50" face="Times-Italic">4</font></td></tr>
+	<tr><td port="5" align="left" bgcolor="Grey95">Yellow</td></tr>
+	<tr><td port="6" align="left">Gold</td></tr>
+	<tr><td port="7" align="left" bgcolor="Grey95"><font color="Gray50" face="Times-Italic">7</font></td></tr>
+	<tr><td port="8" align="left">Gold</td></tr>
+	<tr><td port="9" align="left" bgcolor="Grey95">Gold</td></tr>
+	<tr><td port="10" align="left"><font color="Gray50" face="Times-Italic">10</font></td></tr>
+	<tr><td port="11" align="left" bgcolor="Grey95"><font color="Gray50" face="Times-Italic">11</font></td></tr>
+	<tr><td port="12" align="left"><font color="Gray50" face="Times-Italic">12</font></td></tr>
+	<tr><td port="13" align="left" bgcolor="Grey95">Tan</td></tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	slots:1 -> slab1;
+	slab1 [label=<
+<table border="0" cellspacing="0">
+	<tr><td align="left"><font color="Gray75">Omedurb</font></td></tr>
+	<hr/>
+	<tr><td align="left"><font face="Times-Italic">count 6</font></td></tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	slots:2 -> slab2;
+	slab2 [label=<
+<table border="0" cellspacing="0">
+	<tr><td align="left"><font color="Gray75">Gratbul</font></td></tr>
+	<hr/>
+	<tr><td align="left"><font face="Times-Italic">count 1</font></td></tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	node [fillcolour=red];
+}
