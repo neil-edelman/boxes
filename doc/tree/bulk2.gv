@@ -1,0 +1,15 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans", splines=false];
+	node [shape=none, fontname="Bitstream Vera Sans"];
+
+	trunk0x100511770 [label = <
+<table border="0" cellspacing="0">
+	<tr><td border="0" colspan="2"><font color="Gray75">Ukukbag</font></td></tr>
+	<hr/>
+	<tr>
+	<td border="0" align="center" port="0">1</td>
+	<td border="0" align="center" port="1">2</td>
+	</tr>
+</table>>];
+	node [color="Red"];
+}

@@ -1,0 +1,26 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans"];
+	node [shape=box, style=filled, fontname="Bitstream Vera Sans", fillcolor="Grey90"];
+	edge [fontname="Bitstream Vera Sans"];
+	remove [shape=circle, style=none];
+	lookup [label="lookup rm"];
+	remove -> lookup [label="when min, write parent"];
+	lookup -> false;
+	lookup -> branch;
+	lookup -> upward;
+	branch -> upward [label="transfer to leaf"];
+	upward -> space [label="parent dne"];
+	upward -> balance_less;
+	upward -> balance_more;
+	balance_less -> merge_less [label="min"];
+	balance_more -> merge_more [label="min"];
+	balance_less -> end;
+	balance_more -> end;
+	merge_less -> ascend;
+	merge_more -> ascend;
+	ascend -> upward;
+	space -> end;
+	end -> true;
+	true [shape=none, style=none];
+	false [shape=none, style=none];
+}

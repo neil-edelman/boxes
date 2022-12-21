@@ -1,0 +1,27 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans"];
+	node [shape=box, style=filled, fontname="Bitstream Vera Sans", fillcolor="Grey90"];
+	edge [fontname="Bitstream Vera Sans"];
+
+	add [shape=circle, style=none];
+
+	error [label="ERROR", shape=none, style=none];
+	unique [label="UNIQUE", shape=none, style=none];
+	present [label="PRESENT", shape=none, style=none];
+	descend [label="descend: add, hole"];
+
+	idle -> error;
+	add -> idle [label="root dne"];
+	add -> empty [label="root empty"];
+	add -> descend;
+	idle -> empty;
+	empty -> insert;
+	descend -> present [label="equal"];
+	descend -> insert [label="hole=add"];
+	descend -> grow;
+	grow -> split;
+	grow -> error;
+	split -> split;
+	split -> hole -> unique;
+	insert -> unique;
+}
