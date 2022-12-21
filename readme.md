@@ -59,7 +59,7 @@ On `TREE_VALUE`, this creates a map, otherwise a set of [&lt;PB&gt;key](#user-co
 
 ### <a id = "user-content-typedef-35616b31" name = "user-content-typedef-35616b31">&lt;PB&gt;compare_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PB&gt;compare_fn</strong>)(&lt;PB&gt;key_c a, &lt;PB&gt;key_c b);</code>
+<code>typedef int(*<strong>&lt;PB&gt;compare_fn</strong>)(const &lt;PB&gt;key a, const &lt;PB&gt;key b);</code>
 
 Returns a positive result if `a` is out\-of\-order with respect to `b`, inducing a strict weak order\. This is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\.
 

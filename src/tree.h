@@ -230,9 +230,9 @@ static struct PB_(iterator) PB_(end)(struct B_(tree) *const tree) {
 	it.seen = 0;
 	return it;
 }
-/** @return Whether `it` advances, filling `v`. @implements `next` */
+/** @return Whether `it` advances, filling `ref`. @implements `next` */
 static int PB_(next)(struct PB_(iterator) *const it,
-	struct PB_(ref) **const v) {
+	struct PB_(ref) **const ref) {
 	struct PB_(ref) adv;
 	assert(it);
 	if(!it->root || !it->ref.node) return it->seen = 0, 0;
@@ -271,7 +271,7 @@ static int PB_(next)(struct PB_(iterator) *const it,
 successor:
 	it->seen = 1;
 	it->ref = adv;
-	if(v) *v = &it->ref;
+	if(ref) *ref = &it->ref;
 	return 1;
 }
 /** @return Whether `it` recedes, filling `v`. @implements `next` */
@@ -1632,8 +1632,8 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 
 #ifdef TREE_TRAIT /* <-- trait: Will be different on different includes. */
 #define BOX_TRAIT_NAME TREE_TRAIT
-#define PBT_(n) PB_(ARRAY_CAT(TREE_TRAIT, n))
-#define BT_(n) B_(ARRAY_CAT(TREE_TRAIT, n))
+#define PBT_(n) PB_(TREE_CAT(TREE_TRAIT, n))
+#define BT_(n) B_(TREE_CAT(TREE_TRAIT, n))
 #else /* trait --><!-- !trait */
 #define PBT_(n) PB_(n)
 #define BT_(n) B_(n)
