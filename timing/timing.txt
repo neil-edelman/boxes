@@ -1,0 +1,47 @@
+Seed 2061. Replicas 100000. Random create/destroy.
+Static Contiguo	3236800
+Malloc Random	4581758
+Stable Pool	1948325 Setting Reserve.
+Dynamic Array	73644582
+Dynamic Contigu	3261802
+Dynamic Free-Li	674805
+
+Seed 2155. Replicas 100000. Random create/destroy.
+Static Contiguo	3305568
+Malloc Random	4573931
+Stable Pool	1975125
+Dynamic Array	72521476
+Dynamic Contigu	3255962
+Dynamic Free-Li	664700
+
+Seed 2577. Replicas 10000. Random create/destroy + visit @.
+Static Contiguo	152173
+Malloc Random	170699
+Stable Pool	152890 Setting Reserve.
+Dynamic Array	785076
+Dynamic Contigu	150474
+Dynamic Free-Li	216043
+
+Seed 2399. Replicas 100000. Random create/destroy + visit @.
+Static Contiguo	9839731
+Malloc Random	22429857
+Stable Pool	9741894 Setting Reserve.
+Dynamic Array	103829997
+Dynamic Contigu	9301284
+Dynamic Free-Li	73841553
+
+Seed 2228. Replicas 100000. Random create/destroy + visit @.
+Static Contiguo	9291456
+Malloc Random	21531298
+Stable Pool	9507592
+Dynamic Array	103589675
+Dynamic Contigu	9445075
+Dynamic Free-Li	72173386
+
+Seed 2336. Replicas 1000. Random create/destroy + recreate.
+Static Contiguo	2549024
+Malloc Random	2588089
+Stable Pool	2468618
+Dynamic Array	2506753
+Dynamic Contigu	2648329
+Dynamic Free-Li	2588603
