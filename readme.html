@@ -87,7 +87,7 @@
 
 <p><code>typedef TRIE_KEY <strong>&lt;PT&gt;key</strong>;</code></p>
 
-<p>The default is assignable <code>const char *</code>. If one sets <code>TRIE_KEY</code> to something other then that, then one must also declare <code>&lt;P&gt;string</code> as a <a href = "#typedef:&lt;PT&gt;string_fn">&lt;PT&gt;string_fn</a>.</p>
+<p>The default is assignable <code>const char *</code>. If one sets <code>TRIE_KEY</code> to something other than that, then one must also declare <code>&lt;P&gt;string</code> as a <a href = "#typedef:&lt;PT&gt;string_fn">&lt;PT&gt;string_fn</a>.</p>
 
 </div>
 
@@ -115,9 +115,9 @@
 
 <h3><a id = "typedef:<PSTR>to_string_fn" name = "typedef:<PSTR>to_string_fn">&lt;PSTR&gt;to_string_fn</a></h3>
 
-<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;value *, char(*)[12]);</code></p>
+<p><code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element *, char(*)[12]);</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the read-only argument into a 12-<code>char</code> null-terminated output string, passed as a pointer in the last argument. This function can have 2 or 3 arguments, where <code>&lt;PSTR&gt;value</code> is actually a map with a key-value pair.</p>
+<p><a href = "src/to_string.h">src/to_string.h</a>: responsible for turning the read-only argument into a 12-<code>char</code> null-terminated output string, passed as a pointer in the last argument. This function can have 2 or 3 arguments, where <code>&lt;PSTR&gt;element</code> might be a map with a key-value pair.</p>
 
 </div>
 
@@ -189,7 +189,7 @@
 
 <tr><td align = right>static struct &lt;T&gt;trie_iterator</td><td><a href = "#fn:<T>trie_prefix">&lt;T&gt;trie_prefix</a></td><td>trie, prefix</td></tr>
 
-<tr><td align = right>static &lt;PT&gt;entry *</td><td><a href = "#fn:<T>trie_next">&lt;T&gt;trie_next</a></td><td>it</td></tr>
+<tr><td align = right>static int</td><td><a href = "#fn:<T>trie_next">&lt;T&gt;trie_next</a></td><td>it, k, v</td></tr>
 
 <tr><td align = right>static size_t</td><td><a href = "#fn:<T>trie_size">&lt;T&gt;trie_size</a></td><td>it</td></tr>
 
@@ -329,11 +329,11 @@
 
 <h3><a id = "fn:<T>trie_next" name = "fn:<T>trie_next">&lt;T&gt;trie_next</a></h3>
 
-<p><code>static &lt;PT&gt;entry *<strong>&lt;T&gt;trie_next</strong>(struct &lt;T&gt;trie_iterator *const <em>it</em>)</code></p>
+<p><code>static int <strong>&lt;T&gt;trie_next</strong>(struct &lt;T&gt;trie_iterator *const <em>it</em>, &lt;PT&gt;key *const <em>k</em>, &lt;PT&gt;value **<em>v</em>)</code></p>
 
 <dl>
 	<dt>Return:</dt>
-	<dd>Advances <code>it</code> and returns the entry, or, at the end, returns null.</dd>
+	<dd>Whether advancing <code>it</code> to the next element and filling <code>k</code>, (and <code>v</code> if a map, otherwise absent,) if not-null.</dd>
 	<dt>Order:</dt>
 	<dd>&#927;(log |<code>trie</code>|)</dd>
 </dl>
@@ -369,7 +369,7 @@
 	<dt>Parameter: <em>value</em></dt>
 	<dd>Only if <code>TRIE_VALUE</code> is set will this parameter exist. Output pointer. Can be null only if <code>TRIE_KEY_IN_VALUE</code> was not defined.</dd>
 	<dt>Return:</dt>
-	<dd>One of, <code>TRIE_ERROR</code>, <code>errno</code> is set and <code>value</code> is not; <code>TRIE_UNIQUE</code>, added to <code>trie</code>, and uninitialized <code>value</code> is associated with <code>key</code>; <code>TRIE_PRESENT</code>, the value associated with <code>key</code>. If <code>TRIE_IN_VALUE</code>, was specified and the return is <code>TRIE_UNIQUE</code>, the trie is in an invalid state until filling in the key in value by <code>key</code>.</dd>
+	<dd>One of, <code>TRIE_ERROR</code>, <code>errno</code> is set and <code>value</code> is not; <code>TRIE_ABSENT</code>, added to <code>trie</code>, and uninitialized <code>value</code> is associated with <code>key</code>; <code>TRIE_PRESENT</code>, the value associated with <code>key</code>. If <code>TRIE_IN_VALUE</code>, was specified and the return is <code>TRIE_ABSENT</code>, the trie is in an invalid state until filling in the key in value by <code>key</code>.</dd>
 	<dt>Exceptional return: EILSEQ</dt>
 	<dd>The string has a distinguishing run of bytes with a neighbouring string that is too long. On most platforms, this is about 32 bytes the same.</dd>
 	<dt>Exceptional return: malloc</dt>
@@ -421,7 +421,7 @@
 
 <p><code>static &lt;PT&gt;value <strong>&lt;T&gt;tree&lt;D&gt;get</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const &lt;PT&gt;key <em>key</em>)</code></p>
 
-<p>This is functionally identical to <a href = "#fn:&lt;B&gt;tree_get_or">&lt;B&gt;tree_get_or</a>, but a with a trait specifying a constant default value.</p>
+<p>This is functionally identical to <a href = "#fn:&lt;B&gt;trie_get_or">&lt;B&gt;trie_get_or</a>, but a with a trait specifying a constant default value.</p>
 
 <dl>
 	<dt>Return:</dt>

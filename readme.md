@@ -47,7 +47,7 @@ The worse\-case run\-time of querying or modifying, &#927;\(|`string`|\); howeve
 
 <code>typedef TRIE_KEY <strong>&lt;PT&gt;key</strong>;</code>
 
-The default is assignable `const char *`\. If one sets `TRIE_KEY` to something other then that, then one must also declare `<P>string` as a [&lt;PT&gt;string_fn](#user-content-typedef-fda6adfb)\.
+The default is assignable `const char *`\. If one sets `TRIE_KEY` to something other than that, then one must also declare `<P>string` as a [&lt;PT&gt;string_fn](#user-content-typedef-fda6adfb)\.
 
 
 
@@ -69,9 +69,9 @@ If `TRIE_KEY_IN_VALUE`, extracts the key from `TRIE_VALUE`; in this case, the us
 
 ### <a id = "user-content-typedef-8a8349ca" name = "user-content-typedef-8a8349ca">&lt;PSTR&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;value *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element *, char(*)[12]);</code>
 
-[src/to\_string\.h](src/to_string.h): responsible for turning the read\-only argument into a 12\-`char` null\-terminated output string, passed as a pointer in the last argument\. This function can have 2 or 3 arguments, where `<PSTR>value` is actually a map with a key\-value pair\.
+[src/to\_string\.h](src/to_string.h): responsible for turning the read\-only argument into a 12\-`char` null\-terminated output string, passed as a pointer in the last argument\. This function can have 2 or 3 arguments, where `<PSTR>element` might be a map with a key\-value pair\.
 
 
 
@@ -133,7 +133,7 @@ Represents a range of in\-order keys in &#927;\(1\) space\.
 
 <tr><td align = right>static struct &lt;T&gt;trie_iterator</td><td><a href = "#user-content-fn-b720a682">&lt;T&gt;trie_prefix</a></td><td>trie, prefix</td></tr>
 
-<tr><td align = right>static &lt;PT&gt;entry *</td><td><a href = "#user-content-fn-f36d1483">&lt;T&gt;trie_next</a></td><td>it</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-f36d1483">&lt;T&gt;trie_next</a></td><td>it, k, v</td></tr>
 
 <tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a></td><td>it</td></tr>
 
@@ -248,10 +248,10 @@ Looks at only the index of `trie` for potential `string` \(can both be null\) ma
 
 ### <a id = "user-content-fn-f36d1483" name = "user-content-fn-f36d1483">&lt;T&gt;trie_next</a> ###
 
-<code>static &lt;PT&gt;entry *<strong>&lt;T&gt;trie_next</strong>(struct &lt;T&gt;trie_iterator *const <em>it</em>)</code>
+<code>static int <strong>&lt;T&gt;trie_next</strong>(struct &lt;T&gt;trie_iterator *const <em>it</em>, &lt;PT&gt;key *const <em>k</em>, &lt;PT&gt;value **<em>v</em>)</code>
 
  * Return:  
-   Advances `it` and returns the entry, or, at the end, returns null\.
+   Whether advancing `it` to the next element and filling `k`, \(and `v` if a map, otherwise absent,\) if not\-null\.
  * Order:  
    &#927;\(log |`trie`|\)
 
@@ -281,7 +281,7 @@ Adds `key` to `trie` if it doesn't exist already\.
  * Parameter: _value_  
    Only if `TRIE_VALUE` is set will this parameter exist\. Output pointer\. Can be null only if `TRIE_KEY_IN_VALUE` was not defined\.
  * Return:  
-   One of, `TRIE_ERROR`, `errno` is set and `value` is not; `TRIE_UNIQUE`, added to `trie`, and uninitialized `value` is associated with `key`; `TRIE_PRESENT`, the value associated with `key`\. If `TRIE_IN_VALUE`, was specified and the return is `TRIE_UNIQUE`, the trie is in an invalid state until filling in the key in value by `key`\.
+   One of, `TRIE_ERROR`, `errno` is set and `value` is not; `TRIE_ABSENT`, added to `trie`, and uninitialized `value` is associated with `key`; `TRIE_PRESENT`, the value associated with `key`\. If `TRIE_IN_VALUE`, was specified and the return is `TRIE_ABSENT`, the trie is in an invalid state until filling in the key in value by `key`\.
  * Exceptional return: EILSEQ  
    The string has a distinguishing run of bytes with a neighbouring string that is too long\. On most platforms, this is about 32 bytes the same\.
  * Exceptional return: malloc  
@@ -325,7 +325,7 @@ Tries to remove `string` from `trie`\.
 
 <code>static &lt;PT&gt;value <strong>&lt;T&gt;tree&lt;D&gt;get</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const &lt;PT&gt;key <em>key</em>)</code>
 
-This is functionally identical to [&lt;B&gt;tree_get_or](#user-content-fn-e460356c), but a with a trait specifying a constant default value\.
+This is functionally identical to [&lt;B&gt;trie_get_or](#user-content-fn-515dc940), but a with a trait specifying a constant default value\.
 
  * Return:  
    The value associated with `key` in `trie`, \(which can be null\.\) If no such value exists, the `TREE_DEFAULT` is returned\.

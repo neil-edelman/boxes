@@ -17,11 +17,9 @@
  in fixed-size nodes in a relaxed version of a B-tree, as
  <Bayer, McCreight, 1972 Large>, where the height is no longer fixed.
 
- The worse-case run-time of querying or modifying, \O(|`string`|); however,
- this presumes that the string is packed with decision bits. In reality, the
- bottleneck is more the density of looked-at bits. In an iid model,
- <Tong, Goebel, Lin, 2015, Smoothed> showed that the performance was
- \O(\log |`trie`|).
+ The worse-case run-time of querying or modifying is bounded by \O(|`string`|).
+ <Tong, Goebel, Lin, 2015, Smoothed> show that, in an iid model, a better fit
+ is \O(\log |`trie`|), which is reported here.
 
  ![Bit view of the trie.](../doc/trie-bits.png)
 
@@ -52,6 +50,8 @@
  Named traits are obtained by including `trie.h` multiple times with
  `TRIE_EXPECT_TRAIT` and then subsequently including the name in `TRIE_TRAIT`.
 
+ @fixme This is a confusing interface. TRIE_NAME, and optionally TRIE_VALUE,
+ where custom `const char *to_string(value *)`, would allow maps.
  @std C89 (Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ.) */
 
 #ifndef TRIE_NAME
@@ -188,12 +188,13 @@ static const char *PT_(entry_key)(const PT_(value) *const v)
 #endif /* key in value --> */
 
 union PT_(leaf) { PT_(entry) as_entry; struct PT_(tree) *as_link; };
-/* Node already has conflicting meaning, so we use tree. Such that a trie is a
- forest of non-empty complete binary trees. In a B-tree, described using
- <Knuth, 1998 Art 3> terminology, this is a node of `TRIE_ORDER`. */
+/* In a B-tree described using <Knuth, 1998 Art 3>, this is a node of
+ `TRIE_ORDER`. Node already has conflicting meaning with the individual
+ entries. We use tree, such that a trie is a forest of non-empty complete
+ binary trees. */
 struct PT_(tree) {
 	unsigned short bsize;
-	struct trie_branch branch[TRIE_BRANCHES];
+	struct trie_branch branch[TRIE_BRANCHES]; /* Explicitly say, order? */
 	struct trie_bmp bmp;
 	union PT_(leaf) leaf[TRIE_ORDER];
 };
@@ -309,7 +310,7 @@ static int PT_(to_successor)(struct PT_(tree) *const root,
 	PT_(lower_entry)(ref);
 	return 1;
 }
-/** Advances `it`. @return The previous value or null. @implements next */
+/** @return If `it` was advanced and returns `ref`. @implements next */
 static int PT_(next)(struct PT_(iterator) *const it,
 	struct PT_(ref) **const ref) {
 	assert(it);
@@ -886,7 +887,7 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 #ifdef TRIE_TO_STRING /* <!-- to string trait */
 #ifndef TREE_TRAIT /* <!-- natural default */
-/** Uses the natural `e` -> `z` that is defined by the key string. */
+/** Uses the natural `r` -> `z` that is defined by the key string. */
 static void PTT_(to_string)(const struct PT_(ref) *const r,
 	char (*const z)[12]) {
 	const char *string
@@ -927,7 +928,7 @@ static void PTT_(to_string)(const struct PT_(ref) *const r,
 #define T_D_(n, m) TREE_CAT(T_(n), m)
 #define PT_D_(n, m) TREE_CAT(tree, T_D_(n, m))
 #endif
-/** This is functionally identical to <fn:<B>tree_get_or>, but a with a trait
+/** This is functionally identical to <fn:<B>trie_get_or>, but a with a trait
  specifying a constant default value.
  @return The value associated with `key` in `trie`, (which can be null.) If
  no such value exists, the `TREE_DEFAULT` is returned.

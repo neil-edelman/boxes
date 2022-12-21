@@ -332,7 +332,7 @@ static void article_test(void) {
 	for(i = 0; i < sizeof list1 / sizeof *list1; i++) {
 		const struct star *const star = stars + list1[i];
 		struct star *entry;
-		star_trie_try(&trie, star->name, &entry);
+		if(!star_trie_try(&trie, star->name, &entry)) { assert(0); break; }
 		entry->name = star->name;
 		entry->distance = star->distance;
 	}
@@ -357,7 +357,6 @@ int main(void) {
 	errno = 0;
 	contrived_test(), str32_pool_clear(&str_pool);
 	fixed_colour_test();
-#if 1
 	str_trie_test(), str32_pool_clear(&str_pool); /* Key set. */
 	colour_trie_test(); /* Custom key set with enum string backing. */
 	mapint_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */
@@ -365,7 +364,6 @@ int main(void) {
 	str8_trie_test(); /* Small key set with no dependancy on outside keys. */
 	keyval_trie_test(), keyval_pool_(&kv_pool); /* Pointer to index. */
 	star_trie_test(); /* Custom value with enum strings backing. */
-#endif
 	article_test();
 	str32_pool_(&str_pool);
 	return EXIT_SUCCESS;
