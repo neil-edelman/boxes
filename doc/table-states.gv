@@ -1,0 +1,13 @@
+digraph {
+	graph [rankdir = LR, truecolor=true, bgcolor=transparent, fontname = "Bitstream Vera Sans"];
+	node [shape=record, style=filled, fillcolor="Grey95", fontname="Bitstream Vera Sans"];
+	edge [fontname="Bitstream Vera Sans"];
+	null [label = "uninitialized\l|no dynamic memory;\lundetermined state\l", fillcolor="Pink"];
+	static [label = "idle\l|no dynamic memory;\l\{0\} or SET_IDLE\l"];
+	dynamic [label = "active\l|memory allocated;\lcould have size zero\l"];
+	null -> static [label = "<N>table"];
+	static -> dynamic [ label = "<N>table_buffer\n<N>table_try\n<N>table_replace\n<N>table_update\n..." ];
+	dynamic -> static [label = "<N>table_"];
+	dynamic -> dynamic [label = "<N>table_clear"];
+	static -> static [ label = "<N>table_clear"];
+}

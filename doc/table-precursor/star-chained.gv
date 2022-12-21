@@ -1,0 +1,114 @@
+digraph {
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	data [label=<
+<table border="0" cellspacing="0">
+	<tr><td colspan="4"></td></tr>
+	<hr/>
+	<tr>
+		<td border="0"><font face="Times-Italic">i</font></td>
+		<td border="0"><font face="Times-Italic">hash</font></td>
+		<td border="0"><font face="Times-Italic">key</font></td>
+		<td border="0"><font face="Times-Italic">next</font></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td align="right"><font face="Times-Italic">0x0</font></td>
+		<td></td><td></td><td></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0x1</font></td>
+		<td align="right" bgcolor="Gray95">0x91</td>
+		<td align="left" bgcolor="Gray95">Castor</td>
+		<td port="1" bgcolor="Gray95">⬤</td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0x2</font></td>
+		<td></td><td></td><td></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0x3</font></td>
+		<td align="right" bgcolor="Gray95">0x3</td>
+		<td align="left" bgcolor="Gray95">Deneb</td>
+		<td port="3" bgcolor="Gray95">⬤</td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0x4</font></td>
+		<td align="right">0x44</td>
+		<td align="left">Sirius</td>
+		<td port="4">⬤</td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0x5</font></td>
+		<td align="right" bgcolor="Gray95">0x35</td>
+		<td align="left" bgcolor="Gray95">Spica</td>
+		<td port="5" bgcolor="Gray95">⬤</td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0x6</font></td>
+		<td></td><td></td><td></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0x7</font></td>
+		<td bgcolor="Gray95"></td><td bgcolor="Gray95"></td><td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0x8</font></td>
+		<td align="right">0xd8</td>
+		<td align="left">Rigel</td>
+		<td port="8">⬤</td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0x9</font></td>
+		<td bgcolor="Gray95"></td><td bgcolor="Gray95"></td><td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0xa</font></td>
+		<td align="right">0x4a</td>
+		<td align="left">Betelgeuse</td>
+		<td port="10">⬤</td>
+	</tr>
+	<tr>
+		<td align="right" border="2" bgcolor="Gray95"><font face="Times-Italic">0xb</font></td>
+		<td align="right" bgcolor="Gray95">0x4f</td>
+		<td align="left" bgcolor="Gray95">Procyon</td>
+		<td port="11" bgcolor="Gray95">◯</td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0xc</font></td>
+		<td align="right">0xec</td>
+		<td align="left">Regulus</td>
+		<td port="12">⬤</td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0xd</font></td>
+		<td align="right" bgcolor="Gray95">0x33</td>
+		<td align="left" bgcolor="Gray95">Antares</td>
+		<td port="13" bgcolor="Gray95">◯</td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0xe</font></td>
+		<td align="right">0xb3</td>
+		<td align="left">Sol</td>
+		<td port="14">◯</td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0xf</font></td>
+		<td align="right" bgcolor="Gray95">0x9f</td>
+		<td align="left" bgcolor="Gray95">Polaris</td>
+		<td port="15" bgcolor="Gray95">⬤</td>
+	</tr>
+	<hr/>
+	<tr><td colspan="4"></td></tr>
+</table>>];
+	node [shape=plain, fillcolor=none]
+	e13 [label="0xd"];
+	data:3 -> e13 [tailclip=false];
+	e14 [label="0xe"];
+	e13 -> e14;
+	i0xe [label="0xe", fontcolor="Gray"];
+	data:13 -> i0xe [color="Gray"];
+	e11 [label="0xb"];
+	data:15 -> e11 [tailclip=false];
+	node [color=red];
+}

@@ -1,0 +1,164 @@
+digraph {
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	hash [label=<
+<table border="0" cellspacing="0">
+	<tr><td colspan="2"></td></tr>
+	<hr/>
+	<tr>
+		<td BORDER="0"><FONT FACE="Times-Italic">i</FONT></td>
+		<td BORDER="0"><FONT FACE="Times-Italic">next</FONT></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0x0</font></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x1</font></td>
+		<td PORT="1" bgcolor="Gray95">⬤</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0x2</font></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x3</font></td>
+		<td PORT="3" bgcolor="Gray95">⬤</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0x4</font></td>
+		<td PORT="4">⬤</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x5</font></td>
+		<td PORT="5" bgcolor="Gray95">⬤</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0x6</font></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x7</font></td>
+		<td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0x8</font></td>
+		<td PORT="8">⬤</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x9</font></td>
+		<td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0xa</font></td>
+		<td PORT="10">⬤</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" BORDER="0" bgcolor="Gray95"><font face="Times-Italic">0xb</font></td>
+		<td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0xc</font></td>
+		<td PORT="12">⬤</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0xd</font></td>
+		<td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0xe</font></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0xf</font></td>
+		<td PORT="15" bgcolor="Gray95">⬤</td>
+	</tr>
+	<hr/>
+	<tr><td colspan="2"></td></tr>
+</table>>];
+	e1 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x91</td>
+		<td ALIGN="LEFT">Castor</td>
+		<td PORT="1">⬤</td>
+	</tr>
+</table>>];
+	e3 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x3</td>
+		<td ALIGN="LEFT">Deneb</td>
+		<td PORT="3">⬤</td>
+	</tr>
+</table>>];
+	e4 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x44</td>
+		<td ALIGN="LEFT">Sirius</td>
+		<td PORT="4">⬤</td>
+	</tr>
+</table>>];
+	e5 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x35</td>
+		<td ALIGN="LEFT">Spica</td>
+		<td PORT="5">⬤</td>
+	</tr>
+</table>>];
+	e8 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0xd8</td>
+		<td ALIGN="LEFT">Rigel</td>
+		<td PORT="8">⬤</td>
+	</tr>
+</table>>];
+	e10 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x4a</td>
+		<td ALIGN="LEFT">Betelgeuse</td>
+		<td PORT="10">⬤</td>
+	</tr>
+</table>>];
+	e11 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x4f</td>
+		<td ALIGN="LEFT">Procyon</td>
+		<td PORT="11">◯</td>
+	</tr>
+</table>>];
+	e12 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0xec</td>
+		<td ALIGN="LEFT">Regulus</td>
+		<td PORT="12">⬤</td>
+	</tr>
+</table>>];
+	e13 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x33</td>
+		<td ALIGN="LEFT">Antares</td>
+		<td PORT="13">◯</td>
+	</tr>
+</table>>];
+	e14 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0xb3</td>
+		<td ALIGN="LEFT">Sol</td>
+		<td PORT="14">◯</td>
+	</tr>
+</table>>];
+	e15 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x9f</td>
+		<td ALIGN="LEFT">Polaris</td>
+		<td PORT="15">⬤</td>
+	</tr>
+</table>>];
+	node [shape=plain, fillcolor=none, headclip = false, tailclip=false]
+	hash:1 -> e1;
+	hash:3 -> e3 -> e13 -> e14;
+	hash:4 -> e4;
+	hash:5 -> e5;
+	hash:8 -> e8;
+	hash:10 -> e10;
+	hash:12 -> e12;
+	hash:15 -> e15;
+	e15 -> e11;
+	node [color=red];
+}

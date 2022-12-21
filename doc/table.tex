@@ -1,0 +1,590 @@
+\documentclass[12pt]{article}
+
+% input
+\bibliographystyle{ieeetr}
+\usepackage[utf8]{inputenc}
+%\usepackage{times} % font
+\usepackage{lmodern} % scalable font
+\usepackage[pdftex]{graphicx} % include graphics
+\usepackage{amsmath} % align, nobreakdash
+\usepackage[pdf,tmpdir]{graphviz} % digraph
+\usepackage{fullpage} % book margins -> std margins
+\usepackage{wrapfig} % wrapfigure
+%\usepackage{moreverb} % verbatimtabinput
+\usepackage{subcaption} % subcaptionbox
+\usepackage[colorlinks]{hyperref} % pdf links
+\usepackage{url} % url support
+%\usepackage{comment} % comment
+\usepackage{xfrac}
+\usepackage[table]{xcolor}
+
+\usepackage{siunitx}
+%\usepackage{graphicx} already
+\usepackage{latexsym}
+\usepackage{keyval}
+\usepackage{ifthen}
+\usepackage{moreverb}
+\usepackage[siunitx, subfolder]{gnuplottex}
+
+% https://tex.stackexchange.com/questions/259247/rescaling-gnuplottex-to-fit-in-subfigure
+%\usepackage{epstopdf}
+%\usepackage{printlen}
+%\usepackage[utf8]{inputenx}
+%\usepackage{xparse}
+%\ExplSyntaxOn
+%\DeclareExpandableDocumentCommand{\convertlen}{ O{cm} m }
+% {
+%  \dim_to_unit:nn { #2 } { 1 #1 } cm
+% }
+%\ExplSyntaxOff
+% fuck it, just guess
+
+\newcommand{\code}[1]{\colorbox{light-gray}{\texttt{#1}}}
+\def\Scale{0.5}
+
+% colourize titles
+\definecolor{light-gray}{gray}{0.95}
+\definecolor{ilrblue}{RGB}{79,166,220}
+\usepackage{titling}
+\pretitle{\vspace{-3em}\fontfamily{\sfdefault}\fontsize{18bp}{18bp}\color{ilrblue}\selectfont}
+\posttitle{\par\vspace{18bp}}
+\preauthor{\normalfont\bfseries\selectfont\MakeUppercase}
+\postauthor{\par\vspace{4bp}}
+\predate{\normalfont\selectfont}
+\postdate{\par\vspace{-8bp}}
+\usepackage{titlesec}
+\titleformat{\section}{\fontfamily{\sfdefault}\selectfont\normalsize\bfseries\color{ilrblue}\MakeUppercase}{\thesection}{1em}{}
+\titleformat{\subsection}{\fontfamily{\sfdefault}\normalsize\bfseries\color{ilrblue}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\fontfamily{\sfdefault}\normalsize\bfseries\color{ilrblue}\it}{\thesubsubsection}{1em}{}
+\makeatletter
+\renewenvironment{abstract}{%
+    \if@twocolumn
+      \section*{\abstractname}%
+    \else \small %
+      \begin{center}%
+        {\bfseries\color{ilrblue} \abstractname\vspace{\z@}\vspace{-6bp}}%
+      \end{center}%
+      \quotation
+    \fi}
+    {\if@twocolumn\else\endquotation\fi}
+\makeatother
+
+% for hyperref
+\hypersetup{
+  linkcolor=ilrblue, % internal (figure) links
+  urlcolor=ilrblue,
+  filecolor=ilrblue,
+  citecolor=ilrblue, % bibliography links
+  pdfauthor={\@author},
+  pdftitle={\@title},
+  pdfsubject={\@title},
+  pdfpagemode=UseNone
+}
+
+\author{Neil A. Edelman}
+\title{Allocation-conscious chained hash-table}
+\date{2022-02-22}
+
+\begin{document}
+
+\maketitle
+
+\abstract{We define an inline-chained hash-table as a bucket scheme where each entry overlaps with an index to the next entry. Thus, the front entry in the bucket is closed; all others are open, taken from unoccupied slots. We show that this hash-table design is feasible, and can often be less expensive, performance-wise and to maintain. Having a chained hash-table with the simplicity of allocation of open-addressing is especially attractive for simple data.}
+
+\section{Introduction}
+
+Performance is a critical issue, but we are also concerned with usability. Specifically, without higher-level language support for native hash-tables or automatic garbage-collection, we want to easily understand and maintain a general hash-table, with minimal surprise on behalf of the users.
+
+Overlapping each entry with an index to the next entry creates a hash-table that is self-contained in memory, yet behaves as a chained hash in the regime where the load factor is less-then one.\cite{knuth1998sorting} We call this inline-chaining to differentiate it from separate-chaining, where the buckets are objects with links between them.
+
+Thus, the {\it data} part of the {\it data structure} is similar to that of coalesced-hashing\cite{williams1959handling}. However, coalescing cannot occur. The closed entries that form the heads of buckets and the open entries that form a stack are orthogonal.
+
+\section{Example Comparison}
+
+%\begin{wrapfigure}{r}{0.5\textwidth} %[!ht]
+\begin{figure}
+	\centering
+	\subcaptionbox{Separate-chaining.\label{types:separate}}{%
+		\digraph[scale=\Scale]{separate}{
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	hash [label=<
+<table border="0" cellspacing="0">
+	<tr><td colspan="2"></td></tr>
+	<hr/>
+	<tr>
+		<td BORDER="0"><FONT FACE="Times-Italic">i</FONT></td>
+		<td BORDER="0"><FONT FACE="Times-Italic">next</FONT></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0x0</font></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x1</font></td>
+		<td PORT="1" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0x2</font></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x3</font></td>
+		<td PORT="3" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0x4</font></td>
+		<td PORT="4">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x5</font></td>
+		<td PORT="5" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0x6</font></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x7</font></td>
+		<td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0x8</font></td>
+		<td PORT="8">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x9</font></td>
+		<td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0xa</font></td>
+		<td PORT="10">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" BORDER="0" bgcolor="Gray95"><font face="Times-Italic">0xb</font></td>
+		<td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0xc</font></td>
+		<td PORT="12">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0xd</font></td>
+		<td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT"><font face="Times-Italic">0xe</font></td>
+	</tr>
+	<tr>
+		<td ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0xf</font></td>
+		<td PORT="15" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<hr/>
+	<tr><td colspan="2"></td></tr>
+</table>>];
+	e1 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x91</td>
+		<td ALIGN="LEFT">Castor</td>
+		<td PORT="1">\detokenize{⬤}</td>
+	</tr>
+</table>>];
+	e3 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x3</td>
+		<td ALIGN="LEFT">Deneb</td>
+		<td PORT="3">\detokenize{⬤}</td>
+	</tr>
+</table>>];
+	e4 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x44</td>
+		<td ALIGN="LEFT">Sirius</td>
+		<td PORT="4">\detokenize{⬤}</td>
+	</tr>
+</table>>];
+	e5 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x35</td>
+		<td ALIGN="LEFT">Spica</td>
+		<td PORT="5">\detokenize{⬤}</td>
+	</tr>
+</table>>];
+	e8 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0xd8</td>
+		<td ALIGN="LEFT">Rigel</td>
+		<td PORT="8">\detokenize{⬤}</td>
+	</tr>
+</table>>];
+	e10 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x4a</td>
+		<td ALIGN="LEFT">Betelgeuse</td>
+		<td PORT="10">\detokenize{⬤}</td>
+	</tr>
+</table>>];
+	e11 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x4f</td>
+		<td ALIGN="LEFT">Procyon</td>
+		<td PORT="11">\detokenize{◯}</td>
+	</tr>
+</table>>];
+	e12 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0xec</td>
+		<td ALIGN="LEFT">Regulus</td>
+		<td PORT="12">\detokenize{⬤}</td>
+	</tr>
+</table>>];
+	e13 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x33</td>
+		<td ALIGN="LEFT">Antares</td>
+		<td PORT="13">\detokenize{◯}</td>
+	</tr>
+</table>>];
+	e14 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0xb3</td>
+		<td ALIGN="LEFT">Sol</td>
+		<td PORT="14">\detokenize{◯}</td>
+	</tr>
+</table>>];
+	e15 [label=<<table BORDER="0" cellspacing="0">
+	<tr>
+		<td ALIGN="RIGHT">0x9f</td>
+		<td ALIGN="LEFT">Polaris</td>
+		<td PORT="15">\detokenize{⬤}</td>
+	</tr>
+</table>>];
+	node [shape=plain, fillcolor=none, headclip = false, tailclip=false]
+	hash:1 -> e1;
+	hash:3 -> e3 -> e13 -> e14;
+	hash:4 -> e4;
+	hash:5 -> e5;
+	hash:8 -> e8;
+	hash:10 -> e10;
+	hash:12 -> e12;
+	hash:15 -> e15;
+	e15 -> e11;
+	node [color=red];
+		}
+	}
+	\subcaptionbox{Open-addressing.\label{types:open}}{%
+		\digraph[scale=\Scale]{open}{
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	hash [label=<
+<table border="0" cellspacing="0">
+	<tr><td colspan="4"></td></tr>
+	<hr/>
+	<TR>
+		<TD BORDER="0"><FONT FACE="Times-Italic">i</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Italic">disp.</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Italic">hash</FONT></TD>
+		<TD BORDER="0"><FONT FACE="Times-Italic">key</FONT></TD>
+	</TR>
+	<hr/>
+	<TR>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0x0</font></TD>
+		<TD><font face="Times-Italic">1</font></TD>
+		<TD ALIGN="RIGHT">0x4f</TD>
+		<TD ALIGN="LEFT">Procyon</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x1</font></TD>
+		<TD bgcolor="Gray95"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95">0x91</TD>
+		<TD ALIGN="LEFT" bgcolor="Gray95">Castor</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0x2</font></TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x3</font></TD>
+		<TD bgcolor="Gray95"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95">0x3</TD>
+		<TD ALIGN="LEFT" bgcolor="Gray95">Deneb</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0x4</font></TD>
+		<TD><font face="Times-Italic">1</font></TD>
+		<TD ALIGN="RIGHT">0x33</TD>
+		<TD ALIGN="LEFT">Antares</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x5</font></TD>
+		<TD PORT="14" bgcolor="Gray95"><font face="Times-Italic">2</font></TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95">0xb3</TD>
+		<TD ALIGN="LEFT" bgcolor="Gray95">Sol</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0x6</font></TD>
+		<TD><font face="Times-Italic">2</font></TD>
+		<TD ALIGN="RIGHT">0x44</TD>
+		<TD ALIGN="LEFT">Sirius</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x7</font></TD>
+		<TD bgcolor="Gray95"><font face="Times-Italic">2</font></TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95">0x35</TD>
+		<TD ALIGN="LEFT" bgcolor="Gray95">Spica</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0x8</font></TD>
+		<TD PORT="8"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT">0xd8</TD>
+		<TD ALIGN="LEFT">Rigel</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0x9</font></TD>
+		<td bgcolor="Gray95"></td><td bgcolor="Gray95"></td><td bgcolor="Gray95"></td>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0xa</font></TD>
+		<TD PORT="10"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT">0x4a</TD>
+		<TD ALIGN="LEFT">Betelgeuse</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0xb</font></TD>
+		<td bgcolor="Gray95"></td><td bgcolor="Gray95"></td><td bgcolor="Gray95"></td>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0xc</font></TD>
+		<TD PORT="12"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT">0xec</TD>
+		<TD ALIGN="LEFT">Regulus</TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0xd</font></TD>
+		<td bgcolor="Gray95"></td><td bgcolor="Gray95"></td><td bgcolor="Gray95"></td>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT"><font face="Times-Italic">0xe</font></TD>
+	</TR>
+	<TR>
+		<TD ALIGN="RIGHT" bgcolor="Gray95"><font face="Times-Italic">0xf</font></TD>
+		<TD PORT="15" bgcolor="Gray95"><font face="Times-Italic">0</font></TD>
+		<TD ALIGN="RIGHT" bgcolor="Gray95">0x9f</TD>
+		<TD ALIGN="LEFT" bgcolor="Gray95">Polaris</TD>
+	</TR>
+	<hr/>
+	<tr><td colspan="4"></td></tr>
+</table>>];
+	node [shape=plain, fillcolor=none]
+	node [color=red];
+		}
+	}
+	\subcaptionbox{Inline-chaining.\label{types:inline}}{%
+		\digraph[scale=\Scale]{inline}{
+	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	data [label=<
+<table border="0" cellspacing="0">
+	<tr><td colspan="4"></td></tr>
+	<hr/>
+	<tr>
+		<td border="0"><font face="Times-Italic">i</font></td>
+		<td border="0"><font face="Times-Italic">hash</font></td>
+		<td border="0"><font face="Times-Italic">key</font></td>
+		<td border="0"><font face="Times-Italic">next</font></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td align="right"><font face="Times-Italic">0x0</font></td>
+		<td></td><td></td><td></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0x1</font></td>
+		<td align="right" bgcolor="Gray95">0x91</td>
+		<td align="left" bgcolor="Gray95">Castor</td>
+		<td port="1" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0x2</font></td>
+		<td></td><td></td><td></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0x3</font></td>
+		<td align="right" bgcolor="Gray95">0x3</td>
+		<td align="left" bgcolor="Gray95">Deneb</td>
+		<td port="3" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0x4</font></td>
+		<td align="right">0x44</td>
+		<td align="left">Sirius</td>
+		<td port="4">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0x5</font></td>
+		<td align="right" bgcolor="Gray95">0x35</td>
+		<td align="left" bgcolor="Gray95">Spica</td>
+		<td port="5" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0x6</font></td>
+		<td></td><td></td><td></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0x7</font></td>
+		<td bgcolor="Gray95"></td><td bgcolor="Gray95"></td><td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0x8</font></td>
+		<td align="right">0xd8</td>
+		<td align="left">Rigel</td>
+		<td port="8">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0x9</font></td>
+		<td bgcolor="Gray95"></td><td bgcolor="Gray95"></td><td bgcolor="Gray95"></td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0xa</font></td>
+		<td align="right">0x4a</td>
+		<td align="left">Betelgeuse</td>
+		<td port="10">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td align="right" border="2" bgcolor="Gray95"><font face="Times-Italic">0xb</font></td>
+		<td align="right" bgcolor="Gray95">0x4f</td>
+		<td align="left" bgcolor="Gray95">Procyon</td>
+		<td port="11" bgcolor="Gray95">\detokenize{◯}</td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0xc</font></td>
+		<td align="right">0xec</td>
+		<td align="left">Regulus</td>
+		<td port="12">\detokenize{⬤}</td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0xd</font></td>
+		<td align="right" bgcolor="Gray95">0x33</td>
+		<td align="left" bgcolor="Gray95">Antares</td>
+		<td port="13" bgcolor="Gray95">\detokenize{◯}</td>
+	</tr>
+	<tr>
+		<td align="right"><font face="Times-Italic">0xe</font></td>
+		<td align="right">0xb3</td>
+		<td align="left">Sol</td>
+		<td port="14">\detokenize{◯}</td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95"><font face="Times-Italic">0xf</font></td>
+		<td align="right" bgcolor="Gray95">0x9f</td>
+		<td align="left" bgcolor="Gray95">Polaris</td>
+		<td port="15" bgcolor="Gray95">\detokenize{⬤}</td>
+	</tr>
+	<hr/>
+	<tr><td colspan="4"></td></tr>
+</table>>];
+	node [shape=plain, fillcolor=none]
+	e13 [label="0xd"];
+	data:3 -> e13 [tailclip=false];
+	e14 [label="0xe"];
+	e13 -> e14;
+	i0xe [label="0xe", fontcolor="Gray"];
+	data:13 -> i0xe [color="Gray"];
+	e11 [label="0xb"];
+	data:15 -> e11 [tailclip=false];
+	node [color=red];
+		}
+	}
+	\caption{A set of star names using different collision-resolution schemes. Load factor \sfrac{11}{16} = 0.69. Expected value: chained number of queries, 1.4(7);
+%1.36(0.7),
+open probe-length, 1.6(9),
+%1.60(0.9), (sample
+(standard deviation.)\label{types}
+Order of insertion: Sol, Sirius, Rigel, Procyon, Betelgeuse, Antares, Spica, Deneb, Regulus, Castor, Polaris.}
+\end{figure}
+
+Figure~\ref{types} shows a comparison of some standard hash-table types. It uses D.J.~Bernstein's {\it djb2} to hash a string to 8-bit unsigned integer. All tables use a most-recently-used heuristic as probe-order; experimentally, this was found to make little difference in the run-time, and is advantageous when the access pattern is non-uniform\cite{brent1973reducing, sleator1985self}.
+
+Separate-chaining is seen in Figure~\ref{types:separate}; this is more like T.D. Hanson's {\it uthash}: only being in one hash-table at a time. A similar hash to {\it $C^{++}$}'s \code{std::unordered\_map}, {\it Lua}'s \code{table}, and many others, would have another dereference between the linked-list and the entry. This style of hash-table allows unconstrained load factors. With ordered data, keeping a self-balancing tree cuts down the worst case to $\mathcal{O}(\log n)$\cite{knuth1998sorting}, as in {\it Java}. The expected number of dereferences is a constant added to the number of queries. The nodes are allocated separately from hash-table.
+
+Open-addressing\cite{peterson1957addressing} as seen in Figure~\ref{types:open}, is another, more compact, and generally more cache-coherent table design. Robin Hood hashing\cite{celis1985robin} has been used to keep the variation in the query length to a minimum; here, with the condition on whether to evict strengthened because of the most-recently-used heuristic. It has lower maximum load-factor, because clustering decreases performance as the load-factor reaches saturation.\cite{skiena2008algorithm} Although they have less data {\it per} entry, on average they have more entries. Practically, 0.69 is high; {\it Python}'s \code{dict}\cite{knuth1998sorting} uses a maximum of \sfrac{2}{3}. One can calculate the displacement from the hash, but we have to have a general way of telling if it's null. The lack of symmetry presents a difficulty removing entries.
+
+Inline-chaining, as seen in Figure~\ref{types:inline}, is, in many ways, a hybrid between the two. The dark circles represent the closed heads, and the outline the open stack, with a highlight to indicate the stack position. The expected probe-length is number of chained queries. Because of the \code{next} field, the space taken is one index {\it per} entry more then open-addressing. Being chained offers a higher load-factor, but it is not possible to exceed one: like open-addressing, the hash-table is contained in one block of memory.
+
+\section{Performance}
+
+Because the closed and open entries are orthogonal for inline-chaining, the limiting factor in the worst-case is the same as for separate-chaining, and it will have identical behaviour as long as the load-factor doesn't exceed one. In the average case, we do at least as much work by a constant factor; in addition to the steps required for chaining, we also have to sometimes also have to manage the stack. Moving the top of the stack involves finding the closed head of the top entry and iterating until the top. However, modification requires only copying one entry; we aren't concerned with the order of the stack, only the order of the next indices. However, inline-chaining does have the advantage of cache-locality.
+
+Figure~\ref{timing} benchmarks straight insertion on a closed separately-chained set like Figure~\ref{types:separate}, an inline-chained set like Figure~\ref{types:inline}, and a \code{std::unordered\_set}. The data is a pointer to a randomly generated set of non-sense names, formed out of syllables, Poisson-distributed up to 15-letters in length; a \code{char[16]} with a null-terminator. Hashed by {\it djb2} to a 64-bit \code{size\_t}.
+
+The same data is used for each replica across different methods, thus the same number of duplicates were ignored. The hash-tables were then destroyed for the next replica. The data is in a memory pool. Pre-allocation of the nodes of the separately-chained is done in an array; this is not counted towards the run-time; for the \code{unordered\_set}, however, this is transparent, and is timed. For the inline-chaining, it's behaviour with respect to allocation is like open-addressing: it is all contained it in one array.
+
+\begin{figure}%
+\centering%
+\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
+set format x '\tiny %g'
+set format y '\tiny %g'
+set key font "modern,20"
+set grid
+set monochrome
+set xlabel "insertions"
+set ylabel 'amortized time {\it per} key, (µs)'
+set yrange [0:1]
+set log x
+set xrange [1:33554432]
+plot \
+"../timing/graph/open.tsv" using 1:($2/$1):($3/$1) with errorlines title "inline-chaining", \
+"../timing/graph/closed.tsv" using 1:($2/$1):($3/$1) with errorlines title "separate-chaining", \
+"../timing/graph/unordered.tsv" using 1:($2/$1):($3/$1) with errorlines title "std$\:\:$unordered\\_set"
+\end{gnuplot}
+\caption{A comparison of chained techniques in a $C^{++}$ benchmark with a log-$x$ scale.}%
+\label{timing}%
+\end{figure}%
+
+\section{Implementation}
+
+This section talks about the specific implementation of inline-chained hash-table whose results are shown in Figure~\ref{timing} as a map from star name strings to distance double-precision floating point.
+
+\subsection{Next Entry}
+
+The \code{next} field in offers a convenient place to store out-of-band information without imposing restrictions on the key; specifically, we do not assume that it is non-zero. There are two special values that must be differentiated from the indices: there is no closed value associated with this address, called \code{NULL}, and there is no next value in the bucket, called \code{END}.
+
+Since the \code{next} field must store the range of addressable buckets, minus one for itself, this is one short of representing the whole range. Since the implementation uses power-of-two resizes, it causes the addressable space to be one-bit less; we waste nearly a bit, half the size, or the equivalent of a signed integer. %The values \code{NULL} and \code{END} were chosen to minimize average power requirements while leaving a natural $[0, 011..11]$ for addressing. That is, $100..00$, and $100..01$.
+The default is a \code{size\_t}, but in Figure~\ref{types}, for illustration, the \code{hash} is 8~bits. Therefore the addressable space by \code{next} is $[0, 127]$, and \code{NULL}, \code{END} are 128, 129.
+
+\subsection{Load Factor}
+
+It is possible to get rid of load factor calculations by making the maximum load factor identically one. Only if the hash-table is full does one resize. In an inline-chained hash-table, the entries and the next index are overlapped; this means that the capacity for each goes up in the same allocation. This simplifies the design.
+
+\subsection{Power-of-Two}
+
+During the rehashing phase, closed entries have an expected value of,
+
+\begin{align*}
+E[\text{will move}] &= \frac{\text{old capacity}}{\text{new capacity}}
+\end{align*}
+
+that they will move. This can be seen as a form of consistent hashing\cite{karger1997consistent}, and was a consideration when designing the hash-table with power-of-two resizes. Instead of swapping moved entries with open entries, something that could take $\mathcal{O}(n^2)$, we rehash all the open entries.
+
+\subsection{Stack and Maintaining Orthogonality}
+
+We can tell whether an element is of the stack by it being open; if the address and the address given by the hash function does not match, it is not the head of the bucket. To keep track of the open entries, we place them on top of a stack formed from unused buckets. In this way, only one parameter needs to be added for the table: the \code{top} of the stack. The stack has to yield to a new entry and replace a deleted entry that is in it's range. This involves moving the stack pointer up and down. For that, we need to take the front closed element in the bucket with the \code{top}'s address and iterate until one before the \code{top}.
+
+It is convenient to grow the stack from the back. That way, when rehashing the stack, a stack entry never conflicts with another. The alternative would allow $\mathcal{O}(1)$ low-numbered stack items to keep their place, but at a much more complex copying procedure.
+
+The stack jumps over occupied entries, but it is bounded by $\mathcal{O}(n)$ in $n$ inserts. A slight subtlety is that this amortization is not valid if inserting {\it and} deleting. Despite $\mathcal{O}(n)$ worst-case performance anyway, it is useful to minimize this as much as possible.
+
+Since the \code{top} is an address, and the addresses only go to half the available space, we have a bit to spare. This has been used for a lazy stack. In this way, repeatedly adding and deleting to the open stack just sets the lazy bit. Only when one deletes twice does a move get forced.
+
+\subsection{Inverse Hash Function}
+
+If the hash function forms a bijection between the range in the space where elements live and the image in hash-space, the keys are not stored in the hash-table at all. They are generated from the hashes using an inverse-mapping. This can be the case when the items being hashed are discrete, like an \code{enum}, or a discrete integer set.
+
+\subsection{Iteration}
+
+Inline-chaining is generally good for iteration. For implementations that do not provide a special iteration mechanism, iteration on separate-chaining is $\mathcal{O}(\text{capacity} + \text{size})$. For open-addressing and inline-chaining, because we store collisions in the hash-table itself, it's $\mathcal{O}(\text{capacity})$. However, a practical capacity in open-addressing will be smaller than inline-chaining because the decrease in performance as the load-factor reaches saturation.
+
+\section{Conclusion}
+
+This specific data for the average use-case shows the difference between separate-chaining and inline-chaining is not great enough to matter to performance, and even helps in some cases. For situations where one needs a new hash-table, the simplicity of inline-chaining is appealing.
+
+\bibliography{table}
+
+\end{document}

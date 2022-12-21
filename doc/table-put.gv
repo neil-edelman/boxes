@@ -1,0 +1,17 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname = "Bitstream Vera Sans"];
+	node [shape=record, style=filled, fillcolor="Grey95", fontname="Bitstream Vera Sans"];
+	edge [fontname="Bitstream Vera Sans"];
+	put [label="enum table_result"];
+	put -> unique;
+	unique -> error;
+	unique -> grow;
+	put -> equal;
+	equal -> yield;
+	equal -> replace;
+	error [label="{TABLE_ERROR\l|did not modify;\lmemory error;\lset errno\l}", fillcolor="Pink"];
+	equal [label="{equal to other element\l|values possibly recomputed\l}"];
+	grow [label="{TABLE_UNIQUE\l|value default,\lpassed, or\luninitialized\l}"];
+	yield [label="{TABLE_YIELD\l|did not modify\l}"];
+	replace [label="{TABLE_REPLACE\l|replace\l}"];
+}
