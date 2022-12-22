@@ -8,7 +8,10 @@ macros. All the public functions are documented in `doc/<box>.md`.
 2016 Neil Edelman, distributed under the terms of the [MIT
 License](https://opensource.org/licenses/MIT).
 
-## Papers ##
+## Design papers ##
+
+The implementation of the boxes is fairly standard. Some rationales
+of the more complex containers documented here.
 
 <table><tr>
 <td><a href = "doc/pool.md">memory pool</a></td>
