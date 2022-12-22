@@ -1,6 +1,6 @@
 # tree\.h #
 
-Stand\-alone header [src/tree\.h](src/tree.h); examples [test/test\_tree\.c](test/test_tree.c); article [doc/tree\.pdf](doc/tree.pdf)\. On a compatible workstation, `make` creates the test suite of the examples\.
+Stand\-alone header [\.\./src/tree\.h](../src/tree.h); examples [\.\./test/test\_tree\.c](../test/test_tree.c); article [\.\./doc/tree/tree\.pdf](../doc/tree/tree.pdf)\.
 
 ## Ordered tree ##
 

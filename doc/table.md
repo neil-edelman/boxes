@@ -1,6 +1,6 @@
 # table\.h #
 
-Stand\-alone header [src/table\.h](src/table.h); examples [test/test\_table\.c](test/test_table.c); article [doc/table\.pdf](doc/table.pdf)\. On a compatible workstation, `make` creates the test suite of the examples\.
+Stand\-alone header [\.\./src/table\.h](../src/table.h); examples [\.\./test/test\_table\.c](../test/test_table.c); article [\.\./doc/table/table\.pdf](../doc/table/table.pdf)\.
 
 ## Hash table ##
 

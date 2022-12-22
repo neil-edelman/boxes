@@ -1,6 +1,6 @@
 # list\.h #
 
-Stand\-alone header [src/list\.h](src/list.h); examples [test/test\_list\.c](test/test_list.c); on a compatible workstation, `make` creates the test suite of the examples\.
+Stand\-alone header [\.\./src/list\.h](../src/list.h); examples [\.\./test/test\_list\.c](../test/test_list.c)\.
 
 ## Doubly\-linked component ##
 

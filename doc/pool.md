@@ -1,6 +1,6 @@
 # pool\.h #
 
-Header [src/pool\.h](src/pool.h) depends on [src/heap\.h](src/heap.h) and [src/array\.h](src/array.h); examples [test/test\_pool\.c](test/test_pool.c); article [doc/pool\.pdf](doc/pool.pdf)\. If on a compatible workstation, `make` creates the test suite of the examples\.
+Header [\.\./src/pool\.h](../src/pool.h) depends on [\.\./src/heap\.h](../src/heap.h) and [\.\./src/array\.h](../src/array.h); examples [\.\./test/test\_pool\.c](../test/test_pool.c); article [\.\./doc/pool/pool\.pdf](../doc/pool/pool.pdf)\.
 
 ## Stable pool ##
 
