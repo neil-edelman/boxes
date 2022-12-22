@@ -30,8 +30,9 @@ else
 endif
 
 projects := $(patsubst test/test_%.c, bin/%, $(wildcard test/test_*.c))
+docs := $(patsubst test/test_%.c, doc/%.md, $(wildcard test/test_*.c))
 
-default: $(projects)
+default: $(projects) $(docs)
 	# . . . success making tests in bin/
 
 bin/%: build/test_%.o
@@ -45,15 +46,19 @@ build/test_%.o: test/test_%.c src/%.h
 	@mkdir -p build
 	$(CC) $(CF) -c -o $@ $<
 
+build/%.o: test/%.c test/%.h
+	# compile helper $@
+	@mkdir -p build
+	$(CC) $(CF) -c -o $@ $<
+
 build/%.c: test/%.re.c
 	# https://re2c.org/ $@
 	@mkdir -p build
 	re2c -W --tags -o $@ $<
 
-build/%.o: test/%.c test/%.h
-	# compile helper $@
-	@mkdir -p build
-	$(CC) $(CF) -c -o $@ $<
+doc/%.md: src/%.h
+	# documentation update
+	cdoc -o $@ $<
 
 # additional dependencies
 $(projects): build/orcish.o # except bmp, meh
@@ -70,5 +75,4 @@ test: $(projects)
 clean:
 	-rm -rf bin/ build/ graph/
 
-docs:
-	# working on it
+docs: $(docs)
