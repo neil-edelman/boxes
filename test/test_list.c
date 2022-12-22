@@ -27,7 +27,7 @@ static void permute_filler(struct permute_listlink *const p) { (void)(p); }
  but it must be stable, so vectors (`<A>array`) are a problem. */
 #define POOL_NAME permutelink
 #define POOL_TYPE struct permute_listlink
-#include "pool.h"
+#include "../src/pool.h"
 static struct permute_listlink *permute_from_pool(void *const vpool) {
 	struct permutelink_pool *const pool = vpool;
 	struct permute_listlink *p = permutelink_pool_new(pool);
@@ -69,7 +69,7 @@ static void no_filler(struct no_listlink *const nl) {
 /* Pool is convenient to store <tag:no>. */
 #define POOL_NAME no
 #define POOL_TYPE struct no
-#include "pool.h"
+#include "../src/pool.h"
 static struct no_listlink *no_from_pool(void *const vns) {
 	struct no_pool *const ns = vns;
 	struct no *n = no_pool_new(ns);
@@ -107,7 +107,7 @@ static void letter_filler(struct letter_listlink *const ll) {
 }
 #define POOL_NAME letter
 #define POOL_TYPE struct letter
-#include "pool.h"
+#include "../src/pool.h"
 static struct letter_listlink *letter_from_pool(void *const vls) {
 	struct letter_pool *const ls = vls;
 	struct letter *l = letter_pool_new(ls);
@@ -232,7 +232,7 @@ static void fero_filler(struct fero_listlink *const fero) {
 
 #define POOL_NAME panda
 #define POOL_TYPE struct panda
-#include "pool.h"
+#include "../src/pool.h"
 static struct name_listlink *panda_name_from_pool(void *const vpool) {
 	struct panda_pool *const pool = vpool;
 	struct panda *p = panda_pool_new(pool);
@@ -387,7 +387,7 @@ static void layer2_filler(struct layer2_listlink *const l2)
 
 #define POOL_NAME skip
 #define POOL_TYPE struct skip
-#include "pool.h"
+#include "../src/pool.h"
 static struct layer0_listlink *l0_from_pool(void *const vpool) {
 	struct skip_pool *const pool = vpool;
 	struct skip *s = skip_pool_new(pool);
@@ -538,7 +538,7 @@ struct mount_info {
 struct mount { struct animal *steed, *rider; };
 #define POOL_NAME mount
 #define POOL_TYPE struct mount
-#include "pool.h"
+#include "../src/pool.h"
 
 /* `sloth` extends `animal`. */
 struct sloth {
@@ -547,7 +547,7 @@ struct sloth {
 };
 #define POOL_NAME sloth
 #define POOL_TYPE struct sloth
-#include "pool.h"
+#include "../src/pool.h"
 
 /* `emu` extends `animal`. */
 struct emu {
@@ -556,7 +556,7 @@ struct emu {
 };
 #define POOL_NAME emu
 #define POOL_TYPE struct emu
-#include "pool.h"
+#include "../src/pool.h"
 
 /* `bad_emu` extends `emu`. */
 struct bad_emu {
@@ -566,7 +566,7 @@ struct bad_emu {
 };
 #define POOL_NAME bademu
 #define POOL_TYPE struct bad_emu
-#include "pool.h"
+#include "../src/pool.h"
 
 struct llama {
 	struct animal animal;
@@ -575,7 +575,7 @@ struct llama {
 };
 #define POOL_NAME llama
 #define POOL_TYPE struct llama
-#include "pool.h"
+#include "../src/pool.h"
 
 struct lemur {
 	struct animal animal;
@@ -583,7 +583,7 @@ struct lemur {
 };
 #define POOL_NAME lemur
 #define POOL_TYPE struct lemur
-#include "pool.h"
+#include "../src/pool.h"
 
 /* `bear` extends `animal`. */
 struct bear {

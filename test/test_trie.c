@@ -15,7 +15,7 @@
 struct str32 { char str[32]; };
 #define POOL_NAME str32
 #define POOL_TYPE struct str32
-#include "pool.h"
+#include "../src/pool.h"
 static struct str32_pool str_pool;
 
 
@@ -130,7 +130,7 @@ static void str8_filler(struct str8 *const s) {
 struct keyval { char key[12]; int value; };
 #define POOL_NAME keyval
 #define POOL_TYPE struct keyval
-#include "pool.h"
+#include "../src/pool.h"
 static struct keyval_pool kv_pool;
 static const char *keyval_key(/* fixme: const */
 	struct keyval *const*const kv_ptr)

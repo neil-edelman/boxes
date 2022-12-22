@@ -59,7 +59,7 @@ static void zodiac_filler(void *const zero, enum zodiac *const z) {
 struct str16 { char str[16]; };
 #define POOL_NAME str16
 #define POOL_TYPE struct str16
-#include "pool.h"
+#include "../src/pool.h"
 /** For testing: `s16s` is a pool of `str16`. */
 static char *str16_from_pool(struct str16_pool *const s16s) {
 	struct str16 *s16 = str16_pool_new(s16s);
@@ -176,7 +176,7 @@ struct vec4 { char a[2]; int n[2]; };
 /* Testing. */
 #define POOL_NAME vec4
 #define POOL_TYPE struct vec4
-#include "pool.h"
+#include "../src/pool.h"
 static struct vec4 *vec4_from_pool(struct vec4_pool *const v4s) {
 	struct vec4 *v4 = vec4_pool_new(v4s);
 	if(!v4) return 0;
@@ -399,7 +399,7 @@ static int word_compare(const struct word_listlink *,
 	const struct word_listlink *);
 #define LIST_NAME word
 #define LIST_COMPARE
-#include "list.h"
+#include "../src/list.h"
 /** Associated with the word and a link to other words. */
 struct dict { struct word_listlink link; char *word; };
 /** `container_of` `link`; `offsetof`, in this case, is zero; we could have
@@ -414,11 +414,11 @@ static int word_compare(const struct word_listlink *const a,
 /* We take them on-line as they come, so we need a stable pool. */
 #define POOL_NAME dict
 #define POOL_TYPE struct dict
-#include "pool.h"
+#include "../src/pool.h"
 /* Words which we read all at once from a file, modify them in-place. */
 #define ARRAY_NAME char
 #define ARRAY_TYPE char
-#include "array.h"
+#include "../src/array.h"
 /** Append a text file, `fn`, to `c`, and add a '\0'.
  @return Success. A partial read is failure. @throws[fopen, fread, malloc]
  @throws[EISEQ] The text file has embedded nulls.
@@ -468,7 +468,7 @@ static int dict_is_equal(const char *const a, const char *const b)
 #define TABLE_TO_STRING &string_to_string
 #include "../src/table.h"
 /* `re2c` is very useful for file input. */
-#include "lex.h"
+#include "lex_dict.h"
 /** Manual test. */
 static void linked_dict(void) {
 	struct char_array english = char_array();
@@ -607,13 +607,13 @@ static void fill_letter(struct letter *const letter) {
 }
 #define POOL_NAME colour
 #define POOL_TYPE struct colour
-#include "pool.h"
+#include "../src/pool.h"
 #define POOL_NAME snake
 #define POOL_TYPE struct snake
-#include "pool.h"
+#include "../src/pool.h"
 #define POOL_NAME letter
 #define POOL_TYPE struct letter
-#include "pool.h"
+#include "../src/pool.h"
 /** Example of a set with a pointer key. */
 static void year_of(void) {
 	struct year_table year = year_table();

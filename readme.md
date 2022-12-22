@@ -65,6 +65,10 @@ are used at runtime; to stop them, define `#define NDEBUG` before
 literals. No effort has been made to synchronize for multi-threaded
 execution.
 
+## Tests ##
+
+Must understand .. C95. C13. clang. 
+
 ## License ##
 
 2016 Neil Edelman, distributed under the terms of the [MIT

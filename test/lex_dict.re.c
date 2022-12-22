@@ -1,6 +1,6 @@
 #include <stddef.h>
 #include <assert.h>
-#include "../../test/lex.h"
+#include "../test/lex_dict.h"
 
 int lex_dict(struct lex_state *lex) {
 	unsigned char *YYCURSOR = (unsigned char *)lex->cursor, *s0;

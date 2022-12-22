@@ -382,7 +382,7 @@ static void PT_(test)(void) {
 		= sizeof letter_counts / sizeof *letter_counts;
 	struct { PT_(entry) entry; int is_in; } tests[2000], *test_end, *test;
 	const size_t tests_size = sizeof tests / sizeof *tests;
-	PT_(entry) *e; //fix
+	PT_(entry) *e; /* fixme */
 	PT_(key) k;
 #ifdef TRIE_VALUE
 	PT_(value) *v;
@@ -518,11 +518,11 @@ static void PT_(test)(void) {
 /* Pointer array for random sampling. */
 #define ARRAY_NAME PT_(handle)
 #define ARRAY_TYPE PT_(entry) *
-#include "array.h"
+#include "../src/array.h"
 /* Backing for the trie. */
 #define POOL_NAME PT_(entry)
 #define POOL_TYPE PT_(entry)
-#include "pool.h"
+#include "../src/pool.h"
 #pragma pop_macro("BOX_MINOR_NAME")
 #pragma pop_macro("BOX_MAJOR_NAME")
 #pragma pop_macro("BOX_")

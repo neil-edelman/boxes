@@ -33,7 +33,7 @@ static void orc_to_string(const unsigned health, const struct orc *const orc,
 	char (*const a)[12]) { sprintf(*a, "%u%.9s", health, orc->name); }
 #define POOL_NAME orc
 #define POOL_TYPE struct orc
-#include "pool.h"
+#include "../src/pool.h"
 static struct orc_pool orcs; /* Just for a test. */
 static void orc_filler(unsigned *const health, struct orc **const orc_ptr) {
 	struct orc *orc = orc_pool_new(&orcs);
