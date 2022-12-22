@@ -1,7 +1,7 @@
 /** @license 2016 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Stand-alone header <src/array.h>; examples <test/test_array.c>; on a
+ @abstract Stand-alone header <../../src/array.h>; examples <../test/test_array.c>; on a
  compatible workstation, `make` creates the test suite of the examples.
 
  @subtitle Contiguous dynamic array
@@ -83,7 +83,7 @@ typedef ARRAY_TYPE PA_(type);
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`.
 
- ![States.](../doc/states.png) */
+ ![States.](../doc/array/states.png) */
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 

@@ -5,7 +5,7 @@ digraph {
 	null [label = "uninitialized\l|no dynamic memory;\lundetermined state\l", fillcolor = pink];
 	static [label = "idle\l|no dynamic memory;\l\{0\} or ARRAY_IDLE\l"];
 	dynamic [label = "active\l|memory allocated;\lcould have size zero\l"];
-	null -> static [label = "<A>array"];
+	null -> static [label = "<A>array\n{0}"];
 	static -> dynamic [label = "<A>array_new\n<A>array_buffer\n..."];
 	dynamic -> static [label = "<A>array_"];
 	static -> static [label = "<A>array_clear"]

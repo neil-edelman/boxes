@@ -7,7 +7,7 @@
 
  @subtitle Priority-queue
 
- ![Example of heap.](../doc/heap.png)
+ ![Example of heap.](../doc/heap/heap.png)
 
  A <tag:<H>heap> is a binary heap, proposed by
  <Williams, 1964, Heapsort, p. 347> using terminology of
@@ -124,7 +124,7 @@ typedef PH_(priority_c) PH_(node_c);
  initialize it to an idle state, see <fn:<H>heap>, `{0}` (`C99`), or being
  `static`.
 
- ![States.](../doc/states.png) */
+ ![States.](../doc/heap/states.png) */
 struct H_(heap) { struct PH_(node_array) as_array; };
 
 #define PAH_(n) HEAP_CAT(HEAP_CAT(array, PH_(node)), n)

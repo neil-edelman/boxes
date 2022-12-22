@@ -13,7 +13,7 @@ Stand\-alone header [src/list\.h](src/list.h); examples [test/test\_list\.c](tes
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of a stochastic skip-list.](../doc/list.png)
+![Example of a stochastic skip-list.](../doc/list/list.png)
 
 In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Thareja+2014%2C+Structures), [&lt;L&gt;list](#user-content-tag-eb84971d) is a circular header, or sentinel, to a doubly\-linked list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list\. The links will be generally in a larger container type\.
 
@@ -89,7 +89,7 @@ In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Th
 
 Storage of this structure is the responsibility of the caller, who must provide a stable pointer while in a list\. Generally, one encloses this in a host `struct` or `union`\.
 
-![States.](../doc/node-states.png)
+![States.](../doc/list/node-states.png)
 
 
 
@@ -99,7 +99,7 @@ Storage of this structure is the responsibility of the caller, who must provide 
 
 Serves as head and tail sentinel for a linked\-list of [&lt;L&gt;listlink](#user-content-tag-15769e01)\.
 
-![States.](../doc/states.png)
+![States.](../doc/list/states.png)
 
 
 

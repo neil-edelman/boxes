@@ -13,13 +13,13 @@ Header [src/trie\.h](src/trie.h) requires [src/bmp\.h](src/bmp.h); examples [tes
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of trie.](../doc/trie.png)
+![Example of trie.](../doc/trie/trie.png)
 
 A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, or trie: an ordered set or map of byte null\-terminated immutable key strings allowing efficient prefix queries\. The implementation is as [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) that acts as an index, only storing the where the key bits are different\. The keys are grouped in fixed\-size nodes in a relaxed version of a B\-tree, as [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large), where the height is no longer fixed\.
 
 The worse\-case run\-time of querying or modifying is bounded by &#927;\(|`string`|\)\. [Tong, Goebel, Lin, 2015, Smoothed](https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed) show that, in an iid model, a better fit is &#927;\(log |`trie`|\), which is reported here\.
 
-![Bit view of the trie.](../doc/trie-bits.png)
+![Bit view of the trie.](../doc/trie/trie-bits.png)
 
 
 
@@ -83,7 +83,7 @@ If `TRIE_KEY_IN_VALUE`, extracts the key from `TRIE_VALUE`; in this case, the us
 
 A result of modifying the table, of which `TRIE_ERROR` is false\.
 
-![A diagram of the result states.](../doc/result.png)
+![A diagram of the result states.](../doc/trie/result.png)
 
 
 
@@ -101,7 +101,7 @@ On `KEY_VALUE` but not `KEY_KEY_IN_VALUE`, defines an entry\.
 
 To initialize it to an idle state, see [&lt;T&gt;trie](#user-content-fn-754a10a5), `{0}`, or being `static`\.
 
-![States.](../doc/states.png)
+![States.](../doc/trie/states.png)
 
 
 

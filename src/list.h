@@ -6,7 +6,7 @@
 
  @subtitle Doubly-linked component
 
- ![Example of a stochastic skip-list.](../doc/list.png)
+ ![Example of a stochastic skip-list.](../doc/list/list.png)
 
  In parlance of <Thareja 2014, Structures>, <tag:<L>list> is a circular
  header, or sentinel, to a doubly-linked list of <tag:<L>listlink>. This is a
@@ -83,12 +83,12 @@ enum list_operation { /* Dummy ensures closed. */
  provide a stable pointer while in a list. Generally, one encloses this in a
  host `struct` or `union`.
 
- ![States.](../doc/node-states.png) */
+ ![States.](../doc/list/node-states.png) */
 struct L_(listlink) { struct L_(listlink) *next, *prev; };
 
 /** Serves as head and tail sentinel for a linked-list of <tag:<L>listlink>.
 
- ![States.](../doc/states.png) */
+ ![States.](../doc/list/states.png) */
 struct L_(list);
 struct L_(list) {
 	union {

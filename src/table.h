@@ -7,7 +7,7 @@
 
  @subtitle Hash table
 
- ![Example of <string>table.](../doc/table.png)
+ ![Example of <string>table.](../doc/table/table.png)
 
  <tag:<N>table> implements a set or map of <typedef:<PN>entry> as a hash table.
  It must be supplied <typedef:<PN>hash_fn> `<N>hash` and,
@@ -84,7 +84,7 @@
 #define X(n) TABLE_##n
 /** A result of modifying the table, of which `TABLE_ERROR` is false.
  
- ![A diagram of the result states.](../doc/put.png) */
+ ![A diagram of the result states.](../doc/table/put.png) */
 enum table_result { TABLE_RESULT };
 #undef X
 #define X(n) #n
@@ -191,7 +191,7 @@ typedef int (*PN_(policy_fn))(PN_(key) original, PN_(key) replace);
  `static`. The fields should be treated as read-only; any modification is
  liable to cause the table to go into an invalid state.
 
- ![States.](../doc/states.png) */
+ ![States.](../doc/table/states.png) */
 struct N_(table) { /* "Padding size," good. */
 	struct PN_(bucket) *buckets; /* @ has zero/one key specified by `next`. */
 	/* `size <= capacity`; size is not needed but convenient and allows
@@ -550,7 +550,7 @@ static int PN_(remove)(struct PN_(iterator) *const it) {
 	return 1;
 }
 
-/** ![States](../doc/it.png)
+/** ![States](../doc/table/it.png)
 
  Adding, deleting, successfully looking up entries, or any modification of the
  table's topology invalidates the iterator.

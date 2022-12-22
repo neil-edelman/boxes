@@ -7,7 +7,7 @@
 
  @subtitle Stable pool
 
- ![Example of Pool](../doc/pool.png)
+ ![Example of Pool](../doc/pool/pool.png)
 
  <tag:<P>pool> is a memory pool that stores only one type, <typedef:<PP>type>,
  using [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation). As
@@ -88,7 +88,7 @@ struct PP_(slot) { size_t size; PP_(type) *slab; };
 /** A zeroed pool is a valid state. To instantiate to an idle state, see
  <fn:<P>pool>, `{0}` (`C99`,) or being `static`.
 
- ![States.](../doc/states.png) */
+ ![States.](../doc/pool/states.png) */
 struct P_(pool) {
 	struct PP_(slot_array) slots;
 	struct poolfree_heap free0; /* Free-heap in slab-zero. */

@@ -1,6 +1,6 @@
 # array\.h #
 
-Stand\-alone header [src/array\.h](src/array.h); examples [test/test\_array\.c](test/test_array.c); on a compatible workstation, `make` creates the test suite of the examples\.
+Stand\-alone header [\.\./\.\./src/array\.h](../../src/array.h); examples [\.\./test/test\_array\.c](../test/test_array.c); on a compatible workstation, `make` creates the test suite of the examples\.
 
 ## Contiguous dynamic array ##
 
@@ -97,7 +97,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 Manages the array field `data` which has `size` elements\. The space is indexed up to `capacity`, which is at least `size`\.
 
-![States.](../doc/states.png)
+![States.](../doc/array/states.png)
 
 
 

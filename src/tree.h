@@ -7,7 +7,7 @@
 
  @subtitle Ordered tree
 
- ![Example of an order-3 tree.](../doc/tree.png)
+ ![Example of an order-3 tree.](../doc/tree/tree.png)
 
  A <tag:<B>tree> is an ordered set or map contained in a tree. For memory
  locality, this is implemented B-tree, described in
@@ -91,7 +91,7 @@
 #define X(n) TREE_##n
 /** A result of modifying the tree, of which `TREE_ERROR` is false.
 
- ![A diagram of the result states.](../doc/put.png) */
+ ![A diagram of the result states.](../doc/tree/put.png) */
 enum tree_result { TREE_RESULT };
 #undef X
 #define X(n) #n
@@ -183,7 +183,7 @@ struct PB_(tree) { struct PB_(node) *node; unsigned height; };
 /** To initialize it to an idle state, see <fn:<B>tree>, `{0}` (`C99`), or
  being `static`.
 
- ![States.](../doc/states.png) */
+ ![States.](../doc/tree/states.png) */
 struct B_(tree);
 struct B_(tree) { struct PB_(tree) root; };
 

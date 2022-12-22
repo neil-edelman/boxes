@@ -13,7 +13,7 @@ Stand\-alone header [src/table\.h](src/table.h); examples [test/test\_table\.c](
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of &lt;string&gt;table.](../doc/table.png)
+![Example of &lt;string&gt;table.](../doc/table/table.png)
 
 [&lt;N&gt;table](#user-content-tag-8f317be5) implements a set or map of [&lt;PN&gt;entry](#user-content-typedef-a9017e7) as a hash table\. It must be supplied [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) `<N>hash` and, [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb) `<N>is_equal` or [&lt;PN&gt;unhash_fn](#user-content-typedef-ca7574d7) `<N>unhash`\.
 
@@ -137,7 +137,7 @@ Returns true if the `replace` replaces the `original`\. \(Shouldn't it be entry?
 
 A result of modifying the table, of which `TABLE_ERROR` is false\.
 
-![A diagram of the result states.](../doc/put.png)
+![A diagram of the result states.](../doc/table/put.png)
 
 
 
@@ -155,7 +155,7 @@ Defining `TABLE_VALUE` creates this map from [&lt;PN&gt;key](#user-content-typed
 
 To initialize, see [&lt;N&gt;table](#user-content-fn-8f317be5), `TABLE_IDLE`, `{0}` \(`C99`,\) or being `static`\. The fields should be treated as read\-only; any modification is liable to cause the table to go into an invalid state\.
 
-![States.](../doc/states.png)
+![States.](../doc/table/states.png)
 
 
 
@@ -163,7 +163,7 @@ To initialize, see [&lt;N&gt;table](#user-content-fn-8f317be5), `TABLE_IDLE`, `{
 
 <code>struct <strong>&lt;N&gt;table_iterator</strong>;</code>
 
-![States](../doc/it.png)
+![States](../doc/table/it.png)
 
 Adding, deleting, successfully looking up entries, or any modification of the table's topology invalidates the iterator\. Iteration usually not in any particular order\. The asymptotic runtime of iterating though the whole table is proportional to the capacity\.
 

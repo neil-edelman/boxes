@@ -7,7 +7,7 @@
 
  @subtitle Prefix tree
 
- ![Example of trie.](../doc/trie.png)
+ ![Example of trie.](../doc/trie/trie.png)
 
  A <tag:<T>trie> is a prefix-tree, digital-tree, or trie: an ordered set or map
  of byte null-terminated immutable key strings allowing efficient prefix
@@ -21,7 +21,7 @@
  <Tong, Goebel, Lin, 2015, Smoothed> show that, in an iid model, a better fit
  is \O(\log |`trie`|), which is reported here.
 
- ![Bit view of the trie.](../doc/trie-bits.png)
+ ![Bit view of the trie.](../doc/trie/trie-bits.png)
 
  @param[TRIE_NAME]
  Required `<T>` that satisfies `C` naming conventions when mangled. `<PT>` is
@@ -103,7 +103,7 @@
 #define X(n) TRIE_##n
 /** A result of modifying the table, of which `TRIE_ERROR` is false.
 
- ![A diagram of the result states.](../doc/result.png) */
+ ![A diagram of the result states.](../doc/trie/result.png) */
 enum trie_result { TRIE_RESULT };
 #undef X
 #define X(n) #n
@@ -201,7 +201,7 @@ struct PT_(tree) {
 /** To initialize it to an idle state, see <fn:<T>trie>, `{0}`, or being
  `static`.
 
- ![States.](../doc/states.png) */
+ ![States.](../doc/trie/states.png) */
 struct T_(trie);
 struct T_(trie) { struct PT_(tree) *root; };
 

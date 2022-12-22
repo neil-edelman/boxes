@@ -13,7 +13,7 @@ Header [src/pool\.h](src/pool.h) depends on [src/heap\.h](src/heap.h) and [src/a
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of Pool](../doc/pool.png)
+![Example of Pool](../doc/pool/pool.png)
 
 [&lt;P&gt;pool](#user-content-tag-8aba39cb) is a memory pool that stores only one type, [&lt;PP&gt;type](#user-content-typedef-7560d92f), using [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation)\. As [Bonwick, 1994, Slab](https://scholar.google.ca/scholar?q=Bonwick%2C+1994%2C+Slab), it helps reduce internal fragmentation from repeated allocation and destruction by caching contiguous blocks\. A free\-heap in the active\-slab allows random\-access insertions and deletions\. Pointers to valid items in the pool are stable\. If removal is ongoing and uniformly sampled while reaching a steady\-state size, it will eventually settle in one contiguous region\.
 
@@ -45,7 +45,7 @@ A valid tag type set by `POOL_TYPE`\.
 
 A zeroed pool is a valid state\. To instantiate to an idle state, see [&lt;P&gt;pool](#user-content-fn-8aba39cb), `{0}` \(`C99`,\) or being `static`\.
 
-![States.](../doc/states.png)
+![States.](../doc/pool/states.png)
 
 
 

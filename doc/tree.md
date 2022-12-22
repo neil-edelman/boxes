@@ -13,7 +13,7 @@ Stand\-alone header [src/tree\.h](src/tree.h); examples [test/test\_tree\.c](tes
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of an order-3 tree.](../doc/tree.png)
+![Example of an order-3 tree.](../doc/tree/tree.png)
 
 A [&lt;B&gt;tree](#user-content-tag-a36433e3) is an ordered set or map contained in a tree\. For memory locality, this is implemented B\-tree, described in [Bayer, McCreight, 1972, Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972%2C+Large)\.
 
@@ -81,7 +81,7 @@ Returns a positive result if `a` is out\-of\-order with respect to `b`, inducing
 
 A result of modifying the tree, of which `TREE_ERROR` is false\.
 
-![A diagram of the result states.](../doc/put.png)
+![A diagram of the result states.](../doc/tree/put.png)
 
 
 
@@ -91,7 +91,7 @@ A result of modifying the tree, of which `TREE_ERROR` is false\.
 
 To initialize it to an idle state, see [&lt;B&gt;tree](#user-content-fn-a36433e3), `{0}` \(`C99`\), or being `static`\.
 
-![States.](../doc/states.png)
+![States.](../doc/tree/states.png)
 
 
 
