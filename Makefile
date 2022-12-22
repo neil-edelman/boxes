@@ -1,78 +1,13 @@
-# GNU Make 3.81; MacOSX gcc 4.2.1; clang 19.6.0; MacOSX MinGW 4.3.0
-
-# https://stackoverflow.com/questions/18136918/how-to-get-current-relative-directory-of-your-makefile
-mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
-current_dir := $(notdir $(patsubst %/,%,$(dir $(mkfile_path))))
-
-project := $(current_dir)
-
-# dirs
-src    := src
-test   := test
-build  := build
-bin    := bin
-backup := backup
-doc    := doc
-media  := media
-#lemon  := lemon
-PREFIX := /usr/local
-
-# files in $(bin)
-install := $(project)-`date +%Y-%m-%d`
-
-# extra stuff we should back up
-extra :=
-
-# John Graham-Cumming: rwildcard is a recursive wildcard
-rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) \
-$(filter $(subst *,%,$2),$d))
-
-java_srcs    := $(call rwildcard, $(src), *.java)
-all_c_srcs   := $(call rwildcard, $(src), *.c)
-c_re_srcs    := $(call rwildcard, $(src), *.re.c)
-c_rec_srcs   := $(call rwildcard, $(src), *.re_c.c)
-c_gperf_srcs := $(call rwildcard, $(src), *.gperf.c)
-c_srcs       := $(filter-out $(c_re_srcs) $(c_rec_srcs) $(c_gperf_srcs), $(all_c_srcs))
-h_srcs       := $(call rwildcard, $(src), *.h)
-y_srcs       := $(call rwildcard, $(src), *.y)
-all_c_tests  := $(call rwildcard, $(test), *.c)
-c_re_tests   := $(call rwildcard, $(test), *.re.c)
-c_rec_tests  := $(call rwildcard, $(test), *.re_c.c)
-c_tests      := $(filter-out $(c_re_tests) $(c_rec_tests), $(all_c_tests))
-h_tests      := $(call rwildcard, $(test), *.h)
-icons        := $(call rwildcard, $(media), *.ico)
-
-# combinations
-all_h      := $(h_srcs) $(h_tests)
-all_srcs   := $(java_srcs) $(all_c_srcs) $(y_srcs)
-all_tests  := $(all_c_tests)
-all_icons  := $(icons)
-
-java_class := $(patsubst $(src)/%.java, $(build)/%.class, $(java_srcs))
-c_objs     := $(patsubst $(src)/%.c, $(build)/%.o, $(c_srcs))
-# must not conflict, eg, foo.c.re and foo.c would go to the same thing
-c_re_builds := $(patsubst $(src)/%.re.c, $(build)/%.c, $(c_re_srcs))
-c_re_test_builds := $(patsubst $(test)/%.re.c, $(build)/$(test)/%.c, $(c_re_tests))
-c_rec_builds := $(patsubst $(src)/%.re_c.c, $(build)/%.c, $(c_rec_srcs))
-c_rec_test_builds := $(patsubst $(test)/%.re_c.c, $(build)/%.c, $(c_rec_tests))
-c_y_builds := $(patsubst $(src)/%.y, $(build)/%.c, $(y_srcs))
-c_gperf_builds := $(patsubst $(src)/%.gperf.c, $(build)/%.c, $(c_gperf_srcs))
-# together .re/.re_c/.y/.gperf.c
-c_other_objs := $(patsubst $(build)/%.c, $(build)/%.o, $(c_re_builds) \
-$(c_rec_builds) $(c_re_test_builds) $(c_rec_test_builds) $(c_y_builds) $(c_gperf_builds))
-test_c_objs := $(patsubst $(test)/%.c, $(build)/$(test)/%.o, $(c_tests))
-html_docs  := $(patsubst $(src)/%.c, $(doc)/%.html, $(c_srcs))
-
 cdoc  := cdoc
 re2c  := re2c
 mkdir := mkdir -p
-cat   := cat
-zip   := zip
-bison := bison
+#cat   := cat
+#zip   := zip
+#bison := bison
 #lemon := lemon
-gperf := gperf
+#gperf := gperf
 
-target    := # -mwindows
+target    :=
 optimize  := -ffast-math
 warnbasic := -Wall -pedantic -ansi # -std=c99
 # Some stuff is really new.
@@ -100,20 +35,8 @@ warn := $(warnbasic) $(warnclang)
 
 CC   := clang # gcc
 CF   := $(target) $(optimize) $(warn)
-OF   := # -lm -framework OpenGL -framework GLUT or -lglut -lGLEW
+OF   :=
 
-# Jakob Borg and Eldar Abusalimov
-# $(ARGS) is all the extra arguments; $(BRGS) is_all_the_extra_arguments
-EMPTY :=
-SPACE := $(EMPTY) $(EMPTY)
-ifeq (backup, $(firstword $(MAKECMDGOALS)))
-  ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
-  BRGS := $(subst $(SPACE),_,$(ARGS))
-  ifneq (,$(BRGS))
-    BRGS := -$(BRGS)
-  endif
-  $(eval $(ARGS):;@:)
-endif
 ifeq (release, $(firstword $(MAKECMDGOALS)))
 	CF += -funroll-loops -Ofast -D NDEBUG # -O3
 	OF += -Ofast
@@ -121,13 +44,15 @@ else
 	CF += -g
 endif
 
-######
-# compiles the programme by default
+default: bin/array bin/bmp bin/heap bin/list bin/pool bin/table bin/tree bin/trie
+	# . . . success making tests in bin/
 
-default: $(bin)/$(project)
-	# . . . success; executable is in $(bin)/$(project)
+bin/array:
 
 docs: $(html_docs)
+
+
+
 
 # linking
 $(bin)/$(project): $(c_objs) $(c_other_objs) $(test_c_objs)
