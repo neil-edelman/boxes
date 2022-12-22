@@ -6,7 +6,7 @@
 
  @subtitle Contiguous dynamic array
 
- ![Example of array.](../doc/array.png)
+ ![Example of array.](../doc/array/array.png)
 
  <tag:<A>array> is a dynamic array that stores contiguous <typedef:<PA>type>.
  Resizing may be necessary when increasing the size of the array; this incurs
