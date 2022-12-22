@@ -1,9 +1,9 @@
 /** @license 2021 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Header <src/pool.h> depends on <src/heap.h> and <src/array.h>;
- examples <test/test_pool.c>; article <doc/pool.pdf>. If on a compatible
- workstation, `make` creates the test suite of the examples.
+ @abstract Header <../src/pool.h> depends on <../src/heap.h> and
+ <../src/array.h>; examples <../test/test_pool.c>; article
+ <../doc/pool/pool.pdf>.
 
  @subtitle Stable pool
 

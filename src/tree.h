@@ -1,9 +1,8 @@
 /** @license 2022 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Stand-alone header <src/tree.h>; examples <test/test_tree.c>;
- article <doc/tree.pdf>. On a compatible workstation, `make` creates the test
- suite of the examples.
+ @abstract Stand-alone header <../src/tree.h>; examples <../test/test_tree.c>;
+ article <../doc/tree/tree.pdf>.
 
  @subtitle Ordered tree
 

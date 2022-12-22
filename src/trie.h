@@ -1,9 +1,8 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Header <src/trie.h> requires <src/bmp.h>; examples
- <test/test_trie.c>; article <doc/trie.pdf>. On a compatible workstation,
- `make` creates the test suite of the examples.
+ @abstract Header <../src/trie.h> requires <../src/bmp.h>; examples
+ <../test/test_trie.c>; article <../doc/trie/trie.pdf>.
 
  @subtitle Prefix tree
 
