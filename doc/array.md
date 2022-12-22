@@ -13,7 +13,7 @@ Stand\-alone header [src/array\.h](src/array.h); examples [test/test\_array\.c](
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of array.](../doc/array.png)
+![Example of array.](../doc/array/array.png)
 
 [&lt;A&gt;array](#user-content-tag-8049be0d) is a dynamic array that stores contiguous [&lt;PA&gt;type](#user-content-typedef-a8a4b08a)\. Resizing may be necessary when increasing the size of the array; this incurs amortised cost, and any pointers to this memory may become stale\.
 
