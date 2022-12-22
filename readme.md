@@ -1,6 +1,7 @@
-Mostly independent `C89` data structure headers that use compile-time polymorphism
-to generate lightweight and statically type-safe containers.  The
-documented parameters in each project are pre-processor macros.
+Mostly independent `C89` data structure headers that use compile-time
+polymorphism to generate lightweight and statically type-safe
+containers.  The documented parameters in each project are pre-processor
+macros. All the public functions are documented in `doc/<box>.md`.
 
 ## License ##
 
