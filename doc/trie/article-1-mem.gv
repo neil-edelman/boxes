@@ -1,0 +1,119 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	tree0x100a04120branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td colspan="3" align="left"><font color="Grey75">Vakgimbat</font> ∑bit=0</td></tr>
+	<hr/>
+	<tr>
+		<td><font face="Times-Italic">left</font></td>
+		<td><font face="Times-Italic">skip</font></td>
+		<td><font face="Times-Italic">leaves</font></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td align="right">2</td>
+		<td align="right">3</td>
+		<td align="left" port="0">↓<font color="Grey75">Altair⊔</font></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="right" bgcolor="Gray95">1</td>
+		<td align="left" port="1" bgcolor="Gray95">Fomalhaut<font color="Grey75">⊔</font></td>
+	</tr>
+	<tr>
+		<td align="right">0</td>
+		<td align="right">1</td>
+		<td align="left" port="2">Gacrux<font color="Grey75">⊔</font></td>
+	</tr>
+	<tr>
+		<td>&#8205;</td>		<td>&#8205;</td>		<td align="left" port="3" bgcolor="Gray95">↓<font color="Grey75">Polaris⊔</font></td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	tree0x100a04120branch0:0 -> tree0x100b04160branch0 [style = dashed, arrowhead = rnormal];
+	tree0x100a04120branch0:3 -> tree0x100b040d0branch0 [style = dashed, arrowhead = lnormal];
+	tree0x100b04160branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td colspan="3" align="left"><font color="Grey75">Ukgul</font> ∑bit=6</td></tr>
+	<hr/>
+	<tr>
+		<td><font face="Times-Italic">left</font></td>
+		<td><font face="Times-Italic">skip</font></td>
+		<td><font face="Times-Italic">leaves</font></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td align="right">0</td>
+		<td align="right">0</td>
+		<td align="left" port="0">Altair<font color="Grey75">⊔</font></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="left" port="1" bgcolor="Gray95">Betelgeuse<font color="Grey75">⊔</font></td>
+	</tr>
+	<tr>
+		<td align="right">0</td>
+		<td align="right">11</td>
+		<td align="left" port="2">Canopus<font color="Grey75">⊔</font></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="right" bgcolor="Gray95">2</td>
+		<td align="left" port="3" bgcolor="Gray95">Capella<font color="Grey75">⊔</font></td>
+	</tr>
+	<tr>
+		<td>&#8205;</td>		<td>&#8205;</td>		<td align="left" port="4">Castor<font color="Grey75">⊔</font></td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+	tree0x100b040d0branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td colspan="3" align="left"><font color="Grey75">Orglob</font> ∑bit=4</td></tr>
+	<hr/>
+	<tr>
+		<td><font face="Times-Italic">left</font></td>
+		<td><font face="Times-Italic">skip</font></td>
+		<td><font face="Times-Italic">leaves</font></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td align="right">5</td>
+		<td align="right">1</td>
+		<td align="left" port="0">Polaris<font color="Grey75">⊔</font></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95">1</td>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="left" port="1" bgcolor="Gray95">Pollux<font color="Grey75">⊔</font></td>
+	</tr>
+	<tr>
+		<td align="right">0</td>
+		<td align="right">21</td>
+		<td align="left" port="2">Regulus<font color="Grey75">⊔</font></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95">1</td>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="left" port="3" bgcolor="Gray95">Rigel<font color="Grey75">⊔</font></td>
+	</tr>
+	<tr>
+		<td align="right">0</td>
+		<td align="right">4</td>
+		<td align="left" port="4">Sirius<font color="Grey75">⊔</font></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="right" bgcolor="Gray95">3</td>
+		<td align="left" port="5" bgcolor="Gray95">Spica<font color="Grey75">⊔</font></td>
+	</tr>
+	<tr>
+		<td>&#8205;</td>		<td>&#8205;</td>		<td align="left" port="6">Vega<font color="Grey75">⊔</font></td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+}

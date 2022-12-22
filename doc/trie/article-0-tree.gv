@@ -1,0 +1,20 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	// tree 0x100a04120
+	// branches
+	tree0x100a04120branch0 [label="3", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100a04120branch0 -> tree0x100a04120branch1 [arrowhead=rnormal];
+	tree0x100a04120branch0 -> tree0x100a04120branch2 [arrowhead=lnormal];
+	tree0x100a04120branch1 [label="7", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100a04120branch1 -> tree0x100a04120leaf0 [color=Gray75, arrowhead=rnormal];
+	tree0x100a04120branch1 -> tree0x100a04120leaf1 [color=Gray75, arrowhead=lnormal];
+	tree0x100a04120branch2 [label="1", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100a04120branch2 -> tree0x100a04120leaf2 [color=Gray75, arrowhead=rnormal];
+	tree0x100a04120branch2 -> tree0x100a04120leaf3 [color=Gray75, arrowhead=lnormal];
+	// leaves
+	tree0x100a04120leaf0 [label = <Achernar<font color="Gray75">⊔</font>>];
+	tree0x100a04120leaf1 [label = <Arcturus<font color="Gray75">⊔</font>>];
+	tree0x100a04120leaf2 [label = <Sol<font color="Gray75">⊔</font>>];
+	tree0x100a04120leaf3 [label = <Vega<font color="Gray75">⊔</font>>];
+}

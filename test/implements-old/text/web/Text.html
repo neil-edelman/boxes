@@ -1,0 +1,568 @@
+<!doctype html public "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<!-- steal these colour values from JavaDocs; meh -->
+<style type = "text/css">
+	a:link,  a:visited { color: #4a6782; }
+	a:hover, a:focus   { color: #bb7a2a; }
+	a:active           { color: #4A6782; }
+	tr:nth-child(even) { background: #dee3e9; }
+	div {
+		margin:  4px 0;
+		padding: 0 4px 4px 4px;
+	}
+	table      { width: 100%; }
+	td         { padding: 4px; }
+	h3, h1 {
+		color: #2c4557;
+		background-color: #dee3e9;
+		padding:          4px;
+	}
+	h3 {
+		margin:           0 -4px;
+		padding:          4px;
+	}
+</style>
+<title>Text</title>
+</head>
+
+
+<body>
+
+<h1>Text</h1>
+
+<ul>
+	<li><a href = "#_declarations">Declarations</a></li>
+	<li><a href = "#_summary">Function Summary</a></li>
+	<li><a href = "#_detail">Function Detail</a></li>
+</ul>
+
+<p>
+2018 Neil Edelman, distributed under the terms of the MIT License;
+see readme.txt, or <a href = "https://opensource.org/licenses/MIT">https://opensource.org/licenses/MIT</a>.
+</p>
+<p>
+A <em>Text</em> is composed of <em>String</em> in a way that makes them easy and fast to
+edit. Requires <em>List</em>, <em>Pool</em>, and <em>String</em>. Each <em>Text</em> is made up of lines,
+but one can stick whatever you want in here, including new-lines or not.
+</p>
+<p>
+If one needs traditional, Python-like editing, call <a href = "#TextNext">TextNext</a> to get a
+read-only line, and maybe parse into a new <em>Text</em> using one's favourite
+regular expressions tool, (suggest <a href = "http://re2c.org/">http://re2c.org/</a>.)
+</p>
+<dl>
+	<dt>minimum standard</dt>
+	<dd>C89/90</dd>
+	<dt>author</dt>
+	<dd>Neil</dd>
+	<dt>version</dt>
+	<dd>2018-10 Excess <em>split</em>s removed; <em>re2c</em> is better.</dd>
+	<dt>since</dt>
+	<dd>2018-01</dd>
+</dl>
+
+
+<a name = "_declarations"><!-- --></a><h2>Declarations</h2>
+
+<div><a name = "struct Line"><!-- --></a>
+<h3>struct Line</h3>
+<pre><b>struct Line</b> {
+	const struct LineVt *vt;
+	struct String string;
+}</pre>
+<p>
+Abstract <em>Line</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "struct Plain"><!-- --></a>
+<h3>struct Plain</h3>
+<pre><b>struct Plain</b> { struct LineLink line; }</pre>
+<p>
+<em>Plain</em> extends <em>Line</em>. Plain has no extra data; _is_ a <em>LineLink</em>, but
+renamed to avoid confusion.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "struct File"><!-- --></a>
+<h3>struct File</h3>
+<pre><b>struct File</b> {
+	struct LineLink line;
+	const char *fn;
+	size_t line_no;
+}</pre>
+<p>
+<em>File</em> extends <em>Line</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "struct Text"><!-- --></a>
+<h3>struct Text</h3>
+<pre><b>struct Text</b> {
+	/* List of lines. */
+	struct LineList lines;
+	/* Stores for list. */
+	struct PlainPool plains;
+	struct FilePool files;
+	/* Editing functions. */
+	struct Line *cursor;
+}</pre>
+<p>
+Agglomeration <em>Text</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "typedef void (*LineAction)(struct Line *const)"><!-- --></a>
+<h3>typedef void (*LineAction)(struct Line *const)</h3>
+<pre><b>typedef void (*LineAction)(struct Line *const)</b></pre>
+<p>
+<em>Line</em> in <em>Text</em> generic action.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "typedef int (*LinePredicate)(const struct Line *const)"><!-- --></a>
+<h3>typedef int (*LinePredicate)(const struct Line *const)</h3>
+<pre><b>typedef int (*LinePredicate)(const struct Line *const)</b></pre>
+<p>
+<em>Line</em> in <em>Text</em> generic predicate.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "typedef void (*LinePrint)(const struct Line *const, char *const, const int)"><!-- --></a>
+<h3>typedef void (*LinePrint)(const struct Line *const, char *const, const int)</h3>
+<pre><b>typedef void (*LinePrint)(const struct Line *const, char *const, const int)</b></pre>
+<p>
+Prints information on the line to a supplied buffer.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "typedef void (*TextLineAction)(struct Text *const, struct Line *const)"><!-- --></a>
+<h3>typedef void (*TextLineAction)(struct Text *const, struct Line *const)</h3>
+<pre><b>typedef void (*TextLineAction)(struct Text *const, struct Line *const)</b></pre>
+<p>
+Supplied a <em>Text</em> and <em>Line</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "typedef struct Line *(*LineTextOperator)(const struct Line *const,
+	struct Text *const)"><!-- --></a>
+<h3>typedef struct Line *(*LineTextOperator)(const struct Line *const,
+	struct Text *const)</h3>
+<pre><b>typedef struct Line *(*LineTextOperator)(const struct Line *const,
+	struct Text *const)</b></pre>
+<p>
+Supplied a <em>const Line</em> and <em>Text</em>, returns a <em>Line</em>.
+</p>
+<dl>
+</dl>
+</div>
+
+
+<a name = "_summary"><!-- --></a><h2>Function Summary</h2>
+
+<table>
+<tr><th>Return Type</th><th>Function Name</th><th>Argument List</th></tr>
+<tr>
+	<td>void</td>
+	<td><a href = "#Text_">Text_</a></td>
+	<td>struct Text **const ptext</td>
+</tr>
+<tr>
+	<td>struct Text *</td>
+	<td><a href = "#Text">Text</a></td>
+	<td>void</td>
+</tr>
+<tr>
+	<td>const struct Line *</td>
+	<td><a href = "#TextCursor">TextCursor</a></td>
+	<td>const struct Text *const text</td>
+</tr>
+<tr>
+	<td>const struct String *</td>
+	<td><a href = "#LineString">LineString</a></td>
+	<td>const struct Line *const line</td>
+</tr>
+<tr>
+	<td>struct Line *</td>
+	<td><a href = "#TextNext">TextNext</a></td>
+	<td>struct Text *const text</td>
+</tr>
+<tr>
+	<td>struct Line *</td>
+	<td><a href = "#TextPrevious">TextPrevious</a></td>
+	<td>struct Text *const text</td>
+</tr>
+<tr>
+	<td>struct Line *</td>
+	<td><a href = "#LineCopyMeta">LineCopyMeta</a></td>
+	<td>const struct Line *const src, struct Text *const dst</td>
+</tr>
+<tr>
+	<td>int</td>
+	<td><a href = "#LineBetweenCat">LineBetweenCat</a></td>
+	<td>struct Line *const line,
+	const char *const a, const char *const b</td>
+</tr>
+<tr>
+	<td>void</td>
+	<td><a href = "#TextRemove">TextRemove</a></td>
+	<td>struct Text *const text</td>
+</tr>
+<tr>
+	<td>int</td>
+	<td><a href = "#TextHasContent">TextHasContent</a></td>
+	<td>const struct Text *const text</td>
+</tr>
+<tr>
+	<td>struct Line *</td>
+	<td><a href = "#TextNew">TextNew</a></td>
+	<td>struct Text *const text</td>
+</tr>
+<tr>
+	<td>int</td>
+	<td><a href = "#TextFile">TextFile</a></td>
+	<td>struct Text *const text, FILE *const fp, const char *const fn</td>
+</tr>
+<tr>
+	<td>int</td>
+	<td><a href = "#TextPrint">TextPrint</a></td>
+	<td>struct Text *const text, FILE *const fp, const char *const fmt</td>
+</tr>
+<tr>
+	<td>void</td>
+	<td><a href = "#TextForEach">TextForEach</a></td>
+	<td>struct Text *const text, const LineAction action</td>
+</tr>
+<tr>
+	<td>struct Line *</td>
+	<td><a href = "#TextAll">TextAll</a></td>
+	<td>const struct Text *const text,
+	const LinePredicate predicate</td>
+</tr>
+<tr>
+	<td>size_t</td>
+	<td><a href = "#TextLineCount">TextLineCount</a></td>
+	<td>const struct Text *const text</td>
+</tr>
+<tr>
+	<td>const char *</td>
+	<td><a href = "#LineGet">LineGet</a></td>
+	<td>const struct Line *const line</td>
+</tr>
+<tr>
+	<td>size_t</td>
+	<td><a href = "#LineLength">LineLength</a></td>
+	<td>const struct Line *const line</td>
+</tr>
+<tr>
+	<td>void</td>
+	<td><a href = "#LineSource">LineSource</a></td>
+	<td>const struct Line *const line,
+	char *const a, size_t a_size</td>
+</tr>
+</table>
+
+
+<a name = "_detail"><!-- --></a><h2>Function Detail</h2>
+
+<div><a name = "Text_"><!-- --></a>
+<h3>Text_</h3>
+<pre>void <b>Text_</b> (struct Text **const ptext)</pre>
+<p>
+Destructor.
+</p>
+<dl>
+	<dt>parameter: ptext</dt>
+	<dd>A reference to the object that is to be deleted. If null or
+ points to null, doesn't do anything.</dd>
+</dl>
+</div>
+
+<div><a name = "Text"><!-- --></a>
+<h3>Text</h3>
+<pre>struct Text * <b>Text</b> (void)</pre>
+<p>
+Constructor.
+</p>
+<dl>
+	<dt>return</dt>
+	<dd>An object or a null pointer, if the object couldn't be created.</dd>
+	<dt>throws</dt>
+	<dd><em>malloc</em></dd>
+</dl>
+</div>
+
+<div><a name = "TextCursor"><!-- --></a>
+<h3>TextCursor</h3>
+<pre>const struct Line * <b>TextCursor</b> (const struct Text *const text)</pre>
+<dl>
+	<dt>parameter: text</dt>
+	<dd>If null, returns null.</dd>
+	<dt>return</dt>
+	<dd>The line at the cursor or null if the cursor is reset.</dd>
+</dl>
+</div>
+
+<div><a name = "LineString"><!-- --></a>
+<h3>LineString</h3>
+<pre>const struct String * <b>LineString</b> (const struct Line *const line)</pre>
+<dl>
+	<dt>fixme</dt>
+	<dd></dd>
+</dl>
+</div>
+
+<div><a name = "TextNext"><!-- --></a>
+<h3>TextNext</h3>
+<pre>struct Line * <b>TextNext</b> (struct Text *const text)</pre>
+<p>
+Advances the cursor. If the cursor is reset, sets the cursor to the first
+line.
+</p>
+<dl>
+	<dt>parameter: text</dt>
+	<dd>If null, returns false.</dd>
+	<dt>return</dt>
+	<dd>The string contents or null if there is no next position (the cursor
+ will be reset.)</dd>
+	<dt>fixme</dt>
+	<dd>const?</dd>
+</dl>
+</div>
+
+<div><a name = "TextPrevious"><!-- --></a>
+<h3>TextPrevious</h3>
+<pre>struct Line * <b>TextPrevious</b> (struct Text *const text)</pre>
+<dl>
+	<dt>fixme</dt>
+	<dd>const?</dd>
+</dl>
+</div>
+
+<div><a name = "LineCopyMeta"><!-- --></a>
+<h3>LineCopyMeta</h3>
+<pre>struct Line * <b>LineCopyMeta</b> (const struct Line *const src, struct Text *const dst)</pre>
+<p>
+Makes a copy of the meta-data, but not the actual text, in <em>src</em>. Places
+the copy before the <em>dst</em> cursor; if the cursor of <em>dst</em> is reset, places it
+at the end. <em>dst</em> can be the same list or different <em>Text</em>, but copies any
+depedencies on filenames as well.
+</p>
+<dl>
+	<dt>parameter: dst, src</dt>
+	<dd>If either is null, does nothing.</dd>
+	<dt>return</dt>
+	<dd>The copy.</dd>
+	<dt>throws</dt>
+	<dd><em>realloc</em> errors.</dd>
+</dl>
+</div>
+
+<div><a name = "LineBetweenCat"><!-- --></a>
+<h3>LineBetweenCat</h3>
+<pre>int <b>LineBetweenCat</b> (struct Line *const line,
+	const char *const a, const char *const b)</pre>
+<p>
+Fills <em>line</em> with bits <em>[a, b)</em>.
+</p>
+<dl>
+	<dt>parameter: line</dt>
+	<dd>If null, does nothing.</dd>
+	<dt>parameter: a, b</dt>
+	<dd>If either null or <em>a &gt;= b</em>, does nothing.</dd>
+	<dt>return</dt>
+	<dd>Success.</dd>
+	<dt>throws</dt>
+	<dd>...</dd>
+</dl>
+</div>
+
+<div><a name = "TextRemove"><!-- --></a>
+<h3>TextRemove</h3>
+<pre>void <b>TextRemove</b> (struct Text *const text)</pre>
+<p>
+Removes the line at the cursor. The cursor goes to the previous line; if
+the cursor is on the first line, the cursor is reset. If the cursor is reset,
+does nothing.
+</p>
+<dl>
+	<dt>parameter: text</dt>
+	<dd>If null, does nothing.</dd>
+</dl>
+</div>
+
+<div><a name = "TextHasContent"><!-- --></a>
+<h3>TextHasContent</h3>
+<pre>int <b>TextHasContent</b> (const struct Text *const text)</pre>
+<dl>
+	<dt>fixme</dt>
+	<dd></dd>
+</dl>
+</div>
+
+<div><a name = "TextNew"><!-- --></a>
+<h3>TextNew</h3>
+<pre>struct Line * <b>TextNew</b> (struct Text *const text)</pre>
+<p>
+Concatenates a blank before the <em>text</em> cursor, or if the cursor is reset,
+at the end.
+</p>
+<dl>
+	<dt>parameter: text</dt>
+	<dd>If null, returns null.</dd>
+	<dt>return</dt>
+	<dd>The line that is created ot null.</dd>
+	<dt>throws</dt>
+	<dd><em>malloc</em> errors.</dd>
+</dl>
+</div>
+
+<div><a name = "TextFile"><!-- --></a>
+<h3>TextFile</h3>
+<pre>int <b>TextFile</b> (struct Text *const text, FILE *const fp, const char *const fn)</pre>
+<p>
+Concatenates the contents of the stream <em>fp</em>, after the <em>text</em> line cursor,
+labelled with <em>fn</em>. On success, the read cursor will be at the end of the
+file. The newlines are not preserved, rather it is seen as a command to end
+the line.
+</p>
+<p>
+On error, the contents may be an an intermediate state.
+</p>
+<dl>
+	<dt>parameter: fp</dt>
+	<dd>Must be valid for the duration of this object or any other objects
+ copied off this object.</dd>
+	<dt>return</dt>
+	<dd>Success.</dd>
+	<dt>throws: ERANGE</dt>
+	<dd>the file is too large to fit in a <em>size_t</em>.</dd>
+	<dt>throws</dt>
+	<dd><em>realloc</em> errors.</dd>
+	<dt>throws</dt>
+	<dd><em>fgets</em> errors.</dd>
+	<dt>fixme</dt>
+	<dd>Respect cursor.</dd>
+</dl>
+</div>
+
+<div><a name = "TextPrint"><!-- --></a>
+<h3>TextPrint</h3>
+<pre>int <b>TextPrint</b> (struct Text *const text, FILE *const fp, const char *const fmt)</pre>
+<p>
+Outputs <em>text</em> to <em>fp</em>, each line according to <em>fmt</em>.
+</p>
+<dl>
+	<dt>parameter: text, fp, fmt</dt>
+	<dd>If null, returns false.</dd>
+	<dt>parameter: fmt</dt>
+	<dd>Should be less then <em>INT_MAX</em> bytes. Accepts: <pre>
+ %% as '%',
+ %s as line,
+ %a as source (max 255 bytes.) </pre></dd>
+	<dt>return</dt>
+	<dd>Success.</dd>
+	<dt>throws</dt>
+	<dd><em>fwrite</em>, <em>fputs</em>, <em>fputc</em> errors.</dd>
+</dl>
+</div>
+
+<div><a name = "TextForEach"><!-- --></a>
+<h3>TextForEach</h3>
+<pre>void <b>TextForEach</b> (struct Text *const text, const LineAction action)</pre>
+<p>
+Executes <em>action(line)</em> for all lines if <em>text</em> and <em>action</em> are
+non-null.
+</p>
+<dl>
+</dl>
+</div>
+
+<div><a name = "TextAll"><!-- --></a>
+<h3>TextAll</h3>
+<pre>struct Line * <b>TextAll</b> (const struct Text *const text,
+	const LinePredicate predicate)</pre>
+<p>
+Short-circiut evaluates <em>text</em> with each line's <em>predicate</em>.
+</p>
+<dl>
+	<dt>parameter: list, predicate</dt>
+	<dd>If null, returns null.</dd>
+	<dt>return</dt>
+	<dd>The first <em>Line</em> in the linked-list that causes the <em>predicate</em> with
+ <em>Line</em> as argument to return false, or null if the <em>predicate</em> is true for
+ every case.</dd>
+	<dt>order</dt>
+	<dd>~ O(<em>text.lines</em>) &times; O(<em>predicate</em>)</dd>
+</dl>
+</div>
+
+<div><a name = "TextLineCount"><!-- --></a>
+<h3>TextLineCount</h3>
+<pre>size_t <b>TextLineCount</b> (const struct Text *const text)</pre>
+<dl>
+	<dt>order</dt>
+	<dd>O(<em>lines</em>)</dd>
+	<dt>fixme</dt>
+	<dd></dd>
+</dl>
+</div>
+
+<div><a name = "LineGet"><!-- --></a>
+<h3>LineGet</h3>
+<pre>const char * <b>LineGet</b> (const struct Line *const line)</pre>
+<dl>
+	<dt>parameter: line</dt>
+	<dd>If null, returns null.</dd>
+	<dt>return</dt>
+	<dd>The text stored in line.</dd>
+</dl>
+</div>
+
+<div><a name = "LineLength"><!-- --></a>
+<h3>LineLength</h3>
+<pre>size_t <b>LineLength</b> (const struct Line *const line)</pre>
+<dl>
+	<dt>parameter: line</dt>
+	<dd>If null, returns 0.</dd>
+	<dt>return</dt>
+	<dd>The length of the line.</dd>
+	<dt>order</dt>
+	<dd>O(1)</dd>
+</dl>
+</div>
+
+<div><a name = "LineSource"><!-- --></a>
+<h3>LineSource</h3>
+<pre>void <b>LineSource</b> (const struct Line *const line,
+	char *const a, size_t a_size)</pre>
+<p>
+Gets the source of the <em>line</em> in a null-terminated string, <em>a</em>, not
+exceeding <em>a_size</em>. If <em>a_size</em> is zero, does nothing.
+</p>
+<dl>
+</dl>
+</div>
+
+
+</body>
+</html>

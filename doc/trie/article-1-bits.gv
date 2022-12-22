@@ -1,0 +1,300 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	tree0x100a04120branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr>
+		<td align="left" port="0">↓<font color="Grey75">Altair⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="1">Fomalhaut<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="2">Gacrux<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+	<tr>
+		<td align="left" port="3">↓<font color="Grey75">Polaris⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+</table>>];
+	tree0x100a04120branch0:0 -> tree0x100b04160branch0 [style = dashed, arrowhead = rnormal];
+	tree0x100a04120branch0:3 -> tree0x100b040d0branch0 [style = dashed, arrowhead = lnormal];
+	tree0x100b04160branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr>
+		<td align="left" port="0">Altair<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="1">Betelgeuse<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="2">Canopus<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="3">Capella<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="4">Castor<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+</table>>];
+	tree0x100b040d0branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr>
+		<td align="left" port="0">Polaris<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>1</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="1">Pollux<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>1</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+	<tr>
+		<td align="left" port="2">Regulus<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="3">Rigel<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+	<tr>
+		<td align="left" port="4">Sirius<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="5">Spica<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+	<tr>
+		<td align="left" port="6">Vega<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+</table>>];
+}

@@ -1,0 +1,57 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	tree0x100a04120branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr>
+		<td align="left" port="0">Achernar<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="1">Arcturus<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+	<tr>
+		<td align="left" port="2">Sol<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="3">Vega<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+</table>>];
+}

@@ -1,0 +1,348 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	tree0x1009bf210branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr>
+		<td align="left" port="0">↓<font color="Grey75">Adhara⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="1">Kochab<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="2">Merak<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="3">Mirfak<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="4">Mizar<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+	<tr>
+		<td align="left" port="5">↓<font color="Grey75">Regor⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+</table>>];
+	tree0x1009bf210branch0:0 -> tree0x1009c1650branch0 [style = dashed, arrowhead = rnormal];
+	tree0x1009bf210branch0:5 -> tree0x1009c16e0branch0 [style = dashed, arrowhead = lnormal];
+	tree0x1009c1650branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr>
+		<td align="left" port="0">Adhara<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="1">Alhena<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="2">Alnitak<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+	<tr>
+		<td align="left" port="3">Alpheratz<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+	<tr>
+		<td align="left" port="4">Arcturus<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="5">Aspidiske<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+</table>>];
+	tree0x1009c16e0branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr>
+		<td align="left" port="0">Regor<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="1">Regulus<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+	<tr>
+		<td align="left" port="2">Spica<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="3">Suhail<font color="Grey75">⊔</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+</table>>];
+}
