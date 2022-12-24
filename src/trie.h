@@ -89,16 +89,13 @@
 #define TRIE_QUERY(a, n) ((a)[TRIE_SLOT(n)] & TRIE_MASK(n))
 #define TRIE_DIFF(a, b, n) \
 	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
-/* Worst-case all-branches-left root. Parameter sets the maximum tree size.
- Prefer alignment `4n - 2`; cache `32n - 2`, (`(left + 1) * 2 + 2`.) */
-#define TRIE_MAX_LEFT 254
-#if TRIE_MAX_LEFT < 1 || TRIE_MAX_LEFT > UCHAR_MAX
-#error TRIE_MAX_LEFT parameter range `[1, UCHAR_MAX]`.
+/* Maximum branching factor/leaves. Prefer alignment `4n`; cache `32n`. */
+#define TRIE_ORDER 256
+#if TRIE_ORDER - 2 < 1 || TRIE_ORDER - 2 > UCHAR_MAX /* Max left. */
+#error Non-zero maximum left parameter range `[1, UCHAR_MAX]`.
 #endif
-#define TRIE_BRANCHES (TRIE_MAX_LEFT + 1) /* Maximum branches. */
-#define TRIE_ORDER (TRIE_BRANCHES + 1) /* Maximum branching factor/leaves. */
 /* `⌈(2n-1)/3⌉` nodes. */
-#define TRIE_SPLIT ((2 * (TRIE_ORDER + TRIE_BRANCHES) - 1 + 2) / 3)
+#define TRIE_SPLIT ((2 * (TRIE_ORDER + TRIE_ORDER - 1) - 1 + 2) / 3)
 #define TRIE_RESULT X(ERROR), X(ABSENT), X(PRESENT)
 #define X(n) TRIE_##n
 /** A result of modifying the table, of which `TRIE_ERROR` is false.
@@ -129,7 +126,6 @@ static int trie_is_prefix(const char *prefix, const char *word) {
 
 #ifndef TRIE_TRAIT /* <!-- base trie */
 
-
 #ifdef TRIE_KEY /* <!-- indirect */
 /** The default is `const char *`. If one sets `TRIE_KEY` to something other
  than that, then one must also declare `<P>string` as a
@@ -159,15 +155,12 @@ typedef PT_(entry) PT_(result);
 typedef PT_(key) *PT_(result);
 #endif /* set not sure --> */
 
-
-
 #if 0 /* <!-- documentation */
 /** Transforms a <typedef:<PT>key> into a `const char *`. */
 typedef const char *(*PT_(string_fn))(PT_(key));
 /** Extracts <typedef:<PT>key> from <typedef:<PT>entry>. */
 typedef PT_(key) (*PT_(key_fn))(const PT_(entry) *);
 #endif /* documentation --> */
-
 
 union PT_(leaf) { PT_(entry) as_entry; struct PT_(tree) *as_link; };
 /* In a B-tree described using <Knuth, 1998 Art 3>, this is a node of
@@ -176,7 +169,7 @@ union PT_(leaf) { PT_(entry) as_entry; struct PT_(tree) *as_link; };
  binary trees. */
 struct PT_(tree) {
 	unsigned short bsize;
-	struct trie_branch branch[TRIE_BRANCHES]; /* Explicitly say, order? */
+	struct trie_branch branch[TRIE_ORDER - 1];
 	struct trie_bmp bmp;
 	union PT_(leaf) leaf[TRIE_ORDER];
 };
@@ -345,7 +338,6 @@ static struct PT_(iterator) PT_(prefix)(struct T_(trie) *const trie,
 	return it;
 }
 
-
 /** Destroys `tree`'s children and sets invalid state.
  @order \O(|`tree`|) both time and space. */
 static void PT_(clear_r)(struct PT_(tree) *const tree) {
@@ -395,7 +387,7 @@ static int PT_(get)(const struct T_(trie) *const trie,
 static int PT_(split)(struct PT_(tree) *const tree) {
 	unsigned br0, br1, lf;
 	struct PT_(tree) *kid;
-	assert(tree && tree->bsize == TRIE_BRANCHES);
+	assert(tree && tree->bsize == TRIE_ORDER - 1);
 	/* Mitosis; more info added on error in <fn:<PT>add_unique>. */
 	if(!(kid = malloc(sizeof *kid))) return 0;
 	/* Where should we split it? <https://cs.stackexchange.com/q/144928> */
@@ -452,7 +444,7 @@ static unsigned PT_(open)(struct PT_(tree) *const tree,
 	union PT_(leaf) *leaf;
 	size_t bit1;
 	unsigned is_right;
-	assert(key && tree && tree->bsize < TRIE_BRANCHES);
+	assert(key && tree && tree->bsize < TRIE_ORDER - 1);
 	/* Modify the tree's left branches to account for the new leaf. */
 	br0 = 0, br1 = tree->bsize, lf = 0;
 	while(br0 < br1) {
@@ -496,7 +488,7 @@ static enum trie_result PT_(add)(struct T_(trie) *const trie, PT_(key) key,
 	struct PT_(ref) exemplar, ref;
 	const char *const key_string = T_(string)(key), *exemplar_string;
 	size_t bit1, diff, tree_bit1;
-	assert(trie && found && key_string);
+	assert(trie && key_string);
 	if(!(ref.tree = trie->root)) { /* Idle. */
 		if(!(ref.tree = malloc(sizeof *ref.tree))) goto catch;
 		ref.tree->bsize = USHRT_MAX;
@@ -570,8 +562,8 @@ found_diff:
 	/* Split. Agnostic of the key, also inefficient in that it moves data one
 	 time for split and a subset of the data a second time for insert. Having
 	 `TREE_ORDER` be more makes this matter less. */
-	assert(ref.tree->bsize <= TRIE_BRANCHES);
-	if(ref.tree->bsize == TRIE_BRANCHES) {
+	assert(ref.tree->bsize <= TRIE_ORDER - 1);
+	if(ref.tree->bsize == TRIE_ORDER - 1) {
 		if(!PT_(split)(ref.tree)) goto catch; /* Takes memory. */
 		bit1 = tree_bit1;
 		goto tree; /* Start again from the top of the first tree. */

@@ -356,7 +356,7 @@ static void PT_(valid_tree)(/*const*/ struct PT_(tree) *const tree) {
 	unsigned i;
 	int cmp = 0;
 	const char *str1 = 0;
-	assert(tree && tree->bsize <= TRIE_BRANCHES);
+	assert(tree && tree->bsize <= TRIE_ORDER - 1);
 	for(i = 0; i < tree->bsize; i++)
 		assert(tree->branch[i].left < tree->bsize - i);
 	for(i = 0; i <= tree->bsize; i++) {
@@ -430,7 +430,7 @@ static void PT_(test)(void) {
 		PT_(entry) *value;
 #endif
 		test = tests + i;
-		//key = PT_(entry_key)(&test->entry);
+		key = /*T_(key)(&*/test->entry;
 		if(show) printf("%lu: adding %s.\n",
 			(unsigned long)i, /*PT_(key_string)(key)*/"<>");
 		switch(

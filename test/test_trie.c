@@ -86,8 +86,8 @@ static void contrived_test(void) {
 		trie_str_graph(&t, "graph/contrived-insert.gv", i);
 	}
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
-		const char **const get = str_trie_get(&t, words[i]);
-		assert(get && !strcmp(words[i], *get));
+		const char *const get = str_trie_get(&t, words[i]);
+		assert(get && !strcmp(words[i], get));
 	}
 	/* Add up all the letters; should be equal to the overall count. */
 	for(count2 = 0, i = 0; i < sizeof letters / sizeof *letters; i++) {
@@ -112,10 +112,9 @@ static void contrived_test(void) {
 	assert(count2 == count);
 	assert(count3 == count);
 	{
-		trie_str_entry *e;
 		enum trie_result r;
-		r = trie_str_add(&t, "a", &e), assert(r == TRIE_PRESENT);
-		r = trie_str_add(&t, "yo", &e), assert(r == TRIE_ABSENT);
+		r = str_trie_try(&t, "a"), assert(r == TRIE_PRESENT);
+		r = str_trie_try(&t, "yo"), assert(r == TRIE_ABSENT);
 		trie_str_graph(&t, "graph/yo.gv", 0);
 		result = str_trie_remove(&t, "yo");
 		assert(result);
