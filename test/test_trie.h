@@ -10,13 +10,13 @@
 
 static const char *T_(trie_to_string)(const struct T_(trie) *);
 
-#ifndef TRIE_VALUE /* <!-- key set */
+#ifndef TRIE_ENTRY /* <!-- key set */
 /** Works by side-effects, _ie_ fills the type with data. */
 typedef void (*PT_(action_fn))(PT_(key) *);
 #elif !defined(TRIE_KEY_IN_VALUE) /* ket set --><!-- key map */
-typedef void (*PT_(action_fn))(PT_(key) *, PT_(value) *);
+typedef void (*PT_(action_fn))(PT_(key) *, PT_(entry) *);
 #else /* key map --><!-- custom */
-typedef void (*PT_(action_fn))(PT_(value) *);
+typedef void (*PT_(action_fn))(PT_(entry) *);
 #endif /* custom --> */
 
 typedef void (*PT_(tree_file_fn))(struct PT_(tree) *, size_t, FILE *);
@@ -269,10 +269,13 @@ static void PT_(graph_tree_logic)(struct PT_(tree) *const tr,
 
 	fprintf(fp, "\t// leaves\n");
 
-	for(i = 0; i <= tr->bsize; i++) if(!trie_bmp_test(&tr->bmp, i)) fprintf(fp,
-		"\ttree%pleaf%u [label = <%s<font color=\"Gray75\">⊔</font>>];\n",
-		(const void *)tr, i,
-		PT_(key_string)(PT_(entry_key)(&tr->leaf[i].as_entry)));
+	for(i = 0; i <= tr->bsize; i++) if(!trie_bmp_test(&tr->bmp, i)) {
+		struct PT_(ref) ref;
+		ref.tree = tr, ref.lf = i;
+		fprintf(fp,
+			"\ttree%pleaf%u [label = <%s<font color=\"Gray75\">⊔</font>>];\n",
+			(const void *)tr, i, PT_(ref_to_string)(&ref));
+	}
 
 	for(i = 0; i <= tr->bsize; i++) if(trie_bmp_test(&tr->bmp, i))
 		PT_(graph_tree_logic)(tr->leaf[i].as_link, 0, fp);
@@ -349,7 +352,7 @@ static void PT_(print)(const struct PT_(tree) *const tree) {
 #endif
 
 /** Make sure `tree` is in a valid state, (and all the children.) */
-static void PT_(valid_tree)(const struct PT_(tree) *const tree) {
+static void PT_(valid_tree)(/*const*/ struct PT_(tree) *const tree) {
 	unsigned i;
 	int cmp = 0;
 	const char *str1 = 0;
@@ -361,7 +364,9 @@ static void PT_(valid_tree)(const struct PT_(tree) *const tree) {
 			PT_(valid_tree)(tree->leaf[i].as_link);
 		} else {
 			const char *str2;
-			str2 = PT_(key_string)(PT_(entry_key)(&tree->leaf[i].as_entry));
+			struct PT_(ref) ref;
+			ref.tree = tree, ref.lf = i;
+			str2 = PT_(ref_to_string)(&ref);
 			if(str1) cmp = strcmp(str1, str2), assert(cmp < 0);
 			str1 = str2;
 		}
@@ -382,10 +387,14 @@ static void PT_(test)(void) {
 		= sizeof letter_counts / sizeof *letter_counts;
 	struct { PT_(entry) entry; int is_in; } tests[2000], *test_end, *test;
 	const size_t tests_size = sizeof tests / sizeof *tests;
-	PT_(entry) *e; /* fixme */
-	PT_(key) k;
-#ifdef TRIE_VALUE
-	PT_(value) *v;
+	PT_(result) r;
+#if !defined(TRIE_KEY) && !defined(TRIE_ENTRY)
+	PT_(key) thing;
+#else
+#error
+#ifdef TRIE_ENTRY
+	PT_(entry) *v;
+#endif
 #endif
 
 	/* Idle. */
@@ -394,12 +403,12 @@ static void PT_(test)(void) {
 	PT_(valid)(&trie);
 	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-idle.gv", 0);
 	T_(trie_)(&trie), PT_(valid)(&trie);
-	e = T_(trie_match)(&trie, ""), assert(!e);
-	e = T_(trie_get)(&trie, ""), assert(!e);
+	thing = T_(trie_match)(&trie, ""), assert(!thing);
+	thing = T_(trie_get)(&trie, ""), assert(!thing);
 
 	/* Make random data. */
 	for(test = tests, test_end = test + tests_size; test < test_end; test++) {
-#ifndef TRIE_VALUE /* <!-- key set */
+#ifndef TRIE_ENTRY /* <!-- key set */
 		T_(filler)(&test->entry);
 #elif !defined(TRIE_KEY_IN_VALUE) /* ket set --><!-- key map */
 		T_(filler)(&test->entry.key, &test->entry.value);
@@ -417,15 +426,15 @@ static void PT_(test)(void) {
 	for(i = 0; i < tests_size; i++) {
 		int show = !((i + 1) & i) || i + 1 == tests_size;
 		PT_(key) key;
-#ifdef TRIE_VALUE
-		PT_(value) *value;
+#ifdef TRIE_ENTRY
+		PT_(entry) *value;
 #endif
 		test = tests + i;
-		key = PT_(entry_key)(&test->entry);
+		//key = PT_(entry_key)(&test->entry);
 		if(show) printf("%lu: adding %s.\n",
-			(unsigned long)i, PT_(key_string)(key));
+			(unsigned long)i, /*PT_(key_string)(key)*/"<>");
 		switch(
-#ifndef TRIE_VALUE /* <!-- key set */
+#ifndef TRIE_ENTRY /* <!-- key set */
 		T_(trie_try)(&trie, key)
 #else /* key set --><!-- map */
 		T_(trie_try)(&trie, key, &value)
@@ -433,8 +442,8 @@ static void PT_(test)(void) {
 		) {
 		case TRIE_ERROR: perror("trie"); assert(0); return;
 		case TRIE_ABSENT: test->is_in = 1; unique++;
-			letter_counts[(unsigned char)*PT_(key_string)(key)]++;
-#ifndef TRIE_VALUE /* <!-- set */
+			letter_counts[(unsigned char)*T_(string)(key)]++;
+#ifndef TRIE_ENTRY /* <!-- set */
 #elif !defined(TRIE_KEY_IN_VALUE) /* set --><!-- map */
 			*value = test->entry.value;
 #else /* map --><!-- custom */
@@ -453,12 +462,12 @@ static void PT_(test)(void) {
 	PT_(valid)(&trie);
 	/* Check keys -- there's some key that's there. */
 	for(i = 0; i < tests_size; i++) {
-		const char *estring, *const tstring
-			= PT_(key_string)(PT_(entry_key)(&tests[i].entry));
-		e = T_(trie_get)(&trie, tstring);
-		assert(e);
-		estring = PT_(key_string)(PT_(entry_key)(e));
-		assert(e && !strcmp(estring, tstring));
+		const char *estring, *const tstring = T_(string)(tests[i].entry);
+		r = T_(trie_get)(&trie, tstring);
+		assert(r);
+		estring = PT_(result_to_string)(r);
+		printf("<%s->%s>\n", estring, tstring);
+		assert(!strcmp(estring, tstring));
 	}
 	/* Add up all the letters; should be equal to the overall count. */
 	for(count = 0, i = 0; i < letter_counts_size; i++) {
@@ -466,10 +475,11 @@ static void PT_(test)(void) {
 		unsigned count_letter = 0;
 		struct T_(trie_iterator) it;
 		int output = 0;
+		PT_(key) k;
 		letter[0] = (char)i, letter[1] = '\0';
 		it = T_(trie_prefix)(&trie, letter);
 		while(
-#ifdef TRIE_VALUE
+#ifdef TRIE_ENTRY
 			T_(trie_next)(&it, &k, &v)
 #else
 			T_(trie_next)(&it, &k)
@@ -494,7 +504,7 @@ static void PT_(test)(void) {
 	T_(trie_clear)(&trie);
 	{
 		struct T_(trie_iterator) it = T_(trie_prefix)(&trie, "");
-#ifdef TRIE_VALUE
+#ifdef TRIE_ENTRY
 		assert(!T_(trie_next)(&it, 0, 0));
 #else
 		assert(!T_(trie_next)(&it, 0));
@@ -544,21 +554,18 @@ static void PT_(test_random)(void) {
 		if((unsigned)rand() > size * (RAND_MAX / (2 * expectation))) {
 			/* Create item. */
 			PT_(entry) *entry, **handle;
-			PT_(key) key;
-#ifdef TRIE_VALUE
-			PT_(value) *value;
-#endif
+			PT_(key) key; /* FIX */
 			if(!(entry = PT_(entry_pool_new)(&entries))) goto catch;
-#if defined(TRIE_VALUE) && !defined(TRIE_KEY_IN_VALUE)
+#if defined(TRIE_ENTRY) && !defined(TRIE_KEY_IN_VALUE)
 			T_(filler)(&entry->key, &entry->value);
 #else
 			T_(filler)(entry);
 #endif
-			key = PT_(entry_key)(entry);
+			key = *entry;
 			/*printf("Creating %s: ", PT_(key_string)(key));*/
 			switch(
-#ifndef TRIE_VALUE /* <!-- key set */
-			T_(trie_try)(&trie, key)
+#ifndef TRIE_ENTRY /* <!-- key set */
+			T_(trie_try)(&trie, *entry) /* WHAT? */
 #else /* key set --><!-- map */
 			T_(trie_try)(&trie, key, &value)
 #endif /* map --> */
@@ -571,7 +578,7 @@ static void PT_(test_random)(void) {
 				size++;
 #ifdef TRIE_KEY_IN_VALUE
 				*value = *entry;
-#elif defined(TRIE_VALUE)
+#elif defined(TRIE_ENTRY)
 				*value = entry->value;
 #endif
 				if(!(handle = PT_(handle_array_new)(&handles))) goto catch;
@@ -585,7 +592,7 @@ static void PT_(test_random)(void) {
 		} else { /* Delete item. */
 			unsigned r = (unsigned)rand() / (RAND_MAX / handles.size + 1);
 			PT_(entry) *handle = handles.data[r];
-			const char *const string = PT_(key_string)(PT_(entry_key)(handle));
+			const char *const string = T_(string)(*handle); /*FIX*/
 			int result;
 			/*printf("Deleting %s.\n", string);*/
 			result = T_(trie_remove)(&trie, string);
@@ -598,9 +605,10 @@ static void PT_(test_random)(void) {
 		if(i % (5 * expectation / 10) == 5 * expectation / 20)
 			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
 		for(j = 0; j < handles.size; j++) {
-			PT_(entry) *e = T_(trie_get)(&trie,
-				PT_(key_string)(PT_(entry_key)(handles.data[j])));
-			assert(e);
+			/*PT_(entry) *e = T_(trie_get)(&trie,
+				PT_(key_string)(PT_(entry_key)(handles.data[j]))); */
+			PT_(result) r = T_(trie_get)(&trie, T_(string)(*handles.data[j]));
+			assert(r);
 		}
 	}
 	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
@@ -644,8 +652,8 @@ static void T_(trie_test)(void) {
 #ifdef TRIE_KEY
 		" custom key <" QUOTE(TRIE_KEY) ">"
 #endif
-#ifdef TRIE_VALUE
-		" value <" QUOTE(TRIE_VALUE) ">"
+#ifdef TRIE_ENTRY
+		" value <" QUOTE(TRIE_ENTRY) ">"
 #endif
 #ifdef TRIE_KEY_IN_VALUE
 		" and the key is in the value"

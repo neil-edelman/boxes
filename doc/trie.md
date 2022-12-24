@@ -26,13 +26,13 @@ The worse\-case run\-time of querying or modifying is bounded by &#927;\(|`strin
  * Parameter: TRIE\_NAME  
    Required `<T>` that satisfies `C` naming conventions when mangled\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: TRIE\_KEY  
-   Normally, the key is directly compatible with `const char *`\. Optionally, one can set `TRIE_KEY` to a custom type, [&lt;PT&gt;key](#user-content-typedef-eeee1b4a), needing [&lt;PT&gt;string_fn](#user-content-typedef-fda6adfb) `<T>string`\.
- * Parameter: TRIE\_VALUE, TRIE\_KEY\_IN\_VALUE  
-   `TRIE_VALUE` is an optional payload type to go with the key\. Further, defining `TRIE_KEY_IN_VALUE` says that [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f) `<T>key` picks out [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) from [&lt;PT&gt;value](#user-content-typedef-cc753b30)\. Otherwise it is an associative array from a key to value, [&lt;T&gt;trie_entry](#user-content-tag-1422bb56)\.
+   Optional [&lt;PT&gt;key](#user-content-typedef-eeee1b4a), the default of which is `const char *`\. Requires implementation of [&lt;PT&gt;string_fn](#user-content-typedef-fda6adfb) `<T>string` to convert [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) to a `const char *`\.
+ * Parameter: TRIE\_VALUE  
+   Optional [&lt;PT&gt;value](#user-content-typedef-cc753b30) that contains the key, the default of which is the value is the key\. Requires [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f) `<T>key`, that picks out [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) from [&lt;PT&gt;value](#user-content-typedef-cc753b30)\.
  * Parameter: TRIE\_TO\_STRING  
    To string trait `<STR>` contained in [src/to\_string\.h](src/to_string.h)\. The unnamed trait is automatically supplied by the string, but others require `<name><trait>to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
  * Parameter: TRIE\_DEFAULT  
-   Get or default set default\. \(fixme: upcoming\.\)
+   Get or default set default\. \(fixme: upcoming\.\) \(Why does this not have it?\)
  * Parameter: TRIE\_EXPECT\_TRAIT, TRIE\_TRAIT  
    Named traits are obtained by including `trie.h` multiple times with `TRIE_EXPECT_TRAIT` and then subsequently including the name in `TRIE_TRAIT`\.
  * Standard:  
