@@ -205,22 +205,6 @@ static void kv_filler(struct kv *const kv)
 
 
 #if 0
-/** This is functionally very similar to a map, except there is only one
- pointer. The key is now part of the value, so one has to define projection
- functions. */
-struct foo { int foo; const char *key; };
-static const char *foo_key(const struct foo *const foo)
-	{ return foo->key; }
-static void foo_filler(struct foo *const foo)
-	{ foo->foo = 42; str_filler(&foo->key); }
-#define TRIE_NAME foo
-#define TRIE_ENTRY struct foo
-#define TRIE_KEY_IN_VALUE
-#define TRIE_TO_STRING
-#define TRIE_TEST
-#include "../src/trie.h"
-
-
 /* Stores a value in the leaf itself and not externally. This structure is
  sensitive to the size of the leaves; optimally, would be a pointer's length,
  (which this example is on 64-byte machines.) The attraction of this is not
@@ -361,7 +345,6 @@ int main(void) {
 	colour_trie_test(); /* Custom key set with enum string backing. */
 	kv_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */
 #if 0
-	foo_trie_test(), str32_pool_clear(&str_pool); /* Custom value. */
 	str8_trie_test(); /* Small key set with no dependancy on outside keys. */
 	keyval_trie_test(), keyval_pool_(&kv_pool); /* Pointer to index. */
 	star_trie_test(); /* Custom value with enum strings backing. */
