@@ -55,9 +55,6 @@
 #if defined(TRIE_TRAIT) ^ defined(BOX_TYPE)
 #error TRIE_TRAIT name must come after TRIE_EXPECT_TRAIT.
 #endif
-#if defined(TRIE_KEY_IN_VALUE) && !defined(TRIE_ENTRY)
-#error TRIE_KEY_IN_VALUE requires TRIE_ENTRY.
-#endif
 #if defined(TRIE_TEST) && (!defined(TRIE_TRAIT) && !defined(TRIE_TO_STRING) \
 	|| defined(TRIE_TRAIT) && !defined(TRIE_HAS_TO_STRING))
 #error Test requires to string.
@@ -756,42 +753,41 @@ static enum trie_result T_(trie_get)(const struct T_(trie) *const trie,
 }
 #endif /* enum? --> */
 
-#ifndef TRIE_ENTRY /* <!-- key set */
+#ifndef TRIE_ENTRY /* <!-- set */
 /** Adds `key` to `trie` (which must both exist) if it doesn't exist. */
 static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	const PT_(key) key) {
 	assert(trie && T_(string)(key));
 	return PT_(add)(trie, key, 0);
 }
-#else /* key set --><!-- key value map OR key in value */
+#else /* set --><!-- entry */
 /** Adds `key` to `trie` if it doesn't exist already.
- @param[value] Only if `TRIE_ENTRY` is set will this parameter exist. Output
- pointer. Can be null only if `TRIE_KEY_IN_VALUE` was not defined.
- @return One of, `TRIE_ERROR`, `errno` is set and `value` is not;
- `TRIE_ABSENT`, added to `trie`, and uninitialized `value` is associated with
- `key`; `TRIE_PRESENT`, the value associated with `key`. If `TRIE_IN_VALUE`,
- was specified and the return is `TRIE_ABSENT`, the trie is in an invalid state
- until filling in the key in value by `key`.
+ @param[entry] Output pointer. Only if `TRIE_ENTRY` is set will this parameter
+ exist.
+ @return One of, `TRIE_ERROR`, `errno` is set and `entry` is not;
+ `TRIE_ABSENT`, `key` is added to `trie`; `TRIE_PRESENT`, the value associated
+ with `key`.
+
+ If `TRIE_ENTRY` was specified and the return is `TRIE_ABSENT`, the trie is in
+ an invalid state until filling in the key with an equivalent `key`. (Because
+ <typedef:<PT>key> is not invertible; trie is agnostic of the method of getting
+ the key.)
  @order \O(\log |`trie`|)
  @throws[EILSEQ] The string has a distinguishing run of bytes with a
  neighbouring string that is too long. On most platforms, this is about
  32 bytes the same. @throws[malloc] @allow */
 static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
-	const PT_(key) key, PT_(entry) **const value) {
+	const PT_(key) key, PT_(entry) **const entry) {
 	enum trie_result res;
 	PT_(entry) *e;
 	assert(trie && PT_(key_string)(key));
 	if(res = PT_(add)(trie, key, &e)) {
-#ifndef TRIE_KEY_IN_VALUE /* <!-- key value map */
-		if(value) *value = &e->value;
-#else /* key value map --><!-- key in value */
 		assert(value); /* One _has_ to set the key in the value. */
-		*value = e;
-#endif /* key in value --> */
+		*entry = e;
 	}
 	return res;
 }
-#endif /* trie value map OR key in value --> */
+#endif /* entry --> */
 
 /** Tries to remove `string` from `trie`.
  @return Success. If either parameter is null or the `string` is not in `trie`,

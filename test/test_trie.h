@@ -10,14 +10,8 @@
 
 static const char *T_(trie_to_string)(const struct T_(trie) *);
 
-#ifndef TRIE_ENTRY /* <!-- key set */
 /** Works by side-effects, _ie_ fills the type with data. */
-typedef void (*PT_(action_fn))(PT_(key) *);
-#elif !defined(TRIE_KEY_IN_VALUE) /* ket set --><!-- key map */
-typedef void (*PT_(action_fn))(PT_(key) *, PT_(entry) *);
-#else /* key map --><!-- custom */
 typedef void (*PT_(action_fn))(PT_(entry) *);
-#endif /* custom --> */
 
 typedef void (*PT_(tree_file_fn))(struct PT_(tree) *, size_t, FILE *);
 
@@ -447,12 +441,9 @@ static void PT_(test)(void) {
 		case TRIE_ERROR: perror("trie"); assert(0); return;
 		case TRIE_ABSENT: test->is_in = 1; unique++;
 			letter_counts[(unsigned char)*T_(string)(key)]++;
-#ifndef TRIE_ENTRY /* <!-- set */
-#elif !defined(TRIE_KEY_IN_VALUE) /* set --><!-- map */
-			*value = test->entry.value;
-#else /* map --><!-- custom */
+#ifdef TRIE_ENTRY /* <!-- entry */
 			*value = test->entry;
-#endif /* custom --> */
+#endif /* entry --> */
 			break;
 		case TRIE_PRESENT: /*printf("Key %s is in trie already.\n",
 			PT_(key_string)(key)); spam */ break;
@@ -574,12 +565,8 @@ static void PT_(test_random)(void) {
 			PT_(entry) *entry, **handle;
 			PT_(key) key; /* FIX */
 			if(!(entry = PT_(entry_pool_new)(&entries))) goto catch;
-#if defined(TRIE_ENTRY) && !defined(TRIE_KEY_IN_VALUE) /* fixme */
-			T_(filler)(&entry->key, &entry->value);
-#else
 			T_(filler)(entry);
-#endif
-			key = *entry;
+			key = *entry; //FIXME
 			/*printf("Creating %s: ", PT_(key_string)(key));*/
 			switch(
 #ifndef TRIE_ENTRY /* <!-- key set */
@@ -594,11 +581,9 @@ static void PT_(test_random)(void) {
 			case TRIE_ABSENT:
 				/*printf("unique.\n");*/
 				size++;
-#ifdef TRIE_KEY_IN_VALUE
+#ifdef TRIE_ENTRY
 				*value = *entry;
-#elif defined(TRIE_ENTRY)
-				*value = entry->value;
-#endif /* FIXME! */
+#endif
 				if(!(handle = PT_(handle_array_new)(&handles))) goto catch;
 				*handle = entry;
 				break;
@@ -676,10 +661,7 @@ static void T_(trie_test)(void) {
 		" custom key <" QUOTE(TRIE_KEY) ">"
 #endif
 #ifdef TRIE_ENTRY
-		" value <" QUOTE(TRIE_ENTRY) ">"
-#endif
-#ifdef TRIE_KEY_IN_VALUE
-		" and the key is in the value"
+		" entry <" QUOTE(TRIE_ENTRY) ">"
 #endif
 		" testing using <" QUOTE(TRIE_TEST) ">:\n");
 	PT_(test)();
