@@ -188,21 +188,34 @@ finally:
 }
 
 
-/* An unsigned value associated with an external string as a map. When
- `TREE_ENTRY` is defined, we no longer have a way to output the keys
- automatically. The user must copy the key into the pointer manually. */
-struct kv { const char *key; unsigned value; };
+/** A string as a map key implemented as above with unsigned value associated.
+ We no longer have a way to output the keys automatically. The user must copy
+ the key into the pointer manually. */
+struct kv1 { const char *key; unsigned value; };
 /** @return Picks the key from `kv`. @implements <typedef:<T>key> */
-static const char *kv_key(const struct kv *const kv) { return kv->key; }
+static const char *kv1_key(const struct kv1 *const kv) { return kv->key; }
 /** Generate a `key` (from `str_pool`) and `value`. */
-static void kv_filler(struct kv *const kv)
+static void kv1_filler(struct kv1 *const kv)
 	{ assert(kv), str_filler(&kv->key), kv->value = 42; }
-#define TRIE_NAME kv
-#define TRIE_ENTRY struct kv
+#define TRIE_NAME kv1
+#define TRIE_ENTRY struct kv1
 #define TRIE_TO_STRING
 #define TRIE_TEST
 #include "../src/trie.h"
 
+
+/** Or we could have the key directly in the value. */
+struct kv2 { char key[12]; int value; };
+static const char *kv2_key(const struct kv2 *const kv) { return kv->key; }
+static void kv2_filler(struct kv2 *const kv) {
+	orcish(kv->key, sizeof kv->key);
+	kv->value = rand() / (RAND_MAX / 1098 + 1) - 99;
+}
+#define TRIE_NAME kv2
+#define TRIE_ENTRY struct kv2
+#define TRIE_TO_STRING
+#define TRIE_TEST
+#include "../src/trie.h"
 
 #if 0
 /* Stores a value in the leaf itself and not externally. This structure is
@@ -233,29 +246,6 @@ static void str8_filler(struct str8 *const s) {
 #include "../src/trie.h"
 
 
-/** This is an external pointer; the trie is just an index. We will be
- responsible for assigning keys. */
-struct keyval { char key[12]; int value; };
-#define POOL_NAME keyval
-#define POOL_TYPE struct keyval
-#include "../src/pool.h"
-static struct keyval_pool kv_pool;
-static const char *keyval_key(/* fixme: const */
-	struct keyval *const*const kv_ptr)
-	{ return (*kv_ptr)->key; }
-static void keyval_filler(struct keyval **const kv_ptr) {
-	struct keyval *kv = keyval_pool_new(&kv_pool);
-	assert(kv); /* Not testing malloc. */
-	kv->value = rand() / (RAND_MAX / 1098 + 1) - 99;
-	orcish(kv->key, sizeof kv->key);
-	*kv_ptr = kv;
-}
-#define TRIE_NAME keyval
-#define TRIE_ENTRY struct keyval *
-#define TRIE_KEY_IN_VALUE
-#define TRIE_TO_STRING
-#define TRIE_TEST
-#include "../src/trie.h"
 
 
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
@@ -340,13 +330,13 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	contrived_test(), str32_pool_clear(&str_pool);
-	str_trie_test(), str32_pool_clear(&str_pool); /* Key set. */
+	str_trie_test(), str32_pool_clear(&str_pool);
 	fixed_colour_test();
-	colour_trie_test(); /* Custom key set with enum string backing. */
-	kv_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */
+	colour_trie_test();
+	kv1_trie_test(), str32_pool_clear(&str_pool);
+	kv2_trie_test();
 #if 0
 	str8_trie_test(); /* Small key set with no dependancy on outside keys. */
-	keyval_trie_test(), keyval_pool_(&kv_pool); /* Pointer to index. */
 	star_trie_test(); /* Custom value with enum strings backing. */
 	article_test();
 #endif
