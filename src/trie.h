@@ -175,7 +175,7 @@ struct PT_(ref) { struct PT_(tree) *tree; unsigned lf; };
 /** @return Given `ref`, get the remit. */
 static PT_(remit) PT_(ref_to_remit)(const struct PT_(ref) *const ref) {
 #ifdef TRIE_ENTRY
-#error
+	return &ref->tree->leaf[ref->lf].as_entry;
 #else
 	return ref->tree->leaf[ref->lf].as_entry;
 #endif
@@ -183,7 +183,9 @@ static PT_(remit) PT_(ref_to_remit)(const struct PT_(ref) *const ref) {
 /** @return Given `ref`, get the string. */
 static const char *PT_(ref_to_string)(const struct PT_(ref) *const ref) {
 #ifdef TRIE_ENTRY
-	return T_(string)(&ref->tree.leaf[ref->lf].as_entry);
+	/* <fn:<T>string> defined by the user iff `TRIE_KEY`, but <fn:<T>key> must
+	 be defined by the user. */
+	return T_(string)(T_(key)(&ref->tree->leaf[ref->lf].as_entry));
 #else
 	return T_(string)(ref->tree->leaf[ref->lf].as_entry);
 #endif
@@ -731,6 +733,7 @@ static PT_(remit) T_(trie_get)(const struct T_(trie) *const trie,
 }
 
 #else /* pointer --><!-- enum? */
+
 /** `string` match for `trie` -> `remit`. */
 static enum trie_result T_(trie_match)(const struct T_(trie) *const trie,
 	const char *const string, PT_(remit) *const remit) {
@@ -741,6 +744,7 @@ static enum trie_result T_(trie_match)(const struct T_(trie) *const trie,
 	}
 	return TRIE_ABSENT;
 }
+
 /** `string` exact match for `trie` -> `remit`. */
 static enum trie_result T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const string, PT_(remit) *const remit) {
@@ -751,6 +755,7 @@ static enum trie_result T_(trie_get)(const struct T_(trie) *const trie,
 	}
 	return TRIE_ABSENT;
 }
+
 #endif /* enum? --> */
 
 #ifndef TRIE_ENTRY /* <!-- set */
@@ -778,14 +783,11 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
  32 bytes the same. @throws[malloc] @allow */
 static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 	const PT_(key) key, PT_(entry) **const entry) {
-	enum trie_result res;
-	PT_(entry) *e;
-	assert(trie && PT_(key_string)(key));
-	if(res = PT_(add)(trie, key, &e)) {
-		assert(value); /* One _has_ to set the key in the value. */
-		*entry = e;
-	}
-	return res;
+	enum trie_result result;
+	struct PT_(ref) r;
+	assert(trie && T_(string)(key));
+	if(result = PT_(add)(trie, key, &r)) *entry = &r.tree->leaf[r.lf].as_entry;
+	return result;
 }
 #endif /* entry --> */
 
@@ -833,22 +835,26 @@ static int T_(trie_next)(struct T_(trie_iterator) *const it,
 	PT_(remit) *const remit) {
 	struct PT_(ref) *r;
 	if(!PT_(next)(&it->_, &r)) return 0;
+#ifdef TRIE_ENTRY
+	if(remit) *remit = &r->tree->leaf[r->lf].as_entry;
+#else
 	if(remit) *remit = r->tree->leaf[r->lf].as_entry;
+#endif
 	return 1;
 }
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
-	T_(trie)(); T_(trie_)(0); T_(trie_clear)(0);
+	T_(trie)(); T_(trie_)(0); T_(trie_clear)(0); T_(trie_next)(0, 0);
 #if defined(TREE_ENTRY) || !defined(TRIE_KEY)
 	T_(trie_match)(0, 0); T_(trie_get)(0, 0);
 #else
 	T_(trie_match)(0, 0, 0); T_(trie_get)(0, 0, 0);
 #endif
 #ifdef TRIE_ENTRY
-	T_(trie_try)(0, 0, 0); T_(trie_next)(0, 0, 0);
+	T_(trie_try)(0, 0, 0);
 #else
-	T_(trie_try)(0, 0); T_(trie_next)(0, 0);
+	T_(trie_try)(0, 0);
 #endif
 	T_(trie_remove)(0, 0); T_(trie_prefix)(0, 0); /*T_(trie_size)(0);*/
 	PT_(unused_base_coda)();

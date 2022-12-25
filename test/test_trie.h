@@ -381,14 +381,6 @@ static PT_(key) PT_(entry_key)(const PT_(entry) *entry) {
 #endif
 }
 
-static const char *PT_(remit_to_string)(const PT_(remit) result) {
-#ifdef TRIE_ENTRY
-#error
-#else
-	return T_(string)(result);
-#endif
-}
-
 static void PT_(test)(void) {
 	struct T_(trie) trie = T_(trie)();
 	size_t i, unique, count;
@@ -397,8 +389,7 @@ static void PT_(test)(void) {
 		= sizeof letter_counts / sizeof *letter_counts;
 	struct { PT_(entry) entry; int is_in; } tests[2000], *test_end, *test;
 	const size_t tests_size = sizeof tests / sizeof *tests;
-	PT_(remit) r;
-	PT_(key) k;
+	PT_(remit) e;
 
 	/* Idle. */
 	errno = 0;
@@ -407,13 +398,13 @@ static void PT_(test)(void) {
 	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-idle.gv", 0);
 	T_(trie_)(&trie), PT_(valid)(&trie);
 #if defined(TREE_ENTRY) || !defined(TRIE_KEY)
-	k = T_(trie_match)(&trie, ""), assert(!k);
-	k = T_(trie_get)(&trie, ""), assert(!k);
+	e = T_(trie_match)(&trie, ""), assert(!e);
+	e = T_(trie_get)(&trie, ""), assert(!e);
 #else
 	{
-		enum trie_result tr;
-		tr = T_(trie_match)(&trie, "", &k), assert(tr == TRIE_ABSENT);
-		tr = T_(trie_get)(&trie, "", &k), assert(tr == TRIE_ABSENT);
+		enum trie_result r;
+		r = T_(trie_match)(&trie, "", &e), assert(r == TRIE_ABSENT);
+		r = T_(trie_get)(&trie, "", &e), assert(r == TRIE_ABSENT);
 	}
 #endif
 
@@ -426,24 +417,29 @@ static void PT_(test)(void) {
 	memset(letter_counts, 0, sizeof letter_counts);
 	for(i = 0; i < tests_size; i++) {
 		int show = !((i + 1) & i) || i + 1 == tests_size;
-		PT_(key) key;
+		PT_(key) k;
 		test = tests + i;
-		key = PT_(entry_key)(&test->entry);
-		if(show) printf("%lu: adding %s.\n",
-			(unsigned long)i, T_(string)(test->entry));
+		k = PT_(entry_key)(&test->entry);
+		if(show) printf("%lu: adding %s.\n", (unsigned long)i,
+#ifdef TRIE_ENTRY
+			T_(string)(T_(key)(&test->entry))
+#else
+			T_(string)(test->entry)
+#endif
+			);
 		switch(
 #ifndef TRIE_ENTRY /* <!-- key set */
-		T_(trie_try)(&trie, key)
+		T_(trie_try)(&trie, k)
 #else /* key set --><!-- map */
-		T_(trie_try)(&trie, key, &value)
+		T_(trie_try)(&trie, k, &e)
 #endif /* map --> */
 		) {
 		case TRIE_ERROR: perror("trie"); assert(0); return;
 		case TRIE_ABSENT: test->is_in = 1; unique++;
-			letter_counts[(unsigned char)*T_(string)(key)]++;
-#ifdef TRIE_ENTRY /* <!-- entry */
-			*value = test->entry;
-#endif /* entry --> */
+			letter_counts[(unsigned char)*T_(string)(k)]++;
+#ifdef TRIE_ENTRY
+			*e = test->entry;
+#endif
 			break;
 		case TRIE_PRESENT: /*printf("Key %s is in trie already.\n",
 			PT_(key_string)(key)); spam */ break;
@@ -457,18 +453,26 @@ static void PT_(test)(void) {
 	PT_(valid)(&trie);
 	/* Check keys -- there's some key that's there. */
 	for(i = 0; i < tests_size; i++) {
-		const char *estring, *const tstring = T_(string)(tests[i].entry);
+		const char *estring, *const tstring
+#ifdef TRIE_ENTRY
+			= T_(string)(T_(key)(&tests[i].entry));
+#else
+			= T_(string)(tests[i].entry);
+#endif
 #if defined(TREE_ENTRY) || !defined(TRIE_KEY)
-		r = T_(trie_get)(&trie, tstring);
-		assert(r);
+		e = T_(trie_get)(&trie, tstring), assert(e);
 #else
 		{
-			enum trie_result tr;
-			tr = T_(trie_get)(&trie, tstring, &r);
-			assert(tr == TRIE_PRESENT);
+			enum trie_result r;
+			r = T_(trie_get)(&trie, tstring, &e);
+			assert(r == TRIE_PRESENT);
 		}
 #endif
-		estring = PT_(remit_to_string)(r);
+#ifdef TRIE_ENTRY
+		estring = T_(string)(T_(key)(e));
+#else
+		estring = T_(string)(e);
+#endif
 		/*printf("<%s->%s>\n", estring, tstring);*/
 		assert(!strcmp(estring, tstring));
 	}
@@ -480,13 +484,7 @@ static void PT_(test)(void) {
 		int output = 0;
 		letter[0] = (char)i, letter[1] = '\0';
 		it = T_(trie_prefix)(&trie, letter);
-		while(
-#ifdef TRIE_ENTRY
-			T_(trie_next)(&it, &k, &v)
-#else
-			T_(trie_next)(&it, &k)
-#endif
-			) {
+		while(T_(trie_next)(&it, &e)) {
 			/*printf("%s<%s>", output ? "" : letter,
 				PT_(key_string)(PT_(entry_key)(e)));*/
 			count_letter++, output = 1;
@@ -510,11 +508,7 @@ static void PT_(test)(void) {
 	T_(trie_clear)(&trie);
 	{
 		struct T_(trie_iterator) it = T_(trie_prefix)(&trie, "");
-#ifdef TRIE_ENTRY
-		assert(!T_(trie_next)(&it, 0, 0));
-#else
 		assert(!T_(trie_next)(&it, 0));
-#endif
 	}
 	T_(trie_)(&trie), assert(!trie.root), PT_(valid)(&trie);
 	assert(!errno);
@@ -562,18 +556,22 @@ static void PT_(test_random)(void) {
 		size_t j;
 		if((unsigned)rand() > size * (RAND_MAX / (2 * expectation))) {
 			/* Create item. */
-			PT_(entry) *entry, **handle;
-			PT_(key) key; /* FIX */
-			if(!(entry = PT_(entry_pool_new)(&entries))) goto catch;
-			T_(filler)(entry);
-			key = *entry; //FIXME
+			PT_(entry) *epool, **handle
+#ifdef TRIE_ENTRY
+				, *e
+#endif
+				;
+			PT_(key) key;
+			if(!(epool = PT_(entry_pool_new)(&entries))) goto catch;
+			T_(filler)(epool);
+			key = PT_(entry_key)(epool);
 			/*printf("Creating %s: ", PT_(key_string)(key));*/
 			switch(
-#ifndef TRIE_ENTRY /* <!-- key set */
-			T_(trie_try)(&trie, *entry) /* FIXME? */
-#else /* key set --><!-- map */
-			T_(trie_try)(&trie, key, &value)
-#endif /* map --> */
+#ifdef TRIE_ENTRY
+				T_(trie_try)(&trie, key, &e)
+#else
+				T_(trie_try)(&trie, key)
+#endif
 			) {
 			case TRIE_ERROR:
 				/*printf("error.\n");*/
@@ -582,20 +580,24 @@ static void PT_(test_random)(void) {
 				/*printf("unique.\n");*/
 				size++;
 #ifdef TRIE_ENTRY
-				*value = *entry;
+				*e = *epool;
 #endif
 				if(!(handle = PT_(handle_array_new)(&handles))) goto catch;
-				*handle = entry;
+				*handle = epool;
 				break;
 			case TRIE_PRESENT:
 				/*printf("present.\n");*/
-				PT_(entry_pool_remove)(&entries, entry);
+				PT_(entry_pool_remove)(&entries, epool);
 				break;
 			}
 		} else { /* Delete item. */
 			unsigned r = (unsigned)rand() / (RAND_MAX / handles.size + 1);
 			PT_(entry) *handle = handles.data[r];
-			const char *const string = T_(string)(*handle); /*FIX*/
+#ifdef TRIE_ENTRY
+			const char *const string = T_(string)(T_(key)(handle));
+#else
+			const char *const string = T_(string)(*handle);
+#endif
 			int success;
 			/*printf("Deleting %s.\n", string);*/
 			success = T_(trie_remove)(&trie, string), assert(success);
@@ -610,7 +612,10 @@ static void PT_(test_random)(void) {
 			PT_(remit) r;
 			/*PT_(entry) *e = T_(trie_get)(&trie,
 				PT_(key_string)(PT_(entry_key)(handles.data[j]))); */
-#if defined(TREE_ENTRY) || !defined(TRIE_KEY)
+#ifdef TRIE_ENTRY
+			r = T_(trie_get)(&trie, T_(string)(T_(key)(handles.data[j])));
+			assert(r);
+#elif !defined(TRIE_KEY)
 			r = T_(trie_get)(&trie, T_(string)(*handles.data[j]));
 			assert(r);
 #else

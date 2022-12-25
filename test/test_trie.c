@@ -187,22 +187,24 @@ finally:
 	colour_trie_(&trie);
 }
 
-#if 0
-/* An unsigned value associated with an external string as a map. This is a
- convenience that defines `mapint_trie_entry` with key and value already there.
- We expect it to be slightly slower on update because the entry is larger. */
+
+/* An unsigned value associated with an external string as a map. When
+ `TREE_ENTRY` is defined, we no longer have a way to output the keys
+ automatically. The user must copy the key into the pointer manually. */
+struct kv { const char *key; unsigned value; };
+/** @return Picks the key from `kv`. @implements <typedef:<T>key> */
+static const char *kv_key(const struct kv *const kv) { return kv->key; }
 /** Generate a `key` (from `str_pool`) and `value`. */
-static void mapint_filler(const char **const key, unsigned *const value) {
-	assert(key), str_filler(key);
-	assert(value), *value = 42;
-}
-#define TRIE_NAME mapint
-#define TRIE_ENTRY unsigned
+static void kv_filler(struct kv *const kv)
+	{ assert(kv), str_filler(&kv->key), kv->value = 42; }
+#define TRIE_NAME kv
+#define TRIE_ENTRY struct kv
 #define TRIE_TO_STRING
 #define TRIE_TEST
 #include "../src/trie.h"
 
 
+#if 0
 /** This is functionally very similar to a map, except there is only one
  pointer. The key is now part of the value, so one has to define projection
  functions. */
@@ -357,8 +359,8 @@ int main(void) {
 	str_trie_test(), str32_pool_clear(&str_pool); /* Key set. */
 	fixed_colour_test();
 	colour_trie_test(); /* Custom key set with enum string backing. */
+	kv_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */
 #if 0
-	mapint_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */
 	foo_trie_test(), str32_pool_clear(&str_pool); /* Custom value. */
 	str8_trie_test(); /* Small key set with no dependancy on outside keys. */
 	keyval_trie_test(), keyval_pool_(&kv_pool); /* Pointer to index. */
