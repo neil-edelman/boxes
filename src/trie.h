@@ -172,7 +172,8 @@ struct T_(trie) { struct PT_(tree) *root; };
 
 struct PT_(ref) { struct PT_(tree) *tree; unsigned lf; };
 
-/** @return Given `ref`, get the remit. */
+/** @return Given `ref`, get the remit, which is either a pointer or the entry
+ itself. */
 static PT_(remit) PT_(ref_to_remit)(const struct PT_(ref) *const ref) {
 #ifdef TRIE_ENTRY
 	return &ref->tree->leaf[ref->lf].as_entry;
@@ -603,7 +604,7 @@ static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
 		prev.tree = tree, prev.lf = ye.lf;
 		tree = tree->leaf[ye.lf].as_link; /* Jumped trees. */
 	}
-	rm.tree = tree, rm.lf = ye.lf; // = &tree->leaf[ye.lf].as_entry;
+	rm.tree = tree, rm.lf = ye.lf;
 	if(strcmp(PT_(ref_to_string)(&rm), string)) return 0;
 	/* If a branch, branch not taken's skip merges with the parent. */
 	if(no.br0 < no.br1) {
@@ -829,7 +830,7 @@ static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
 	return it;
 }
 
-/** @return Whether advancing `it` to the next element and filling `entry`, if
+/** @return Whether advancing `it` to the next element and filling `remit`, if
  not-null. @order \O(\log |`trie`|) @allow */
 static int T_(trie_next)(struct T_(trie_iterator) *const it,
 	PT_(remit) *const remit) {

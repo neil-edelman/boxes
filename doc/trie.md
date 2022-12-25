@@ -137,7 +137,7 @@ Represents a range of in\-order keys in &#927;\(1\) space\.
 
 <tr><td align = right>static &lt;PT&gt;remit</td><td><a href = "#user-content-fn-d0ca0cba">&lt;T&gt;trie_get</a></td><td>trie, string</td></tr>
 
-<tr><td align = right>static enum trie_result</td><td><a href = "#user-content-fn-6750ab7">&lt;T&gt;trie_try</a></td><td>trie, key, value</td></tr>
+<tr><td align = right>static enum trie_result</td><td><a href = "#user-content-fn-6750ab7">&lt;T&gt;trie_try</a></td><td>trie, key, entry</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-7b28a4ea">&lt;T&gt;trie_remove</a></td><td>trie, string</td></tr>
 
@@ -145,7 +145,7 @@ Represents a range of in\-order keys in &#927;\(1\) space\.
 
 <tr><td align = right>static struct &lt;T&gt;trie_iterator</td><td><a href = "#user-content-fn-b720a682">&lt;T&gt;trie_prefix</a></td><td>trie, prefix</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-f36d1483">&lt;T&gt;trie_next</a></td><td>it, result</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-f36d1483">&lt;T&gt;trie_next</a></td><td>it, remit</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
@@ -214,7 +214,7 @@ Clears every entry in a valid `trie` \(can be null\), but it continues to be act
 
 <code>static &lt;PT&gt;remit <strong>&lt;T&gt;trie_match</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code>
 
-Looks at only the index of `trie` for potential `string` \(can both be null\) matches\. Does not access the string itself, thus will ignore the bits that are not in the index\. If may not have a null, the `result` is stuck as a pointer on the end and a `trie_result` is returned\.
+Looks at only the index of `trie` for potential `string` \(can both be null\) matches\. Does not access the string itself, thus will ignore the bits that are not in the index\. If may not have a null, the `remit` is stuck as a pointer on the end and a `trie_result` is returned\.
 
  * Return:  
    A candidate match for `string` or null\.
@@ -228,7 +228,7 @@ Looks at only the index of `trie` for potential `string` \(can both be null\) ma
 
 <code>static &lt;PT&gt;remit <strong>&lt;T&gt;trie_get</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code>
 
-If may not have a null, the `result` is stuck as a pointer on the end and a `trie_result` is returned\.
+If may not have a null, the `remit` is stuck as a pointer on the end and a `trie_result` is returned\.
 
  * Return:  
    Exact `string` match for `trie` or null, \(both can be null\.\)
@@ -240,14 +240,18 @@ If may not have a null, the `result` is stuck as a pointer on the end and a `tri
 
 ### <a id = "user-content-fn-6750ab7" name = "user-content-fn-6750ab7">&lt;T&gt;trie_try</a> ###
 
-<code>static enum trie_result <strong>&lt;T&gt;trie_try</strong>(struct &lt;T&gt;trie *const <em>trie</em>, const &lt;PT&gt;key <em>key</em>, &lt;PT&gt;entry **const <em>value</em>)</code>
+<code>static enum trie_result <strong>&lt;T&gt;trie_try</strong>(struct &lt;T&gt;trie *const <em>trie</em>, const &lt;PT&gt;key <em>key</em>, &lt;PT&gt;entry **const <em>entry</em>)</code>
 
 Adds `key` to `trie` if it doesn't exist already\.
 
- * Parameter: _value_  
-   Only if `TRIE_ENTRY` is set will this parameter exist\. Output pointer\. Can be null only if `TRIE_KEY_IN_VALUE` was not defined\.
+If `TRIE_ENTRY` was specified and the return is `TRIE_ABSENT`, the trie is in an invalid state until filling in the key with an equivalent `key`\. \(Because [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) is not invertible; trie is agnostic of the method of getting the key\.\)
+
+
+
+ * Parameter: _entry_  
+   Output pointer\. Only if `TRIE_ENTRY` is set will this parameter exist\.
  * Return:  
-   One of, `TRIE_ERROR`, `errno` is set and `value` is not; `TRIE_ABSENT`, added to `trie`, and uninitialized `value` is associated with `key`; `TRIE_PRESENT`, the value associated with `key`\. If `TRIE_IN_VALUE`, was specified and the return is `TRIE_ABSENT`, the trie is in an invalid state until filling in the key in value by `key`\.
+   One of, `TRIE_ERROR`, `errno` is set and `entry` is not; `TRIE_ABSENT`, `key` is added to `trie`; `TRIE_PRESENT`, the value associated with `key`\.
  * Exceptional return: EILSEQ  
    The string has a distinguishing run of bytes with a neighbouring string that is too long\. On most platforms, this is about 32 bytes the same\.
  * Exceptional return: malloc  
@@ -303,10 +307,10 @@ Counts the of the items in `it`\.
 
 ### <a id = "user-content-fn-f36d1483" name = "user-content-fn-f36d1483">&lt;T&gt;trie_next</a> ###
 
-<code>static int <strong>&lt;T&gt;trie_next</strong>(struct &lt;T&gt;trie_iterator *const <em>it</em>, &lt;PT&gt;remit *const <em>result</em>)</code>
+<code>static int <strong>&lt;T&gt;trie_next</strong>(struct &lt;T&gt;trie_iterator *const <em>it</em>, &lt;PT&gt;remit *const <em>remit</em>)</code>
 
  * Return:  
-   Whether advancing `it` to the next element and filling `entry`, if not\-null\.
+   Whether advancing `it` to the next element and filling `remit`, if not\-null\.
  * Order:  
    &#927;\(log |`trie`|\)
 
@@ -323,8 +327,6 @@ Counts the of the items in `it`\.
    Address of the static buffer\.
  * Order:  
    &#920;\(1\)
-
-
 
 
 
