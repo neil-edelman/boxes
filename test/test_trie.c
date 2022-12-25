@@ -134,7 +134,8 @@ static void contrived_test(void) {
 	str_trie_(&t);
 }
 
-#if 0
+
+#ifdef WHAT
 /* This is a custom key; uses `TRIE_KEY` to forward the keys to `colours`.
  Internally, a trie is a collection of fixed trees that have `union` leaves
  with a pointer-to-tree; there therefore is no optimization to shrinking the
@@ -188,8 +189,9 @@ catch:
 finally:
 	colour_trie_(&trie);
 }
+#endif
 
-
+#if 0
 /* An unsigned value associated with an external string as a map. This is a
  convenience that defines `mapint_trie_entry` with key and value already there.
  We expect it to be slightly slower on update because the entry is larger. */
@@ -357,9 +359,11 @@ int main(void) {
 	errno = 0;
 	contrived_test(), str32_pool_clear(&str_pool);
 	str_trie_test(), str32_pool_clear(&str_pool); /* Key set. */
-#if 0
+#ifdef WHAT
 	fixed_colour_test();
 	colour_trie_test(); /* Custom key set with enum string backing. */
+#endif
+#if 0
 	mapint_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */
 	foo_trie_test(), str32_pool_clear(&str_pool); /* Custom value. */
 	str8_trie_test(); /* Small key set with no dependancy on outside keys. */

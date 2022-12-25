@@ -396,14 +396,7 @@ static void PT_(test)(void) {
 	struct { PT_(entry) entry; int is_in; } tests[2000], *test_end, *test;
 	const size_t tests_size = sizeof tests / sizeof *tests;
 	PT_(result) r;
-#if !defined(TRIE_KEY) && !defined(TRIE_ENTRY)
 	PT_(key) k;
-#else
-#error
-#ifdef TRIE_ENTRY
-	PT_(entry) *entry;
-#endif
-#endif
 
 	/* Idle. */
 	errno = 0;
@@ -470,7 +463,6 @@ static void PT_(test)(void) {
 		unsigned count_letter = 0;
 		struct T_(trie_iterator) it;
 		int output = 0;
-		PT_(key) k;
 		letter[0] = (char)i, letter[1] = '\0';
 		it = T_(trie_prefix)(&trie, letter);
 		while(
