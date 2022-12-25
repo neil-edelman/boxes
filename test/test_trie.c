@@ -161,7 +161,6 @@ static void colour_filler(enum colour *const c)
 	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
 #define TRIE_NAME colour
 #define TRIE_KEY enum colour
-#define TRIE_DEFAULT Purple + 1
 #define TRIE_TO_STRING
 #define TRIE_TEST
 #include "../src/trie.h"

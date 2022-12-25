@@ -36,11 +36,6 @@
  the entry is the key. Requires <typedef:<PT>key_fn> `<T>key`, that picks out
  <typedef:<PT>key> from <typedef:<PT>entry>.
 
- @param[TRIE_DEFAULT]
- Optional <typedef:<PT>result> that is the get default trait; usually is a null
- pointer, but when `TRIE_KEY` is set but `TRIE_ENTRY` is not, the null element
- might not be a member of the set of <typedef:<PT>result>.
-
  @param[TRIE_TO_STRING]
  To string trait `<STR>` contained in <src/to_string.h>. The unnamed trait is
  automatically supplied by the string, but others require
@@ -126,10 +121,6 @@ static int trie_is_prefix(const char *prefix, const char *word) {
 
 
 #ifndef TRIE_TRAIT /* <!-- base trie */
-
-#ifndef TRIE_DEFAULT
-#define TRIE_DEFAULT 0
-#endif
 
 #ifdef TRIE_KEY /* <!-- indirect */
 /** The default is `const char *`. If one sets `TRIE_KEY` to something other
@@ -715,27 +706,50 @@ static void T_(trie_clear)(struct T_(trie) *const trie) {
 	trie->root->bsize = USHRT_MAX; /* Hysteresis. */
 }
 
-/** Looks at only the index of `trie` for potential `string` (can both
- be null) matches. Does not access the string itself, thus will ignore the
- bits that are not in the index.
+#if defined(TREE_ENTRY) || !defined(TRIE_KEY) /* <!-- pointer */
+
+/** Looks at only the index of `trie` for potential `string` (can both be null)
+ matches. Does not access the string itself, thus will ignore the bits that are
+ not in the index. If may not have a null, the `result` is stuck as a pointer
+ on the end and a `trie_result` is returned.
  @return A candidate match for `string` or null. @order \O(|`string`|) @allow */
 static PT_(result) T_(trie_match)(const struct T_(trie) *const trie,
 	const char *const string) {
 	struct PT_(ref) ref;
-	const PT_(result) zero = (TRIE_DEFAULT);
 	return trie && string && PT_(match)(trie, string, &ref)
-		? PT_(ref_to_result)(&ref) : zero;
+		? PT_(ref_to_result)(&ref) : 0;
 }
 
-/** @return Exact `string` match for `trie` or null, (both can be null.)
+/** If may not have a null, the `result` is stuck as a pointer on the end and a
+ `trie_result` is returned.
+ @return Exact `string` match for `trie` or null, (both can be null.)
  @order \O(\log |`trie`|) iid @allow */
 static PT_(result) T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const string) {
 	struct PT_(ref) ref;
-	const PT_(result) zero = (TRIE_DEFAULT);
 	return trie && string && PT_(get)(trie, string, &ref)
-		? PT_(ref_to_result)(&ref) : zero;
+		? PT_(ref_to_result)(&ref) : 0;
 }
+
+#else /* pointer --><!-- no-null? */
+/** `string` match for `trie` -> `result`. */
+static enum trie_result T_(trie_match)(const struct T_(trie) *const trie,
+	const char *const string, PT_(result) *const result) {
+	struct PT_(ref) ref;
+	assert(result);
+	return trie && string && PT_(match)(trie, string, &ref)
+		? (*result = PT_(ref_to_result)(&ref), TRIE_PRESENT) : TRIE_ABSENT;
+}
+/** `string` exact match for `trie` -> `result`. */
+static enum trie_result T_(trie_get)(const struct T_(trie) *const trie,
+	const char *const string, PT_(result) *const result) {
+	struct PT_(ref) ref;
+	assert(result);
+	return trie && string && PT_(get)(trie, string, &ref)
+		? (*result = PT_(ref_to_result)(&ref), TRIE_PRESENT) : TRIE_ABSENT;
+}
+#endif /* no-null? --> */
+
 
 #ifndef TRIE_ENTRY /* <!-- key set */
 /** Adds `key` to `trie` (which must both exist) if it doesn't exist. */
@@ -825,13 +839,15 @@ static int T_(trie_next)(struct T_(trie_iterator) *const it,
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
 	T_(trie)(); T_(trie_)(0); T_(trie_clear)(0);
-#if defined TRIE_ENTRY || !defined TRIE_KEY
+#if defined(TREE_ENTRY) || !defined(TRIE_KEY)
 	T_(trie_match)(0, 0); T_(trie_get)(0, 0);
-#endif
-#ifndef TRIE_ENTRY
-	T_(trie_try)(0, 0); T_(trie_next)(0, 0);
 #else
+	T_(trie_match)(0, 0, 0); T_(trie_get)(0, 0, 0);
+#endif
+#ifdef TRIE_ENTRY
 	T_(trie_try)(0, 0, 0); T_(trie_next)(0, 0, 0);
+#else
+	T_(trie_try)(0, 0); T_(trie_next)(0, 0);
 #endif
 	T_(trie_remove)(0, 0); T_(trie_prefix)(0, 0); /*T_(trie_size)(0);*/
 	PT_(unused_base_coda)();
@@ -900,7 +916,6 @@ static void PTT_(to_string)(const struct PT_(ref) *const r,
 #undef BOX_MAJOR_NAME
 #undef BOX_MINOR_NAME
 #undef TRIE_NAME
-#undef TRIE_DEFAULT
 #ifdef TRIE_ENTRY
 #undef TRIE_ENTRY
 #endif

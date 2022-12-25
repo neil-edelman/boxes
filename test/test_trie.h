@@ -412,8 +412,12 @@ static void PT_(test)(void) {
 	PT_(valid)(&trie);
 	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-idle.gv", 0);
 	T_(trie_)(&trie), PT_(valid)(&trie);
+#if defined(TREE_ENTRY) || !defined(TRIE_KEY)
 	k = T_(trie_match)(&trie, ""), assert(!k);
 	k = T_(trie_get)(&trie, ""), assert(!k);
+#else
+#error
+#endif
 
 	/* Make random data. */
 	for(test = tests, test_end = test + tests_size; test < test_end; test++)
@@ -459,7 +463,11 @@ static void PT_(test)(void) {
 	/* Check keys -- there's some key that's there. */
 	for(i = 0; i < tests_size; i++) {
 		const char *estring, *const tstring = T_(string)(tests[i].entry);
+#if defined(TREE_ENTRY) || !defined(TRIE_KEY)
 		r = T_(trie_get)(&trie, tstring);
+#else
+#error
+#endif
 		assert(r);
 		estring = PT_(result_to_string)(r);
 		printf("<%s->%s>\n", estring, tstring);
@@ -490,7 +498,11 @@ static void PT_(test)(void) {
 			count += count_letter;
 		} else { /* Sentinel; "" gets all the trie. */
 			assert(count_letter == unique);
+#if defined(TREE_ENTRY) || !defined(TRIE_KEY)
 			if(T_(trie_get)(&trie, "")) count++; /* Is "" included? */
+#else
+#error
+#endif
 		}
 	}
 	printf("Counted by letter %lu elements, checksum %lu.\n",
@@ -600,9 +612,14 @@ static void PT_(test_random)(void) {
 		if(i % (5 * expectation / 10) == 5 * expectation / 20)
 			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
 		for(j = 0; j < handles.size; j++) {
+			PT_(result) r;
 			/*PT_(entry) *e = T_(trie_get)(&trie,
 				PT_(key_string)(PT_(entry_key)(handles.data[j]))); */
-			PT_(result) r = T_(trie_get)(&trie, T_(string)(*handles.data[j]));
+#if defined(TREE_ENTRY) || !defined(TRIE_KEY)
+			r = T_(trie_get)(&trie, T_(string)(*handles.data[j]));
+#else
+#error
+#endif
 			assert(r);
 		}
 	}
