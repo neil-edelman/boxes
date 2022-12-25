@@ -188,13 +188,39 @@ finally:
 }
 
 
-/** A string as a map key implemented as above with unsigned value associated.
- We no longer have a way to output the keys automatically. The user must copy
- the key into the pointer manually. */
+/* Stores a value in the leaf itself and not externally. Optimally, would be a
+ pointer's length. It's entirely self-contained inside the trie, with the
+ downside of moving data. */
+struct str8 { char str[8]; };
+static const char *str8_key(const struct str8 *const s) { return s->str; }
+static void str8_filler(struct str8 *const s) {
+#if 0
+	/* This is not enough range. */
+	orcish(s->str, sizeof s->str);
+#else
+	static const char alphabet[] = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		"abcdefghijklmnopqrstuvwxyz~";
+	unsigned i;
+	for(i = 0; i < 7; i++) s->str[i]
+		= alphabet[rand() / (RAND_MAX / ((int)sizeof alphabet - 1) + 1)];
+	s->str[i] = '\0';
+#endif
+}
+#define TRIE_NAME str8
+#define TRIE_ENTRY struct str8
+#define TRIE_TO_STRING
+#define TRIE_TEST
+#include "../src/trie.h"
+
+
+/** A map from string key implemented as a pointer to unsigned value. We no
+ longer have a way to output the keys automatically. The user must copy the key
+ into the pointer manually. */
 struct kv1 { const char *key; unsigned value; };
 /** @return Picks the key from `kv`. @implements <typedef:<T>key> */
 static const char *kv1_key(const struct kv1 *const kv) { return kv->key; }
-/** Generate a `key` (from `str_pool`) and `value`. */
+/** Generate a `key` (from `str_pool`) and `value`.
+ @implements <typedef:<T>filler> */
 static void kv1_filler(struct kv1 *const kv)
 	{ assert(kv), str_filler(&kv->key), kv->value = 42; }
 #define TRIE_NAME kv1
@@ -217,40 +243,9 @@ static void kv2_filler(struct kv2 *const kv) {
 #define TRIE_TEST
 #include "../src/trie.h"
 
-#if 0
-/* Stores a value in the leaf itself and not externally. This structure is
- sensitive to the size of the leaves; optimally, would be a pointer's length,
- (which this example is on 64-byte machines.) The attraction of this is not
- that it is faster, but it's convenient to not store keys somewhere else,
- (somewhere bigger.) */
-struct str8 { char str[8]; };
-static const char *str8_key(const struct str8 *const s) { return s->str; }
-static void str8_filler(struct str8 *const s) {
-#if 0
-	/* This is not enough range. */
-	orcish(s->str, sizeof s->str);
-#else
-	static const char alphabet[] = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-		"abcdefghijklmnopqrstuvwxyz~";
-	unsigned i;
-	for(i = 0; i < 7; i++) s->str[i]
-		= alphabet[rand() / (RAND_MAX / ((int)sizeof alphabet - 1) + 1)];
-	s->str[i] = '\0';
-#endif
-}
-#define TRIE_NAME str8
-#define TRIE_ENTRY struct str8
-#define TRIE_KEY_IN_VALUE &str8_key
-#define TRIE_TO_STRING
-#define TRIE_TEST
-#include "../src/trie.h"
-
-
-
 
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
- Sol. The trie is a copy of this table, _vs_ the actual table if we would have
- used pointers. */
+ Sol. */
 #define STARS \
 	X(Sol, 0), X(Sirius, 8.6), X(Canopus, 310), X(Rigil Kentaurus, 4.4), \
 	X(Toliman, 4.4), X(Arcturus, 37), X(Vega, 25), X(Capella, 43), \
@@ -291,7 +286,6 @@ static void star_filler(struct star *const star) {
 }
 #define TRIE_NAME star
 #define TRIE_ENTRY struct star
-#define TRIE_KEY_IN_VALUE
 #define TRIE_TEST
 #define TRIE_TO_STRING
 #include "../src/trie.h"
@@ -323,7 +317,6 @@ static void article_test(void) {
 	trie_star_graph(&trie, "graph/article.gv", 1);
 	star_trie_(&trie);
 }
-#endif
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
@@ -333,13 +326,10 @@ int main(void) {
 	str_trie_test(), str32_pool_clear(&str_pool);
 	fixed_colour_test();
 	colour_trie_test();
-	kv1_trie_test(), str32_pool_clear(&str_pool);
+	str8_trie_test();
+	kv1_trie_test(), str32_pool_(&str_pool);
 	kv2_trie_test();
-#if 0
-	str8_trie_test(); /* Small key set with no dependancy on outside keys. */
-	star_trie_test(); /* Custom value with enum strings backing. */
+	star_trie_test();
 	article_test();
-#endif
-	str32_pool_(&str_pool);
 	return EXIT_SUCCESS;
 }
