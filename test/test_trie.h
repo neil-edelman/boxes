@@ -379,6 +379,14 @@ static void PT_(valid)(const struct T_(trie) *const trie) {
 	PT_(valid_tree)(trie->root);
 }
 
+static PT_(key) PT_(entry_key)(const PT_(entry) *entry) {
+#ifdef TRIE_ENTRY
+	return T_(key)(entry);
+#else
+	return *entry;
+#endif
+}
+
 static void PT_(test)(void) {
 	struct T_(trie) trie = T_(trie)();
 	size_t i, unique, count;
@@ -389,11 +397,11 @@ static void PT_(test)(void) {
 	const size_t tests_size = sizeof tests / sizeof *tests;
 	PT_(result) r;
 #if !defined(TRIE_KEY) && !defined(TRIE_ENTRY)
-	PT_(key) thing;
+	PT_(key) k;
 #else
 #error
 #ifdef TRIE_ENTRY
-	PT_(entry) *v;
+	PT_(entry) *entry;
 #endif
 #endif
 
@@ -403,22 +411,12 @@ static void PT_(test)(void) {
 	PT_(valid)(&trie);
 	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-idle.gv", 0);
 	T_(trie_)(&trie), PT_(valid)(&trie);
-	thing = T_(trie_match)(&trie, ""), assert(!thing);
-	thing = T_(trie_get)(&trie, ""), assert(!thing);
+	k = T_(trie_match)(&trie, ""), assert(!k);
+	k = T_(trie_get)(&trie, ""), assert(!k);
 
 	/* Make random data. */
-	for(test = tests, test_end = test + tests_size; test < test_end; test++) {
-#ifndef TRIE_ENTRY /* <!-- key set */
-		T_(filler)(&test->entry);
-#elif !defined(TRIE_KEY_IN_VALUE) /* ket set --><!-- key map */
-		T_(filler)(&test->entry.key, &test->entry.value);
-#else /* key map --><!-- custom */
-		T_(filler)(&test->entry);
-#endif /* custom --> */
-		test->is_in = 0;
-	}
-	/*for(test = tests, test_end = test + tests_size; test < test_end; test++)
-		printf("%s\n", PT_(key_string)(PT_(entry_key)(&test->entry)));*/
+	for(test = tests, test_end = test + tests_size; test < test_end; test++)
+		T_(filler)(&test->entry), test->is_in = 0;
 
 	/* Adding. */
 	unique = 0;
@@ -426,13 +424,10 @@ static void PT_(test)(void) {
 	for(i = 0; i < tests_size; i++) {
 		int show = !((i + 1) & i) || i + 1 == tests_size;
 		PT_(key) key;
-#ifdef TRIE_ENTRY
-		PT_(entry) *value;
-#endif
 		test = tests + i;
-		key = /*T_(key)(&*/test->entry;
+		key = PT_(entry_key)(&test->entry);
 		if(show) printf("%lu: adding %s.\n",
-			(unsigned long)i, /*PT_(key_string)(key)*/"<>");
+			(unsigned long)i, T_(string)(test->entry));
 		switch(
 #ifndef TRIE_ENTRY /* <!-- key set */
 		T_(trie_try)(&trie, key)

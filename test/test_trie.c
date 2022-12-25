@@ -26,8 +26,8 @@ static struct str32_pool str_pool; /* Global random string buffer. */
 /** Generate a random name from `global_pool` and assign it to `key`. */
 static void str_filler(const char **const key) {
 	struct str32 *backing = str32_pool_new(&str_pool);
-	/* Unlikely to fail, but for tests, we don't have recourse to back out. */
-	assert(backing && key);
+	/* Unlikely to fail, but for tests, we don't have the set-up to back-out. */
+	assert(backing && key); if(!backing || !key) exit(EXIT_FAILURE);
 	orcish(backing->str, sizeof backing->str);
 	*key = backing->str;
 }

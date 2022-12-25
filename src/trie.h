@@ -34,9 +34,7 @@
  @param[TRIE_ENTRY]
  Optional <typedef:<PT>entry> that contains the key, the default of which is
  the entry is the key. Requires <typedef:<PT>key_fn> `<T>key`, that picks out
- <typedef:<PT>key> from <typedef:<PT>entry>. (This is kind of like a key-value
- pair, expect the user might want to have more control over memory the value,
- so the value is in the key; this makes it an entry.)
+ <typedef:<PT>key> from <typedef:<PT>entry>.
 
  @param[TRIE_TO_STRING]
  To string trait `<STR>` contained in <src/to_string.h>. The unnamed trait is
@@ -133,8 +131,8 @@ static int trie_is_prefix(const char *prefix, const char *word) {
 typedef TRIE_KEY PT_(key);
 #else /* indirect --><!-- !indirect */
 typedef const char *PT_(key);
-/** @return The string of `key` is itself, by default.
- @implements <typedef:<PT>string_fn> */
+/** @return The string of `key` is itself, by default. This is implicit, so we
+ supply this function. @implements <typedef:<PT>string_fn> */
 static const char *T_(string)(const char *const key) { return key; }
 #endif /* !indirect --> */
 
@@ -158,7 +156,8 @@ typedef PT_(key) *PT_(result);
 #if 0 /* <!-- documentation */
 /** Transforms a <typedef:<PT>key> into a `const char *`. */
 typedef const char *(*PT_(string_fn))(PT_(key));
-/** Extracts <typedef:<PT>key> from <typedef:<PT>entry>. */
+/** Extracts <typedef:<PT>key> from <typedef:<PT>entry>. (This has been
+ designed this way so that  */
 typedef PT_(key) (*PT_(key_fn))(const PT_(entry) *);
 #endif /* documentation --> */
 
