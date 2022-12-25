@@ -366,7 +366,7 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 /** Thunk `n` -> `a`. */
 static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12]) {
 #ifdef HEAP_VALUE
-	HT_(to_string)(n->priority, 0, a);
+	HT_(to_string)(n->priority, n->value, a);
 #else
 	HT_(to_string)(n, a);
 #endif
