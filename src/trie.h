@@ -37,9 +37,9 @@
  <typedef:<PT>key> from <typedef:<PT>entry>.
 
  @param[TRIE_DEFAULT]
- Get or default trait. It is required when `TRIE_KEY` is set but `TRIE_ENTRY`
- is not; that is, the null element might not be a member of the set of
- <typedef:<PT>result>.
+ Optional <typedef:<PT>result> that is the get default trait; usually is a null
+ pointer, but when `TRIE_KEY` is set but `TRIE_ENTRY` is not, the null element
+ might not be a member of the set of <typedef:<PT>result>.
 
  @param[TRIE_TO_STRING]
  To string trait `<STR>` contained in <src/to_string.h>. The unnamed trait is
@@ -66,9 +66,6 @@
 #if defined(TRIE_TEST) && (!defined(TRIE_TRAIT) && !defined(TRIE_TO_STRING) \
 	|| defined(TRIE_TRAIT) && !defined(TRIE_HAS_TO_STRING))
 #error Test requires to string.
-#endif
-#if !defined(TRIE_ENTRY) && defined(TRIE_KEY) && !defined(TRIE_DEFAULT)
-#error Custom TRIE_KEY without TRIE_DEFAULT leaves no way to access.
 #endif
 
 
@@ -718,8 +715,6 @@ static void T_(trie_clear)(struct T_(trie) *const trie) {
 	trie->root->bsize = USHRT_MAX; /* Hysteresis. */
 }
 
-#if defined TRIE_ENTRY || !defined TRIE_KEY /* <!-- pointer */
-
 /** Looks at only the index of `trie` for potential `string` (can both
  be null) matches. Does not access the string itself, thus will ignore the
  bits that are not in the index.
@@ -727,8 +722,9 @@ static void T_(trie_clear)(struct T_(trie) *const trie) {
 static PT_(result) T_(trie_match)(const struct T_(trie) *const trie,
 	const char *const string) {
 	struct PT_(ref) ref;
+	const PT_(result) zero = (TRIE_DEFAULT);
 	return trie && string && PT_(match)(trie, string, &ref)
-		? PT_(ref_to_result)(&ref) : 0;
+		? PT_(ref_to_result)(&ref) : zero;
 }
 
 /** @return Exact `string` match for `trie` or null, (both can be null.)
@@ -736,11 +732,10 @@ static PT_(result) T_(trie_match)(const struct T_(trie) *const trie,
 static PT_(result) T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const string) {
 	struct PT_(ref) ref;
+	const PT_(result) zero = (TRIE_DEFAULT);
 	return trie && string && PT_(get)(trie, string, &ref)
-		? PT_(ref_to_result)(&ref) : 0;
+		? PT_(ref_to_result)(&ref) : zero;
 }
-
-#endif /* pointer --> */
 
 #ifndef TRIE_ENTRY /* <!-- key set */
 /** Adds `key` to `trie` (which must both exist) if it doesn't exist. */
@@ -896,41 +891,6 @@ static void PTT_(to_string)(const struct PT_(ref) *const r,
 #endif /* test --> */
 
 
-#ifdef TRIE_DEFAULT /* <!-- default trait */
-#ifdef TREE_TRAIT
-#define T_D_(n, m) TREE_CAT(T_(n), TREE_CAT(TREE_TRAIT, m))
-#else
-#define T_D_(n, m) TREE_CAT(T_(n), m)
-#endif
-#define PT_D_(n, m) TREE_CAT(tree, T_D_(n, m))
-/** This is not finished.
- @return The value associated with `key` in `trie`, (which can be null.) If
- no such value exists, the `TREE_DEFAULT` is returned.
- @order \O(\log |`tree`|). @allow */
-static PT_(result) T_D_(trie, get)(const struct T_(trie) *const trie,
-	const PT_(key) key) {
-	struct PT_(ref) ref;
-	/* `TREE_DEFAULT` is a valid <tag:<PB>value>. */
-	static const PT_(entry) PT_D_(default, value) = (TREE_DEFAULT);
-	return tree && tree->root.node && tree->root.height != UINT_MAX
-		&& (ref = PT_(find)(&tree->root, key)).node
-		? *PT_(ref_to_valuep)(ref) : PT_D_(default, value);
-}
-/** @return Exact `string` match for `trie` or null, (both can be null.)
- @order \O(\log |`trie`|) iid @allow */
-static PT_(result) T_(trie_get)(const struct T_(trie) *const trie,
-	const char *const string) {
-	struct PT_(ref) ref;
-	return trie && string && PT_(get)(trie, string, &ref)
-		? PT_(ref_to_result)(&ref) : 0;
-}
-
-
-#undef T_D_
-#undef PT_D_
-#endif /* default trait --> */
-
-
 #ifdef TRIE_EXPECT_TRAIT /* <!-- more */
 #undef TRIE_EXPECT_TRAIT
 #else /* more --><!-- done */
@@ -940,14 +900,12 @@ static PT_(result) T_(trie_get)(const struct T_(trie) *const trie,
 #undef BOX_MAJOR_NAME
 #undef BOX_MINOR_NAME
 #undef TRIE_NAME
+#undef TRIE_DEFAULT
 #ifdef TRIE_ENTRY
 #undef TRIE_ENTRY
 #endif
 #ifdef TRIE_KEY
 #undef TRIE_KEY
-#endif
-#ifdef TRIE_KEY_IN_VALUE
-#undef TRIE_KEY_IN_VALUE
 #endif
 #ifdef TRIE_HAS_TO_STRING
 #undef TRIE_HAS_TO_STRING
