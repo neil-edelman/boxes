@@ -36,13 +36,15 @@
  the entry is the key. Requires <typedef:<PT>key_fn> `<T>key`, that picks out
  <typedef:<PT>key> from <typedef:<PT>entry>.
 
+ @param[TRIE_DEFAULT]
+ Get or default trait. It is required when `TRIE_KEY` is set but `TRIE_ENTRY`
+ is not; that is, the null element might not be a member of the set of
+ <typedef:<PT>result>.
+
  @param[TRIE_TO_STRING]
  To string trait `<STR>` contained in <src/to_string.h>. The unnamed trait is
  automatically supplied by the string, but others require
 `<name><trait>to_string` be declared as <typedef:<PSTR>to_string_fn>.
-
- @param[TRIE_DEFAULT]
- Get or default set default. (fixme: upcoming.) (Why does this not have it?)
 
  @param[TRIE_EXPECT_TRAIT, TRIE_TRAIT]
  Named traits are obtained by including `trie.h` multiple times with
@@ -65,6 +67,10 @@
 	|| defined(TRIE_TRAIT) && !defined(TRIE_HAS_TO_STRING))
 #error Test requires to string.
 #endif
+#if !defined(TRIE_ENTRY) && defined(TRIE_KEY) && !defined(TRIE_DEFAULT)
+#error Custom TRIE_KEY without TRIE_DEFAULT leaves no way to access.
+#endif
+
 
 #ifndef TRIE_H /* <!-- idempotent */
 #define TRIE_H
@@ -124,6 +130,10 @@ static int trie_is_prefix(const char *prefix, const char *word) {
 
 #ifndef TRIE_TRAIT /* <!-- base trie */
 
+#ifndef TRIE_DEFAULT
+#define TRIE_DEFAULT 0
+#endif
+
 #ifdef TRIE_KEY /* <!-- indirect */
 /** The default is `const char *`. If one sets `TRIE_KEY` to something other
  than that, then one must also declare `<P>string` as a
@@ -141,17 +151,11 @@ static const char *T_(string)(const char *const key) { return key; }
  <typedef:<PT>key_fn>; otherwise a set and <typedef:<PT>entry> and
  <typedef:<PT>key> are the same. */
 typedef TRIE_ENTRY PT_(entry);
+typedef PT_(entry) *PT_(result);
 #else /* entry --><!-- set */
 typedef PT_(key) PT_(entry);
+typedef PT_(key) PT_(result);
 #endif /* set --> */
-
-#if defined(TRIE_ENTRY) || !defined(TRIE_KEY) /* <!-- pointer */
-/** A pointer reference to <typedef:<PT>entry> or just a <typedef:<PT>key>. */
-typedef PT_(entry) PT_(result);
-#else /* pointer --><!-- set not sure */
-#error
-typedef PT_(key) *PT_(result);
-#endif /* set not sure --> */
 
 #if 0 /* <!-- documentation */
 /** Transforms a <typedef:<PT>key> into a `const char *`. */
@@ -183,18 +187,11 @@ struct PT_(ref) { struct PT_(tree) *tree; unsigned lf; };
 
 /** @return Given `ref`, get the result. */
 static PT_(result) PT_(ref_to_result)(const struct PT_(ref) *const ref) {
-#if defined(TRIE_ENTRY) || !defined(TRIE_KEY) /* <!-- pointer */
+#ifdef TRIE_ENTRY
+#error
+#else
 	return ref->tree->leaf[ref->lf].as_entry;
-#else /* pointer --><!-- set not sure */
-#error
-#endif /* set not sure --> */
-}
-static const char *PT_(result_to_string)(const PT_(result) result) {
-#if defined(TRIE_ENTRY) || !defined(TRIE_KEY) /* <!-- pointer */
-	return T_(string)(result);
-#else /* pointer --><!-- set not sure */
-#error
-#endif /* set not sure --> */
+#endif
 }
 /** @return Given `ref`, get the string. */
 static const char *PT_(ref_to_string)(const struct PT_(ref) *const ref) {
@@ -582,160 +579,6 @@ catch:
 	return TRIE_ERROR;
 }
 
-
-
-/** Zeroed data (not all-bits-zero) is initialized. @return An idle tree.
- @order \Theta(1) @allow */
-static struct T_(trie) T_(trie)(void)
-	{ struct T_(trie) trie = { 0 }; return trie; }
-
-#if 0
-/** Initializes `trie` from an `array` of pointers-to-`<T>` of `array_size`.
- @return Success. @throws[realloc] @order \O(`array_size`) @allow
- @fixme Write this function, somehow. */
-static int T_(trie_from_array)(struct T_(trie) *const trie,
-	PT_(type) *const*const array, const size_t array_size) {
-	return assert(trie && array && array_size),
-		PT_(init)(trie, array, array_size);
-}
-#endif
-
-/** Returns any initialized `trie` (can be null) to idle.
- @order \O(|`trie`|) @allow */
-static void T_(trie_)(struct T_(trie) *const trie) {
-	if(!trie || !trie->root) return; /* Null or idle. */
-	if(trie->root->bsize != USHRT_MAX) PT_(clear_r)(trie->root); /* Contents. */
-	free(trie->root); /* Empty. */
-	*trie = T_(trie)();
-}
-
-/** Clears every entry in a valid `trie` (can be null), but it continues to be
- active if it is not idle. @order \O(|`trie`|) @allow */
-static void T_(trie_clear)(struct T_(trie) *const trie) {
-	if(!trie || !trie->root) return; /* Null or idle. */
-	if(trie->root->bsize != USHRT_MAX) PT_(clear_r)(trie->root); /* Contents. */
-	trie->root->bsize = USHRT_MAX; /* Hysteresis. */
-}
-
-#if defined(TRIE_ENTRY) || !defined(TRIE_KEY) /* <!-- nullable */
-
-/** Looks at only the index of `trie` for potential `string` (can both
- be null) matches. Does not access the string itself, thus will ignore the
- bits that are not in the index.
- @return A candidate match for `string` or null. @order \O(|`string`|) @allow */
-static PT_(result) T_(trie_match)(const struct T_(trie) *const trie,
-	const char *const string) {
-	struct PT_(ref) ref;
-	return trie && string && PT_(match)(trie, string, &ref)
-		? PT_(ref_to_result)(&ref) : 0;
-}
-
-/** @return Exact `string` match for `trie` or null, (both can be null.)
- @order \O(\log |`trie`|) iid @allow */
-static PT_(result) T_(trie_get)(const struct T_(trie) *const trie,
-	const char *const string) {
-	struct PT_(ref) ref;
-	return trie && string && PT_(get)(trie, string, &ref)
-		? PT_(ref_to_result)(&ref) : 0;
-}
-
-#else /* nullable --><!-- maybe not nullable */
-
-#error
-
-/** Looks at only the index of `trie` for potential `string` matches; can both
- be null. Does not access the string itself, thus will ignore the bits that are
- not in the index. @return A candidate match for `string` or `default_key`.
- @order \O(|`string`|) @allow */
-static PT_(key) T_(trie_match_or)(const struct T_(trie) *const trie,
-	const char *const string, PT_(key) default_key) {
-	struct PT_(ref) ref;
-	return trie && string && PT_(match)(trie, string, &ref)
-		? ref.tree->leaf[ref.lf].as_entry : default_key;
-}
-/** @return Exact `string` match for `trie` or null, (both can be null.)
- @order \O(\log |`trie`|) iid @allow */
-static PT_(entry_ref) T_(trie_get)(const struct T_(trie) *const trie,
-	const char *const string)
-	{ return trie && string ? PT_(get)(trie, string) : 0; }
-
-#endif /* maybe not nullable --> */
-
-/** Represents a range of in-order keys in \O(1) space. */
-struct T_(trie_iterator);
-struct T_(trie_iterator) { struct PT_(iterator) _; };
-
-/** @return An iterator set to strings that start with `prefix` in `trie`.
- It is valid until a topological change to `trie`. Calling <fn:<T>trie_next>
- will iterate them in order.
- @param[prefix] To fill with the entire `trie`, use the empty string.
- @order \O(|`prefix`|) @allow */
-static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
-	const char *const prefix) {
-	struct T_(trie_iterator) it;
-	it._ = PT_(prefix)(trie, prefix);
-	return it;
-}
-
-/** @return Whether advancing `it` to the next element and filling `entry`, if
- not-null. @order \O(\log |`trie`|) @allow */
-static int T_(trie_next)(struct T_(trie_iterator) *const it,
-	PT_(result) *const result) {
-	struct PT_(ref) *r;
-	if(!PT_(next)(&it->_, &r)) return 0;
-	if(result) *result = r->tree->leaf[r->lf].as_entry;
-	return 1;
-}
-
-#if 0
-/* Haven't figured out the best way to do this. */
-/** @return The number of elements in `it`. */
-static size_t PT_(size_r)(const struct PT_(iterator) *const it) {
-	return it->end.lf - it->cur.lf; /* Fixme. */
-}
-/** Counts the of the items in `it`. @order \O(|`it`|) @allow
- @fixme Doesn't work at all. */
-static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
-	{ return assert(it), PT_(size_r)(&it->_); }
-#endif
-
-#ifndef TRIE_ENTRY /* <!-- key set */
-/** Adds `key` to `trie` (which must both exist) if it doesn't exist. */
-static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
-	const PT_(key) key) {
-	assert(trie && T_(string)(key));
-	return PT_(add)(trie, key, 0);
-}
-#else /* key set --><!-- key value map OR key in value */
-/** Adds `key` to `trie` if it doesn't exist already.
- @param[value] Only if `TRIE_ENTRY` is set will this parameter exist. Output
- pointer. Can be null only if `TRIE_KEY_IN_VALUE` was not defined.
- @return One of, `TRIE_ERROR`, `errno` is set and `value` is not;
- `TRIE_ABSENT`, added to `trie`, and uninitialized `value` is associated with
- `key`; `TRIE_PRESENT`, the value associated with `key`. If `TRIE_IN_VALUE`,
- was specified and the return is `TRIE_ABSENT`, the trie is in an invalid state
- until filling in the key in value by `key`.
- @order \O(\log |`trie`|)
- @throws[EILSEQ] The string has a distinguishing run of bytes with a
- neighbouring string that is too long. On most platforms, this is about
- 32 bytes the same. @throws[malloc] @allow */
-static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
-	const PT_(key) key, PT_(entry) **const value) {
-	enum trie_result res;
-	PT_(entry) *e;
-	assert(trie && PT_(key_string)(key));
-	if(res = PT_(add)(trie, key, &e)) {
-#ifndef TRIE_KEY_IN_VALUE /* <!-- key value map */
-		if(value) *value = &e->value;
-#else /* key value map --><!-- key in value */
-		assert(value); /* One _has_ to set the key in the value. */
-		*value = e;
-#endif /* key in value --> */
-	}
-	return res;
-}
-#endif /* trie value map OR key in value --> */
-
 /** Try to remove `string` from `trie`. @fixme Join when combined-half is less
  than a quarter? Probably crucial to performance in some corner cases. */
 static int PT_(remove)(struct T_(trie) *const trie, const char *const string) {
@@ -840,6 +683,102 @@ erased_tree:
 	tree->bsize = USHRT_MAX;
 	return 1;
 }
+
+
+/** Zeroed data (not all-bits-zero) is initialized. @return An idle tree.
+ @order \Theta(1) @allow */
+static struct T_(trie) T_(trie)(void)
+	{ struct T_(trie) trie = { 0 }; return trie; }
+
+#if 0
+/** Initializes `trie` from an `array` of pointers-to-`<T>` of `array_size`.
+ @return Success. @throws[realloc] @order \O(`array_size`) @allow
+ @fixme Write this function, somehow. */
+static int T_(trie_from_array)(struct T_(trie) *const trie,
+	PT_(type) *const*const array, const size_t array_size) {
+	return assert(trie && array && array_size),
+		PT_(init)(trie, array, array_size);
+}
+#endif
+
+/** Returns any initialized `trie` (can be null) to idle.
+ @order \O(|`trie`|) @allow */
+static void T_(trie_)(struct T_(trie) *const trie) {
+	if(!trie || !trie->root) return; /* Null or idle. */
+	if(trie->root->bsize != USHRT_MAX) PT_(clear_r)(trie->root); /* Contents. */
+	free(trie->root); /* Empty. */
+	*trie = T_(trie)();
+}
+
+/** Clears every entry in a valid `trie` (can be null), but it continues to be
+ active if it is not idle. @order \O(|`trie`|) @allow */
+static void T_(trie_clear)(struct T_(trie) *const trie) {
+	if(!trie || !trie->root) return; /* Null or idle. */
+	if(trie->root->bsize != USHRT_MAX) PT_(clear_r)(trie->root); /* Contents. */
+	trie->root->bsize = USHRT_MAX; /* Hysteresis. */
+}
+
+#if defined TRIE_ENTRY || !defined TRIE_KEY /* <!-- pointer */
+
+/** Looks at only the index of `trie` for potential `string` (can both
+ be null) matches. Does not access the string itself, thus will ignore the
+ bits that are not in the index.
+ @return A candidate match for `string` or null. @order \O(|`string`|) @allow */
+static PT_(result) T_(trie_match)(const struct T_(trie) *const trie,
+	const char *const string) {
+	struct PT_(ref) ref;
+	return trie && string && PT_(match)(trie, string, &ref)
+		? PT_(ref_to_result)(&ref) : 0;
+}
+
+/** @return Exact `string` match for `trie` or null, (both can be null.)
+ @order \O(\log |`trie`|) iid @allow */
+static PT_(result) T_(trie_get)(const struct T_(trie) *const trie,
+	const char *const string) {
+	struct PT_(ref) ref;
+	return trie && string && PT_(get)(trie, string, &ref)
+		? PT_(ref_to_result)(&ref) : 0;
+}
+
+#endif /* pointer --> */
+
+#ifndef TRIE_ENTRY /* <!-- key set */
+/** Adds `key` to `trie` (which must both exist) if it doesn't exist. */
+static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
+	const PT_(key) key) {
+	assert(trie && T_(string)(key));
+	return PT_(add)(trie, key, 0);
+}
+#else /* key set --><!-- key value map OR key in value */
+/** Adds `key` to `trie` if it doesn't exist already.
+ @param[value] Only if `TRIE_ENTRY` is set will this parameter exist. Output
+ pointer. Can be null only if `TRIE_KEY_IN_VALUE` was not defined.
+ @return One of, `TRIE_ERROR`, `errno` is set and `value` is not;
+ `TRIE_ABSENT`, added to `trie`, and uninitialized `value` is associated with
+ `key`; `TRIE_PRESENT`, the value associated with `key`. If `TRIE_IN_VALUE`,
+ was specified and the return is `TRIE_ABSENT`, the trie is in an invalid state
+ until filling in the key in value by `key`.
+ @order \O(\log |`trie`|)
+ @throws[EILSEQ] The string has a distinguishing run of bytes with a
+ neighbouring string that is too long. On most platforms, this is about
+ 32 bytes the same. @throws[malloc] @allow */
+static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
+	const PT_(key) key, PT_(entry) **const value) {
+	enum trie_result res;
+	PT_(entry) *e;
+	assert(trie && PT_(key_string)(key));
+	if(res = PT_(add)(trie, key, &e)) {
+#ifndef TRIE_KEY_IN_VALUE /* <!-- key value map */
+		if(value) *value = &e->value;
+#else /* key value map --><!-- key in value */
+		assert(value); /* One _has_ to set the key in the value. */
+		*value = e;
+#endif /* key in value --> */
+	}
+	return res;
+}
+#endif /* trie value map OR key in value --> */
+
 /** Tries to remove `string` from `trie`.
  @return Success. If either parameter is null or the `string` is not in `trie`,
  returns false without setting `errno`.
@@ -850,17 +789,56 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
 	const char *const string)
 	{ return trie && string && PT_(remove)(trie, string); }
 
+/** Represents a range of in-order keys in \O(1) space. */
+struct T_(trie_iterator);
+struct T_(trie_iterator) { struct PT_(iterator) _; };
+
+#if 0
+/* Haven't figured out the best way to do this. */
+/** @return The number of elements in `it`. */
+static size_t PT_(size_r)(const struct PT_(iterator) *const it) {
+	return it->end.lf - it->cur.lf; /* Fixme. */
+}
+/** Counts the of the items in `it`. @order \O(|`it`|) @allow
+ @fixme Doesn't work at all. */
+static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
+	{ return assert(it), PT_(size_r)(&it->_); }
+#endif
+
+/** @return An iterator set to strings that start with `prefix` in `trie`.
+ It is valid until a topological change to `trie`. Calling <fn:<T>trie_next>
+ will iterate them in order.
+ @param[prefix] To fill with the entire `trie`, use the empty string.
+ @order \O(|`prefix`|) @allow */
+static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
+	const char *const prefix) {
+	struct T_(trie_iterator) it;
+	it._ = PT_(prefix)(trie, prefix);
+	return it;
+}
+
+/** @return Whether advancing `it` to the next element and filling `entry`, if
+ not-null. @order \O(\log |`trie`|) @allow */
+static int T_(trie_next)(struct T_(trie_iterator) *const it,
+	PT_(result) *const result) {
+	struct PT_(ref) *r;
+	if(!PT_(next)(&it->_, &r)) return 0;
+	if(result) *result = r->tree->leaf[r->lf].as_entry;
+	return 1;
+}
+
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
 	T_(trie)(); T_(trie_)(0); T_(trie_clear)(0);
+#if defined TRIE_ENTRY || !defined TRIE_KEY
 	T_(trie_match)(0, 0); T_(trie_get)(0, 0);
+#endif
 #ifndef TRIE_ENTRY
 	T_(trie_try)(0, 0); T_(trie_next)(0, 0);
 #else
 	T_(trie_try)(0, 0, 0); T_(trie_next)(0, 0, 0);
 #endif
-	T_(trie_remove)(0, 0);
-	T_(trie_prefix)(0, 0); /*T_(trie_size)(0);*/
+	T_(trie_remove)(0, 0); T_(trie_prefix)(0, 0); /*T_(trie_size)(0);*/
 	PT_(unused_base_coda)();
 }
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
@@ -919,19 +897,17 @@ static void PTT_(to_string)(const struct PT_(ref) *const r,
 
 
 #ifdef TRIE_DEFAULT /* <!-- default trait */
-#error Unfinished.
 #ifdef TREE_TRAIT
 #define T_D_(n, m) TREE_CAT(T_(n), TREE_CAT(TREE_TRAIT, m))
-#define PT_D_(n, m) TREE_CAT(tree, B_T_(n, m))
 #else
 #define T_D_(n, m) TREE_CAT(T_(n), m)
-#define PT_D_(n, m) TREE_CAT(tree, T_D_(n, m))
 #endif
+#define PT_D_(n, m) TREE_CAT(tree, T_D_(n, m))
 /** This is not finished.
  @return The value associated with `key` in `trie`, (which can be null.) If
  no such value exists, the `TREE_DEFAULT` is returned.
  @order \O(\log |`tree`|). @allow */
-static PT_(entry) T_D_(tree, get)(const struct T_(trie) *const trie,
+static PT_(result) T_D_(trie, get)(const struct T_(trie) *const trie,
 	const PT_(key) key) {
 	struct PT_(ref) ref;
 	/* `TREE_DEFAULT` is a valid <tag:<PB>value>. */
@@ -940,6 +916,18 @@ static PT_(entry) T_D_(tree, get)(const struct T_(trie) *const trie,
 		&& (ref = PT_(find)(&tree->root, key)).node
 		? *PT_(ref_to_valuep)(ref) : PT_D_(default, value);
 }
+/** @return Exact `string` match for `trie` or null, (both can be null.)
+ @order \O(\log |`trie`|) iid @allow */
+static PT_(result) T_(trie_get)(const struct T_(trie) *const trie,
+	const char *const string) {
+	struct PT_(ref) ref;
+	return trie && string && PT_(get)(trie, string, &ref)
+		? PT_(ref_to_result)(&ref) : 0;
+}
+
+
+#undef T_D_
+#undef PT_D_
 #endif /* default trait --> */
 
 

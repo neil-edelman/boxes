@@ -135,6 +135,7 @@ static void contrived_test(void) {
 }
 
 
+#define WHAT
 #ifdef WHAT
 /* This is a custom key; uses `TRIE_KEY` to forward the keys to `colours`.
  Internally, a trie is a collection of fixed trees that have `union` leaves

@@ -387,6 +387,14 @@ static PT_(key) PT_(entry_key)(const PT_(entry) *entry) {
 #endif
 }
 
+static const char *PT_(result_to_string)(const PT_(result) result) {
+#ifdef TRIE_ENTRY
+#error
+#else
+	return T_(string)(result);
+#endif
+}
+
 static void PT_(test)(void) {
 	struct T_(trie) trie = T_(trie)();
 	size_t i, unique, count;
