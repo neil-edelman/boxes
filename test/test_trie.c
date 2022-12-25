@@ -132,10 +132,11 @@ static void contrived_test(void) {
 }
 
 
-/* This is a custom key; uses `TRIE_KEY` to forward the keys to `colours`.
- Internally, a trie is a collection of fixed trees that have `union` leaves
- with a pointer-to-tree; there therefore is no optimization to shrinking the
- size of the data past a pointer. */
+/* Set of `enum colour`. The set is necessarily alphabetically ordered, and can
+ efficiently tell which colour names are starting with a prefix. This stores
+ 2 bytes overhead and an `enum colour` for each in the set. It forwards one
+ request _per_ query _via_ `colour_string` (required iff `TRIE_KEY`) to a
+ static string array `colours`. */
 #define COLOUR \
 	X(White), X(Silver), X(Gray), X(Black), X(Red), X(Maroon), X(Bisque), \
 	X(Wheat), X(Tan), X(Sienna), X(Brown), X(Yellow), X(Khaki), X(Gold), \

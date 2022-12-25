@@ -478,7 +478,7 @@ static void PT_(test)(void) {
 		}
 #endif
 		estring = PT_(remit_to_string)(r);
-		printf("<%s->%s>\n", estring, tstring);
+		/*printf("<%s->%s>\n", estring, tstring);*/
 		assert(!strcmp(estring, tstring));
 	}
 	/* Add up all the letters; should be equal to the overall count. */
