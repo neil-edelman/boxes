@@ -736,17 +736,21 @@ static PT_(result) T_(trie_get)(const struct T_(trie) *const trie,
 static enum trie_result T_(trie_match)(const struct T_(trie) *const trie,
 	const char *const string, PT_(result) *const result) {
 	struct PT_(ref) ref;
-	assert(result);
-	return trie && string && PT_(match)(trie, string, &ref)
-		? (*result = PT_(ref_to_result)(&ref), TRIE_PRESENT) : TRIE_ABSENT;
+	if(trie && string && PT_(match)(trie, string, &ref)) {
+		if(result) *result = PT_(ref_to_result)(&ref);
+		return TRIE_PRESENT;
+	}
+	return TRIE_ABSENT;
 }
 /** `string` exact match for `trie` -> `result`. */
 static enum trie_result T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const string, PT_(result) *const result) {
 	struct PT_(ref) ref;
-	assert(result);
-	return trie && string && PT_(get)(trie, string, &ref)
-		? (*result = PT_(ref_to_result)(&ref), TRIE_PRESENT) : TRIE_ABSENT;
+	if(trie && string && PT_(get)(trie, string, &ref)) {
+		if(result) *result = PT_(ref_to_result)(&ref);
+		return TRIE_PRESENT;
+	}
+	return TRIE_ABSENT;
 }
 #endif /* no-null? --> */
 

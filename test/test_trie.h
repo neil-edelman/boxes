@@ -416,7 +416,11 @@ static void PT_(test)(void) {
 	k = T_(trie_match)(&trie, ""), assert(!k);
 	k = T_(trie_get)(&trie, ""), assert(!k);
 #else
-#error
+	{
+		enum trie_result tr;
+		tr = T_(trie_match)(&trie, "", &k), assert(tr == TRIE_ABSENT);
+		tr = T_(trie_get)(&trie, "", &k), assert(tr == TRIE_ABSENT);
+	}
 #endif
 
 	/* Make random data. */
@@ -465,10 +469,14 @@ static void PT_(test)(void) {
 		const char *estring, *const tstring = T_(string)(tests[i].entry);
 #if defined(TREE_ENTRY) || !defined(TRIE_KEY)
 		r = T_(trie_get)(&trie, tstring);
-#else
-#error
-#endif
 		assert(r);
+#else
+		{
+			enum trie_result tr;
+			tr = T_(trie_get)(&trie, tstring, &r);
+			assert(tr == TRIE_PRESENT);
+		}
+#endif
 		estring = PT_(result_to_string)(r);
 		printf("<%s->%s>\n", estring, tstring);
 		assert(!strcmp(estring, tstring));
@@ -501,7 +509,7 @@ static void PT_(test)(void) {
 #if defined(TREE_ENTRY) || !defined(TRIE_KEY)
 			if(T_(trie_get)(&trie, "")) count++; /* Is "" included? */
 #else
-#error
+			if(T_(trie_get)(&trie, "", 0) == TRIE_PRESENT) count++;
 #endif
 		}
 	}
@@ -617,10 +625,14 @@ static void PT_(test_random)(void) {
 				PT_(key_string)(PT_(entry_key)(handles.data[j]))); */
 #if defined(TREE_ENTRY) || !defined(TRIE_KEY)
 			r = T_(trie_get)(&trie, T_(string)(*handles.data[j]));
-#else
-#error
-#endif
 			assert(r);
+#else
+			{
+				enum trie_result tr;
+				tr = T_(trie_get)(&trie, T_(string)(*handles.data[j]), &r);
+				assert(tr == TRIE_PRESENT);
+			}
+#endif
 		}
 	}
 	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
