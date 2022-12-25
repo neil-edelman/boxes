@@ -44,8 +44,8 @@ static void contrived_test(void) {
 		"foobar", "foo", "dictionary", "dictionaries" };
 	unsigned i, count, count2, count3 = 0, letters[UCHAR_MAX];
 	struct str_trie t = str_trie();
-	int result;
-	enum trie_result trlt;
+	enum trie_result r;
+	int success;
 	/* Histogram of letters. */
 	memset(letters, 0, sizeof letters);
 	printf("Contrived manual test of set <str>trie.\n");
@@ -62,16 +62,16 @@ static void contrived_test(void) {
 		(unsigned long)sizeof(struct trie_str_tree));
 	assert(CHAR_BIT == 8 && ' ' ^ '!' == 1); /* Assumed UTF-8 for tests. */
 	errno = 0;
-	trlt = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ");
-	assert(trlt == TRIE_ABSENT);
-	trlt = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 256 */
-	assert(trlt == TRIE_ERROR && errno == EILSEQ), errno = 0;
-	trlt = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa!"); /* 255 */
-	assert(trlt == TRIE_ABSENT);
-	trlt = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 0 */
-	assert(trlt == TRIE_ABSENT);
-	result = str_trie_remove(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa!");
-	assert(!result && errno == EILSEQ), errno = 0;
+	r = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ");
+	assert(r == TRIE_ABSENT);
+	r = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 256 */
+	assert(r == TRIE_ERROR && errno == EILSEQ), errno = 0;
+	r = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa!"); /* 255 */
+	assert(r == TRIE_ABSENT);
+	r = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 0 */
+	assert(r == TRIE_ABSENT);
+	success = str_trie_remove(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa!");
+	assert(!success && errno == EILSEQ), errno = 0;
 	trie_str_graph(&t, "graph/contrived-max.gv", 0);
 	str_trie_clear(&t);
 	for(count = 0, i = 0; i < sizeof words / sizeof *words; i++) {
@@ -112,21 +112,18 @@ static void contrived_test(void) {
 	assert(count2 == count);
 	assert(count3 == count);
 	{
-		enum trie_result r;
 		r = str_trie_try(&t, "a"), assert(r == TRIE_PRESENT);
 		r = str_trie_try(&t, "yo"), assert(r == TRIE_ABSENT);
 		trie_str_graph(&t, "graph/yo.gv", 0);
-		result = str_trie_remove(&t, "yo");
-		assert(result);
+		success = str_trie_remove(&t, "yo"), assert(success);
 		trie_str_graph(&t, "graph/yo.gv", 1);
 	}
-	result = str_trie_remove(&t, "yo");
-	assert(!result);
+	success = str_trie_remove(&t, "yo"), assert(!success);
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
 		const char *const word = words[i];
 		printf("Delete <%s>.\n", word);
-		result = str_trie_remove(&t, word);
-		if(result) count--;
+		success = str_trie_remove(&t, word);
+		if(success) count--;
 		else printf("Didn't find <%s>.\n", word);
 		trie_str_graph(&t, "graph/contrived-delete.gv", i);
 	}
@@ -135,8 +132,6 @@ static void contrived_test(void) {
 }
 
 
-#define WHAT
-#ifdef WHAT
 /* This is a custom key; uses `TRIE_KEY` to forward the keys to `colours`.
  Internally, a trie is a collection of fixed trees that have `union` leaves
  with a pointer-to-tree; there therefore is no optimization to shrinking the
@@ -190,7 +185,6 @@ catch:
 finally:
 	colour_trie_(&trie);
 }
-#endif
 
 #if 0
 /* An unsigned value associated with an external string as a map. This is a
@@ -360,10 +354,8 @@ int main(void) {
 	errno = 0;
 	contrived_test(), str32_pool_clear(&str_pool);
 	str_trie_test(), str32_pool_clear(&str_pool); /* Key set. */
-#ifdef WHAT
 	fixed_colour_test();
 	colour_trie_test(); /* Custom key set with enum string backing. */
-#endif
 #if 0
 	mapint_trie_test(), str32_pool_clear(&str_pool); /* `string -> int`. */
 	foo_trie_test(), str32_pool_clear(&str_pool); /* Custom value. */

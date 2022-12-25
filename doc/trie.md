@@ -5,8 +5,8 @@ Header [\.\./src/trie\.h](../src/trie.h) requires [\.\./src/bmp\.h](../src/bmp.h
 ## Prefix tree ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;key](#user-content-typedef-eeee1b4a), [&lt;PT&gt;string_fn](#user-content-typedef-fda6adfb), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [trie_result](#user-content-tag-eb9850a3), [&lt;T&gt;trie_entry](#user-content-tag-1422bb56), [&lt;T&gt;trie](#user-content-tag-754a10a5), [&lt;T&gt;trie_iterator](#user-content-tag-854250a4)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PT&gt;key](#user-content-typedef-eeee1b4a), [&lt;PT&gt;entry](#user-content-typedef-41052ced), [&lt;PT&gt;remit](#user-content-typedef-b92c77f8), [&lt;PT&gt;string_fn](#user-content-typedef-fda6adfb), [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [trie_result](#user-content-tag-eb9850a3), [&lt;T&gt;trie](#user-content-tag-754a10a5), [&lt;T&gt;trie_iterator](#user-content-tag-854250a4)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -27,18 +27,16 @@ The worse\-case run\-time of querying or modifying is bounded by &#927;\(|`strin
    Required `<T>` that satisfies `C` naming conventions when mangled\. `<PT>` is private, whose names are prefixed in a manner to avoid collisions\.
  * Parameter: TRIE\_KEY  
    Optional [&lt;PT&gt;key](#user-content-typedef-eeee1b4a), the default of which is `const char *`\. Requires implementation of [&lt;PT&gt;string_fn](#user-content-typedef-fda6adfb) `<T>string` to convert [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) to a `const char *`\.
- * Parameter: TRIE\_VALUE  
-   Optional [&lt;PT&gt;value](#user-content-typedef-cc753b30) that contains the key, the default of which is the value is the key\. Requires [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f) `<T>key`, that picks out [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) from [&lt;PT&gt;value](#user-content-typedef-cc753b30)\.
+ * Parameter: TRIE\_ENTRY  
+   Optional [&lt;PT&gt;entry](#user-content-typedef-41052ced) that contains the key, the default of which is the entry is the key\. Requires [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f) `<T>key`, that picks out [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) from [&lt;PT&gt;entry](#user-content-typedef-41052ced)\.
  * Parameter: TRIE\_TO\_STRING  
    To string trait `<STR>` contained in [src/to\_string\.h](src/to_string.h)\. The unnamed trait is automatically supplied by the string, but others require `<name><trait>to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
- * Parameter: TRIE\_DEFAULT  
-   Get or default set default\. \(fixme: upcoming\.\) \(Why does this not have it?\)
  * Parameter: TRIE\_EXPECT\_TRAIT, TRIE\_TRAIT  
    Named traits are obtained by including `trie.h` multiple times with `TRIE_EXPECT_TRAIT` and then subsequently including the name in `TRIE_TRAIT`\.
  * Standard:  
    C89 \(Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ\.\)
  * Caveat:  
-   This is a confusing interface\. TRIE_NAME,andoptionallyTRIE_VALUE, where custom `const char *to_string(value *)`, would allow maps\. ([&lt;T&gt;trie_from_array](#user-content-fn-3554106c), [&lt;T&gt;trie_size](#user-content-fn-b7ff4bcf))
+   This is a confusing interface\. TRIE_NAME,andoptionallyTRIE_ENTRY, where custom `const char *to_string(value *)`, would allow maps\. ([&lt;T&gt;trie_from_array](#user-content-fn-3554106c), [&lt;T&gt;trie_size](#user-content-fn-b7ff4bcf))
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -47,7 +45,23 @@ The worse\-case run\-time of querying or modifying is bounded by &#927;\(|`strin
 
 <code>typedef TRIE_KEY <strong>&lt;PT&gt;key</strong>;</code>
 
-The default is assignable `const char *`\. If one sets `TRIE_KEY` to something other than that, then one must also declare `<P>string` as a [&lt;PT&gt;string_fn](#user-content-typedef-fda6adfb)\.
+The default is `const char *`\. If one sets `TRIE_KEY` to something other than that, then one must also declare `<P>string` as a [&lt;PT&gt;string_fn](#user-content-typedef-fda6adfb)\.
+
+
+
+### <a id = "user-content-typedef-41052ced" name = "user-content-typedef-41052ced">&lt;PT&gt;entry</a> ###
+
+<code>typedef TRIE_ENTRY <strong>&lt;PT&gt;entry</strong>;</code>
+
+If `TRIE_ENTRY` is set, one must provide `<T>key` as a [&lt;PT&gt;key_fn](#user-content-typedef-1e6e6b3f); otherwise a set and [&lt;PT&gt;entry](#user-content-typedef-41052ced) and [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) are the same\.
+
+
+
+### <a id = "user-content-typedef-b92c77f8" name = "user-content-typedef-b92c77f8">&lt;PT&gt;remit</a> ###
+
+<code>typedef &lt;PT&gt;entry *<strong>&lt;PT&gt;remit</strong>;</code>
+
+Remit is either an extra indirection on [&lt;PT&gt;entry](#user-content-typedef-41052ced) on `TRIE_ENTRY` or not\.
 
 
 
@@ -55,15 +69,15 @@ The default is assignable `const char *`\. If one sets `TRIE_KEY` to something o
 
 <code>typedef const char *(*<strong>&lt;PT&gt;string_fn</strong>)(&lt;PT&gt;key);</code>
 
-Transforms a [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) into a `const char *`, if `TRIE_KEY` has been set\.
+Transforms a [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) into a `const char *`\.
 
 
 
 ### <a id = "user-content-typedef-1e6e6b3f" name = "user-content-typedef-1e6e6b3f">&lt;PT&gt;key_fn</a> ###
 
-<code>typedef &lt;PT&gt;key(*<strong>&lt;PT&gt;key_fn</strong>)(const &lt;PT&gt;value *);</code>
+<code>typedef &lt;PT&gt;key(*<strong>&lt;PT&gt;key_fn</strong>)(const &lt;PT&gt;entry *);</code>
 
-If `TRIE_KEY_IN_VALUE`, extracts the key from `TRIE_VALUE`; in this case, the user makes a contract to set the key on new entries before using the trie again, \(mostly, can still match, but not reliably modify the topology\.\)
+Extracts [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) from [&lt;PT&gt;entry](#user-content-typedef-41052ced)\. \(This has been designed this way so that
 
 
 
@@ -84,14 +98,6 @@ If `TRIE_KEY_IN_VALUE`, extracts the key from `TRIE_VALUE`; in this case, the us
 A result of modifying the table, of which `TRIE_ERROR` is false\.
 
 ![A diagram of the result states.](../doc/trie/result.png)
-
-
-
-### <a id = "user-content-tag-1422bb56" name = "user-content-tag-1422bb56">&lt;T&gt;trie_entry</a> ###
-
-<code>struct <strong>&lt;T&gt;trie_entry</strong> { &lt;PT&gt;key key; &lt;PT&gt;value value; };</code>
-
-On `KEY_VALUE` but not `KEY_KEY_IN_VALUE`, defines an entry\.
 
 
 
@@ -127,23 +133,21 @@ Represents a range of in\-order keys in &#927;\(1\) space\.
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-1e455cff">&lt;T&gt;trie_clear</a></td><td>trie</td></tr>
 
-<tr><td align = right>static &lt;PT&gt;entry *</td><td><a href = "#user-content-fn-46d99cc7">&lt;T&gt;trie_match</a></td><td>trie, string</td></tr>
+<tr><td align = right>static &lt;PT&gt;remit</td><td><a href = "#user-content-fn-46d99cc7">&lt;T&gt;trie_match</a></td><td>trie, string</td></tr>
 
-<tr><td align = right>static &lt;PT&gt;entry *</td><td><a href = "#user-content-fn-d0ca0cba">&lt;T&gt;trie_get</a></td><td>trie, string</td></tr>
-
-<tr><td align = right>static struct &lt;T&gt;trie_iterator</td><td><a href = "#user-content-fn-b720a682">&lt;T&gt;trie_prefix</a></td><td>trie, prefix</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-f36d1483">&lt;T&gt;trie_next</a></td><td>it, k, v</td></tr>
-
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a></td><td>it</td></tr>
+<tr><td align = right>static &lt;PT&gt;remit</td><td><a href = "#user-content-fn-d0ca0cba">&lt;T&gt;trie_get</a></td><td>trie, string</td></tr>
 
 <tr><td align = right>static enum trie_result</td><td><a href = "#user-content-fn-6750ab7">&lt;T&gt;trie_try</a></td><td>trie, key, value</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-7b28a4ea">&lt;T&gt;trie_remove</a></td><td>trie, string</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a></td><td>it</td></tr>
 
-<tr><td align = right>static &lt;PT&gt;value</td><td><a href = "#user-content-fn-36398d67">&lt;T&gt;tree&lt;D&gt;get</a></td><td>trie, key</td></tr>
+<tr><td align = right>static struct &lt;T&gt;trie_iterator</td><td><a href = "#user-content-fn-b720a682">&lt;T&gt;trie_prefix</a></td><td>trie, prefix</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-f36d1483">&lt;T&gt;trie_next</a></td><td>it, result</td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -208,9 +212,9 @@ Clears every entry in a valid `trie` \(can be null\), but it continues to be act
 
 ### <a id = "user-content-fn-46d99cc7" name = "user-content-fn-46d99cc7">&lt;T&gt;trie_match</a> ###
 
-<code>static &lt;PT&gt;entry *<strong>&lt;T&gt;trie_match</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code>
+<code>static &lt;PT&gt;remit <strong>&lt;T&gt;trie_match</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code>
 
-Looks at only the index of `trie` for potential `string` \(can both be null\) matches\. Does not access the string itself, thus will ignore the bits that are not in the index\.
+Looks at only the index of `trie` for potential `string` \(can both be null\) matches\. Does not access the string itself, thus will ignore the bits that are not in the index\. If may not have a null, the `result` is stuck as a pointer on the end and a `trie_result` is returned\.
 
  * Return:  
    A candidate match for `string` or null\.
@@ -222,7 +226,9 @@ Looks at only the index of `trie` for potential `string` \(can both be null\) ma
 
 ### <a id = "user-content-fn-d0ca0cba" name = "user-content-fn-d0ca0cba">&lt;T&gt;trie_get</a> ###
 
-<code>static &lt;PT&gt;entry *<strong>&lt;T&gt;trie_get</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code>
+<code>static &lt;PT&gt;remit <strong>&lt;T&gt;trie_get</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code>
+
+If may not have a null, the `result` is stuck as a pointer on the end and a `trie_result` is returned\.
 
  * Return:  
    Exact `string` match for `trie` or null, \(both can be null\.\)
@@ -232,54 +238,14 @@ Looks at only the index of `trie` for potential `string` \(can both be null\) ma
 
 
 
-### <a id = "user-content-fn-b720a682" name = "user-content-fn-b720a682">&lt;T&gt;trie_prefix</a> ###
-
-<code>static struct &lt;T&gt;trie_iterator <strong>&lt;T&gt;trie_prefix</strong>(struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>prefix</em>)</code>
-
- * Parameter: _prefix_  
-   To fill with the entire `trie`, use the empty string\.
- * Return:  
-   An iterator set to strings that start with `prefix` in `trie`\. It is valid until a topological change to `trie`\. Calling [&lt;T&gt;trie_next](#user-content-fn-f36d1483) will iterate them in order\.
- * Order:  
-   &#927;\(|`prefix`|\)
-
-
-
-
-### <a id = "user-content-fn-f36d1483" name = "user-content-fn-f36d1483">&lt;T&gt;trie_next</a> ###
-
-<code>static int <strong>&lt;T&gt;trie_next</strong>(struct &lt;T&gt;trie_iterator *const <em>it</em>, &lt;PT&gt;key *const <em>k</em>, &lt;PT&gt;value **<em>v</em>)</code>
-
- * Return:  
-   Whether advancing `it` to the next element and filling `k`, \(and `v` if a map, otherwise absent,\) if not\-null\.
- * Order:  
-   &#927;\(log |`trie`|\)
-
-
-
-
-### <a id = "user-content-fn-b7ff4bcf" name = "user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a> ###
-
-<code>static size_t <strong>&lt;T&gt;trie_size</strong>(const struct &lt;T&gt;trie_iterator *const <em>it</em>)</code>
-
-Counts the of the items in `it`\.
-
- * Order:  
-   &#927;\(|`it`|\)
- * Caveat:  
-   Doesn't work at all\.
-
-
-
-
 ### <a id = "user-content-fn-6750ab7" name = "user-content-fn-6750ab7">&lt;T&gt;trie_try</a> ###
 
-<code>static enum trie_result <strong>&lt;T&gt;trie_try</strong>(struct &lt;T&gt;trie *const <em>trie</em>, const &lt;PT&gt;key <em>key</em>, &lt;PT&gt;value **const <em>value</em>)</code>
+<code>static enum trie_result <strong>&lt;T&gt;trie_try</strong>(struct &lt;T&gt;trie *const <em>trie</em>, const &lt;PT&gt;key <em>key</em>, &lt;PT&gt;entry **const <em>value</em>)</code>
 
 Adds `key` to `trie` if it doesn't exist already\.
 
  * Parameter: _value_  
-   Only if `TRIE_VALUE` is set will this parameter exist\. Output pointer\. Can be null only if `TRIE_KEY_IN_VALUE` was not defined\.
+   Only if `TRIE_ENTRY` is set will this parameter exist\. Output pointer\. Can be null only if `TRIE_KEY_IN_VALUE` was not defined\.
  * Return:  
    One of, `TRIE_ERROR`, `errno` is set and `value` is not; `TRIE_ABSENT`, added to `trie`, and uninitialized `value` is associated with `key`; `TRIE_PRESENT`, the value associated with `key`\. If `TRIE_IN_VALUE`, was specified and the return is `TRIE_ABSENT`, the trie is in an invalid state until filling in the key in value by `key`\.
  * Exceptional return: EILSEQ  
@@ -307,6 +273,46 @@ Tries to remove `string` from `trie`\.
 
 
 
+### <a id = "user-content-fn-b7ff4bcf" name = "user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a> ###
+
+<code>static size_t <strong>&lt;T&gt;trie_size</strong>(const struct &lt;T&gt;trie_iterator *const <em>it</em>)</code>
+
+Counts the of the items in `it`\.
+
+ * Order:  
+   &#927;\(|`it`|\)
+ * Caveat:  
+   Doesn't work at all\.
+
+
+
+
+### <a id = "user-content-fn-b720a682" name = "user-content-fn-b720a682">&lt;T&gt;trie_prefix</a> ###
+
+<code>static struct &lt;T&gt;trie_iterator <strong>&lt;T&gt;trie_prefix</strong>(struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>prefix</em>)</code>
+
+ * Parameter: _prefix_  
+   To fill with the entire `trie`, use the empty string\.
+ * Return:  
+   An iterator set to strings that start with `prefix` in `trie`\. It is valid until a topological change to `trie`\. Calling [&lt;T&gt;trie_next](#user-content-fn-f36d1483) will iterate them in order\.
+ * Order:  
+   &#927;\(|`prefix`|\)
+
+
+
+
+### <a id = "user-content-fn-f36d1483" name = "user-content-fn-f36d1483">&lt;T&gt;trie_next</a> ###
+
+<code>static int <strong>&lt;T&gt;trie_next</strong>(struct &lt;T&gt;trie_iterator *const <em>it</em>, &lt;PT&gt;remit *const <em>result</em>)</code>
+
+ * Return:  
+   Whether advancing `it` to the next element and filling `entry`, if not\-null\.
+ * Order:  
+   &#927;\(log |`trie`|\)
+
+
+
+
 ### <a id = "user-content-fn-751c6337" name = "user-content-fn-751c6337">&lt;STR&gt;to_string</a> ###
 
 <code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
@@ -317,20 +323,6 @@ Tries to remove `string` from `trie`\.
    Address of the static buffer\.
  * Order:  
    &#920;\(1\)
-
-
-
-
-### <a id = "user-content-fn-36398d67" name = "user-content-fn-36398d67">&lt;T&gt;tree&lt;D&gt;get</a> ###
-
-<code>static &lt;PT&gt;value <strong>&lt;T&gt;tree&lt;D&gt;get</strong>(const struct &lt;T&gt;trie *const <em>trie</em>, const &lt;PT&gt;key <em>key</em>)</code>
-
-This is not finished\.
-
- * Return:  
-   The value associated with `key` in `trie`, \(which can be null\.\) If no such value exists, the `TREE_DEFAULT` is returned\.
- * Order:  
-   &#927;\(log |`tree`|\)\.
 
 
 

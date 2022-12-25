@@ -139,10 +139,12 @@ static const char *T_(string)(const char *const key) { return key; }
  <typedef:<PT>key_fn>; otherwise a set and <typedef:<PT>entry> and
  <typedef:<PT>key> are the same. */
 typedef TRIE_ENTRY PT_(entry);
-typedef PT_(entry) *PT_(result);
+/** Remit is either an extra indirection on <typedef:<PT>entry> on `TRIE_ENTRY`
+ or not. */
+typedef PT_(entry) *PT_(remit);
 #else /* entry --><!-- set */
 typedef PT_(key) PT_(entry);
-typedef PT_(key) PT_(result);
+typedef PT_(key) PT_(remit);
 #endif /* set --> */
 
 #if 0 /* <!-- documentation */
@@ -173,8 +175,8 @@ struct T_(trie) { struct PT_(tree) *root; };
 
 struct PT_(ref) { struct PT_(tree) *tree; unsigned lf; };
 
-/** @return Given `ref`, get the result. */
-static PT_(result) PT_(ref_to_result)(const struct PT_(ref) *const ref) {
+/** @return Given `ref`, get the remit. */
+static PT_(remit) PT_(ref_to_remit)(const struct PT_(ref) *const ref) {
 #ifdef TRIE_ENTRY
 #error
 #else
@@ -710,50 +712,49 @@ static void T_(trie_clear)(struct T_(trie) *const trie) {
 
 /** Looks at only the index of `trie` for potential `string` (can both be null)
  matches. Does not access the string itself, thus will ignore the bits that are
- not in the index. If may not have a null, the `result` is stuck as a pointer
- on the end and a `trie_result` is returned.
+ not in the index. If may not have a null, the `remit` is stuck as a pointer on
+ the end and a `trie_result` is returned.
  @return A candidate match for `string` or null. @order \O(|`string`|) @allow */
-static PT_(result) T_(trie_match)(const struct T_(trie) *const trie,
+static PT_(remit) T_(trie_match)(const struct T_(trie) *const trie,
 	const char *const string) {
 	struct PT_(ref) ref;
 	return trie && string && PT_(match)(trie, string, &ref)
-		? PT_(ref_to_result)(&ref) : 0;
+		? PT_(ref_to_remit)(&ref) : 0;
 }
 
-/** If may not have a null, the `result` is stuck as a pointer on the end and a
+/** If may not have a null, the `remit` is stuck as a pointer on the end and a
  `trie_result` is returned.
  @return Exact `string` match for `trie` or null, (both can be null.)
  @order \O(\log |`trie`|) iid @allow */
-static PT_(result) T_(trie_get)(const struct T_(trie) *const trie,
+static PT_(remit) T_(trie_get)(const struct T_(trie) *const trie,
 	const char *const string) {
 	struct PT_(ref) ref;
 	return trie && string && PT_(get)(trie, string, &ref)
-		? PT_(ref_to_result)(&ref) : 0;
+		? PT_(ref_to_remit)(&ref) : 0;
 }
 
-#else /* pointer --><!-- no-null? */
-/** `string` match for `trie` -> `result`. */
+#else /* pointer --><!-- enum? */
+/** `string` match for `trie` -> `remit`. */
 static enum trie_result T_(trie_match)(const struct T_(trie) *const trie,
-	const char *const string, PT_(result) *const result) {
+	const char *const string, PT_(remit) *const remit) {
 	struct PT_(ref) ref;
 	if(trie && string && PT_(match)(trie, string, &ref)) {
-		if(result) *result = PT_(ref_to_result)(&ref);
+		if(remit) *remit = PT_(ref_to_remit)(&ref);
 		return TRIE_PRESENT;
 	}
 	return TRIE_ABSENT;
 }
-/** `string` exact match for `trie` -> `result`. */
+/** `string` exact match for `trie` -> `remit`. */
 static enum trie_result T_(trie_get)(const struct T_(trie) *const trie,
-	const char *const string, PT_(result) *const result) {
+	const char *const string, PT_(remit) *const remit) {
 	struct PT_(ref) ref;
 	if(trie && string && PT_(get)(trie, string, &ref)) {
-		if(result) *result = PT_(ref_to_result)(&ref);
+		if(remit) *remit = PT_(ref_to_remit)(&ref);
 		return TRIE_PRESENT;
 	}
 	return TRIE_ABSENT;
 }
-#endif /* no-null? --> */
-
+#endif /* enum? --> */
 
 #ifndef TRIE_ENTRY /* <!-- key set */
 /** Adds `key` to `trie` (which must both exist) if it doesn't exist. */
@@ -833,10 +834,10 @@ static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
 /** @return Whether advancing `it` to the next element and filling `entry`, if
  not-null. @order \O(\log |`trie`|) @allow */
 static int T_(trie_next)(struct T_(trie_iterator) *const it,
-	PT_(result) *const result) {
+	PT_(remit) *const remit) {
 	struct PT_(ref) *r;
 	if(!PT_(next)(&it->_, &r)) return 0;
-	if(result) *result = r->tree->leaf[r->lf].as_entry;
+	if(remit) *remit = r->tree->leaf[r->lf].as_entry;
 	return 1;
 }
 

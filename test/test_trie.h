@@ -387,7 +387,7 @@ static PT_(key) PT_(entry_key)(const PT_(entry) *entry) {
 #endif
 }
 
-static const char *PT_(result_to_string)(const PT_(result) result) {
+static const char *PT_(remit_to_string)(const PT_(remit) result) {
 #ifdef TRIE_ENTRY
 #error
 #else
@@ -403,7 +403,7 @@ static void PT_(test)(void) {
 		= sizeof letter_counts / sizeof *letter_counts;
 	struct { PT_(entry) entry; int is_in; } tests[2000], *test_end, *test;
 	const size_t tests_size = sizeof tests / sizeof *tests;
-	PT_(result) r;
+	PT_(remit) r;
 	PT_(key) k;
 
 	/* Idle. */
@@ -477,7 +477,7 @@ static void PT_(test)(void) {
 			assert(tr == TRIE_PRESENT);
 		}
 #endif
-		estring = PT_(result_to_string)(r);
+		estring = PT_(remit_to_string)(r);
 		printf("<%s->%s>\n", estring, tstring);
 		assert(!strcmp(estring, tstring));
 	}
@@ -561,6 +561,9 @@ static void PT_(test_random)(void) {
 	const size_t expectation = 1000;
 	size_t i, size = 0;
 	FILE *const fp = fopen("graph/" QUOTE(TRIE_NAME) "-random.data", "w");
+#if !defined(TREE_ENTRY) && defined(TRIE_KEY)
+	enum trie_result result;
+#endif
 	printf("Random test; expectation value of items %lu.\n",
 		(unsigned long)expectation);
 	if(!fp) goto catch;
@@ -571,7 +574,7 @@ static void PT_(test_random)(void) {
 			PT_(entry) *entry, **handle;
 			PT_(key) key; /* FIX */
 			if(!(entry = PT_(entry_pool_new)(&entries))) goto catch;
-#if defined(TRIE_ENTRY) && !defined(TRIE_KEY_IN_VALUE)
+#if defined(TRIE_ENTRY) && !defined(TRIE_KEY_IN_VALUE) /* fixme */
 			T_(filler)(&entry->key, &entry->value);
 #else
 			T_(filler)(entry);
@@ -580,7 +583,7 @@ static void PT_(test_random)(void) {
 			/*printf("Creating %s: ", PT_(key_string)(key));*/
 			switch(
 #ifndef TRIE_ENTRY /* <!-- key set */
-			T_(trie_try)(&trie, *entry) /* WHAT? */
+			T_(trie_try)(&trie, *entry) /* FIXME? */
 #else /* key set --><!-- map */
 			T_(trie_try)(&trie, key, &value)
 #endif /* map --> */
@@ -595,7 +598,7 @@ static void PT_(test_random)(void) {
 				*value = *entry;
 #elif defined(TRIE_ENTRY)
 				*value = entry->value;
-#endif
+#endif /* FIXME! */
 				if(!(handle = PT_(handle_array_new)(&handles))) goto catch;
 				*handle = entry;
 				break;
@@ -608,10 +611,9 @@ static void PT_(test_random)(void) {
 			unsigned r = (unsigned)rand() / (RAND_MAX / handles.size + 1);
 			PT_(entry) *handle = handles.data[r];
 			const char *const string = T_(string)(*handle); /*FIX*/
-			int result;
+			int success;
 			/*printf("Deleting %s.\n", string);*/
-			result = T_(trie_remove)(&trie, string);
-			assert(result);
+			success = T_(trie_remove)(&trie, string), assert(success);
 			PT_(handle_array_lazy_remove)(&handles, handles.data + r);
 			PT_(entry_pool_remove)(&entries, handle);
 			size--;
@@ -620,18 +622,15 @@ static void PT_(test_random)(void) {
 		if(i % (5 * expectation / 10) == 5 * expectation / 20)
 			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
 		for(j = 0; j < handles.size; j++) {
-			PT_(result) r;
+			PT_(remit) r;
 			/*PT_(entry) *e = T_(trie_get)(&trie,
 				PT_(key_string)(PT_(entry_key)(handles.data[j]))); */
 #if defined(TREE_ENTRY) || !defined(TRIE_KEY)
 			r = T_(trie_get)(&trie, T_(string)(*handles.data[j]));
 			assert(r);
 #else
-			{
-				enum trie_result tr;
-				tr = T_(trie_get)(&trie, T_(string)(*handles.data[j]), &r);
-				assert(tr == TRIE_PRESENT);
-			}
+			result = T_(trie_get)(&trie, T_(string)(*handles.data[j]), &r);
+			assert(result == TRIE_PRESENT);
 #endif
 		}
 	}
