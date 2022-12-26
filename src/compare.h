@@ -204,7 +204,6 @@ static int CMP_(is_equal)(const PCMP_(box) *restrict const a,
 		/* Must have this function declared! */
 		if(!CMPCALL_(is_equal)(x, y)) return 0;
 	}
-	return 1;
 }
 
 #ifdef BOX_CONTIGUOUS /* <!-- contiguous: (array, pointer), size, at,
