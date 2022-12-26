@@ -24,14 +24,11 @@ of the more complex containers documented here.
 
 ## Compatibility ##
 
-* `pool` compares different objects' addresses; in `C89` that
-behaviour is undefined. With `C99`, a `uintptr_t`-cast makes it
-implementation-defined.
-* `to_string.h` contains UTF-8 literals, (for convenience.)
-* `trie` conforms to ISO/IEC 9899/AMD1:1995 because it uses `EILSEQ`.
-* The testing framework uses `C13` in places, assumes a `union` is
-in the usual order, uses non-standard `pragma` (in `test_trie.h`.)
-The build files compatible with `gcc` and use `clang`.
+The testing framework in `test/` is much less multi-platform then
+the headers in `src/`, requiring `C13` anonymous unions, assuming
+a `union` is in the usual order, uses non-standard `pragma` (in
+`test_trie.h`.) The `Makefile` provided assumes the `gcc` suite and
+uses `clang`.
 
 ## License ##
 
