@@ -2,14 +2,14 @@ digraph {
 	graph [truecolor=true, bgcolor=transparent, fontname = "modern"];
 	node [shape=record, style=filled, fillcolor="Grey95", fontname="modern"];
 	edge [fontname="modern"];
-	put [label="enum trie_result"];
-	put -> unique;
+	result [label="enum trie_result"];
+	result -> unique;
 	unique -> error;
-	unique -> grow;
-	put -> equal;
-	equal -> yield;
+	unique -> absent;
+	result -> equal;
+	equal -> present;
 	error [label="{TRIE_ERROR\l|did not modify;\lset errno\l}", fillcolor="Pink"];
 	equal [label="{equal to other element}"];
-	grow [label="{TRIE_UNIQUE\l|value uninitialized\lexcept key when not\lTRIE\_KEY\_IN\_VALUE\l}"];
-	yield [label="TRIE_PRESENT"];
+	absent [label="{TRIE_ABSENT\l|if TRIE_ENTRY,\lset the key\l}"];
+	present [label="TRIE_PRESENT"];
 }

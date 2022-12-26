@@ -98,8 +98,8 @@ typedef void (*PSTR_(to_string_fn))(const PSTR_(element) *, char (*)[12]);
 #endif /* documentation --> */
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
- 256 bytes, with limitations of only printing 4 things at a time.
- @return Address of the static buffer. @order \Theta(1) @allow */
+ 256 bytes, with limitations of only printing 4 things in a single sequence
+ point. @return Address of the static buffer. @order \Theta(1) @allow */
 static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	const char comma = ',', space = ' ', ellipsis[] = "…",
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;

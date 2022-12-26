@@ -83,7 +83,7 @@
 #define X(n) TABLE_##n
 /** A result of modifying the table, of which `TABLE_ERROR` is false.
  
- ![A diagram of the result states.](../doc/table/put.png) */
+ ![A diagram of the result states.](../doc/table/result.png) */
 enum table_result { TABLE_RESULT };
 #undef X
 #define X(n) #n

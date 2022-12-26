@@ -776,8 +776,8 @@ static enum trie_result T_(trie_try)(struct T_(trie) *const trie,
 
  If `TRIE_ENTRY` was specified and the return is `TRIE_ABSENT`, the trie is in
  an invalid state until filling in the key with an equivalent `key`. (Because
- <typedef:<PT>key> is not invertible; trie is agnostic of the method of getting
- the key.)
+ <typedef:<PT>key> is not invertible in this case, it is agnostic of the method
+ of setting the key.)
  @order \O(\log |`trie`|)
  @throws[EILSEQ] The string has a distinguishing run of bytes with a
  neighbouring string that is too long. On most platforms, this is about

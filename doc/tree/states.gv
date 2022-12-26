@@ -3,7 +3,7 @@ digraph {
 	node [shape=record, style=filled, fillcolor="Grey95", fontname="Bitstream Vera Sans"];
 	edge [fontname="Bitstream Vera Sans"];
 	null [label = "uninitialized\l|no dynamic memory;\lundetermined state\l", fillcolor = pink];
-	static [label = "idle\l|no dynamic memory;\l\{0\} or ARRAY_IDLE\l"];
+	static [label = "idle\l|no dynamic\lmemory; \{0\}\l"];
 	dynamic [label = "active\l|memory allocated;\lcould have size zero\l"];
 	bulk [label = "bulk loading\l"]
 	null -> static [label = "<B>tree"];

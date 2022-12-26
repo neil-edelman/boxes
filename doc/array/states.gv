@@ -2,10 +2,10 @@ digraph {
 	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans"];
 	node [shape=record, style=filled, fillcolor="Grey95", fontname="Bitstream Vera Sans"];
 	edge [fontname="Bitstream Vera Sans"];
-	null [label = "uninitialized\l|no dynamic memory;\lundetermined state\l", fillcolor = pink];
-	static [label = "idle\l|no dynamic memory;\l\{0\} or ARRAY_IDLE\l"];
+	null [label = "uninitialized\l|undetermined state\l", fillcolor = pink];
+	static [label = "idle\l|\{0\}\l"];
 	dynamic [label = "active\l|memory allocated;\lcould have size zero\l"];
-	null -> static [label = "<A>array\n{0}"];
+	null -> static [label = "<A>array"];
 	static -> dynamic [label = "<A>array_new\n<A>array_buffer\n..."];
 	dynamic -> static [label = "<A>array_"];
 	static -> static [label = "<A>array_clear"]

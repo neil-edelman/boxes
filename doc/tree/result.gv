@@ -2,14 +2,14 @@ digraph {
 	graph [truecolor=true, bgcolor=transparent, fontname = "Bitstream Vera Sans"];
 	node [shape=record, style=filled, fillcolor="Grey95", fontname="Bitstream Vera Sans"];
 	edge [fontname="Bitstream Vera Sans"];
-	put [label="enum tree_result"];
-	put -> unique;
+	result [label="enum tree_result"];
+	result -> unique;
 	unique -> error;
-	unique -> grow;
-	put -> equal;
-	equal -> yield;
+	unique -> absent;
+	result -> equal;
+	equal -> present;
 	error [label="{TREE_ERROR\l|did not modify;\lset errno\l}", fillcolor="Pink"];
 	equal [label="{equal to other element}"];
-	grow [label="{TREE_UNIQUE\l|value uninitialized\l}"];
-	yield [label="{TREE_PRESENT\l|try -- don't reassign key\lassign -- do reassign key\l}"];
+	absent [label="{TREE_ABSENT\l|value uninitialized\l}"];
+	present [label="{TREE_PRESENT\l|try -- don't reassign key\lassign -- do reassign key\l}"];
 }

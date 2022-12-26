@@ -1,0 +1,15 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname = "Bitstream Vera Sans"];
+	node [shape=record, style=filled, fillcolor="Grey95", fontname="Bitstream Vera Sans"];
+	edge [fontname="Bitstream Vera Sans"];
+	result [label="enum table_result"];
+	result -> unique;
+	unique -> error;
+	unique -> absent;
+	result -> equal;
+	equal -> present;
+	error [label="{TABLE_ERROR\l|did not modify;\lset errno\l}", fillcolor="Pink"];
+	equal [label="{equal to other element\l}"];
+	absent [label="{TABLE_ABSENT\l|value uninitialized\l}"];
+	present [label="{TABLE_PRESENT\l}"];
+}

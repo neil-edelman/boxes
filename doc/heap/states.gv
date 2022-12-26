@@ -2,8 +2,8 @@ digraph {
 	graph [rankdir=LR, truecolor=true, bgcolor=transparent, fontname="Bitstream Vera Sans"];
 	node [shape=record, style=filled, fillcolor="Grey95", fontname="Bitstream Vera Sans"];
 	edge [fontname="Bitstream Vera Sans"];
-	null [ label = "uninitialized\l|no dynamic memory;\lundetermined state\l", fillcolor = pink ];
-	static [ label = "idle\l|no dynamic memory\l\{0\} or HEAP_IDLE\l" ];
+	null [ label = "uninitialized\l|undetermined state\l", fillcolor = pink ];
+	static [ label = "idle\l|\{0\}\l" ];
 	dynamic [ label = "active\l|memory allocated;\lcould have size zero\l" ];
 	null -> static [ label = "<H>heap" ];
 	static -> dynamic [ label = "<H>heap_add\n<H>heap_buffer\n<H>heap_append\n..." ];

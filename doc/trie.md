@@ -244,7 +244,7 @@ If may not have a null, the `remit` is stuck as a pointer on the end and a `trie
 
 Adds `key` to `trie` if it doesn't exist already\.
 
-If `TRIE_ENTRY` was specified and the return is `TRIE_ABSENT`, the trie is in an invalid state until filling in the key with an equivalent `key`\. \(Because [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) is not invertible; trie is agnostic of the method of getting the key\.\)
+If `TRIE_ENTRY` was specified and the return is `TRIE_ABSENT`, the trie is in an invalid state until filling in the key with an equivalent `key`\. \(Because [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) is not invertible in this case, it is agnostic of the method of setting the key\.\)
 
 
 
@@ -321,7 +321,7 @@ Counts the of the items in `it`\.
 
 <code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\.
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
 
  * Return:  
    Address of the static buffer\.

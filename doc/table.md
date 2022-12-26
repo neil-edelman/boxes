@@ -137,7 +137,7 @@ Returns true if the `replace` replaces the `original`\. \(Shouldn't it be entry?
 
 A result of modifying the table, of which `TABLE_ERROR` is false\.
 
-![A diagram of the result states.](../doc/table/put.png)
+![A diagram of the result states.](../doc/table/result.png)
 
 
 
@@ -505,7 +505,7 @@ Removes `key` from `table` \(which could be null\.\)
 
 <code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\.
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
 
  * Return:  
    Address of the static buffer\.

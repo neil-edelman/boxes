@@ -81,7 +81,7 @@ Returns a positive result if `a` is out\-of\-order with respect to `b`, inducing
 
 A result of modifying the tree, of which `TREE_ERROR` is false\.
 
-![A diagram of the result states.](../doc/tree/put.png)
+![A diagram of the result states.](../doc/tree/result.png)
 
 
 
@@ -413,7 +413,7 @@ Tries to remove `key` from `tree`\.
 
 <code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\.
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
 
  * Return:  
    Address of the static buffer\.

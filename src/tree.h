@@ -90,7 +90,7 @@
 #define X(n) TREE_##n
 /** A result of modifying the tree, of which `TREE_ERROR` is false.
 
- ![A diagram of the result states.](../doc/tree/put.png) */
+ ![A diagram of the result states.](../doc/tree/result.png) */
 enum tree_result { TREE_RESULT };
 #undef X
 #define X(n) #n
