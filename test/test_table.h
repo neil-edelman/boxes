@@ -37,32 +37,31 @@ static size_t PN_(count_bucket)(const struct N_(table) *const table,
 	return no;
 }
 
-/** Mean: `mean`, population variance: `ssdm/n`, sample variance: `ssdm/(n-1)`.
- <Welford1962Note>. */
-static struct { size_t n, max; double mean, ssdm; }
-	PN_(stats) = { 0, 0, 0.0, 0.0 };
-static void PN_(rehash)(void) {
-	PN_(stats).n = PN_(stats).max = 0;
-	PN_(stats).mean = PN_(stats).ssdm = 0.0;
-}
+#ifndef TEST_TABLE_H
+#define TEST_TABLE_H
+/** <Welford1962Note>: population variance: `ssdm/n`,
+ sample variance: `ssdm/(n-1)`. */
+struct table_stats { size_t n, max; double mean, ssdm; };
+#endif
 /** Update one sample point of `value`. */
-static void PN_(update)(const size_t value) {
+static void PN_(update)(struct table_stats *const st, const size_t value) {
 	double d, v = (double)value;
-	if(PN_(stats).max < value) PN_(stats).max = value;
-	d = v - PN_(stats).mean;
-	PN_(stats).mean += d / (double)++PN_(stats).n;
-	PN_(stats).ssdm += d * (v - PN_(stats).mean);
+	if(st->max < value) st->max = value;
+	d = v - st->mean;
+	st->mean += d / (double)++st->n;
+	st->ssdm += d * (v - st->mean);
 }
 /** Collect stats on `hash`. */
-static void PN_(collect)(const struct N_(table) *const table) {
+static struct table_stats PN_(collect)(const struct N_(table) *const table) {
+	struct table_stats st = { 0, 0, 0.0, 0.0 };
 	PN_(uint) i, i_end;
-	PN_(rehash)();
-	if(!table || !table->buckets) return;
+	if(!table || !table->buckets) return st;
 	for(i = 0, i_end = PN_(capacity)(table); i < i_end; i++) {
 		size_t no;
 		/* I'm sure there's a cheaper way to do it. */
-		for(no = PN_(count_bucket)(table, i); no; no--) PN_(update)(no);
+		for(no = PN_(count_bucket)(table, i); no; no--) PN_(update)(&st, no);
 	}
+	return st;
 }
 
 /** Draw a diagram of `hash` written to `fn` in
@@ -72,6 +71,7 @@ static void PN_(graph)(const struct N_(table) *const table,
 	const char *const fn) {
 	FILE *fp;
 	size_t i, i_end;
+	struct table_stats st = PN_(collect)(table);
 	assert(table && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	printf("*** %s\n", fn);
@@ -80,7 +80,7 @@ static void PN_(graph)(const struct N_(table) *const table,
 		" fontname=modern];\n"
 		"\tnode [shape=none, fontname=modern];\n");
 	if(!table->buckets) { fprintf(fp, "\tidle;\n"); goto end; }
-	PN_(collect)(table), assert((size_t)table->size >= PN_(stats).n);
+	assert(table->size >= st.n); /* This is not obvious. */
 	fprintf(fp,
 		"\thash [label=<\n"
 		"<table border=\"0\" cellspacing=\"0\">\n"
@@ -108,11 +108,11 @@ static void PN_(graph)(const struct N_(table) *const table,
 		"</table>>];\n"
 		"\thash -> data;\n"
 		"\t{ rank=same; hash; data; }\n",
-		(unsigned long)PN_(stats).n,
+		(unsigned long)st.n,
 		table->buckets ? (unsigned long)PN_(capacity)(table) : 0,
-		PN_(stats).n ? PN_(stats).mean : (double)NAN, PN_(stats).n > 1
-		? sqrt(PN_(stats).ssdm / (double)(PN_(stats).n - 1)) : (double)NAN,
-		(unsigned long)PN_(stats).max);
+		st.n ? st.mean : (double)NAN, st.n > 1
+		? sqrt(st.ssdm / (double)(st.n - 1)) : (double)NAN,
+		(unsigned long)st.max);
 	fprintf(fp,
 		"\tdata [label=<\n"
 		"<table border=\"0\" cellspacing=\"0\">\n"
@@ -146,11 +146,11 @@ static void PN_(graph)(const struct N_(table) *const table,
 			fprintf(fp, "\t\t<td align=\"right\"%s>0x%lx</td>\n"
 				"\t\t<td align=\"left\"%s>"
 #ifdef TABLE_INVERSE
-		"<font face=\"Times-Italic\">"
+				"<font face=\"Times-Italic\">"
 #endif
 				"%s"
 #ifdef TABLE_INVERSE
-		"</font>"
+				"</font>"
 #endif
 				"</td>\n"
 				"\t\t<td port=\"%lu\"%s>%s</td>\n",
@@ -207,6 +207,9 @@ static void PN_(histogram)(const struct N_(table) *const table,
 	FILE *fp;
 	size_t histogram[64], hs, h;
 	const size_t histogram_size = sizeof histogram / sizeof *histogram;
+	/* Stats for fit. fixme: This is stats for expected value, I don't think
+	 they are the same. */
+	struct table_stats st = PN_(collect)(table);
 	assert(table && fn);
 	memset(histogram, 0, sizeof histogram);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
@@ -221,9 +224,6 @@ static void PN_(histogram)(const struct N_(table) *const table,
 	}
 	/* `historgram_size` is much larger than it has to be, usually. */
 	for(hs = histogram_size - 1; !(histogram[hs] && (hs++, 1)) && hs; hs--);
-	/* Stats for fit. fixme: This is stats for expected value, I don't think
-	 they are the same. */
-	PN_(collect)(table);
 	fprintf(fp, "# Size: %lu.\n"
 		"set term postscript eps enhanced color\n"
 		"set output \"%s.eps\"\n"
@@ -240,7 +240,7 @@ static void PN_(histogram)(const struct N_(table) *const table,
 		"plot \"-\" using ($1+0.5):2 with boxes lw 3 title \"Histogram\", \\\n"
 		"\tpoisson(int(x)) with lines linestyle 2 title \"Fit\"\n",
 		(unsigned long)table->size, fn,
-		PN_(stats).mean, (unsigned long)PN_(stats).n);
+		st.mean, (unsigned long)st.n);
 	for(h = 0; h < hs; h++) fprintf(fp, "%lu\t%lu\n",
 		(unsigned long)h, (unsigned long)histogram[h]);
 	fclose(fp);
