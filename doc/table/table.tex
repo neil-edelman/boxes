@@ -89,7 +89,7 @@
 
 \maketitle
 
-\abstract{We define an inline-chained hash-table as a bucket scheme where each entry overlaps with an index to the next entry. Thus, the front entry in the bucket is closed; all others are open, taken from unoccupied slots. We show that this hash-table design is feasible, and can often be less expensive, performance-wise and to maintain. Having a chained hash-table with the simplicity of allocation of open-addressing is especially attractive for simple data.}
+\abstract{We define an inline-chained hash-table as a bucket scheme where each entry overlaps with an index to the next entry. Thus, the front entry in the bucket is closed; all others are open, taken from a stack of unoccupied slots. We show that this hash-table design is feasible, and can often be less expensive, performance-wise and to maintain. The result doesn't suffer from primary clustering, with the simplicity of allocation of open-addressing, but is not stable.}
 
 \section{Introduction}
 
@@ -97,7 +97,7 @@ Performance is a critical issue, but we are also concerned with usability. Speci
 
 Overlapping each entry with an index to the next entry creates a hash-table that is self-contained in memory, yet behaves as a chained hash in the regime where the load factor is less-then one.\cite{knuth1998sorting} We call this inline-chaining to differentiate it from separate-chaining, where the buckets are objects with links between them.
 
-Thus, the {\it data} part of the {\it data structure} is similar to that of coalesced-hashing\cite{williams1959handling}. However, coalescing cannot occur. The closed entries that form the heads of buckets and the open entries that form a stack are orthogonal.
+Thus, the {\it data} part of the {\it data structure} is similar to that of coalesced-hashing\cite{williams1959handling}. However, coalescing cannot occur because open entries move to the top of the stack when closed entries are added. In this way, the closed entries that form the heads of buckets and the open entries that form a stack are orthogonal to the other buckets.
 
 \section{Example Comparison}
 
@@ -530,9 +530,9 @@ set yrange [0:1]
 set log x
 set xrange [1:33554432]
 plot \
-"../timing/graph/open.tsv" using 1:($2/$1):($3/$1) with errorlines title "inline-chaining", \
-"../timing/graph/closed.tsv" using 1:($2/$1):($3/$1) with errorlines title "separate-chaining", \
-"../timing/graph/unordered.tsv" using 1:($2/$1):($3/$1) with errorlines title "std$\:\:$unordered\\_set"
+"../../timing/table/graph/open.tsv" using 1:($2/$1):($3/$1) with errorlines title "inline-chaining", \
+"../../timing/table/graph/closed.tsv" using 1:($2/$1):($3/$1) with errorlines title "separate-chaining", \
+"../../timing/table/graph/unordered.tsv" using 1:($2/$1):($3/$1) with errorlines title "std$\:\:$unordered\\_set"
 \end{gnuplot}
 \caption{A comparison of chained techniques in a $C^{++}$ benchmark with a log-$x$ scale.}%
 \label{timing}%
@@ -583,7 +583,7 @@ Inline-chaining is generally good for iteration. For implementations that do not
 
 \section{Conclusion}
 
-This specific data for the average use-case shows the difference between separate-chaining and inline-chaining is not great enough to matter to performance, and even helps in some cases. For situations where one needs a new hash-table, the simplicity of inline-chaining is appealing.
+This specific data for the average use-case shows the difference between separate-chaining and inline-chaining is not great enough to matter to performance, and even helps in some cases. Thus, the simplicity of inline-chaining is appealing when one doesn't require stability.
 
 \bibliography{table}
 
