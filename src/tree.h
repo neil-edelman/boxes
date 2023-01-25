@@ -320,7 +320,7 @@ predecessor:
 #define TREE_FOR_TREE(tree, i) i.node = tree->node, i.height = tree->height; ; \
 	i.node = PB_(as_branch_c)(i.node)->child[i.idx], i.height--
 #define TREE_START_HI(i) unsigned hi = i.node->size; i.idx = 0;
-#define TREE_FOR_MINORENT(i, key) do { \
+#define TREE_FOR_GREAT(i, key) do { \
 	const unsigned m = (i.idx + hi) / 2; \
 	if(B_(compare)(key, i.node->key[m]) > 0) i.idx = m + 1; \
 	else hi = m; \
@@ -330,17 +330,17 @@ predecessor:
 static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 	TREE_START_HI((*lo))
 	if(!lo) return;
-	TREE_FOR_MINORENT((*lo), key)
+	TREE_FOR_GREAT((*lo), key)
 }
 /** Finds greatest lower-bound of `key` in non-empty `tree`, or, if `key` is
  greater than all `tree`, one off the end. */
-static struct PB_(ref) PB_(greatest_r)(struct PB_(tree) *const tree,
+static struct PB_(ref) PB_(great_r)(struct PB_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) i, lo = { 0, 0, 0 };
 	for(TREE_FOR_TREE(tree, i)) {
 		TREE_START_HI(i)
 		if(!hi) continue;
-		TREE_FOR_MINORENT(i, key)
+		TREE_FOR_GREAT(i, key)
 		if(i.idx < i.node->size) {
 			lo = i;
 			if(TREE_FLIPPED(i, key)) break; /* Multi-keys go here. */
@@ -353,11 +353,11 @@ static struct PB_(ref) PB_(greatest_r)(struct PB_(tree) *const tree,
 	return lo;
 }
 /** @return Greatest lower bound of `x` in `tree`. @order \O(\log |`tree`|) */
-static struct PB_(ref) PB_(greatest)(struct PB_(tree) tree, const PB_(key) x) {
+static struct PB_(ref) PB_(great)(struct PB_(tree) tree, const PB_(key) x) {
 	if(!tree.node || tree.height == UINT_MAX) {
 		struct PB_(ref) ref; ref.node = 0; return ref;
 	} else {
-		return PB_(greatest_r)(&tree, x);
+		return PB_(great_r)(&tree, x);
 	}
 }
 /** Finds an exact `key` in non-empty `tree`. */
@@ -367,7 +367,7 @@ static struct PB_(ref) PB_(find)(const struct PB_(tree) *const tree,
 	for(TREE_FOR_TREE(tree, i)) {
 		TREE_START_HI(i)
 		if(!hi) continue;
-		TREE_FOR_MINORENT(i, key)
+		TREE_FOR_GREAT(i, key)
 		if(i.idx < i.node->size && TREE_FLIPPED(i, key)) break;
 		if(!i.height) { i.node = 0; return i; }
 	}
@@ -383,7 +383,7 @@ static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) *const tree,
 		TREE_START_HI(lo)
 		if(hi < TREE_MAX) *hole = lo;
 		if(!hi) continue;
-		TREE_FOR_MINORENT(lo, key)
+		TREE_FOR_GREAT(lo, key)
 		if(lo.node->size < TREE_MAX) hole->idx = lo.idx;
 		if(lo.idx < lo.node->size && TREE_FLIPPED(lo, key))
 			{ *is_equal = 1; break; }
@@ -408,7 +408,7 @@ static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
 			if(lo.height) PB_(as_branch)(lo.node)->child[TREE_MAX] = parent;
 			else *leaf_parent = parent;
 		}
-		TREE_FOR_MINORENT(lo, key)
+		TREE_FOR_GREAT(lo, key)
 		if(lo.idx < lo.node->size && TREE_FLIPPED(lo, key)) break;
 		if(!lo.height) { lo.node = 0; break; } /* Was not in. */
 		parent = lo.node;
@@ -417,7 +417,7 @@ static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
 }
 #undef TREE_FOR_TREE
 #undef TREE_START
-#undef TREE_FOR_MINORENT
+#undef TREE_FOR_GREAT
 #undef TREE_FLIPPED
 
 /** Zeroed data (not all-bits-zero) is initialized. @return An idle tree.
@@ -526,7 +526,7 @@ static PB_(value) B_(tree_get_or)(const struct B_(tree) *const tree,
 static PB_(value) B_(tree_great_or)(const struct B_(tree) *const tree,
 	const PB_(key) key, const PB_(value) default_value) {
 	struct PB_(ref) ref;
-	return tree && (ref = PB_(greatest)(tree->root, key)).node
+	return tree && (ref = PB_(great)(tree->root, key)).node
 		&& ref.idx < ref.node->size ? *PB_(ref_to_valuep)(ref) : default_value;
 }
 
@@ -1476,7 +1476,7 @@ static struct B_(tree_iterator) B_(tree_begin_at)(struct B_(tree) *const tree,
 	const PB_(key) x) {
 	struct B_(tree_iterator) cur;
 	if(!tree) return cur._.root = 0, cur;
-	cur._.ref = PB_(greatest)(tree->root, x);
+	cur._.ref = PB_(great)(tree->root, x);
 	cur._.root = &tree->root;
 	cur._.seen = 0;
 	return cur;
@@ -1560,7 +1560,7 @@ static enum tree_result B_(tree_iterator_try)(struct B_(tree_iterator) *const
 	assert(it->_.root->height != UINT_MAX); /* Can't be empty. */
 	switch(where) {
 	case TREE_NONODE: it->_.ref.node = 0; it->_.seen = 0; break;
-	case TREE_ITERATING: it->_.ref = PB_(greatest)(*it->_.root, anchor); break;
+	case TREE_ITERATING: it->_.ref = PB_(great)(*it->_.root, anchor); break;
 	case TREE_END:
 		assert(it->_.root->node);
 		it->_.ref.node = it->_.root->node;
@@ -1594,7 +1594,7 @@ static int B_(tree_iterator_remove)(struct B_(tree_iterator) *const it) {
 		|| (remove = it->_.ref.node->key[it->_.ref.idx],
 		!PB_(remove)(it->_.root, remove))) return 0;
 	/* <fn:<B>tree_begin_at>. */
-	it->_.ref = PB_(greatest)(*it->_.root, remove);
+	it->_.ref = PB_(great)(*it->_.root, remove);
 	it->_.seen = 0;
 	return 1;
 }
@@ -1698,7 +1698,7 @@ static PB_(value) B_D_(tree, get)(const struct B_(tree) *const tree,
 static PB_(value) B_D_(tree, great)(const struct B_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) ref;
-	return tree && (ref = PB_(greatest)(tree->root, key)).node
+	return tree && (ref = PB_(great)(tree->root, key)).node
 		&& ref.idx < ref.node->size
 		? *PB_(ref_to_valuep)(ref) : PB_D_(default, value);
 }
