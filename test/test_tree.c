@@ -583,7 +583,7 @@ static void loop(void) {
 	tree_loop_graph_horiz(&tree, "graph/loop1.gv");
 	status = loop_tree_assign(&tree, 101, &eject);
 	assert(status == TREE_PRESENT && eject == 1);
-	ret = loop_tree_get_or(&tree, 1, 0), assert(ret == 101);
+	ret = loop_tree_get_or(&tree, 1, 0), assert(ret == 101); /* ~= 1 */
 	tree_loop_graph_horiz(&tree, "graph/loop2.gv");
 	ret = loop_tree_get_or(&tree, 3, 0), assert(ret == 3);
 	ret = loop_tree_get_or(&tree, 4, 0), assert(ret == 0);
@@ -594,7 +594,7 @@ static void loop(void) {
 	ret = loop_tree_great(&tree, 0), assert(ret == 101);
 	ret = loop_tree_great(&tree, 4), assert(ret == 0);
 	ret = loop_tree_meaning_great(&tree, 0), assert(ret == 101);
-	ret = loop_tree_meaning_great(&tree, 4), assert(ret == 42);
+	ret = loop_tree_meaning_great(&tree, 4), assert(ret == 42); /* No glb. */
 	loop_tree_(&tree);
 	if(!loop_tree_try(&tree, 8)) { assert(0); return; }
 	if(!loop_tree_try(&tree, 4)) { assert(0); return; }
