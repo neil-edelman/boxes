@@ -317,7 +317,7 @@ predecessor:
 
 /* Want to find slightly different things; code re-use is bad. Confusing.
  This is the lower-bound. */
-#define TREE_FORTREE(i) i.node = tree->node, i.height = tree->height; ; \
+#define TREE_FORTREE(tree, i) i.node = tree->node, i.height = tree->height; ; \
 	i.node = PB_(as_branch_c)(i.node)->child[i.idx], i.height--
 #define TREE_START(i) unsigned hi = i.node->size; i.idx = 0;
 #define TREE_FORNODE(i, key) do { \
@@ -337,7 +337,7 @@ static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) i, lo = { 0, 0, 0 };
-	for(TREE_FORTREE(i)) {
+	for(TREE_FORTREE(tree, i)) {
 		TREE_START(i)
 		if(!hi) continue;
 		TREE_FORNODE(i, key)
@@ -364,7 +364,7 @@ static struct PB_(ref) PB_(lower)(struct PB_(tree) tree, const PB_(key) x) {
 static struct PB_(ref) PB_(find)(const struct PB_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) i;
-	for(TREE_FORTREE(i)) {
+	for(TREE_FORTREE(tree, i)) {
 		TREE_START(i)
 		if(!hi) continue;
 		TREE_FORNODE(i, key)
@@ -379,7 +379,7 @@ static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) *const tree,
 	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal) {
 	struct PB_(ref) lo;
 	hole->node = 0;
-	for(TREE_FORTREE(lo)) {
+	for(TREE_FORTREE(tree, lo)) {
 		TREE_START(lo)
 		if(hi < TREE_MAX) *hole = lo;
 		if(!hi) continue;
@@ -400,7 +400,7 @@ static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
 	const PB_(key) key, struct PB_(node) **leaf_parent) {
 	struct PB_(node) *parent = 0;
 	struct PB_(ref) lo;
-	for(TREE_FORTREE(lo)) {
+	for(TREE_FORTREE(tree, lo)) {
 		TREE_START(lo)
 		/* Cannot delete bulk add. */
 		if(parent && hi < TREE_MIN || !parent && !hi) { lo.node = 0; break; }
