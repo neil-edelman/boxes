@@ -319,7 +319,12 @@ predecessor:
  This is the lower-bound. */
 #define TREE_FOR_TREE(tree, i) i.node = tree->node, i.height = tree->height; ; \
 	i.node = PB_(as_branch_c)(i.node)->child[i.idx], i.height--
-#define TREE_START_HI(i) unsigned hi = i.node->size; i.idx = 0;
+#define TREE_START(i) unsigned hi = i.node->size; i.idx = 0;
+#define TREE_FOR_LEAST(i, key) do { \
+	const unsigned m = (i.idx + hi) / 2; \
+	if(B_(compare)(key, i.node->key[m]) > 0) i.idx = m + 1; \
+	else hi = m; \
+} while(i.idx <= hi);
 #define TREE_FOR_GREAT(i, key) do { \
 	const unsigned m = (i.idx + hi) / 2; \
 	if(B_(compare)(key, i.node->key[m]) > 0) i.idx = m + 1; \
@@ -328,7 +333,7 @@ predecessor:
 #define TREE_FLIPPED(i, key) B_(compare)(i.node->key[i.idx], key) <= 0
 /** Finds `key` in `lo` one node at a time. */
 static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
-	TREE_START_HI((*lo))
+	TREE_START((*lo))
 	if(!lo) return;
 	TREE_FOR_GREAT((*lo), key)
 }
@@ -338,7 +343,7 @@ static struct PB_(ref) PB_(great_r)(struct PB_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) i, lo = { 0, 0, 0 };
 	for(TREE_FOR_TREE(tree, i)) {
-		TREE_START_HI(i)
+		TREE_START(i)
 		if(!hi) continue;
 		TREE_FOR_GREAT(i, key)
 		if(i.idx < i.node->size) {
@@ -365,7 +370,7 @@ static struct PB_(ref) PB_(find)(const struct PB_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) i;
 	for(TREE_FOR_TREE(tree, i)) {
-		TREE_START_HI(i)
+		TREE_START(i)
 		if(!hi) continue;
 		TREE_FOR_GREAT(i, key)
 		if(i.idx < i.node->size && TREE_FLIPPED(i, key)) break;
@@ -380,7 +385,7 @@ static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) *const tree,
 	struct PB_(ref) lo;
 	hole->node = 0;
 	for(TREE_FOR_TREE(tree, lo)) {
-		TREE_START_HI(lo)
+		TREE_START(lo)
 		if(hi < TREE_MAX) *hole = lo;
 		if(!hi) continue;
 		TREE_FOR_GREAT(lo, key)
@@ -401,7 +406,7 @@ static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
 	struct PB_(node) *parent = 0;
 	struct PB_(ref) lo;
 	for(TREE_FOR_TREE(tree, lo)) {
-		TREE_START_HI(lo)
+		TREE_START(lo)
 		/* Cannot delete bulk add. */
 		if(parent && hi < TREE_MIN || !parent && !hi) { lo.node = 0; break; }
 		if(hi <= TREE_MIN) { /* Remember the parent temporarily. */
