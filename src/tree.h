@@ -320,17 +320,17 @@ predecessor:
 #define TREE_FORTREE(i) i.node = tree->node, i.height = tree->height; ; \
 	i.node = PB_(as_branch_c)(i.node)->child[i.idx], i.height--
 #define TREE_START(i) unsigned hi = i.node->size; i.idx = 0;
-#define TREE_FORNODE(i) do { \
+#define TREE_FORNODE(i, key) do { \
 	const unsigned m = (i.idx + hi) / 2; \
 	if(B_(compare)(key, i.node->key[m]) > 0) i.idx = m + 1; \
 	else hi = m; \
 } while(i.idx < hi);
-#define TREE_FLIPPED(i) B_(compare)(i.node->key[i.idx], key) <= 0
+#define TREE_FLIPPED(i, key) B_(compare)(i.node->key[i.idx], key) <= 0
 /** Finds `key` in `lo` one node at a time. */
 static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 	TREE_START((*lo))
 	if(!lo) return;
-	TREE_FORNODE((*lo))
+	TREE_FORNODE((*lo), key)
 }
 /** Finds lower-bound of `key` in non-empty `tree`, or, if `key` is greater
  than all `tree`, one off the end. */
@@ -340,10 +340,10 @@ static struct PB_(ref) PB_(lower_r)(struct PB_(tree) *const tree,
 	for(TREE_FORTREE(i)) {
 		TREE_START(i)
 		if(!hi) continue;
-		TREE_FORNODE(i)
+		TREE_FORNODE(i, key)
 		if(i.idx < i.node->size) {
 			lo = i;
-			if(TREE_FLIPPED(i)) break; /* Multi-keys go here. */
+			if(TREE_FLIPPED(i, key)) break; /* Multi-keys go here. */
 		}
 		if(!i.height) {
 			if(!lo.node) lo = i; /* Want one-off-end if last. */
@@ -367,8 +367,8 @@ static struct PB_(ref) PB_(find)(const struct PB_(tree) *const tree,
 	for(TREE_FORTREE(i)) {
 		TREE_START(i)
 		if(!hi) continue;
-		TREE_FORNODE(i)
-		if(i.idx < i.node->size && TREE_FLIPPED(i)) break;
+		TREE_FORNODE(i, key)
+		if(i.idx < i.node->size && TREE_FLIPPED(i, key)) break;
 		if(!i.height) { i.node = 0; return i; }
 	}
 	return i;
@@ -383,9 +383,10 @@ static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) *const tree,
 		TREE_START(lo)
 		if(hi < TREE_MAX) *hole = lo;
 		if(!hi) continue;
-		TREE_FORNODE(lo)
+		TREE_FORNODE(lo, key)
 		if(lo.node->size < TREE_MAX) hole->idx = lo.idx;
-		if(lo.idx < lo.node->size && TREE_FLIPPED(lo)) { *is_equal = 1; break; }
+		if(lo.idx < lo.node->size && TREE_FLIPPED(lo, key))
+			{ *is_equal = 1; break; }
 		if(!lo.height) break;
 	}
 	return lo;
@@ -407,8 +408,8 @@ static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
 			if(lo.height) PB_(as_branch)(lo.node)->child[TREE_MAX] = parent;
 			else *leaf_parent = parent;
 		}
-		TREE_FORNODE(lo)
-		if(lo.idx < lo.node->size && TREE_FLIPPED(lo)) break;
+		TREE_FORNODE(lo, key)
+		if(lo.idx < lo.node->size && TREE_FLIPPED(lo, key)) break;
 		if(!lo.height) { lo.node = 0; break; } /* Was not in. */
 		parent = lo.node;
 	}
