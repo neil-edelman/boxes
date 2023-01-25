@@ -222,11 +222,11 @@ static void order3(void) {
 	printf("previous %u.\n", v);
 
 	/* The value of the cursor. */
-	v = order3_tree_at_or(&between, 50, 0), assert(v == 100);
-	v = order3_tree_at_or(&between, 150, 0), assert(v == 200);
-	v = order3_tree_at_or(&between, 250, 0), assert(v == 300);
-	v = order3_tree_at_or(&between, 300, 0), assert(v == 300);
-	v = order3_tree_at_or(&between, 350, 0), assert(!v);
+	v = order3_tree_great_or(&between, 50, 0), assert(v == 100);
+	v = order3_tree_great_or(&between, 150, 0), assert(v == 200);
+	v = order3_tree_great_or(&between, 250, 0), assert(v == 300);
+	v = order3_tree_great_or(&between, 300, 0), assert(v == 300);
+	v = order3_tree_great_or(&between, 350, 0), assert(!v);
 
 	/* For the paper. */
 	order3_tree_clear(&between);
@@ -591,10 +591,10 @@ static void loop(void) {
 	ret = loop_tree_get(&tree, 4), assert(ret == 0);
 	ret = loop_tree_meaning_get(&tree, 3), assert(ret == 3);
 	ret = loop_tree_meaning_get(&tree, 0), assert(ret == 42);
-	ret = loop_tree_at(&tree, 0), assert(ret == 101);
-	ret = loop_tree_at(&tree, 4), assert(ret == 0);
-	ret = loop_tree_meaning_at(&tree, 0), assert(ret == 101);
-	ret = loop_tree_meaning_at(&tree, 4), assert(ret == 42);
+	ret = loop_tree_great(&tree, 0), assert(ret == 101);
+	ret = loop_tree_great(&tree, 4), assert(ret == 0);
+	ret = loop_tree_meaning_great(&tree, 0), assert(ret == 101);
+	ret = loop_tree_meaning_great(&tree, 4), assert(ret == 42);
 	loop_tree_(&tree);
 	if(!loop_tree_try(&tree, 8)) { assert(0); return; }
 	if(!loop_tree_try(&tree, 4)) { assert(0); return; }
