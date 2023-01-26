@@ -344,23 +344,58 @@ static struct PB_(ref) PB_(upper)(struct PB_(tree) tree, const PB_(key) x) {
 	if(!tree.node || tree.height == UINT_MAX) {
 		return i.node = 0, i;
 	} else {
-		struct PB_(ref) lo = { 0, 0, 0 };
-		for(TREE_FOR_NODE(tree, i)) {
-			TREE_START(i)
-			if(!hi) continue;
-			TREE_FOR_UPPER(i, x)
+		struct PB_(ref) hi = { 0, 0, 0 };
+		for(i.node = tree.node, i.height = tree.height; ;
+			i.node = PB_(as_branch_c)(i.node)->child[i.idx], i.height--) {
+			unsigned lo = 0; i.idx = i.node->size;
+			if(!i.idx) continue; /* No contents. */
+			do {
+				const unsigned m = (lo + i.idx) / 2; /* Doesn't overflow. */
+				if(B_(compare)(x, i.node->key[m]) > 0) lo = m + 1;
+				else i.idx = m;
+			} while(lo > i.idx);
 			if(i.idx < i.node->size) {
-				lo = i;
-				if(TREE_FLIPPED(i, x)) break;
+				hi = i;
+				if(B_(compare)(i.node->key[i.idx], x) <= 0) break;
 			}
 			if(!i.height) {
-				if(!lo.node) lo = i; /* Want one-off-end if last. */
+				if(!hi.node) hi = i; /* Want one-off-end if last. */
 				break;
 			}
 		}
-		return lo;
+		return hi;
 	}
 }
+
+static struct PB_(ref) PB_(lower)(struct PB_(tree) tree, const PB_(key) x) {
+	struct PB_(ref) i;
+	if(!tree.node || tree.height == UINT_MAX) {
+		return i.node = 0, i;
+	} else {
+		struct PB_(ref) found_lo = { 0, 0, 0 };
+		for(i.node = tree.node, i.height = tree.height; ;
+			i.node = PB_(as_branch_c)(i.node)->child[i.idx], i.height--) {
+			unsigned hi = i.node->size; i.idx = 0;
+			if(!hi) continue;
+			do { \
+				const unsigned m = (i.idx + hi) / 2;
+				if(B_(compare)(x, i.node->key[m]) > 0) i.idx = m + 1;
+				else hi = m; \
+			} while(i.idx < hi);
+			if(i.idx < i.node->size) {
+				found_lo = i;
+				if(B_(compare)(i.node->key[i.idx], x) <= 0) break;
+			}
+			if(!i.height) {
+				if(!found_lo.node) found_lo = i; /* Want one-off-end if last. */
+				break;
+			}
+		}
+		return found_lo;
+	}
+}
+
+#if 0
 /** @return Greatest lower bound of `x` in `tree`, or if `x` is greater, then
  one off the end. @order \O(\log |`tree`|) */
 static struct PB_(ref) PB_(lower)(struct PB_(tree) tree, const PB_(key) x) {
@@ -385,6 +420,7 @@ static struct PB_(ref) PB_(lower)(struct PB_(tree) tree, const PB_(key) x) {
 		return lo;
 	}
 }
+#endif
 /** Finds an exact `key` in non-empty `tree`. */
 static struct PB_(ref) PB_(find)(const struct PB_(tree) *const tree,
 	const PB_(key) key) {
