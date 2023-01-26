@@ -592,19 +592,19 @@ static void loop(void) {
 	ret = loop_tree_meaning_get(&tree, 3), assert(ret == 3);
 	ret = loop_tree_meaning_get(&tree, 0), assert(ret == 42);
 
-	ret = loop_tree_upper_or(&tree, 3, 0), assert(ret == 3);
-	ret = loop_tree_upper_or(&tree, 4, 0), assert(ret == 3);
-	ret = loop_tree_upper(&tree, 0), assert(ret == 0);
-	ret = loop_tree_upper(&tree, 4), assert(ret == 3);
-	ret = loop_tree_meaning_upper(&tree, 0), assert(ret == 42); /* No lub. */
-	ret = loop_tree_meaning_upper(&tree, 4), assert(ret == 3);
-
 	ret = loop_tree_lower_or(&tree, 3, 0), assert(ret == 3);
 	ret = loop_tree_lower_or(&tree, 4, 0), assert(ret == 0);
 	ret = loop_tree_lower(&tree, 0), assert(ret == 101);
 	ret = loop_tree_lower(&tree, 4), assert(ret == 0);
 	ret = loop_tree_meaning_lower(&tree, 0), assert(ret == 101);
 	ret = loop_tree_meaning_lower(&tree, 4), assert(ret == 42); /* No glb. */
+
+	ret = loop_tree_upper_or(&tree, 3, 0), assert(ret == 3);
+	ret = loop_tree_upper_or(&tree, 4, 0), assert(ret == 3);
+	ret = loop_tree_upper(&tree, 0), assert(ret == 0);
+	ret = loop_tree_upper(&tree, 4), assert(ret == 3);
+	ret = loop_tree_meaning_upper(&tree, 0), assert(ret == 42); /* No lub. */
+	ret = loop_tree_meaning_upper(&tree, 4), assert(ret == 3);
 
 	loop_tree_(&tree);
 	if(!loop_tree_try(&tree, 8)) { assert(0); return; }

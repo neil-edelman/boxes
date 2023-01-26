@@ -340,59 +340,55 @@ static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
 /** @return Least upper bound of `x` in `tree`, or if `x` is lowest, null.
  @order \O(\log |`tree`|) */
 static struct PB_(ref) PB_(upper)(struct PB_(tree) tree, const PB_(key) x) {
-	struct PB_(ref) i;
-	if(!tree.node || tree.height == UINT_MAX) {
-		return i.node = 0, i;
-	} else {
-		struct PB_(ref) hi = { 0, 0, 0 };
-		for(i.node = tree.node, i.height = tree.height; ;
-			i.node = PB_(as_branch_c)(i.node)->child[i.idx], i.height--) {
-			unsigned lo = 0; i.idx = i.node->size;
-			if(!i.idx) continue; /* No contents. */
-			do {
-				const unsigned m = (lo + i.idx) / 2; /* Doesn't overflow. */
-				if(B_(compare)(x, i.node->key[m]) > 0) lo = m + 1;
-				else i.idx = m;
-			} while(lo > i.idx);
-			if(i.idx < i.node->size) {
-				hi = i;
-				if(B_(compare)(i.node->key[i.idx], x) <= 0) break;
-			}
-			if(!i.height) {
-				if(!hi.node) hi = i; /* Want one-off-end if last. */
-				break;
-			}
+	struct PB_(ref) hi, found;
+	found.node = 0;
+	if(!tree.node || tree.height == UINT_MAX) return found;
+	printf("key %u\n", x);
+	for(hi.node = tree.node, hi.height = tree.height; ;
+		hi.node = PB_(as_branch_c)(hi.node)->child[hi.idx], hi.height--) {
+		unsigned lo = 0;
+		if(!(hi.idx = hi.node->size)) continue; /* No contents. */
+		do {
+			const unsigned mid = (lo + hi.idx) / 2; /* Doesn't overflow. */
+			printf("key %u, mid [%u]%u\n", x, mid, hi.node->key[mid]);
+			if(B_(compare)(x, hi.node->key[mid]) <= 0) printf("->lower\n"), hi.idx = mid;
+			else printf("->higher\n"), lo = mid + 1;
+			printf("([%u], [%u])\n", lo, hi.idx);
+		} while(lo < hi.idx);
+		if(hi.idx < hi.node->size) { /* Within bounds. */
+			printf("within bounds\n");
+			found = hi;
+			if(B_(compare)(x, hi.node->key[hi.idx]) <= 0) break; /* Equal. */
 		}
-		return hi;
+		if(!hi.height) break;
 	}
+	printf("found: [%u]\n", found.idx);
+	return found;
 }
 
 static struct PB_(ref) PB_(lower)(struct PB_(tree) tree, const PB_(key) x) {
-	struct PB_(ref) i;
-	if(!tree.node || tree.height == UINT_MAX) {
-		return i.node = 0, i;
-	} else {
-		struct PB_(ref) found_lo = { 0, 0, 0 };
-		for(i.node = tree.node, i.height = tree.height; ;
-			i.node = PB_(as_branch_c)(i.node)->child[i.idx], i.height--) {
-			unsigned hi = i.node->size; i.idx = 0;
-			if(!hi) continue;
-			do { \
-				const unsigned m = (i.idx + hi) / 2;
-				if(B_(compare)(x, i.node->key[m]) > 0) i.idx = m + 1;
-				else hi = m; \
-			} while(i.idx < hi);
-			if(i.idx < i.node->size) {
-				found_lo = i;
-				if(B_(compare)(i.node->key[i.idx], x) <= 0) break;
-			}
-			if(!i.height) {
-				if(!found_lo.node) found_lo = i; /* Want one-off-end if last. */
-				break;
-			}
+	struct PB_(ref) lo, found;
+	found.node = 0;
+	if(!tree.node || tree.height == UINT_MAX) return found;
+	for(lo.node = tree.node, lo.height = tree.height; ;
+		lo.node = PB_(as_branch_c)(lo.node)->child[lo.idx], lo.height--) {
+		unsigned hi = lo.node->size; lo.idx = 0;
+		if(!hi) continue;
+		do {
+			const unsigned mid = (lo.idx + hi) / 2;
+			if(B_(compare)(x, lo.node->key[mid]) > 0) lo.idx = mid + 1;
+			else hi = mid;
+		} while(lo.idx < hi);
+		if(lo.idx < lo.node->size) { /* Within bounds. */
+			found = lo;
+			if(B_(compare)(x, lo.node->key[lo.idx]) > 0) break;
 		}
-		return found_lo;
+		if(!lo.height) {
+			if(!found.node) found = lo; /* Want one-off-end if last. */
+			break;
+		}
 	}
+	return found;
 }
 
 #if 0
