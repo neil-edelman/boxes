@@ -121,7 +121,9 @@ Adding, deleting, or changes in the topology of the tree invalidate it\.
 
 <tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#user-content-fn-e460356c">&lt;B&gt;tree_get_or</a></td><td>tree, key, default_value</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#user-content-fn-9c97fd6f">&lt;B&gt;tree_great_or</a></td><td>tree, key, default_value</td></tr>
+<tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#user-content-fn-6e8e5494">&lt;B&gt;tree_upper_or</a></td><td>tree, key, default_value</td></tr>
+
+<tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#user-content-fn-f5f88f67">&lt;B&gt;tree_lower_or</a></td><td>tree, key, default_value</td></tr>
 
 <tr><td align = right>static enum tree_result</td><td><a href = "#user-content-fn-f0e6123c">&lt;B&gt;tree_bulk_add</a></td><td>tree, key, value</td></tr>
 
@@ -149,7 +151,9 @@ Adding, deleting, or changes in the topology of the tree invalidate it\.
 
 <tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#user-content-fn-16ee74a9">&lt;B&gt;tree&lt;D&gt;get</a></td><td>tree, key</td></tr>
 
-<tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#user-content-fn-3598f47c">&lt;B&gt;tree&lt;D&gt;great</a></td><td>tree, key</td></tr>
+<tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#user-content-fn-d78be869">&lt;B&gt;tree&lt;D&gt;upper</a></td><td>tree, key</td></tr>
+
+<tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#user-content-fn-56e92fa4">&lt;B&gt;tree&lt;D&gt;lower</a></td><td>tree, key</td></tr>
 
 </table>
 
@@ -231,9 +235,23 @@ Counts all the keys on `tree`, which can be null\.
 
 
 
-### <a id = "user-content-fn-9c97fd6f" name = "user-content-fn-9c97fd6f">&lt;B&gt;tree_great_or</a> ###
+### <a id = "user-content-fn-6e8e5494" name = "user-content-fn-6e8e5494">&lt;B&gt;tree_upper_or</a> ###
 
-<code>static &lt;PB&gt;value <strong>&lt;B&gt;tree_great_or</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>, const &lt;PB&gt;value <em>default_value</em>)</code>
+<code>static &lt;PB&gt;value <strong>&lt;B&gt;tree_upper_or</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>, const &lt;PB&gt;value <em>default_value</em>)</code>
+
+For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`, `x = 11 -> null`\. \(There is no upper value\.\)
+
+ * Return:  
+   Least upper\-bound value for `key` in `tree` or `default_value` if `key` is greater than all in `tree`\. The map type is `TREE_VALUE` and the set type is `TREE_KEY`\.
+ * Order:  
+   &#927;\(log |`tree`|\)
+
+
+
+
+### <a id = "user-content-fn-f5f88f67" name = "user-content-fn-f5f88f67">&lt;B&gt;tree_lower_or</a> ###
+
+<code>static &lt;PB&gt;value <strong>&lt;B&gt;tree_lower_or</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>, const &lt;PB&gt;value <em>default_value</em>)</code>
 
 For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`, `x = 11 -> null`\. \(There is no upper value\.\)
 
@@ -437,11 +455,25 @@ This is functionally identical to [&lt;B&gt;tree_get_or](#user-content-fn-e46035
 
 
 
-### <a id = "user-content-fn-3598f47c" name = "user-content-fn-3598f47c">&lt;B&gt;tree&lt;D&gt;great</a> ###
+### <a id = "user-content-fn-d78be869" name = "user-content-fn-d78be869">&lt;B&gt;tree&lt;D&gt;upper</a> ###
 
-<code>static &lt;PB&gt;value <strong>&lt;B&gt;tree&lt;D&gt;great</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>)</code>
+<code>static &lt;PB&gt;value <strong>&lt;B&gt;tree&lt;D&gt;upper</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>)</code>
 
-This is functionally identical to [&lt;B&gt;tree_great_or](#user-content-fn-9c97fd6f), but a with a trait specifying a constant default value\.
+This is functionally identical to [&lt;B&gt;tree_upper_or](#user-content-fn-6e8e5494), but a with a trait specifying a constant default value\.
+
+ * Return:  
+   The value associated with `key` in `tree`, \(which can be null\.\) If no such value exists, the `TREE_DEFAULT` is returned\.
+ * Order:  
+   &#927;\(log |`tree`|\)\.
+
+
+
+
+### <a id = "user-content-fn-56e92fa4" name = "user-content-fn-56e92fa4">&lt;B&gt;tree&lt;D&gt;lower</a> ###
+
+<code>static &lt;PB&gt;value <strong>&lt;B&gt;tree&lt;D&gt;lower</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>)</code>
+
+This is functionally identical to [&lt;B&gt;tree_lower_or](#user-content-fn-f5f88f67), but a with a trait specifying a constant default value\.
 
  * Return:  
    The value associated with `key` in `tree`, \(which can be null\.\) If no such value exists, the `TREE_DEFAULT` is returned\.
