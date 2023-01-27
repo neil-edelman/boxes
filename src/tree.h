@@ -343,26 +343,30 @@ static struct PB_(ref) PB_(upper)(struct PB_(tree) tree, const PB_(key) x) {
 	struct PB_(ref) hi, found;
 	found.node = 0;
 	if(!tree.node || tree.height == UINT_MAX) return found;
-	printf("key %u\n", x);
 	for(hi.node = tree.node, hi.height = tree.height; ;
 		hi.node = PB_(as_branch_c)(hi.node)->child[hi.idx], hi.height--) {
 		unsigned lo = 0;
 		if(!(hi.idx = hi.node->size)) continue; /* No contents. */
+		printf("start [%u..%u]\n", lo, hi.idx);
 		do {
 			const unsigned mid = (lo + hi.idx) / 2; /* Doesn't overflow. */
-			printf("key %u, mid [%u]%u\n", x, mid, hi.node->key[mid]);
-			if(B_(compare)(x, hi.node->key[mid]) <= 0) printf("->lower\n"), hi.idx = mid;
-			else printf("->higher\n"), lo = mid + 1;
-			printf("([%u], [%u])\n", lo, hi.idx);
+			printf("key %u, mid [%u]%u ->", x, mid, hi.node->key[mid]);
+			if(B_(compare)(x, hi.node->key[mid]) > 0) hi.idx = mid;
+			else lo = mid + 1;
+			printf("[%u..%u]\n", lo, hi.idx);
 		} while(lo < hi.idx);
-		if(hi.idx < hi.node->size) { /* Within bounds. */
-			printf("within bounds\n");
+		if(hi.idx < hi.node->size) { /* Save found if within bounds. */
+			printf("within bounds [%u]%u\n", hi.idx, hi.node->key[hi.idx]);
 			found = hi;
-			if(B_(compare)(x, hi.node->key[hi.idx]) <= 0) break; /* Equal. */
+			if(B_(compare)(hi.node->key[hi.idx], x) <= 0)
+				{ printf("equal!\n"); break; }/* Equal. */
 		}
 		if(!hi.height) break;
 	}
-	printf("found: [%u]\n", found.idx);
+	printf("%u: ", x);
+	if(found.node) printf("found [%u]%u\n",
+		found.idx, found.node->key[found.idx]);
+	else printf("lower then lowest\n");
 	return found;
 }
 

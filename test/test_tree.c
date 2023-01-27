@@ -228,6 +228,25 @@ static void order3(void) {
 	v = order3_tree_lower_or(&between, 300, 0), assert(v == 300);
 	v = order3_tree_lower_or(&between, 350, 0), assert(!v);
 
+	/* Test greatest lower/least higher bound. */
+	order3_tree_clear(&between);
+	order3_tree_bulk_add(&between, 10);
+	order3_tree_bulk_add(&between, 20);
+	order3_tree_bulk_add(&between, 30);
+	order3_tree_bulk_add(&between, 40);
+	order3_tree_bulk_add(&between, 50);
+	order3_tree_bulk_add(&between, 60);
+	order3_tree_bulk_add(&between, 70);
+	order3_tree_bulk_add(&between, 80);
+	order3_tree_bulk_finish(&between);
+	tree_order3_graph_horiz(&between, "graph/higher.gv");
+	v = order3_tree_upper_or(&between, 10, 0), assert(v == 10);
+	v = order3_tree_upper_or(&between, 80, 0), assert(v == 80);
+	v = order3_tree_upper_or(&between, 55, 0), assert(v == 50);
+	v = order3_tree_upper_or(&between, 85, 0), assert(v == 80);
+	v = order3_tree_upper_or(&between, 15, 0), assert(v == 10);
+	v = order3_tree_upper_or(&between, 5, 0), assert(v == 0);
+
 	/* For the paper. */
 	order3_tree_clear(&between);
 	order3_tree_bulk_add(&between, 1);
