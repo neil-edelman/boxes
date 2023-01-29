@@ -173,11 +173,10 @@ static struct PB_(branch) *PB_(as_branch)(struct PB_(node) *const as_leaf)
 static const struct PB_(branch) *PB_(as_branch_c)(const struct PB_(node) *
 	const as_node) { return (const struct PB_(branch) *)(const void *)
 	((const char *)as_node - offsetof(struct PB_(branch), base)); }
-/* Address of a specific key by node. There is a need for node plus index
- without height, but we'll just let height be unused. */
+/* Address of a specific key by node. Height might not be used, but there's too
+ many structs in this file anyway. */
 struct PB_(ref) { struct PB_(node) *node; unsigned height, idx; };
-/* Node plus height is a sub-tree. A <tag:<B>tree> is a sub-tree of the tree.
- fixme: 0-based height is problematic. UINT_MAX? No. */
+/* Node plus height is a [sub]-tree. */
 struct PB_(tree) { struct PB_(node) *node; unsigned height; };
 /** To initialize it to an idle state, see <fn:<B>tree>, `{0}` (`C99`), or
  being `static`.
@@ -187,18 +186,14 @@ struct B_(tree);
 struct B_(tree) { struct PB_(tree) root; };
 
 #ifdef TREE_VALUE /* <!-- value */
-
 /** Gets the value of `ref`. */
 static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->value + ref.idx : 0; }
-
 #else /* value --><!-- !value */
-
 typedef PB_(key) PB_(value);
 /** Gets the value of `ref`. */
 static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->key + ref.idx : 0; }
-
 #endif /* !value --> */
 
 struct PB_(iterator) { struct PB_(tree) *root; struct PB_(ref) ref; int seen; };
@@ -315,47 +310,6 @@ predecessor:
 	return 1;
 }
 
-/* Want to find slightly different things; code re-use is bad. Confusing.
- This is the lower-bound. */
-#define TREE_FOR_NODE(tree, i) i.node = tree.node, i.height = tree.height; ; \
-	i.node = PB_(as_branch_c)(i.node)->child[i.idx], i.height--
-#define TREE_START(i) unsigned hi = i.node->size; i.idx = 0;
-#define TREE_FOR_UPPER(i, x) do { \
-	const unsigned m = (i.idx + hi) / 2; \
-	if(B_(compare)(x, i.node->key[m]) > 0) i.idx = m + 1; \
-	else hi = m; \
-} while(hi <= i.idx);
-#define TREE_FOR_LOWER(i, x) do { \
-	const unsigned m = (i.idx + hi) / 2; \
-	if(B_(compare)(x, i.node->key[m]) > 0) i.idx = m + 1; \
-	else hi = m; \
-} while(i.idx < hi);
-#define TREE_FLIPPED(i, x) B_(compare)(i.node->key[i.idx], x) <= 0
-
-/** @return A reference the element at the greatest lower bound of `x` in
- `tree`, or if the element doesn't exist, `node` will be null. */
-static struct PB_(ref) PB_(right)(const struct PB_(tree) tree,
-	const PB_(key) x) {
-	struct PB_(ref) lo, found;
-	found.node = 0;
-	if(!tree.node) return found;
-	for(lo.node = tree.node, lo.height = tree.height; ;
-		lo.node = PB_(as_branch_c)(lo.node)->child[lo.idx], lo.height--) {
-		unsigned hi = lo.node->size; lo.idx = 0;
-		if(!hi) continue;
-		do { /* Greatest lower-bound on node. */
-			const unsigned mid = (lo.idx + hi) / 2; /* Will not overflow. */
-			if(B_(compare)(x, lo.node->key[mid]) > 0) lo.idx = mid + 1;
-			else hi = mid;
-		} while(lo.idx < hi);
-		if(lo.idx < lo.node->size) { /* Within bounds, record the current. */
-			found = lo;
-			if(B_(compare)(x, lo.node->key[lo.idx]) > 0) break; /* Equal. */
-		}
-		if(!lo.height) break; /* Reached the bottom. */
-	}
-	return found;
-}
 /** @return A reference to the predecessor of the element at the least upper
  bound of `x` in `tree`, or `node` will be null if the predecessor doesn't
  exist. */
@@ -373,50 +327,106 @@ static struct PB_(ref) PB_(left)(const struct PB_(tree) tree,
 			if(B_(compare)(hi.node->key[mid], x) <= 0) lo = mid + 1;
 			else hi.idx = mid;
 		} while(lo < hi.idx);
-		if(hi.idx) {
+		if(hi.idx) { /* Within bounds, record the current. */
 			found = hi, found.idx--;
+			/* Equal. */
 			if(B_(compare)(x, found.node->key[found.idx]) <= 0) break;
 		}
-		if(!hi.height) break;
+		if(!hi.height) break; /* Reached the bottom. */
 	}
 	return found;
 }
-
-
-
-
-/** Finds `key` in `lo` one node at a time. */
-static void PB_(find_idx)(struct PB_(ref) *const lo, const PB_(key) key) {
-	TREE_START((*lo))
-	if(!lo) return;
-	TREE_FOR_LOWER((*lo), key)
-}
-
-static struct PB_(ref) PB_(lower)(struct PB_(tree) tree, const PB_(key) x) {
-	struct PB_(ref) lo, found;
+#include "orcish.h"
+/** @return A reference to the element at the least upper bound of `x` in
+ `tree`; can have imaginary one-higher if lub dne. */
+static struct PB_(ref) PB_(upper_bound)(const struct PB_(tree) tree,
+	const PB_(key) x) {
+	struct PB_(ref) hi, found;
 	found.node = 0;
-	if(!tree.node || tree.height == UINT_MAX) return found;
-	for(lo.node = tree.node, lo.height = tree.height; ;
-		lo.node = PB_(as_branch_c)(lo.node)->child[lo.idx], lo.height--) {
-		unsigned hi = lo.node->size; lo.idx = 0;
-		if(!hi) continue;
-		do {
-			const unsigned mid = (lo.idx + hi) / 2;
-			if(B_(compare)(x, lo.node->key[mid]) > 0) lo.idx = mid + 1;
-			else hi = mid;
-		} while(lo.idx < hi);
-		if(lo.idx < lo.node->size) { /* Within bounds. */
-			found = lo;
-			if(B_(compare)(x, lo.node->key[lo.idx]) > 0) break;
-		}
-		if(!lo.height) {
-			if(!found.node) found = lo; /* Want one-off-end if last. */
-			break;
-		}
+	if(!tree.node) return found;
+	for(hi.node = tree.node, hi.height = tree.height; ;
+		hi.node = PB_(as_branch_c)(hi.node)->child[hi.idx], hi.height--) {
+		unsigned lo = 0;
+		if(!(hi.idx = hi.node->size)) continue;
+		do { /* Least upper-bound on node. */
+			const unsigned mid = (lo + hi.idx) / 2;
+			if(B_(compare)(hi.node->key[mid], x) <= 0) lo = mid + 1;
+			else hi.idx = mid;
+		} while(lo < hi.idx);
+		if(hi.idx < hi.node->size) found = hi;
+		if(!hi.height
+			|| hi.idx && B_(compare)(x, hi.node->key[hi.idx - 1]) <= 0) break;
 	}
+	printf("yo: %s:%u\n", orcify(found.node), found.idx);
 	return found;
 }
 
+/* @return A reference the element at the greatest lower bound of `x` in
+ `tree`, or if the element doesn't exist, `node` will be null. */
+#define RIGHT(right, REACHED_BOTTOM) \
+static struct PB_(ref) PB_(right)(const struct PB_(tree) tree, \
+	const PB_(key) x) { \
+	struct PB_(ref) lo, found; \
+	found.node = 0; \
+	if(!tree.node || tree.height == UINT_MAX) return found; \
+	for(lo.node = tree.node, lo.height = tree.height; ; \
+		lo.node = PB_(as_branch_c)(lo.node)->child[lo.idx], lo.height--) { \
+		unsigned hi = lo.node->size; lo.idx = 0; \
+		if(!hi) continue; \
+		do { /* Greatest lower-bound on node. */ \
+			const unsigned mid = (lo.idx + hi) / 2; \
+			if(B_(compare)(x, lo.node->key[mid]) > 0) lo.idx = mid + 1; \
+			else hi = mid; \
+		} while(lo.idx < hi); \
+		if(lo.idx < lo.node->size) { \
+			found = lo; \
+			if(B_(compare)(x, lo.node->key[lo.idx]) > 0) break; \
+		} \
+		if(!lo.height) { \
+			REACHED_BOTTOM \
+		} \
+	} \
+	return found; \
+}
+/* Only returns references to real elements. */
+RIGHT(right, break;)
+/* Returns an iterator to the greatest lower bound. */
+RIGHT(lower_bound, if(!found.node) found = lo; break;)
+#undef RIGHT
+
+
+/** Finds `idx` of greatest lower-bound of `key` in `lo` only in one node at a
+ time. Subset code-duplication from <fn:<PB>right>. */
+static void PB_(node_glb)(struct PB_(ref) *const lo, const PB_(key) key) {
+	unsigned hi = lo->node->size; lo->idx = 0;
+	assert(lo && lo->node);
+	do {
+		const unsigned m = (lo->idx + hi) / 2;
+		if(B_(compare)(key, lo->node->key[m]) > 0) lo->idx = m + 1;
+		else hi = m;
+	} while(lo->idx < hi);
+}
+
+
+
+
+
+/* Want to find slightly different things; code re-use is bad. Confusing.
+ This is the lower-bound. */
+#define TREE_FOR_NODE(tree, i) i.node = tree.node, i.height = tree.height; ; \
+	i.node = PB_(as_branch_c)(i.node)->child[i.idx], i.height--
+#define TREE_START(i) unsigned hi = i.node->size; i.idx = 0;
+#define TREE_FOR_UPPER(i, x) do { \
+	const unsigned m = (i.idx + hi) / 2; \
+	if(B_(compare)(x, i.node->key[m]) > 0) i.idx = m + 1; \
+	else hi = m; \
+} while(hi <= i.idx);
+#define TREE_FOR_LOWER(i, x) do { \
+	const unsigned m = (i.idx + hi) / 2; \
+	if(B_(compare)(x, i.node->key[m]) > 0) i.idx = m + 1; \
+	else hi = m; \
+} while(i.idx < hi);
+#define TREE_FLIPPED(i, x) B_(compare)(i.node->key[i.idx], x) <= 0
 /** Finds an exact `key` in non-empty `tree`. */
 static struct PB_(ref) PB_(find)(const struct PB_(tree) *const tree,
 	const PB_(key) key) {
@@ -594,11 +604,11 @@ static PB_(value) B_(tree_left_or)(const struct B_(tree) *const tree,
  @return Greatest lower-bound value for `key` in `tree` or `default_value` if
  `key` is greater than all in `tree`. The map type is `TREE_VALUE` and the set
  type is `TREE_KEY`. @order \O(\log |`tree`|) @allow */
-static PB_(value) B_(tree_lower_or)(const struct B_(tree) *const tree,
+static PB_(value) B_(tree_right_or)(const struct B_(tree) *const tree,
 	const PB_(key) key, const PB_(value) default_value) {
 	struct PB_(ref) ref;
-	return tree && (ref = PB_(lower)(tree->root, key)).node
-		&& ref.idx < ref.node->size ? *PB_(ref_to_valuep)(ref) : default_value;
+	return tree && (ref = PB_(right)(tree->root, key)).node
+		? *PB_(ref_to_valuep)(ref) : default_value;
 }
 
 #ifdef TREE_VALUE /* <!-- map */
@@ -892,7 +902,7 @@ grow: /* Leaf is full. */ {
 	/* Descend now while split hasn't happened -- easier. */
 	new_head = --iterator.height ? PB_(as_branch)(new_head)->child[0] : 0;
 	iterator.node = PB_(as_branch)(iterator.node)->child[iterator.idx];
-	PB_(find_idx)(&iterator, key);
+	PB_(node_glb)(&iterator, key);
 	assert(!sibling->size && iterator.node->size == TREE_MAX); /* Atomic. */
 	/* Expand `iterator`, which is full, to multiple nodes. */
 	if(iterator.idx < TREE_SPLIT) { /* Descend hole to `iterator`. */
@@ -1118,7 +1128,7 @@ no_succ:
 	/* Retrieve forgotten information about the index in parent. (This is not
 	 as fast at it could be, but holding parent data in minimum keys allows it
 	 to be in place, if a hack. We could go down, but new problems arise.) */
-	PB_(find_idx)(&parent, provisional_x);
+	PB_(node_glb)(&parent, provisional_x);
 	parentb = PB_(as_branch)(parent.node);
 	assert(parent.idx <= parent.node->size
 		&& parentb->child[parent.idx] == rm.node);
@@ -1539,19 +1549,33 @@ static struct B_(tree_iterator) B_(tree_begin)(struct B_(tree) *const tree)
  @order \Theta(\log |`tree`|) @allow */
 static struct B_(tree_iterator) B_(tree_end)(struct B_(tree) *const tree)
 	{ struct B_(tree_iterator) it; it._ = PB_(end)(tree); return it; }
-/** @return Cursor in `tree` between elements, such
- that if <fn:<B>tree_next> is called, it will be smallest key that is not
- smaller than `x`, or, <fn:<B>tree_end> if `x` is greater than all in `tree`.
+/** @return Cursor in `tree` between elements, such that if <fn:<B>tree_next>
+ is called, it will be least upper-bound of `x`. If `x` is greater than all the
+ `tree`, it will be <fn:<B>tree_end>, otherwise <fn:<B>tree_left_or>.
  @order \Theta(\log |`tree`|) @allow */
-static struct B_(tree_iterator) B_(tree_begin_at)(struct B_(tree) *const tree,
-	const PB_(key) x) {
+static struct B_(tree_iterator) B_(tree_upper_bound)(struct B_(tree) *const
+	tree, const PB_(key) x) {
 	struct B_(tree_iterator) cur;
 	if(!tree) return cur._.root = 0, cur;
-	cur._.ref = PB_(lower)(tree->root, x);
+	cur._.ref = PB_(upper_bound)(tree->root, x);
 	cur._.root = &tree->root;
 	cur._.seen = 0;
 	return cur;
 }
+/** @return Cursor in `tree` between elements, such
+ that if <fn:<B>tree_next> is called, it will be smallest key that is not
+ smaller than `x`, or, <fn:<B>tree_end> if `x` is greater than all in `tree`.
+ @order \Theta(\log |`tree`|) @allow */
+static struct B_(tree_iterator) B_(tree_lower_bound)(struct B_(tree) *const
+	tree, const PB_(key) x) {
+	struct B_(tree_iterator) cur;
+	if(!tree) return cur._.root = 0, cur;
+	cur._.ref = PB_(lower_bound)(tree->root, x);
+	cur._.root = &tree->root;
+	cur._.seen = 0;
+	return cur;
+}
+
 #ifdef TREE_VALUE /* <!-- map */
 /** @return Whether advancing `it` to the next element and filling `k`, (and
  `v` if a map, otherwise absent,) if not-null.
@@ -1631,7 +1655,7 @@ static enum tree_result B_(tree_iterator_try)(struct B_(tree_iterator) *const
 	assert(it->_.root->height != UINT_MAX); /* Can't be empty. */
 	switch(where) {
 	case TREE_NONODE: it->_.ref.node = 0; it->_.seen = 0; break;
-	case TREE_ITERATING: it->_.ref = PB_(lower)(*it->_.root, anchor); break;
+	case TREE_ITERATING: it->_.ref = PB_(right)(*it->_.root, anchor); break;
 	case TREE_END:
 		assert(it->_.root->node);
 		it->_.ref.node = it->_.root->node;
@@ -1665,7 +1689,7 @@ static int B_(tree_iterator_remove)(struct B_(tree_iterator) *const it) {
 		|| (remove = it->_.ref.node->key[it->_.ref.idx],
 		!PB_(remove)(it->_.root, remove))) return 0;
 	/* <fn:<B>tree_begin_at>. */
-	it->_.ref = PB_(lower)(*it->_.root, remove);
+	it->_.ref = PB_(right)(*it->_.root, remove);
 	it->_.seen = 0;
 	return 1;
 }
@@ -1675,7 +1699,7 @@ static void PB_(unused_base)(void) {
 	PB_(key) k; PB_(value) v; memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
 	B_(tree)(); B_(tree_)(0); B_(tree_clear)(0); B_(tree_count)(0);
 	B_(tree_contains)(0, k); B_(tree_get_or)(0, k, v);
-	B_(tree_left_or)(0, k, v); B_(tree_lower_or)(0, k, v);
+	B_(tree_left_or)(0, k, v); B_(tree_right_or)(0, k, v);
 #ifdef TREE_VALUE
 	B_(tree_bulk_add)(0, k, 0); B_(tree_try)(0, k, 0);
 	B_(tree_assign)(0, k, 0, 0); B_(tree_iterator_try)(0, k, 0);
@@ -1686,7 +1710,8 @@ static void PB_(unused_base)(void) {
 	B_(tree_next)(0, 0); B_(tree_previous)(0, 0);
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
-	B_(tree_begin)(0); B_(tree_begin_at)(0, k); /* fixme! */ B_(tree_end)(0);
+	B_(tree_begin)(0); B_(tree_end)(0);
+	B_(tree_upper_bound)(0, k); B_(tree_lower_bound)(0, k);
 	B_(tree_iterator_remove)(0);
 	PB_(unused_base_coda)();
 }
@@ -1778,17 +1803,17 @@ static PB_(value) B_D_(tree, left)(const struct B_(tree) *const tree,
  @return The value associated with `key` in `tree`, (which can be null.) If
  no such value exists, the `TREE_DEFAULT` is returned.
  @order \O(\log |`tree`|). @allow */
-static PB_(value) B_D_(tree, lower)(const struct B_(tree) *const tree,
+static PB_(value) B_D_(tree, right)(const struct B_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) ref;
-	return tree && (ref = PB_(lower)(tree->root, key)).node
+	return tree && (ref = PB_(right)(tree->root, key)).node
 		&& ref.idx < ref.node->size
 		? *PB_(ref_to_valuep)(ref) : PB_D_(default, value);
 }
 static void PB_D_(unused, default_coda)(void);
 static void PB_D_(unused, default)(void) {
 	PB_(key) k; memset(&k, 0, sizeof k);
-	B_D_(tree, get)(0, k); B_D_(tree, left)(0, k); B_D_(tree, lower)(0, k);
+	B_D_(tree, get)(0, k); B_D_(tree, left)(0, k); B_D_(tree, right)(0, k);
 	PB_D_(unused, default_coda)();
 }
 static void PB_D_(unused, default_coda)(void) { PB_D_(unused, default)(); }

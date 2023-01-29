@@ -223,8 +223,8 @@ static void PB_(test)(void) {
 	PB_(valid)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
-	it = B_(tree_begin_at)(0, test[0].key), assert(!it._.root);
-	it = B_(tree_begin_at)(&tree, test[0].key), assert(!it._.ref.node);
+	it = B_(tree_lower_bound)(0, test[0].key), assert(!it._.root);
+	it = B_(tree_lower_bound)(&tree, test[0].key), assert(!it._.ref.node);
 
 	/* Bulk, (simple.) */
 	for(i = 0; i < test_size; i++) {
@@ -267,7 +267,7 @@ static void PB_(test)(void) {
 #endif
 		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-bulk-%lu.gv", i + 1);
-			PB_(graph)(&tree, fn);
+			//PB_(graph)(&tree, fn);
 		}
 	}
 	printf("Finalize.\n");
@@ -322,13 +322,13 @@ static void PB_(test)(void) {
 #endif
 		) {
 		int succ;
-		/*char z[12];
+		char z[12];
 #ifdef TREE_VALUE
 		B_(to_string)(k, v, &z);
 #else
 		B_(to_string)(k, &z);
 #endif
-		printf("removing <%s>\n", z);*/
+		printf("removing <%s>\n", z);
 		succ = B_(tree_iterator_remove)(&it);
 		assert(succ);
 		succ = B_(tree_iterator_remove)(&it);
