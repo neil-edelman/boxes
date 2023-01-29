@@ -165,6 +165,7 @@ static void entry_to_string(const union date32 k, const int *const v,
 /** Static bounds check. */
 static void char_bounds(void) {
 	struct char_tree tree = char_tree();
+	struct char_tree_iterator it;
 	const char correct_right[] = {
 		/*a*/'b', 'b', 'd', 'd',
 		/*e*/'f', 'f', 'h', 'h',
@@ -176,7 +177,11 @@ static void char_bounds(void) {
 	correct_upper[] = {
 		/*a*/'b', 'd', 'd', 'f',
 		/*e*/'f', 'h', 'h', 'j',
-		/*i*/'j', '_', '_', '_' };
+		/*i*/'j', '_', '_', '_' },
+	correct_lower[] = {
+		/*a*/'b', 'b', 'd', 'd',
+		/*e*/'f', 'f', 'h', 'h',
+		/*i*/'j', 'j', '_', '_' };
 	char i;
 	char_tree_bulk_add(&tree, 'b');
 	char_tree_bulk_add(&tree, 'd');
@@ -188,14 +193,30 @@ static void char_bounds(void) {
 	printf("right or z:\n");
 	for(i = 'a'; i < 'm'; i++) {
 		char right = char_tree_right(&tree, i);
-		printf("%c\t%c\n", i, right);
-		assert(correct_right[(int)i-'a'] == right);
+		printf("%c\t%c\t(%c)\n", i, right, correct_right[(int)i-'a']);
+		assert(right == correct_right[(int)i-'a']);
 	}
 	printf("left or z:\n");
 	for(i = 'a'; i < 'm'; i++) {
 		char left = char_tree_left(&tree, i);
-		printf("%c\t%c\n", i, left);
-		assert(correct_left[(int)i-'a'] == left);
+		printf("%c\t%c\t(%c)\n", i, left, correct_left[(int)i-'a']);
+		assert(left == correct_left[(int)i-'a']);
+	}
+	printf("upper_bound:\n");
+	for(i = 'a'; i < 'm'; i++) {
+		char up;
+		it = char_tree_lower_bound(&tree, i);
+		if(!char_tree_next(&it, &up)) up = '_';
+		printf("%c\t%c\t(%c)\n", i, up, correct_upper[(int)i-'a']);
+		assert(up == correct_upper[(int)i-'a']);
+	}
+	printf("lower_bound:\n");
+	for(i = 'a'; i < 'm'; i++) {
+		char low;
+		it = char_tree_lower_bound(&tree, i);
+		if(!char_tree_next(&it, &low)) low = '_';
+		printf("%c\t%c\t(%c)\n", i, low, correct_lower[(int)i-'a']);
+		assert(low == correct_lower[(int)i-'a']);
 	}
 	char_tree_(&tree);
 }
