@@ -239,13 +239,13 @@ static void order3(void) {
 	order3_tree_bulk_add(&between, 70);
 	order3_tree_bulk_add(&between, 80);
 	order3_tree_bulk_finish(&between);
-	tree_order3_graph_horiz(&between, "graph/higher.gv");
-	v = order3_tree_upper_or(&between, 10, 0), assert(v == 10);
-	v = order3_tree_upper_or(&between, 80, 0), assert(v == 80);
-	v = order3_tree_upper_or(&between, 55, 0), assert(v == 50);
-	v = order3_tree_upper_or(&between, 85, 0), assert(v == 80);
-	v = order3_tree_upper_or(&between, 15, 0), assert(v == 10);
-	v = order3_tree_upper_or(&between, 5, 0), assert(v == 0);
+	tree_order3_graph_horiz(&between, "graph/left.gv");
+	v = order3_tree_left_or(&between, 10, 0), assert(v == 10);
+	v = order3_tree_left_or(&between, 80, 0), assert(v == 80);
+	v = order3_tree_left_or(&between, 55, 0), assert(v == 50);
+	v = order3_tree_left_or(&between, 85, 0), assert(v == 80);
+	v = order3_tree_left_or(&between, 15, 0), assert(v == 10);
+	v = order3_tree_left_or(&between, 5, 0), assert(v == 0);
 
 	/* For the paper. */
 	order3_tree_clear(&between);
@@ -618,12 +618,12 @@ static void loop(void) {
 	ret = loop_tree_meaning_lower(&tree, 0), assert(ret == 101);
 	ret = loop_tree_meaning_lower(&tree, 4), assert(ret == 42); /* No glb. */
 
-	ret = loop_tree_upper_or(&tree, 3, 0), assert(ret == 3);
-	ret = loop_tree_upper_or(&tree, 4, 0), assert(ret == 3);
-	ret = loop_tree_upper(&tree, 0), assert(ret == 0);
-	ret = loop_tree_upper(&tree, 4), assert(ret == 3);
-	ret = loop_tree_meaning_upper(&tree, 0), assert(ret == 42); /* No lub. */
-	ret = loop_tree_meaning_upper(&tree, 4), assert(ret == 3);
+	ret = loop_tree_left_or(&tree, 3, 0), assert(ret == 3);
+	ret = loop_tree_left_or(&tree, 4, 0), assert(ret == 3);
+	ret = loop_tree_left(&tree, 0), assert(ret == 0);
+	ret = loop_tree_left(&tree, 4), assert(ret == 3);
+	ret = loop_tree_meaning_left(&tree, 0), assert(ret == 42); /* No lub. */
+	ret = loop_tree_meaning_left(&tree, 4), assert(ret == 3);
 
 	loop_tree_(&tree);
 	if(!loop_tree_try(&tree, 8)) { assert(0); return; }
