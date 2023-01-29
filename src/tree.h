@@ -586,28 +586,28 @@ static PB_(value) B_(tree_get_or)(const struct B_(tree) *const tree,
 		? *PB_(ref_to_valuep)(ref) : default_value;
 }
 
-/** For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`,
- `x = 11 -> null`. (There is no upper value.)
- @return Least upper-bound value for `key` in `tree` or `default_value` if
- `key` is greater than all in `tree`. The map type is `TREE_VALUE` and the set
- type is `TREE_KEY`. @order \O(\log |`tree`|) @allow */
+/** For example, `tree = { 10 }`, `x = 5 -> default_value`, `x = 10 -> 10`,
+ `x = 11 -> 10`.
+ @return Value in `tree` less-then-or-equal to `x` or `default_value` if `x`
+ is smaller than all in `tree`.
+ @order \O(\log |`tree`|) @allow */
 static PB_(value) B_(tree_left_or)(const struct B_(tree) *const tree,
-	const PB_(key) key, const PB_(value) default_value) {
+	const PB_(key) x, const PB_(value) default_value) {
 	struct PB_(ref) ref;
-	return tree && (ref = PB_(left)(tree->root, key)).node ?
+	return tree && (ref = PB_(left)(tree->root, x)).node ?
 		(assert(ref.idx < ref.node->size), *PB_(ref_to_valuep)(ref))
 		: default_value;
 }
 
 /** For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`,
- `x = 11 -> null`. (There is no upper value.)
- @return Greatest lower-bound value for `key` in `tree` or `default_value` if
- `key` is greater than all in `tree`. The map type is `TREE_VALUE` and the set
- type is `TREE_KEY`. @order \O(\log |`tree`|) @allow */
+ `x = 11 -> default_value`.
+ @return Value in `tree` greater-than-or-equal to `x` or `default_value` if `x`
+ is greater than all in `tree`.
+ @order \O(\log |`tree`|) @allow */
 static PB_(value) B_(tree_right_or)(const struct B_(tree) *const tree,
-	const PB_(key) key, const PB_(value) default_value) {
+	const PB_(key) x, const PB_(value) default_value) {
 	struct PB_(ref) ref;
-	return tree && (ref = PB_(right)(tree->root, key)).node
+	return tree && (ref = PB_(right)(tree->root, x)).node
 		? *PB_(ref_to_valuep)(ref) : default_value;
 }
 
@@ -1786,7 +1786,7 @@ static PB_(value) B_D_(tree, get)(const struct B_(tree) *const tree,
 		&& (ref = PB_(find)(&tree->root, key)).node
 		? *PB_(ref_to_valuep)(ref) : PB_D_(default, value);
 }
-/** This is functionally identical to <fn:<B>tree_upper_or>, but a with a trait
+/** This is functionally identical to <fn:<B>tree_left_or>, but a with a trait
  specifying a constant default value.
  @return The value associated with `key` in `tree`, (which can be null.) If
  no such value exists, the `TREE_DEFAULT` is returned.
@@ -1798,7 +1798,7 @@ static PB_(value) B_D_(tree, left)(const struct B_(tree) *const tree,
 		(assert(ref.idx < ref.node->size), *PB_(ref_to_valuep)(ref))
 		: PB_D_(default, value);
 }
-/** This is functionally identical to <fn:<B>tree_lower_or>, but a with a trait
+/** This is functionally identical to <fn:<B>tree_right_or>, but a with a trait
  specifying a constant default value.
  @return The value associated with `key` in `tree`, (which can be null.) If
  no such value exists, the `TREE_DEFAULT` is returned.

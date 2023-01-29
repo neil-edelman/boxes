@@ -190,13 +190,13 @@ static void char_bounds(void) {
 	char_tree_bulk_add(&tree, 'j');
 	char_tree_bulk_finish(&tree);
 	tree_char_graph(&tree, "graph/char-bounds.gv");
-	printf("right or z:\n");
+	printf("right:\n");
 	for(i = 'a'; i < 'm'; i++) {
 		char right = char_tree_right(&tree, i);
 		printf("%c\t%c\t(%c)\n", i, right, correct_right[(int)i-'a']);
 		assert(right == correct_right[(int)i-'a']);
 	}
-	printf("left or z:\n");
+	printf("left:\n");
 	for(i = 'a'; i < 'm'; i++) {
 		char left = char_tree_left(&tree, i);
 		printf("%c\t%c\t(%c)\n", i, left, correct_left[(int)i-'a']);
@@ -205,7 +205,7 @@ static void char_bounds(void) {
 	printf("upper_bound:\n");
 	for(i = 'a'; i < 'm'; i++) {
 		char up;
-		it = char_tree_lower_bound(&tree, i);
+		it = char_tree_upper_bound(&tree, i);
 		if(!char_tree_next(&it, &up)) up = '_';
 		printf("%c\t%c\t(%c)\n", i, up, correct_upper[(int)i-'a']);
 		assert(up == correct_upper[(int)i-'a']);
