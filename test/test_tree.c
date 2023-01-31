@@ -173,15 +173,7 @@ static void char_bounds(void) {
 	correct_left[] = {
 		/*a*/'_', 'b', 'b', 'd',
 		/*e*/'d', 'f', 'f', 'h',
-		/*i*/'h', 'j', 'j', 'j' },
-	correct_upper[] = {
-		/*a*/'b', 'd', 'd', 'f',
-		/*e*/'f', 'h', 'h', 'j',
-		/*i*/'j', '_', '_', '_' },
-	correct_lower[] = {
-		/*a*/'b', 'b', 'd', 'd',
-		/*e*/'f', 'f', 'h', 'h',
-		/*i*/'j', 'j', '_', '_' };
+		/*i*/'h', 'j', 'j', 'j' };
 	char i;
 	char_tree_bulk_add(&tree, 'b');
 	char_tree_bulk_add(&tree, 'd');
@@ -201,22 +193,6 @@ static void char_bounds(void) {
 		char left = char_tree_left(&tree, i);
 		printf("%c\t%c\t(%c)\n", i, left, correct_left[(int)i-'a']);
 		assert(left == correct_left[(int)i-'a']);
-	}
-	printf("upper_bound:\n");
-	for(i = 'a'; i < 'm'; i++) {
-		char up;
-		it = char_tree_upper_bound(&tree, i);
-		if(!char_tree_next(&it, &up)) up = '_';
-		printf("%c\t%c\t(%c)\n", i, up, correct_upper[(int)i-'a']);
-		assert(up == correct_upper[(int)i-'a']);
-	}
-	printf("lower_bound:\n");
-	for(i = 'a'; i < 'm'; i++) {
-		char low;
-		it = char_tree_lower_bound(&tree, i);
-		if(!char_tree_next(&it, &low)) low = '_';
-		printf("%c\t%c\t(%c)\n", i, low, correct_lower[(int)i-'a']);
-		assert(low == correct_lower[(int)i-'a']);
 	}
 	char_tree_(&tree);
 }
@@ -239,17 +215,6 @@ static void order3(void) {
 	printf("manual: order3 order %lu\n", order3_order);
 	assert(order3_order == 3);
 
-	/* Multi-maps. This is less useful and finally dropped.
-	for(i = 0; i < 5; i++) if(!unsigned_tree_bulk_add(&equal, 0)) goto catch;
-	for(i = 0; i < 15; i++) if(!unsigned_tree_bulk_add(&equal, 1)) goto catch;
-	tree_unsigned_graph(&equal, "graph/manual-equal.gv");
-	unsigned_tree_bulk_finish(&equal);
-	tree_unsigned_graph(&equal, "graph/manual-equal-finalize.gv");
-	x = unsigned_tree_get(&equal, 1), assert(x);
-	printf("equal: x = %u\n", *x);
-	ti._ = tree_unsigned_lower(&equal, 1);
-	printf("equal: %s:%u\n", orcify(ti._.end.node), ti._.end.idx);*/
-
 	/* Lookup between nodes. */
 	if(!order3_tree_bulk_add(&between, 100)
 		|| !order3_tree_bulk_add(&between, 200)
@@ -258,48 +223,48 @@ static void order3(void) {
 	assert(ret);
 	tree_order3_graph_horiz(&between, "graph/between.gv");
 
-	it = order3_tree_lower_bound(&between, 50);
+	it = order3_tree_right_bound(&between, 50);
 	printf("between(50) %s:%u %sseen.\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
 	ret = order3_tree_next(&it, &v), assert(ret && v == 100);
 	printf("next %u.\n", v);
-	it = order3_tree_lower_bound(&between, 50);
+	it = order3_tree_right_bound(&between, 50);
 	ret = order3_tree_previous(&it, &v), assert(!ret);
 	printf("previous dne.\n");
 
-	it = order3_tree_lower_bound(&between, 150);
+	it = order3_tree_right_bound(&between, 150);
 	printf("between(150) %s:%u %sseen.\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
 	ret = order3_tree_next(&it, &v), assert(ret && v == 200);
 	printf("next %u.\n", v);
-	it = order3_tree_lower_bound(&between, 150);
+	it = order3_tree_right_bound(&between, 150);
 	ret = order3_tree_previous(&it, &v), assert(ret && v == 100);
 	printf("previous %u.\n", v);
 
-	it = order3_tree_lower_bound(&between, 200);
+	it = order3_tree_right_bound(&between, 200);
 	printf("between(200) %s:%u %sseen.\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
 	ret = order3_tree_next(&it, &v), assert(ret && v == 200);
 	printf("next %u.\n", v);
-	it = order3_tree_lower_bound(&between, 200);
+	it = order3_tree_right_bound(&between, 200);
 	ret = order3_tree_previous(&it, &v), assert(ret && v == 100);
 	printf("previous %u.\n", v);
 
-	it = order3_tree_lower_bound(&between, 250);
+	it = order3_tree_right_bound(&between, 250);
 	printf("between(250) %s:%u %sseen.\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
 	ret = order3_tree_next(&it, &v), assert(ret && v == 300);
 	printf("next %u.\n", v);
-	it = order3_tree_lower_bound(&between, 250);
+	it = order3_tree_right_bound(&between, 250);
 	ret = order3_tree_previous(&it, &v), assert(ret && v == 200);
 	printf("previous %u.\n", v);
 
-	it = order3_tree_lower_bound(&between, 350);
+	it = order3_tree_right_bound(&between, 350);
 	printf("between(350) %s:%u %sseen\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
 	ret = order3_tree_next(&it, &v), assert(!ret);
 	printf("next dne.\n");
-	it = order3_tree_lower_bound(&between, 350);
+	it = order3_tree_right_bound(&between, 350);
 	ret = order3_tree_previous(&it, &v), assert(ret && v == 300);
 	printf("previous %u.\n", v);
 
@@ -309,48 +274,48 @@ static void order3(void) {
 	v = order3_tree_right_or(&between, 300, 0), assert(v == 300);
 	v = order3_tree_right_or(&between, 350, 0), assert(!v);
 
-	it = order3_tree_upper_bound(&between, 50);
+	it = order3_tree_left_bound(&between, 50);
 	printf("between(50) %s:%u %sseen.\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
 	ret = order3_tree_next(&it, &v), assert(ret && v == 100);
 	printf("next %u.\n", v);
-	it = order3_tree_upper_bound(&between, 50);
+	it = order3_tree_left_bound(&between, 50);
 	ret = order3_tree_previous(&it, &v), assert(!ret);
 	printf("previous dne.\n");
 
-	it = order3_tree_upper_bound(&between, 150);
+	it = order3_tree_left_bound(&between, 150);
 	printf("between(150) %s:%u %sseen.\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
 	ret = order3_tree_next(&it, &v), assert(ret && v == 200);
 	printf("next %u.\n", v);
-	it = order3_tree_upper_bound(&between, 150);
+	it = order3_tree_left_bound(&between, 150);
 	ret = order3_tree_previous(&it, &v), assert(ret && v == 100);
 	printf("previous %u.\n", v);
 
-	it = order3_tree_upper_bound(&between, 200);
+	it = order3_tree_left_bound(&between, 200);
 	printf("between(200) %s:%u %sseen.\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
 	ret = order3_tree_next(&it, &v), assert(ret && v == 300);
 	printf("next %u.\n", v);
-	it = order3_tree_upper_bound(&between, 200);
+	it = order3_tree_left_bound(&between, 200);
 	ret = order3_tree_previous(&it, &v), assert(ret && v == 200);
 	printf("previous %u.\n", v);
 
-	it = order3_tree_upper_bound(&between, 250);
+	it = order3_tree_left_bound(&between, 250);
 	printf("between(250) %s:%u %sseen.\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
 	ret = order3_tree_next(&it, &v), assert(ret && v == 200);
 	printf("next %u.\n", v);
-	it = order3_tree_upper_bound(&between, 250);
+	it = order3_tree_left_bound(&between, 250);
 	ret = order3_tree_previous(&it, &v), assert(ret && v == 100);
 	printf("previous %u.\n", v);
 
-	it = order3_tree_upper_bound(&between, 350);
+	it = order3_tree_left_bound(&between, 350);
 	printf("between(350) %s:%u %sseen\n",
 		orcify(it._.ref.node), it._.ref.idx, it._.seen ? "" : "not ");
 	ret = order3_tree_next(&it, &v), assert(ret && v == 300);
 	printf("next dne.\n");
-	it = order3_tree_upper_bound(&between, 350);
+	it = order3_tree_left_bound(&between, 350);
 	ret = order3_tree_previous(&it, &v), assert(ret && v == 200);
 	printf("previous %u.\n", v);
 

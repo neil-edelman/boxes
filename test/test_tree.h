@@ -223,8 +223,8 @@ static void PB_(test)(void) {
 	PB_(valid)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
-	it = B_(tree_lower_bound)(0, test[0].key), assert(!it._.root);
-	it = B_(tree_lower_bound)(&tree, test[0].key), assert(!it._.ref.node);
+	it = B_(tree_left_bound)(0, test[0].key), assert(!it._.root);
+	it = B_(tree_left_bound)(&tree, test[0].key), assert(!it._.ref.node);
 
 	/* Bulk, (simple.) */
 	for(i = 0; i < test_size; i++) {
