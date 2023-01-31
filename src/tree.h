@@ -313,6 +313,8 @@ predecessor:
 	return 1;
 }
 
+/***************** fixme iterator has a degenerate state at left, begin
+ change the specification to previous; do we even need it? */
 /* @return A reference to the predecessor of the element at the least upper
  bound of `x` in `tree`, or `node` will be null if the predecessor doesn't
  exist. */
