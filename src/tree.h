@@ -415,8 +415,8 @@ static struct PB_(ref) PB_(ref_right)(const struct PB_(tree) tree,
 	}
 	return found;
 }
-/** Exact version of the previous with `tree` and `x`. */
-static struct PB_(ref) PB_(find)(const struct PB_(tree) tree,
+/** Finds an exact `key` in non-empty `tree`. */
+static struct PB_(ref) PB_(lookup_find)(const struct PB_(tree) tree,
 	const PB_(key) x) {
 	struct PB_(ref) lo;
 	if(!tree.node || tree.height == UINT_MAX) return lo.node = 0, lo;
@@ -432,93 +432,50 @@ static struct PB_(ref) PB_(find)(const struct PB_(tree) tree,
 	}
 	return lo;
 }
-
-
-
-
-/* Want to find slightly different things; code re-use is bad. Confusing.
- This is the lower-bound. */
-#define TREE_FOR_NODE(tree, i) i.node = tree.node, i.height = tree.height; ; \
-	i.node = PB_(as_branch_c)(i.node)->child[i.idx], i.height--
-#define TREE_START(i) unsigned hi = i.node->size; i.idx = 0;
-#define TREE_FOR_UPPER(i, x) do { \
-	const unsigned m = (i.idx + hi) / 2; \
-	if(B_(compare)(x, i.node->key[m]) > 0) i.idx = m + 1; \
-	else hi = m; \
-} while(hi <= i.idx);
-#define TREE_FOR_LOWER(i, x) do { \
-	const unsigned m = (i.idx + hi) / 2; \
-	if(B_(compare)(x, i.node->key[m]) > 0) i.idx = m + 1; \
-	else hi = m; \
-} while(i.idx < hi);
-#define TREE_FLIPPED(i, x) B_(compare)(i.node->key[i.idx], x) <= 0
-/** Finds an exact `key` in non-empty `tree`. */
-#if 0
-static struct PB_(ref) PB_(find)(const struct PB_(tree) *const tree,
-	const PB_(key) key) {
-	struct PB_(ref) i;
-	for(TREE_FOR_NODE((*tree), i)) {
-		TREE_START(i)
-		if(!hi) continue;
-		TREE_FOR_LOWER(i, key)
-		if(i.idx < i.node->size && TREE_FLIPPED(i, key)) break;
-		if(!i.height) { i.node = 0; break; }
-	}
-	return i;
-}
-#endif
 /** Finds lower-bound of `key` in non-empty `tree` while counting the
  non-filled `hole` and `is_equal`. */
-static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) *const tree,
-	const PB_(key) key, struct PB_(ref) *const hole, int *const is_equal) {
+static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) tree,
+	const PB_(key) x, struct PB_(ref) *const hole, int *const is_equal) {
 	struct PB_(ref) lo;
 	hole->node = 0;
-	for(TREE_FOR_NODE((*tree), lo)) {
-		TREE_START(lo)
+	for(lo.node = tree.node, lo.height = tree.height; ;
+		lo.node = PB_(as_branch_c)(lo.node)->child[lo.idx], lo.height--) {
+		unsigned hi = lo.node->size; lo.idx = 0;
 		if(hi < TREE_MAX) *hole = lo;
 		if(!hi) continue;
-		TREE_FOR_LOWER(lo, key)
+		PB_(node_lb)(&lo, x);
 		if(lo.node->size < TREE_MAX) hole->idx = lo.idx;
-		if(lo.idx < lo.node->size && TREE_FLIPPED(lo, key))
+		if(lo.idx < lo.node->size && B_(compare)(lo.node->key[lo.idx], x) <= 0)
 			{ *is_equal = 1; break; }
 		if(!lo.height) break;
 	}
 	return lo;
 }
-
-
-
-
-
 /** Finds exact `key` in non-empty `tree`. If `node` is found, temporarily, the
- nodes that have `TREE_MIN` keys have
- `as_branch(node).child[TREE_MAX] = parent` or, for leaves, `leaf_parent`,
- which must be set. (Patently terrible for running concurrently; hack, would be
- nice to go down tree maybe.) */
-static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) *const tree,
-	const PB_(key) key, struct PB_(node) **leaf_parent) {
+ nodes that have `TREE_MIN` keys have `as_branch(node).child[TREE_MAX] = parent`
+ or, for leaves, `leaf_parent`, which must be set. (Patently terrible for
+ running concurrently; hack, would be nice to go down tree maybe.) */
+static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) tree,
+	const PB_(key) x, struct PB_(node) **leaf_parent) {
 	struct PB_(node) *parent = 0;
 	struct PB_(ref) lo;
-	for(TREE_FOR_NODE((*tree), lo)) {
-		TREE_START(lo)
+	for(lo.node = tree.node, lo.height = tree.height; ;
+		lo.node = PB_(as_branch_c)(lo.node)->child[lo.idx], lo.height--) {
+		unsigned hi = lo.node->size; lo.idx = 0;
 		/* Cannot delete bulk add. */
 		if(parent && hi < TREE_MIN || !parent && !hi) { lo.node = 0; break; }
 		if(hi <= TREE_MIN) { /* Remember the parent temporarily. */
 			if(lo.height) PB_(as_branch)(lo.node)->child[TREE_MAX] = parent;
 			else *leaf_parent = parent;
 		}
-		TREE_FOR_LOWER(lo, key)
-		if(lo.idx < lo.node->size && TREE_FLIPPED(lo, key)) break;
+		PB_(node_lb)(&lo, x);
+		if(lo.idx < lo.node->size && B_(compare)(lo.node->key[lo.idx], x) <= 0)
+			break;
 		if(!lo.height) { lo.node = 0; break; } /* Was not in. */
 		parent = lo.node;
 	}
 	return lo;
 }
-#undef TREE_FOR_NODE
-#undef TREE_START
-#undef TREE_FOR_LOWER
-#undef TREE_FOR_UPPER
-#undef TREE_FLIPPED
 
 /** Zeroed data (not all-bits-zero) is initialized. @return An idle tree.
  @order \Theta(1) @allow */
@@ -601,7 +558,7 @@ static size_t B_(tree_count)(const struct B_(tree) *const tree) {
 /** @return Is `x` in `tree` (which can be null)?
  @order \O(\log |`tree`|) @allow */
 static int B_(tree_contains)(const struct B_(tree) *const tree,
-	const PB_(key) x) { return tree && PB_(find)(tree->root, x).node; }
+	const PB_(key) x) { return tree && PB_(lookup_find)(tree->root, x).node; }
 /* fixme: entry <B>tree_query -- there is no functionality that returns the
  key. */
 
@@ -612,7 +569,7 @@ static PB_(value) B_(tree_get_or)(const struct B_(tree) *const tree,
 	const PB_(key) key, const PB_(value) default_value) {
 	struct PB_(ref) ref;
 	return tree && tree->root.node && tree->root.height != UINT_MAX
-		&& (ref = PB_(find)(tree->root, key)).node
+		&& (ref = PB_(lookup_find)(tree->root, key)).node
 		? *PB_(ref_to_valuep)(ref) : default_value;
 }
 
@@ -858,7 +815,7 @@ empty: /* Reserved dynamic memory, but tree is empty. */
 descend: /* Record last node that has space. */
 	{
 		int is_equal = 0;
-		add = PB_(lookup_insert)(root, key, &hole, &is_equal);
+		add = PB_(lookup_insert)(*root, key, &hole, &is_equal);
 		if(is_equal) {
 			if(eject) {
 				*eject = add.node->key[add.idx];
@@ -1084,7 +1041,7 @@ static int PB_(remove)(struct PB_(tree) *const tree, const PB_(key) x) {
 	assert(tree && tree->node && tree->height != UINT_MAX);
 	/* Traverse down the tree until `key`, leaving breadcrumbs for parents of
 	 minimum key nodes. */
-	if(!(rm = PB_(lookup_remove)(tree, x, &parent.node)).node) return 0;
+	if(!(rm = PB_(lookup_remove)(*tree, x, &parent.node)).node) return 0;
 	/* Important when `rm = parent`; `find_idx` later. */
 	parent.height = rm.height + 1;
 	assert(rm.idx < rm.node->size);
@@ -1812,7 +1769,7 @@ static PB_(value) B_D_(tree, get)(const struct B_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) ref;
 	return tree && tree->root.node && tree->root.height != UINT_MAX
-		&& (ref = PB_(find)(tree->root, key)).node
+		&& (ref = PB_(lookup_find)(tree->root, key)).node
 		? *PB_(ref_to_valuep)(ref) : PB_D_(default, value);
 }
 /** This is functionally identical to <fn:<B>tree_left_or>, but a with a trait

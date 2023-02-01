@@ -165,7 +165,6 @@ static void entry_to_string(const union date32 k, const int *const v,
 /** Static bounds check. */
 static void char_bounds(void) {
 	struct char_tree tree = char_tree();
-	struct char_tree_iterator it;
 	const char correct_right[] = {
 		/*a*/'b', 'b', 'd', 'd',
 		/*e*/'f', 'f', 'h', 'h',
