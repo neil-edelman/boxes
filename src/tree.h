@@ -313,42 +313,58 @@ predecessor:
 	return 1;
 }
 
-/***************** fixme iterator has a degenerate state at left, begin
- change the specification to previous; do we even need it? */
-/* @return A reference to the predecessor of the element at the least upper
- bound of `x` in `tree`, or `node` will be null if the predecessor doesn't
- exist. */
-#define LEFT(left, REACHED_BOTTOM) \
-static struct PB_(ref) PB_(left)(const struct PB_(tree) tree, \
-	const PB_(key) x) { \
-	struct PB_(ref) hi, found; \
-	found.node = 0; \
-	if(!tree.node) return found; \
-	for(hi.node = tree.node, hi.height = tree.height; ; \
-		hi.node = PB_(as_branch_c)(hi.node)->child[hi.idx], hi.height--) { \
-		unsigned lo = 0; \
-		if(!(hi.idx = hi.node->size)) continue; \
-		do { /* C++ `upper_bound` on node. */ \
-			const unsigned mid = (lo + hi.idx) / 2; /* Will not overflow. */ \
-			if(B_(compare)(hi.node->key[mid], x) <= 0) lo = mid + 1; \
-			else hi.idx = mid; \
-		} while(lo < hi.idx); \
-		if(hi.idx) { /* Within bounds to record the current predecessor. */ \
-			found = hi, found.idx--; \
-			/* Equal. */ \
-			if(B_(compare)(x, found.node->key[found.idx]) <= 0) break; \
-		} \
-		if(!hi.height) { /* Reached the bottom. */ \
-			REACHED_BOTTOM \
-		} \
-	} \
-	return found; \
+/** @return A reference to the element first element at or less than `x` in
+ `tree`, or `node` will be null if the `x` is less than all `tree`. */
+static struct PB_(ref) PB_(left)(const struct PB_(tree) tree,
+	const PB_(key) x) {
+	struct PB_(ref) hi, found;
+	found.node = 0;
+	if(!tree.node) return found;
+	for(hi.node = tree.node, hi.height = tree.height; ;
+		hi.node = PB_(as_branch_c)(hi.node)->child[hi.idx], hi.height--) {
+		unsigned lo = 0;
+		if(!(hi.idx = hi.node->size)) continue;
+		do { /* C++ `upper_bound` on node. */
+			const unsigned mid = (lo + hi.idx) / 2; /* Will not overflow. */
+			if(B_(compare)(hi.node->key[mid], x) <= 0) lo = mid + 1;
+			else hi.idx = mid;
+		} while(lo < hi.idx);
+		if(hi.idx) { /* Within bounds to record the current predecessor. */
+			found = hi, found.idx--;
+			/* Equal. */
+			if(B_(compare)(x, found.node->key[found.idx]) <= 0) break;
+		}
+		if(!hi.height) break; /* Reached the bottom. */
+	}
+	return found;
 }
-/* Only returns references to real elements. */
-LEFT(left, break;)
-/* Real elements or one-off the side. */
-LEFT(left_ref, if(!found.node) found = hi; break;)
-#undef LEFT
+/** A slightly modified version of the above that more closely matches
+ `upper_bound`: the least-index node for which the key at the returned index is
+ greater than `x` or beyond the last element. */
+static struct PB_(ref) PB_(left_ref)(const struct PB_(tree) tree,
+	const PB_(key) x) {
+	struct PB_(ref) hi, found;
+	found.node = 0;
+	if(!tree.node) return found;
+	printf("left_ref\n");
+	for(hi.node = tree.node, hi.height = tree.height; ;
+		hi.node = PB_(as_branch_c)(hi.node)->child[hi.idx], hi.height--) {
+		unsigned lo = 0;
+		if(!(hi.idx = hi.node->size)) continue;
+		do {
+			const unsigned mid = (lo + hi.idx) / 2;
+			if(B_(compare)(hi.node->key[mid], x) <= 0) lo = mid + 1;
+			else hi.idx = mid;
+		} while(lo < hi.idx);
+		if(hi.idx < hi.node->size) {
+			found = hi;
+			if(hi.idx && B_(compare)(x, found.node->key[found.idx - 1]) <= 0)
+				break;
+		}
+		if(!hi.height) { if(!found.node) found = hi; break; }
+	}
+	return found;
+}
 
 /* @return A reference the element at the greatest lower bound of `x` in
  `tree`, or if the element doesn't exist, `node` will be null. */
@@ -447,6 +463,11 @@ static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) *const tree,
 	}
 	return lo;
 }
+
+
+
+
+
 /** Finds exact `key` in non-empty `tree`. If `node` is found, temporarily, the
  nodes that have `TREE_MIN` keys have
  `as_branch(node).child[TREE_MAX] = parent` or, for leaves, `leaf_parent`,
@@ -1538,12 +1559,11 @@ static struct B_(tree_iterator) B_(tree_begin)(struct B_(tree) *const tree)
  @order \Theta(\log |`tree`|) @allow */
 static struct B_(tree_iterator) B_(tree_end)(struct B_(tree) *const tree)
 	{ struct B_(tree_iterator) it; it._ = PB_(end)(tree); return it; }
-/** @return Cursor in `tree` between elements, such that <fn:<B>tree_next> is
- the first element `x` or below. If `x` is greater than all the
- `tree`, it will be <fn:<B>tree_end>, otherwise <fn:<B>tree_left_or>.
- @order \Theta(\log |`tree`|) @allow */
-static struct B_(tree_iterator) B_(tree_left_bound)(struct B_(tree) *const tree,
-	const PB_(key) x) {
+/** @return Cursor in `tree` such that <fn:<B>tree_previous> is the greatest
+ key that is less-than-or-equal to `x`, or, <fn:<B>tree_begin> if `x` is less
+ than all in `tree`. @order \Theta(\log |`tree`|) @allow */
+static struct B_(tree_iterator) B_(tree_left_previous)(struct B_(tree) *const
+	tree, const PB_(key) x) {
 	struct B_(tree_iterator) cur;
 	if(!tree) return cur._.root = 0, cur;
 	cur._.ref = PB_(left_ref)(tree->root, x);
@@ -1551,11 +1571,10 @@ static struct B_(tree_iterator) B_(tree_left_bound)(struct B_(tree) *const tree,
 	cur._.seen = 0;
 	return cur;
 }
-/** @return Cursor in `tree` between elements, such
- that if <fn:<B>tree_next> is called, it will be smallest key that is not
- smaller than `x`, or, <fn:<B>tree_end> if `x` is greater than all in `tree`.
- @order \Theta(\log |`tree`|) @allow */
-static struct B_(tree_iterator) B_(tree_right_bound)(struct B_(tree) *const
+/** @return Cursor in `tree` such that <fn:<B>tree_next> is the least key that
+ is greater-than-or-equal to `x`, or, <fn:<B>tree_end> if `x` is greater than
+ all in `tree`. @order \Theta(\log |`tree`|) @allow */
+static struct B_(tree_iterator) B_(tree_right_next)(struct B_(tree) *const
 	tree, const PB_(key) x) {
 	struct B_(tree_iterator) cur;
 	if(!tree) return cur._.root = 0, cur;
@@ -1700,7 +1719,7 @@ static void PB_(unused_base)(void) {
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
 	B_(tree_begin)(0); B_(tree_end)(0);
-	B_(tree_left_bound)(0, k); B_(tree_right_bound)(0, k);
+	B_(tree_left_previous)(0, k); B_(tree_right_next)(0, k);
 	B_(tree_iterator_remove)(0);
 	PB_(unused_base_coda)();
 }
