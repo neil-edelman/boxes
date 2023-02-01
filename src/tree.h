@@ -356,7 +356,8 @@ static struct PB_(ref) PB_(lookup_left)(const struct PB_(tree) tree,
 	}
 	return found;
 }
-/** Iterator version of <fn:<PB>left> of `x` in `tree` that goes one-off. */
+/** Iterator version of <fn:<PB>lookup_left> of `x` in `tree` that goes
+ one-off the end. */
 static struct PB_(ref) PB_(ref_left)(const struct PB_(tree) tree,
 	const PB_(key) x) {
 	struct PB_(ref) hi, found;
@@ -396,7 +397,8 @@ static struct PB_(ref) PB_(lookup_right)(const struct PB_(tree) tree,
 	}
 	return found;
 }
-/** Iterator version of <fn:<PB>right> of `x` in `tree` that goes one-off. */
+/** Iterator version of <fn:<PB>lookup_right> of `x` in `tree` that goes
+ one-off the end. */
 static struct PB_(ref) PB_(ref_right)(const struct PB_(tree) tree,
 	const PB_(key) x) {
 	struct PB_(ref) lo, found;
@@ -415,7 +417,7 @@ static struct PB_(ref) PB_(ref_right)(const struct PB_(tree) tree,
 	}
 	return found;
 }
-/** Finds an exact `key` in non-empty `tree`. */
+/** Finds an exact key `x` in non-empty `tree`. */
 static struct PB_(ref) PB_(lookup_find)(const struct PB_(tree) tree,
 	const PB_(key) x) {
 	struct PB_(ref) lo;
@@ -432,7 +434,7 @@ static struct PB_(ref) PB_(lookup_find)(const struct PB_(tree) tree,
 	}
 	return lo;
 }
-/** Finds lower-bound of `key` in non-empty `tree` while counting the
+/** Finds lower-bound of key `x` in non-empty `tree` while counting the
  non-filled `hole` and `is_equal`. */
 static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) tree,
 	const PB_(key) x, struct PB_(ref) *const hole, int *const is_equal) {
@@ -451,10 +453,11 @@ static struct PB_(ref) PB_(lookup_insert)(struct PB_(tree) tree,
 	}
 	return lo;
 }
-/** Finds exact `key` in non-empty `tree`. If `node` is found, temporarily, the
- nodes that have `TREE_MIN` keys have `as_branch(node).child[TREE_MAX] = parent`
- or, for leaves, `leaf_parent`, which must be set. (Patently terrible for
- running concurrently; hack, would be nice to go down tree maybe.) */
+/** Finds exact key `x` in non-empty `tree`. If `node` is found, temporarily,
+ the nodes that have `TREE_MIN` keys have
+ `as_branch(node).child[TREE_MAX] = parent` or, for leaves, `leaf_parent`,
+ which must be set. (Patently terrible for running concurrently; hack, would be
+ nice to go down tree maybe.) */
 static struct PB_(ref) PB_(lookup_remove)(struct PB_(tree) tree,
 	const PB_(key) x, struct PB_(node) **leaf_parent) {
 	struct PB_(node) *parent = 0;

@@ -267,7 +267,7 @@ static void PB_(test)(void) {
 #endif
 		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-bulk-%lu.gv", i + 1);
-			//PB_(graph)(&tree, fn);
+			PB_(graph)(&tree, fn);
 		}
 	}
 	printf("Finalize.\n");
