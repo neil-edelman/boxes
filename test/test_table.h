@@ -397,7 +397,7 @@ static void PN_(test_basic)(void *const parent) {
 		PN_(value) value;
 		const PN_(value) *sample_value;
 		int /*cmp,*/ is;
-		is = N_(table_is)(&table, key);
+		is = N_(table_contains)(&table, key);
 		assert(is);
 #ifdef TABLE_VALUE
 		is = N_(table_query)(&table, key, &result, &value);

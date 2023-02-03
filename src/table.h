@@ -626,7 +626,7 @@ static void N_(table_clear)(struct N_(table) *const table) {
 }
 
 /** @return Whether `key` is in `table` (which can be null.) @allow */
-static int N_(table_is)(struct N_(table) *const table, const PN_(key) key) {
+static int N_(table_contains)(struct N_(table) *const table, const PN_(key) key) {
 	/* This function must be defined by the user. */
 	return table && table->buckets
 		? !!PN_(query)(table, key, N_(hash)(key)) : 0;
@@ -635,7 +635,7 @@ static int N_(table_is)(struct N_(table) *const table, const PN_(key) key) {
 #ifdef TABLE_VALUE /* <!-- map */
 /** If the entire entry space is filled, use this. Otherwise, a more convenient
  function is <fn:<N>table_get_or>.
- @param[result] If null, behaves like <fn:<N>table_is>, otherwise, a
+ @param[result] If null, behaves like <fn:<N>table_contains>, otherwise, a
  <typedef:<PN>key> which gets filled on true.
  @param[value] Only on a map with `TABLE_VALUE`. If not-null, stores the value.
  @return Whether `key` is in `table` (which can be null.) @allow */
@@ -794,7 +794,7 @@ static void PN_(unused_base)(void) {
 	PN_(entry) e; PN_(key) k; PN_(value) v;
 	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
 	N_(table)(); N_(table_)(0); N_(table_begin)(0);
-	N_(table_buffer)(0, 0); N_(table_clear)(0); N_(table_is)(0, k);
+	N_(table_buffer)(0, 0); N_(table_clear)(0); N_(table_contains)(0, k);
 	N_(table_get_or)(0, k, v);
 	N_(table_update)(0, k, 0); N_(table_policy)(0, k, 0, 0);
 	N_(table_remove)(0, k); N_(table_iterator_remove)(0);

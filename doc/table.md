@@ -189,7 +189,7 @@ Adding, deleting, successfully looking up entries, or any modification of the ta
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-abc0643f">&lt;N&gt;table_clear</a></td><td>table</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-a8bd2b22">&lt;N&gt;table_is</a></td><td>table, key</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-8596385b">&lt;N&gt;table_contains</a></td><td>table, key</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-72aa7b72">&lt;N&gt;table_query</a></td><td>table, key, result, value</td></tr>
 
@@ -312,9 +312,9 @@ Clears and removes all buckets from `table`\. The capacity and memory of the `ta
 
 
 
-### <a id = "user-content-fn-a8bd2b22" name = "user-content-fn-a8bd2b22">&lt;N&gt;table_is</a> ###
+### <a id = "user-content-fn-8596385b" name = "user-content-fn-8596385b">&lt;N&gt;table_contains</a> ###
 
-<code>static int <strong>&lt;N&gt;table_is</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code>
+<code>static int <strong>&lt;N&gt;table_contains</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>)</code>
 
  * Return:  
    Whether `key` is in `table` \(which can be null\.\)
@@ -329,7 +329,7 @@ Clears and removes all buckets from `table`\. The capacity and memory of the `ta
 If the entire entry space is filled, use this\. Otherwise, a more convenient function is [&lt;N&gt;table_get_or](#user-content-fn-638dcc26)\.
 
  * Parameter: _result_  
-   If null, behaves like [&lt;N&gt;table_is](#user-content-fn-a8bd2b22), otherwise, a [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) which gets filled on true\.
+   If null, behaves like [&lt;N&gt;table_contains](#user-content-fn-8596385b), otherwise, a [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) which gets filled on true\.
  * Parameter: _value_  
    Only on a map with `TABLE_VALUE`\. If not\-null, stores the value\.
  * Return:  
