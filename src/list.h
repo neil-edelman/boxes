@@ -99,26 +99,25 @@ struct L_(list) {
 
 /* Since this is a permutation, the iteration is defined by none other then
  itself. @implements `iterator` */
-struct PL_(iterator) { struct L_(listlink) *link; int seen; };
-/** @return A pointer to null in `l`. @implements `iterator` */
-static struct PL_(iterator) PL_(begin)(struct L_(list) *const l)
-	{ struct PL_(iterator) it; it.link = l ? &l->u.as_head.head : 0;
-	it.seen = 0; return it; }
-/** @return A pointer to null in `l`. @implements `iterator` */
-static struct PL_(iterator) PL_(end)(struct L_(list) *const l)
-	{ struct PL_(iterator) it; it.link = l ? &l->u.as_tail.tail : 0;
-	it.seen = 0; return it; }
-/** @return Advances `it` into `v` or false. @implements `next` */
-static int PL_(next)(struct PL_(iterator) *const it,
-	struct L_(listlink) **const v) {
-	struct L_(listlink) *next;
-	assert(it);
-	if(!it->link || !(next = it->link->next)) return 0; /* Unattached? */
-	if(!next->next) { it->seen = 0; return 0; } /* End of list. */
-	it->seen = 1, it->link = next;
-	if(v) *v = next;
-	return 1;
+struct PL_(iterator) { struct L_(listlink) *link; };
+/** @return A pointer to the first in `l` (can be null). */
+static struct PL_(iterator) PL_(begin)(struct L_(list) *const l) {
+	struct PL_(iterator) it;
+	it.link = l ? &l->u.as_head.head : 0;
+	return it;
 }
+/* @return A pointer to null in `l`. */
+/*static struct PL_(iterator) PL_(end)(struct L_(list) *const l)
+	{ struct PL_(iterator) it; it.link = l ? &l->u.as_tail.tail : 0;
+	it.seen = 0; return it; }*/
+static int PL_(valid_right)(struct PL_(iterator) *const it)
+	{ return assert(it), it->link && it->link->next; }
+static struct L_(listlink) *PL_(right)(struct PL_(iterator) *const it)
+	{ return it->link; }
+/** @return Advances `it`. */
+static void PL_(next)(struct PL_(iterator) *const it)
+	{ assert(it); it->link = it->link->next; }
+#if 0
 /** @return Reverses `it` into `v` or false. @implements `previous` */
 static int PL_(previous)(struct PL_(iterator) *const it,
 	struct L_(listlink) **const v) {
@@ -130,6 +129,7 @@ static int PL_(previous)(struct PL_(iterator) *const it,
 	if(v) *v = prev;
 	return 1;
 }
+#endif
 #if 0
 /** Removes the element last returned by `it`. (Untested and unused.)
  @return There was an element. @implements `remove` */
@@ -327,7 +327,7 @@ static void ITR_(to_if)(struct L_(list) *restrict const from,
 
 static void PL_(unused_base_coda)(void);
 static void PL_(unused_base)(void) {
-	PL_(begin)(0); PL_(end)(0); PL_(previous)(0, 0); PL_(next)(0, 0);
+	PL_(begin)(0); PL_(valid_right)(0); PL_(right)(0); PL_(next)(0);
 	L_(list_head)(0); L_(list_tail)(0); L_(list_previous)(0); L_(list_next)(0);
 	L_(list_clear)(0); L_(list_add_before)(0, 0); L_(list_add_after)(0, 0);
 	L_(list_unshift)(0, 0); L_(list_push)(0, 0); L_(list_remove)(0);
