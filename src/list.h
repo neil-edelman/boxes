@@ -98,7 +98,8 @@ struct L_(list) {
 };
 
 /* Since this is a permutation, the iteration is defined by none other then
- itself. @implements `iterator` */
+ itself. Not especially useful, but contracted to other files.
+ @implements `iterator` */
 struct PL_(iterator) { struct L_(listlink) *link; };
 /** @return A pointer to the first in `l` (can be null). */
 static struct PL_(iterator) PL_(begin)(struct L_(list) *const l) {
@@ -108,7 +109,7 @@ static struct PL_(iterator) PL_(begin)(struct L_(list) *const l) {
 }
 /** @return Valid 'right', which is the value at the iterator. Only the
  sentinel has `next` null, and it is invalid. */
-static int PL_(valid_right)(struct PL_(iterator) *const it)
+static int PL_(has_right)(const struct PL_(iterator) *const it)
 	{ return assert(it), it->link && it->link->next; }
 /** @return Link to `it`, which is just itself. */
 static struct L_(listlink) *PL_(right)(struct PL_(iterator) *const it)
@@ -128,8 +129,6 @@ static int PL_(previous)(struct PL_(iterator) *const it,
 	if(v) *v = prev;
 	return 1;
 }
-#endif
-#if 0
 /** Removes the element last returned by `it`. (Untested and unused.)
  @return There was an element. @implements `remove` */
 static int PL_(remove)(struct PL_(iterator) *const it) {
@@ -326,7 +325,7 @@ static void ITR_(to_if)(struct L_(list) *restrict const from,
 
 static void PL_(unused_base_coda)(void);
 static void PL_(unused_base)(void) {
-	PL_(begin)(0); PL_(valid_right)(0); PL_(right)(0); PL_(next)(0);
+	PL_(begin)(0); PL_(has_right)(0); PL_(right)(0); PL_(next)(0);
 	L_(list_head)(0); L_(list_tail)(0); L_(list_previous)(0); L_(list_next)(0);
 	L_(list_clear)(0); L_(list_add_before)(0, 0); L_(list_add_after)(0, 0);
 	L_(list_unshift)(0, 0); L_(list_push)(0, 0); L_(list_remove)(0);

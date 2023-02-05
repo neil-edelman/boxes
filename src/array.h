@@ -100,7 +100,7 @@ static struct PA_(iterator) PA_(iterator_at)(struct A_(array) *a, size_t i) {
 	return it;
 }
 /** @return `it` (valid) pointing to valid element? */
-static int PA_(valid_right)(struct PA_(iterator) *const it)
+static int PA_(has_right)(const struct PA_(iterator) *const it)
 	{ return assert(it), it->a && it->i < it->a->size; }
 /** @return Dereference the next (pointing to valid element) `it`. */
 static PA_(type) *PA_(right)(struct PA_(iterator) *const it)
@@ -310,7 +310,7 @@ static int A_(array_splice)(struct A_(array) *restrict const a,
 
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
-	PA_(begin)(0); PA_(end)(0); PA_(iterator_at)(0, 0); PA_(valid_right)(0);
+	PA_(begin)(0); PA_(end)(0); PA_(iterator_at)(0, 0); PA_(has_right)(0);
 	PA_(right)(0); PA_(next)(0); PA_(previous)(0);
 	PA_(size)(0); PA_(at)(0, 0); PA_(tell_size)(0, 0);
 	A_(array)(); A_(array_)(0);

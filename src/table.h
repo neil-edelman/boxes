@@ -487,8 +487,7 @@ static enum table_result PN_(put_key)(struct N_(table) *const table,
 	return result;
 }
 
-/* In no particular order, usually, but deterministic up to topology changes.
- @implements `iterator` */
+/* In no particular order, usually, but deterministic up to topology changes. */
 struct PN_(iterator) { struct N_(table) *table; PN_(uint) cur, prev; };
 /** Helper to skip the buckets of `it` that are not there.
  @return Whether it found another index. */
@@ -508,15 +507,15 @@ static struct PN_(iterator) PN_(begin)(struct N_(table) *const table) {
 	struct PN_(iterator) it; it.table = table, it.cur = 0; it.prev = TABLE_NULL;
 	return it;
 }
-/** @return Whether `it` advances and `v`. */
-static int PN_(next)(struct PN_(iterator) *const it,
-	struct PN_(bucket) **const v) {
+static int PN_(has_right)(struct PN_(iterator) *const it)
+	{ return PN_(skip)(it); }
+static struct PN_(bucket) *PN_(right)(struct PN_(iterator) *const it)
+	{ return it->table->buckets + it->cur; }
+/** Advance `it`. */
+static void PN_(next)(struct PN_(iterator) *const it) {
 	assert(it);
-	if(!it->table || !it->table->buckets) return 0;
-	if(!PN_(skip)(it)) return it->table = 0, it->cur = 0, 0;
-	if(v) *v = it->table->buckets + it->cur;
-	it->prev = it->cur, it->cur++;
-	return 1;
+	if(it->table && it->table->buckets && PN_(skip)(it))
+		it->prev = it->cur, it->cur++;
 }
 /** Removes the entry at `it`. @return Success. */
 static int PN_(remove)(struct PN_(iterator) *const it) {
@@ -582,7 +581,9 @@ static struct N_(table_iterator) N_(table_begin)(struct N_(table) *const
 static int N_(table_next)(struct N_(table_iterator) *const it,
 	PN_(key) *key, PN_(value) **value) {
 	struct PN_(bucket) *bucket;
-	if(!PN_(next)(&it->_, &bucket)) return 0;
+	if(!PN_(has_right)(&it->_)) return 0;
+	bucket = PN_(right)(&it->_);
+	PN_(next)(&it->_);
 	if(key) *key = PN_(bucket_key)(bucket);
 	if(value) *value = &bucket->value;
 	return 1;
@@ -591,7 +592,9 @@ static int N_(table_next)(struct N_(table_iterator) *const it,
 /** Advances `it`, sets `key` on true. */
 static int N_(table_next)(struct N_(table_iterator) *const it, PN_(key) *key) {
 	struct PN_(bucket) *bucket;
-	if(!PN_(next)(&it->_, &bucket)) return 0;
+	if(!PN_(has_right)(&it->_)) return 0;
+	bucket = PN_(right)(&it->_);
+	PN_(next)(&it->_);
 	if(key) *key = PN_(bucket_key)(bucket);
 	return 1;
 }

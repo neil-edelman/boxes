@@ -95,23 +95,23 @@ struct P_(pool) {
 	size_t capacity0; /* Capacity of slab-zero. */
 };
 
-/** Is `x` not null? @implements `is_content` */
-static int PP_(is_element)(PP_(type) *const x) { return !!x; }
-/* It is very useful in debugging, is required for `BOX_CONTENT`. Only iterates
- on `slot0` and ignores the free-heap. This is a memory-manager, we don't have
+/* It is very useful in debugging, is required contract, but only iterates on
+ `slot0` and ignores the free-heap. This is a memory-manager, we don't have
  enough information to do otherwise. Only goes one-way. */
 struct PP_(iterator) { struct PP_(slot) *slot0; size_t i; };
 /** @return Before `p`. @implements `forward` */
 static struct PP_(iterator) PP_(begin)(const struct P_(pool) *const p)
-	{ struct PP_(iterator) it; it.slot0 = p && p->slots.size
+	{ struct PP_(iterator) it; it.slot0 = p && p->slots.data
 	? p->slots.data + 0 : 0, it.i = 0; return it; }
+/** Valid `it` (can be null). */
+static int PP_(has_right)(const struct PP_(iterator) *const it)
+	{ return assert(it), it->slot0 && it->i < it->slot0->size; }
+/** `it` has right. */
+static PP_(type) *PP_(right)(struct PP_(iterator) *const it)
+	{ return it->slot0->slab + it->i; }
 /** @return Whether moved to next `it` and put in `v`. @implements `next` */
-static int PP_(next)(struct PP_(iterator) *const it, PP_(type) **const v) {
-	assert(it);
-	if(it->slot0 && it->i >= it->slot0->size) return 0;
-	if(v) *v = it->slot0->slab + it->i++;
-	return 1;
-}
+static void PP_(next)(struct PP_(iterator) *const it)
+	{ assert(it); if(it->slot0 && it->i < it->slot0->size) it->i++; }
 
 /** @return Index of slot that is higher than `x` in `slots`, but treating zero
  as special. @order \O(\log `slots`) */
@@ -304,7 +304,7 @@ static void P_(pool_clear)(struct P_(pool) *const pool) {
 
 static void PP_(unused_base_coda)(void);
 static void PP_(unused_base)(void) {
-	PP_(is_element)(0); PP_(begin)(0); PP_(next)(0, 0);
+	PP_(begin)(0); PP_(has_right)(0); PP_(right)(0); PP_(next)(0);
 	P_(pool)(); P_(pool_)(0); P_(pool_buffer)(0, 0); P_(pool_new)(0);
 	P_(pool_remove)(0, 0); P_(pool_clear)(0); PP_(unused_base_coda)();
 }

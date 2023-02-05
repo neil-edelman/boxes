@@ -50,9 +50,8 @@ static PITR_(element) *ITR_(any)(const PITR_(box) *const box,
 		it = BOX_(begin)(promise_box);
 	}
 	int n = 1;
-	for( ; BOX_(valid_right)(&it); BOX_(next)(&it), n++) {
+	for( ; BOX_(has_right)(&it); BOX_(next)(&it), n++) {
 		PITR_(element) *i = BOX_(right)(&it);
-		printf("[[<<%d>>]]\n", n);
 		if(predicate(i)) return i;
 	}
 	return 0;
@@ -64,7 +63,7 @@ static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
 	struct BOX_(iterator) it;
 	assert(box && action);
 	/* fixme: Could we remove `v` from the list? */
-	for(it = BOX_(begin)(box); BOX_(valid_right)(&it); BOX_(next)(&it))
+	for(it = BOX_(begin)(box); BOX_(has_right)(&it); BOX_(next)(&it))
 		action(BOX_(right)(&it));
 }
 
@@ -76,7 +75,7 @@ static void ITR_(if_each)(PITR_(box) *const box,
 	struct BOX_(iterator) it;
 	assert(box && predicate && action);
 	/* fixme: Could be to remove `i` from the list? */
-	for(it = BOX_(begin)(box); BOX_(valid_right)(&it); BOX_(next)(&it)) {
+	for(it = BOX_(begin)(box); BOX_(has_right)(&it); BOX_(next)(&it)) {
 		PITR_(element) *v = BOX_(right)(&it);
 		if(predicate(v)) action(v);
 	}

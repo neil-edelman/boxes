@@ -119,7 +119,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 		it = BOX_(begin)(promise_box);
 	}
 	*b++ = left;
-	for( ; BOX_(valid_right)(&it); BOX_(next)(&it)) {
+	for( ; BOX_(has_right)(&it); BOX_(next)(&it)) {
 		STRCALL_(to_string)(BOX_(right)(&it), (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
@@ -127,7 +127,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size_t)(b - buffer) > to_string_buffer_size - 11 - 1
 			- ellipsis_len - 1 - 1) {
-			if(BOX_(next)(&it), BOX_(valid_right)(&it)) goto ellipsis;
+			if(BOX_(next)(&it), BOX_(has_right)(&it)) goto ellipsis;
 			else break;
 		}
 	}

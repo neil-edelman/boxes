@@ -78,8 +78,8 @@ static int CMP_(compare)(const PCMP_(box) *restrict const a,
 	}
 	for( ; ; BOX_(next)(&ia), BOX_(next)(&ib)) {
 		int diff;
-		if(!BOX_(valid_right)(&ia)) return BOX_(valid_right)(&ib) ? -1 : 0;
-		else if(!BOX_(valid_right)(&ib)) return 1;
+		if(!BOX_(has_right)(&ia)) return BOX_(has_right)(&ib) ? -1 : 0;
+		else if(!BOX_(has_right)(&ib)) return 1;
 		/* Must have this function declared. */
 		if(diff = CMPCALL_(compare)((void *)BOX_(right)(&ia),
 			(void *)BOX_(right)(&ib))) return diff;
@@ -198,8 +198,8 @@ static int CMP_(is_equal)(const PCMP_(box) *restrict const a,
 		ib = BOX_(begin)(promise_box);
 	}
 	for( ; ; BOX_(next)(&ia), BOX_(next)(&ib)) {
-		if(!BOX_(valid_right)(&ia)) return !BOX_(valid_right)(&ib);
-		else if(!BOX_(valid_right)(&ib)) return 0;
+		if(!BOX_(has_right)(&ia)) return !BOX_(has_right)(&ib);
+		else if(!BOX_(has_right)(&ib)) return 0;
 		if(!CMPCALL_(is_equal)(BOX_(right)(&ia), BOX_(right)(&ib))) return 0;
 	}
 }

@@ -431,7 +431,12 @@ static void PN_(test_basic)(void *const parent) {
 #else
 			N_(table_next)(&it, &key);
 #endif
-			b++);
+			b++) {
+#ifndef TABLE_VALUE
+			N_(to_string)(key, &z);
+			printf("---->%s\n", z);
+#endif
+		}
 		assert(b == table.size);
 		for(it = N_(table_begin)(&table);
 #ifdef TABLE_VALUE
