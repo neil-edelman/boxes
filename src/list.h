@@ -106,12 +106,11 @@ static struct PL_(iterator) PL_(begin)(struct L_(list) *const l) {
 	it.link = l ? l->u.as_head.head.next : 0;
 	return it;
 }
-/* @return A pointer to null in `l`. */
-/*static struct PL_(iterator) PL_(end)(struct L_(list) *const l)
-	{ struct PL_(iterator) it; it.link = l ? &l->u.as_tail.tail : 0;
-	it.seen = 0; return it; }*/
+/** @return Valid 'right', which is the value at the iterator. Only the
+ sentinel has `next` null, and it is invalid. */
 static int PL_(valid_right)(struct PL_(iterator) *const it)
 	{ return assert(it), it->link && it->link->next; }
+/** @return Link to `it`, which is just itself. */
 static struct L_(listlink) *PL_(right)(struct PL_(iterator) *const it)
 	{ return it->link; }
 /** @return Advances `it`. */
