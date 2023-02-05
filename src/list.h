@@ -103,7 +103,7 @@ struct PL_(iterator) { struct L_(listlink) *link; };
 /** @return A pointer to the first in `l` (can be null). */
 static struct PL_(iterator) PL_(begin)(struct L_(list) *const l) {
 	struct PL_(iterator) it;
-	it.link = l ? &l->u.as_head.head : 0;
+	it.link = l ? l->u.as_head.head.next : 0;
 	return it;
 }
 /* @return A pointer to null in `l`. */

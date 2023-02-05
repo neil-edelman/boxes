@@ -49,8 +49,10 @@ static PITR_(element) *ITR_(any)(const PITR_(box) *const box,
 		memcpy(&promise_box, &box, sizeof box);
 		it = BOX_(begin)(promise_box);
 	}
-	for( ; BOX_(valid_right)(&it); BOX_(next)(&it)) {
+	int n = 1;
+	for( ; BOX_(valid_right)(&it); BOX_(next)(&it), n++) {
 		PITR_(element) *i = BOX_(right)(&it);
+		printf("[[<<%d>>]]\n", n);
 		if(predicate(i)) return i;
 	}
 	return 0;
