@@ -77,10 +77,10 @@ static void PCMP_(test_compactify)(void) {
 
 static void PCMP_(test_compare)(void) {
 	struct A_(array) a = A_(array)(), b = A_(array)();
-	struct A_(array_iterator) it;
+	/*struct A_(array_iterator) it;*/
 	PA_(type) ts[9], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
-	size_t i;
+	/*size_t i;*/
 	int cmp;
 	/* `valgrind` is giving me grief if I don't do this? */
 	memset(ts, 0, sizeof ts);
@@ -90,6 +90,7 @@ static void PCMP_(test_compare)(void) {
 	memcpy(a.data, ts, sizeof *t * ts_size);
 	printf("\ntest compare: %s.\n", A_(array_to_string)(&a));
 	assert(ts_size == a.size);
+#if 0 /* I don't use iterators. */
 	t = 0, i = 0;
 	it = A_(array_begin)(&a);
 	while(t = A_(array_next)(&it)) {
@@ -107,6 +108,7 @@ static void PCMP_(test_compare)(void) {
 	}
 	printf("done.\n");
 	assert(!i);
+#endif
 	cmp = CMP_(is_equal)(0, 0), assert(cmp);
 	printf("a: %s.\n"
 		"b: %s.\n", A_(array_to_string)(&a), A_(array_to_string)(&b));

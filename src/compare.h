@@ -76,13 +76,13 @@ static int CMP_(compare)(const PCMP_(box) *restrict const a,
 		memcpy(&promise_box, &rm_restrict, sizeof b);
 		ib = BOX_(begin)(promise_box);
 	}
-	for( ; ; ) {
-		/*const*/ PCMP_(element) *x, *y;
+	for( ; ; BOX_(next)(&ia), BOX_(next)(&ib)) {
 		int diff;
-		if(!BOX_(next)(&ia, &x)) return BOX_(next)(&ib, 0) ? -1 : 0;
-		else if(!BOX_(next)(&ib, &y)) return 1;
+		if(!BOX_(valid_right)(&ia)) return BOX_(valid_right)(&ib) ? -1 : 0;
+		else if(!BOX_(valid_right)(&ib)) return 1;
 		/* Must have this function declared. */
-		if(diff = CMPCALL_(compare)((void *)x, (void *)y)) return diff;
+		if(diff = CMPCALL_(compare)((void *)BOX_(right)(&ia),
+			(void *)BOX_(right)(&ib))) return diff;
 	}
 }
 
@@ -197,12 +197,10 @@ static int CMP_(is_equal)(const PCMP_(box) *restrict const a,
 		memcpy(&promise_box, &rm_restrict, sizeof b);
 		ib = BOX_(begin)(promise_box);
 	}
-	for( ; ; ) {
-		/*const*/ PCMP_(element) *x, *y;
-		if(!BOX_(next)(&ia, &x)) return !BOX_(next)(&ib, 0);
-		else if(!BOX_(next)(&ib, &y)) return 0;
-		/* Must have this function declared! */
-		if(!CMPCALL_(is_equal)(x, y)) return 0;
+	for( ; ; BOX_(next)(&ia), BOX_(next)(&ib)) {
+		if(!BOX_(valid_right)(&ia)) return !BOX_(valid_right)(&ib);
+		else if(!BOX_(valid_right)(&ib)) return 0;
+		if(!CMPCALL_(is_equal)(BOX_(right)(&ia), BOX_(right)(&ib))) return 0;
 	}
 }
 

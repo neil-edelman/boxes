@@ -106,7 +106,6 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	const size_t ellipsis_len = sizeof ellipsis - 1;
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance;
-	PSTR_(element) *v;
 	struct BOX_(iterator) it;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
@@ -120,15 +119,17 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 		it = BOX_(begin)(promise_box);
 	}
 	*b++ = left;
-	while(BOX_(next)(&it, &v)) {
-		STRCALL_(to_string)(v, (char (*)[12])b);
+	for( ; BOX_(valid_right)(&it); BOX_(next)(&it)) {
+		STRCALL_(to_string)(BOX_(right)(&it), (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size_t)(b - buffer) > to_string_buffer_size - 11 - 1
-			- ellipsis_len - 1 - 1)
-			{ if(BOX_(next)(&it, 0)) goto ellipsis; else break; }
+			- ellipsis_len - 1 - 1) {
+			if(BOX_(next)(&it), BOX_(valid_right)(&it)) goto ellipsis;
+			else break;
+		}
 	}
 	if(is_sep) b -= 2;
 	*b++ = right;

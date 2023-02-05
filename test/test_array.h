@@ -67,8 +67,8 @@ no_data:
 
 static void PA_(test_basic)(void) {
 	struct A_(array) a = A_(array)();
-	struct A_(array_iterator) it;
-	char z[12];
+	/*struct A_(array_iterator) it;
+	char z[12];*/
 	PA_(type) items[5], *item, *item1;
 	const size_t items_size = sizeof items / sizeof *items, big = 1000;
 	size_t i;
@@ -110,6 +110,7 @@ static void PA_(test_basic)(void) {
 		assert(item);
 		memcpy(item, items + i, sizeof *item);
 	}
+#if 0 /* Why would anyone use this? */
 	printf("Testing iteration, a = %s.\n", A_(array_to_string)(&a));
 	for(it = A_(array_begin)(&a), i = 0; item = A_(array_next)(&it); i++)
 		assert(!memcmp(item, items + i, sizeof *item));
@@ -146,6 +147,7 @@ static void PA_(test_basic)(void) {
 	it = A_(array_begin)(&a);
 	item = A_(array_previous)(&it), assert(!item);
 	item = A_(array_next)(&it), assert(!memcmp(item, items + 0, sizeof *item));
+#endif
 
 	printf("Testing lazy remove.\n");
 	A_(array_lazy_remove)(&a, a.data);

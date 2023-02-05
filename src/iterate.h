@@ -43,14 +43,16 @@ typedef int (*PITR_(predicate_fn))(const PITR_(element) *);
 static PITR_(element) *ITR_(any)(const PITR_(box) *const box,
 	const PITR_(predicate_fn) predicate) {
 	struct BOX_(iterator) it;
-	PITR_(element) *i;
 	assert(box && predicate);
 	{ /* We do not modify `box`, but the compiler doesn't know that. */
 		PITR_(box) *promise_box;
 		memcpy(&promise_box, &box, sizeof box);
 		it = BOX_(begin)(promise_box);
 	}
-	while(BOX_(next)(&it, &i)) if(predicate(i)) return i;
+	for( ; BOX_(valid_right)(&it); BOX_(next)(&it)) {
+		PITR_(element) *i = BOX_(right)(&it);
+		if(predicate(i)) return i;
+	}
 	return 0;
 }
 
@@ -58,10 +60,10 @@ static PITR_(element) *ITR_(any)(const PITR_(box) *const box,
  elements. @order \O(|`box`|) \times \O(`action`) @allow */
 static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
 	struct BOX_(iterator) it;
-	PITR_(element) *v;
 	assert(box && action);
 	/* fixme: Could we remove `v` from the list? */
-	for(it = BOX_(begin)(box); BOX_(next)(&it, &v); ) action(v);
+	for(it = BOX_(begin)(box); BOX_(valid_right)(&it); BOX_(next)(&it))
+		action(BOX_(right)(&it));
 }
 
 /** <src/iterate.h>: Iterates through `box` and calls `action` on all the
@@ -70,11 +72,12 @@ static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
 static void ITR_(if_each)(PITR_(box) *const box,
 	const PITR_(predicate_fn) predicate, const PITR_(action_fn) action) {
 	struct BOX_(iterator) it;
-	PITR_(element) *v;
 	assert(box && predicate && action);
 	/* fixme: Could be to remove `i` from the list? */
-	for(it = BOX_(begin)(box); BOX_(next)(&it, &v); )
+	for(it = BOX_(begin)(box); BOX_(valid_right)(&it); BOX_(next)(&it)) {
+		PITR_(element) *v = BOX_(right)(&it);
 		if(predicate(v)) action(v);
+	}
 }
 
 #ifdef BOX_CONTIGUOUS /* <!-- contiguous */
