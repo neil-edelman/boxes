@@ -200,7 +200,7 @@ static void PB_(test)(void) {
 	PB_(value) *v;
 #endif
 	PB_(key) k, k_prev;
-	size_t i, n_unique = 0, n_unique2 = 0;
+	size_t i, n_unique = 0;
 	char fn[64];
 
 	errno = 0;
@@ -223,8 +223,8 @@ static void PB_(test)(void) {
 	PB_(valid)(&tree);
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
-	it = B_(tree_left_previous)(0, test[0].key), assert(!it._.root);
-	it = B_(tree_left_previous)(&tree, test[0].key), assert(!it._.ref.node);
+	it = B_(tree_less)(0, test[0].key), assert(!it._.root);
+	it = B_(tree_less)(&tree, test[0].key), assert(!it._.ref.node);
 
 	/* Bulk, (simple.) */
 	for(i = 0; i < test_size; i++) {
@@ -279,17 +279,17 @@ static void PB_(test)(void) {
 
 	/* Iteration; checksum. */
 	memset(&k_prev, 0, sizeof k_prev);
-	it = B_(tree_begin)(&tree), i = 0;
-	while(
+	for(it = B_(tree_begin)(&tree), i = 0; B_(tree_has_right)(&it);
+		B_(tree_next)(&it), i++) {
+		char z[12];
+		k = B_(tree_right_key)(&it);
 #ifdef TREE_VALUE
-		B_(tree_next)(&it, &k, &v)
+		v = B_(tree_right_value)(&it);
+		B_(to_string)(k, v, &z);
 #else
-		B_(tree_next)(&it, &k)
+		B_(to_string)(k, &z);
 #endif
-		) {
-		/*char z[12];
-		B_(to_string)(&k, &z);
-		printf("<%s>\n", z);*/
+		printf("<%s>\n", z);
 		if(i) { const int cmp = B_(compare)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
@@ -396,14 +396,8 @@ static void PB_(test)(void) {
 		(unsigned long)n_unique, (unsigned long)test_size);
 
 	/* Delete all. Start again each time; removal invalidates iterator. */
-	i = 0;
-	while(it = B_(tree_begin)(&tree),
-#ifdef TREE_VALUE
-		B_(tree_next)(&it, &k, &v)
-#else
-		B_(tree_next)(&it, &k)
-#endif
-		) {
+	for(it = B_(tree_begin)(&tree), i = 0; B_(tree_has_right)(&it);
+		B_(tree_next)(&it), i++) {
 		/*char z[12];
 #ifdef TREE_VALUE
 		B_(to_string)(k, v, &z);
@@ -411,6 +405,7 @@ static void PB_(test)(void) {
 		B_(to_string)(k, &z);
 #endif
 		printf("Targeting <%s> for removal.\n", z);*/
+		k = B_(tree_right_key)(&it);
 		if(i) { const int cmp = B_(compare)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
@@ -423,6 +418,8 @@ static void PB_(test)(void) {
 		}
 	}
 	assert(i == n_unique);
+
+#if 0
 
 	/* Using a cursor and building the tree. */
 	n_unique2 = 0;
@@ -461,15 +458,17 @@ static void PB_(test)(void) {
 		(unsigned long)i, (unsigned long)n_unique2);
 	assert(i == n_unique);
 
-	/* Remove every 2nd. */
-	for(it = B_(tree_begin)(&tree);
-#ifdef TREE_VALUE
-		B_(tree_next)(&it, 0, 0) && B_(tree_next)(&it, 0, 0)
-#else
-		B_(tree_next)(&it, 0) && B_(tree_next)(&it, 0)
 #endif
-		; )
-		B_(tree_iterator_remove)(&it), n_unique--;
+
+	/* Remove every 2nd. */
+	for(it = B_(tree_begin)(&tree); B_(tree_has_right)(&it);
+		B_(tree_next)(&it), B_(tree_next)(&it)) {
+		PB_(key) key = B_(tree_right_key)(&it);
+		const int ret = B_(tree_remove)(&tree, key);
+		assert(ret);
+		n_unique--;
+		B_(tree_more)(&tree, key); /* Move past the erased keys. */
+	}
 	i = B_(tree_count)(&tree);
 	printf("remove every 2nd: %lu\n", (unsigned long)i);
 	assert(i == n_unique);

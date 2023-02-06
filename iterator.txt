@@ -1,0 +1,34 @@
+...
+
+|_|_|_|_|_|
+^         ^
+it begin(a) <- first
+it end(a) <- past end
+int has_right(it)
+void next(it)
+void prev(it)
+elem *right(it)
+
+Reasons why this is problematic: no space at begin leads to, it != begin(), for loop. This is kind of bad.
+
+The reason we only have one null unless making more variables, size_max. So this is fundamentally unbalanced. We have to check before we iterate on the forward_iterator, leads to reverse_iterator. Ugly.
+
+for(it = begin(a); has_right(it); next(it)) elem = right(it)
+
+...
+Better?
+
+it iterator(a)
+int next(it)
+int prev(it)
+elem element(it)
+[key key(it), value value(it)]
+
+more symmetrical, but insert always right for unordered containers
+one null value, insert at end, iterator.next.insert() beginning
+tree anything greater then index goes to next
+tree iterator_higher, iterator_lower
+
+while(next(it)) elem = element(it)
+
+it is an error to create it null? no, cover?

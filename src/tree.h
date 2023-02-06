@@ -1526,23 +1526,24 @@ finally:
 }
 
 
-/** Adding, deleting, or changes in the topology of the tree invalidate it. */
+/** Adding, deleting, or changes in the topology of the tree invalidate the
+ iterator. To modify the tree while iterating, take the <fn:<B>tree_key> and
+ restart the iterator with <fn:<B>tree_left> or <fn:<B>tree_right> as
+ appropriate. */
 struct B_(tree_iterator);
 struct B_(tree_iterator) { struct PB_(iterator) _; };
-
-
-/** @return Cursor before the first element of `tree`. Can be null.
+/** @return Cursor before the first element of `tree` (can be null).
  @order \Theta(\log |`tree`|) @allow */
 static struct B_(tree_iterator) B_(tree_begin)(struct B_(tree) *const tree)
 	{ struct B_(tree_iterator) it; it._ = PB_(begin)(tree); return it; }
-/** @return Cursor after the last element of `tree`. Can be null.
+/** @return Cursor after the last element of `tree` (can be null).
  @order \Theta(\log |`tree`|) @allow */
 static struct B_(tree_iterator) B_(tree_end)(struct B_(tree) *const tree)
 	{ struct B_(tree_iterator) it; it._ = PB_(end)(tree); return it; }
 /** @return Cursor in `tree` such that <fn:<B>tree_right> is the greatest
  key that is less-than-or-equal to `x`, or, <fn:<B>tree_begin> if `x` is less
  than all in `tree`. @order \Theta(\log |`tree`|) @allow */
-static struct B_(tree_iterator) B_(tree_left_previous)(struct B_(tree) *const
+static struct B_(tree_iterator) B_(tree_less)(struct B_(tree) *const
 	tree, const PB_(key) x) {
 	struct B_(tree_iterator) cur;
 	if(!tree) return cur._.root = 0, cur;
@@ -1550,10 +1551,10 @@ static struct B_(tree_iterator) B_(tree_left_previous)(struct B_(tree) *const
 	cur._.root = &tree->root;
 	return cur;
 }
-/** @return Cursor in `tree` such that <fn:<B>tree_next> is the least key that
- is greater-than-or-equal to `x`, or, <fn:<B>tree_end> if `x` is greater than
- all in `tree`. @order \Theta(\log |`tree`|) @allow */
-static struct B_(tree_iterator) B_(tree_right_next)(struct B_(tree) *const
+/** @return Cursor in `tree` such that <fn:<B>tree_right> is the least key that
+ is greater-than `x`, or, <fn:<B>tree_end> if `x` is greater than all in
+ `tree`. @order \Theta(\log |`tree`|) @allow */
+static struct B_(tree_iterator) B_(tree_more)(struct B_(tree) *const
 	tree, const PB_(key) x) {
 	struct B_(tree_iterator) cur;
 	if(!tree) return cur._.root = 0, cur;
@@ -1562,30 +1563,28 @@ static struct B_(tree_iterator) B_(tree_right_next)(struct B_(tree) *const
 	return cur;
 }
 
+static void B_(tree_next)(struct B_(tree_iterator) *const it)
+	{ assert(it), PB_(next)(&it->_); }
+/*static void B_(tree_previous)(struct B_(tree_iterator) *const it)
+	{ assert(it), PB_(previous)(&it->_); }*/
+static PB_(key) B_(tree_right_key_or)(const struct B_(tree_iterator) *const it,
+	const PB_(key) default_key) { return it->_.root && it->_.ref.node
+	&& it->_.ref.idx < it->_.ref.node->size ? it->_.ref.node->key[it->_.ref.idx]
+	: default_key; }
+static int B_(tree_has_right)(const struct B_(tree_iterator) *const it)
+	{ return assert(it), PB_(has_right)(&it->_); }
+static PB_(key) B_(tree_right_key)(const struct B_(tree_iterator) *const it)
+	{ return it->_.ref.node->key[it->_.ref.idx]; }
 #ifdef TREE_VALUE /* <!-- map */
-/** @return Whether advancing `it` to the next element and filling `k`, (and
- `v` if a map, otherwise absent,) if not-null.
- @order \O(\log |`tree`|) @allow */
-static int B_(tree_next)(struct B_(tree_iterator) *const it,
-	PB_(key) *const k, PB_(value) **v) {
-#else /* map --><!-- set */
-static int B_(tree_next)(struct B_(tree_iterator) *const it,
-	PB_(key) *const k) {
-#endif /* set --> */
-	struct PB_(ref) *r;
-	PB_(next)(&it->_);
-	if(!PB_(has_right)(&it->_)) return 0;
-	r = PB_(right)(&it->_);
-	if(k) *k = r->node->key[r->idx];
-#ifdef TREE_VALUE
-	if(v) *v = r->node->value + r->idx;
-#endif
-	return 1;
-#ifdef TREE_VALUE
-}
-#else
-}
-#endif
+static PB_(value) *B_(tree_right_value)(const struct B_(tree_iterator) *const it)
+	{ return it->_.ref.node->value + it->_.ref.idx; }
+#endif /* map --> */
+
+
+
+
+
+
 
 #if 0
 
@@ -1611,8 +1610,6 @@ static int B_(tree_previous)(struct B_(tree_iterator) *const it,
 #else
 }
 #endif
-
-#endif/*0*/
 
 #ifdef TREE_VALUE /* <!-- map */
 /** Adds `key` and returns `value` to tree in iterator `it`. See
@@ -1685,6 +1682,12 @@ static int B_(tree_iterator_remove)(struct B_(tree_iterator) *const it) {
 	return 1;
 }
 
+#endif/*0*/
+
+
+
+
+
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
 	PB_(key) k; PB_(value) v; memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
@@ -1693,17 +1696,15 @@ static void PB_(unused_base)(void) {
 	B_(tree_left_or)(0, k, v); B_(tree_right_or)(0, k, v);
 #ifdef TREE_VALUE
 	B_(tree_bulk_add)(0, k, 0); B_(tree_try)(0, k, 0);
-	B_(tree_assign)(0, k, 0, 0); B_(tree_iterator_try)(0, k, 0);
-	B_(tree_next)(0, 0, 0); /*B_(tree_previous)(0, 0, 0);*/
+	B_(tree_assign)(0, k, 0, 0);
+	B_(tree_next)(0); /*B_(tree_previous)(0, 0, 0);*/
 #else
 	B_(tree_bulk_add)(0, k); B_(tree_try)(0, k);
-	B_(tree_assign)(0, k, 0); B_(tree_iterator_try)(0, k);
-	B_(tree_next)(0, 0); /*B_(tree_previous)(0, 0);*/
+	B_(tree_assign)(0, k, 0);
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
 	B_(tree_begin)(0); B_(tree_end)(0);
-	B_(tree_left_previous)(0, k); B_(tree_right_next)(0, k);
-	B_(tree_iterator_remove)(0);
+	B_(tree_less)(0, k); B_(tree_more)(0, k);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
@@ -1782,7 +1783,7 @@ static PB_(value) B_D_(tree, get)(const struct B_(tree) *const tree,
  @return The value associated with `key` in `tree`, (which can be null.) If
  no such value exists, the `TREE_DEFAULT` is returned.
  @order \O(\log |`tree`|). @allow */
-static PB_(value) B_D_(tree, left)(const struct B_(tree) *const tree,
+static PB_(key) B_D_(tree, less_key)(const struct B_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) ref;
 	return tree && (ref = PB_(lookup_left)(tree->root, key)).node ?
@@ -1794,7 +1795,7 @@ static PB_(value) B_D_(tree, left)(const struct B_(tree) *const tree,
  @return The value associated with `key` in `tree`, (which can be null.) If
  no such value exists, the `TREE_DEFAULT` is returned.
  @order \O(\log |`tree`|). @allow */
-static PB_(value) B_D_(tree, right)(const struct B_(tree) *const tree,
+static PB_(key) B_D_(tree, more_key)(const struct B_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) ref;
 	return tree && (ref = PB_(lookup_right)(tree->root, key)).node
@@ -1804,8 +1805,8 @@ static PB_(value) B_D_(tree, right)(const struct B_(tree) *const tree,
 static void PB_D_(unused, default_coda)(void);
 static void PB_D_(unused, default)(void) {
 	PB_(key) k; memset(&k, 0, sizeof k);
-	B_D_(tree, get)(0, k); B_D_(tree, left)(0, k); B_D_(tree, right)(0, k);
-	PB_D_(unused, default_coda)();
+	B_D_(tree, get)(0, k); B_D_(tree, less_key)(0, k);
+	B_D_(tree, more_key)(0, k); PB_D_(unused, default_coda)();
 }
 static void PB_D_(unused, default_coda)(void) { PB_D_(unused, default)(); }
 #undef B_D_

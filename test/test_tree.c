@@ -183,13 +183,13 @@ static void char_bounds(void) {
 	tree_char_graph(&tree, "graph/char-bounds.gv");
 	printf("right:\n");
 	for(i = 'a'; i < 'm'; i++) {
-		char right = char_tree_right(&tree, i);
+		char right = char_tree_more_key(&tree, i);
 		printf("%c\t%c\t(%c)\n", i, right, correct_right[(int)i-'a']);
 		assert(right == correct_right[(int)i-'a']);
 	}
 	printf("left:\n");
 	for(i = 'a'; i < 'm'; i++) {
-		char left = char_tree_left(&tree, i);
+		char left = char_tree_less_key(&tree, i);
 		printf("%c\t%c\t(%c)\n", i, left, correct_left[(int)i-'a']);
 		assert(left == correct_left[(int)i-'a']);
 	}
@@ -228,23 +228,17 @@ static void order3(void) {
 	v = order3_tree_right_or(&between, 300, 0), assert(v == 300);
 	v = order3_tree_right_or(&between, 350, 0), assert(!v);
 
-	it = order3_tree_right_next(&between, 50);
+	it = order3_tree_more(&between, 50);
 	printf("right next 50, %s:%u.\n",
 		orcify(it._.ref.node), it._.ref.idx);
-	ret = order3_tree_next(&it, &v), assert(ret && v == 100);
-	printf("next %u.\n", v);
-	/*it = order3_tree_right_next(&between, 50);
-	ret = order3_tree_previous(&it, &v), assert(!ret);
-	printf("previous dne.\n");*/
+	order3_tree_right_key(&it), assert(ret && v == 100);
+	printf("right %u.\n", v);
 
-	it = order3_tree_right_next(&between, 150);
+	it = order3_tree_more(&between, 150);
 	printf("right next 150, %s:%u.\n",
 		orcify(it._.ref.node), it._.ref.idx);
 	ret = order3_tree_next(&it, &v), assert(ret && v == 200);
-	printf("next %u.\n", v);
-	/*it = order3_tree_right_next(&between, 150);
-	ret = order3_tree_previous(&it, &v), assert(ret && v == 100);
-	printf("previous %u.\n", v);*/
+	printf("right %u.\n", v);
 
 	it = order3_tree_right_next(&between, 200);
 	printf("right next 200, %s:%u.\n",
