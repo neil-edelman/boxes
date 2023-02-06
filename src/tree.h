@@ -228,11 +228,8 @@ static struct PB_(iterator) PB_(end)(struct B_(tree) *const tree) {
 	it.ref.idx = it.ref.node ? it.ref.node->size : 0;
 	return it;
 }
-#include "orcish.h"
 /** @return `it` (valid) pointing to valid element? */
 static int PB_(has_right)(const struct PB_(iterator) *const it) {
-	printf("has_right: %s:h%u:%u\n",
-		orcify(it->ref.node), it->ref.height, it->ref.idx);
 	return assert(it), it->root && it->ref.node
 		&& it->ref.idx < it->ref.node->size;
 }
@@ -273,52 +270,6 @@ static void PB_(next)(struct PB_(iterator) *const it) {
 	it->ref = next;
 }
 #if 0
-
-/** @return Whether `it` advances, filling `ref`. @implements `next` */
-static int PB_(next)(struct PB_(iterator) *const it,
-	struct PB_(ref) **const ref) {
-	struct PB_(ref) adv;
-	assert(it);
-	if(!it->root || !it->ref.node) return it->seen = 0, 0;
-	if(!it->root->node || it->root->height == UINT_MAX)
-		return it->ref.node = 0, 0; /* Concurrent modification? */
-	adv = it->ref; /* Shorten keystrokes and work with a copy. */
-	if(!it->seen && adv.idx < adv.node->size) goto successor;
-	adv.idx++;
-	if(adv.height && adv.idx > adv.node->size)
-		return it->ref.node = 0, 0; /* Concurrent modification? */
-	while(adv.height) adv.height--,
-		adv.node = PB_(as_branch)(adv.node)->child[adv.idx], adv.idx = 0;
-	if(adv.idx < adv.node->size) goto successor; /* Likely. */
-	/* Bulk-loading or concurrent modification? */
-	if(adv.idx > adv.node->size) return it->ref.node = 0, 0;
-	{ /* Re-descend; pick the minimum height node that has a next key. */
-		struct PB_(ref) next;
-		struct PB_(tree) tree = *it->root;
-		unsigned a0;
-		const PB_(key) x = adv.node->key[adv.node->size - 1]; /* Target. */
-		for(next.node = 0; tree.height;
-			tree.node = PB_(as_branch)(tree.node)->child[a0], tree.height--) {
-			unsigned a1 = tree.node->size;
-			a0 = 0;
-			while(a0 < a1) {
-				const unsigned m = (a0 + a1) / 2;
-				if(B_(compare)(x, tree.node->key[m]) > 0) a0 = m + 1;
-				else a1 = m;
-			}
-			if(a0 < tree.node->size) next.node = tree.node,
-				next.height = tree.height, next.idx = a0;
-		}
-		if(!next.node) return it->seen = 0, 0; /* Off right. */
-		adv = next;
-	} /* Jumped nodes. */
-successor:
-	it->seen = 1;
-	it->ref = adv;
-	if(ref) *ref = &it->ref;
-	return 1;
-}
-
 /** @return Whether `it` recedes, filling `v`. @implements `next` */
 static int PB_(previous)(struct PB_(iterator) *const it,
 	struct PB_(ref) **const v) {
@@ -1588,7 +1539,7 @@ static struct B_(tree_iterator) B_(tree_begin)(struct B_(tree) *const tree)
  @order \Theta(\log |`tree`|) @allow */
 static struct B_(tree_iterator) B_(tree_end)(struct B_(tree) *const tree)
 	{ struct B_(tree_iterator) it; it._ = PB_(end)(tree); return it; }
-/** @return Cursor in `tree` such that <fn:<B>tree_previous> is the greatest
+/** @return Cursor in `tree` such that <fn:<B>tree_right> is the greatest
  key that is less-than-or-equal to `x`, or, <fn:<B>tree_begin> if `x` is less
  than all in `tree`. @order \Theta(\log |`tree`|) @allow */
 static struct B_(tree_iterator) B_(tree_left_previous)(struct B_(tree) *const
