@@ -487,12 +487,10 @@ static void PB_(test)(void) {
  defining `assert`. @allow */
 static void B_(tree_test)(void) {
 	printf("<" QUOTE(TREE_NAME) ">tree"
-		" of type <" QUOTE(TREE_KEY) ">"
-		" was created using:"
+		" of key <" QUOTE(TREE_KEY) ">;"
 #ifdef TREE_VALUE
-		" TREE_VALUE<" QUOTE(TREE_VALUE) ">;"
+		" value <" QUOTE(TREE_VALUE) ">;"
 #endif
-		" TREE_TEST <" QUOTE(TREE_TEST) ">;"
 		" testing:\n");
 	PB_(test)();
 	fprintf(stderr, "Done tests of <" QUOTE(TREE_NAME) ">tree.\n\n");

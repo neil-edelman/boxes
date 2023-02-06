@@ -252,11 +252,11 @@ static void PB_(next)(struct PB_(iterator) *const it) {
 		next.idx = 0, next.height--; /* Fall from branch. */
 	it->ref = next; /* Possibly one beyond bounds. */
 	if(next.idx >= next.node->size) { /* Maybe re-descend reveals more keys. */
-		struct PB_(ref) jump;
 		struct PB_(tree) tree = *it->root;
 		unsigned a0;
-		const PB_(key) x = next.node->key[next.node->size - 1]; /* Target. */
-		for(jump.node = 0; tree.height;
+		/* Target; this will not work with duplicate keys. */
+		const PB_(key) x = next.node->key[next.node->size - 1];
+		for(next.node = 0; tree.height;
 			tree.node = PB_(as_branch)(tree.node)->child[a0], tree.height--) {
 			unsigned a1 = tree.node->size;
 			a0 = 0;
@@ -265,11 +265,10 @@ static void PB_(next)(struct PB_(iterator) *const it) {
 				if(B_(compare)(x, tree.node->key[m]) > 0) a0 = m + 1;
 				else a1 = m;
 			}
-			if(a0 < tree.node->size) jump.node = tree.node,
-				jump.height = tree.height, jump.idx = a0;
+			if(a0 < tree.node->size) next.node = tree.node,
+				next.height = tree.height, next.idx = a0;
 		}
-		if(!jump.node) return; /* Off right. */
-		next = jump;
+		if(!next.node) return; /* Off right. */
 	} /* Jumped nodes. */
 	it->ref = next;
 }
@@ -319,8 +318,6 @@ successor:
 	if(ref) *ref = &it->ref;
 	return 1;
 }
-
-
 
 /** @return Whether `it` recedes, filling `v`. @implements `next` */
 static int PB_(previous)(struct PB_(iterator) *const it,
