@@ -116,20 +116,18 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	{ /* We do not modify `box`, but the compiler doesn't know that. */
 		PSTR_(box) *promise_box;
 		memcpy(&promise_box, &box, sizeof box);
-		it = BOX_(begin)(promise_box);
+		it = BOX_(iterator)(promise_box);
 	}
 	*b++ = left;
-	for( ; BOX_(has_right)(&it); BOX_(next)(&it)) {
-		STRCALL_(to_string)(BOX_(right)(&it), (char (*)[12])b);
+	while(BOX_(next)(&it)) {
+		STRCALL_(to_string)(BOX_(element)(&it), (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size_t)(b - buffer) > to_string_buffer_size - 11 - 1
-			- ellipsis_len - 1 - 1) {
-			if(BOX_(next)(&it), BOX_(has_right)(&it)) goto ellipsis;
-			else break;
-		}
+			- ellipsis_len - 1 - 1)
+			{ if(BOX_(next)(&it)) goto ellipsis; else break; }
 	}
 	if(is_sep) b -= 2;
 	*b++ = right;

@@ -69,20 +69,20 @@ static int CMP_(compare)(const PCMP_(box) *restrict const a,
 		const PCMP_(box) *const rm_restrict = a;
 		PCMP_(box) *promise_box;
 		memcpy(&promise_box, &rm_restrict, sizeof a);
-		ia = BOX_(begin)(promise_box);
+		ia = BOX_(iterator)(promise_box);
 	} {
 		const PCMP_(box) *const rm_restrict = b;
 		PCMP_(box) *promise_box;
 		memcpy(&promise_box, &rm_restrict, sizeof b);
-		ib = BOX_(begin)(promise_box);
+		ib = BOX_(iterator)(promise_box);
 	}
-	for( ; ; BOX_(next)(&ia), BOX_(next)(&ib)) {
+	for( ; ; ) {
 		int diff;
-		if(!BOX_(has_right)(&ia)) return BOX_(has_right)(&ib) ? -1 : 0;
-		else if(!BOX_(has_right)(&ib)) return 1;
+		if(!BOX_(next)(&ia)) return BOX_(next)(&ib) ? -1 : 0;
+		else if(!BOX_(next)(&ib)) return 1;
 		/* Must have this function declared. */
-		if(diff = CMPCALL_(compare)((void *)BOX_(right)(&ia),
-			(void *)BOX_(right)(&ib))) return diff;
+		if(diff = CMPCALL_(compare)((void *)BOX_(element)(&ia),
+			(void *)BOX_(element)(&ib))) return diff;
 	}
 }
 
@@ -190,18 +190,20 @@ static int CMP_(is_equal)(const PCMP_(box) *restrict const a,
 		const PCMP_(box) *const rm_restrict = a;
 		PCMP_(box) *promise_box;
 		memcpy(&promise_box, &rm_restrict, sizeof a);
-		ia = BOX_(begin)(promise_box);
+		ia = BOX_(iterator)(promise_box);
 	} {
 		const PCMP_(box) *const rm_restrict = b;
 		PCMP_(box) *promise_box;
 		memcpy(&promise_box, &rm_restrict, sizeof b);
-		ib = BOX_(begin)(promise_box);
+		ib = BOX_(iterator)(promise_box);
 	}
-	for( ; ; BOX_(next)(&ia), BOX_(next)(&ib)) {
-		if(!BOX_(has_right)(&ia)) return !BOX_(has_right)(&ib);
-		else if(!BOX_(has_right)(&ib)) return 0;
-		if(!CMPCALL_(is_equal)(BOX_(right)(&ia), BOX_(right)(&ib))) return 0;
+	for( ; ; ) {
+		if(!BOX_(next)(&ia)) return !BOX_(next)(&ib);
+		else if(!BOX_(next)(&ib)) return 0;
+		if(!CMPCALL_(is_equal)(BOX_(element)(&ia), BOX_(element)(&ib)))
+			return 0;
 	}
+	return 1;
 }
 
 #ifdef BOX_CONTIGUOUS /* <!-- contiguous: (array, pointer), size, at,

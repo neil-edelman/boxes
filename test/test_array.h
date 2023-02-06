@@ -418,10 +418,10 @@ static void PA_(test_keep)(void) {
 static void PA_(test_each)(void) {
 #ifdef HAVE_ITERATE_H
 	struct A_(array) empty = A_(array)(), one = A_(array)();
-	const PA_(type) *t;
+	PA_(type) *t;
 	t = A_(array_new)(&one);
 	assert(t);
-	if(!t) return;
+	A_(filler)(t);
 	PA_(num) = 0;
 	A_(array_each)(&empty, &PA_(increment));
 	assert(!PA_(num));

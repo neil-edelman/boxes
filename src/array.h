@@ -86,35 +86,34 @@ typedef ARRAY_TYPE PA_(type);
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
+/* `a` non-null; `i >= elements` empty; insert-delete on left like C++. */
 struct PA_(iterator) { struct A_(array) *a; size_t i; };
-/** @return Initialize before beginning of `a` (can be null). */
-static struct PA_(iterator) PA_(begin)(struct A_(array) *const a)
-	{ struct PA_(iterator) it; it.a = a, it.i = 0; return it; }
-/** @return Initialize after the end of `a` (can be null). */
-static struct PA_(iterator) PA_(end)(struct A_(array) *const a)
-	{ struct PA_(iterator) it; it.a = a, it.i = a ? a->size : 0; return it; }
-/** @return Iterator at element `i` of `a` (can be null). */
-static struct PA_(iterator) PA_(iterator_at)(struct A_(array) *a, size_t i) {
+/** @return Iterator at end of (non-null) valid `a`. */
+static struct PA_(iterator) PA_(iterator)(struct A_(array) *const a) {
 	struct PA_(iterator) it;
-	it.a = a, it.i = a ? i < a->size ? i : a->size : 0;
+	assert(a), it.a = a, it.i = (size_t)~0;
 	return it;
 }
-/** @return `it` (valid) pointing to valid element? */
-static int PA_(has_right)(const struct PA_(iterator) *const it)
-	{ return assert(it), it->a && it->i < it->a->size; }
-/** @return Dereference the next (pointing to valid element) `it`. */
-static PA_(type) *PA_(right)(struct PA_(iterator) *const it)
+/** @return Iterator at element `i` of non-null `a`. */
+static struct PA_(iterator) PA_(iterator_at)(struct A_(array) *a, size_t i) {
+	struct PA_(iterator) it;
+	assert(a), it.a = a, it.i = i < a->size ? i : (size_t)~0;
+	return it;
+}
+/** @return Dereference the element pointed to by valid `it`. */
+static PA_(type) *PA_(element)(struct PA_(iterator) *const it)
 	{ return it->a->data + it->i; }
-/** Next `it` (valid). */
-static void PA_(next)(struct PA_(iterator) *const it)
-	{ assert(it); if(it->a && it->i < it->a->size) it->i++; }
-/** Previous `it` (valid). */
-static void PA_(previous)(struct PA_(iterator) *const it) {
-	assert(it);
-	if(it->a) {
-		if(it->i > it->a->size) it->i = it->a->size; /* Clip. */
-		if(it->i) it->i--;
-	}
+/** Next `it`. @return Valid element? */
+static int PA_(next)(struct PA_(iterator) *const it) {
+	assert(it && it->a);
+	if(it->i >= it->a->size) it->i = (size_t)~0;
+	return ++it->i < it->a->size;
+}
+/** Previous `it`. @return Valid element? */
+static int PA_(previous)(struct PA_(iterator) *const it) {
+	assert(it && it->a);
+	if(it->i > it->a->size) it->i = it->a->size; /* Clip. */
+	return --it->i < it->a->size;
 }
 /* fixme: static struct PA_(iterator)
  PA_(remove)(struct PA_(iterator) *const it) */
@@ -310,8 +309,8 @@ static int A_(array_splice)(struct A_(array) *restrict const a,
 
 static void PA_(unused_base_coda)(void);
 static void PA_(unused_base)(void) {
-	PA_(begin)(0); PA_(end)(0); PA_(iterator_at)(0, 0); PA_(has_right)(0);
-	PA_(right)(0); PA_(next)(0); PA_(previous)(0);
+	PA_(iterator)(0); PA_(iterator_at)(0, 0); PA_(element)(0);
+	PA_(next)(0); PA_(previous)(0);
 	PA_(size)(0); PA_(at)(0, 0); PA_(tell_size)(0, 0);
 	A_(array)(); A_(array_)(0);
 	A_(array_insert)(0, 0, 0); A_(array_new)(0);

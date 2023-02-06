@@ -1563,8 +1563,8 @@ static struct B_(tree_iterator) B_(tree_more)(struct B_(tree) *const
 	return cur;
 }
 
-static void B_(tree_next)(struct B_(tree_iterator) *const it)
-	{ assert(it), PB_(next)(&it->_); }
+static int B_(tree_next)(struct B_(tree_iterator) *const it)
+	{ return assert(it), PB_(next)(&it->_); }
 /*static void B_(tree_previous)(struct B_(tree_iterator) *const it)
 	{ assert(it), PB_(previous)(&it->_); }*/
 static PB_(key) B_(tree_right_key_or)(const struct B_(tree_iterator) *const it,

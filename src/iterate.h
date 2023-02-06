@@ -47,11 +47,10 @@ static PITR_(element) *ITR_(any)(const PITR_(box) *const box,
 	{ /* We do not modify `box`, but the compiler doesn't know that. */
 		PITR_(box) *promise_box;
 		memcpy(&promise_box, &box, sizeof box);
-		it = BOX_(begin)(promise_box);
+		it = BOX_(iterator)(promise_box);
 	}
-	int n = 1;
-	for( ; BOX_(has_right)(&it); BOX_(next)(&it), n++) {
-		PITR_(element) *i = BOX_(right)(&it);
+	while(BOX_(next)(&it)) {
+		PITR_(element) *i = BOX_(element)(&it);
 		if(predicate(i)) return i;
 	}
 	return 0;
@@ -60,11 +59,10 @@ static PITR_(element) *ITR_(any)(const PITR_(box) *const box,
 /** <src/iterate.h>: Iterates through `box` and calls `action` on all the
  elements. @order \O(|`box`|) \times \O(`action`) @allow */
 static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
-	struct BOX_(iterator) it;
+	struct BOX_(iterator) it = BOX_(iterator)(box);
 	assert(box && action);
 	/* fixme: Could we remove `v` from the list? */
-	for(it = BOX_(begin)(box); BOX_(has_right)(&it); BOX_(next)(&it))
-		action(BOX_(right)(&it));
+	while(BOX_(next)(&it)) action(BOX_(element)(&it));
 }
 
 /** <src/iterate.h>: Iterates through `box` and calls `action` on all the
@@ -72,11 +70,11 @@ static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
  @order \O(`box.size`) \times (\O(`predicate`) + \O(`action`)) @allow */
 static void ITR_(if_each)(PITR_(box) *const box,
 	const PITR_(predicate_fn) predicate, const PITR_(action_fn) action) {
-	struct BOX_(iterator) it;
+	struct BOX_(iterator) it = BOX_(iterator)(box);
 	assert(box && predicate && action);
 	/* fixme: Could be to remove `i` from the list? */
-	for(it = BOX_(begin)(box); BOX_(has_right)(&it); BOX_(next)(&it)) {
-		PITR_(element) *v = BOX_(right)(&it);
+	while(BOX_(next)(&it)) {
+		PITR_(element) *v = BOX_(element)(&it);
 		if(predicate(v)) action(v);
 	}
 }
