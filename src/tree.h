@@ -241,23 +241,22 @@ static struct PB_(ref) *PB_(right)(struct PB_(iterator) *const it)
 	{ return &it->ref; }
 /** `it` advances. */
 static void PB_(next)(struct PB_(iterator) *const it) {
-	struct PB_(ref) adv;
+	struct PB_(ref) next;
 	assert(it);
 	if(!it->root || !it->ref.node
 		|| !it->root->node || it->root->height == UINT_MAX) return;
-	adv = it->ref, adv.idx++; /* Work with a copy of the next. */
+	next = it->ref, next.idx++; /* Work with a copy of the next. */
 	/* This shouldn't happen, but no accessing out-of-bounds. */
-	if(adv.height && adv.idx > adv.node->size) adv.idx = adv.node->size;
-	while(adv.height) adv.node = PB_(as_branch)(adv.node)->child[adv.idx],
-		adv.idx = 0, adv.height--; /* Fall from branch. */
-	if(adv.idx < adv.node->size) goto successor; /* Likely. */
-	{ /* Re-descend; pick the minimum height node that has a next key. */
-		struct PB_(ref) next;
+	if(next.height && next.idx > next.node->size) next.idx = next.node->size;
+	while(next.height) next.node = PB_(as_branch)(next.node)->child[next.idx],
+		next.idx = 0, next.height--; /* Fall from branch. */
+	it->ref = next; /* Possibly one beyond bounds. */
+	if(next.idx >= next.node->size) { /* Maybe re-descend reveals more keys. */
+		struct PB_(ref) jump;
 		struct PB_(tree) tree = *it->root;
 		unsigned a0;
-		const PB_(key) x = adv.node->key[adv.node->size - 1]; /* Target. */
-		//printf("targeting %s:h%u:%u\n", orcify(adv.node), adv.height, adv.idx-1);
-		for(next.node = 0; tree.height;
+		const PB_(key) x = next.node->key[next.node->size - 1]; /* Target. */
+		for(jump.node = 0; tree.height;
 			tree.node = PB_(as_branch)(tree.node)->child[a0], tree.height--) {
 			unsigned a1 = tree.node->size;
 			a0 = 0;
@@ -266,15 +265,13 @@ static void PB_(next)(struct PB_(iterator) *const it) {
 				if(B_(compare)(x, tree.node->key[m]) > 0) a0 = m + 1;
 				else a1 = m;
 			}
-			if(a0 < tree.node->size) next.node = tree.node,
-				next.height = tree.height, next.idx = a0;
+			if(a0 < tree.node->size) jump.node = tree.node,
+				jump.height = tree.height, jump.idx = a0;
 		}
-		if(!next.node) { printf("arr\n"); return;} /* Off right. */
-		//printf("adv %s:h%u:%u <- next %s:h%u:%u\n", orcify(adv.node), adv.height, adv.idx, orcify(next.node), next.height, next.idx);
-		adv = next;
+		if(!jump.node) return; /* Off right. */
+		next = jump;
 	} /* Jumped nodes. */
-successor:
-	it->ref = adv;
+	it->ref = next;
 }
 #if 0
 
