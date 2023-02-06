@@ -129,16 +129,14 @@ struct H_(heap) { struct PH_(node_array) as_array; };
 #define PAH_(n) HEAP_CAT(HEAP_CAT(array, PH_(node)), n)
 struct PH_(iterator) { struct PAH_(iterator) _; };
 /** @return Before `h`. @implements `forward` */
-static struct PH_(iterator) PH_(begin)(struct H_(heap) *const h) {
-	struct PH_(iterator) it; it._ = PAH_(begin)(&h->as_array); return it; }
-/** @return Valid `it`? */
-static int PH_(has_right)(const struct PH_(iterator) *const it)
-	{ return PAH_(has_right)(&it->_); }
+static struct PH_(iterator) PH_(iterator)(struct H_(heap) *const h) {
+	struct PH_(iterator) it; it._ = PAH_(iterator)(&h->as_array); return it; }
 /** @return Dereferences `it`. */
-static PH_(node) *PH_(right)(struct PH_(iterator) *const it)
-	{ return PAH_(right)(&it->_); }
+static PH_(node) *PH_(element)(struct PH_(iterator) *const it)
+	{ return PAH_(element)(&it->_); }
 /** @return Next `it`. */
-static void PH_(next)(struct PH_(iterator) *const it) { PAH_(next)(&it->_); }
+static int PH_(next)(struct PH_(iterator) *const it)
+	{ return PAH_(next)(&it->_); }
 #undef PAH_
 
 /** Extracts the <typedef:<PH>priority> of `node`, which must not be null. */
@@ -339,7 +337,7 @@ static int H_(heap_affix)(struct H_(heap) *restrict const heap,
 static void PH_(unused_base_coda)(void);
 static void PH_(unused_base)(void) {
 	PH_(node) unused; memset(&unused, 0, sizeof unused);
-	PH_(begin)(0); PH_(has_right)(0); PH_(right)(0); PH_(next)(0);
+	PH_(iterator)(0); PH_(element)(0); PH_(next)(0);
 	H_(heap)(); H_(heap_)(0); H_(heap_clear)(0); H_(heap_size)(0);
 	H_(heap_add)(0, unused); H_(heap_peek)(0); H_(heap_pop)(0);
 	H_(heap_buffer)(0, 0); H_(heap_append)(0, 0); H_(heap_affix)(0, 0);
