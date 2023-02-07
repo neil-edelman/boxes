@@ -122,8 +122,8 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 	L_(list_clear)(&la);
 	/* Test nulls, (Not comprehensive.) */
 	cmp = L_(list_compare)(0, 0), assert(cmp == 0);
-	cmp = L_(list_compare)(&la, 0), assert(cmp == 0);
-	cmp = L_(list_compare)(0, &la), assert(cmp == 0);
+	cmp = L_(list_compare)(&la, 0), assert(cmp == -1);
+	cmp = L_(list_compare)(0, &la), assert(cmp == 1);
 	L_(list_subtraction_to)(0, 0, 0);
 	L_(list_subtraction_to)(0, 0, &la);
 	L_(list_union_to)(0, 0, 0);

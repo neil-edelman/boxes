@@ -960,6 +960,7 @@ static void animals_act(void) {
 }
 /** Clears all the `animals`. */
 static void animals_clear(void) {
+	printf("About to delete %s.", id_list_to_string(&animals.list));
 	id_list_each(&animals.list, &id_delete);
 }
 

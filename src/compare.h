@@ -65,6 +65,8 @@ typedef int (*PCMP_(biaction_fn))(PCMP_(element) *restrict,
 static int CMP_(compare)(const PCMP_(box) *restrict const a,
 	const PCMP_(box) *restrict const b) {
 	struct BOX_(iterator) ia, ib;
+	if(!a) return b ? 1 : 0;
+	if(!b) return -1;
 	{ /* We do not modify, but the compiler doesn't know that. */
 		const PCMP_(box) *const rm_restrict = a;
 		PCMP_(box) *promise_box;

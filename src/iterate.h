@@ -57,12 +57,17 @@ static PITR_(element) *ITR_(any)(const PITR_(box) *const box,
 }
 
 /** <src/iterate.h>: Iterates through `box` and calls `action` on all the
- elements. @order \O(|`box`|) \times \O(`action`) @allow */
+ elements. Differs calling `action` until the iterator is one-ahead, so can
+ delete elements as long as it doesn't affect the next, (specifically, a
+ linked-list.) @order \O(|`box`|) \times \O(`action`) @allow */
 static void ITR_(each)(PITR_(box) *const box, const PITR_(action_fn) action) {
 	struct BOX_(iterator) it = BOX_(iterator)(box);
+	PITR_(element) *i;
 	assert(box && action);
-	/* fixme: Could we remove `v` from the list? */
-	while(BOX_(next)(&it)) action(BOX_(element)(&it));
+	if(!BOX_(next)(&it)) return;
+	i = BOX_(element)(&it);
+	while(BOX_(next)(&it)) action(i), i = BOX_(element)(&it);
+	action(i);
 }
 
 /** <src/iterate.h>: Iterates through `box` and calls `action` on all the
@@ -113,9 +118,10 @@ static int ITR_(copy_if)(PITR_(box) *restrict const dst,
 	return 1;
 }
 
-/** <src/iterate.h>, `BOX_CONTIGUOUS`: For all elements of `box`, calls `keep`,
- and if false, lazy deletes that item. Calls `destruct` if not-null before
- deleting. @order \O(|`box`|) (\times O(`keep`) + O(`destruct`)) @allow */
+/** <src/iterate.h>: For all elements of `box`, calls `keep`,
+ and if false, if contiguous, lazy deletes that item, if not, eagerly. Calls
+ `destruct` if not-null before deleting.
+ @order \O(|`box`|) (\times O(`keep`) + O(`destruct`)) @allow */
 static void ITR_(keep_if)(PITR_(box) *const box,
 	const PITR_(predicate_fn) keep, const PITR_(action_fn) destruct) {
 	PITR_(element) *erase = 0, *v, *retain = 0, *end;
@@ -150,6 +156,15 @@ static void ITR_(keep_if)(PITR_(box) *const box,
 	assert((size_t)(erase - BOX_(at)(box, 0)) <= BOX_(size)(box));
 	BOX_(tell_size)(box, (size_t)(erase - BOX_(at)(box, 0)));
 }
+
+#else /* contiguous --><!-- !contiguous */
+
+static void ITR_(keep_if)(PITR_(box) *const box,
+	const PITR_(predicate_fn) keep, const PITR_(action_fn) destruct) {
+}
+
+#endif /* !contiguous --> */
+#ifdef BOX_CONTIGUOUS /* contiguous --> */
 
 /** <src/iterate.h>, `BOX_CONTIGUOUS`: Removes at either end of `box` the
  things that `predicate`, if it exists, returns true.
