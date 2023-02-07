@@ -245,11 +245,14 @@ static void test_it(void) {
 	const int ko = 1000, ko2 = ko * 2;
 	int n, i;
 	printf("Testing iteration.\n");
+#if 0
 	for(n = 0; n < ko2; n++) if(!int_table_try(&t, n)) goto catch;
 	table_int_graph(&t, "graph/it0.gv");
 	assert(t.size == ko2);
 	printf("Remove: ");
-	for(it = int_table_begin(&t); int_table_next(&it, &i); ) {
+	it = int_table_iterator(&t);
+	while(int_table_next(&it)) {
+		i = int_table_key(&it);
 		if(i & 1) continue; /* Odd ones left. */
 		int_table_iterator_remove(&it);
 		assert(int_table_iterator_remove(&it) == 0);
@@ -262,12 +265,13 @@ static void test_it(void) {
 catch:
 	perror("it"), assert(0);
 finally:
+#endif
 	int_table_(&t);
 	printf("\n");
 }
 
 
-/** This is stored in the map value of `<boat>table`. */
+/* <https://stackoverflow.com/q/59091226/2472827>. */
 struct boat_record { int best_time, points; };
 static unsigned boat_hash(const int x) { return int_hash(x); }
 static int boat_unhash(const unsigned h) { return int_unhash(h); }
@@ -277,9 +281,9 @@ static int boat_unhash(const unsigned h) { return int_unhash(h); }
 #define TABLE_VALUE struct boat_record
 #define TABLE_INVERSE
 #include "../src/table.h"
-/** <https://stackoverflow.com/q/59091226/2472827>. */
 static void boat_club(void) {
 	struct boat_table boats = boat_table();
+	struct boat_table_iterator it;
 	size_t i;
 	printf("Boat club races:\n");
 	for(i = 0; i < 1000; i++) {
@@ -291,9 +295,10 @@ static void boat_club(void) {
 		/*printf("Boat #%d had a time of %d, giving them %d points.\n",
 			id, time, points);*/
 		switch(boat_table_assign(&boats, id, &record)) {
-		case TABLE_ABSENT:
+		case TABLE_ERROR: goto catch;
+		case TABLE_ABSENT: /* First time for boat with this id. */
 			record->best_time = time; record->points = points; break;
-		case TABLE_PRESENT:
+		case TABLE_PRESENT: /* Returning time. */
 			if(time < record->best_time) {
 				printf("#%d best time %d -> %d.\n", id, record->best_time, time);
 				record->best_time = time;
@@ -302,20 +307,15 @@ static void boat_club(void) {
 				id, record->points, record->points + points);*/
 			record->points += points;
 			break;
-		case TABLE_ERROR: goto catch;
 		}
 	}
-	{
-		struct boat_table_iterator it;
-		int key;
-		struct boat_record *value;
-		printf("Final score:\n"
-			"id\tbest\tpoints\n");
-		it = boat_table_begin(&boats);
-		while(boat_table_next(&it, &key, &value))
-			printf("%d\t%d\t%d\n", key, value->best_time, value->points);
-	}
-	{ goto finally; }
+	printf("Final score:\n"
+		"id\tbest\tpoints\n");
+	it = boat_table_iterator(&boats);
+	while(boat_table_next(&it))
+		printf("%d\t%d\t%d\n", boat_table_key(&it),
+		boat_table_value(&it)->best_time, boat_table_value(&it)->points);
+	goto finally;
 catch:
 	perror("boats"), assert(0);
 finally:
@@ -706,11 +706,14 @@ static void nato(void) {
 	}
 	printf("NATO phonetic alphabet letter count histogram\n"
 		"length\tcount\twords\n");
-	it = nato_table_begin(&nato);
-	while(nato_table_next(&it, &length_of_word, &value)) {
-		struct nato_node *w = value->head;
+	it = nato_table_iterator(&nato);
+	while(nato_table_next(&it)) {
+		struct nato_node *w;
+		length_of_word = nato_table_key(&it);
+		value = nato_table_value(&it);
 		printf("%lu\t%lu\t{", (unsigned long)length_of_word,
 			(unsigned long)value->occurrences);
+		w = value->head;
 		do printf("%s%s", value->head == w ? "" : ",", w->alpha);
 		while(w = w->next);
 		printf("}\n");

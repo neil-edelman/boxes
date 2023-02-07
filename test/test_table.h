@@ -418,35 +418,26 @@ static void PN_(test_basic)(void *const parent) {
 		assert(!cmp);*/ /* <- not doing what I think in vect4 */
 		(void)value, (void)sample_value;
 	}}
+	printf("Table: %s.\n", N_(table_to_string)(&table));
 	printf("Remove:\n");
 	{
-		struct N_(table_iterator) it;
-		PN_(key) key;
-		/*char fn[64];
-		unsigned count = 0;*/
+		struct N_(table_iterator) it = N_(table_iterator)(&table);
 		b = 0;
-		for(it = N_(table_begin)(&table);
+		while(N_(table_next)(&it)) {
+			b++;
 #ifdef TABLE_VALUE
-			N_(table_next)(&it, &key, 0);
+			N_(to_string)(N_(table_key)(&it), 0/*N_(table_value)(&it)??*/, &z);
 #else
-			N_(table_next)(&it, &key);
+			N_(to_string)(N_(table_key)(&it), &z);
 #endif
-			b++) {
-#ifndef TABLE_VALUE
-			N_(to_string)(key, &z);
 			printf("---->%s\n", z);
-#endif
 		}
 		assert(b == table.size);
-		for(it = N_(table_begin)(&table);
-#ifdef TABLE_VALUE
-			N_(table_next)(&it, &key, 0);
-#else
-			N_(table_next)(&it, &key);
-#endif
-			) {
+		/* Is it kosher? */
+		it = N_(table_iterator)(&table);
+		while(N_(table_next)(&it)) {
 			b++;
-			N_(table_remove)(&table, key);
+			N_(table_remove)(&table, N_(table_key)(&it));
 			/*sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-end-%u.gv", ++count);
 			PN_(graph)(&table, fn);*/
 		}

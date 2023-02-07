@@ -488,35 +488,22 @@ static enum table_result PN_(put_key)(struct N_(table) *const table,
 }
 
 /* In no particular order, usually, but deterministic up to topology changes. */
-struct PN_(iterator) { struct N_(table) *table; PN_(uint) cur, prev; };
-/** Helper to skip the buckets of `it` that are not there.
- @return Whether it found another index. */
-static int PN_(skip)(struct PN_(iterator) *const it) {
+struct PN_(iterator) { struct N_(table) *table; PN_(uint) i; };
+/** @return Before `table`. */
+static struct PN_(iterator) PN_(iterator)(struct N_(table) *const table)
+	{ struct PN_(iterator) it; it.table = table, it.i = 0, it.i--; return it; }
+static struct PN_(bucket) *PN_(element)(const struct PN_(iterator) *const it)
+	{ return it->table->buckets + it->i; }
+static int PN_(next)(struct PN_(iterator) *const it) {
 	const struct N_(table) *const t = it->table;
 	const PN_(uint) limit = PN_(capacity)(t);
-	assert(it && it->table && it->table->buckets);
-	while(it->cur < limit) {
-		struct PN_(bucket) *const bucket = t->buckets + it->cur;
-		if(bucket->next != TABLE_NULL) return 1;
-		it->cur++;
-	}
+	assert(it && it->table);
+	if(!it->table->buckets) return 0; /* Idle. */
+	while(++it->i < limit) if(t->buckets[it->i].next != TABLE_NULL) return 1;
 	return 0;
 }
-/** @return Before `table`. @implements `begin` */
-static struct PN_(iterator) PN_(begin)(struct N_(table) *const table) {
-	struct PN_(iterator) it; it.table = table, it.cur = 0; it.prev = TABLE_NULL;
-	return it;
-}
-static int PN_(has_right)(struct PN_(iterator) *const it)
-	{ return PN_(skip)(it); }
-static struct PN_(bucket) *PN_(right)(struct PN_(iterator) *const it)
-	{ return it->table->buckets + it->cur; }
-/** Advance `it`. */
-static void PN_(next)(struct PN_(iterator) *const it) {
-	assert(it);
-	if(it->table && it->table->buckets && PN_(skip)(it))
-		it->prev = it->cur, it->cur++;
-}
+
+#if 0 /* fixme! */
 /** Removes the entry at `it`. @return Success. */
 static int PN_(remove)(struct PN_(iterator) *const it) {
 	struct N_(table) *table;
@@ -547,6 +534,7 @@ static int PN_(remove)(struct PN_(iterator) *const it) {
 	it->prev = TABLE_NULL;
 	return 1;
 }
+#endif
 
 /** ![States](../doc/table/it.png)
 
@@ -569,42 +557,30 @@ static struct N_(table) N_(table)(void) {
 static void N_(table_)(struct N_(table) *const table)
 	{ if(table) free(table->buckets), *table = N_(table)(); }
 
-/** Loads `table` (can be null) into `it`. @allow */
-static struct N_(table_iterator) N_(table_begin)(struct N_(table) *const
-	table) { struct N_(table_iterator) it; it._ = PN_(begin)(table);
+/** Loads a non-null `table` into `it`. @allow */
+static struct N_(table_iterator) N_(table_iterator)(struct N_(table) *const
+	table) { struct N_(table_iterator) it; it._ = PN_(iterator)(table);
 	return it; }
-#ifdef TABLE_VALUE /* <!-- map */
-/** Advances `it`. @param[key, value] If non-null, the key or value is filled
- with the next element on return true. `value` is a pointer to the actual value
- in the map, only there if it is a map.
- @return Whether it had a next element. @allow */
-static int N_(table_next)(struct N_(table_iterator) *const it,
-	PN_(key) *key, PN_(value) **value) {
-	struct PN_(bucket) *bucket;
-	if(!PN_(has_right)(&it->_)) return 0;
-	bucket = PN_(right)(&it->_);
-	PN_(next)(&it->_);
-	if(key) *key = PN_(bucket_key)(bucket);
-	if(value) *value = &bucket->value;
-	return 1;
+/** Advances `it`. @return Whether `it` has an element now. @allow */
+static int N_(table_next)(struct N_(table_iterator) *const it) {
+	return PN_(next)(&it->_);
 }
-#else /* map --><!-- set */
-/** Advances `it`, sets `key` on true. */
-static int N_(table_next)(struct N_(table_iterator) *const it, PN_(key) *key) {
-	struct PN_(bucket) *bucket;
-	if(!PN_(has_right)(&it->_)) return 0;
-	bucket = PN_(right)(&it->_);
-	PN_(next)(&it->_);
-	if(key) *key = PN_(bucket_key)(bucket);
-	return 1;
-}
-#endif /* set --> */
+/** @return If `it` has an element, returns it's key. */
+static PN_(key) N_(table_key)(const struct N_(table_iterator) *const it)
+	{ return PN_(bucket_key)(it->_.table->buckets + it->_.i); }
+#ifdef TABLE_VALUE /* <!-- value */
+/** @return If `it` has an element, returns it's value, if `TABLE_VALUE`. */
+static PN_(value) *N_(table_value)(const struct N_(table_iterator) *const it)
+	{ return &it->_.table->buckets[it->_.i].value; }
+#endif /* value --> */
+#if 0
 /** Removes the entry at `it`. Whereas <fn:<N>table_remove> invalidates the
  iterator, this corrects for a signal `it`.
  @return Success, or there was no entry at the iterator's position, (anymore.)
  @allow */
 static int N_(table_iterator_remove)(struct N_(table_iterator) *const it)
 	{ return assert(it), PN_(remove)(&it->_); }
+#endif
 
 /** Reserve at least `n` more empty buckets in `table`. This may cause the
  capacity to increase and invalidates any pointers to data in the table.
@@ -796,16 +772,16 @@ static void PN_(unused_base_coda)(void);
 static void PN_(unused_base)(void) {
 	PN_(entry) e; PN_(key) k; PN_(value) v;
 	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
-	N_(table)(); N_(table_)(0); N_(table_begin)(0);
+	N_(table)(); N_(table_)(0);
+	N_(table_iterator)(0); N_(table_key)(0); N_(table_next)(0);
 	N_(table_buffer)(0, 0); N_(table_clear)(0); N_(table_contains)(0, k);
 	N_(table_get_or)(0, k, v);
 	N_(table_update)(0, k, 0); N_(table_policy)(0, k, 0, 0);
-	N_(table_remove)(0, k); N_(table_iterator_remove)(0);
+	N_(table_remove)(0, k); //N_(table_iterator_remove)(0);
 #ifdef TABLE_VALUE
-	N_(table_query)(0, k, 0, 0); N_(table_next)(0, 0, 0);
-	N_(table_assign)(0, k, 0);
+	N_(table_value)(0); N_(table_query)(0, k, 0, 0); N_(table_assign)(0, k, 0);
 #else
-	N_(table_query)(0, k, 0); N_(table_next)(0, 0); N_(table_try)(0, e);
+	N_(table_query)(0, k, 0); N_(table_try)(0, e);
 #endif
 	PN_(unused_base_coda)();
 }
