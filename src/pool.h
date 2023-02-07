@@ -100,18 +100,19 @@ struct P_(pool) {
  enough information to do otherwise. Only goes one-way. */
 struct PP_(iterator) { struct PP_(slot) *slot0; size_t i; };
 /** @return Before `p`. @implements `forward` */
-static struct PP_(iterator) PP_(begin)(const struct P_(pool) *const p)
+static struct PP_(iterator) PP_(iterator)(const struct P_(pool) *const p)
 	{ struct PP_(iterator) it; it.slot0 = p && p->slots.data
-	? p->slots.data + 0 : 0, it.i = 0; return it; }
-/** Valid `it` (can be null). */
-static int PP_(has_right)(const struct PP_(iterator) *const it)
-	{ return assert(it), it->slot0 && it->i < it->slot0->size; }
-/** `it` has right. */
-static PP_(type) *PP_(right)(struct PP_(iterator) *const it)
+	? p->slots.data + 0 : 0, it.i = (size_t)~0; return it; }
+/** `it` element. */
+static PP_(type) *PP_(element)(struct PP_(iterator) *const it)
 	{ return it->slot0->slab + it->i; }
-/** @return Whether moved to next `it` and put in `v`. @implements `next` */
-static void PP_(next)(struct PP_(iterator) *const it)
-	{ assert(it); if(it->slot0 && it->i < it->slot0->size) it->i++; }
+/** @return Whether moved to next `it`. @implements `next` */
+static int PP_(next)(struct PP_(iterator) *const it) {
+	assert(it);
+	if(!it->slot0) return 0;
+	it->i++;
+	return it->i < it->slot0->size;
+}
 
 /** @return Index of slot that is higher than `x` in `slots`, but treating zero
  as special. @order \O(\log `slots`) */
@@ -304,7 +305,7 @@ static void P_(pool_clear)(struct P_(pool) *const pool) {
 
 static void PP_(unused_base_coda)(void);
 static void PP_(unused_base)(void) {
-	PP_(begin)(0); PP_(has_right)(0); PP_(right)(0); PP_(next)(0);
+	PP_(iterator)(0); PP_(element)(0); PP_(next)(0);
 	P_(pool)(); P_(pool_)(0); P_(pool_buffer)(0, 0); P_(pool_new)(0);
 	P_(pool_remove)(0, 0); P_(pool_clear)(0); PP_(unused_base_coda)();
 }
