@@ -157,15 +157,6 @@ static void ITR_(keep_if)(PITR_(box) *const box,
 	BOX_(tell_size)(box, (size_t)(erase - BOX_(at)(box, 0)));
 }
 
-#else /* contiguous --><!-- !contiguous */
-
-static void ITR_(keep_if)(PITR_(box) *const box,
-	const PITR_(predicate_fn) keep, const PITR_(action_fn) destruct) {
-}
-
-#endif /* !contiguous --> */
-#ifdef BOX_CONTIGUOUS /* contiguous --> */
-
 /** <src/iterate.h>, `BOX_CONTIGUOUS`: Removes at either end of `box` the
  things that `predicate`, if it exists, returns true.
  @order \O(`box.size`) \times \O(`predicate`) @allow */
@@ -193,7 +184,7 @@ static void PITR_(unused_iterate_coda)(void);
 static void PITR_(unused_function)(void) {
 	ITR_(any)(0, 0); ITR_(each)(0, 0); ITR_(if_each)(0, 0, 0);
 #ifdef BOX_CONTIGUOUS
-	ITR_(copy_if)(0, 0, 0); ITR_(keep_if)(0, 0, 0); ITR_(trim)(0, 0);
+	ITR_(copy_if)(0, 0, 0); ITR_(trim)(0, 0); ITR_(keep_if)(0, 0, 0);
 #endif
 	PITR_(unused_iterate_coda)(); }
 static void PITR_(unused_iterate_coda)(void) { PITR_(unused_function)(); }
