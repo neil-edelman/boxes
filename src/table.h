@@ -575,7 +575,8 @@ static PN_(value) *N_(table_value)(const struct N_(table_iterator) *const it)
 	{ return &it->_.table->buckets[it->_.i].value; }
 #endif /* value --> */
 /** Removes the entry at `it`. Whereas <fn:<N>table_remove> invalidates the
- iterator, this corrects `it` so <fn:<N>table_next> is the next entry.
+ iterator, this corrects `it` so <fn:<N>table_next> is the next entry. To use
+ the iterator after this, one must move to the next.
  @return Success, or there was no entry at the iterator's position, (anymore.)
  @allow */
 static int N_(table_iterator_remove)(struct N_(table_iterator) *const it)
