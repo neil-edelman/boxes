@@ -222,11 +222,11 @@ static void order3(void) {
 	assert(ret);
 	tree_order3_graph_horiz(&between, "graph/between.gv");
 
-	v = order3_tree_right_or(&between, 50, 0), assert(v == 100);
-	v = order3_tree_right_or(&between, 150, 0), assert(v == 200);
-	v = order3_tree_right_or(&between, 250, 0), assert(v == 300);
-	v = order3_tree_right_or(&between, 300, 0), assert(v == 300);
-	v = order3_tree_right_or(&between, 350, 0), assert(!v);
+	v = order3_tree_more_or(&between, 50, 0), assert(v == 100);
+	v = order3_tree_more_or(&between, 150, 0), assert(v == 200);
+	v = order3_tree_more_or(&between, 250, 0), assert(v == 300);
+	v = order3_tree_more_or(&between, 300, 0), assert(v == 300);
+	v = order3_tree_more_or(&between, 350, 0), assert(!v);
 
 	it = order3_tree_more(&between, 50);
 	printf("more(50), %s:%u.\n",
@@ -265,11 +265,11 @@ static void order3(void) {
 	assert(!order3_tree_has_element(&it));
 	printf("->dne.\n");
 
-	v = order3_tree_left_or(&between, 50, 0), assert(!v);
-	v = order3_tree_left_or(&between, 150, 0), assert(v == 100);
-	v = order3_tree_left_or(&between, 250, 0), assert(v == 200);
-	v = order3_tree_left_or(&between, 300, 0), assert(v == 300);
-	v = order3_tree_left_or(&between, 350, 0), assert(v == 300);
+	v = order3_tree_less_or(&between, 50, 0), assert(!v);
+	v = order3_tree_less_or(&between, 150, 0), assert(v == 100);
+	v = order3_tree_less_or(&between, 250, 0), assert(v == 200);
+	v = order3_tree_less_or(&between, 300, 0), assert(v == 300);
+	v = order3_tree_less_or(&between, 350, 0), assert(v == 300);
 
 	it = order3_tree_less(&between, 50);
 	printf("less(50), %s:%u.\n",
@@ -295,7 +295,7 @@ static void order3(void) {
 	printf("less(250), %s:%u.\n",
 		orcify(it._.ref.node), it._.ref.idx);
 	assert(order3_tree_has_element(&it));
-	v = order3_tree_key(&it), assert(v == 300);
+	v = order3_tree_key(&it), assert(v == 200);
 	printf("->%u.\n", v);
 
 	it = order3_tree_less(&between, 350);
@@ -317,18 +317,18 @@ static void order3(void) {
 	order3_tree_bulk_add(&between, 80);
 	order3_tree_bulk_finish(&between);
 	tree_order3_graph_horiz(&between, "graph/left.gv");
-	v = order3_tree_left_or(&between, 10, 0), assert(v == 10);
-	v = order3_tree_left_or(&between, 80, 0), assert(v == 80);
-	v = order3_tree_left_or(&between, 55, 0), assert(v == 50);
-	v = order3_tree_left_or(&between, 85, 0), assert(v == 80);
-	v = order3_tree_left_or(&between, 15, 0), assert(v == 10);
-	v = order3_tree_left_or(&between, 5, 0), assert(!v);
-	v = order3_tree_right_or(&between, 10, 0), assert(v == 10);
-	v = order3_tree_right_or(&between, 80, 0), assert(v == 80);
-	v = order3_tree_right_or(&between, 55, 0), assert(v == 60);
-	v = order3_tree_right_or(&between, 85, 0), assert(!v);
-	v = order3_tree_right_or(&between, 15, 0), assert(v == 20);
-	v = order3_tree_right_or(&between, 5, 0), assert(v == 10);
+	v = order3_tree_less_or(&between, 10, 0), assert(v == 10);
+	v = order3_tree_less_or(&between, 80, 0), assert(v == 80);
+	v = order3_tree_less_or(&between, 55, 0), assert(v == 50);
+	v = order3_tree_less_or(&between, 85, 0), assert(v == 80);
+	v = order3_tree_less_or(&between, 15, 0), assert(v == 10);
+	v = order3_tree_less_or(&between, 5, 0), assert(!v);
+	v = order3_tree_more_or(&between, 10, 0), assert(v == 10);
+	v = order3_tree_more_or(&between, 80, 0), assert(v == 80);
+	v = order3_tree_more_or(&between, 55, 0), assert(v == 60);
+	v = order3_tree_more_or(&between, 85, 0), assert(!v);
+	v = order3_tree_more_or(&between, 15, 0), assert(v == 20);
+	v = order3_tree_more_or(&between, 5, 0), assert(v == 10);
 
 	/* For the paper. */
 	order3_tree_clear(&between);
@@ -695,15 +695,15 @@ static void loop(void) {
 	ret = loop_tree_meaning_get(&tree, 0), assert(ret == 42);
 
 #if 0 /*fixme*/
-	ret = loop_tree_right_or(&tree, 3, 0), assert(ret == 3);
-	ret = loop_tree_right_or(&tree, 4, 0), assert(ret == 0);
+	ret = loop_tree_more_or(&tree, 3, 0), assert(ret == 3);
+	ret = loop_tree_more_or(&tree, 4, 0), assert(ret == 0);
 	ret = loop_tree_right(&tree, 0), assert(ret == 101);
 	ret = loop_tree_right(&tree, 4), assert(ret == 0);
 	ret = loop_tree_meaning_right(&tree, 0), assert(ret == 101);
 	ret = loop_tree_meaning_right(&tree, 4), assert(ret == 42); /* No glb. */
 
-	ret = loop_tree_left_or(&tree, 3, 0), assert(ret == 3);
-	ret = loop_tree_left_or(&tree, 4, 0), assert(ret == 3);
+	ret = loop_tree_less_or(&tree, 3, 0), assert(ret == 3);
+	ret = loop_tree_less_or(&tree, 4, 0), assert(ret == 3);
 	ret = loop_tree_left(&tree, 0), assert(ret == 0);
 	ret = loop_tree_left(&tree, 4), assert(ret == 3);
 	ret = loop_tree_meaning_left(&tree, 0), assert(ret == 42); /* No lub. */

@@ -209,32 +209,10 @@ static struct PB_(iterator) PB_(iterator)(struct B_(tree) *const tree) {
 	it.ref.node = 0, it.ref.height = 0, it.ref.idx = 0;
 	return it;
 }
-
-#if 0
-/** @return After the end of `tree`, (can be null.) @implements `end` */
-static struct PB_(iterator) PB_(end)(struct B_(tree) *const tree) {
-	struct PB_(iterator) it;
-	it.root = tree ? &tree->root : 0;
-	it.ref.height = tree ? tree->root.height : 0;
-	if(tree && tree->root.height != UINT_MAX)
-		for(it.ref.node = tree->root.node; it.ref.height;
-		it.ref.node = PB_(as_branch)(it.ref.node)->child[it.ref.node->size],
-		it.ref.height--);
-	else it.ref.node = 0;
-	/* Only valid if not bulk-loading. */
-	it.ref.idx = it.ref.node ? it.ref.node->size : 0;
-	return it;
-}
-static int PB_(has_right)(const struct PB_(iterator) *const it) {
-	return assert(it), it->root && it->ref.node
-		&& it->ref.idx < it->ref.node->size;
-}
-#endif
-
 /** @return Dereference the next (pointing to valid element) `it`. */
 static struct PB_(ref) *PB_(element)(struct PB_(iterator) *const it)
 	{ return &it->ref; }
-/** @return `it` valid? */
+/** @return Is `it` pointing to a valid element? */
 static int PB_(next)(struct PB_(iterator) *const it) {
 	struct PB_(ref) next;
 	assert(it && it->root);
@@ -280,7 +258,26 @@ static int PB_(next)(struct PB_(iterator) *const it) {
 	it->ref = next;
 	return 1;
 }
-#if 0
+
+#if 0 /* fixme! */
+/** @return After the end of `tree`, (can be null.) @implements `end` */
+static struct PB_(iterator) PB_(end)(struct B_(tree) *const tree) {
+	struct PB_(iterator) it;
+	it.root = tree ? &tree->root : 0;
+	it.ref.height = tree ? tree->root.height : 0;
+	if(tree && tree->root.height != UINT_MAX)
+		for(it.ref.node = tree->root.node; it.ref.height;
+		it.ref.node = PB_(as_branch)(it.ref.node)->child[it.ref.node->size],
+		it.ref.height--);
+	else it.ref.node = 0;
+	/* Only valid if not bulk-loading. */
+	it.ref.idx = it.ref.node ? it.ref.node->size : 0;
+	return it;
+}
+static int PB_(has_right)(const struct PB_(iterator) *const it) {
+	return assert(it), it->root && it->ref.node
+		&& it->ref.idx < it->ref.node->size;
+}
 /** @return Whether `it` recedes, filling `v`. @implements `next` */
 static int PB_(previous)(struct PB_(iterator) *const it,
 	struct PB_(ref) **const v) {
@@ -349,7 +346,7 @@ static void PB_(node_ub)(struct PB_(ref) *const hi, const PB_(key) x) {
 
 /** @return A reference to the element first element at or less than `x` in
  `tree`, or `node` will be null if the `x` is less than all `tree`. */
-static struct PB_(ref) PB_(lookup_left)(const struct PB_(tree) tree,
+static struct PB_(ref) PB_(less)(const struct PB_(tree) tree,
 	const PB_(key) x) {
 	struct PB_(ref) hi, found;
 	found.node = 0;
@@ -367,7 +364,9 @@ static struct PB_(ref) PB_(lookup_left)(const struct PB_(tree) tree,
 	}
 	return found;
 }
-/** Iterator version of <fn:<PB>lookup_left> of `x` in `tree` that goes
+
+#if 0
+/** Iterator version of <fn:<PB>less> of `x` in `tree` that goes
  one-off the end. */
 static struct PB_(ref) PB_(ref_left)(const struct PB_(tree) tree,
 	const PB_(key) x) {
@@ -387,10 +386,11 @@ static struct PB_(ref) PB_(ref_left)(const struct PB_(tree) tree,
 	}
 	return found;
 }
+#endif
 
 /** @return A reference the element at the greatest lower bound of `x` in
  `tree`, or if the element doesn't exist, `node` will be null. */
-static struct PB_(ref) PB_(lookup_right)(const struct PB_(tree) tree,
+static struct PB_(ref) PB_(more)(const struct PB_(tree) tree,
 	const PB_(key) x) {
 	struct PB_(ref) lo, found;
 	found.node = 0;
@@ -408,7 +408,7 @@ static struct PB_(ref) PB_(lookup_right)(const struct PB_(tree) tree,
 	}
 	return found;
 }
-/** Iterator version of <fn:<PB>lookup_right> of `x` in `tree` that goes
+/** Iterator version of <fn:<PB>more> of `x` in `tree` that goes
  one-off the end. */
 static struct PB_(ref) PB_(ref_right)(const struct PB_(tree) tree,
 	const PB_(key) x) {
@@ -592,10 +592,10 @@ static PB_(value) B_(tree_get_or)(const struct B_(tree) *const tree,
  @return Value in `tree` less-then-or-equal to `x` or `default_value` if `x`
  is smaller than all in `tree`.
  @order \O(\log |`tree`|) @allow */
-static PB_(value) B_(tree_left_or)(const struct B_(tree) *const tree,
+static PB_(value) B_(tree_less_or)(const struct B_(tree) *const tree,
 	const PB_(key) x, const PB_(value) default_value) {
 	struct PB_(ref) ref;
-	return tree && (ref = PB_(lookup_left)(tree->root, x)).node ?
+	return tree && (ref = PB_(less)(tree->root, x)).node ?
 		(assert(ref.idx < ref.node->size), *PB_(ref_to_valuep)(ref))
 		: default_value;
 }
@@ -605,10 +605,10 @@ static PB_(value) B_(tree_left_or)(const struct B_(tree) *const tree,
  @return Value in `tree` greater-than-or-equal to `x` or `default_value` if `x`
  is greater than all in `tree`.
  @order \O(\log |`tree`|) @allow */
-static PB_(value) B_(tree_right_or)(const struct B_(tree) *const tree,
+static PB_(value) B_(tree_more_or)(const struct B_(tree) *const tree,
 	const PB_(key) x, const PB_(value) default_value) {
 	struct PB_(ref) ref;
-	return tree && (ref = PB_(lookup_right)(tree->root, x)).node
+	return tree && (ref = PB_(more)(tree->root, x)).node
 		? *PB_(ref_to_valuep)(ref) : default_value;
 }
 
@@ -1547,27 +1547,27 @@ struct B_(tree_iterator) { struct PB_(iterator) _; };
  @order \Theta(1) @allow */
 static struct B_(tree_iterator) B_(tree_iterator)(struct B_(tree) *const tree)
 	{ struct B_(tree_iterator) it; it._ = PB_(iterator)(tree); return it; }
-/** @return Cursor in `tree` such that <fn:<B>tree_right> is the greatest
- key that is less-than-or-equal to `x`, or, <fn:<B>tree_begin> if `x` is less
- than all in `tree`. @order \Theta(\log |`tree`|) @allow */
+/** @return Cursor in `tree` such that <fn:<B>tree_element> is the greatest
+ key that is less-than-or-equal to `x`, or if `x` is less than all in `tree`,
+ <fn:<B>tree_iterator>. @order \Theta(\log |`tree`|) @allow */
 static struct B_(tree_iterator) B_(tree_less)(struct B_(tree) *const
 	tree, const PB_(key) x) {
-	struct B_(tree_iterator) cur;
-	if(!tree) return cur._.root = 0, cur;
-	cur._.ref = PB_(ref_left)(tree->root, x);
-	cur._.root = &tree->root;
-	return cur;
+	struct B_(tree_iterator) it;
+	assert(tree);
+	if(!(it._.root = &tree->root)) return it;
+	it._.ref = PB_(less)(tree->root, x);
+	return it;
 }
 /** @return Cursor in `tree` such that <fn:<B>tree_right> is the least key that
  is greater-than `x`, or, <fn:<B>tree_end> if `x` is greater than all in
  `tree`. @order \Theta(\log |`tree`|) @allow */
 static struct B_(tree_iterator) B_(tree_more)(struct B_(tree) *const
 	tree, const PB_(key) x) {
-	struct B_(tree_iterator) cur;
-	if(!tree) return cur._.root = 0, cur;
-	cur._.ref = PB_(ref_right)(tree->root, x);
-	cur._.root = &tree->root;
-	return cur;
+	struct B_(tree_iterator) it;
+	assert(tree);
+	if(!(it._.root = &tree->root)) return it;
+	it._.ref = PB_(more)(tree->root, x);
+	return it;
 }
 static int B_(tree_has_element)(const struct B_(tree_iterator) *const it) {
 	return assert(it), it->_.root && it->_.ref.node
@@ -1651,7 +1651,7 @@ static enum tree_result B_(tree_iterator_try)(struct B_(tree_iterator) *const
 	switch(where) {
 	case TREE_NONODE: it->_.ref.node = 0; /*it->_.seen = 0*/; break;
 	case TREE_ITERATING:
-		it->_.ref = PB_(lookup_right)(*it->_.root, anchor); break;
+		it->_.ref = PB_(more)(*it->_.root, anchor); break;
 	case TREE_END:
 		assert(it->_.root->node);
 		it->_.ref.node = it->_.root->node;
@@ -1684,7 +1684,7 @@ static int B_(tree_iterator_remove)(struct B_(tree_iterator) *const it) {
 		|| (remove = it->_.ref.node->key[it->_.ref.idx],
 		!PB_(remove)(it->_.root, remove))) return 0;
 	/* <fn:<B>tree_begin_at>. */
-	it->_.ref = PB_(lookup_right)(*it->_.root, remove);
+	it->_.ref = PB_(more)(*it->_.root, remove);
 	return 1;
 }
 
@@ -1700,7 +1700,7 @@ static void PB_(unused_base)(void) {
 	PB_(element)(0);
 	B_(tree)(); B_(tree_)(0); B_(tree_clear)(0); B_(tree_count)(0);
 	B_(tree_contains)(0, k); B_(tree_get_or)(0, k, v);
-	B_(tree_left_or)(0, k, v); B_(tree_right_or)(0, k, v);
+	B_(tree_less_or)(0, k, v); B_(tree_more_or)(0, k, v);
 	B_(tree_next)(0); B_(tree_has_element)(0);
 #ifdef TREE_VALUE
 	B_(tree_bulk_add)(0, k, 0); B_(tree_try)(0, k, 0);
@@ -1785,7 +1785,7 @@ static PB_(value) B_D_(tree, get)(const struct B_(tree) *const tree,
 		&& (ref = PB_(lookup_find)(tree->root, key)).node
 		? *PB_(ref_to_valuep)(ref) : PB_D_(default, value);
 }
-/** This is functionally identical to <fn:<B>tree_left_or>, but a with a trait
+/** This is functionally identical to <fn:<B>tree_less_or>, but a with a trait
  specifying a constant default value.
  @return The value associated with `key` in `tree`, (which can be null.) If
  no such value exists, the `TREE_DEFAULT` is returned.
@@ -1793,11 +1793,11 @@ static PB_(value) B_D_(tree, get)(const struct B_(tree) *const tree,
 static PB_(key) B_D_(tree, less_key)(const struct B_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) ref;
-	return tree && (ref = PB_(lookup_left)(tree->root, key)).node ?
+	return tree && (ref = PB_(less)(tree->root, key)).node ?
 		(assert(ref.idx < ref.node->size), *PB_(ref_to_valuep)(ref))
 		: PB_D_(default, value);
 }
-/** This is functionally identical to <fn:<B>tree_right_or>, but a with a trait
+/** This is functionally identical to <fn:<B>tree_more_or>, but a with a trait
  specifying a constant default value.
  @return The value associated with `key` in `tree`, (which can be null.) If
  no such value exists, the `TREE_DEFAULT` is returned.
@@ -1805,7 +1805,7 @@ static PB_(key) B_D_(tree, less_key)(const struct B_(tree) *const tree,
 static PB_(key) B_D_(tree, more_key)(const struct B_(tree) *const tree,
 	const PB_(key) key) {
 	struct PB_(ref) ref;
-	return tree && (ref = PB_(lookup_right)(tree->root, key)).node
+	return tree && (ref = PB_(more)(tree->root, key)).node
 		&& ref.idx < ref.node->size
 		? *PB_(ref_to_valuep)(ref) : PB_D_(default, value);
 }
