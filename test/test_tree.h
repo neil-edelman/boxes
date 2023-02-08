@@ -224,7 +224,7 @@ static void PB_(test)(void) {
 	PB_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
 	B_(tree_)(&tree), PB_(valid)(&tree);
 	it = B_(tree_less)(0, test[0].key), assert(!it._.root);
-	it = B_(tree_less)(&tree, test[0].key), assert(!it._.ref.node);
+	it = B_(tree_less)(&tree, test[0].key), assert(it._.root && !it._.ref.node);
 
 	/* Bulk, (simple.) */
 	for(i = 0; i < test_size; i++) {
@@ -234,13 +234,11 @@ static void PB_(test)(void) {
 		/*e = PB_(test_to_entry_c)(t);
 		PB_(to_string)(e, &z);
 		printf("%lu -- bulk adding <%s>.\n", (unsigned long)i, z);*/
-		switch(
+		switch(B_(tree_bulk_add)(&tree, t->key
 #ifdef TREE_VALUE
-			B_(tree_bulk_add)(&tree, t->key, &v)
-#else
-			B_(tree_bulk_add)(&tree, t->key)
+			, &v
 #endif
-			){
+			)){
 		case TREE_ERROR: perror("What?"); assert(0); break;
 		case TREE_PRESENT:
 			/*assert(B_(tree_get)(&tree, PB_(test_to_key)(t)));*/
@@ -279,12 +277,12 @@ static void PB_(test)(void) {
 
 	/* Iteration; checksum. */
 	memset(&k_prev, 0, sizeof k_prev);
-	for(it = B_(tree_begin)(&tree), i = 0; B_(tree_has_right)(&it);
-		B_(tree_next)(&it), i++) {
+	it = B_(tree_iterator)(&tree), i = 0;
+	while(B_(tree_next)(&it)) {
 		char z[12];
-		k = B_(tree_right_key)(&it);
+		k = B_(tree_key)(&it);
 #ifdef TREE_VALUE
-		v = B_(tree_right_value)(&it);
+		v = B_(tree_value)(&it);
 		B_(to_string)(k, v, &z);
 #else
 		B_(to_string)(k, &z);
@@ -396,8 +394,8 @@ static void PB_(test)(void) {
 		(unsigned long)n_unique, (unsigned long)test_size);
 
 	/* Delete all. Start again each time; removal invalidates iterator. */
-	for(it = B_(tree_begin)(&tree), i = 0; B_(tree_has_right)(&it);
-		B_(tree_next)(&it), i++) {
+	it = B_(tree_iterator)(&tree), i = 0;
+	while(B_(tree_next)(&it)) {
 		/*char z[12];
 #ifdef TREE_VALUE
 		B_(to_string)(k, v, &z);
@@ -405,7 +403,7 @@ static void PB_(test)(void) {
 		B_(to_string)(k, &z);
 #endif
 		printf("Targeting <%s> for removal.\n", z);*/
-		k = B_(tree_right_key)(&it);
+		k = B_(tree_key)(&it);
 		if(i) { const int cmp = B_(compare)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
@@ -461,9 +459,9 @@ static void PB_(test)(void) {
 #endif
 
 	/* Remove every 2nd. */
-	for(it = B_(tree_begin)(&tree); B_(tree_has_right)(&it);
-		B_(tree_next)(&it), B_(tree_next)(&it)) {
-		PB_(key) key = B_(tree_right_key)(&it);
+	it = B_(tree_iterator)(&tree);
+	while(B_(tree_next)(&it)) {
+		PB_(key) key = B_(tree_key)(&it);
 		const int ret = B_(tree_remove)(&tree, key);
 		assert(ret);
 		n_unique--;
