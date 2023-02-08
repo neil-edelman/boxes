@@ -395,26 +395,32 @@ static void PB_(test)(void) {
 
 	/* Delete all. Start again each time; removal invalidates iterator. */
 	it = B_(tree_iterator)(&tree), i = 0;
-	while(B_(tree_next)(&it)) {
-		/*char z[12];
+	B_(tree_next)(&it);
+	assert(B_(tree_has_element)(&it));
+	do {
+		/*char z[12];*/
+		k = B_(tree_key)(&it); /*
 #ifdef TREE_VALUE
+		v = B_(tree_value)(&it);
 		B_(to_string)(k, v, &z);
 #else
 		B_(to_string)(k, &z);
 #endif
 		printf("Targeting <%s> for removal.\n", z);*/
-		k = B_(tree_key)(&it);
 		if(i) { const int cmp = B_(compare)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
 		assert(B_(tree_contains)(&tree, k));
 		B_(tree_remove)(&tree, k);
 		assert(!B_(tree_contains)(&tree, k));
+		it = B_(tree_more)(&tree, k);
+		/*printf("Iterator now %s:h%u:i%u.\n",
+			orcify(it._.ref.node), it._.ref.height, it._.ref.idx);*/
 		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-rm-%lu.gv", i);
 			PB_(graph)(&tree, fn);
 		}
-	}
+	} while(B_(tree_has_element)(&it));
 	assert(i == n_unique);
 
 #if 0

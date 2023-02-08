@@ -210,6 +210,7 @@ static struct PB_(iterator) PB_(iterator)(struct B_(tree) *const tree) {
 	return it;
 }
 
+#if 0
 /** @return After the end of `tree`, (can be null.) @implements `end` */
 static struct PB_(iterator) PB_(end)(struct B_(tree) *const tree) {
 	struct PB_(iterator) it;
@@ -224,15 +225,16 @@ static struct PB_(iterator) PB_(end)(struct B_(tree) *const tree) {
 	it.ref.idx = it.ref.node ? it.ref.node->size : 0;
 	return it;
 }
-/** @return `it` (valid) pointing to valid element? */
 static int PB_(has_right)(const struct PB_(iterator) *const it) {
 	return assert(it), it->root && it->ref.node
 		&& it->ref.idx < it->ref.node->size;
 }
+#endif
+
 /** @return Dereference the next (pointing to valid element) `it`. */
 static struct PB_(ref) *PB_(element)(struct PB_(iterator) *const it)
 	{ return &it->ref; }
-/** `it` advances. */
+/** @return `it` valid? */
 static int PB_(next)(struct PB_(iterator) *const it) {
 	struct PB_(ref) next;
 	assert(it && it->root);
@@ -273,7 +275,7 @@ static int PB_(next)(struct PB_(iterator) *const it) {
 			if(a0 < tree.node->size) next.node = tree.node,
 				next.height = tree.height, next.idx = a0;
 		}
-		if(!next.node) return 0; /* Off right. */
+		if(!next.node) return it->ref.node = 0, 0; /* Off right. */
 	} /* Jumped nodes. */
 	it->ref = next;
 	return 1;
@@ -1567,17 +1569,16 @@ static struct B_(tree_iterator) B_(tree_more)(struct B_(tree) *const
 	cur._.root = &tree->root;
 	return cur;
 }
-
+static int B_(tree_has_element)(const struct B_(tree_iterator) *const it) {
+	return assert(it), it->_.root && it->_.ref.node
+		&& it->_.ref.idx <= it->_.ref.node->size;
+}
 static int B_(tree_next)(struct B_(tree_iterator) *const it)
 	{ return assert(it), PB_(next)(&it->_); }
 /*static void B_(tree_previous)(struct B_(tree_iterator) *const it)
 	{ assert(it), PB_(previous)(&it->_); }*/
-static PB_(key) B_(tree_key_or)(const struct B_(tree_iterator) *const it,
-	const PB_(key) default_key) { return it->_.root && it->_.ref.node
-	&& it->_.ref.idx < it->_.ref.node->size ? it->_.ref.node->key[it->_.ref.idx]
-	: default_key; }
-static int B_(tree_has_right)(const struct B_(tree_iterator) *const it)
-	{ return assert(it), PB_(has_right)(&it->_); }
+/*static int B_(tree_has_right)(const struct B_(tree_iterator) *const it)
+	{ return assert(it), PB_(has_right)(&it->_); }*/
 static PB_(key) B_(tree_key)(const struct B_(tree_iterator) *const it)
 	{ return it->_.ref.node->key[it->_.ref.idx]; }
 #ifdef TREE_VALUE /* <!-- map */
@@ -1696,20 +1697,21 @@ static int B_(tree_iterator_remove)(struct B_(tree_iterator) *const it) {
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
 	PB_(key) k; PB_(value) v; memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
+	PB_(element)(0);
 	B_(tree)(); B_(tree_)(0); B_(tree_clear)(0); B_(tree_count)(0);
 	B_(tree_contains)(0, k); B_(tree_get_or)(0, k, v);
 	B_(tree_left_or)(0, k, v); B_(tree_right_or)(0, k, v);
+	B_(tree_next)(0); B_(tree_has_element)(0);
 #ifdef TREE_VALUE
 	B_(tree_bulk_add)(0, k, 0); B_(tree_try)(0, k, 0);
 	B_(tree_assign)(0, k, 0, 0);
-	B_(tree_next)(0); /*B_(tree_previous)(0, 0, 0);*/
 #else
 	B_(tree_bulk_add)(0, k); B_(tree_try)(0, k);
 	B_(tree_assign)(0, k, 0);
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
-	B_(tree_iterator)(0);
-	B_(tree_less)(0, k); B_(tree_more)(0, k);
+	B_(tree_iterator)(0); B_(tree_less)(0, k); B_(tree_more)(0, k);
+	B_(tree_next)(0); B_(tree_key)(0);
 	PB_(unused_base_coda)();
 }
 static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }

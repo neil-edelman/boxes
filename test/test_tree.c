@@ -231,19 +231,22 @@ static void order3(void) {
 	it = order3_tree_more(&between, 50);
 	printf("more(50), %s:%u.\n",
 		orcify(it._.ref.node), it._.ref.idx);
-	v = order3_tree_key_or(&it, 0), assert(v == 100);
+	assert(order3_tree_has_element(&it));
+	v = order3_tree_key(&it), assert(v == 100);
 	printf("->%u.\n", v);
 
 	it = order3_tree_more(&between, 150);
 	printf("more(150), %s:%u.\n",
 		orcify(it._.ref.node), it._.ref.idx);
-	v = order3_tree_key_or(&it, 0), assert(v == 200);
+	assert(order3_tree_has_element(&it));
+	v = order3_tree_key(&it), assert(v == 200);
 	printf("->%u.\n", v);
 
 	it = order3_tree_more(&between, 200);
 	printf("more(200), %s:%u.\n",
 		orcify(it._.ref.node), it._.ref.idx);
-	v = order3_tree_key_or(&it, 0), assert(v == 200);
+	assert(order3_tree_has_element(&it));
+	v = order3_tree_key(&it), assert(v == 200);
 	printf("->%u.\n", v);
 	/*it = order3_tree_right_next(&between, 200);
 	ret = order3_tree_previous(&it, &v), assert(ret && v == 100);
@@ -252,13 +255,14 @@ static void order3(void) {
 	it = order3_tree_more(&between, 250);
 	printf("more(250), %s:%u.\n",
 		orcify(it._.ref.node), it._.ref.idx);
-	v = order3_tree_key_or(&it, 0), assert(v == 300);
+	assert(order3_tree_has_element(&it));
+	v = order3_tree_key(&it), assert(v == 300);
 	printf("->%u.\n", v);
 
 	it = order3_tree_more(&between, 350);
 	printf("right next 350, %s:%u.\n",
 		orcify(it._.ref.node), it._.ref.idx);
-	v = order3_tree_key_or(&it, 0), assert(!v);
+	assert(!order3_tree_has_element(&it));
 	printf("->dne.\n");
 
 	v = order3_tree_left_or(&between, 50, 0), assert(!v);
@@ -270,31 +274,35 @@ static void order3(void) {
 	it = order3_tree_less(&between, 50);
 	printf("less(50), %s:%u.\n",
 		orcify(it._.ref.node), it._.ref.idx);
-	v = order3_tree_key_or(&it, 0), assert(v == 0);
+	assert(!order3_tree_has_element(&it));
 	printf("->dne.\n");
 
 	it = order3_tree_less(&between, 150);
 	printf("less(150), %s:%u.\n",
 		orcify(it._.ref.node), it._.ref.idx);
-	v = order3_tree_key_or(&it, 0), assert(v == 100);
+	assert(order3_tree_has_element(&it));
+	v = order3_tree_key(&it), assert(v == 100);
 	printf("->%u.\n", v);
 
 	it = order3_tree_less(&between, 200);
 	printf("less(200), %s:%u.\n",
 		orcify(it._.ref.node), it._.ref.idx);
-	v = order3_tree_key_or(&it, 0), assert(v == 200);
+	assert(order3_tree_has_element(&it));
+	v = order3_tree_key(&it), assert(v == 200);
 	printf("->%u.\n", v);
 
 	it = order3_tree_less(&between, 250);
 	printf("less(250), %s:%u.\n",
 		orcify(it._.ref.node), it._.ref.idx);
-	v = order3_tree_key_or(&it, 0), assert(v == 300);
+	assert(order3_tree_has_element(&it));
+	v = order3_tree_key(&it), assert(v == 300);
 	printf("->%u.\n", v);
 
 	it = order3_tree_less(&between, 350);
 	printf("less(350), %s:%u\n",
 		orcify(it._.ref.node), it._.ref.idx);
-	v = order3_tree_key_or(&it, 0), assert(v == 300);
+	assert(order3_tree_has_element(&it));
+	v = order3_tree_key(&it), assert(v == 300);
 	printf("->%u.\n", v);
 
 	/* Test greatest lower/least higher bound again. */
