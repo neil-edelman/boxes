@@ -145,11 +145,11 @@ static void PN_(graph)(const struct N_(table) *const table,
 #endif
 			fprintf(fp, "\t\t<td align=\"right\"%s>0x%lx</td>\n"
 				"\t\t<td align=\"left\"%s>"
-#ifdef TABLE_INVERSE
+#ifdef TABLE_UNHASH
 				"<font face=\"Times-Italic\">"
 #endif
 				"%s"
-#ifdef TABLE_INVERSE
+#ifdef TABLE_UNHASH
 				"</font>"
 #endif
 				"</td>\n"
@@ -248,7 +248,7 @@ static void PN_(histogram)(const struct N_(table) *const table,
 
 /** @return Equality of entries `a` and `b`. */
 static int PN_(eq_key)(PN_(key_c) a, PN_(key_c) b) {
-#ifdef TABLE_INVERSE /* Compare in <typedef:<PN>uint> space. */
+#ifdef TABLE_UNHASH /* Compare in <typedef:<PN>uint> space. */
 	return N_(hash)(a) == N_(hash)(b);
 #else
 	return N_(is_equal)(a, b);
@@ -463,16 +463,12 @@ static void N_(table_test)(void *const parent) {
 	printf("<" QUOTE(TABLE_NAME) ">table of key <" QUOTE(TABLE_KEY)
 		"> was created using: "
 		"TABLE_UINT <" QUOTE(TABLE_UINT) ">; "
-		"TABLE_HASH <" QUOTE(TABLE_HASH) ">; "
-#ifdef TABLE_IS_EQUAL
-		"TABLE_IS_EQUAL <" QUOTE(TABLE_IS_EQUAL) ">; "
-#else
-		"TABLE_INVERSE <" QUOTE(TABLE_INVERSE) ">; "
+#ifdef TABLE_UNHASH
+		"TABLE_UNHASH; "
 #endif
 #ifdef TABLE_VALUE
 		"TABLE_VALUE <" QUOTE(TABLE_VALUE) ">; "
 #endif
-		"TABLE_TEST; "
 		"testing%s:\n", parent ? "(pointer)" : "");
 	PN_(test_basic)(parent);
 	fprintf(stderr, "Done tests of <" QUOTE(TABLE_NAME) ">hash.\n\n");

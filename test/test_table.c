@@ -46,7 +46,7 @@ static void zodiac_filler(void *const zero, enum zodiac *const z) {
 }
 #define TABLE_NAME zodiac
 #define TABLE_KEY enum zodiac
-#define TABLE_INVERSE /* If you can, inverse is less space and simpler. */
+#define TABLE_UNHASH /* If you can, inverse is less space and simpler. */
 #define TABLE_UINT unsigned char /*<-small unsigned*/ /* `size_t` overkill. */
 #define TABLE_TEST /* Testing requires to string. */
 #define TABLE_TO_STRING /* Requires <../src/to_string.h>. */
@@ -88,7 +88,6 @@ static void string_to_string(const char *const s, char (*const a)[12])
 	{ strncpy(*a, s, sizeof(*a) - 1), (*a)[sizeof(*a) - 1] = '\0'; }
 #define TABLE_NAME string
 #define TABLE_KEY char *
-#define TABLE_HASH
 #define TABLE_DEFAULT 0 /* Enables `string_get`, do not assume 0 meaning. */
 #define TABLE_TO_STRING
 #define TABLE_TEST
@@ -137,7 +136,7 @@ static void uint_filler(void *const zero, unsigned *const u) {
 #define TABLE_NAME uint
 #define TABLE_KEY unsigned /* Parameter of <fn:lowbias32>. */
 #define TABLE_UINT unsigned /* Return key of <fn:lowbias32>. */
-#define TABLE_INVERSE /* Invertible means no key storage at all. */
+#define TABLE_UNHASH /* Invertible means no key storage at all. */
 #define TABLE_TEST
 #define TABLE_TO_STRING
 #include "../src/table.h"
@@ -158,7 +157,7 @@ static void int_filler(void *const zero, int *const s) {
 #define TABLE_NAME int
 #define TABLE_KEY int
 #define TABLE_UINT unsigned
-#define TABLE_INVERSE
+#define TABLE_UNHASH
 #define TABLE_TO_STRING
 #define TABLE_DEFAULT 0
 #define TABLE_TEST
@@ -297,7 +296,7 @@ static int boat_unhash(const unsigned h) { return int_unhash(h); }
 #define TABLE_KEY int
 #define TABLE_UINT unsigned
 #define TABLE_VALUE struct boat_record
-#define TABLE_INVERSE
+#define TABLE_UNHASH
 #include "../src/table.h"
 static void boat_club(void) {
 	struct boat_table boats = boat_table();
@@ -567,7 +566,7 @@ static const struct year *year_upcast(const int *const year)
 	((const char *)year - offsetof(struct year, year)); }
 static void year_to_string(const int *const year, char (*const a)[12])
 	{ year_upcast(year)->vt.to_string(year_upcast(year), a); }
-/* Can not use `TABLE_INVERSE` because it's not a bijection; the child is also
+/* Can not use `TABLE_UNHASH` because it's not a bijection; the child is also
  part of the data. Arguably, `TABLE_DO_NOT_CACHE` would be useful in this
  situation, but I took it out. Too many options. */
 #define TABLE_NAME year
@@ -689,7 +688,7 @@ static size_t nato_unhash(const size_t h) { return h; }
 #define TABLE_NAME nato
 #define TABLE_KEY size_t /* Number of letters. */
 #define TABLE_VALUE struct nato_value /* Count and letters. */
-#define TABLE_INVERSE
+#define TABLE_UNHASH
 #include "../src/table.h" /* (Manual testing.) */
 /** Counts code-points except non-alnums of `s`, being careful.
  (You are working in UTF-8, right?) <https://stackoverflow.com/a/32936928> */

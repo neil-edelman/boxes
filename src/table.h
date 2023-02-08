@@ -17,7 +17,7 @@
  <typedef:<PN>key> associated therewith; required. `<PN>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
- @param[TABLE_INVERSE]
+ @param[TABLE_UNHASH]
  By default it assumes that `<N>is_equal` is supplied; with this, instead
  requires `<N>unhash` satisfying <typedef:<PN>unhash_fn>.
 
@@ -26,7 +26,7 @@
  associative array.
 
  @param[TABLE_UINT]
- This is <typedef:<PN>uint>, the unsigned type of hash hash of the key given by
+ This is <typedef:<PN>uint>, the unsigned type of hash of the key given by
  <typedef:<PN>hash_fn>; defaults to `size_t`.
 
  @param[TABLE_DEFAULT]
@@ -104,7 +104,7 @@ static const char *const table_result_str[] = { TABLE_RESULT };
  elements of half the cardinality. */
 typedef TABLE_UINT PN_(uint);
 
-/** Valid tag type defined by `TABLE_KEY` used for keys. If `TABLE_INVERSE` is
+/** Valid tag type defined by `TABLE_KEY` used for keys. If `TABLE_UNHASH` is
  not defined, a copy of this value will be stored in the internal buckets. */
 typedef TABLE_KEY PN_(key);
 typedef const TABLE_KEY PN_(key_c); /* Works 90%? */
@@ -115,8 +115,8 @@ typedef const TABLE_KEY PN_(key_c); /* Works 90%? */
  Must be consistent for each value while in the table. If <typedef:<PN>key> is
  a pointer, one is permitted to have null in the domain. */
 typedef PN_(uint) (*PN_(hash_fn))(const PN_(key));
-#ifdef TABLE_INVERSE /* <!-- inv */
-/** Defining `TABLE_INVERSE` says <typedef:<PN>hash_fn> forms a bijection
+#ifdef TABLE_UNHASH /* <!-- inv */
+/** Defining `TABLE_UNHASH` says <typedef:<PN>hash_fn> forms a bijection
  between the range in <typedef:<PN>key> and the image in <typedef:<PN>uint>,
  and the inverse is called `<N>unhash`. In this case, keys are not stored
  in the hash table, rather they are generated using this inverse-mapping. */
@@ -124,7 +124,7 @@ typedef PN_(key) (*PN_(unhash_fn))(PN_(uint));
 #else /* inv --><!-- !inv */
 /** Equivalence relation between <typedef:<PN>key> that satisfies
  `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`, called `<N>is_equal`.
- If `TABLE_INVERSE` is set, there is no need for this function because the
+ If `TABLE_UNHASH` is set, there is no need for this function because the
  comparison is done directly in hash space. */
 typedef int (*PN_(is_equal_fn))(PN_(key_c) a, PN_(key_c) b);
 #endif /* !inv --> */
@@ -152,7 +152,7 @@ typedef PN_(key) PN_(entry);
 struct PN_(bucket) {
 	PN_(uint) next; /* Bucket index, including `TABLE_NULL` and `TABLE_END`. */
 	PN_(uint) hash;
-#ifndef TABLE_INVERSE
+#ifndef TABLE_UNHASH
 	PN_(key) key;
 #endif
 #ifdef TABLE_VALUE
@@ -163,8 +163,8 @@ struct PN_(bucket) {
 /** Gets the key of an occupied `bucket`. */
 static PN_(key) PN_(bucket_key)(const struct PN_(bucket) *const bucket) {
 	assert(bucket && bucket->next != TABLE_NULL);
-#ifdef TABLE_INVERSE
-	/* On `TABLE_INVERSE`, this function must be defined by the user. */
+#ifdef TABLE_UNHASH
+	/* On `TABLE_UNHASH`, this function must be defined by the user. */
 	return N_(unhash)(bucket->hash);
 #else
 	return bucket->key;
@@ -287,10 +287,10 @@ static void PN_(move_to_top)(struct N_(table) *const table, const PN_(uint) m) {
 }
 /* stack --> */
 
-/** `TABLE_INVERSE` is injective, so in that case, we only compare hashes.
+/** `TABLE_UNHASH` is injective, so in that case, we only compare hashes.
  @return `a` and `b`. */
 static int PN_(equal_buckets)(PN_(key_c) a, PN_(key_c) b) {
-#ifdef TABLE_INVERSE
+#ifdef TABLE_UNHASH
 	return (void)a, (void)b, 1;
 #else
 	/* Must have this function declared. */
@@ -439,7 +439,7 @@ static void PN_(replace_key)(struct PN_(bucket) *const bucket,
 	const PN_(key) key, const PN_(uint) hash) {
 	(void)key;
 	bucket->hash = hash;
-#ifndef TABLE_INVERSE
+#ifndef TABLE_UNHASH
 	bucket->key = key;
 #endif
 }
@@ -771,12 +771,13 @@ static void PN_(unused_base_coda)(void);
 static void PN_(unused_base)(void) {
 	PN_(entry) e; PN_(key) k; PN_(value) v;
 	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
+	PN_(element)(0);
 	N_(table)(); N_(table_)(0);
 	N_(table_iterator)(0); N_(table_key)(0); N_(table_next)(0);
 	N_(table_buffer)(0, 0); N_(table_clear)(0); N_(table_contains)(0, k);
 	N_(table_get_or)(0, k, v);
 	N_(table_update)(0, k, 0); N_(table_policy)(0, k, 0, 0);
-	N_(table_remove)(0, k); //N_(table_iterator_remove)(0);
+	N_(table_remove)(0, k); N_(table_iterator_remove)(0);
 #ifdef TABLE_VALUE
 	N_(table_value)(0); N_(table_query)(0, k, 0, 0); N_(table_assign)(0, k, 0);
 #else
@@ -882,7 +883,7 @@ static void PN_D_(unused, default_coda)(void) { PN_D_(unused, default)(); }
 #ifdef TABLE_IS_EQUAL
 #undef TABLE_IS_EQUAL
 #else
-#undef TABLE_INVERSE
+#undef TABLE_UNHASH
 #endif
 #ifdef TABLE_VALUE
 #undef TABLE_VALUE
