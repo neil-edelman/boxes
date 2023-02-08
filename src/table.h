@@ -76,9 +76,9 @@
  less.) Choose representations that may save power? We cannot save this in an
  `enum` because we don't know maximum. */
 #define TABLE_M1 ((PN_(uint))~(PN_(uint))0) /* 2's compliment -1. */
-#define TABLE_HIGH ((TABLE_M1 >> 1) + 1) /* Cardinality must be 1111... */
-#define TABLE_END (TABLE_HIGH)
-#define TABLE_NULL (TABLE_HIGH + 1)
+#define TABLE_HIGH ((TABLE_M1 >> 1) + 1) /* High-bit set: max cardinality. */
+#define TABLE_END (TABLE_HIGH) /* Out-of-band signalling end of chain. */
+#define TABLE_NULL (TABLE_HIGH + 1) /* Out-of-band signalling no item. */
 #define TABLE_RESULT X(ERROR), X(ABSENT), X(PRESENT)
 #define X(n) TABLE_##n
 /** A result of modifying the table, of which `TABLE_ERROR` is false.
@@ -205,23 +205,23 @@ static PN_(uint) PN_(capacity)(const struct N_(table) *const table)
 	{ return assert(table && table->buckets && table->log_capacity >= 3),
 	(PN_(uint))((PN_(uint))1 << table->log_capacity); }
 
-/** @return Indexes the first closed bucket in the set of buckets with the same
- address from non-idle `table` given the `hash`. If the bucket is empty, it
- will have `next = TABLE_NULL` or it's own <fn:<PN>to_bucket_no> not equal to
- the index. */
-static PN_(uint) PN_(to_bucket_no)(const struct N_(table) *const table,
+/** @return Indexes the first (closed) bucket in the set of buckets with the
+ same address from non-idle `table` given the `hash`. If the bucket is empty,
+ it will have `next = TABLE_NULL` or it's own <fn:<PN>to_bucket_no> not equal
+ to the index (open). */
+static PN_(uint) PN_(chain_head)(const struct N_(table) *const table,
 	const PN_(uint) hash) { return hash & (PN_(capacity)(table) - 1); }
 
 /** @return Search for the previous link in the bucket to `b` in `table`, if it
- exists, (by restarting and going though the list.) This is not the same as the
- iterator. @order \O(`bucket size`) */
+ exists, (by restarting and going though the list.)
+ @order \O(`bucket size`) */
 static struct PN_(bucket) *PN_(prev)(const struct N_(table) *const table,
 	const PN_(uint) b) {
 	const struct PN_(bucket) *const bucket = table->buckets + b;
 	PN_(uint) to_next = TABLE_NULL, next;
 	assert(table && bucket->next != TABLE_NULL);
 	/* Note that this does not check for corrupted tables; would get assert. */
-	for(next = PN_(to_bucket_no)(table, bucket->hash);
+	for(next = PN_(chain_head)(table, bucket->hash);
 		/* assert(next < capacity), */ next != b;
 		to_next = next, next = table->buckets[next].next);
 	return to_next != TABLE_NULL ? table->buckets + to_next : 0;
@@ -246,7 +246,7 @@ static void PN_(force_stack)(struct N_(table) *const table) {
 		top &= ~TABLE_HIGH;
 		do bucket = table->buckets + ++top/*, assert(top < capacity)*/;
 		while(bucket->next != TABLE_NULL
-			&& PN_(to_bucket_no)(table, bucket->hash) == top);
+			&& PN_(chain_head)(table, bucket->hash) == top);
 		table->top = top; /* Eager. */
 	}
 }
@@ -304,11 +304,11 @@ static struct PN_(bucket) *PN_(query)(struct N_(table) *const table,
 	struct PN_(bucket) *bucket1;
 	PN_(uint) head, b0 = TABLE_NULL, b1, b2;
 	assert(table && table->buckets && table->log_capacity);
-	bucket1 = table->buckets + (head = b1 = PN_(to_bucket_no)(table, hash));
+	bucket1 = table->buckets + (head = b1 = PN_(chain_head)(table, hash));
 	/* Not the start of a bucket: empty or in the collision stack. */
 	if((b2 = bucket1->next) == TABLE_NULL
 		|| PN_(in_stack_range)(table, b1)
-		&& b1 != PN_(to_bucket_no)(table, bucket1->hash)) return 0;
+		&& b1 != PN_(chain_head)(table, bucket1->hash)) return 0;
 	while(hash != bucket1->hash
 		|| !PN_(equal_buckets)(key, PN_(bucket_key)(bucket1))) {
 		if(b2 == TABLE_END) return 0;
@@ -377,7 +377,7 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 		PN_(uint) g, hash;
 		idx = table->buckets + i;
 		if(idx->next == TABLE_NULL) continue;
-		g = PN_(to_bucket_no)(table, hash = idx->hash);
+		g = PN_(chain_head)(table, hash = idx->hash);
 		/* It's a power-of-two size, so, like consistent hashing, `E[old/new]`
 		 capacity that a closed bucket will remain where it is. */
 		if(i == g) { idx->next = TABLE_END; continue; }
@@ -387,7 +387,7 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 			PN_(uint) h = g & ~mask; assert(h <= g);
 			if(h < g && i < h
 				&& (head = table->buckets + h, assert(head->next != TABLE_NULL),
-				PN_(to_bucket_no)(table, head->hash) == g)) {
+				PN_(chain_head)(table, head->hash) == g)) {
 				memcpy(go, head, sizeof *head);
 				go->next = TABLE_END, head->next = TABLE_NULL;
 				/* Fall-though -- the bucket still needs to be put on wait. */
@@ -404,7 +404,7 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 	/* Search waiting stack for buckets that moved concurrently. */
 	{ PN_(uint) prev = TABLE_END, w = wait; while(w != TABLE_END) {
 		struct PN_(bucket) *waiting = table->buckets + w;
-		PN_(uint) cl = PN_(to_bucket_no)(table, waiting->hash);
+		PN_(uint) cl = PN_(chain_head)(table, waiting->hash);
 		struct PN_(bucket) *const closed = table->buckets + cl;
 		assert(cl != w);
 		if(closed->next == TABLE_NULL) {
@@ -421,7 +421,7 @@ static int PN_(buffer)(struct N_(table) *const table, const PN_(uint) n) {
 	/* Rebuild the top stack at the high numbers from the waiting at low. */
 	while(wait != TABLE_END) {
 		struct PN_(bucket) *const waiting = table->buckets + wait;
-		PN_(uint) h = PN_(to_bucket_no)(table, waiting->hash);
+		PN_(uint) h = PN_(chain_head)(table, waiting->hash);
 		struct PN_(bucket) *const head = table->buckets + h;
 		struct PN_(bucket) *top;
 		assert(h != wait && head->next != TABLE_NULL);
@@ -451,9 +451,9 @@ static struct PN_(bucket) *PN_(evict)(struct N_(table) *const table,
 	PN_(uint) i;
 	struct PN_(bucket) *bucket;
 	if(!PN_(buffer)(table, 1)) return 0; /* Amortized. */
-	bucket = table->buckets + (i = PN_(to_bucket_no)(table, hash));/* Closed. */
+	bucket = table->buckets + (i = PN_(chain_head)(table, hash));/* Closed. */
 	if(bucket->next != TABLE_NULL) { /* Occupied. */
-		int in_stack = PN_(to_bucket_no)(table, bucket->hash) != i;
+		int in_stack = PN_(chain_head)(table, bucket->hash) != i;
 		PN_(move_to_top)(table, i);
 		bucket->next = in_stack ? TABLE_END : table->top;
 	} else { /* Unoccupied. */
@@ -503,22 +503,24 @@ static int PN_(next)(struct PN_(iterator) *const it) {
 	return 0;
 }
 
-#if 0 /* fixme! */
-/** Removes the entry at `it`. @return Success. */
+/** Removes the entry at `it` and possibly corrects `it` so that calling
+ <fn:<PN>next> will go through the entire list. @return Success. */
 static int PN_(remove)(struct PN_(iterator) *const it) {
-	struct N_(table) *table;
-	PN_(uint) prev = it->prev;
+	struct N_(table) *table = it->table;
 	struct PN_(bucket) *previous = 0, *current;
 	PN_(uint) prv = TABLE_NULL, crnt;
-	assert(it);
-	if(prev == TABLE_NULL) return 0;
-	table = it->table;
-	assert(it->table == it->table
-	   && it->table->buckets && prev < PN_(capacity)(it->table));
-	/* Egregious code reuse. :[ */
-	current = it->table->buckets + prev, assert(current->next != TABLE_NULL);
-	crnt = PN_(to_bucket_no)(it->table, current->hash);
-	while(crnt != prev) assert(crnt < PN_(capacity)(it->table)),
+	assert(it && table);
+	if(!it->table->buckets) return 0;
+	assert(it->i < PN_(capacity)(it->table));
+	if(it->i >= PN_(capacity)(it->table)) return 0;
+	/* This should be possible to simplify with <fn:<PN>prev>?
+	 if(previous = PN_(prev)(table, it->i)) */
+	/* Egregious code reuse from <fn:<N>table_remove>; because `it` contains
+	 `i` and remove has a `key`, the counting is different. But the rest is the
+	 same? Get the last bucket. */
+	current = it->table->buckets + it->i, assert(current->next != TABLE_NULL);
+	crnt = PN_(chain_head)(it->table, current->hash);
+	while(crnt != it->i) assert(crnt < PN_(capacity)(it->table)),
 		crnt = (previous = it->table->buckets + (prv = crnt))->next;
 	if(prv != TABLE_NULL) { /* Open entry. */
 		previous->next = current->next;
@@ -527,14 +529,13 @@ static int PN_(remove)(struct PN_(iterator) *const it) {
 		struct PN_(bucket) *const second = table->buckets + scnd;
 		assert(scnd < PN_(capacity)(table));
 		memcpy(current, second, sizeof *second);
-		if(crnt < scnd) it->cur = it->prev; /* Iterate new entry. */
-		crnt = scnd; current = second;
+		/* Because we replace current with a bucket we haven't seen yet. */
+		if(crnt < scnd) it->i--;
+		crnt = scnd, current = second;
 	}
 	current->next = TABLE_NULL, table->size--, PN_(shrink_stack)(table, crnt);
-	it->prev = TABLE_NULL;
 	return 1;
 }
-#endif
 
 /** ![States](../doc/table/it.png)
 
@@ -573,14 +574,12 @@ static PN_(key) N_(table_key)(const struct N_(table_iterator) *const it)
 static PN_(value) *N_(table_value)(const struct N_(table_iterator) *const it)
 	{ return &it->_.table->buckets[it->_.i].value; }
 #endif /* value --> */
-#if 0
 /** Removes the entry at `it`. Whereas <fn:<N>table_remove> invalidates the
- iterator, this corrects for a signal `it`.
+ iterator, this corrects `it` so <fn:<N>table_next> is the next entry.
  @return Success, or there was no entry at the iterator's position, (anymore.)
  @allow */
 static int N_(table_iterator_remove)(struct N_(table_iterator) *const it)
 	{ return assert(it), PN_(remove)(&it->_); }
-#endif
 
 /** Reserve at least `n` more empty buckets in `table`. This may cause the
  capacity to increase and invalidates any pointers to data in the table.
@@ -727,33 +726,33 @@ static enum table_result N_(table_policy)(struct N_(table) *const table,
 static int N_(table_remove)(struct N_(table) *const table,
 	const PN_(key) key) {
 	struct PN_(bucket) *current;
-	/* This function must be defined by the user. */
-	PN_(uint) crnt, prv = TABLE_NULL, nxt, hash = N_(hash)(key);
+	PN_(uint) c, p = TABLE_NULL, n, hash = N_(hash)(key);
 	if(!table || !table->size) return 0; assert(table->buckets);
 	/* Find item and keep track of previous. */
-	current = table->buckets + (crnt = PN_(to_bucket_no)(table, hash));
-	if((nxt = current->next) == TABLE_NULL
-		|| PN_(in_stack_range)(table, crnt)
-		&& crnt != PN_(to_bucket_no)(table, current->hash)) return 0;
+	current = table->buckets + (c = PN_(chain_head)(table, hash));
+	if((n = current->next) == TABLE_NULL /* No entry here. */
+		|| PN_(in_stack_range)(table, c)
+		&& c != PN_(chain_head)(table, current->hash)) return 0;
+	/* Find prev? Why not <fn:<PN>prev>? */
 	while(hash != current->hash
 		&& !PN_(equal_buckets)(key, PN_(bucket_key)(current))) {
-		if(nxt == TABLE_END) return 0;
-		prv = crnt, current = table->buckets + (crnt = nxt);
-		assert(crnt < PN_(capacity)(table) && PN_(in_stack_range)(table, crnt)
-			&& crnt != TABLE_NULL);
-		nxt = current->next;
+		if(n == TABLE_END) return 0;
+		p = c, current = table->buckets + (c = n);
+		assert(c < PN_(capacity)(table) && PN_(in_stack_range)(table, c)
+			&& c != TABLE_NULL);
+		n = current->next;
 	}
-	if(prv != TABLE_NULL) { /* Open entry. */
-		struct PN_(bucket) *previous = table->buckets + prv;
+	if(p != TABLE_NULL) { /* Open entry. */
+		struct PN_(bucket) *previous = table->buckets + p;
 		previous->next = current->next;
 	} else if(current->next != TABLE_END) { /* Head closed entry and others. */
 		struct PN_(bucket) *const second
-			= table->buckets + (crnt = current->next);
+			= table->buckets + (c = current->next);
 		assert(current->next < PN_(capacity)(table));
 		memcpy(current, second, sizeof *second);
 		current = second;
 	}
-	current->next = TABLE_NULL, table->size--, PN_(shrink_stack)(table, crnt);
+	current->next = TABLE_NULL, table->size--, PN_(shrink_stack)(table, c);
 	return 1;
 }
 

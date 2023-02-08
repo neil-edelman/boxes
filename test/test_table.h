@@ -25,7 +25,7 @@ static size_t PN_(count_bucket)(const struct N_(table) *const table,
 	assert(table && idx < PN_(capacity)(table));
 	bucket = table->buckets + idx;
 	if((next = bucket->next) == TABLE_NULL
-		|| idx != PN_(to_bucket_no)(table, bucket->hash)) return 0;
+		|| idx != PN_(chain_head)(table, bucket->hash)) return 0;
 	for( ; no++, next != TABLE_END;
 		next = bucket->next, assert(next != TABLE_NULL)) {
 		idx = next;
@@ -136,7 +136,7 @@ static void PN_(graph)(const struct N_(table) *const table,
 			top, bgc, (unsigned long)i);
 		if(b->next != TABLE_NULL) {
 			const char *const closed
-				= PN_(to_bucket_no)(table, b->hash) == i ? "⬤" : "◯";
+				= PN_(chain_head)(table, b->hash) == i ? "⬤" : "◯";
 			char z[12];
 #ifdef TABLE_VALUE
 			N_(to_string)(PN_(bucket_key)(b), PN_(bucket_value)(b), &z);
@@ -171,7 +171,7 @@ static void PN_(graph)(const struct N_(table) *const table,
 		struct PN_(bucket) *b = table->buckets + i;
 		PN_(uint) left, right;
 		if((right = b->next) == TABLE_NULL || right == TABLE_END) continue;
-		if(PN_(to_bucket_no)(table, b->hash) != i) {
+		if(PN_(chain_head)(table, b->hash) != i) {
 			fprintf(fp, "\ti0x%lx [label=\"0x%lx\", fontcolor=\"Gray\"];\n"
 				"\tdata:%lu -> i0x%lx [color=\"Gray\"];\n",
 				(unsigned long)right, (unsigned long)right,
@@ -280,7 +280,7 @@ static void PN_(legit)(const struct N_(table) *const table) {
 		if(b->next == TABLE_NULL) continue;
 		size++;
 		if(b->next == TABLE_END) end++;
-		if(i == PN_(to_bucket_no)(table, b->hash)) start++;
+		if(i == PN_(chain_head)(table, b->hash)) start++;
 	}
 	assert(table->size == size && end == start && size >= start);
 }
@@ -297,9 +297,10 @@ static void PN_(test_basic)(void *const parent) {
 	const size_t trial_size = sizeof trials.sample / sizeof *trials.sample,
 		max_graph = ((PN_(uint))~0) > 1000 ? 1000 : ((PN_(uint))~0);
 	size_t i;
-	PN_(uint) b, b_end;
+	PN_(uint) b, b_end, count1, count2;
 	char z[12];
 	struct N_(table) table = N_(table)();
+	struct N_(table_iterator) it;
 	int success;
 	assert(trial_size > 1);
 	/* Pre-computation. O(element_size*(element_size-1)/2); this places a limit
@@ -419,30 +420,20 @@ static void PN_(test_basic)(void *const parent) {
 		(void)value, (void)sample_value;
 	}}
 	printf("Table: %s.\n", N_(table_to_string)(&table));
-	printf("Remove:\n");
-	{
-		struct N_(table_iterator) it = N_(table_iterator)(&table);
-		b = 0;
-		while(N_(table_next)(&it)) {
-			b++;
-#ifdef TABLE_VALUE
-			N_(to_string)(N_(table_key)(&it), 0/*N_(table_value)(&it)??*/, &z);
-#else
-			N_(to_string)(N_(table_key)(&it), &z);
-#endif
-			printf("---->%s\n", z);
-		}
-		assert(b == table.size);
-		/* Is it kosher? */
-		it = N_(table_iterator)(&table);
-		while(N_(table_next)(&it)) {
-			b++;
-			N_(table_remove)(&table, N_(table_key)(&it));
-			/*sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-end-%u.gv", ++count);
-			PN_(graph)(&table, fn);*/
-		}
-		PN_(graph)(&table, "graph/" QUOTE(TABLE_NAME) "-end.gv");
+	printf("Count:\n");
+	it = N_(table_iterator)(&table), count1 = 0;
+	while(N_(table_next)(&it)) count1++;
+	assert(count1 == table.size);
+	/* Is it kosher? Yes, but it doesn't test anything. Use iterator. */
+	it = N_(table_iterator)(&table), count2 = 0;
+	while(N_(table_next)(&it)) {
+		count2++;
+		N_(table_iterator_remove)(&it);
+		/*sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-end-%u.gv", ++count);
+		PN_(graph)(&table, fn);*/
 	}
+	PN_(graph)(&table, "graph/" QUOTE(TABLE_NAME) "-end.gv");
+	assert(count1 == count2);
 	/* Clear. */
 	N_(table_clear)(&table);
 	PN_(graph)(&table, "graph/" QUOTE(TABLE_NAME) "-clear.gv");

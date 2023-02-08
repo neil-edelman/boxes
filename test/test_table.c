@@ -240,32 +240,50 @@ static void test_default(void) {
 
 /** Test iteration removal. */
 static void test_it(void) {
+	struct zodiac_table z = zodiac_table();
+	struct zodiac_table_iterator zit;
 	struct int_table t = int_table();
 	struct int_table_iterator it;
-	const int ko = 1000, ko2 = ko * 2;
-	int n, i;
-	printf("Testing iteration.\n");
-#if 0
-	for(n = 0; n < ko2; n++) if(!int_table_try(&t, n)) goto catch;
+	const int no_till = 1000, no_till2 = no_till * 2;
+	int n;
+
+	printf("Testing zodiac remove iterator.\n");
+	if(!zodiac_table_try(&z, Sagittarius) || !zodiac_table_try(&z, Capricorn)
+		|| !zodiac_table_try(&z, Gemini) || !zodiac_table_try(&z, Aries)
+		|| !zodiac_table_try(&z, Virgo) || !zodiac_table_try(&z, Libra)
+		|| !zodiac_table_try(&z, Taurus)) goto catch;
+	table_zodiac_graph(&z, "graph/it-z0.gv");
+	printf("Remove all zodiac one at a time.\n");
+	zit = zodiac_table_iterator(&z), n = 0;
+	while(zodiac_table_next(&zit)) {
+		char fn[64];
+		printf("On %s.\n", zodiac[zodiac_table_key(&zit)]);
+		if(!zodiac_table_iterator_remove(&zit)) printf("(that's weird?)\n");
+		sprintf(fn, "graph/it-z%d.gv", ++n);
+		table_zodiac_graph(&z, fn);
+	}
+	assert(!z.size);
+	zodiac_table_(&z);
+
+	printf("Testing iteration with elements [0, %d).\n", no_till2);
+	for(n = 0; n < no_till2; n++) if(!int_table_try(&t, n)) goto catch;
 	table_int_graph(&t, "graph/it0.gv");
-	assert(t.size == ko2);
+	assert(t.size == no_till2);
+	/* Even ones get deleted. */
 	printf("Remove: ");
 	it = int_table_iterator(&t);
-	while(int_table_next(&it)) {
-		i = int_table_key(&it);
-		if(i & 1) continue; /* Odd ones left. */
-		int_table_iterator_remove(&it);
-		assert(int_table_iterator_remove(&it) == 0);
-	}
+	while(int_table_next(&it)) if(!(int_table_key(&it) & 1)
+		&& !int_table_iterator_remove(&it)) printf("(that's weird?)");
 	printf("done.\n");
 	table_int_graph(&t, "graph/it1.gv");
-	assert(t.size == ko);
-	for(it = int_table_begin(&t); int_table_next(&it, &i); ) assert(i & 1);
+	assert(t.size == no_till);
+	it = int_table_iterator(&t);
+	while(int_table_next(&it)) assert(int_table_key(&it) & 1);
 	goto finally;
 catch:
 	perror("it"), assert(0);
 finally:
-#endif
+	zodiac_table_(&z);
 	int_table_(&t);
 	printf("\n");
 }
