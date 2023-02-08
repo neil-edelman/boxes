@@ -100,7 +100,7 @@ static void PN_(graph)(const struct N_(table) *const table,
 		"%.2f(%.1f)</td>\n"
 		"\t</tr>\n"
 		"\t<tr>\n"
-		"\t\t<td border=\"0\" align=\"right\">max bucket</td>\n"
+		"\t\t<td border=\"0\" align=\"right\">max chain</td>\n"
 		"\t\t<td border=\"0\" align=\"right\">%lu</td>\n"
 		"\t</tr>\n"
 		"\t<hr/>\n"
