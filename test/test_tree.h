@@ -220,7 +220,7 @@ static void PB_(test)(void) {
 #else
 		B_(to_string)(t->key, &z);
 #endif
-		printf("%s\n", z);
+		/*printf("%s\n", z);*/
 	}
 
 	/* Idle. */
@@ -368,14 +368,14 @@ static void PB_(test)(void) {
 
 	/* Add. */
 	for(i = 0; i < test_size; i++) {
-		char z[12];
+		/*char z[12];*/
 		struct PB_(tree_test) *const t = test + i;
-#ifdef TREE_VALUE
+/*#ifdef TREE_VALUE
 		B_(to_string)(t->key, &t->value, &z);
 #else
 		B_(to_string)(t->key, &z);
 #endif
-		/*printf("%lu -- adding <%s>.\n", (unsigned long)i, z);*/
+		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);*/
 #ifdef TREE_VALUE
 		switch(B_(tree_try)(&tree, t->key, &v))
 #else
@@ -390,7 +390,7 @@ static void PB_(test)(void) {
 			*v = t->value;
 #endif
 			t->in = 1;
-			printf("<%s> added\n", z); break;
+			/*printf("<%s> added\n", z);*/ break;
 		}
 		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-add-%lu.gv", i + 1);
