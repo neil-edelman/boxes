@@ -338,7 +338,7 @@ static struct PB_(ref) PB_(less)(const struct PB_(tree) tree,
 	const PB_(key) x) {
 	struct PB_(ref) hi, found;
 	found.node = 0;
-	if(!tree.node) return found;
+	if(!tree.node || tree.height == UINT_MAX) return found;
 	for(hi.node = tree.node, hi.height = tree.height; ;
 		hi.node = PB_(as_branch_c)(hi.node)->child[hi.idx], hi.height--) {
 		if(!(hi.idx = hi.node->size)) continue;
