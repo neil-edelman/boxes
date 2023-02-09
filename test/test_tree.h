@@ -48,12 +48,6 @@ static void PB_(subgraph)(const struct PB_(tree) *const sub, FILE *fp) {
 	fprintf(fp, "\t<hr/>\n"
 		"\t<tr><td></td></tr>\n"
 		"</table>>];\n");
-#ifdef TREE_MULTIPLE_KEY
-	if(sub->node->parent) {
-		fprintf(fp, "\ttrunk%p -> trunk%p [dir=back];\n",
-			(const void *)&sub->node->parent->base, (const void *)sub->node);
-	}
-#endif
 	if(!sub->height) return;
 	/* Draw the lines between trees. */
 	branch = PB_(as_branch_c)(sub->node);
@@ -202,6 +196,7 @@ static void PB_(test)(void) {
 	PB_(key) k, k_prev;
 	size_t i, n_unique = 0, n_unique2;
 	char fn[64];
+	int succ;
 
 	errno = 0;
 
@@ -262,7 +257,10 @@ static void PB_(test)(void) {
 			t->in = 1;
 			break;
 		}
-#if 0 /* fixme */
+
+
+
+#if 0 /* fixme: is this even a thing anymore? `get_or`? */
 #ifdef TREE_VALUE
 		/* Not a very good test. */
 		value = B_(tree_get)(&tree, PB_(test_to_key)(t));
@@ -274,6 +272,9 @@ static void PB_(test)(void) {
 		}
 #endif
 #endif
+
+
+
 		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-bulk-%lu.gv", i + 1);
 			PB_(graph)(&tree, fn);
@@ -290,15 +291,15 @@ static void PB_(test)(void) {
 	memset(&k_prev, 0, sizeof k_prev);
 	it = B_(tree_iterator)(&tree), i = 0;
 	while(B_(tree_next)(&it)) {
-		char z[12];
+		/*char z[12];*/
 		k = B_(tree_key)(&it);
-#ifdef TREE_VALUE
+/*#ifdef TREE_VALUE
 		v = B_(tree_value)(&it);
 		B_(to_string)(k, v, &z);
 #else
 		B_(to_string)(k, &z);
 #endif
-		printf("<%s>\n", z);
+		printf("<%s>\n", z);*/
 		if(i) { const int cmp = B_(compare)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
@@ -306,50 +307,45 @@ static void PB_(test)(void) {
 	assert(i == n_unique);
 	/*printf("\n");*/
 
-
-#if 0 /* fixme */
-
-	it = B_(tree_end)(&tree), i = 0;
-	while(
-#ifdef TREE_VALUE
-		B_(tree_previous)(&it, &k, &v)
+	/* Going the other way. */
+	it = B_(tree_iterator)(&tree), i = 0;
+	while(B_(tree_previous)(&it)) {
+		/*char z[12];*/
+		k = B_(tree_key)(&it);
+/*#ifdef TREE_VALUE
+		v = B_(tree_value)(&it);
+		B_(to_string)(k, v, &z);
 #else
-		B_(tree_previous)(&it, &k)
+		B_(to_string)(k, &z);
 #endif
-		) {
-		/*char z[12];
-		B_(to_string)(&k, &z);
 		printf("<%s>\n", z);*/
 		if(i) { const int cmp = B_(compare)(k_prev, k); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
 	}
 	assert(i == n_unique);
-	printf("it %s height %u, idx %u, seen %d\n",
-		orcify(it._.ref.node), it._.ref.height, it._.ref.idx, it._.seen);
-	while(
-#ifdef TREE_VALUE
-		B_(tree_next)(&it, &k, &v)
-#else
-		B_(tree_next)(&it, &k)
-#endif
-		) {
-		int succ;
+
+	/* Deleting while iterating. */
+	it = B_(tree_iterator)(&tree);
+	succ = B_(tree_previous)(&it);
+	assert(succ);
+	do {
 		char z[12];
+		PB_(key) key = B_(tree_key)(&it);
 #ifdef TREE_VALUE
-		B_(to_string)(k, v, &z);
+		B_(to_string)(key, B_(tree_value)(&it), &z);
 #else
-		B_(to_string)(k, &z);
+		B_(to_string)(key, &z);
 #endif
 		printf("removing <%s>\n", z);
-		succ = B_(tree_iterator_remove)(&it);
+		succ = B_(tree_remove)(&tree, key);
 		assert(succ);
-		succ = B_(tree_iterator_remove)(&it);
+		succ = B_(tree_remove)(&tree, key);
 		assert(!succ);
-	}
+		it = B_(tree_less)(&tree, key);
+	} while(B_(tree_has_element)(&it));
 	printf("Deleted tree: %s.\n", B_(tree_to_string)(&tree));
 	assert(tree.root.height == UINT_MAX);
-#endif /*0*/
 
 	/* Clear. */
 	B_(tree_clear)(0);
