@@ -1528,44 +1528,6 @@ static PB_(value) *B_(tree_value)(const struct B_(tree_iterator) *const it)
 #endif /* map --> */
 
 
-
-
-
-
-
-#if 0
-
-
-
-#ifdef TREE_VALUE /* <!-- map */
-/** @return Whether reversing `it` to the previous element and filling `k`,
- (and `v` if a map, otherwise absent,) if not-null.
- @order \O(\log |`tree`|) @allow */
-static int B_(tree_previous)(struct B_(tree_iterator) *const it,
-	PB_(key) *const k, PB_(value) **v) {
-#else /* map --><!-- set */
-static int B_(tree_previous)(struct B_(tree_iterator) *const it,
-	PB_(key) *const k) {
-#endif /* set --> */
-	struct PB_(ref) *r;
-	if(!PB_(previous)(&it->_, &r)) return 0;
-	if(k) *k = r->node->key[r->idx];
-#ifdef TREE_VALUE
-	if(v) *v = r->node->value + r->idx;
-#endif
-	return 1;
-#ifdef TREE_VALUE
-}
-#else
-}
-#endif
-
-
-
-#endif
-
-
-
 static void PB_(unused_base_coda)(void);
 static void PB_(unused_base)(void) {
 	PB_(key) k; PB_(value) v; memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
@@ -1576,7 +1538,7 @@ static void PB_(unused_base)(void) {
 	B_(tree_next)(0); B_(tree_has_element)(0);
 #ifdef TREE_VALUE
 	B_(tree_bulk_add)(0, k, 0); B_(tree_try)(0, k, 0);
-	B_(tree_assign)(0, k, 0, 0);
+	B_(tree_assign)(0, k, 0, 0); B_(tree_value)(0);
 #else
 	B_(tree_bulk_add)(0, k); B_(tree_try)(0, k);
 	B_(tree_assign)(0, k, 0);

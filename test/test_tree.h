@@ -330,21 +330,21 @@ static void PB_(test)(void) {
 	succ = B_(tree_previous)(&it);
 	assert(succ);
 	do {
-		char z[12];
+		/*char z[12];*/
 		PB_(key) key = B_(tree_key)(&it);
-#ifdef TREE_VALUE
+/*#ifdef TREE_VALUE
 		B_(to_string)(key, B_(tree_value)(&it), &z);
 #else
 		B_(to_string)(key, &z);
 #endif
-		printf("removing <%s>\n", z);
+		printf("removing <%s>\n", z);*/
 		succ = B_(tree_remove)(&tree, key);
 		assert(succ);
 		succ = B_(tree_remove)(&tree, key);
 		assert(!succ);
 		it = B_(tree_less)(&tree, key);
 	} while(B_(tree_has_element)(&it));
-	printf("Deleted tree: %s.\n", B_(tree_to_string)(&tree));
+	printf("Individual delete tree: %s.\n", B_(tree_to_string)(&tree));
 	assert(tree.root.height == UINT_MAX);
 
 	/* Clear. */
