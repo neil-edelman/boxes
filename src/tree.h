@@ -201,7 +201,7 @@ static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 #endif /* !value --> */
 
 struct PB_(iterator) { struct PB_(tree) *root; struct PB_(ref) ref; };
-/** Iterator for `tree` in null state. */
+/** Iterator for `tree` in empty state. */
 static struct PB_(iterator) PB_(iterator)(struct B_(tree) *const tree) {
 	struct PB_(iterator) it;
 	assert(tree);
@@ -332,8 +332,8 @@ static void PB_(node_ub)(struct PB_(ref) *const hi, const PB_(key) x) {
 	} while(lo < hi->idx);
 }
 
-/** @return A reference to the element first element at or less than `x` in
- `tree`, or `node` will be null if the `x` is less than all `tree`. */
+/** @return A reference to the greatest key at or less than `x` in `tree`, or
+ the reference will be empty if the `x` is less than all `tree`. */
 static struct PB_(ref) PB_(less)(const struct PB_(tree) tree,
 	const PB_(key) x) {
 	struct PB_(ref) hi, found;
@@ -352,8 +352,8 @@ static struct PB_(ref) PB_(less)(const struct PB_(tree) tree,
 	}
 	return found;
 }
-/** @return A reference the element at the greatest lower bound of `x` in
- `tree`, or if the element doesn't exist, `node` will be null. */
+/** @return A reference to the smallest key at or more than `x` in `tree`, or
+ the reference will be empty if the `x` is more than all `tree`. */
 static struct PB_(ref) PB_(more)(const struct PB_(tree) tree,
 	const PB_(key) x) {
 	struct PB_(ref) lo, found;
@@ -518,7 +518,7 @@ static size_t B_(tree_count)(const struct B_(tree) *const tree) {
 static int B_(tree_contains)(const struct B_(tree) *const tree,
 	const PB_(key) x) { return tree && PB_(lookup_find)(tree->root, x).node; }
 /* fixme: entry <B>tree_query -- there is no functionality that returns the
- key. */
+ key, which might be important with distinguishable keys. */
 
 /** @return Get the value of `key` in `tree`, or if no key, `default_value`.
  The map type is `TREE_VALUE` and the set type is `TREE_KEY`.
@@ -533,27 +533,27 @@ static PB_(value) B_(tree_get_or)(const struct B_(tree) *const tree,
 
 /** For example, `tree = { 10 }`, `x = 5 -> default_value`, `x = 10 -> 10`,
  `x = 11 -> 10`.
- @return Value in `tree` less-then-or-equal to `x` or `default_value` if `x`
+ @return Key in `tree` less-then-or-equal to `x` or `default_value` if `x`
  is smaller than all in `tree`.
  @order \O(\log |`tree`|) @allow */
-static PB_(value) B_(tree_less_or)(const struct B_(tree) *const tree,
-	const PB_(key) x, const PB_(value) default_value) {
+static PB_(key) B_(tree_less_or)(const struct B_(tree) *const tree,
+	const PB_(key) x, const PB_(key) default_key) {
 	struct PB_(ref) ref;
 	return tree && (ref = PB_(less)(tree->root, x)).node ?
-		(assert(ref.idx < ref.node->size), *PB_(ref_to_valuep)(ref))
-		: default_value;
+		(assert(ref.idx < ref.node->size), ref.node->key[ref.idx])
+		: default_key;
 }
 
 /** For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`,
  `x = 11 -> default_value`.
- @return Value in `tree` greater-than-or-equal to `x` or `default_value` if `x`
+ @return Key in `tree` greater-than-or-equal to `x` or `default_value` if `x`
  is greater than all in `tree`.
  @order \O(\log |`tree`|) @allow */
-static PB_(value) B_(tree_more_or)(const struct B_(tree) *const tree,
-	const PB_(key) x, const PB_(value) default_value) {
+static PB_(key) B_(tree_more_or)(const struct B_(tree) *const tree,
+	const PB_(key) x, const PB_(key) default_key) {
 	struct PB_(ref) ref;
 	return tree && (ref = PB_(more)(tree->root, x)).node
-		? *PB_(ref_to_valuep)(ref) : default_value;
+		? ref.node->key[ref.idx] : default_key;
 }
 
 #ifdef TREE_VALUE /* <!-- map */
@@ -1572,7 +1572,7 @@ static void PB_(unused_base)(void) {
 	PB_(element)(0);
 	B_(tree)(); B_(tree_)(0); B_(tree_clear)(0); B_(tree_count)(0);
 	B_(tree_contains)(0, k); B_(tree_get_or)(0, k, v);
-	B_(tree_less_or)(0, k, v); B_(tree_more_or)(0, k, v);
+	B_(tree_less_or)(0, k, k); B_(tree_more_or)(0, k, k);
 	B_(tree_next)(0); B_(tree_has_element)(0);
 #ifdef TREE_VALUE
 	B_(tree_bulk_add)(0, k, 0); B_(tree_try)(0, k, 0);
