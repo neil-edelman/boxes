@@ -484,7 +484,8 @@ static void PT_(test)(void) {
 		int output = 0;
 		letter[0] = (char)i, letter[1] = '\0';
 		it = T_(trie_prefix)(&trie, letter);
-		while(T_(trie_next)(&it, &e)) {
+		while(T_(trie_next)(&it)) {
+			/*e = T_(trie_element)(&it); haven't made yet */
 			/*printf("%s<%s>", output ? "" : letter,
 				PT_(key_string)(PT_(entry_key)(e)));*/
 			count_letter++, output = 1;
@@ -508,7 +509,7 @@ static void PT_(test)(void) {
 	T_(trie_clear)(&trie);
 	{
 		struct T_(trie_iterator) it = T_(trie_prefix)(&trie, "");
-		assert(!T_(trie_next)(&it, 0));
+		assert(!T_(trie_next)(&it));
 	}
 	T_(trie_)(&trie), assert(!trie.root), PT_(valid)(&trie);
 	assert(!errno);
