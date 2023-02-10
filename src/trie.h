@@ -215,8 +215,8 @@ struct PT_(iterator) {
 	struct PT_(tree) *root;
 	struct PT_(ref) cur, end;
 };
-/** Looks at only the index of `trie` (which can be null) for potential
- `prefix` matches, and stores them in `it`. */
+/** Looks at only the index of `trie` (non-null) for potential `prefix`
+ matches, and stores them in `it`. */
 static struct PT_(iterator) PT_(match_prefix)
 	(const struct T_(trie) *const trie, const char *const prefix) {
 	struct PT_(iterator) it;
@@ -246,9 +246,9 @@ finally:
 		assert(br0 <= br1 && lf - br0 + br1 <= tree->bsize);
 		it.root = trie->root;
 		it.cur.tree = it.end.tree = tree;
-		/* Such that <fn:<PT>next> is the first. */
+		/* Such that <fn:<PT>next> is the first and end is greater than. */
 		it.cur.lf = lf, PT_(lower_entry)(&it.cur), it.cur.lf--;
-		it.end.lf = lf + br1 - br0, PT_(higher_entry)(&it.end);
+		it.end.lf = lf + br1 - br0, PT_(higher_entry)(&it.end), it.end.lf++;
 		break;
 	}
 	return it;
