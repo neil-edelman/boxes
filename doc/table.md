@@ -21,12 +21,12 @@ Stand\-alone header [\.\./src/table\.h](../src/table.h); examples [\.\./test/tes
 
  * Parameter: TABLE\_NAME, TABLE\_KEY  
    `<N>` that satisfies `C` naming conventions when mangled and a valid [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) associated therewith; required\. `<PN>` is private, whose names are prefixed in a manner to avoid collisions\.
- * Parameter: TABLE\_INVERSE  
+ * Parameter: TABLE\_UNHASH  
    By default it assumes that `<N>is_equal` is supplied; with this, instead requires `<N>unhash` satisfying [&lt;PN&gt;unhash_fn](#user-content-typedef-ca7574d7)\.
  * Parameter: TABLE\_VALUE  
    An optional type that is the payload of the key, thus making this a map or associative array\.
  * Parameter: TABLE\_UINT  
-   This is [&lt;PN&gt;uint](#user-content-typedef-c13937ad), the unsigned type of hash hash of the key given by [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292); defaults to `size_t`\.
+   This is [&lt;PN&gt;uint](#user-content-typedef-c13937ad), the unsigned type of hash of the key given by [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292); defaults to `size_t`\.
  * Parameter: TABLE\_DEFAULT  
    Default trait; a [&lt;PN&gt;value](#user-content-typedef-218ce716) used in [&lt;N&gt;table&lt;D&gt;get](#user-content-fn-92774ccb)\.
  * Parameter: TABLE\_TO\_STRING  
@@ -53,7 +53,7 @@ Stand\-alone header [\.\./src/table\.h](../src/table.h); examples [\.\./test/tes
 
 <code>typedef TABLE_KEY <strong>&lt;PN&gt;key</strong>;</code>
 
-Valid tag type defined by `TABLE_KEY` used for keys\. If `TABLE_INVERSE` is not defined, a copy of this value will be stored in the internal buckets\.
+Valid tag type defined by `TABLE_KEY` used for keys\. If `TABLE_UNHASH` is not defined, a copy of this value will be stored in the internal buckets\.
 
 
 
@@ -69,7 +69,7 @@ A map from [&lt;PN&gt;key_c](#user-content-typedef-46bcab6a) onto [&lt;PN&gt;uin
 
 <code>typedef &lt;PN&gt;key(*<strong>&lt;PN&gt;unhash_fn</strong>)(&lt;PN&gt;uint);</code>
 
-Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) forms a bijection between the range in [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) and the image in [&lt;PN&gt;uint](#user-content-typedef-c13937ad), and the inverse is called `<N>unhash`\. In this case, keys are not stored in the hash table, rather they are generated using this inverse\-mapping\.
+Defining `TABLE_UNHASH` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) forms a bijection between the range in [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) and the image in [&lt;PN&gt;uint](#user-content-typedef-c13937ad), and the inverse is called `<N>unhash`\. In this case, keys are not stored in the hash table, rather they are generated using this inverse\-mapping\.
 
 
 
@@ -77,7 +77,7 @@ Defining `TABLE_INVERSE` says [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292
 
 <code>typedef int(*<strong>&lt;PN&gt;is_equal_fn</strong>)(&lt;PN&gt;key_c a, &lt;PN&gt;key_c b);</code>
 
-Equivalence relation between [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) that satisfies `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`, called `<N>is_equal`\. If `TABLE_INVERSE` is set, there is no need for this function because the comparison is done directly in hash space\.
+Equivalence relation between [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) that satisfies `<PN>is_equal_fn(a, b) -> <PN>hash(a) == <PN>hash(b)`, called `<N>is_equal`\. If `TABLE_UNHASH` is set, there is no need for this function because the comparison is done directly in hash space\.
 
 
 
@@ -179,9 +179,9 @@ Adding, deleting, successfully looking up entries, or any modification of the ta
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-24e5c5ce">&lt;N&gt;table_</a></td><td>table</td></tr>
 
-<tr><td align = right>static struct &lt;N&gt;table_iterator</td><td><a href = "#user-content-fn-89645eb3">&lt;N&gt;table_begin</a></td><td>table</td></tr>
+<tr><td align = right>static struct &lt;N&gt;table_iterator</td><td><a href = "#user-content-fn-f67540e4">&lt;N&gt;table_iterator</a></td><td>table</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-f5d778c3">&lt;N&gt;table_next</a></td><td>it, key, value</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-f5d778c3">&lt;N&gt;table_next</a></td><td>it</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-c384e71">&lt;N&gt;table_iterator_remove</a></td><td>it</td></tr>
 
@@ -249,26 +249,22 @@ If `table` is not null, destroys and returns it to idle\.
 
 
 
-### <a id = "user-content-fn-89645eb3" name = "user-content-fn-89645eb3">&lt;N&gt;table_begin</a> ###
+### <a id = "user-content-fn-f67540e4" name = "user-content-fn-f67540e4">&lt;N&gt;table_iterator</a> ###
 
-<code>static struct &lt;N&gt;table_iterator <strong>&lt;N&gt;table_begin</strong>(struct &lt;N&gt;table *const <em>table</em>)</code>
+<code>static struct &lt;N&gt;table_iterator <strong>&lt;N&gt;table_iterator</strong>(struct &lt;N&gt;table *const <em>table</em>)</code>
 
-Loads `table` \(can be null\) into `it`\.
+Loads a non\-null `table` into `it`\.
 
 
 
 ### <a id = "user-content-fn-f5d778c3" name = "user-content-fn-f5d778c3">&lt;N&gt;table_next</a> ###
 
-<code>static int <strong>&lt;N&gt;table_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>, &lt;PN&gt;key *<em>key</em>, &lt;PN&gt;value **<em>value</em>)</code>
+<code>static int <strong>&lt;N&gt;table_next</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
 
 Advances `it`\.
 
- * Parameter: _key_  
-   If non\-null, the key or value is filled with the next element on return true\. `value` is a pointer to the actual value in the map, only there if it is a map\.
- * Parameter: _value_  
-   If non\-null, the key or value is filled with the next element on return true\. `value` is a pointer to the actual value in the map, only there if it is a map\.
  * Return:  
-   Whether it had a next element\.
+   Whether `it` has an element now\.
 
 
 
@@ -277,7 +273,7 @@ Advances `it`\.
 
 <code>static int <strong>&lt;N&gt;table_iterator_remove</strong>(struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
 
-Removes the entry at `it`\. Whereas [&lt;N&gt;table_remove](#user-content-fn-f3d5d82a) invalidates the iterator, this corrects for a signal `it`\.
+Removes the entry at `it`\. Whereas [&lt;N&gt;table_remove](#user-content-fn-f3d5d82a) invalidates the iterator, this corrects `it` so [&lt;N&gt;table_next](#user-content-fn-f5d778c3) is the next entry\. To use the iterator after this, one must move to the next\.
 
  * Return:  
    Success, or there was no entry at the iterator's position, \(anymore\.\)
@@ -444,7 +440,7 @@ Removes `key` from `table` \(which could be null\.\)
 
 <code>static void <strong>&lt;ITR&gt;each</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;action_fn <em>action</em>)</code>
 
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements\.
+[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements\. Differs calling `action` until the iterator is one\-ahead, so can delete elements as long as it doesn't affect the next, \(specifically, a linked\-list\.\)
 
  * Order:  
    &#927;\(|`box`|\) &#215; &#927;\(`action`\)
@@ -481,7 +477,7 @@ Removes `key` from `table` \(which could be null\.\)
 
 <code>static void <strong>&lt;ITR&gt;keep_if</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>keep</em>, const &lt;PITR&gt;action_fn <em>destruct</em>)</code>
 
-[src/iterate\.h](src/iterate.h), `BOX_CONTIGUOUS`: For all elements of `box`, calls `keep`, and if false, lazy deletes that item\. Calls `destruct` if not\-null before deleting\.
+[src/iterate\.h](src/iterate.h): For all elements of `box`, calls `keep`, and if false, if contiguous, lazy deletes that item, if not, eagerly\. Calls `destruct` if not\-null before deleting\.
 
  * Order:  
    &#927;\(|`box`|\) \(&#215; O\(`keep`\) \+ O\(`destruct`\)\)

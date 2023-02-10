@@ -17,7 +17,7 @@ Header [\.\./src/trie\.h](../src/trie.h) requires [\.\./src/bmp\.h](../src/bmp.h
 
 A [&lt;T&gt;trie](#user-content-tag-754a10a5) is a prefix\-tree, digital\-tree, or trie: an ordered set or map of byte null\-terminated immutable key strings allowing efficient prefix queries\. The implementation is as [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) that acts as an index, only storing the where the key bits are different\. The keys are grouped in fixed\-size nodes in a relaxed version of a B\-tree, as [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large), where the height is no longer fixed\.
 
-The worse\-case run\-time of querying or modifying is bounded by &#927;\(|`string`|\)\. [Tong, Goebel, Lin, 2015, Smoothed](https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed) show that, in an iid model, a better fit is &#927;\(log |`trie`|\), which is reported here\.
+While the worse\-case run\-time of querying or modifying is bounded by &#927;\(|`string`|\), [Tong, Goebel, Lin, 2015, Smoothed](https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed) show that, in an iid model, a better fit is &#927;\(log |`trie`|\), which is reported here\.
 
 ![Bit view of the trie.](../doc/trie/trie-bits.png)
 
@@ -36,7 +36,7 @@ The worse\-case run\-time of querying or modifying is bounded by &#927;\(|`strin
  * Standard:  
    C89 \(Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ\.\)
  * Caveat:  
-   This is a confusing interface\. TRIE_NAME,andoptionallyTRIE_ENTRY, where custom `const char *to_string(value *)`, would allow maps\. ([&lt;T&gt;trie_from_array](#user-content-fn-3554106c), [&lt;T&gt;trie_size](#user-content-fn-b7ff4bcf))
+   ([&lt;T&gt;trie_from_array](#user-content-fn-3554106c), [&lt;T&gt;trie_size](#user-content-fn-b7ff4bcf))
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -45,7 +45,7 @@ The worse\-case run\-time of querying or modifying is bounded by &#927;\(|`strin
 
 <code>typedef TRIE_KEY <strong>&lt;PT&gt;key</strong>;</code>
 
-The default is `const char *`\. If one sets `TRIE_KEY` to something other than that, then one must also declare `<P>string` as a [&lt;PT&gt;string_fn](#user-content-typedef-fda6adfb)\.
+The default is `const char *`\. If one sets `TRIE_KEY` to a different type, then one must also declare `<P>string` as a [&lt;PT&gt;string_fn](#user-content-typedef-fda6adfb)\.
 
 
 
@@ -77,7 +77,7 @@ Transforms a [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) into a `const char 
 
 <code>typedef &lt;PT&gt;key(*<strong>&lt;PT&gt;key_fn</strong>)(const &lt;PT&gt;entry *);</code>
 
-Extracts [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) from [&lt;PT&gt;entry](#user-content-typedef-41052ced)\. \(This has been designed this way so that
+Extracts [&lt;PT&gt;key](#user-content-typedef-eeee1b4a) from [&lt;PT&gt;entry](#user-content-typedef-41052ced)\.
 
 
 
@@ -145,7 +145,7 @@ Represents a range of in\-order keys in &#927;\(1\) space\.
 
 <tr><td align = right>static struct &lt;T&gt;trie_iterator</td><td><a href = "#user-content-fn-b720a682">&lt;T&gt;trie_prefix</a></td><td>trie, prefix</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-f36d1483">&lt;T&gt;trie_next</a></td><td>it, remit</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-f36d1483">&lt;T&gt;trie_next</a></td><td>it</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
@@ -307,10 +307,10 @@ Counts the of the items in `it`\.
 
 ### <a id = "user-content-fn-f36d1483" name = "user-content-fn-f36d1483">&lt;T&gt;trie_next</a> ###
 
-<code>static int <strong>&lt;T&gt;trie_next</strong>(struct &lt;T&gt;trie_iterator *const <em>it</em>, &lt;PT&gt;remit *const <em>remit</em>)</code>
+<code>static int <strong>&lt;T&gt;trie_next</strong>(struct &lt;T&gt;trie_iterator *const <em>it</em>)</code>
 
  * Return:  
-   Whether advancing `it` to the next element and filling `remit`, if not\-null\.
+   Whether advancing `it` to the next element is successful\.
  * Order:  
    &#927;\(log |`trie`|\)
 

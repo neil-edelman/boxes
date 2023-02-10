@@ -365,7 +365,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;ITR&gt;each</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;action_fn <em>action</em>)</code>
 
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements\.
+[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements\. Differs calling `action` until the iterator is one\-ahead, so can delete elements as long as it doesn't affect the next, \(specifically, a linked\-list\.\)
 
  * Order:  
    &#927;\(|`box`|\) &#215; &#927;\(`action`\)
@@ -402,7 +402,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;ITR&gt;keep_if</strong>(&lt;PITR&gt;box *const <em>box</em>, const &lt;PITR&gt;predicate_fn <em>keep</em>, const &lt;PITR&gt;action_fn <em>destruct</em>)</code>
 
-[src/iterate\.h](src/iterate.h), `BOX_CONTIGUOUS`: For all elements of `box`, calls `keep`, and if false, lazy deletes that item\. Calls `destruct` if not\-null before deleting\.
+[src/iterate\.h](src/iterate.h): For all elements of `box`, calls `keep`, and if false, if contiguous, lazy deletes that item, if not, eagerly\. Calls `destruct` if not\-null before deleting\.
 
  * Order:  
    &#927;\(|`box`|\) \(&#215; O\(`keep`\) \+ O\(`destruct`\)\)
@@ -426,7 +426,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things at a time\.
+[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
 
  * Return:  
    Address of the static buffer\.

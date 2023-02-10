@@ -209,9 +209,10 @@ static const char *PT_(sample)(struct PT_(tree) *const tree,
 	return PT_(ref_to_string)(&ref);
 }
 
-/* A range of words from `[cur, end]`. */
+/* A range of words from `[cur + 1, end)` such that <fn:<PT>next> makes it
+ `[cur, end)`. */
 struct PT_(iterator) {
-	const struct PT_(tree) *root;
+	struct PT_(tree) *root;
 	struct PT_(ref) cur, end;
 };
 /** Looks at only the index of `trie` (which can be null) for potential
@@ -245,7 +246,8 @@ finally:
 		assert(br0 <= br1 && lf - br0 + br1 <= tree->bsize);
 		it.root = trie->root;
 		it.cur.tree = it.end.tree = tree;
-		it.cur.lf = lf, PT_(lower_entry)(&it.cur);
+		/* Such that <fn:<PT>next> is the first. */
+		it.cur.lf = lf, PT_(lower_entry)(&it.cur), it.cur.lf--;
 		it.end.lf = lf + br1 - br0, PT_(higher_entry)(&it.end);
 		break;
 	}
@@ -254,29 +256,27 @@ finally:
 /** Loads the first element of a non-null `trie` into `it`. */
 static struct PT_(iterator) PT_(iterator)(const struct T_(trie) *const trie)
 	{ return PT_(match_prefix)(trie, ""); }
-static struct PT_(ref) PT_(element)(const struct PT_(iterator) *const it) {
-	//if(remit) *remit = r->tree->leaf[r->lf].as_entry;
+static struct PT_(ref) PT_(element)(const struct PT_(iterator) *const it)
+	{ return it->cur; }
+/** @return If `it` was advanced to the successor? @implements next */
+static int PT_(next)(struct PT_(iterator) *const it) {
 	assert(it);
-	return it->cur;
-}
-
-/** If `ref.tree` is null, starts iteration.
- @return Does `ref` have a successor in `root`? If yes, sets it to that.
- @fixme Incorporate into next? */
-static int PT_(to_successor)(struct PT_(tree) *const root,
-	struct PT_(ref) *const ref) {
-	assert(ref);
-	if(!root || root->bsize == USHRT_MAX) return 0; /* Empty. */
-	if(!ref->tree) { ref->tree = root, ref->lf = 0; } /* Start. */
-	else if(++ref->lf > ref->tree->bsize) { /* Gone off the end. */
-		struct PT_(tree) *const old = ref->tree;
-		const char *const sample = PT_(sample)(old, ref->lf - 1);
-		struct PT_(tree) *tree = root;
+	if(!it->root || it->root->bsize == USHRT_MAX) return 0; /* Empty. */
+	assert(it->cur.tree && it->end.tree && it->end.tree->bsize <= it->end.lf);
+	/* Stop when getting to the end of the range. */
+	if(it->cur.tree == it->end.tree && it->cur.lf + 1 >= it->end.lf) return 0;
+	if(it->cur.lf + 1 <= it->cur.tree->bsize) { /* It's in the same tree. */
+		it->cur.lf++;
+	} else { /* Going to go off the end. */
+		const char *const sample = PT_(sample)(it->cur.tree, it->cur.lf);
+		const struct PT_(tree) *old = it->cur.tree;
+		struct PT_(tree) *next = it->root;
 		size_t bit = 0;
-		for(ref->tree = 0, ref->lf = 0; tree != old; ) {
-			unsigned br0 = 0, br1 = tree->bsize, lf = 0;
+		it->cur.tree = 0;
+		while(next != old) {
+			unsigned br0 = 0, br1 = next->bsize, lf = 0;
 			while(br0 < br1) {
-				const struct trie_branch *const branch = tree->branch + br0;
+				const struct trie_branch *const branch = next->branch + br0;
 				bit += branch->skip;
 				if(!TRIE_QUERY(sample, bit))
 					br1 = ++br0 + branch->left;
@@ -284,32 +284,16 @@ static int PT_(to_successor)(struct PT_(tree) *const root,
 					br0 += branch->left + 1, lf += branch->left + 1;
 				bit++;
 			}
-			if(lf < tree->bsize) ref->tree = tree, ref->lf = lf + 1;
-			assert(trie_bmp_test(&tree->bmp, lf));
-			tree = tree->leaf[lf].as_link;
+			if(lf < next->bsize) it->cur.tree = next, it->cur.lf = lf + 1;
+			assert(trie_bmp_test(&next->bmp, lf)); /* The old. */
+			next = next->leaf[lf].as_link;
 		}
-		if(!ref->tree) return 0; /* End of iteration. */
+		/* End of iteration. Should not get here because iteration will stop
+		 one before the end. */
+		if(!it->cur.tree) return 0;
 	}
-	PT_(lower_entry)(ref);
-	return 1;
-}
-/** @return If `it` was advanced and returns `ref`. @implements next */
-static int PT_(next)(struct PT_(iterator) *const it) {
-	assert(it);
-	/* Possibly this is still valid? */
-	if(!it->root || !it->cur.tree || it->cur.tree->bsize < it->cur.lf
-		|| !it->end.tree || it->end.tree->bsize < it->end.lf) return 0;
-#if 0
-	if(it->seen) {
-		/* We have reached the planned end or concurrent modification. */
-		if(it->cur.tree == it->end.tree && it->cur.lf >= it->end.lf
-			|| !PT_(to_successor)(it->trie->root, &it->cur)) return 0;
-	} else {
-		it->seen = 1;
-	}
-#endif
-	assert(!trie_bmp_test(&it->cur.tree->bmp, it->cur.lf));
-	/*if(ref) *ref = &it->cur;*/
+	PT_(lower_entry)(&it->cur);
+	printf("next: %s:%u\n", orcify(it->cur.tree), it->cur.lf);
 	return 1;
 }
 /** Stores all `prefix` matches in `trie` in `it`. */
@@ -319,8 +303,14 @@ static struct PT_(iterator) PT_(prefix)(struct T_(trie) *const trie,
 	assert(trie && prefix);
 	it = PT_(match_prefix)(trie, prefix);
 	/* Make sure actually a prefix. */
-	if(it.root && !trie_is_prefix(prefix, PT_(ref_to_string)(&it.cur)))
-		it.root = 0;
+	if(it.root) {
+		struct PT_(ref) next = it.cur;
+		next.lf++;
+		assert(it.cur.tree && it.end.tree);
+		if(next.tree == it.end.tree && next.lf >= it.end.lf /* Empty. */
+			|| !trie_is_prefix(prefix, PT_(ref_to_string)(&next)))
+			it.root = 0;
+	}
 	return it;
 }
 
