@@ -262,7 +262,8 @@ static struct PT_(ref) PT_(element)(const struct PT_(iterator) *const it)
 static int PT_(next)(struct PT_(iterator) *const it) {
 	assert(it);
 	if(!it->root || it->root->bsize == USHRT_MAX) return 0; /* Empty. */
-	assert(it->cur.tree && it->end.tree && it->end.tree->bsize <= it->end.lf);
+	assert(it->cur.tree && it->end.tree
+		&& it->end.lf < it->end.tree->bsize + 2 /* +1 plus [) */);
 	/* Stop when getting to the end of the range. */
 	if(it->cur.tree == it->end.tree && it->cur.lf + 1 >= it->end.lf) return 0;
 	if(it->cur.lf + 1 <= it->cur.tree->bsize) { /* It's in the same tree. */
@@ -293,7 +294,6 @@ static int PT_(next)(struct PT_(iterator) *const it) {
 		if(!it->cur.tree) return 0;
 	}
 	PT_(lower_entry)(&it->cur);
-	printf("next: %s:%u\n", orcify(it->cur.tree), it->cur.lf);
 	return 1;
 }
 /** Stores all `prefix` matches in `trie` in `it`. */
@@ -822,16 +822,8 @@ static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
 
 /** @return Whether advancing `it` to the next element is successful.
  @order \O(\log |`trie`|) @allow */
-static int T_(trie_next)(struct T_(trie_iterator) *const it) {
-	return PT_(next)(&it->_);
-#if 0
-#ifdef TRIE_ENTRY
-	if(remit) *remit = &r->tree->leaf[r->lf].as_entry;
-#else
-	if(remit) *remit = r->tree->leaf[r->lf].as_entry;
-#endif
-#endif
-}
+static int T_(trie_next)(struct T_(trie_iterator) *const it)
+	{ return PT_(next)(&it->_); }
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
