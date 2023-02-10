@@ -796,6 +796,9 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
 struct T_(trie_iterator);
 struct T_(trie_iterator) { struct PT_(iterator) _; };
 
+static PT_(remit) T_(trie_entry)(const struct T_(trie_iterator) *const it)
+	{ return PT_(ref_to_remit)(&it->_.cur); }
+
 #if 0
 /* Haven't figured out the best way to do this. */
 /** @return The number of elements in `it`. */
@@ -827,7 +830,8 @@ static int T_(trie_next)(struct T_(trie_iterator) *const it)
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
-	T_(trie)(); T_(trie_)(0); T_(trie_clear)(0); T_(trie_next)(0);
+	T_(trie)(); T_(trie_)(0); T_(trie_clear)(0);
+	T_(trie_next)(0);
 #if defined(TREE_ENTRY) || !defined(TRIE_KEY)
 	T_(trie_match)(0, 0); T_(trie_get)(0, 0);
 #else
@@ -838,7 +842,8 @@ static void PT_(unused_base)(void) {
 #else
 	T_(trie_try)(0, 0);
 #endif
-	T_(trie_remove)(0, 0); T_(trie_prefix)(0, 0); /*T_(trie_size)(0);*/
+	T_(trie_remove)(0, 0); T_(trie_entry)(0); T_(trie_prefix)(0, 0);
+	/*T_(trie_size)(0);*/
 	PT_(unused_base_coda)();
 }
 static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }

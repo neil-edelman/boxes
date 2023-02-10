@@ -99,8 +99,11 @@ static void contrived_test(void) {
 		letter[0] = (char)i, letter[1] = '\0';
 		it = str_trie_prefix(&t, letter);
 		/*fixme*/
-		while(str_trie_next(&it/*, &str*/)) str = it._.cur.tree->leaf[it._.cur.lf].as_entry, printf("%s<%s>",
-			output ? ", " : letter, str), count_letter++, output = 1;
+		while(str_trie_next(&it/*, &str*/)) {
+			str = str_trie_entry(&it);
+			printf("%s<%s>", output ? ", " : letter, str);
+			count_letter++, output = 1;
+		}
 		if(output) printf("\n");
 		if(i) {
 			assert(count_letter == letters[i]);
