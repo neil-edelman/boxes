@@ -5,8 +5,8 @@ macros. All the public functions are documented in `doc/<box>.md`.
 
 ## Design papers ##
 
-The implementation of the boxes is fairly standard. Some rationales
-of the more complex containers documented here.
+The implementation is fairly standard. Some rationales of the more
+complex containers documented here.
 
 <table><tr>
 <td><a href = "doc/pool.md">memory pool</a></td>
