@@ -98,7 +98,6 @@ static void contrived_test(void) {
 		int output = 0;
 		letter[0] = (char)i, letter[1] = '\0';
 		it = str_trie_prefix(&t, letter);
-		/*fixme*/
 		while(str_trie_next(&it/*, &str*/)) {
 			str = str_trie_entry(&it);
 			printf("%s<%s>", output ? ", " : letter, str);
@@ -168,7 +167,6 @@ static void colour_filler(enum colour *const c)
 static void fixed_colour_test(void) {
 	struct colour_trie trie = colour_trie();
 	struct colour_trie_iterator it;
-	enum colour c;
 	int ret;
 	if(!colour_trie_try(&trie, Black)
 		|| !colour_trie_try(&trie, Red)
@@ -179,12 +177,11 @@ static void fixed_colour_test(void) {
 	colour_trie_remove(&trie, "Steel");
 	trie_colour_graph(&trie, "graph/colour-fixed.gv", 1);
 	it = colour_trie_prefix(&trie, "");
-	/*fixme*/
-	/*ret = colour_trie_next(&it), assert(ret && colour_trie_key(&it) == Black);
-	ret = colour_trie_next(&it, &c), assert(ret && c == Lime);
-	ret = colour_trie_next(&it, &c), assert(ret && c == Red);
-	ret = colour_trie_next(&it, &c), assert(ret && c == Yellow);
-	ret = colour_trie_next(&it, &c), assert(!ret);*/
+	ret = colour_trie_next(&it), assert(ret && colour_trie_entry(&it) == Black);
+	ret = colour_trie_next(&it), assert(ret && colour_trie_entry(&it) == Lime);
+	ret = colour_trie_next(&it), assert(ret && colour_trie_entry(&it) == Red);
+	ret = colour_trie_next(&it), assert(ret && colour_trie_entry(&it) == Yellow);
+	ret = colour_trie_next(&it), assert(!ret);
 	goto finally;
 catch:
 	perror("fixed colour trie");

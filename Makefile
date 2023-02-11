@@ -73,6 +73,6 @@ test: $(projects)
 	done
 
 clean:
-	-rm -rf bin/ build/ graph/
+	-rm -rf build/
 
 docs: $(docs)
