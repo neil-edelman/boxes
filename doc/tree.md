@@ -99,7 +99,7 @@ To initialize it to an idle state, see [&lt;B&gt;tree](#user-content-fn-a36433e3
 
 <code>struct <strong>&lt;B&gt;tree_iterator</strong>;</code>
 
-Adding, deleting, or changes in the topology of the tree invalidate the iterator\. To modify the tree while iterating, take the [&lt;B&gt;tree_key](#user-content-fn-4ebcbf13) and restart the iterator with [&lt;B&gt;tree_left](#user-content-fn-84b71f75) or [&lt;B&gt;tree_right](#user-content-fn-eae9928e) as appropriate\.
+Adding, deleting, or changes in the topology of the tree invalidate the iterator\. To modify the tree while iterating, take the [&lt;B&gt;tree_key](#user-content-fn-4ebcbf13) and restart the iterator with [&lt;B&gt;tree_less](#user-content-fn-9596e68d) or [&lt;B&gt;tree_more](#user-content-fn-22fe429d) as appropriate\.
 
 
 
@@ -238,7 +238,7 @@ Counts all the keys on `tree`, which can be null\.
 For example, `tree = { 10 }`, `x = 5 -> default_value`, `x = 10 -> 10`, `x = 11 -> 10`\.
 
  * Return:  
-   Key in `tree` less\-then\-or\-equal to `x` or `default_value` if `x` is smaller than all in `tree`\.
+   Key in `tree` less\-then\-or\-equal to `x` or `default_key` if `x` is smaller than all in `tree`\.
  * Order:  
    &#927;\(log |`tree`|\)
 
@@ -252,7 +252,7 @@ For example, `tree = { 10 }`, `x = 5 -> default_value`, `x = 10 -> 10`, `x = 11 
 For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`, `x = 11 -> default_value`\.
 
  * Return:  
-   Key in `tree` greater\-than\-or\-equal to `x` or `default_value` if `x` is greater than all in `tree`\.
+   Key in `tree` greater\-than\-or\-equal to `x` or `default_key` if `x` is greater than all in `tree`\.
  * Order:  
    &#927;\(log |`tree`|\)
 
@@ -380,7 +380,7 @@ Tries to remove `key` from `tree`\.
 <code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_less</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code>
 
  * Return:  
-   Cursor in `tree` such that [&lt;B&gt;tree_element](#user-content-fn-9e149cdc) is the greatest key that is less\-than\-or\-equal to `x`, or if `x` is less than all in `tree`, [&lt;B&gt;tree_iterator](#user-content-fn-18b8c30e)\.
+   Cursor in `tree` such that [&lt;B&gt;tree_key](#user-content-fn-4ebcbf13) is the greatest key that is less\-than\-or\-equal\-to `x`, or if `x` is less than all in `tree`, [&lt;B&gt;tree_iterator](#user-content-fn-18b8c30e)\.
  * Order:  
    &#920;\(log |`tree`|\)
 
@@ -392,7 +392,7 @@ Tries to remove `key` from `tree`\.
 <code>static struct &lt;B&gt;tree_iterator <strong>&lt;B&gt;tree_more</strong>(struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>x</em>)</code>
 
  * Return:  
-   Cursor in `tree` such that [&lt;B&gt;tree_right](#user-content-fn-eae9928e) is the least key that is greater\-than `x`, or, [&lt;B&gt;tree_end](#user-content-fn-6b449fc9) if `x` is greater than all in `tree`\.
+   Cursor in `tree` such that [&lt;B&gt;tree_more](#user-content-fn-22fe429d) is the smallest key that is greater\-than\-or\-equal\-to `x`, or, [&lt;B&gt;tree_iterator](#user-content-fn-18b8c30e) if `x` is greater than all in `tree`\.
  * Order:  
    &#920;\(log |`tree`|\)
 

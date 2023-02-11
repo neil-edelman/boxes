@@ -253,9 +253,10 @@ finally:
 	}
 	return it;
 }
-/** Loads the first element of a non-null `trie` into `it`. */
+/** @return The first element of a non-null `trie`. */
 static struct PT_(iterator) PT_(iterator)(const struct T_(trie) *const trie)
 	{ return PT_(match_prefix)(trie, ""); }
+/** @return Extracts the reference from a valid, non-null `it`. */
 static struct PT_(ref) PT_(element)(const struct PT_(iterator) *const it)
 	{ return it->cur; }
 /** @return If `it` was advanced to the successor? @implements next */
@@ -796,6 +797,7 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
 struct T_(trie_iterator);
 struct T_(trie_iterator) { struct PT_(iterator) _; };
 
+/** @return The entry at a valid, non-null `it`. */
 static PT_(remit) T_(trie_entry)(const struct T_(trie_iterator) *const it)
 	{ return PT_(ref_to_remit)(&it->_.cur); }
 

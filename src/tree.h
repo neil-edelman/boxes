@@ -533,9 +533,8 @@ static PB_(value) B_(tree_get_or)(const struct B_(tree) *const tree,
 
 /** For example, `tree = { 10 }`, `x = 5 -> default_value`, `x = 10 -> 10`,
  `x = 11 -> 10`.
- @return Key in `tree` less-then-or-equal to `x` or `default_value` if `x`
- is smaller than all in `tree`.
- @order \O(\log |`tree`|) @allow */
+ @return Key in `tree` less-then-or-equal to `x` or `default_key` if `x` is
+ smaller than all in `tree`. @order \O(\log |`tree`|) @allow */
 static PB_(key) B_(tree_less_or)(const struct B_(tree) *const tree,
 	const PB_(key) x, const PB_(key) default_key) {
 	struct PB_(ref) ref;
@@ -546,8 +545,8 @@ static PB_(key) B_(tree_less_or)(const struct B_(tree) *const tree,
 
 /** For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`,
  `x = 11 -> default_value`.
- @return Key in `tree` greater-than-or-equal to `x` or `default_value` if `x`
- is greater than all in `tree`.
+ @return Key in `tree` greater-than-or-equal to `x` or `default_key` if `x` is
+ greater than all in `tree`.
  @order \O(\log |`tree`|) @allow */
 static PB_(key) B_(tree_more_or)(const struct B_(tree) *const tree,
 	const PB_(key) x, const PB_(key) default_key) {
@@ -1483,15 +1482,15 @@ finally:
 
 /** Adding, deleting, or changes in the topology of the tree invalidate the
  iterator. To modify the tree while iterating, take the <fn:<B>tree_key> and
- restart the iterator with <fn:<B>tree_left> or <fn:<B>tree_right> as
+ restart the iterator with <fn:<B>tree_less> or <fn:<B>tree_more> as
  appropriate. */
 struct B_(tree_iterator);
 struct B_(tree_iterator) { struct PB_(iterator) _; };
 /** @return Cursor at null in valid `tree`. @order \Theta(1) @allow */
 static struct B_(tree_iterator) B_(tree_iterator)(struct B_(tree) *const tree)
 	{ struct B_(tree_iterator) it; it._ = PB_(iterator)(tree); return it; }
-/** @return Cursor in `tree` such that <fn:<B>tree_element> is the greatest
- key that is less-than-or-equal to `x`, or if `x` is less than all in `tree`,
+/** @return Cursor in `tree` such that <fn:<B>tree_key> is the greatest key
+ that is less-than-or-equal-to `x`, or if `x` is less than all in `tree`,
  <fn:<B>tree_iterator>. @order \Theta(\log |`tree`|) @allow */
 static struct B_(tree_iterator) B_(tree_less)(struct B_(tree) *const
 	tree, const PB_(key) x) {
@@ -1501,9 +1500,9 @@ static struct B_(tree_iterator) B_(tree_less)(struct B_(tree) *const
 	it._.ref = PB_(less)(tree->root, x);
 	return it;
 }
-/** @return Cursor in `tree` such that <fn:<B>tree_right> is the least key that
- is greater-than `x`, or, <fn:<B>tree_end> if `x` is greater than all in
- `tree`. @order \Theta(\log |`tree`|) @allow */
+/** @return Cursor in `tree` such that <fn:<B>tree_more> is the smallest key
+ that is greater-than-or-equal-to `x`, or, <fn:<B>tree_iterator> if `x` is
+ greater than all in `tree`. @order \Theta(\log |`tree`|) @allow */
 static struct B_(tree_iterator) B_(tree_more)(struct B_(tree) *const
 	tree, const PB_(key) x) {
 	struct B_(tree_iterator) it;
@@ -1512,17 +1511,26 @@ static struct B_(tree_iterator) B_(tree_more)(struct B_(tree) *const
 	it._.ref = PB_(more)(tree->root, x);
 	return it;
 }
+/** @return Whether valid `it` is pointing to an element. This is the same as
+ the return value from <fn:<B>tree_next> and <fn:<B>tree_previous> but intended
+ for <fn:<B>tree_less> and <fn:<B>tree_more> because there's no check for
+ validity. */
 static int B_(tree_has_element)(const struct B_(tree_iterator) *const it) {
 	return assert(it), it->_.root && it->_.ref.node
 		&& it->_.ref.idx <= it->_.ref.node->size;
 }
+/** @return Whether `it` still points at a valid index. */
 static int B_(tree_next)(struct B_(tree_iterator) *const it)
 	{ return assert(it), PB_(next)(&it->_); }
+/** @return Whether `it` still points at a valid index. */
 static int B_(tree_previous)(struct B_(tree_iterator) *const it)
 	{ return assert(it), PB_(previous)(&it->_); }
+/** @return Extract the key from `it` when it points at a valid index. */
 static PB_(key) B_(tree_key)(const struct B_(tree_iterator) *const it)
 	{ return it->_.ref.node->key[it->_.ref.idx]; }
 #ifdef TREE_VALUE /* <!-- map */
+/** @return Extract the value from `it` when it points at a valid index, if
+ `TREE_VALUE`. */
 static PB_(value) *B_(tree_value)(const struct B_(tree_iterator) *const it)
 	{ return it->_.ref.node->value + it->_.ref.idx; }
 #endif /* map --> */

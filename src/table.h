@@ -207,8 +207,8 @@ static PN_(uint) PN_(capacity)(const struct N_(table) *const table)
 
 /** @return Indexes the first (closed) bucket in the set of buckets with the
  same address from non-idle `table` given the `hash`. If the bucket is empty,
- it will have `next = TABLE_NULL` or it's own <fn:<PN>to_bucket_no> not equal
- to the index (open). */
+ it will have `next = TABLE_NULL` or it's own <fn:<PN>chain_head> not equal
+ to the index (another open bucket). */
 static PN_(uint) PN_(chain_head)(const struct N_(table) *const table,
 	const PN_(uint) hash) { return hash & (PN_(capacity)(table) - 1); }
 
@@ -492,8 +492,10 @@ struct PN_(iterator) { struct N_(table) *table; PN_(uint) i; };
 /** @return Before `table`. */
 static struct PN_(iterator) PN_(iterator)(struct N_(table) *const table)
 	{ struct PN_(iterator) it; it.table = table, it.i = 0, it.i--; return it; }
+/** @return Element at valid non-null `it`. */
 static struct PN_(bucket) *PN_(element)(const struct PN_(iterator) *const it)
 	{ return it->table->buckets + it->i; }
+/** @return Whether `it` even has a next. */
 static int PN_(next)(struct PN_(iterator) *const it) {
 	const struct N_(table) *const t = it->table;
 	const PN_(uint) limit = PN_(capacity)(t);
