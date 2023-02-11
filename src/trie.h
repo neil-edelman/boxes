@@ -807,7 +807,7 @@ static PT_(remit) T_(trie_entry)(const struct T_(trie_iterator) *const it)
 static size_t PT_(size_r)(const struct PT_(iterator) *const it) {
 	return it->end.lf - it->cur.lf; /* Fixme. */
 }
-/** Counts the of the items in `it`. @order \O(|`it`|) @allow
+/** Counts the of the items in `it`. @order \O(|`it`|)
  @fixme Doesn't work at all. */
 static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
 	{ return assert(it), PT_(size_r)(&it->_); }
@@ -817,7 +817,7 @@ static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
  It is valid until a topological change to `trie`. Calling <fn:<T>trie_next>
  will iterate them in order.
  @param[prefix] To fill with the entire `trie`, use the empty string.
- @order \O(|`prefix`|) @allow */
+ @order \O(\log |`trie`|) @allow */
 static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
 	const char *const prefix) {
 	struct T_(trie_iterator) it;
