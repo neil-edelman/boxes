@@ -36,7 +36,7 @@ While the worse\-case run\-time of querying or modifying is bounded by &#927;\(|
  * Standard:  
    C89 \(Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ\.\)
  * Caveat:  
-   ([&lt;T&gt;trie_from_array](#user-content-fn-3554106c), [&lt;T&gt;trie_size](#user-content-fn-b7ff4bcf))
+   ([&lt;T&gt;trie_from_array](#user-content-fn-3554106c))
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -140,8 +140,6 @@ Represents a range of in\-order keys in &#927;\(1\) space\.
 <tr><td align = right>static enum trie_result</td><td><a href = "#user-content-fn-6750ab7">&lt;T&gt;trie_try</a></td><td>trie, key, entry</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-7b28a4ea">&lt;T&gt;trie_remove</a></td><td>trie, string</td></tr>
-
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a></td><td>it</td></tr>
 
 <tr><td align = right>static struct &lt;T&gt;trie_iterator</td><td><a href = "#user-content-fn-b720a682">&lt;T&gt;trie_prefix</a></td><td>trie, prefix</td></tr>
 
@@ -277,20 +275,6 @@ Tries to remove `string` from `trie`\.
 
 
 
-### <a id = "user-content-fn-b7ff4bcf" name = "user-content-fn-b7ff4bcf">&lt;T&gt;trie_size</a> ###
-
-<code>static size_t <strong>&lt;T&gt;trie_size</strong>(const struct &lt;T&gt;trie_iterator *const <em>it</em>)</code>
-
-Counts the of the items in `it`\.
-
- * Order:  
-   &#927;\(|`it`|\)
- * Caveat:  
-   Doesn't work at all\.
-
-
-
-
 ### <a id = "user-content-fn-b720a682" name = "user-content-fn-b720a682">&lt;T&gt;trie_prefix</a> ###
 
 <code>static struct &lt;T&gt;trie_iterator <strong>&lt;T&gt;trie_prefix</strong>(struct &lt;T&gt;trie *const <em>trie</em>, const char *const <em>prefix</em>)</code>
@@ -300,7 +284,7 @@ Counts the of the items in `it`\.
  * Return:  
    An iterator set to strings that start with `prefix` in `trie`\. It is valid until a topological change to `trie`\. Calling [&lt;T&gt;trie_next](#user-content-fn-f36d1483) will iterate them in order\.
  * Order:  
-   &#927;\(|`prefix`|\)
+   &#927;\(log |`trie`|\)
 
 
 
