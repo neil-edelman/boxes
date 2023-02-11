@@ -74,5 +74,6 @@ test: $(projects)
 
 clean:
 	-rm -rf build/
+	-rm graph/*.gv
 
 docs: $(docs)

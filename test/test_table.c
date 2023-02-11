@@ -543,7 +543,7 @@ static void linked_dict(void) {
 	}
 	goto finally;
 catch:
-	perror("dict"), assert(0);
+	perror(inglesi_fn), assert(0);
 finally:
 	dict_table_(&dict);
 	dict_pool_(&pool);
