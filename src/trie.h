@@ -797,10 +797,6 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
 struct T_(trie_iterator);
 struct T_(trie_iterator) { struct PT_(iterator) _; };
 
-/** @return The entry at a valid, non-null `it`. @allow */
-static PT_(remit) T_(trie_entry)(const struct T_(trie_iterator) *const it)
-	{ return PT_(ref_to_remit)(&it->_.cur); }
-
 #if 0
 /* Haven't figured out the best way to do this. */
 /** @return The number of elements in `it`. */
@@ -824,6 +820,10 @@ static struct T_(trie_iterator) T_(trie_prefix)(struct T_(trie) *const trie,
 	it._ = PT_(prefix)(trie, prefix);
 	return it;
 }
+
+/** @return The entry at a valid, non-null `it`. @allow */
+static PT_(remit) T_(trie_entry)(const struct T_(trie_iterator) *const it)
+	{ return PT_(ref_to_remit)(&it->_.cur); }
 
 /** @return Whether advancing `it` to the next element is successful.
  @order \O(\log |`trie`|) @allow */
