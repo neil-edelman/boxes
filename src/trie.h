@@ -797,7 +797,7 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
 struct T_(trie_iterator);
 struct T_(trie_iterator) { struct PT_(iterator) _; };
 
-/** @return The entry at a valid, non-null `it`. */
+/** @return The entry at a valid, non-null `it`. @allow */
 static PT_(remit) T_(trie_entry)(const struct T_(trie_iterator) *const it)
 	{ return PT_(ref_to_remit)(&it->_.cur); }
 

@@ -141,6 +141,8 @@ Represents a range of in\-order keys in &#927;\(1\) space\.
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-7b28a4ea">&lt;T&gt;trie_remove</a></td><td>trie, string</td></tr>
 
+<tr><td align = right>static &lt;PT&gt;remit</td><td><a href = "#user-content-fn-1422bb56">&lt;T&gt;trie_entry</a></td><td>it</td></tr>
+
 <tr><td align = right>static struct &lt;T&gt;trie_iterator</td><td><a href = "#user-content-fn-b720a682">&lt;T&gt;trie_prefix</a></td><td>trie, prefix</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-f36d1483">&lt;T&gt;trie_next</a></td><td>it</td></tr>
@@ -271,6 +273,16 @@ Tries to remove `string` from `trie`\.
    The deletion of `string` would cause an overflow with the rest of the strings\.
  * Order:  
    &#927;\(log |`trie`|\)
+
+
+
+
+### <a id = "user-content-fn-1422bb56" name = "user-content-fn-1422bb56">&lt;T&gt;trie_entry</a> ###
+
+<code>static &lt;PT&gt;remit <strong>&lt;T&gt;trie_entry</strong>(const struct &lt;T&gt;trie_iterator *const <em>it</em>)</code>
+
+ * Return:  
+   The entry at a valid, non\-null `it`\.
 
 
 
