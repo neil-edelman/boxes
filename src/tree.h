@@ -1514,23 +1514,23 @@ static struct B_(tree_iterator) B_(tree_more)(struct B_(tree) *const
 /** @return Whether valid `it` is pointing to an element. This is the same as
  the return value from <fn:<B>tree_next> and <fn:<B>tree_previous> but intended
  for <fn:<B>tree_less> and <fn:<B>tree_more> because there's no check for
- validity. */
+ validity. @allow */
 static int B_(tree_has_element)(const struct B_(tree_iterator) *const it) {
 	return assert(it), it->_.root && it->_.ref.node
 		&& it->_.ref.idx <= it->_.ref.node->size;
 }
-/** @return Whether `it` still points at a valid index. */
+/** @return Whether `it` still points at a valid index. @allow */
 static int B_(tree_next)(struct B_(tree_iterator) *const it)
 	{ return assert(it), PB_(next)(&it->_); }
-/** @return Whether `it` still points at a valid index. */
+/** @return Whether `it` still points at a valid index. @allow */
 static int B_(tree_previous)(struct B_(tree_iterator) *const it)
 	{ return assert(it), PB_(previous)(&it->_); }
-/** @return Extract the key from `it` when it points at a valid index. */
+/** @return Extract the key from `it` when it points at a valid index. @allow */
 static PB_(key) B_(tree_key)(const struct B_(tree_iterator) *const it)
 	{ return it->_.ref.node->key[it->_.ref.idx]; }
 #ifdef TREE_VALUE /* <!-- map */
 /** @return Extract the value from `it` when it points at a valid index, if
- `TREE_VALUE`. */
+ `TREE_VALUE`. @allow */
 static PB_(value) *B_(tree_value)(const struct B_(tree_iterator) *const it)
 	{ return it->_.ref.node->value + it->_.ref.idx; }
 #endif /* map --> */
@@ -1627,35 +1627,10 @@ static PB_(value) B_D_(tree, get)(const struct B_(tree) *const tree,
 		&& (ref = PB_(lookup_find)(tree->root, key)).node
 		? *PB_(ref_to_valuep)(ref) : PB_D_(default, value);
 }
-/** This is functionally identical to <fn:<B>tree_less_or>, but a with a trait
- specifying a constant default value.
- @return The value associated with `key` in `tree`, (which can be null.) If
- no such value exists, the `TREE_DEFAULT` is returned.
- @order \O(\log |`tree`|). @allow */
-static PB_(key) B_D_(tree, less_key)(const struct B_(tree) *const tree,
-	const PB_(key) key) {
-	struct PB_(ref) ref;
-	return tree && (ref = PB_(less)(tree->root, key)).node ?
-		(assert(ref.idx < ref.node->size), *PB_(ref_to_valuep)(ref))
-		: PB_D_(default, value);
-}
-/** This is functionally identical to <fn:<B>tree_more_or>, but a with a trait
- specifying a constant default value.
- @return The value associated with `key` in `tree`, (which can be null.) If
- no such value exists, the `TREE_DEFAULT` is returned.
- @order \O(\log |`tree`|). @allow */
-static PB_(key) B_D_(tree, more_key)(const struct B_(tree) *const tree,
-	const PB_(key) key) {
-	struct PB_(ref) ref;
-	return tree && (ref = PB_(more)(tree->root, key)).node
-		&& ref.idx < ref.node->size
-		? *PB_(ref_to_valuep)(ref) : PB_D_(default, value);
-}
 static void PB_D_(unused, default_coda)(void);
 static void PB_D_(unused, default)(void) {
 	PB_(key) k; memset(&k, 0, sizeof k);
-	B_D_(tree, get)(0, k); B_D_(tree, less_key)(0, k);
-	B_D_(tree, more_key)(0, k); PB_D_(unused, default_coda)();
+	B_D_(tree, get)(0, k); PB_D_(unused, default_coda)();
 }
 static void PB_D_(unused, default_coda)(void) { PB_D_(unused, default)(); }
 #undef B_D_

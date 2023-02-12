@@ -143,13 +143,19 @@ Adding, deleting, or changes in the topology of the tree invalidate the iterator
 
 <tr><td align = right>static struct &lt;B&gt;tree_iterator</td><td><a href = "#user-content-fn-22fe429d">&lt;B&gt;tree_more</a></td><td>tree, x</td></tr>
 
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-72a3313">&lt;B&gt;tree_has_element</a></td><td>it</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-6828a06d">&lt;B&gt;tree_next</a></td><td>it</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-30771909">&lt;B&gt;tree_previous</a></td><td>it</td></tr>
+
+<tr><td align = right>static &lt;PB&gt;key</td><td><a href = "#user-content-fn-4ebcbf13">&lt;B&gt;tree_key</a></td><td>it</td></tr>
+
+<tr><td align = right>static &lt;PB&gt;value *</td><td><a href = "#user-content-fn-cde418ad">&lt;B&gt;tree_value</a></td><td>it</td></tr>
+
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static &lt;PB&gt;value</td><td><a href = "#user-content-fn-16ee74a9">&lt;B&gt;tree&lt;D&gt;get</a></td><td>tree, key</td></tr>
-
-<tr><td align = right>static &lt;PB&gt;key</td><td><a href = "#user-content-fn-ee42585e">&lt;B&gt;tree&lt;D&gt;less_key</a></td><td>tree, key</td></tr>
-
-<tr><td align = right>static &lt;PB&gt;key</td><td><a href = "#user-content-fn-3ce056c6">&lt;B&gt;tree&lt;D&gt;more_key</a></td><td>tree, key</td></tr>
 
 </table>
 
@@ -399,6 +405,56 @@ Tries to remove `key` from `tree`\.
 
 
 
+### <a id = "user-content-fn-72a3313" name = "user-content-fn-72a3313">&lt;B&gt;tree_has_element</a> ###
+
+<code>static int <strong>&lt;B&gt;tree_has_element</strong>(const struct &lt;B&gt;tree_iterator *const <em>it</em>)</code>
+
+ * Return:  
+   Whether valid `it` is pointing to an element\. This is the same as the return value from [&lt;B&gt;tree_next](#user-content-fn-6828a06d) and [&lt;B&gt;tree_previous](#user-content-fn-30771909) but intended for [&lt;B&gt;tree_less](#user-content-fn-9596e68d) and [&lt;B&gt;tree_more](#user-content-fn-22fe429d) because there's no check for validity\.
+
+
+
+
+### <a id = "user-content-fn-6828a06d" name = "user-content-fn-6828a06d">&lt;B&gt;tree_next</a> ###
+
+<code>static int <strong>&lt;B&gt;tree_next</strong>(struct &lt;B&gt;tree_iterator *const <em>it</em>)</code>
+
+ * Return:  
+   Whether `it` still points at a valid index\.
+
+
+
+
+### <a id = "user-content-fn-30771909" name = "user-content-fn-30771909">&lt;B&gt;tree_previous</a> ###
+
+<code>static int <strong>&lt;B&gt;tree_previous</strong>(struct &lt;B&gt;tree_iterator *const <em>it</em>)</code>
+
+ * Return:  
+   Whether `it` still points at a valid index\.
+
+
+
+
+### <a id = "user-content-fn-4ebcbf13" name = "user-content-fn-4ebcbf13">&lt;B&gt;tree_key</a> ###
+
+<code>static &lt;PB&gt;key <strong>&lt;B&gt;tree_key</strong>(const struct &lt;B&gt;tree_iterator *const <em>it</em>)</code>
+
+ * Return:  
+   Extract the key from `it` when it points at a valid index\.
+
+
+
+
+### <a id = "user-content-fn-cde418ad" name = "user-content-fn-cde418ad">&lt;B&gt;tree_value</a> ###
+
+<code>static &lt;PB&gt;value *<strong>&lt;B&gt;tree_value</strong>(const struct &lt;B&gt;tree_iterator *const <em>it</em>)</code>
+
+ * Return:  
+   Extract the value from `it` when it points at a valid index, if `TREE_VALUE`\.
+
+
+
+
 ### <a id = "user-content-fn-751c6337" name = "user-content-fn-751c6337">&lt;STR&gt;to_string</a> ###
 
 <code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
@@ -418,34 +474,6 @@ Tries to remove `key` from `tree`\.
 <code>static &lt;PB&gt;value <strong>&lt;B&gt;tree&lt;D&gt;get</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>)</code>
 
 This is functionally identical to [&lt;B&gt;tree_get_or](#user-content-fn-e460356c), but a with a trait specifying a constant default value\.
-
- * Return:  
-   The value associated with `key` in `tree`, \(which can be null\.\) If no such value exists, the `TREE_DEFAULT` is returned\.
- * Order:  
-   &#927;\(log |`tree`|\)\.
-
-
-
-
-### <a id = "user-content-fn-ee42585e" name = "user-content-fn-ee42585e">&lt;B&gt;tree&lt;D&gt;less_key</a> ###
-
-<code>static &lt;PB&gt;key <strong>&lt;B&gt;tree&lt;D&gt;less_key</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>)</code>
-
-This is functionally identical to [&lt;B&gt;tree_less_or](#user-content-fn-d43b18ab), but a with a trait specifying a constant default value\.
-
- * Return:  
-   The value associated with `key` in `tree`, \(which can be null\.\) If no such value exists, the `TREE_DEFAULT` is returned\.
- * Order:  
-   &#927;\(log |`tree`|\)\.
-
-
-
-
-### <a id = "user-content-fn-3ce056c6" name = "user-content-fn-3ce056c6">&lt;B&gt;tree&lt;D&gt;more_key</a> ###
-
-<code>static &lt;PB&gt;key <strong>&lt;B&gt;tree&lt;D&gt;more_key</strong>(const struct &lt;B&gt;tree *const <em>tree</em>, const &lt;PB&gt;key <em>key</em>)</code>
-
-This is functionally identical to [&lt;B&gt;tree_more_or](#user-content-fn-5e91051b), but a with a trait specifying a constant default value\.
 
  * Return:  
    The value associated with `key` in `tree`, \(which can be null\.\) If no such value exists, the `TREE_DEFAULT` is returned\.
