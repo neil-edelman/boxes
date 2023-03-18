@@ -98,8 +98,6 @@ static int keyval_value_compare(const struct keyval *const a,
 #include "../src/array.h"
 
 
-#if 1
-
 static int targets[] = { 4, 2, 8, 2, 6, 5, 3, 6, 1, 2, 9, 3 };
 static void pointer_to_string(const int *const*const i, char (*const a)[12])
 	{ sprintf(*a, "%d", **i); }
@@ -116,7 +114,24 @@ static int pointer_compare(const int *const*const a, const int *const*const b)
 #include "../src/array.h"
 
 
-#endif
+/* This is simulating a header include. */
+#define ARRAY_NAME public
+#define ARRAY_TYPE int
+#define ARRAY_HEAD
+#include "../src/array.h"
+/* And this would be the C source body -- same ARRAY_NAME and ARRAY_TYPE. */
+static void public_to_string(const int *i, char (*const a)[12])
+	{ int_to_string(i, a); }
+static void public_filler(int *const i) { int_filler(i); }
+static int public_compare(const int *const a, const int *const b)
+	{ return int_compare(a, b); }
+#define ARRAY_NAME public
+#define ARRAY_TYPE int
+#define ARRAY_TEST
+#define ARRAY_COMPARE
+#define ARRAY_TO_STRING
+#define ARRAY_BODY
+#include "../src/array.h"
 
 /** Tests; assert crashes on failed test. @return `EXIT_SUCCESS`. */
 int main(void) {
@@ -137,6 +152,8 @@ int main(void) {
 	 <- probably the test is wrong, assumes contiguous. I don't know what it's
 	 doing, wrote 10 years ago. */
 	(void)pointer_array_compare_test;
+	public_array_test();
+	public_array_compare_test();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

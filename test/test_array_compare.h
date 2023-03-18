@@ -219,13 +219,13 @@ static void PCMP_(test_bounds)(void) {
 /** `ARRAY_TEST`, `ARRAY_COMPARE` -> `ARRAY_TO_STRING`, !`NDEBUG`: will be
  tested on stdout. @allow */
 static void CMP_(compare_test)(void) {
-	printf("<" QUOTE(ARRAY_NAME) "," QUOTE(ARRAY_TRAIT) ">array testing "
-#ifdef ARRAY_COMPARE
-		"compare <" QUOTE(ARRAY_COMPARE)
-#elif defined(ARRAY_IS_EQUAL)
-		"is equal <" QUOTE(ARRAY_IS_EQUAL)
+	printf("<" QUOTE(ARRAY_NAME) ","
+#ifdef ARRAY_TRAIT
+		QUOTE(ARRAY_TRAIT)
+#else
+		"unnamed"
 #endif
-		">:\n");
+		">array testing compare:\n");
 	errno = 0;
 	PCMP_(test_sort)();
 	PCMP_(test_bounds)();

@@ -31,6 +31,14 @@
  `ARRAY_EXPECT_TRAIT` and then subsequently including the name in
  `ARRAY_TRAIT`.
 
+ @param[ARRAY_HEAD, ARRAY_BODY]
+ These go together to allow exporting non-static data between compilation units
+ by separating the `ARRAY_HEAD`, which defines the data-type with `ARRAY_NAME`
+ and `ARRAY_TYPE`, and `ARRAY_BODY`, is intended to go in the header, with the
+ same options for static inclusion in the C source. [All static functions will
+ have `s_` prepended for ease of creating a public thunk functions, (which
+ most likely will conflict with static functions.)]
+
  @std C89 */
 
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
@@ -45,6 +53,9 @@
 #if defined(ARRAY_TEST) && (!defined(ARRAY_TRAIT) && !defined(ARRAY_TO_STRING) \
 	|| defined(ARRAY_TRAIT) && !defined(ARRAY_HAS_TO_STRING))
 #error Test requires to string.
+#endif
+#if defined ARRAY_HEAD && defined ARRAY_BODY
+#error Can not be ARRAY_HEAD and ARRAY_BODY.
 #endif
 
 #ifndef ARRAY_H /* <!-- idempotent */
@@ -76,6 +87,8 @@
 #define ARRAY_MIN_CAPACITY 3 /* > 1 */
 #endif /* !min --> */
 
+#ifndef ARRAY_BODY /* <!-- head */
+
 /** A valid tag type set by `ARRAY_TYPE`. */
 typedef ARRAY_TYPE PA_(type);
 
@@ -88,6 +101,13 @@ struct A_(array) { PA_(type) *data; size_t size, capacity; };
 
 /* `a` non-null; `i >= elements` empty; insert-delete on left like C++. */
 struct PA_(iterator) { struct A_(array) *a; size_t i; };
+/** May become invalid after a topological change to any items previous. */
+struct A_(array_iterator);
+struct A_(array_iterator) { struct PA_(iterator) _; };
+
+#endif /* head --> */
+#ifndef ARRAY_HEAD /* <!-- body */
+
 /** @return Iterator at end of (non-null) valid `a`. */
 static struct PA_(iterator) PA_(iterator)(struct A_(array) *const a) {
 	struct PA_(iterator) it;
@@ -125,10 +145,6 @@ static PA_(type) *PA_(at)(const struct A_(array) *a, const size_t idx)
 /** Writes `size` to `a`. @implements `tell_size` */
 static void PA_(tell_size)(struct A_(array) *a, const size_t size)
 	{ assert(a); a->size = size; }
-
-/** May become invalid after a topological change to any items previous. */
-struct A_(array_iterator);
-struct A_(array_iterator) { struct PA_(iterator) _; };
 
 /** Zeroed data (not all-bits-zero) is initialized.
  @return An idle array. @order \Theta(1) @allow */
@@ -321,6 +337,8 @@ static void PA_(unused_base)(void) {
 }
 static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 
+#endif /* body --> */
+
 #endif /* base code --> */
 
 
@@ -391,6 +409,12 @@ static void PAT_(to_string)(const PA_(type) *e, char (*const a)[12])
 #endif
 #ifdef ARRAY_TEST
 #undef ARRAY_TEST
+#endif
+#ifdef ARRAY_BODY
+#undef ARRAY_BODY
+#endif
+#ifdef ARRAY_HEAD
+#undef ARRAY_HEAD
 #endif
 #endif /* done --> */
 #ifdef ARRAY_TRAIT
