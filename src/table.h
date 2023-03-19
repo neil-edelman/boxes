@@ -41,6 +41,11 @@
  `TABLE_EXPECT_TRAIT` and then subsequently including the name in
  `TABLE_TRAIT`.
 
+ @param[TABLE_HEAD, TABLE_BODY]
+ These go together to allow exporting non-static data between compilation units
+ by separating the `TABLE_BODY` refers to `TABLE_HEAD`, and identical
+ `TABLE_NAME`, `TABLE_KEY`, `TABLE_UNHASH`, `TABLE_VALUE`, and `TABLE_UINT`.
+
  @fixme Remove entry as public struct, this should be entirely private.
  @fixme Why not have two `to_string` arguments on map? It's C, after all. This
  would be useful in some practical cases.
@@ -55,6 +60,9 @@
 #if defined(TABLE_TEST) && (!defined(TABLE_TRAIT) && !defined(TABLE_TO_STRING) \
 	|| defined(TABLE_TRAIT) && !defined(TABLE_HAS_TO_STRING))
 #error Test requires to string.
+#endif
+#if defined TABLE_HEAD && defined TABLE_BODY
+#error Can not be TABLE_HEAD and TABLE_BODY.
 #endif
 
 #ifndef TABLE_H /* <!-- idempotent */
@@ -99,6 +107,9 @@ static const char *const table_result_str[] = { TABLE_RESULT };
 #ifndef TABLE_UINT
 #define TABLE_UINT size_t
 #endif
+
+#ifndef TABLE_BODY /* <!-- head */
+
 /** <typedef:<PN>hash_fn> returns this hash type by `TABLE_UINT`, which must be
  be an unsigned integer. Places a simplifying limit on the maximum number of
  elements of half the cardinality. */
@@ -160,6 +171,39 @@ struct PN_(bucket) {
 #endif
 };
 
+/** Returns true if the `replace` replaces the `original`.
+ (Shouldn't it be entry?) */
+typedef int (*PN_(policy_fn))(PN_(key) original, PN_(key) replace);
+
+/** To initialize, see <fn:<N>table>, `TABLE_IDLE`, `{0}` (`C99`,) or being
+ `static`. The fields should be treated as read-only; any modification is
+ liable to cause the table to go into an invalid state.
+
+ ![States.](../doc/table/states.png) */
+struct N_(table) { /* "Padding size," good. */
+	struct PN_(bucket) *buckets; /* @ has zero/one key specified by `next`. */
+	/* `size <= capacity`; size is not needed but convenient and allows
+	 short-circuiting. Top is an index of the stack, potentially lazy: MSB
+	 stores whether this is a step ahead (which would make it less, the stack
+	 grows from the bottom,) otherwise it is right at the top, */
+	PN_(uint) log_capacity, size, top;
+};
+
+/* In no particular order, usually, but deterministic up to topology changes. */
+struct PN_(iterator) { struct N_(table) *table; PN_(uint) i; };
+
+/** ![States](../doc/table/it.png)
+
+ Adding, deleting, successfully looking up entries, or any modification of the
+ table's topology invalidates the iterator.
+ Iteration usually not in any particular order. The asymptotic runtime of
+ iterating though the whole table is proportional to the capacity. */
+struct N_(table_iterator);
+struct N_(table_iterator) { struct PN_(iterator) _; };
+
+#endif /* head --> */
+#ifndef TABLE_HEAD /* <!-- body */
+
 /** Gets the key of an occupied `bucket`. */
 static PN_(key) PN_(bucket_key)(const struct PN_(bucket) *const bucket) {
 	assert(bucket && bucket->next != TABLE_NULL);
@@ -181,24 +225,6 @@ static PN_(value) PN_(bucket_value)(const struct PN_(bucket) *const bucket) {
 	return PN_(bucket_key)(bucket);
 #endif
 }
-
-/** Returns true if the `replace` replaces the `original`.
- (Shouldn't it be entry?) */
-typedef int (*PN_(policy_fn))(PN_(key) original, PN_(key) replace);
-
-/** To initialize, see <fn:<N>table>, `TABLE_IDLE`, `{0}` (`C99`,) or being
- `static`. The fields should be treated as read-only; any modification is
- liable to cause the table to go into an invalid state.
-
- ![States.](../doc/table/states.png) */
-struct N_(table) { /* "Padding size," good. */
-	struct PN_(bucket) *buckets; /* @ has zero/one key specified by `next`. */
-	/* `size <= capacity`; size is not needed but convenient and allows
-	 short-circuiting. Top is an index of the stack, potentially lazy: MSB
-	 stores whether this is a step ahead (which would make it less, the stack
-	 grows from the bottom,) otherwise it is right at the top, */
-	PN_(uint) log_capacity, size, top;
-};
 
 /** The capacity of a non-idle `table` is always a power-of-two. */
 static PN_(uint) PN_(capacity)(const struct N_(table) *const table)
@@ -487,8 +513,6 @@ static enum table_result PN_(put_key)(struct N_(table) *const table,
 	return result;
 }
 
-/* In no particular order, usually, but deterministic up to topology changes. */
-struct PN_(iterator) { struct N_(table) *table; PN_(uint) i; };
 /** @return Before `table`. */
 static struct PN_(iterator) PN_(iterator)(struct N_(table) *const table)
 	{ struct PN_(iterator) it; it.table = table, it.i = 0, it.i--; return it; }
@@ -538,15 +562,6 @@ static int PN_(remove)(struct PN_(iterator) *const it) {
 	current->next = TABLE_NULL, table->size--, PN_(shrink_stack)(table, crnt);
 	return 1;
 }
-
-/** ![States](../doc/table/it.png)
-
- Adding, deleting, successfully looking up entries, or any modification of the
- table's topology invalidates the iterator.
- Iteration usually not in any particular order. The asymptotic runtime of
- iterating though the whole table is proportional to the capacity. */
-struct N_(table_iterator);
-struct N_(table_iterator) { struct PN_(iterator) _; };
 
 /** Zeroed data (not all-bits-zero) is initialized. @return An idle array.
  @order \Theta(1) @allow */
@@ -790,6 +805,8 @@ static void PN_(unused_base)(void) {
 }
 static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 
+#endif /* body --> */
+
 #endif /* base code --> */
 
 
@@ -801,13 +818,6 @@ static void PN_(unused_base_coda)(void) { PN_(unused_base)(); }
 #define PNT_(n) PN_(n)
 #define NT_(n) N_(n)
 #endif /* !trait --> */
-
-/* #ifdef TABLE_TRAIT
-#define N_D_(n, m) TABLE_CAT(N_(n), TABLE_CAT(TABLE_TRAIT, m))
-#else
-#define N_D_(n, m) TABLE_CAT(N_(n), m)
-#endif
-#define PN_D_(n, m) TABLE_CAT(table, N_D_(n, m)) */
 
 
 #ifdef TABLE_TO_STRING /* <!-- to string trait */
@@ -896,6 +906,12 @@ static void PN_D_(unused, default_coda)(void) { PN_D_(unused, default)(); }
 #endif
 #ifdef TABLE_TEST
 #undef TABLE_TEST
+#endif
+#ifdef TABLE_BODY
+#undef TABLE_BODY
+#endif
+#ifdef TABLE_HEAD
+#undef TABLE_HEAD
 #endif
 #endif /* done --> */
 #ifdef TABLE_TRAIT

@@ -796,10 +796,35 @@ finally:
 }
 
 
+/* Simulated going in header. */
+#define TABLE_NAME public
+#define TABLE_KEY enum zodiac
+#define TABLE_UNHASH
+#define TABLE_UINT unsigned char
+#define TABLE_HEAD
+#include "../src/table.h"
+static unsigned char public_hash(const enum zodiac z) { return zodiac_hash(z); }
+static enum zodiac public_unhash(const unsigned char z)
+	{ return zodiac_unhash(z); }
+static void public_to_string(const enum zodiac z, char (*const a)[12])
+	{ zodiac_to_string(z, a); }
+static void public_filler(void *const zero, enum zodiac *const z)
+	{ zodiac_filler(zero, z); }
+#define TABLE_NAME public
+#define TABLE_KEY enum zodiac
+#define TABLE_UNHASH
+#define TABLE_UINT unsigned char
+#define TABLE_TEST
+#define TABLE_TO_STRING
+#define TABLE_BODY
+#include "../src/table.h"
+
+
 int main(void) {
 	struct str16_pool strings = str16_pool();
 	struct vec4_pool vec4s = vec4_pool();
 	zodiac_table_test(0); /* Don't require any space. */
+	public_table_test(0); /* Export public functions. */
 	string_table_test(&strings), str16_pool_(&strings);
 	uint_table_test(0);
 	int_table_test(0);
