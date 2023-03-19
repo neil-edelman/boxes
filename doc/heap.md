@@ -5,7 +5,7 @@ Header [\.\./src/heap\.h](../src/heap.h) depends on [\.\./src/array\.h](../src/a
 ## Priority\-queue ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PH&gt;node](#user-content-typedef-23ae637f), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
+ * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;node](#user-content-typedef-23ae637f), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;heapnode](#user-content-tag-9938042f), [&lt;H&gt;heap](#user-content-tag-8ef1078f)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
@@ -29,6 +29,8 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Wil
    To string trait `<STR>` contained in [src/to\_string\.h](src/to_string.h)\. Require `<name>[<trait>]to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
  * Parameter: HEAP\_EXPECT\_TRAIT, HEAP\_TRAIT  
    Named traits are obtained by including `heap.h` multiple times with `HEAP_EXPECT_TRAIT` and then subsequently including the name in `HEAP_TRAIT`\.
+ * Parameter: HEAP\_HEAD, HEAP\_BODY  
+   These go together to allow exporting non\-static data between compilation units by separating the `HEAP_HEAD`, which is intended to go in the header, with `HEAP_NAME`, `HEAP_TYPE`, and `HEAP_VALUE`, and `HEAP_BODY` functions\.
  * Standard:  
    C89
  * Dependancies:  
@@ -45,19 +47,19 @@ Valid assignable type used for priority in [&lt;PH&gt;node](#user-content-typede
 
 
 
-### <a id = "user-content-typedef-dee13533" name = "user-content-typedef-dee13533">&lt;PH&gt;compare_fn</a> ###
-
-<code>typedef int(*<strong>&lt;PH&gt;compare_fn</strong>)(&lt;PH&gt;priority_c a, &lt;PH&gt;priority_c b);</code>
-
-Returns a positive result if `a` is out\-of\-order with respect to `b`, inducing a strict weak order\. This is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\.
-
-
-
 ### <a id = "user-content-typedef-23ae637f" name = "user-content-typedef-23ae637f">&lt;PH&gt;node</a> ###
 
 <code>typedef struct &lt;H&gt;heapnode <strong>&lt;PH&gt;node</strong>;</code>
 
 If `HEAP_VALUE` is set, \(priority, value\) set by [&lt;H&gt;heapnode](#user-content-tag-9938042f), otherwise it's a \(priority\) set directly by [&lt;PH&gt;priority](#user-content-typedef-775cba47)\.
+
+
+
+### <a id = "user-content-typedef-dee13533" name = "user-content-typedef-dee13533">&lt;PH&gt;compare_fn</a> ###
+
+<code>typedef int(*<strong>&lt;PH&gt;compare_fn</strong>)(&lt;PH&gt;priority_c a, &lt;PH&gt;priority_c b);</code>
+
+Returns a positive result if `a` is out\-of\-order with respect to `b`, inducing a strict weak order\. This is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\.
 
 
 

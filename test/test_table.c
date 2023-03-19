@@ -824,7 +824,7 @@ int main(void) {
 	struct str16_pool strings = str16_pool();
 	struct vec4_pool vec4s = vec4_pool();
 	zodiac_table_test(0); /* Don't require any space. */
-	public_table_test(0); /* Export public functions. */
+	public_table_test(0); /* Export public functions of zodiac. */
 	string_table_test(&strings), str16_pool_(&strings);
 	uint_table_test(0);
 	int_table_test(0);

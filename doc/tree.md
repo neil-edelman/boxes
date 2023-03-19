@@ -33,6 +33,8 @@ A [&lt;B&gt;tree](#user-content-tag-a36433e3) is an ordered set or map contained
    To string trait `<STR>` contained in [src/to\_string\.h](src/to_string.h)\. Require `<name>[<trait>]to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
  * Parameter: TREE\_EXPECT\_TRAIT, TREE\_TRAIT  
    Named traits are obtained by including `tree.h` multiple times with `TREE_EXPECT_TRAIT` and then subsequently including the name in `TREE_TRAIT`\.
+ * Parameter: TREE\_HEAD, TREE\_BODY  
+   These go together to allow exporting non\-static data between compilation units by separating the `TREE_BODY` refers to `TREE_HEAD`, and identical `TREE_NAME`, `TREE_KEY`, `TREE_VALUE`, and `TREE_ORDER`\.
  * Standard:  
    C89
  * Caveat:  

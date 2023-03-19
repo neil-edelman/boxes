@@ -36,7 +36,7 @@ While the worse\-case run\-time of querying or modifying is bounded by &#927;\(|
  * Standard:  
    C89 \(Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ\.\)
  * Caveat:  
-   ([&lt;T&gt;trie_from_array](#user-content-fn-3554106c))
+   `TRIE_BODY` ([&lt;T&gt;trie_from_array](#user-content-fn-3554106c))
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##

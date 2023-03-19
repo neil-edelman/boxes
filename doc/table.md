@@ -33,6 +33,8 @@ Stand\-alone header [\.\./src/table\.h](../src/table.h); examples [\.\./test/tes
    To string trait `<STR>` contained in [src/to\_string\.h](src/to_string.h)\. Require `<name>[<trait>]to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
  * Parameter: TABLE\_EXPECT\_TRAIT, TABLE\_TRAIT  
    Named traits are obtained by including `table.h` multiple times with `TABLE_EXPECT_TRAIT` and then subsequently including the name in `TABLE_TRAIT`\.
+ * Parameter: TABLE\_HEAD, TABLE\_BODY  
+   These go together to allow exporting non\-static data between compilation units by separating the `TABLE_BODY` refers to `TABLE_HEAD`, and identical `TABLE_NAME`, `TABLE_KEY`, `TABLE_UNHASH`, `TABLE_VALUE`, and `TABLE_UINT`\.
  * Standard:  
    C89
  * Caveat:  

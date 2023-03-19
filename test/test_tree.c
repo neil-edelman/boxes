@@ -24,6 +24,23 @@ static void char_filler(char *x)
 #include "../src/tree.h"
 
 
+/* For testing public. */
+#define TREE_NAME public
+#define TREE_KEY char
+#define TREE_HEAD
+#include "../src/tree.h"
+static void public_to_string(const char x, char (*const z)[12])
+	{ char_to_string(x, z); }
+static void public_filler(char *x) { char_filler(x); }
+#define TREE_NAME public
+#define TREE_KEY char
+#define TREE_DEFAULT '_'
+#define TREE_TO_STRING
+#define TREE_TEST
+#define TREE_BODY
+#include "../src/tree.h"
+
+
 /* Unsigned numbers: testing framework. */
 /** @implements <typedef:<PSZ>to_string_fn> */
 static void int_to_string(const unsigned x, char (*const z)[12])
@@ -755,6 +772,7 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	char_tree_test();
+	public_tree_test();
 	int_tree_test();
 	order3_tree_test();
 	redblack_tree_test();

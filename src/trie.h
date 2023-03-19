@@ -45,6 +45,7 @@
  Named traits are obtained by including `trie.h` multiple times with
  `TRIE_EXPECT_TRAIT` and then subsequently including the name in `TRIE_TRAIT`.
 
+ @fixme `TRIE_BODY`
  @std C89 (Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ.) */
 
 #ifndef TRIE_NAME

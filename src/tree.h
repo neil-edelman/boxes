@@ -44,6 +44,11 @@
  Named traits are obtained by including `tree.h` multiple times with
  `TREE_EXPECT_TRAIT` and then subsequently including the name in `TREE_TRAIT`.
 
+ @param[TREE_HEAD, TREE_BODY]
+ These go together to allow exporting non-static data between compilation units
+ by separating the `TREE_BODY` refers to `TREE_HEAD`, and identical
+ `TREE_NAME`, `TREE_KEY`, `TREE_VALUE`, and `TREE_ORDER`.
+
  @fixme merge, difference
 
  @std C89 */
@@ -57,6 +62,9 @@
 #if defined(TREE_TEST) && (!defined(TREE_TRAIT) && !defined(TREE_TO_STRING) \
 	|| defined(TREE_TRAIT) && !defined(TREE_HAS_TO_STRING))
 #error Test requires to string.
+#endif
+#if defined TREE_HEAD && defined TREE_BODY
+#error Can not be TREE_HEAD and TREE_BODY.
 #endif
 
 #ifndef TREE_H /* <!-- idempotent */
@@ -114,6 +122,8 @@ struct tree_node_count { size_t branches, leaves; };
 #define TREE_KEY unsigned
 #endif
 
+#ifndef TREE_BODY /* <!-- head */
+
 /** Ordered type used by <typedef:<PB>compare_fn>; defaults to `unsigned`. */
 typedef TREE_KEY PB_(key);
 
@@ -122,20 +132,6 @@ typedef TREE_KEY PB_(key);
  <typedef:<PB>key>. */
 typedef TREE_VALUE PB_(value);
 #endif
-
-/** Returns a positive result if `a` is out-of-order with respect to `b`,
- inducing a strict weak order. This is compatible, but less strict then the
- comparators from `bsearch` and `qsort`; it only needs to divide entries into
- two instead of three categories. */
-typedef int (*PB_(compare_fn))(const PB_(key) a, const PB_(key) b);
-#ifndef TREE_COMPARE /* <!-- !cmp */
-/** The default `TREE_COMPARE` on `a` and `b` is integer comparison that
- results in ascending order, `a > b`. Use `TREE_COMPARE` to supply one's own.
- @implements <typedef:<PB>compare_fn> */
-static int B_(compare)(const PB_(key) a, const PB_(key) b)
-	{ return a > b; }
-#define TREE_COMPARE &PB_(default_compare)
-#endif /* !cmp --> */
 
 /* These rules are more lazy than the original so as to not exhibit worst-case
  behaviour in small trees, as <Johnson, Shasha, 1993, Free-at-Empty>, (lookup
@@ -165,14 +161,7 @@ struct PB_(node) {
 };
 /* B-tree branch is a <tag:<PB>node> and links to `size + 1` nodes. */
 struct PB_(branch) { struct PB_(node) base, *child[TREE_ORDER]; };
-/** @return Downcasts `as_leaf` to a branch. */
-static struct PB_(branch) *PB_(as_branch)(struct PB_(node) *const as_leaf)
-	{ return (struct PB_(branch) *)(void *)
-	((char *)as_leaf - offsetof(struct PB_(branch), base)); }
-/** @return Downcasts `as_node` to a branch. */
-static const struct PB_(branch) *PB_(as_branch_c)(const struct PB_(node) *
-	const as_node) { return (const struct PB_(branch) *)(const void *)
-	((const char *)as_node - offsetof(struct PB_(branch), base)); }
+
 /* Node plus height is a [sub]-tree. */
 struct PB_(tree) { struct PB_(node) *node; unsigned height; };
 /** To initialize it to an idle state, see <fn:<B>tree>, `{0}` (`C99`), or
@@ -189,6 +178,42 @@ struct PB_(ref) {
 	struct PB_(node) *node; /* If null, others ignored. */
 	unsigned height, idx; /* `idx < node.size` means valid. */
 };
+
+struct PB_(iterator) { struct PB_(tree) *root; struct PB_(ref) ref; };
+
+/** Adding, deleting, or changes in the topology of the tree invalidate the
+ iterator. To modify the tree while iterating, take the <fn:<B>tree_key> and
+ restart the iterator with <fn:<B>tree_less> or <fn:<B>tree_more> as
+ appropriate. */
+struct B_(tree_iterator);
+struct B_(tree_iterator) { struct PB_(iterator) _; };
+
+#endif /* head --> */
+#ifndef TREE_HEAD /* <!-- body */
+
+/** Returns a positive result if `a` is out-of-order with respect to `b`,
+ inducing a strict weak order. This is compatible, but less strict then the
+ comparators from `bsearch` and `qsort`; it only needs to divide entries into
+ two instead of three categories. */
+typedef int (*PB_(compare_fn))(const PB_(key) a, const PB_(key) b);
+#ifndef TREE_COMPARE /* <!-- !cmp */
+/** The default `TREE_COMPARE` on `a` and `b` is integer comparison that
+ results in ascending order, `a > b`. Use `TREE_COMPARE` to supply one's own.
+ @implements <typedef:<PB>compare_fn> */
+static int B_(compare)(const PB_(key) a, const PB_(key) b)
+	{ return a > b; }
+#define TREE_COMPARE &PB_(default_compare)
+#endif /* !cmp --> */
+
+/** @return Downcasts `as_leaf` to a branch. */
+static struct PB_(branch) *PB_(as_branch)(struct PB_(node) *const as_leaf)
+	{ return (struct PB_(branch) *)(void *)
+	((char *)as_leaf - offsetof(struct PB_(branch), base)); }
+/** @return Downcasts `as_node` to a branch. */
+static const struct PB_(branch) *PB_(as_branch_c)(const struct PB_(node) *
+	const as_node) { return (const struct PB_(branch) *)(const void *)
+	((const char *)as_node - offsetof(struct PB_(branch), base)); }
+
 #ifdef TREE_VALUE /* <!-- value */
 /** Gets the value of `ref`. */
 static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
@@ -200,7 +225,6 @@ static PB_(value) *PB_(ref_to_valuep)(const struct PB_(ref) ref)
 	{ return ref.node ? ref.node->key + ref.idx : 0; }
 #endif /* !value --> */
 
-struct PB_(iterator) { struct PB_(tree) *root; struct PB_(ref) ref; };
 /** Iterator for `tree` in empty state. */
 static struct PB_(iterator) PB_(iterator)(struct B_(tree) *const tree) {
 	struct PB_(iterator) it;
@@ -1480,12 +1504,6 @@ finally:
 }
 
 
-/** Adding, deleting, or changes in the topology of the tree invalidate the
- iterator. To modify the tree while iterating, take the <fn:<B>tree_key> and
- restart the iterator with <fn:<B>tree_less> or <fn:<B>tree_more> as
- appropriate. */
-struct B_(tree_iterator);
-struct B_(tree_iterator) { struct PB_(iterator) _; };
 /** @return Cursor at null in valid `tree`. @order \Theta(1) @allow */
 static struct B_(tree_iterator) B_(tree_iterator)(struct B_(tree) *const tree)
 	{ struct B_(tree_iterator) it; it._ = PB_(iterator)(tree); return it; }
@@ -1564,6 +1582,8 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 #define BOX_ PB_
 #define BOX_MAJOR_NAME tree
 #define BOX_MINOR_NAME TREE_NAME
+
+#endif /* body --> */
 
 #endif /* base code --> */
 
@@ -1659,6 +1679,12 @@ static void PB_D_(unused, default_coda)(void) { PB_D_(unused, default)(); }
 #endif
 #ifdef TREE_TEST
 #undef TREE_TEST
+#endif
+#ifdef TREE_BODY
+#undef TREE_BODY
+#endif
+#ifdef TREE_HEAD
+#undef TREE_HEAD
 #endif
 #endif /* done --> */
 #ifdef TREE_TRAIT
