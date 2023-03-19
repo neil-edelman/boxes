@@ -39,6 +39,11 @@
  `HEAP_EXPECT_TRAIT` and then subsequently including the name in
  `HEAP_TRAIT`.
 
+ @param[HEAP_HEAD, HEAP_BODY]
+ These go together to allow exporting non-static data between compilation units
+ by separating the `HEAP_HEAD`, which is intended to go in the header, with
+ `HEAP_NAME`, `HEAP_TYPE`, and `HEAP_VALUE`, and `HEAP_BODY` functions.
+
  @depend [array](https://github.com/neil-edelman/array)
  @std C89 */
 
@@ -51,6 +56,9 @@
 #if defined(HEAP_TEST) && (!defined(HEAP_TRAIT) && !defined(HEAP_TO_STRING) \
 	|| defined(HEAP_TRAIT) && !defined(HEAP_HAS_TO_STRING))
 #error Test requires to string.
+#endif
+#if defined HEAP_HEAD && defined HEAP_BODY
+#error Can not be HEAP_HEAD and HEAP_BODY.
 #endif
 
 #ifndef HEAP_H /* <!-- idempotent */
@@ -78,26 +86,15 @@
 #define HEAP_TYPE unsigned
 #endif
 
+/* Used to refer to heap as array. */
+#define PAH_(n) HEAP_CAT(HEAP_CAT(array, PH_(node)), n)
+
+#ifndef HEAP_BODY /* <!-- head */
+
 /** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
  `unsigned int` if not set by `HEAP_TYPE`. */
 typedef HEAP_TYPE PH_(priority);
 typedef const HEAP_TYPE PH_(priority_c); /* This is assuming a lot. */
-
-/** Returns a positive result if `a` is out-of-order with respect to `b`,
- inducing a strict weak order. This is compatible, but less strict then the
- comparators from `bsearch` and `qsort`; it only needs to divide entries into
- two instead of three categories. */
-typedef int (*PH_(compare_fn))(PH_(priority_c) a, PH_(priority_c) b);
-#ifndef HEAP_COMPARE /* <!-- !cmp */
-/** The default `HEAP_COMPARE` on `a` and `b` is `a > b`, which makes a
- minimum-hash. @implements <typedef:<PH>compare_fn> */
-static int PH_(default_compare)(PH_(priority_c) a, PH_(priority_c) b)
-	{ return a > b; }
-#define HEAP_COMPARE &PH_(default_compare)
-#endif /* !cmp --> */
-/* Check that `HEAP_COMPARE` is a function implementing
- <typedef:<PH>compare_fn>, if defined. */
-static const PH_(compare_fn) PH_(compare) = (HEAP_COMPARE);
 
 #ifdef HEAP_VALUE /* <!-- value */
 typedef HEAP_VALUE PH_(value);
@@ -117,6 +114,9 @@ typedef PH_(priority_c) PH_(node_c);
 /* This relies on <src/array.h> which must be in the same directory. */
 #define ARRAY_NAME PH_(node)
 #define ARRAY_TYPE PH_(node)
+#ifdef HEAP_HEAD
+#define ARRAY_HEAD
+#endif
 #include "array.h"
 
 /** Stores the heap as an implicit binary tree in an array called `a`. To
@@ -126,18 +126,43 @@ typedef PH_(priority_c) PH_(node_c);
  ![States.](../doc/heap/states.png) */
 struct H_(heap) { struct PH_(node_array) as_array; };
 
-#define PAH_(n) HEAP_CAT(HEAP_CAT(array, PH_(node)), n)
 struct PH_(iterator) { struct PAH_(iterator) _; };
+
+#endif /* head --> */
+#ifndef HEAP_HEAD /* <!-- body */
+
+#ifdef HEAP_BODY /* <!-- real body: get the array functions, if separate. */
+#define ARRAY_NAME PH_(node)
+#define ARRAY_TYPE PH_(node)
+#define ARRAY_BODY
+#include "array.h"
+#endif /* real body --> */
+
+/** Returns a positive result if `a` is out-of-order with respect to `b`,
+ inducing a strict weak order. This is compatible, but less strict then the
+ comparators from `bsearch` and `qsort`; it only needs to divide entries into
+ two instead of three categories. */
+typedef int (*PH_(compare_fn))(PH_(priority_c) a, PH_(priority_c) b);
+#ifndef HEAP_COMPARE /* <!-- !cmp */
+/** The default `HEAP_COMPARE` on `a` and `b` is `a > b`, which makes a
+ minimum-hash. @implements <typedef:<PH>compare_fn> */
+static int PH_(default_compare)(PH_(priority_c) a, PH_(priority_c) b)
+	{ return a > b; }
+#define HEAP_COMPARE &PH_(default_compare)
+#endif /* !cmp --> */
+/* Check that `HEAP_COMPARE` is a function implementing
+ <typedef:<PH>compare_fn>, if defined. */
+static const PH_(compare_fn) PH_(compare) = (HEAP_COMPARE);
+
 /** @return Before `h`. @implements `forward` */
-static struct PH_(iterator) PH_(iterator)(struct H_(heap) *const h) {
-	struct PH_(iterator) it; it._ = PAH_(iterator)(&h->as_array); return it; }
+static struct PH_(iterator) PH_(iterator)(struct H_(heap) *const h)
+	{ struct PH_(iterator) it; it._ = PAH_(iterator)(&h->as_array); return it; }
 /** @return Dereferences `it`. */
 static PH_(node) *PH_(element)(struct PH_(iterator) *const it)
 	{ return PAH_(element)(&it->_); }
 /** @return Next `it`. */
 static int PH_(next)(struct PH_(iterator) *const it)
 	{ return PAH_(next)(&it->_); }
-#undef PAH_
 
 /** Extracts the <typedef:<PH>priority> of `node`, which must not be null. */
 static PH_(priority) PH_(get_priority)(const PH_(node) *const node) {
@@ -293,8 +318,8 @@ static PH_(value) H_(heap_pop)(struct H_(heap) *const heap) {
 
 /** The capacity of `heap` will be increased to at least `n` elements beyond
  the size. Invalidates pointers in `heap`. All the elements
- `heap.as_array.size` <= `index` < `heap.as_array.capacity` can be used to construct new
- elements without immediately making them part of the heap, then
+ `heap.as_array.size` <= `index` < `heap.as_array.capacity` can be used to
+ construct new elements without immediately making them part of the heap, then
  <fn:<H>heap_append>.
  @return The start of the buffered space. If `a` is idle and `buffer` is zero,
  a null pointer is returned, otherwise null indicates an error.
@@ -352,6 +377,10 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #define BOX_MAJOR_NAME heap
 #define BOX_MINOR_NAME HEAP_NAME
 
+#endif /* body --> */
+
+#undef PAH_ /* From referring to a heap as an array. */
+
 #endif /* base code --> */
 
 
@@ -408,6 +437,12 @@ static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12]) {
 #endif
 #ifdef HEAP_TEST
 #undef HEAP_TEST
+#endif
+#ifdef HEAP_BODY
+#undef HEAP_BODY
+#endif
+#ifdef HEAP_HEAD
+#undef HEAP_HEAD
 #endif
 #endif /* done --> */
 #ifdef HEAP_TRAIT

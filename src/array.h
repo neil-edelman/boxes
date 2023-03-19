@@ -33,11 +33,10 @@
 
  @param[ARRAY_HEAD, ARRAY_BODY]
  These go together to allow exporting non-static data between compilation units
- by separating the `ARRAY_HEAD`, which defines the data-type with `ARRAY_NAME`
- and `ARRAY_TYPE`, and `ARRAY_BODY`, is intended to go in the header, with the
- same options for static inclusion in the C source. [All static functions will
- have `s_` prepended for ease of creating a public thunk functions, (which
- most likely will conflict with static functions.)]
+ by separating the `ARRAY_HEAD`, which is intended to go in the header, with
+ `ARRAY_NAME` and `ARRAY_TYPE`, and `ARRAY_BODY` functions. [All static
+ functions will have `s_` prepended for ease of creating a public thunk
+ functions, which most likely will conflict with static functions.]
 
  @std C89 */
 

@@ -63,10 +63,25 @@ static int index_compare(const size_t a, const size_t b) { return a < b; }
 #include "../src/heap.h"
 
 
+/* Heap separate header. */
+#define HEAP_NAME header
+#define HEAP_HEAD
+#include "../src/heap.h"
+static void header_to_string(const unsigned *const i, char (*const z)[12])
+	{ int_to_string(i, z); }
+static void header_filler(unsigned *const p) { int_filler(p); }
+#define HEAP_NAME header
+#define HEAP_TEST
+#define HEAP_TO_STRING
+#define HEAP_BODY
+#include "../src/heap.h"
+
+
 int main(void) {
 	rand();
 	int_heap_test();
 	orc_heap_test(), orc_pool_(&orcs);
 	index_heap_test();
+	header_heap_test();
 	return EXIT_SUCCESS;
 }
