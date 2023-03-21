@@ -69,6 +69,22 @@ static void keyval_to_string(const struct keyval *const kv,
 #include "../src/pool.h"
 
 
+/* Separate head/body. */
+#define POOL_NAME public
+#define POOL_TYPE enum colour
+#define POOL_HEAD
+#include "../src/pool.h"
+static void public_to_string(const enum colour *c, char (*const a)[12])
+	{ colour_to_string(c, a); }
+static void public_filler(enum colour *const c) { colour_filler(c); }
+#define POOL_NAME public
+#define POOL_TYPE enum colour
+#define POOL_TO_STRING
+#define POOL_TEST
+#define POOL_BODY
+#include "../src/pool.h"
+
+
 /** For paper. */
 static void special(void) {
 	struct colour_pool pool = colour_pool();
@@ -104,6 +120,7 @@ int main(void) {
 	str4_pool_test();
 	int_pool_test();
 	keyval_pool_test();
+	public_pool_test();
 	special();
 	printf("Test success.\n\n");
 

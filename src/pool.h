@@ -23,6 +23,11 @@
  <typedef:<PP>type>, associated therewith; required. `<PP>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
+ @param[POOL_HEAD, POOL_BODY]
+ These go together to allow exporting non-static data between compilation units
+ by separating the header head from the code body. `POOL_HEAD` needs the same
+ `POOL_NAME` and `POOL_TYPE`.
+
  @depend [array](https://github.com/neil-edelman/array)
  @depend [heap](https://github.com/neil-edelman/heap)
  @std C89; however, when compiling for segmented memory models, C99 with
@@ -38,6 +43,9 @@
 #if defined(POOL_TEST) && !defined(POOL_TO_STRING)
 #error Test requires to string.
 #endif
+#if defined POOL_HEAD && defined POOL_BODY
+#error Can not be simultaneously defined.
+#endif
 
 #ifndef POOL_H /* <!-- idempotent */
 #define POOL_H
@@ -52,11 +60,16 @@
 #define POOL_CAT(n, m) POOL_CAT_(n, m)
 #define P_(n) POOL_CAT(POOL_NAME, n)
 #define PP_(n) POOL_CAT(pool, P_(n))
+#ifndef POOL_HEAD /* <!-- body */
 /** @return An order on `a`, `b` which specifies a max-heap. */
 static int poolfree_compare(const size_t a, const size_t b) { return a < b; }
+#endif /* body --> */
 #define HEAP_NAME poolfree
 #define HEAP_TYPE size_t
 #define HEAP_COMPARE &poolfree_compare
+#ifdef POOL_HEAD
+#define HEAP_HEAD
+#endif
 #include "heap.h"
 #if !defined(__STDC__) || !defined(__STDC_VERSION__) \
 	|| __STDC_VERSION__ < 199901L /* < C99 */
@@ -76,6 +89,8 @@ static int poolfree_compare(const size_t a, const size_t b) { return a < b; }
 #error Pool slab capacity error.
 #endif
 
+#ifndef POOL_BODY /* <!-- head */
+
 /** A valid tag type set by `POOL_TYPE`. */
 typedef POOL_TYPE PP_(type);
 
@@ -83,6 +98,9 @@ typedef POOL_TYPE PP_(type);
 struct PP_(slot) { size_t size; PP_(type) *slab; };
 #define ARRAY_NAME PP_(slot)
 #define ARRAY_TYPE struct PP_(slot)
+#ifdef POOL_HEAD
+#define ARRAY_HEAD
+#endif
 #include "array.h"
 
 /** A zeroed pool is a valid state. To instantiate to an idle state, see
@@ -99,6 +117,17 @@ struct P_(pool) {
  `slot0` and ignores the free-heap. This is a memory-manager, we don't have
  enough information to do otherwise. Only goes one-way. */
 struct PP_(iterator) { struct PP_(slot) *slot0; size_t i; };
+
+#endif /* head --> */
+#ifndef POOL_HEAD /* <!-- body */
+
+#ifdef POOL_BODY /* <!-- real body: get the array functions, if separate. */
+#define ARRAY_NAME PP_(slot)
+#define ARRAY_TYPE struct PP_(slot)
+#define ARRAY_BODY
+#include "array.h"
+#endif /* real body --> */
+
 /** @return Before `p`. @implements `forward` */
 static struct PP_(iterator) PP_(iterator)(const struct P_(pool) *const p)
 	{ struct PP_(iterator) it; it.slot0 = p && p->slots.data
@@ -333,6 +362,7 @@ static void PP_(to_string)(const PP_(type) *p, char (*const a)[12])
 #undef POOL_TEST
 #endif /* test --> */
 
+#endif /* body --> */
 
 #undef BOX_TYPE
 #undef BOX_CONTENT
@@ -342,3 +372,9 @@ static void PP_(to_string)(const PP_(type) *p, char (*const a)[12])
 #undef POOL_NAME
 #undef POOL_TYPE
 #undef POOL_SLAB_MIN_CAPACITY
+#ifdef POOL_BODY
+#undef POOL_BODY
+#endif
+#ifdef POOL_HEAD
+#undef POOL_HEAD
+#endif

@@ -33,10 +33,8 @@
 
  @param[ARRAY_HEAD, ARRAY_BODY]
  These go together to allow exporting non-static data between compilation units
- by separating the `ARRAY_HEAD`, which is intended to go in the header, with
- `ARRAY_NAME` and `ARRAY_TYPE`, and `ARRAY_BODY` functions. [All static
- functions will have `s_` prepended for ease of creating a public thunk
- functions, which most likely will conflict with static functions.]
+ by separating the header head from the code body. `ARRAY_HEAD` needs the same
+ `ARRAY_NAME` and `ARRAY_TYPE`.
 
  @std C89 */
 
@@ -53,8 +51,8 @@
 	|| defined(ARRAY_TRAIT) && !defined(ARRAY_HAS_TO_STRING))
 #error Test requires to string.
 #endif
-#if defined ARRAY_HEAD && defined ARRAY_BODY
-#error Can not be ARRAY_HEAD and ARRAY_BODY.
+#if defined ARRAY_HEAD && (defined ARRAY_BODY || defined ARRAY_TRAIT)
+#error Can not be simultaneously defined.
 #endif
 
 #ifndef ARRAY_H /* <!-- idempotent */

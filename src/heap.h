@@ -41,8 +41,8 @@
 
  @param[HEAP_HEAD, HEAP_BODY]
  These go together to allow exporting non-static data between compilation units
- by separating the `HEAP_HEAD`, which is intended to go in the header, with
- `HEAP_NAME`, `HEAP_TYPE`, and `HEAP_VALUE`, and `HEAP_BODY` functions.
+ by separating the header head from the code body. `HEAP_HEAD` needs the same
+ `HEAP_NAME`, `HEAP_TYPE`, and `HEAP_VALUE`.
 
  @depend [array](https://github.com/neil-edelman/array)
  @std C89 */
@@ -57,8 +57,8 @@
 	|| defined(HEAP_TRAIT) && !defined(HEAP_HAS_TO_STRING))
 #error Test requires to string.
 #endif
-#if defined HEAP_HEAD && defined HEAP_BODY
-#error Can not be HEAP_HEAD and HEAP_BODY.
+#if defined HEAP_HEAD && (defined HEAP_BODY || defined HEAP_TRAIT)
+#error Can not be simultaneously defined.
 #endif
 
 #ifndef HEAP_H /* <!-- idempotent */
