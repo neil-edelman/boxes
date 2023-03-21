@@ -17,6 +17,8 @@ Stand\-alone header [\.\./src/table\.h](../src/table.h); examples [\.\./test/tes
 
 [&lt;N&gt;table](#user-content-tag-8f317be5) implements a set or map of [&lt;PN&gt;entry](#user-content-typedef-a9017e7) as a hash table\. It must be supplied [&lt;PN&gt;hash_fn](#user-content-typedef-5e79a292) `<N>hash` and, [&lt;PN&gt;is_equal_fn](#user-content-typedef-52314bb) `<N>is_equal` or [&lt;PN&gt;unhash_fn](#user-content-typedef-ca7574d7) `<N>unhash`\.
 
+These go together to allow exporting non\-static data between compilation units by separating the `TABLE_BODY` refers to `TABLE_HEAD`, and identical
+
 \* [src/iterate\.h](src/iterate.h): defining `HAVE_ITERATE_H` supplies `<ITR>` functions\.
 
  * Parameter: TABLE\_NAME, TABLE\_KEY  
@@ -34,11 +36,9 @@ Stand\-alone header [\.\./src/table\.h](../src/table.h); examples [\.\./test/tes
  * Parameter: TABLE\_EXPECT\_TRAIT, TABLE\_TRAIT  
    Named traits are obtained by including `table.h` multiple times with `TABLE_EXPECT_TRAIT` and then subsequently including the name in `TABLE_TRAIT`\.
  * Parameter: TABLE\_HEAD, TABLE\_BODY  
-   These go together to allow exporting non\-static data between compilation units by separating the `TABLE_BODY` refers to `TABLE_HEAD`, and identical `TABLE_NAME`, `TABLE_KEY`, `TABLE_UNHASH`, `TABLE_VALUE`, and `TABLE_UINT`\.
+   These go together to allow exporting non\-static data between compilation units by separating the header head from the code body\. `TABLE_HEAD` needs identical `TABLE_NAME`, `TABLE_KEY`, `TABLE_UNHASH`, `TABLE_VALUE`, and `TABLE_UINT`\.
  * Standard:  
    C89
- * Caveat:  
-   Remove entry as public struct, this should be entirely private\. Why not have two `to_string` arguments on map? It's C, after all\. This would be useful in some practical cases\.
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##

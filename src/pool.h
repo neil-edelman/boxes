@@ -25,7 +25,7 @@
 
  @param[POOL_HEAD, POOL_BODY]
  These go together to allow exporting non-static data between compilation units
- by separating the header head from the code body. `POOL_HEAD` needs the same
+ by separating the header head from the code body. `POOL_HEAD` needs identical
  `POOL_NAME` and `POOL_TYPE`.
 
  @depend [array](https://github.com/neil-edelman/array)

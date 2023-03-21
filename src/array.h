@@ -33,7 +33,7 @@
 
  @param[ARRAY_HEAD, ARRAY_BODY]
  These go together to allow exporting non-static data between compilation units
- by separating the header head from the code body. `ARRAY_HEAD` needs the same
+ by separating the header head from the code body. `ARRAY_HEAD` needs identical
  `ARRAY_NAME` and `ARRAY_TYPE`.
 
  @std C89 */

@@ -41,14 +41,14 @@
  `TABLE_EXPECT_TRAIT` and then subsequently including the name in
  `TABLE_TRAIT`.
 
- @param[TABLE_HEAD, TABLE_BODY]
  These go together to allow exporting non-static data between compilation units
  by separating the `TABLE_BODY` refers to `TABLE_HEAD`, and identical
+
+ @param[TABLE_HEAD, TABLE_BODY]
+ These go together to allow exporting non-static data between compilation units
+ by separating the header head from the code body. `TABLE_HEAD` needs identical
  `TABLE_NAME`, `TABLE_KEY`, `TABLE_UNHASH`, `TABLE_VALUE`, and `TABLE_UINT`.
 
- @fixme Remove entry as public struct, this should be entirely private.
- @fixme Why not have two `to_string` arguments on map? It's C, after all. This
- would be useful in some practical cases.
  @std C89 */
 
 #if !defined(TABLE_NAME) || !defined(TABLE_KEY)
@@ -61,8 +61,8 @@
 	|| defined(TABLE_TRAIT) && !defined(TABLE_HAS_TO_STRING))
 #error Test requires to string.
 #endif
-#if defined TABLE_HEAD && defined TABLE_BODY
-#error Can not be TABLE_HEAD and TABLE_BODY.
+#if defined TABLE_HEAD && (defined TABLE_BODY || defined TABLE_TRAIT)
+#error Can not be simultaneously defined.
 #endif
 
 #ifndef TABLE_H /* <!-- idempotent */
@@ -94,10 +94,12 @@
  ![A diagram of the result states.](../doc/table/result.png) */
 enum table_result { TABLE_RESULT };
 #undef X
+#ifndef TABLE_HEAD /* <!-- body */
 #define X(n) #n
 /** A static array of strings describing the <tag:table_result>. */
 static const char *const table_result_str[] = { TABLE_RESULT };
 #undef X
+#endif /* body --> */
 #undef TABLE_RESULT
 #endif /* idempotent --> */
 

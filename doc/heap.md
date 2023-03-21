@@ -30,7 +30,7 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Wil
  * Parameter: HEAP\_EXPECT\_TRAIT, HEAP\_TRAIT  
    Named traits are obtained by including `heap.h` multiple times with `HEAP_EXPECT_TRAIT` and then subsequently including the name in `HEAP_TRAIT`\.
  * Parameter: HEAP\_HEAD, HEAP\_BODY  
-   These go together to allow exporting non\-static data between compilation units by separating the `HEAP_HEAD`, which is intended to go in the header, with `HEAP_NAME`, `HEAP_TYPE`, and `HEAP_VALUE`, and `HEAP_BODY` functions\.
+   These go together to allow exporting non\-static data between compilation units by separating the header head from the code body\. `HEAP_HEAD` needs identical `HEAP_NAME`, `HEAP_TYPE`, and `HEAP_VALUE`\.
  * Standard:  
    C89
  * Dependancies:  

@@ -21,6 +21,8 @@ Header [\.\./src/pool\.h](../src/pool.h) depends on [\.\./src/heap\.h](../src/he
 
  * Parameter: POOL\_NAME, POOL\_TYPE  
    `<P>` that satisfies `C` naming conventions when mangled and a valid tag type, [&lt;PP&gt;type](#user-content-typedef-7560d92f), associated therewith; required\. `<PP>` is private, whose names are prefixed in a manner to avoid collisions\.
+ * Parameter: POOL\_HEAD, POOL\_BODY  
+   These go together to allow exporting non\-static data between compilation units by separating the header head from the code body\. `POOL_HEAD` needs identical `POOL_NAME` and `POOL_TYPE`\.
  * Standard:  
    C89; however, when compiling for segmented memory models, C99 with `uintptr_t` is recommended because of it's implementation\-defined instead of undefined\-behaviour when comparing pointers from different objects\.
  * Dependancies:  

@@ -41,7 +41,7 @@
 
  @param[HEAP_HEAD, HEAP_BODY]
  These go together to allow exporting non-static data between compilation units
- by separating the header head from the code body. `HEAP_HEAD` needs the same
+ by separating the header head from the code body. `HEAP_HEAD` needs identical
  `HEAP_NAME`, `HEAP_TYPE`, and `HEAP_VALUE`.
 
  @depend [array](https://github.com/neil-edelman/array)

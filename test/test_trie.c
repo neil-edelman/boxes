@@ -190,6 +190,22 @@ finally:
 }
 
 
+/* Public separating header/body. */
+#define TRIE_NAME public
+#define TRIE_KEY enum colour
+#define TRIE_HEAD
+#include "../src/trie.h"
+static const char *public_string(const enum colour c)
+	{ return colour_string(c); }
+static void public_filler(enum colour *const c) { colour_filler(c); }
+#define TRIE_NAME public
+#define TRIE_KEY enum colour
+#define TRIE_TO_STRING
+#define TRIE_TEST
+#define TRIE_BODY
+#include "../src/trie.h"
+
+
 /* Stores a value in the leaf itself and not externally. Optimally, would be a
  pointer's length. It's entirely self-contained inside the trie, with the
  downside of moving data. */
@@ -328,6 +344,7 @@ int main(void) {
 	str_trie_test(), str32_pool_clear(&str_pool);
 	fixed_colour_test();
 	colour_trie_test();
+	public_trie_test();
 	str8_trie_test();
 	kv1_trie_test(), str32_pool_(&str_pool);
 	kv2_trie_test();

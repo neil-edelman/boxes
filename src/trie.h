@@ -45,7 +45,11 @@
  Named traits are obtained by including `trie.h` multiple times with
  `TRIE_EXPECT_TRAIT` and then subsequently including the name in `TRIE_TRAIT`.
 
- @fixme `TRIE_BODY`
+ @param[TREE_HEAD, TREE_BODY]
+ These go together to allow exporting non-static data between compilation units
+ by separating the header head from the code body. `TREE_HEAD` needs identical
+ `TREE_NAME`, `TREE_KEY`, and `TREE_ENTRY`.
+
  @std C89 (Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ.) */
 
 #ifndef TRIE_NAME
@@ -57,6 +61,9 @@
 #if defined(TRIE_TEST) && (!defined(TRIE_TRAIT) && !defined(TRIE_TO_STRING) \
 	|| defined(TRIE_TRAIT) && !defined(TRIE_HAS_TO_STRING))
 #error Test requires to string.
+#endif
+#if defined TRIE_HEAD && (defined TRIE_BODY || defined TRIE_TRAIT)
+#error Can not be simultaneously defined.
 #endif
 
 
@@ -95,12 +102,15 @@
  ![A diagram of the result states.](../doc/trie/result.png) */
 enum trie_result { TRIE_RESULT };
 #undef X
+#ifndef TREE_HEAD /* <!-- body */
 #define X(n) #n
 /** A static array of strings describing the <tag:trie_result>. */
 static const char *const trie_result_str[] = { TRIE_RESULT };
 #undef X
+#endif /* body --> */
 #undef TRIE_RESULT
 struct trie_branch { unsigned char left, skip; };
+#ifndef TREE_HEAD /* <!-- body */
 /* Construct `struct trie_bmp`. */
 #define BMP_NAME trie
 #define BMP_BITS TRIE_ORDER
@@ -113,10 +123,13 @@ static int trie_is_prefix(const char *prefix, const char *word) {
 		if(*prefix != *word) return 0;
 	}
 }
+#endif /* body --> */
 #endif /* idempotent --> */
 
 
 #ifndef TRIE_TRAIT /* <!-- base trie */
+
+#ifndef TRIE_BODY /* <!-- head */
 
 #ifdef TRIE_KEY /* <!-- indirect */
 /** The default is `const char *`. If one sets `TRIE_KEY` to a different type,
@@ -124,9 +137,6 @@ static int trie_is_prefix(const char *prefix, const char *word) {
 typedef TRIE_KEY PT_(key);
 #else /* indirect --><!-- !indirect */
 typedef const char *PT_(key);
-/** @return The string of `key` is itself, by default. We supply this function
- if `TRIE_KEY` has not been defined. @implements <typedef:<PT>string_fn> */
-static const char *T_(string)(const char *const key) { return key; }
 #endif /* !indirect --> */
 
 #ifdef TRIE_ENTRY /* <!-- entry */
@@ -169,6 +179,25 @@ struct T_(trie) { struct PT_(tree) *root; };
 
 struct PT_(ref) { struct PT_(tree) *tree; unsigned lf; };
 
+/* A range of words from `[cur + 1, end)` such that <fn:<PT>next> makes it
+ `[cur, end)`. */
+struct PT_(iterator) {
+	struct PT_(tree) *root;
+	struct PT_(ref) cur, end;
+};
+/** Represents a range of in-order keys in \O(1) space. */
+struct T_(trie_iterator);
+struct T_(trie_iterator) { struct PT_(iterator) _; };
+
+#endif /* head --> */
+#ifndef TRIE_HEAD /* <!-- body */
+
+#ifndef TRIE_KEY /* <!-- !key */
+/** @return The string of `key` is itself, by default. We supply this function
+ if `TRIE_KEY` has not been defined. @implements <typedef:<PT>string_fn> */
+static const char *T_(string)(const char *const key) { return key; }
+#endif /* !key --> */
+
 /** @return Given `ref`, get the remit, which is either a pointer or the entry
  itself. */
 static PT_(remit) PT_(ref_to_remit)(const struct PT_(ref) *const ref) {
@@ -210,12 +239,6 @@ static const char *PT_(sample)(struct PT_(tree) *const tree,
 	return PT_(ref_to_string)(&ref);
 }
 
-/* A range of words from `[cur + 1, end)` such that <fn:<PT>next> makes it
- `[cur, end)`. */
-struct PT_(iterator) {
-	struct PT_(tree) *root;
-	struct PT_(ref) cur, end;
-};
 /** Looks at only the index of `trie` (non-null) for potential `prefix`
  matches, and stores them in `it`. */
 static struct PT_(iterator) PT_(match_prefix)
@@ -794,10 +817,6 @@ static int T_(trie_remove)(struct T_(trie) *const trie,
 	const char *const string)
 	{ return trie && string && PT_(remove)(trie, string); }
 
-/** Represents a range of in-order keys in \O(1) space. */
-struct T_(trie_iterator);
-struct T_(trie_iterator) { struct PT_(iterator) _; };
-
 #if 0
 /* Haven't figured out the best way to do this. */
 /** @return The number of elements in `it`. */
@@ -857,6 +876,8 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #define BOX_ PT_
 #define BOX_MAJOR_NAME trie
 #define BOX_MINOR_NAME TRIE_NAME
+
+#endif /* body --> */
 
 #endif /* base code --> */
 
@@ -924,6 +945,12 @@ static void PTT_(to_string)(const struct PT_(ref) r,
 #endif
 #ifdef TRIE_TEST
 #undef TRIE_TEST
+#endif
+#ifdef TRIE_BODY
+#undef TRIE_BODY
+#endif
+#ifdef TRIE_HEAD
+#undef TRIE_HEAD
 #endif
 #endif /* done --> */
 #ifdef TRIE_TRAIT

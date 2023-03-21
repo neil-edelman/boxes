@@ -33,10 +33,12 @@ While the worse\-case run\-time of querying or modifying is bounded by &#927;\(|
    To string trait `<STR>` contained in [src/to\_string\.h](src/to_string.h)\. The unnamed trait is automatically supplied by the string, but others require `<name><trait>to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
  * Parameter: TRIE\_EXPECT\_TRAIT, TRIE\_TRAIT  
    Named traits are obtained by including `trie.h` multiple times with `TRIE_EXPECT_TRAIT` and then subsequently including the name in `TRIE_TRAIT`\.
+ * Parameter: TREE\_HEAD, TREE\_BODY  
+   These go together to allow exporting non\-static data between compilation units by separating the header head from the code body\. `TREE_HEAD` needs identical `TREE_NAME`, `TREE_KEY`, and `TREE_ENTRY`\.
  * Standard:  
    C89 \(Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ\.\)
  * Caveat:  
-   `TRIE_BODY` ([&lt;T&gt;trie_from_array](#user-content-fn-3554106c))
+   ([&lt;T&gt;trie_from_array](#user-content-fn-3554106c))
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##

@@ -46,7 +46,7 @@
 
  @param[TREE_HEAD, TREE_BODY]
  These go together to allow exporting non-static data between compilation units
- by separating the `TREE_BODY` refers to `TREE_HEAD`, and identical
+ by separating the header head from the code body. `TREE_HEAD` needs identical
  `TREE_NAME`, `TREE_KEY`, `TREE_VALUE`, and `TREE_ORDER`.
 
  @fixme merge, difference
@@ -63,8 +63,8 @@
 	|| defined(TREE_TRAIT) && !defined(TREE_HAS_TO_STRING))
 #error Test requires to string.
 #endif
-#if defined TREE_HEAD && defined TREE_BODY
-#error Can not be TREE_HEAD and TREE_BODY.
+#if defined TREE_HEAD && (defined TREE_BODY || defined TREE_TRAIT)
+#error Can not be simultaneously defined.
 #endif
 
 #ifndef TREE_H /* <!-- idempotent */
@@ -101,10 +101,12 @@
  ![A diagram of the result states.](../doc/tree/result.png) */
 enum tree_result { TREE_RESULT };
 #undef X
+#ifndef TREE_HEAD /* <!-- body */
 #define X(n) #n
 /** A static array of strings describing the <tag:tree_result>. */
 static const char *const tree_result_str[] = { TREE_RESULT };
 #undef X
+#endif /* body --> */
 #undef TREE_RESULT
 struct tree_node_count { size_t branches, leaves; };
 #endif /* idempotent --> */
