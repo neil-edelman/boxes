@@ -191,11 +191,11 @@ static void char_bounds(void) {
 		/*e*/'d', 'f', 'f', 'h',
 		/*i*/'h', 'j', 'j', 'j' };
 	char i;
-	char_tree_bulk_add(&tree, 'b');
-	char_tree_bulk_add(&tree, 'd');
-	char_tree_bulk_add(&tree, 'f');
-	char_tree_bulk_add(&tree, 'h');
-	char_tree_bulk_add(&tree, 'j');
+	char_tree_bulk_try(&tree, 'b');
+	char_tree_bulk_try(&tree, 'd');
+	char_tree_bulk_try(&tree, 'f');
+	char_tree_bulk_try(&tree, 'h');
+	char_tree_bulk_try(&tree, 'j');
 	char_tree_bulk_finish(&tree);
 	tree_char_graph(&tree, "graph/char-bounds.gv");
 	printf("right:\n");
@@ -232,9 +232,9 @@ static void order3(void) {
 	assert(order3_order == 3);
 
 	/* Lookup between nodes. */
-	if(!order3_tree_bulk_add(&between, 100)
-		|| !order3_tree_bulk_add(&between, 200)
-		|| !order3_tree_bulk_add(&between, 300)) goto catch;
+	if(!order3_tree_bulk_try(&between, 100)
+		|| !order3_tree_bulk_try(&between, 200)
+		|| !order3_tree_bulk_try(&between, 300)) goto catch;
 	ret = order3_tree_bulk_finish(&between);
 	assert(ret);
 	tree_order3_graph_horiz(&between, "graph/between.gv");
@@ -324,14 +324,14 @@ static void order3(void) {
 
 	/* Test greatest lower/least higher bound again. */
 	order3_tree_clear(&between);
-	order3_tree_bulk_add(&between, 10);
-	order3_tree_bulk_add(&between, 20);
-	order3_tree_bulk_add(&between, 30);
-	order3_tree_bulk_add(&between, 40);
-	order3_tree_bulk_add(&between, 50);
-	order3_tree_bulk_add(&between, 60);
-	order3_tree_bulk_add(&between, 70);
-	order3_tree_bulk_add(&between, 80);
+	order3_tree_bulk_try(&between, 10);
+	order3_tree_bulk_try(&between, 20);
+	order3_tree_bulk_try(&between, 30);
+	order3_tree_bulk_try(&between, 40);
+	order3_tree_bulk_try(&between, 50);
+	order3_tree_bulk_try(&between, 60);
+	order3_tree_bulk_try(&between, 70);
+	order3_tree_bulk_try(&between, 80);
 	order3_tree_bulk_finish(&between);
 	tree_order3_graph_horiz(&between, "graph/left.gv");
 	v = order3_tree_less_or(&between, 10, 0), assert(v == 10);
@@ -349,14 +349,14 @@ static void order3(void) {
 
 	/* For the paper. */
 	order3_tree_clear(&between);
-	order3_tree_bulk_add(&between, 1);
-	order3_tree_bulk_add(&between, 2);
+	order3_tree_bulk_try(&between, 1);
+	order3_tree_bulk_try(&between, 2);
 	if(!order3_tree_clone(&copy, &between)) goto catch;
 	tree_order3_graph_horiz(&copy, "graph/bulk2.gv");
-	order3_tree_bulk_add(&between, 3);
+	order3_tree_bulk_try(&between, 3);
 	if(!order3_tree_clone(&copy, &between)) goto catch;
 	tree_order3_graph_horiz(&copy, "graph/bulk3.gv");
-	order3_tree_bulk_add(&copy, 4);
+	order3_tree_bulk_try(&copy, 4);
 	tree_order3_graph_horiz(&copy, "graph/bulk4.gv");
 	if(!order3_tree_clone(&copy, &between)) goto catch;
 	order3_tree_bulk_finish(&copy);
@@ -382,7 +382,7 @@ static void order3(void) {
 		 gives keys, `m^{h+1}-1`, three levels. */
 		const size_t size = order3_order * order3_order * order3_order - 1;
 		for(i = 0; i < size; i++) /* Even for odd spaces between them. */
-			if(!order3_tree_bulk_add(&even, ((unsigned)i + 1) * 2)) assert(0);
+			if(!order3_tree_bulk_try(&even, ((unsigned)i + 1) * 2)) assert(0);
 		order3_tree_bulk_finish(&even); /* Does nothing, in this case. */
 		tree_order3_graph_horiz(&even, "graph/even-1.gv");
 		for(i = 0; i <= size; i++) {
@@ -402,7 +402,7 @@ static void order3(void) {
 		unsigned n;
 		memset(&in, 0, sizeof in);
 		for(n = 0; n < size; n++) {
-			if(!(order3_tree_bulk_add(&removal, n + 1))) goto catch;
+			if(!(order3_tree_bulk_try(&removal, n + 1))) goto catch;
 			in[n] = 1;
 		}
 		order3_tree_bulk_finish(&even);

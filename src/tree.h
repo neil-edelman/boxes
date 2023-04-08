@@ -593,10 +593,10 @@ static PB_(key) B_(tree_more_or)(const struct B_(tree) *const tree,
  `TREE_ABSENT`, added, the `value` (if applicable) is uninitialized.
  @throws[EDOM] `x` is smaller than the largest key in `tree`. @throws[malloc]
  @order \O(\log |`tree`|) @allow */
-static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
+static enum tree_result B_(tree_bulk_try)(struct B_(tree) *const tree,
 	PB_(key) key, PB_(value) **const value) {
 #else /* map --><!-- set */
-static enum tree_result B_(tree_bulk_add)(struct B_(tree) *const tree,
+static enum tree_result B_(tree_bulk_try)(struct B_(tree) *const tree,
 	PB_(key) key) {
 #endif
 	struct PB_(node) *node = 0, *head = 0; /* The original and new. */
@@ -697,7 +697,7 @@ catch: /* Didn't work. Reset. */
 #endif
 
 /** Distributes `tree` (can be null) on the right side so that, after a series
- of <fn:<B>tree_bulk_add>, it will be consistent with the minimum number of
+ of <fn:<B>tree_bulk_try>, it will be consistent with the minimum number of
  keys in a node. @return The re-distribution was a success and all nodes are
  within rules. (Only when intermixing bulk and regular operations, can the
  function return false.) @order \O(\log |`tree`|) @allow */
@@ -1565,10 +1565,10 @@ static void PB_(unused_base)(void) {
 	B_(tree_less_or)(0, k, k); B_(tree_more_or)(0, k, k);
 	B_(tree_next)(0); B_(tree_has_element)(0);
 #ifdef TREE_VALUE
-	B_(tree_bulk_add)(0, k, 0); B_(tree_try)(0, k, 0);
+	B_(tree_bulk_try)(0, k, 0); B_(tree_try)(0, k, 0);
 	B_(tree_assign)(0, k, 0, 0); B_(tree_value)(0);
 #else
-	B_(tree_bulk_add)(0, k); B_(tree_try)(0, k);
+	B_(tree_bulk_try)(0, k); B_(tree_try)(0, k);
 	B_(tree_assign)(0, k, 0);
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);

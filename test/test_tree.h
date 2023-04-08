@@ -240,7 +240,7 @@ static void PB_(test)(void) {
 		/*e = PB_(test_to_entry_c)(t);
 		PB_(to_string)(e, &z);
 		printf("%lu -- bulk adding <%s>.\n", (unsigned long)i, z);*/
-		switch(B_(tree_bulk_add)(&tree, t->key
+		switch(B_(tree_bulk_try)(&tree, t->key
 #ifdef TREE_VALUE
 			, &v
 #endif
