@@ -127,7 +127,7 @@ Adding, deleting, or changes in the topology of the tree invalidate the iterator
 
 <tr><td align = right>static &lt;PB&gt;key</td><td><a href = "#user-content-fn-5e91051b">&lt;B&gt;tree_more_or</a></td><td>tree, x, default_key</td></tr>
 
-<tr><td align = right>static enum tree_result</td><td><a href = "#user-content-fn-f0e6123c">&lt;B&gt;tree_bulk_add</a></td><td>tree, key, value</td></tr>
+<tr><td align = right>static enum tree_result</td><td><a href = "#user-content-fn-d6ce36a6">&lt;B&gt;tree_bulk_try</a></td><td>tree, key, value</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-1a5f2d8a">&lt;B&gt;tree_bulk_finish</a></td><td>tree</td></tr>
 
@@ -267,9 +267,9 @@ For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`, `x = 11 -> default_
 
 
 
-### <a id = "user-content-fn-f0e6123c" name = "user-content-fn-f0e6123c">&lt;B&gt;tree_bulk_add</a> ###
+### <a id = "user-content-fn-d6ce36a6" name = "user-content-fn-d6ce36a6">&lt;B&gt;tree_bulk_try</a> ###
 
-<code>static enum tree_result <strong>&lt;B&gt;tree_bulk_add</strong>(struct &lt;B&gt;tree *const <em>tree</em>, &lt;PB&gt;key <em>key</em>, &lt;PB&gt;value **const <em>value</em>)</code>
+<code>static enum tree_result <strong>&lt;B&gt;tree_bulk_try</strong>(struct &lt;B&gt;tree *const <em>tree</em>, &lt;PB&gt;key <em>key</em>, &lt;PB&gt;value **const <em>value</em>)</code>
 
 Packs `key` on the right side of `tree` without doing the usual restructuring\. All other topology modification functions should be avoided until followed by [&lt;B&gt;tree_bulk_finish](#user-content-fn-1a5f2d8a)\.
 
@@ -290,7 +290,7 @@ Packs `key` on the right side of `tree` without doing the usual restructuring\. 
 
 <code>static int <strong>&lt;B&gt;tree_bulk_finish</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code>
 
-Distributes `tree` \(can be null\) on the right side so that, after a series of [&lt;B&gt;tree_bulk_add](#user-content-fn-f0e6123c), it will be consistent with the minimum number of keys in a node\.
+Distributes `tree` \(can be null\) on the right side so that, after a series of [&lt;B&gt;tree_bulk_try](#user-content-fn-d6ce36a6), it will be consistent with the minimum number of keys in a node\.
 
  * Return:  
    The re\-distribution was a success and all nodes are within rules\. \(Only when intermixing bulk and regular operations, can the function return false\.\)
