@@ -403,6 +403,8 @@ static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12]) {
 	HT_(to_string)(n, a);
 #endif
 }
+#define TO_STRING_LEFT '['
+#define TO_STRING_RIGHT ']'
 #include "to_string.h" /** \include */
 #undef HEAP_TO_STRING
 #ifndef HEAP_TRAIT

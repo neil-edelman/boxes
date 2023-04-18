@@ -908,8 +908,6 @@ static void PTT_(to_string)(const struct PT_(ref) r,
 	*to = '\0';
 }
 #endif /* natural --> */
-#define TO_STRING_LEFT '{'
-#define TO_STRING_RIGHT '}'
 #include "to_string.h" /** \include */
 #undef TRIE_TO_STRING
 #ifndef TRIE_TRAIT

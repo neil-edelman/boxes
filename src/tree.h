@@ -1610,8 +1610,6 @@ static void PBT_(to_string)(const struct PB_(ref) *const r,
 	BT_(to_string)(r->node->key[r->idx], a);
 #endif
 }
-#define TO_STRING_LEFT '{'
-#define TO_STRING_RIGHT '}'
 #include "to_string.h" /** \include */
 #undef TREE_TO_STRING
 #ifndef TREE_TRAIT
