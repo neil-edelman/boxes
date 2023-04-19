@@ -524,9 +524,10 @@ static struct PN_(bucket) *PN_(element)(const struct PN_(iterator) *const it)
 /** @return Whether `it` even has a next. */
 static int PN_(next)(struct PN_(iterator) *const it) {
 	const struct N_(table) *const t = it->table;
-	const PN_(uint) limit = PN_(capacity)(t);
+	PN_(uint) limit;
 	assert(it && it->table);
 	if(!it->table->buckets) return 0; /* Idle. */
+	limit = PN_(capacity)(t);
 	while(++it->i < limit) if(t->buckets[it->i].next != TABLE_NULL) return 1;
 	return 0;
 }
