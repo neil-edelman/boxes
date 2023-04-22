@@ -748,7 +748,8 @@ static int N_(table_remove)(struct N_(table) *const table,
 	const PN_(key) key) {
 	struct PN_(bucket) *current;
 	PN_(uint) c, p = TABLE_NULL, n, hash = N_(hash)(key);
-	if(!table || !table->size) return 0; assert(table->buckets);
+	if(!table || !table->size) return 0;
+	assert(table->buckets);
 	/* Find item and keep track of previous. */
 	current = table->buckets + (c = PN_(chain_head)(table, hash));
 	if((n = current->next) == TABLE_NULL /* No entry here. */
