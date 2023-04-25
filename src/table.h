@@ -632,8 +632,8 @@ static int N_(table_contains)(struct N_(table) *const table, const PN_(key) key)
 }
 
 #ifdef TABLE_VALUE /* <!-- map */
-/** If the entire entry space is filled, use this. Otherwise, a more convenient
- function is <fn:<N>table_get_or>.
+/** If there can be no default key, use this so separate a null, returns false,
+ from a result. Otherwise, a more convenient function is <fn:<N>table_get_or>.
  @param[result] If null, behaves like <fn:<N>table_contains>, otherwise, a
  <typedef:<PN>key> which gets filled on true.
  @param[value] Only on a map with `TABLE_VALUE`. If not-null, stores the value.
@@ -673,8 +673,8 @@ static PN_(value) N_(table_get_or)(struct N_(table) *const table,
 
 #ifndef TABLE_VALUE /* <!-- set */
 
-/** Only if not `TABLE_VALUE`; see <fn:<N>table_assign> for a map. Puts `key`
- in set `table` only if absent.
+/** Only if `TABLE_VALUE` is not set; see <fn:<N>table_assign> for a map. Puts
+ `key` in set `table` only if absent.
  @return One of: `TABLE_ERROR`, tried putting the entry in the table but
  failed, the table is not modified; `TABLE_PRESENT`, does nothing if there is
  another entry with the same key; `TABLE_ABSENT`, put an entry in the table.
@@ -685,7 +685,8 @@ static enum table_result N_(table_try)(struct N_(table) *const table,
 
 #else /* set --><!-- map */
 
-/** Puts `key` in the map `table` and update `content`. @throws[malloc] */
+/** Only if `TABLE_VALUE` is set. Ensures that `key` is in the `table` and
+ update `content`. @throws[malloc] */
 static enum table_result PN_(assign)(struct N_(table) *const table,
 	PN_(key) key, PN_(value) **const content) {
 	struct PN_(bucket) *bucket;
@@ -703,8 +704,8 @@ static enum table_result PN_(assign)(struct N_(table) *const table,
 	return result;
 }
 
-/** Only if `TABLE_VALUE`; see <fn:<N>table_try> for a set. Puts `key` in the
- map `table` and store the associated value in `content`.
+/** Only if `TABLE_VALUE` is set; see <fn:<N>table_try> for a set. Puts `key`
+ in the map `table` and store the associated value in `content`.
  @return `TABLE_ERROR` does not set `content`; `TABLE_ABSENT`, the `content`
  will be a pointer to uninitialized memory; `TABLE_PRESENT`, gets the current
  `content`, (does not alter the keys, if they are distinguishable.)
@@ -721,7 +722,9 @@ static enum table_result N_(table_assign)(struct N_(table) *const table,
 static int PN_(always_replace)(const PN_(key) original,
 	const PN_(key) replace) { return (void)original, (void)replace, 1; }
 
-/** Puts `key` in `table`, replacing an equal-valued key.
+/** Puts `key` in `table`, replacing an equal-valued key. (If keys are
+ indistinguishable, this function is not very useful, see <fn:<N>table_try> or
+ <fn:<N>table_assign>.)
  @return One of: `TABLE_ERROR`, the table is not modified; `TABLE_ABSENT`, the
  `key` is new; `TABLE_PRESENT`, the `key` displaces another, and if non-null,
  `eject` will be filled with the previous entry.

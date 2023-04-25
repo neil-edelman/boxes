@@ -615,7 +615,7 @@ static void redblack(void) {
 	/* In tree. */
 	for(n = 0, i = 0; i < rnd_size; i++) {
 		unsigned v;
-		switch(redblack_tree_try(&tree, rnd[i].x, &value)) {
+		switch(redblack_tree_assign(&tree, rnd[i].x, &value)) {
 		case TREE_ERROR: goto catch;
 		case TREE_PRESENT: printf("%u already in tree\n", rnd[i].x); break;
 		case TREE_ABSENT: *value = rnd[i].x; rnd[i].in = 1; n++; break;
@@ -700,7 +700,7 @@ static void loop(void) {
 	status = loop_tree_try(&tree, 101), assert(status == TREE_PRESENT);
 	ret = loop_tree_get_or(&tree, 1, 0), assert(ret == 1);
 	tree_loop_graph_horiz(&tree, "graph/loop1.gv");
-	status = loop_tree_assign(&tree, 101, &eject);
+	status = loop_tree_update(&tree, 101, &eject);
 	assert(status == TREE_PRESENT && eject == 1);
 	ret = loop_tree_get_or(&tree, 1, 0), assert(ret == 101); /* ~= 1 */
 	tree_loop_graph_horiz(&tree, "graph/loop2.gv");

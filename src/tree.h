@@ -593,9 +593,13 @@ static PB_(key) B_(tree_more_or)(const struct B_(tree) *const tree,
  `TREE_ABSENT`, added, the `value` (if applicable) is uninitialized.
  @throws[EDOM] `x` is smaller than the largest key in `tree`. @throws[malloc]
  @order \O(\log |`tree`|) @allow */
-static enum tree_result B_(tree_bulk_try)(struct B_(tree) *const tree,
+static enum tree_result B_(tree_bulk_assign)(struct B_(tree) *const tree,
 	PB_(key) key, PB_(value) **const value) {
-#else /* map --><!-- set */
+#elif defined TREE_VALUE /* map --><!-- null: For braces matching. */
+}
+#else /* null --><!-- set */
+/** Packs `key` on the right side of `tree`. See <fn:<B>tree_assign>, which is
+ the map version. @allow */
 static enum tree_result B_(tree_bulk_try)(struct B_(tree) *const tree,
 	PB_(key) key) {
 #endif
@@ -690,17 +694,14 @@ catch: /* Didn't work. Reset. */
 	}
 	if(!errno) errno = ERANGE;
 	return TREE_ERROR;
-#ifdef TREE_VALUE
 }
-#else
-}
-#endif
 
 /** Distributes `tree` (can be null) on the right side so that, after a series
- of <fn:<B>tree_bulk_try>, it will be consistent with the minimum number of
- keys in a node. @return The re-distribution was a success and all nodes are
- within rules. (Only when intermixing bulk and regular operations, can the
- function return false.) @order \O(\log |`tree`|) @allow */
+ of <fn:<B>tree_bulk_try> or <fn:<B>tree_bulk_assign>, it will be consistent
+ with the minimum number of keys in a node.
+ @return The re-distribution was a success and all nodes are within rules.
+ (Only when intermixing bulk and regular operations, can the function return
+ false.) @order \O(\log |`tree`|) @allow */
 static int B_(tree_bulk_finish)(struct B_(tree) *const tree) {
 	struct PB_(tree) s;
 	struct PB_(node) *right;
@@ -971,22 +972,23 @@ grow: /* Leaf is full. */ {
 
 #ifdef TREE_VALUE /* <!-- map */
 /** Adds or gets `key` in `tree`. If `key` is already in `tree`, uses the
- old value, _vs_ <fn:<B>tree_assign>. (This is only significant in trees with
+ old value, _vs_ <fn:<B>tree_update>. (This is only significant in trees with
  distinguishable keys.)
  @param[valuep] Only present if `TREE_VALUE` (map) was specified. If this
  parameter is non-null and a return value other then `TREE_ERROR`, this
  receives the address of the value associated with the `key`. This pointer is
  only guaranteed to be valid only while the `tree` doesn't undergo
- structural changes, (such as calling <fn:<B>tree_try> with `TREE_ABSENT`
- again.)
+ structural changes, (such as potentially calling it again.)
  @return Either `TREE_ERROR` (false) and doesn't touch `tree`, `TREE_ABSENT`
  and adds a new key with `key`, or `TREE_PRESENT` there was already an existing
  key. @throws[malloc] @order \Theta(\log |`tree`|) @allow */
-static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
+static enum tree_result B_(tree_assign)(struct B_(tree) *const tree,
 	const PB_(key) key, PB_(value) **const valuep)
 	{ return assert(tree), PB_(update)(&tree->root, key, 0, valuep); }
 #else /* map --><!-- set */
-/** Adds `key` to `tree` but in a set. */
+/** Only if `TREE_VALUE` is not defined. Adds `key` to `tree` only if it is a
+ new value, otherwise returns `TREE_PRESENT`. See <fn:<B>tree_assign>, which is
+ the map version. @allow */
 static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
 	const PB_(key) key)
 	{ return assert(tree), PB_(update)(&tree->root, key, 0); }
@@ -1004,12 +1006,12 @@ static enum tree_result B_(tree_try)(struct B_(tree) *const tree,
  @return Either `TREE_ERROR` (false,) `errno` is set and doesn't touch `tree`;
  `TREE_ABSENT`, adds a new key; or `TREE_PRESENT`, there was already an
  existing key. @throws[malloc] @order \Theta(\log |`tree`|) @allow */
-static enum tree_result B_(tree_assign)(struct B_(tree) *const tree,
+static enum tree_result B_(tree_update)(struct B_(tree) *const tree,
 	const PB_(key) key, PB_(key) *const eject, PB_(value) **const value)
 	{ return assert(tree), PB_(update)(&tree->root, key, eject, value); }
 #else /* map --><!-- set */
 /** Replaces `eject` by `key` or adds `key` in `tree`, but in a set. */
-static enum tree_result B_(tree_assign)(struct B_(tree) *const tree,
+static enum tree_result B_(tree_update)(struct B_(tree) *const tree,
 	const PB_(key) key, PB_(key) *const eject)
 	{ return assert(tree), PB_(update)(&tree->root, key, eject); }
 #endif /* set --> */
@@ -1565,11 +1567,11 @@ static void PB_(unused_base)(void) {
 	B_(tree_less_or)(0, k, k); B_(tree_more_or)(0, k, k);
 	B_(tree_next)(0); B_(tree_has_element)(0);
 #ifdef TREE_VALUE
-	B_(tree_bulk_try)(0, k, 0); B_(tree_try)(0, k, 0);
-	B_(tree_assign)(0, k, 0, 0); B_(tree_value)(0);
+	B_(tree_bulk_assign)(0, k, 0); B_(tree_assign)(0, k, 0);
+	B_(tree_update)(0, k, 0, 0); B_(tree_value)(0);
 #else
 	B_(tree_bulk_try)(0, k); B_(tree_try)(0, k);
-	B_(tree_assign)(0, k, 0);
+	B_(tree_update)(0, k, 0);
 #endif
 	B_(tree_bulk_finish)(0); B_(tree_remove)(0, k); B_(tree_clone)(0, 0);
 	B_(tree_iterator)(0); B_(tree_less)(0, k); B_(tree_more)(0, k);

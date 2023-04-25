@@ -324,7 +324,7 @@ Clears and removes all buckets from `table`\. The capacity and memory of the `ta
 
 <code>static int <strong>&lt;N&gt;table_query</strong>(struct &lt;N&gt;table *const <em>table</em>, const &lt;PN&gt;key <em>key</em>, &lt;PN&gt;key *<em>result</em>, &lt;PN&gt;value *<em>value</em>)</code>
 
-If the entire entry space is filled, use this\. Otherwise, a more convenient function is [&lt;N&gt;table_get_or](#user-content-fn-638dcc26)\.
+If there can be no default key, use this so separate a null, returns false, from a result\. Otherwise, a more convenient function is [&lt;N&gt;table_get_or](#user-content-fn-638dcc26)\.
 
  * Parameter: _result_  
    If null, behaves like [&lt;N&gt;table_contains](#user-content-fn-8596385b), otherwise, a [&lt;PN&gt;key](#user-content-typedef-e7af8dc0) which gets filled on true\.
@@ -352,7 +352,7 @@ If the entire entry space is filled, use this\. Otherwise, a more convenient fun
 
 <code>static enum table_result <strong>&lt;N&gt;table_try</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>)</code>
 
-Only if not `TABLE_VALUE`; see [&lt;N&gt;table_assign](#user-content-fn-7c006237) for a map\. Puts `key` in set `table` only if absent\.
+Only if `TABLE_VALUE` is not set; see [&lt;N&gt;table_assign](#user-content-fn-7c006237) for a map\. Puts `key` in set `table` only if absent\.
 
  * Return:  
    One of: `TABLE_ERROR`, tried putting the entry in the table but failed, the table is not modified; `TABLE_PRESENT`, does nothing if there is another entry with the same key; `TABLE_ABSENT`, put an entry in the table\.
@@ -368,7 +368,7 @@ Only if not `TABLE_VALUE`; see [&lt;N&gt;table_assign](#user-content-fn-7c006237
 
 <code>static enum table_result <strong>&lt;N&gt;table_assign</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>, &lt;PN&gt;value **const <em>content</em>)</code>
 
-Only if `TABLE_VALUE`; see [&lt;N&gt;table_try](#user-content-fn-1680bdf7) for a set\. Puts `key` in the map `table` and store the associated value in `content`\.
+Only if `TABLE_VALUE` is set; see [&lt;N&gt;table_try](#user-content-fn-1680bdf7) for a set\. Puts `key` in the map `table` and store the associated value in `content`\.
 
  * Return:  
    `TABLE_ERROR` does not set `content`; `TABLE_ABSENT`, the `content` will be a pointer to uninitialized memory; `TABLE_PRESENT`, gets the current `content`, \(does not alter the keys, if they are distinguishable\.\)
@@ -382,7 +382,7 @@ Only if `TABLE_VALUE`; see [&lt;N&gt;table_try](#user-content-fn-1680bdf7) for a
 
 <code>static enum table_result <strong>&lt;N&gt;table_update</strong>(struct &lt;N&gt;table *const <em>table</em>, &lt;PN&gt;key <em>key</em>, &lt;PN&gt;key *<em>eject</em>)</code>
 
-Puts `key` in `table`, replacing an equal\-valued key\.
+Puts `key` in `table`, replacing an equal\-valued key\. \(If keys are indistinguishable, this function is not very useful, see [&lt;N&gt;table_try](#user-content-fn-1680bdf7) or [&lt;N&gt;table_assign](#user-content-fn-7c006237)\.\)
 
  * Return:  
    One of: `TABLE_ERROR`, the table is not modified; `TABLE_ABSENT`, the `key` is new; `TABLE_PRESENT`, the `key` displaces another, and if non\-null, `eject` will be filled with the previous entry\.

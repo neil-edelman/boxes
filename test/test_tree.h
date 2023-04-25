@@ -240,11 +240,13 @@ static void PB_(test)(void) {
 		/*e = PB_(test_to_entry_c)(t);
 		PB_(to_string)(e, &z);
 		printf("%lu -- bulk adding <%s>.\n", (unsigned long)i, z);*/
-		switch(B_(tree_bulk_try)(&tree, t->key
+		switch(
 #ifdef TREE_VALUE
-			, &v
+		B_(tree_bulk_assign)(&tree, t->key, &v)
+#else
+		B_(tree_bulk_try)(&tree, t->key)
 #endif
-			)){
+		) {
 		case TREE_ERROR: perror("What?"); assert(0); break;
 		case TREE_PRESENT:
 			/*assert(B_(tree_get)(&tree, PB_(test_to_key)(t)));*/
@@ -376,12 +378,13 @@ static void PB_(test)(void) {
 		B_(to_string)(t->key, &z);
 #endif
 		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);*/
+		switch(
 #ifdef TREE_VALUE
-		switch(B_(tree_try)(&tree, t->key, &v))
+		B_(tree_assign)(&tree, t->key, &v)
 #else
-		switch(B_(tree_try)(&tree, t->key))
+		B_(tree_try)(&tree, t->key)
 #endif
-		{
+		) {
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
 		case TREE_PRESENT: /*printf("<%s> already in tree\n", z);*/ break;
 		case TREE_ABSENT:
@@ -442,12 +445,13 @@ static void PB_(test)(void) {
 		B_(to_string)(t->key, &z);
 #endif
 		printf("Adding %s.\n", z);*/
+		switch(
 #ifdef TREE_VALUE
-		switch(B_(tree_try)(&tree, t->key, &v))
+		B_(tree_assign)(&tree, t->key, &v)
 #else
-		switch(B_(tree_try)(&tree, t->key))
+		B_(tree_try)(&tree, t->key)
 #endif
-		{
+		) {
 		case TREE_ERROR:
 		case TREE_PRESENT: perror("unexpected"); assert(0); return;
 		case TREE_ABSENT: n_unique2++; break;
