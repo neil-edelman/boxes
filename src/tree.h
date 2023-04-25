@@ -33,8 +33,8 @@
  tree, <Sedgewick, 2008, LLRB>. The above illustration is 5.
 
  @param[TREE_DEFAULT]
- Default trait; a name that satisfies `C` naming conventions when mangled and a
- <typedef:<PB>value> used in <fn:<B>tree<D>get>.
+ Default trait which must be set to a <typedef:<PB>value>, used in
+ <fn:<B>tree<D>get>.
 
  @param[TREE_TO_STRING]
  To string trait `<STR>` contained in <src/to_string.h>. Require
@@ -42,7 +42,8 @@
 
  @param[TREE_EXPECT_TRAIT, TREE_TRAIT]
  Named traits are obtained by including `tree.h` multiple times with
- `TREE_EXPECT_TRAIT` and then subsequently including the name in `TREE_TRAIT`.
+ `TREE_EXPECT_TRAIT` and then subsequently including the name that satisfies
+ `C` naming conventions when mangled in `TREE_TRAIT`.
 
  @param[TREE_HEAD, TREE_BODY]
  These go together to allow exporting non-static data between compilation units

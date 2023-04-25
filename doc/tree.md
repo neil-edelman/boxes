@@ -28,11 +28,11 @@ A [&lt;B&gt;tree](#user-content-tag-a36433e3) is an ordered set or map contained
  * Parameter: TREE\_ORDER  
    Sets the branching factor, or order as [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3), to the range `[3, UINT_MAX+1]`\. Default 65 is tuned to an integer to pointer map, and should be okay for most variations\. 4 is isomorphic to left\-leaning red\-black tree, [Sedgewick, 2008, LLRB](https://scholar.google.ca/scholar?q=Sedgewick%2C+2008%2C+LLRB)\. The above illustration is 5\.
  * Parameter: TREE\_DEFAULT  
-   Default trait; a name that satisfies `C` naming conventions when mangled and a [&lt;PB&gt;value](#user-content-typedef-1740653a) used in [&lt;B&gt;tree&lt;D&gt;get](#user-content-fn-16ee74a9)\.
+   Default trait which must be set to a [&lt;PB&gt;value](#user-content-typedef-1740653a), used in [&lt;B&gt;tree&lt;D&gt;get](#user-content-fn-16ee74a9)\.
  * Parameter: TREE\_TO\_STRING  
    To string trait `<STR>` contained in [src/to\_string\.h](src/to_string.h)\. Require `<name>[<trait>]to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
  * Parameter: TREE\_EXPECT\_TRAIT, TREE\_TRAIT  
-   Named traits are obtained by including `tree.h` multiple times with `TREE_EXPECT_TRAIT` and then subsequently including the name in `TREE_TRAIT`\.
+   Named traits are obtained by including `tree.h` multiple times with `TREE_EXPECT_TRAIT` and then subsequently including the name that satisfies `C` naming conventions when mangled in `TREE_TRAIT`\.
  * Parameter: TREE\_HEAD, TREE\_BODY  
    These go together to allow exporting non\-static data between compilation units by separating the header head from the code body\. `TREE_HEAD` needs identical `TREE_NAME`, `TREE_KEY`, `TREE_VALUE`, and `TREE_ORDER`\.
  * Standard:  
