@@ -199,7 +199,7 @@ Returns an initialized `tree` to idle, `tree` can be null\.
 
 <code>static void <strong>&lt;B&gt;tree_clear</strong>(struct &lt;B&gt;tree *const <em>tree</em>)</code>
 
-Clears `tree`, which can be null, idle, empty, or full\. If it is empty or full, it remains active\.
+Clears `tree`, which can be null, idle, empty, or full\. If it is empty or full, it remains active, \(all except one node are freed\.\)
 
  * Order:  
    &#927;\(|`tree`|\)
@@ -275,10 +275,10 @@ For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`, `x = 11 -> default_
 
 <code>static enum tree_result <strong>&lt;B&gt;tree_bulk_assign</strong>(struct &lt;B&gt;tree *const <em>tree</em>, &lt;PB&gt;key <em>key</em>, &lt;PB&gt;value **const <em>value</em>)</code>
 
-Packs `key` on the right side of `tree` without doing the usual restructuring\. All other topology modification functions should be avoided until followed by [&lt;B&gt;tree_bulk_finish](#user-content-fn-1a5f2d8a)\.
+Only if `TREE_VALUE` is set; the set version is [&lt;B&gt;tree_try](#user-content-fn-2c43561d)\. Packs `key` on the right side of `tree` without doing the usual restructuring\. All other topology modification functions should be avoided until followed by [&lt;B&gt;tree_bulk_finish](#user-content-fn-1a5f2d8a)\.
 
  * Parameter: _value_  
-   A pointer to the key's value which is set by the function on returning true\. A null pointer in this parameter causes the value to go uninitialized\. This parameter is not there if one didn't specify `TREE_VALUE`\.
+   A pointer to the key's value which is set by the function on returning true\. Can be null\.
  * Return:  
    One of [tree_result](#user-content-tag-9c3f99d7): `TREE_ERROR` and `errno` will be set, `TREE_PRESENT` if the key is already \(the highest\) in the tree, and `TREE_ABSENT`, added, the `value` \(if applicable\) is uninitialized\.
  * Exceptional return: EDOM  
@@ -294,7 +294,7 @@ Packs `key` on the right side of `tree` without doing the usual restructuring\. 
 
 <code>static enum tree_result <strong>&lt;B&gt;tree_bulk_try</strong>(struct &lt;B&gt;tree *const <em>tree</em>, &lt;PB&gt;key <em>key</em>)</code>
 
-Packs `key` on the right side of `tree`\. See [&lt;B&gt;tree_assign](#user-content-fn-4b04ca55), which is the map version\.
+Only if `TREE_VALUE` is not set; see [&lt;B&gt;tree_assign](#user-content-fn-4b04ca55), which is the map version\. Packs `key` on the right side of `tree`\.
 
 
 

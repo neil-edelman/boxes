@@ -514,7 +514,8 @@ static void B_(tree_)(struct B_(tree) *const tree) {
 }
 
 /** Clears `tree`, which can be null, idle, empty, or full. If it is empty or
- full, it remains active. @order \O(|`tree`|) @allow */
+ full, it remains active, (all except one node are freed.)
+ @order \O(|`tree`|) @allow */
 static void B_(tree_clear)(struct B_(tree) *const tree) { PB_(clear)(tree); }
 
 /** Private: counts a sub-tree, `tree`. */
@@ -582,12 +583,12 @@ static PB_(key) B_(tree_more_or)(const struct B_(tree) *const tree,
 }
 
 #ifdef TREE_VALUE /* <!-- map */
-/** Packs `key` on the right side of `tree` without doing the usual
- restructuring. All other topology modification functions should be avoided
- until followed by <fn:<B>tree_bulk_finish>.
+/** Only if `TREE_VALUE` is set; the set version is <fn:<B>tree_try>. Packs
+ `key` on the right side of `tree` without doing the usual restructuring. All
+ other topology modification functions should be avoided until followed by
+ <fn:<B>tree_bulk_finish>.
  @param[value] A pointer to the key's value which is set by the function on
- returning true. A null pointer in this parameter causes the value to go
- uninitialized. This parameter is not there if one didn't specify `TREE_VALUE`.
+ returning true. Can be null.
  @return One of <tag:tree_result>: `TREE_ERROR` and `errno` will be set,
  `TREE_PRESENT` if the key is already (the highest) in the tree, and
  `TREE_ABSENT`, added, the `value` (if applicable) is uninitialized.
@@ -598,8 +599,8 @@ static enum tree_result B_(tree_bulk_assign)(struct B_(tree) *const tree,
 #elif defined TREE_VALUE /* map --><!-- null: For braces matching. */
 }
 #else /* null --><!-- set */
-/** Packs `key` on the right side of `tree`. See <fn:<B>tree_assign>, which is
- the map version. @allow */
+/** Only if `TREE_VALUE` is not set; see <fn:<B>tree_assign>, which is
+ the map version. Packs `key` on the right side of `tree`. @allow */
 static enum tree_result B_(tree_bulk_try)(struct B_(tree) *const tree,
 	PB_(key) key) {
 #endif
