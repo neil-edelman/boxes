@@ -872,7 +872,7 @@ static PN_(value) N_D_(table, get)(struct N_(table) *const table,
 	const PN_(key) key) {
 	struct PN_(bucket) *bucket;
 	/* `TABLE_DEFAULT` is a valid <tag:<PN>value>. */
-	const PN_(value) PN_D_(default, value) = (TABLE_DEFAULT);
+	const PN_(value) PN_D_(default, value) = TABLE_DEFAULT;
 	/* Function `<N>hash` must be defined by the user. */
 	return table && table->buckets
 		&& (bucket = PN_(query)(table, key, N_(hash)(key)))

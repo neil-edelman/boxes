@@ -1638,7 +1638,7 @@ static void PBT_(to_string)(const struct PB_(ref) *const r,
 #define PB_D_(n, m) TREE_CAT(tree, B_D_(n, m))
 #endif
 /* `TREE_DEFAULT` is a valid <tag:<PB>value>. */
-static const PB_(value) PB_D_(default, value) = (TREE_DEFAULT);
+static const PB_(value) PB_D_(default, value) = TREE_DEFAULT;
 /** This is functionally identical to <fn:<B>tree_get_or>, but a with a trait
  specifying a constant default value.
  @return The value associated with `key` in `tree`, (which can be null.) If
