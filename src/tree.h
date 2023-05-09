@@ -245,7 +245,7 @@ static int PB_(next)(struct PB_(iterator) *const it) {
 	assert(it && it->root);
 
 	/* Tree empty. */
-	if(!it->root->node || it->root->height == UINT_MAX) return 0;
+	if(!it->root || !it->root->node || it->root->height == UINT_MAX) return 0;
 
 	/* Iterator empty; tree non-empty; point at first. */
 	if(!it->ref.node) {
@@ -292,7 +292,7 @@ static int PB_(previous)(struct PB_(iterator) *const it) {
 	assert(it && it->root);
 
 	/* Tree empty. */
-	if(!it->root->node || it->root->height == UINT_MAX) return 0;
+	if(!it->root || !it->root->node || it->root->height == UINT_MAX) return 0;
 
 	/* Iterator empty; tree non-empty; point at last. */
 	if(!it->ref.node) {
