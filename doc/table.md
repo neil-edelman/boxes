@@ -185,6 +185,10 @@ Adding, deleting, successfully looking up entries, or any modification of the ta
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-f5d778c3">&lt;N&gt;table_next</a></td><td>it</td></tr>
 
+<tr><td align = right>static &lt;PN&gt;key</td><td><a href = "#user-content-fn-2c046ff5">&lt;N&gt;table_key</a></td><td>it</td></tr>
+
+<tr><td align = right>static &lt;PN&gt;value *</td><td><a href = "#user-content-fn-ab82ba6f">&lt;N&gt;table_value</a></td><td>it</td></tr>
+
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-c384e71">&lt;N&gt;table_iterator_remove</a></td><td>it</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-4afceb58">&lt;N&gt;table_buffer</a></td><td>table, n</td></tr>
@@ -267,6 +271,26 @@ Advances `it`\.
 
  * Return:  
    Whether `it` has an element now\.
+
+
+
+
+### <a id = "user-content-fn-2c046ff5" name = "user-content-fn-2c046ff5">&lt;N&gt;table_key</a> ###
+
+<code>static &lt;PN&gt;key <strong>&lt;N&gt;table_key</strong>(const struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
+
+ * Return:  
+   If `it` has an element, returns it's key\.
+
+
+
+
+### <a id = "user-content-fn-ab82ba6f" name = "user-content-fn-ab82ba6f">&lt;N&gt;table_value</a> ###
+
+<code>static &lt;PN&gt;value *<strong>&lt;N&gt;table_value</strong>(const struct &lt;N&gt;table_iterator *const <em>it</em>)</code>
+
+ * Return:  
+   If `it` has an element, returns it's value, if `TABLE_VALUE`\.
 
 
 

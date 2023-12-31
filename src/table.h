@@ -586,11 +586,12 @@ static struct N_(table_iterator) N_(table_iterator)(struct N_(table) *const
 static int N_(table_next)(struct N_(table_iterator) *const it) {
 	return PN_(next)(&it->_);
 }
-/** @return If `it` has an element, returns it's key. */
+/** @return If `it` has an element, returns it's key. @allow */
 static PN_(key) N_(table_key)(const struct N_(table_iterator) *const it)
 	{ return PN_(bucket_key)(it->_.table->buckets + it->_.i); }
 #ifdef TABLE_VALUE /* <!-- value */
-/** @return If `it` has an element, returns it's value, if `TABLE_VALUE`. */
+/** @return If `it` has an element, returns it's value, if `TABLE_VALUE`.
+ @allow */
 static PN_(value) *N_(table_value)(const struct N_(table_iterator) *const it)
 	{ return &it->_.table->buckets[it->_.i].value; }
 #endif /* value --> */
