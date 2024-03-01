@@ -30,9 +30,11 @@
 
  @depend [array](https://github.com/neil-edelman/array)
  @depend [heap](https://github.com/neil-edelman/heap)
- @std C89; however, when compiling for segmented memory models, C99 with
+ @std C89. However, when compiling for segmented memory models, C99 with
  `uintptr_t` is recommended because of it's implementation-defined instead of
- undefined-behaviour when comparing pointers from different objects. */
+ undefined-behaviour when comparing pointers from different objects in the
+ heap of memory addresses. Still, this is not guaranteed to produce meaningful
+ results on all systems. */
 
 /* `POOL_TO_STRING` is undocumented because this container is only iterable in
  the first slab, so this is not very useful except for debugging. */

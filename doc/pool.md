@@ -24,7 +24,7 @@ Header [\.\./src/pool\.h](../src/pool.h) depends on [\.\./src/heap\.h](../src/he
  * Parameter: POOL\_HEAD, POOL\_BODY  
    These go together to allow exporting non\-static data between compilation units by separating the header head from the code body\. `POOL_HEAD` needs identical `POOL_NAME` and `POOL_TYPE`\.
  * Standard:  
-   C89; however, when compiling for segmented memory models, C99 with `uintptr_t` is recommended because of it's implementation\-defined instead of undefined\-behaviour when comparing pointers from different objects\.
+   C89\. However, when compiling for segmented memory models, C99 with `uintptr_t` is recommended because of it's implementation\-defined instead of undefined\-behaviour when comparing pointers from different objects in the heap of memory addresses\. Still, this is not guaranteed to produce meaningful results on all systems\.
  * Dependancies:  
    [array](https://github.com/neil-edelman/array), [heap](https://github.com/neil-edelman/heap)
 
