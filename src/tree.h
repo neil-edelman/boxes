@@ -583,6 +583,9 @@ static PB_(key) B_(tree_more_or)(const struct B_(tree) *const tree,
 		? ref.node->key[ref.idx] : default_key;
 }
 
+/* fixme: Notch (add) and nick (delete) are good names for the highest
+ non-full node, in spirit with the tree analogy. */
+
 #ifdef TREE_VALUE /* <!-- map */
 /** Only if `TREE_VALUE` is set; the set version is <fn:<B>tree_try>. Packs
  `key` on the right side of `tree` without doing the usual restructuring. All
