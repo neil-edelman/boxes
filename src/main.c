@@ -201,6 +201,9 @@ int main(void) {
 		const char build[] = { letter, '\0' };
 		const char *bound;
 		struct str_tree_iterator it;
+		// iterator cursor look range: unbounded laden full entire, laden occupied exist, size, get acquire look front first, back last, shift, pop
+		// for(range r = entire(&container) or r = prefix(&tree, "foo"); exist(&r); shift(&r)) print front(&r);
+		//
 		it._.root = &tree.root;
 		it._.ref = tree_prefix_lower(tree.root, build);
 		printf("%s: ", build);
