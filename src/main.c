@@ -92,11 +92,7 @@ static struct tree_str_ref tree_prefix_lower(const struct tree_str_tree tree,
 		unsigned hi = lo.node->size; lo.idx = 0;
 		if(!hi) continue;
 		tree_str_prefix_node_lower(&lo, x);
-		if(lo.idx < lo.node->size) {
-			found = lo;
-			// fixme
-			if(str_compare_prefix(x, lo.node->key[lo.idx]) > 0) break;
-		}
+		if(lo.idx < lo.node->size) found = lo;
 		if(!lo.height) break;
 	}
 	return found;
@@ -110,11 +106,7 @@ static struct tree_str_ref tree_prefix_upper(const struct tree_str_tree tree,
 		hi.node = tree_str_as_branch_c(hi.node)->child[hi.idx], hi.height--) {
 		if(!(hi.idx = hi.node->size)) continue;
 		tree_str_prefix_node_upper(&hi, x);
-		if(hi.idx) { /* Within bounds to record the current predecessor. */
-			found = hi, found.idx--;
-			/* Equal. fixme */
-			if(str_compare_prefix(x, found.node->key[found.idx]) <= 0) break;
-		}
+		if(hi.idx) found = hi, found.idx--;
 		if(!hi.height) break; /* Reached the bottom. */
 	}
 	return found;
@@ -207,26 +199,20 @@ int main(void) {
 		letter <= letter_end;
 		letter++) {
 		const char build[] = { letter, '\0' };
+		const char *bound;
 		struct str_tree_iterator it;
-/*		it = str_tree_less(&tree, build);
-		while(str_tree_next(&it)) {
-#ifdef OUT
-			printf("less %s: %s\n", build, str_tree_key(&it));
-#endif
-			break;
-		}
-		it = str_tree_more(&tree, build);
-		while(str_tree_next(&it)) {
-#ifdef OUT
-			printf("more %s: %s\n", build, str_tree_key(&it));
-#endif
-			break;
-		}*/
 		it._.root = &tree.root;
 		it._.ref = tree_prefix_lower(tree.root, build);
-		printf("%s: [%s, ", build, str_tree_has_element(&it) ? str_tree_key(&it) : "null");
+		printf("%s: ", build);
+		/* We have done this comparison already, but I don't think it's worth
+		 it to carry along an extra parameter. */
+		if(!str_tree_has_element(&it)
+			|| (bound = str_tree_key(&it), str_compare_prefix(build, bound)))
+			{ printf("null\n"); continue; }
+		printf("[%s, ", bound);
 		it._.ref = tree_prefix_upper(tree.root, build);
-		printf("%s]\n", str_tree_has_element(&it) ? str_tree_key(&it) : "null");
+		bound = str_tree_key(&it), assert(bound);
+		printf("%s]\n", bound);
 	}
 	m_add(&m, diff_us(t));
 	printf("tree prefix: %f(%f)µs/%zu\n", m_mean(&m), m_stddev(&m), word_array_size);
