@@ -43,7 +43,7 @@ static void str_to_string(const char *const x, char (*const z)[12])
 #define TREE_KEY const char *
 #define TREE_COMPARE
 #define TREE_DEFAULT 0
-//#define TREE_ORDER 3
+#define TREE_ORDER 3
 #define TREE_TO_STRING
 #define TREE_TEST
 #include "tree.h"
@@ -78,7 +78,6 @@ static void tree_str_prefix_node_upper(struct tree_str_ref *const hi, const tree
 	assert(hi->node && hi->idx);
 	do {
 		const unsigned mid = (lo + hi->idx) / 2;
-		//if(str_compare_prefix(hi->node->key[mid], x) <= 0) lo = mid + 1;
 		if(str_compare_prefix(x, hi->node->key[mid]) >= 0) lo = mid + 1;
 		else hi->idx = mid;
 	} while(lo < hi->idx);
@@ -95,6 +94,7 @@ static struct tree_str_ref tree_prefix_lower(const struct tree_str_tree tree,
 		tree_str_prefix_node_lower(&lo, x);
 		if(lo.idx < lo.node->size) {
 			found = lo;
+			// fixme
 			if(str_compare_prefix(x, lo.node->key[lo.idx]) > 0) break;
 		}
 		if(!lo.height) break;
@@ -112,7 +112,7 @@ static struct tree_str_ref tree_prefix_upper(const struct tree_str_tree tree,
 		tree_str_prefix_node_upper(&hi, x);
 		if(hi.idx) { /* Within bounds to record the current predecessor. */
 			found = hi, found.idx--;
-			/* Equal. */
+			/* Equal. fixme */
 			if(str_compare_prefix(x, found.node->key[found.idx]) <= 0) break;
 		}
 		if(!hi.height) break; /* Reached the bottom. */
