@@ -25,7 +25,7 @@ static double m_sample_variance(const struct measure *const m)
 static double m_stddev(const struct measure *const m)
 	{ return sqrt(m_sample_variance(m)); }
 
-struct fixed_string { char str[32]; };
+struct fixed_string { char str[12/*32*/]; };
 
 /** Unused—just want to get gv output. */
 static void str_filler(const char **const key) { (void)key; }
@@ -52,16 +52,59 @@ static int str_compare_prefix(const char *const prefix, const char *const word) 
 	const unsigned char *uprefix = (const char unsigned *)prefix,
 		*uword = (const char unsigned *)word;
 	unsigned char up, uw;
-	while((up = *uprefix) == (uw = *uword)) {
-		if(up == '\0') return 0; /* It's a prefix. */
+	for( ; ; ) {
+		if((up = *uprefix) == '\0') return 0; /* It's a prefix. */
+		if((uw = *uword) == '\0') {
+			fprintf(stderr, "(%s is not a prefix of %s)\n", prefix, word);
+			return -1;
+		}
+		if(up != uw) return (up > uw) - (up < uw);
 		uprefix++, uword++;
 	}
-	if(up == '\0') return 0; /* It's a prefix. */
-	if(uw == '\0') /* Not a prefix! fixme */fprintf(stderr, "(%s is not a prefix of %s)\n", prefix, word);
-	return (up > uw) - (up < uw);
 }
 
-static struct tree_str_ref tree_prefix_less(const struct tree_str_tree tree,
+/** Finds `idx` of greatest lower-bound minorant of `x` in `lo` only in one
+ node at a time. */
+static void tree_str_prefix_node_lb(struct tree_str_ref *const lo, const tree_str_key x) {
+	unsigned hi = lo->node->size; lo->idx = 0;
+	assert(lo && lo->node && hi);
+	do {
+		const unsigned mid = (lo->idx + hi) / 2; /* Will not overflow. */
+		if(str_compare_prefix(x, lo->node->key[mid]) > 0) lo->idx = mid + 1;
+		else hi = mid;
+	} while(lo->idx < hi);
+}
+/** Finds `idx` of least upper-bound majorant of `x` in `hi` only in one node
+ at a time. */
+static void tree_str_prefix_node_ub(struct tree_str_ref *const hi, const tree_str_key x) {
+	unsigned lo = 0;
+	assert(hi->node && hi->idx);
+	do {
+		const unsigned mid = (lo + hi->idx) / 2;
+		//if(str_compare_prefix(hi->node->key[mid], x) <= 0) lo = mid + 1;
+		if(str_compare_prefix(x, hi->node->key[mid]) >= 0) lo = mid + 1;
+		else hi->idx = mid;
+	} while(lo < hi->idx);
+}
+static struct tree_str_ref tree_prefix_lower(const struct tree_str_tree tree,
+	const char *const x) {
+	struct tree_str_ref lo, found;
+	found.node = 0;
+	if(!tree.node || tree.height == UINT_MAX) return found;
+	for(lo.node = tree.node, lo.height = tree.height; ;
+		lo.node = tree_str_as_branch_c(lo.node)->child[lo.idx], lo.height--) {
+		unsigned hi = lo.node->size; lo.idx = 0;
+		if(!hi) continue;
+		tree_str_prefix_node_lb(&lo, x);
+		if(lo.idx < lo.node->size) {
+			found = lo;
+			if(str_compare_prefix(x, lo.node->key[lo.idx]) > 0) break;
+		}
+		if(!lo.height) break;
+	}
+	return found;
+}
+static struct tree_str_ref tree_prefix_upper(const struct tree_str_tree tree,
 	const char *const x) {
 	struct tree_str_ref hi, found;
 	found.node = 0;
@@ -69,21 +112,20 @@ static struct tree_str_ref tree_prefix_less(const struct tree_str_tree tree,
 	for(hi.node = tree.node, hi.height = tree.height; ;
 		hi.node = tree_str_as_branch_c(hi.node)->child[hi.idx], hi.height--) {
 		if(!(hi.idx = hi.node->size)) continue;
-		tree_str_node_ub(&hi, x);
+		tree_str_prefix_node_ub(&hi, x);
 		if(hi.idx) { /* Within bounds to record the current predecessor. */
 			found = hi, found.idx--;
 			/* Equal. */
-			if(str_compare(x, found.node->key[found.idx]) <= 0) break;
+			if(str_compare_prefix(x, found.node->key[found.idx]) <= 0) break;
 		}
 		if(!hi.height) break; /* Reached the bottom. */
 	}
 	return found;
 }
 
-
 #define OUT
 
-int main(/*int argc, char **argv*/void) {
+int main(void) {
 	int success = 0;
 	struct measure m;
 	clock_t t;
@@ -164,25 +206,30 @@ int main(/*int argc, char **argv*/void) {
 	m_add(&m, diff_us(t));
 	printf("tree look: %f(%f)µs/%zu\n", m_mean(&m), m_stddev(&m), word_array_size);
 	m_reset(&m), t = clock();
-	for(char letter = 'A', letter_end = 'Z' + 1;
-		letter < letter_end;
+	for(char letter = 'A', letter_end = 'Z';
+		letter <= letter_end;
 		letter++) {
 		const char build[] = { letter, '\0' };
 		struct str_tree_iterator it;
-		/*it = str_tree_more(&tree, build);
-		while(str_tree_next(&it)) {
-#ifdef OUT
-			printf("more %s: %s\n", build, str_tree_key(&it));
-#endif
-			break;
-		}*/
-		it = str_tree_less(&tree, build);
+/*		it = str_tree_less(&tree, build);
 		while(str_tree_next(&it)) {
 #ifdef OUT
 			printf("less %s: %s\n", build, str_tree_key(&it));
 #endif
 			break;
 		}
+		it = str_tree_more(&tree, build);
+		while(str_tree_next(&it)) {
+#ifdef OUT
+			printf("more %s: %s\n", build, str_tree_key(&it));
+#endif
+			break;
+		}*/
+		it._.root = &tree.root;
+		it._.ref = tree_prefix_lower(tree.root, build);
+		printf("%s: [%s, ", build, str_tree_has_element(&it) ? str_tree_key(&it) : "null");
+		it._.ref = tree_prefix_upper(tree.root, build);
+		printf("%s]\n", str_tree_has_element(&it) ? str_tree_key(&it) : "null");
 	}
 	m_add(&m, diff_us(t));
 	printf("tree prefix: %f(%f)µs/%zu\n", m_mean(&m), m_stddev(&m), word_array_size);
