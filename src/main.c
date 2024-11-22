@@ -194,28 +194,48 @@ int main(void) {
 	}
 	m_add(&m, diff_us(t));
 	printf("tree look: %f(%f)µs/%zu\n", m_mean(&m), m_stddev(&m), word_array_size);
+	struct tree_view {
+		struct tree_str_tree *root;
+		struct tree_str_ref front, back;
+		/* !root -> dead, root -> front_node, front < front_node.size, back_node, back < back_node.size, front_node[front] <= back_node[back] */
+	} view;
 	m_reset(&m), t = clock();
 	for(char letter = 'A', letter_end = 'Z';
 		letter <= letter_end;
 		letter++) {
 		const char build[] = { letter, '\0' };
 		const char *bound;
-		struct str_tree_iterator it;
-		// iterator cursor look range: unbounded laden full entire, laden occupied exist, size, get acquire look front first, back last, shift, pop
-		// for(range r = entire(&container) or r = prefix(&tree, "foo"); exist(&r); shift(&r)) print front(&r);
-		//
-		it._.root = &tree.root;
-		it._.ref = tree_prefix_lower(tree.root, build);
+		view.root = 0;
 		printf("%s: ", build);
+		//view = (struct tree_view){ &tree.root, { 0, 0, 0 }, { 0, 0, 0 } };
+		//struct str_tree_iterator it;
+		/* A subset of contiguous elements built on top of a container, stored
+		 in O(1) space, valid until a topological modification of the
+		 container. */
+		// iterator cursor look range subset [view] span: unbounded laden full [entire], laden occupied [exist], distance size count, get acquire look first [front], last back, shift [pop_front], pop pop_back… random?, delete, insert
+		// for(view v = entire(&container) or v = prefix(&tree, "foo"); exist(&v); pop_front(&v)) print front(&v);
+		//it._.root = &tree.root;
+		//it._.ref = tree_prefix_lower(tree.root, build);
+		view.front = tree_prefix_lower(tree.root, build);
 		/* We have done this comparison already, but I don't think it's worth
-		 it to carry along an extra parameter. */
-		if(!str_tree_has_element(&it)
-			|| (bound = str_tree_key(&it), str_compare_prefix(build, bound)))
+		 it to carry along an extra parameter. In the case where the tree has
+		 no prefix matches, this will be not a prefix but null or some adjacent
+		 element. I think it is a mistake to go farther without checking
+		 for empty because the elements are not in an obvious order. Because we
+		 are checking bounds with two inclusions. */
+		/*if(!str_tree_has_element(&it)
+			|| (bound = str_tree_key(&it), str_compare_prefix(build, bound)))*/
+		if(!view.front.node
+			|| (bound = view.front.node->key[view.front.idx],
+			str_compare_prefix(build, bound)))
 			{ printf("null\n"); continue; }
 		printf("[%s, ", bound);
-		it._.ref = tree_prefix_upper(tree.root, build);
-		bound = str_tree_key(&it), assert(bound);
+		//it._.ref = tree_prefix_upper(tree.root, build);
+		view.back = tree_prefix_upper(tree.root, build);
+		//bound = str_tree_key(&it), assert(bound);
+		bound = view.back.node->key[view.back.idx], assert(bound);
 		printf("%s]\n", bound);
+		view.root = &tree.root;
 	}
 	m_add(&m, diff_us(t));
 	printf("tree prefix: %f(%f)µs/%zu\n", m_mean(&m), m_stddev(&m), word_array_size);
