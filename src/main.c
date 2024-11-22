@@ -48,24 +48,21 @@ static void str_to_string(const char *const x, char (*const z)[12])
 #define TREE_TEST
 #include "tree.h"
 
+/** @return Compares up to `prefix`-length lexicographically with `word`. */
 static int str_compare_prefix(const char *const prefix, const char *const word) {
 	const unsigned char *uprefix = (const char unsigned *)prefix,
 		*uword = (const char unsigned *)word;
 	unsigned char up, uw;
 	for( ; ; ) {
 		if((up = *uprefix) == '\0') return 0; /* It's a prefix. */
-		if((uw = *uword) == '\0') {
-			fprintf(stderr, "(%s is not a prefix of %s)\n", prefix, word);
-			return -1;
-		}
-		if(up != uw) return (up > uw) - (up < uw);
+		if(up != (uw = *uword)) return (up > uw) - (up < uw);
 		uprefix++, uword++;
 	}
 }
 
 /** Finds `idx` of greatest lower-bound minorant of `x` in `lo` only in one
  node at a time. */
-static void tree_str_prefix_node_lb(struct tree_str_ref *const lo, const tree_str_key x) {
+static void tree_str_prefix_node_lower(struct tree_str_ref *const lo, const tree_str_key x) {
 	unsigned hi = lo->node->size; lo->idx = 0;
 	assert(lo && lo->node && hi);
 	do {
@@ -76,7 +73,7 @@ static void tree_str_prefix_node_lb(struct tree_str_ref *const lo, const tree_st
 }
 /** Finds `idx` of least upper-bound majorant of `x` in `hi` only in one node
  at a time. */
-static void tree_str_prefix_node_ub(struct tree_str_ref *const hi, const tree_str_key x) {
+static void tree_str_prefix_node_upper(struct tree_str_ref *const hi, const tree_str_key x) {
 	unsigned lo = 0;
 	assert(hi->node && hi->idx);
 	do {
@@ -95,7 +92,7 @@ static struct tree_str_ref tree_prefix_lower(const struct tree_str_tree tree,
 		lo.node = tree_str_as_branch_c(lo.node)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.node->size; lo.idx = 0;
 		if(!hi) continue;
-		tree_str_prefix_node_lb(&lo, x);
+		tree_str_prefix_node_lower(&lo, x);
 		if(lo.idx < lo.node->size) {
 			found = lo;
 			if(str_compare_prefix(x, lo.node->key[lo.idx]) > 0) break;
@@ -112,7 +109,7 @@ static struct tree_str_ref tree_prefix_upper(const struct tree_str_tree tree,
 	for(hi.node = tree.node, hi.height = tree.height; ;
 		hi.node = tree_str_as_branch_c(hi.node)->child[hi.idx], hi.height--) {
 		if(!(hi.idx = hi.node->size)) continue;
-		tree_str_prefix_node_ub(&hi, x);
+		tree_str_prefix_node_upper(&hi, x);
 		if(hi.idx) { /* Within bounds to record the current predecessor. */
 			found = hi, found.idx--;
 			/* Equal. */
