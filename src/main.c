@@ -43,7 +43,7 @@ static void str_to_string(const char *const x, char (*const z)[12])
 #define TREE_KEY const char *
 #define TREE_COMPARE
 #define TREE_DEFAULT 0
-#define TREE_ORDER 3
+//#define TREE_ORDER 3
 #define TREE_TO_STRING
 #define TREE_TEST
 #include "tree.h"
@@ -185,110 +185,189 @@ static void str_tree_pop_front(struct str_tree_view *const v) {
 	v->front = next;
 }
 
+extern void optimization_inhibitor(const char *);
+extern void optimization_inhibitor(const char *const dum) { (void)dum; }
 
 //#define OUT
 
 int main(void) {
 	int success = 0;
-	struct measure m;
 	clock_t t;
-	const size_t word_array_size = 5000;
-	struct fixed_string *word_array = 0;
+	struct measures { struct measure trie_add, trie_look, trie_prefix,
+		tree_add, tree_look, tree_prefix; } m_array[22];
+	const size_t m_size = sizeof m_array / sizeof *m_array,
+		words_size = 1 << m_size;
+	struct fixed_string *words_array = 0;
 	struct str_trie trie = str_trie();
 	struct str_tree tree = str_tree();
 
 	(void)str_trie_test, (void)str_tree_test;
 
 	unsigned seed = (unsigned)clock();
-	srand(seed), rand(), fprintf(stderr, "Seed %u.\n", seed);
+	srand(seed), rand(), printf("# Seed %u.\n", seed);
 	errno = 0;
 
-	/* Create a random word array. */
-	if(!(word_array = malloc(sizeof *word_array * word_array_size))) goto catch;
-	for(struct fixed_string *word = word_array,
-		*const word_end = word_array + word_array_size;
-		word < word_end; word++)
-		orcish(word->str, sizeof word->str);
+	/* Set up memory to run the experiment. */
+	if(!(words_array = malloc(sizeof *words_array * words_size))) goto catch;
+	for(struct measures *m = m_array, *const m_end = m + m_size; m < m_end; m++)
+		m_reset(&m->trie_add), m_reset(&m->trie_look), m_reset(&m->trie_prefix),
+		m_reset(&m->tree_add), m_reset(&m->tree_look), m_reset(&m->tree_prefix);
+	if(!str_trie_try(&trie, "init") || !str_tree_try(&tree, "init"))
+		goto catch;
+	str_trie_clear(&trie), str_tree_clear(&tree);
 
-	/* Trie tests. */
-	m_reset(&m), t = clock();
-	for(struct fixed_string *word = word_array,
-		*const word_end = word_array + word_array_size;
-		word < word_end; word++)
-		if(!str_trie_try(&trie, word->str)) goto catch;
-	m_add(&m, diff_us(t));
-	printf("trie add: %f(%f)µs/%zu\n", m_mean(&m), m_stddev(&m), word_array_size);
-	trie_str_graph(&trie, "trie.gv", 1);
-	m_reset(&m), t = clock();
-	for(struct fixed_string *word = word_array,
-		*const word_end = word_array + word_array_size;
-		word < word_end; word++) {
-		const char *result;
-		result = str_trie_get(&trie, word->str);
-#ifdef OUT
-		fprintf(stderr, "%s: %s\n", word->str, result);
-#endif
-	}
-	m_add(&m, diff_us(t));
-	printf("trie look: %f(%f)µs/%zu\n", m_mean(&m), m_stddev(&m), word_array_size);
-	m_reset(&m), t = clock();
-	for(char letter = 'A', letter_end = 'Z' + 1;
-		letter < letter_end;
-		letter++) {
-		const char build[] = { letter, '\0' };
-		struct str_trie_iterator it = str_trie_prefix(&trie, build);
-		while(str_trie_next(&it))
-#ifdef OUT
-			printf("%s: %s\n", build, str_trie_entry(&it))
-#endif
-			;
-	}
-	m_add(&m, diff_us(t));
-	printf("trie prefix: %f(%f)µs/%zu\n", m_mean(&m), m_stddev(&m), word_array_size);
-	str_trie_clear(&trie);
+	/* We are going to repeat measurements this many times… */
+	for(unsigned replicas = 0; replicas < 3; replicas++) {
+		/* …with these exponential differences in problem… */
+		for(unsigned m = 0, m_words = 2; m < m_size; m++, m_words <<= 1) {
+			assert(m_words <= words_size);
+			/* …with different random words. */
+			for(struct fixed_string *word = words_array,
+				*const word_end = words_array + m_words;
+				word < word_end; word++)
+				orcish(word->str, sizeof word->str);
+			//fprintf(stderr, "m: %u; m_words: %u; word_size: %zu\n", m, m_words, words_size);
 
-	/* Tree tests. */
-	m_reset(&m);
-	for(struct fixed_string *word = word_array,
-		*const word_end = word_array + word_array_size;
-		word < word_end; word++)
-		if(!str_tree_try(&tree, word->str)) goto catch;
-	m_add(&m, diff_us(t));
-	printf("tree add: %f(%f)µs/%zu\n", m_mean(&m), m_stddev(&m), word_array_size);
-	tree_str_graph(&tree, "tree.gv");
-	m_reset(&m), t = clock();
-	for(struct fixed_string *word = word_array,
-		*const word_end = word_array + word_array_size;
-		word < word_end; word++) {
-		const char *result;
-		result = str_tree_get(&tree, word->str);
+			/* Trie tests. */
+			t = clock();
+			for(struct fixed_string *word = words_array,
+				*const word_end = words_array + m_words;
+				word < word_end; word++)
+				if(!str_trie_try(&trie, word->str)) goto catch;
+			m_add(&m_array[m].trie_add, diff_us(t));
+			//trie_str_graph(&trie, "trie.gv", 1);
+			t = clock();
+			for(struct fixed_string *word = words_array,
+				*const word_end = words_array + m_words;
+				word < word_end; word++) {
+				const char *result = str_trie_get(&trie, word->str);
 #ifdef OUT
-		fprintf(stderr, "%s: %s\n", word->str, result);
+				fprintf(stderr, "look trie %s: %s\n", word->str, result);
+#else
+				optimization_inhibitor(result);
 #endif
-	}
-	m_add(&m, diff_us(t));
-	printf("tree look: %f(%f)µs/%zu\n", m_mean(&m), m_stddev(&m), word_array_size);
-	m_reset(&m), t = clock();
-	for(char letter = 'A', letter_end = 'Z';
-		letter <= letter_end;
-		letter++) {
-		const char build[] = { letter, '\0' };
-		struct str_tree_view view = str_tree_prefix(&tree, build);
+			}
+			m_add(&m_array[m].trie_look, diff_us(t));
+			t = clock();
+			for(char letter = 'A', letter_end = 'Z' + 1;
+				letter < letter_end; letter++) {
+				const char build[] = { letter, '\0' };
+				struct str_trie_iterator it = str_trie_prefix(&trie, build);
 #ifdef OUT
-		printf("range %s: ", build);
-		if(!view.root) printf("null\n");
-		else printf("[%s, %s]\n", view.front.node->key[view.front.idx], view.back.node->key[view.back.idx]);
+				while(str_trie_next(&it))
+					printf("%s: %s\n", build, str_trie_entry(&it));
+#else
+				str_trie_next(&it);
 #endif
-		for( ; str_tree_exists(&view); str_tree_pop_front(&view))
-#ifdef OUT
-			printf("%s: %s\n", build, str_tree_front(&view))
-#endif
-			;
+			}
+			m_add(&m_array[m].trie_prefix, diff_us(t));
+			str_trie_clear(&trie);
 
+			/* Tree tests. */
+			t = clock();
+			for(struct fixed_string *word = words_array,
+				*const word_end = words_array + m_words;
+				word < word_end; word++)
+				if(!str_tree_try(&tree, word->str)) goto catch;
+			double fl;
+			m_add(&m_array[m].tree_add, fl = diff_us(t));
+			//tree_str_graph(&tree, "tree.gv");
+			t = clock();
+			for(struct fixed_string *word = words_array,
+				*const word_end = words_array + m_words;
+				word < word_end; word++) {
+				const char *result;
+				result = str_tree_get(&tree, word->str);
+#ifdef OUT
+				fprintf(stderr, "%s: %s\n", word->str, result);
+#else
+				optimization_inhibitor(result);
+#endif
+			}
+			m_add(&m_array[m].tree_look, diff_us(t));
+			t = clock();
+			for(char letter = 'A', letter_end = 'Z';
+				letter <= letter_end;
+				letter++) {
+				const char build[] = { letter, '\0' };
+				struct str_tree_view view = str_tree_prefix(&tree, build);
+#ifdef OUT
+				printf("range %s: ", build);
+				if(!view.root) printf("null\n");
+				else printf("[%s, %s]\n", view.front.node->key[view.front.idx], view.back.node->key[view.back.idx]);
+				for( ; str_tree_exists(&view); str_tree_pop_front(&view))
+					printf("%s: %s\n", build, str_tree_front(&view));
+#else
+				str_tree_exists(&view);
+#endif
+			}
+			m_add(&m_array[m].tree_prefix, diff_us(t));
+			str_tree_clear(&tree);
+		}
 	}
-	m_add(&m, diff_us(t));
-	printf("tree prefix: %f(%f)µs/%zu\n", m_mean(&m), m_stddev(&m), word_array_size);
-	str_tree_clear(&tree);
+	/* This could be a macro. */
+	printf("set term postscript eps enhanced\n"
+		"set encoding utf8\n"
+		"set output \"plot.eps\"\n"
+		"set xlabel \"Elements\"\n"
+		"set ylabel \"Time (µs)\"\n"
+		"set xrange [0:%u*1.01]\n"
+		"set yrange [0:*]\n"
+		"set grid\n"
+		"set key autotitle columnhead\n"
+		"set multiplot layout 3,1\n"
+		"#set size ratio 1\n"
+		"\n"
+		"$trie_add<<EOD\n"
+		"trie-add\n"
+		"# size\ttime µs\tstddev µs\n", 1 << m_size);
+	for(unsigned m = 0, m_words = 2; m < m_size; m++, m_words <<= 1)
+		printf("%u\t%f\t%f\n", m_words, m_mean(&m_array[m].trie_add),
+		m_stddev(&m_array[m].trie_add));
+	printf("EOD\n"
+		"$trie_look<<EOD\n"
+		"trie-look\n"
+		"# size\ttime µs\tstddev µs\n");
+	for(unsigned m = 0, m_words = 2; m < m_size; m++, m_words <<= 1)
+		printf("%u\t%f\t%f\n", m_words, m_mean(&m_array[m].trie_look),
+		m_stddev(&m_array[m].trie_look));
+	printf("EOD\n"
+		"$trie_prefix<<EOD\n"
+		"trie-prefix\n"
+		"# size\ttime µs\tstddev µs\n");
+	for(unsigned m = 0, m_words = 2; m < m_size; m++, m_words <<= 1)
+		printf("%u\t%f\t%f\n", m_words, m_mean(&m_array[m].trie_prefix),
+			m_stddev(&m_array[m].trie_prefix));
+	printf("EOD\n"
+		"$tree_add<<EOD\n"
+		"tree-add\n"
+		"# size\ttime µs\tstddev µs\n");
+	for(unsigned m = 0, m_words = 2; m < m_size; m++, m_words <<= 1)
+		printf("%u\t%f\t%f\n", m_words, m_mean(&m_array[m].tree_add),
+			m_stddev(&m_array[m].tree_add));
+	printf("EOD\n"
+		"$tree_look<<EOD\n"
+		"tree-look\n"
+		"# size\ttime µs\tstddev µs\n");
+	for(unsigned m = 0, m_words = 2; m < m_size; m++, m_words <<= 1)
+		printf("%u\t%f\t%f\n", m_words, m_mean(&m_array[m].tree_look),
+			m_stddev(&m_array[m].tree_look));
+	printf("EOD\n"
+		"$tree_prefix<<EOD\n"
+		"tree-prefix\n"
+		"# size\ttime µs\tstddev µs\n");
+	for(unsigned m = 0, m_words = 2; m < m_size; m++, m_words <<= 1)
+		printf("%u\t%f\t%f\n", m_words, m_mean(&m_array[m].tree_prefix),
+			m_stddev(&m_array[m].tree_prefix));
+	printf("EOD\n"
+		"\n"
+		"unset xlabel\n"
+		"set format x \"\"\n"
+		"plot $trie_add with yerrorlines, $tree_add with yerrorlines\n"
+		"plot $trie_look with yerrorlines, $tree_look with yerrorlines\n"
+		"set xlabel\n"
+		"set format x \"%%.0f\"\n"
+		"plot $trie_prefix with yerrorlines, $tree_prefix with yerrorlines\n");
 
 	success = 1;
 	goto finally;
@@ -297,6 +376,6 @@ catch:
 finally:
 	str_tree_(&tree);
 	str_trie_(&trie);
-	free(word_array);
+	free(words_array);
 	return success ? EXIT_SUCCESS : EXIT_FAILURE;
 }
