@@ -136,13 +136,63 @@ static struct str_tree_view str_tree_prefix(const struct str_tree *const tree,
 	return view.root = &tree->root, view;
 }
 
-#define OUT
+static int str_tree_exists(struct str_tree_view *const v)
+	{ return assert(v), !!v->root; }
+
+static const char *str_tree_front(const struct str_tree_view *const v) {
+	assert(v && v->root && v->front.node
+		&& v->front.idx <= v->front.node->size);
+	return v->front.node->key[v->front.idx];
+}
+
+/** @return Whether `it` pointing to a valid element. */
+static void str_tree_pop_front(struct str_tree_view *const v) {
+	struct tree_str_ref next;
+	assert(v && v->root && v->root->node && v->root->height != UINT_MAX &&
+		(!v->front.node || v->front.idx <= v->front.node->size) &&
+		(!v->back.node || v->back.idx <= v->back.node->size));
+
+	/* Next is a copy of the next element. Clip. */
+	next = v->front, next.idx++;
+	//if(next.height && next.idx > next.node->size) next.idx = next.node->size;
+	if(next.idx > next.node->size /* Concurrent modification? */
+		|| v->front.node == v->back.node && v->front.idx == v->back.idx)
+		{ v->root = 0; return; }
+	while(next.height) next.node = tree_str_as_branch(next.node)->child[next.idx],
+		next.idx = 0, next.height--; /* Fall from branch. */
+	v->front = next; /* Possibly one beyond bounds.[?!] */
+	if(next.idx >= next.node->size) { /* Maybe re-descend reveals more keys. */
+		struct tree_str_tree tree = *v->root;
+		unsigned a0;
+		/* Target; this will not work with duplicate keys: we can't have any. */
+		const tree_str_key x = next.node->key[next.node->size - 1];
+		assert(next.node->size);
+		for(next.node = 0; tree.height;
+			tree.node = tree_str_as_branch(tree.node)->child[a0],
+			tree.height--) {
+			unsigned a1 = tree.node->size;
+			a0 = 0;
+			while(a0 < a1) {
+				const unsigned m = (a0 + a1) / 2;
+				if(strcmp(x, tree.node->key[m]) > 0) a0 = m + 1;
+				else a1 = m;
+			}
+			if(a0 < tree.node->size) next.node = tree.node,
+				next.height = tree.height, next.idx = a0;
+		}
+		if(!next.node) { v->root = 0; return; } /* Off right. */
+	} /* Jumped nodes. */
+	v->front = next;
+}
+
+
+//#define OUT
 
 int main(void) {
 	int success = 0;
 	struct measure m;
 	clock_t t;
-	const size_t word_array_size = 50;
+	const size_t word_array_size = 5000;
 	struct fixed_string *word_array = 0;
 	struct str_trie trie = str_trie();
 	struct str_tree tree = str_tree();
@@ -224,9 +274,17 @@ int main(void) {
 		letter++) {
 		const char build[] = { letter, '\0' };
 		struct str_tree_view view = str_tree_prefix(&tree, build);
-		printf("%s: ", build);
+#ifdef OUT
+		printf("range %s: ", build);
 		if(!view.root) printf("null\n");
 		else printf("[%s, %s]\n", view.front.node->key[view.front.idx], view.back.node->key[view.back.idx]);
+#endif
+		for( ; str_tree_exists(&view); str_tree_pop_front(&view))
+#ifdef OUT
+			printf("%s: %s\n", build, str_tree_front(&view))
+#endif
+			;
+
 	}
 	m_add(&m, diff_us(t));
 	printf("tree prefix: %f(%f)µs/%zu\n", m_mean(&m), m_stddev(&m), word_array_size);
