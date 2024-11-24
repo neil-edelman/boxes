@@ -1,4 +1,17 @@
-## view interface
+# Documentation
+
+* [array](array.md)
+* [bmp](bmp.md)
+* [heap](heap.mb) —requires array
+* [list](list.md) —never used
+* [pool](pool.md) —requires array, heap
+* [table](table.md)
+* [tree](tree.md)
+* [trie](trie.md) —requires bmp
+
+# Interfaces
+
+## view
 
 Generally, a subset of contiguous elements built on top of a container, stored in O(1) space, valid until a topological modification of the container.
 
@@ -23,7 +36,7 @@ back: Where applicable. should be symmetric.
 	for(view v = entire(&container); exists(&v);
 		drop_front(&v)) print front(&v);
 
-## to_string interface
+## to_string
 
 	view, entire, exists, drop_front, front
 	void <type>to_string(const *<type>, char (*)[12]); —supplied by user, [11] is a dud
@@ -34,7 +47,7 @@ If turned on by the options, includes `to_string.h` and supplies,
 
 Which calls `<type>to_string` in the order of `entire` `front` and prints in one of 4 static buffers.
 
-## iterate interface
+## iterate
 
 	view, entire, exists, drop_front, front
 
@@ -51,7 +64,7 @@ On inclusion somehow from `iterate.h`, supplies:
 
 I have never used this.
 
-## compare interface
+## compare
 
 	view, entire, exists, drop_front, front
 
