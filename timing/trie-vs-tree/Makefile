@@ -74,7 +74,7 @@ gperf := gperf
 
 target    := # -mwindows
 optimize  := -ffast-math
-warnbasic := -Wall -pedantic -ansi # -std=c99
+warnbasic := -Wall -pedantic -std=c99
 # Some stuff is really new.
 warnclang := -Wextra \
 -Weverything \

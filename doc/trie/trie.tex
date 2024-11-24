@@ -3,6 +3,7 @@
 % input
 \bibliographystyle{ieeetr}
 \usepackage[utf8]{inputenc}
+\usepackage[fontsize=14]{fontsize}
 %\usepackage{times} % font
 \usepackage{lmodern} % scalable font
 \usepackage[pdftex]{graphicx} % include graphics
@@ -15,6 +16,7 @@
 \usepackage[colorlinks]{hyperref} % pdf links
 \usepackage{url} % url support
 %\usepackage{comment} % comment
+\pdfsuppresswarningpagegroup=1
 
 \usepackage{siunitx}
 %\usepackage{graphicx} already
@@ -68,9 +70,9 @@
   urlcolor=ilrblue,
   filecolor=ilrblue,
   citecolor=ilrblue, % bibliography links
-  pdfauthor={\@author},
-  pdftitle={\@title},
-  pdfsubject={\@title},
+  pdfauthor={Neil A. Edelman},
+  pdftitle={Compact binary prefix trees},
+  pdfsubject={trie},
   pdfpagemode=UseNone
 }
 
@@ -228,13 +230,18 @@ We encode the branches in pre-order fashion, as in Figure~\ref{star-0:mem}. Each
 
 Figure~\ref{star-0:tree} shows the conventional full binary tree view of the same data as Figure~\ref{star-0:bits} and \ref{star-0:mem}. The branches indicate a \code{do not care} for all the skipped bits. If a query might have a difference in the skipped values, one can also check the final leaf for agreement with the found value.
 
+
+\subsection{Optimizing data-access}
+
+In a Patrica-trie\cite{morrison1968patricia} path-compression, each non-decision bit is left out of the index. Therefore, in a one-pass algorithm, our key is compared to in order to a sample from the trie before the new decision bit is reached, following a binary-search pattern. This requires access to $\mathcal{O}(\log \text{size})$ keys.
+
+We can improve on this algorithm by only checking decision bits. This can give us only a single candidate key in the list that matches the supplied key in all the decision bits. This forms an exemplar for comparison with the supplied key. In practice, the improvement only became evident only at 10~million keys.
+
 \subsection{Range and locality}
 
-Only when the algorithm arrives at a leaf will it go outside the \code{left, skip}. This suggests that these be placed in a contiguous index. This index should be compact as possible to fit the maximum into cache.
+Only when the algorithm arrives at a leaf will it go outside the \code{left, skip}. This suggests that these be placed in a contiguous index. This index should be compact as possible to fit the maximum into cache. However, in establishing a maximum \code{skip} value, one limits the contiguous bits that can be skipped. The maximum \code{left} plus one is the maximum number of leaves in the worst-case of all-left. It is also inefficient to modify the trie array with more branches to be changed owing to an array's $\mathcal{O}(n)$.
 
-However, in establishing a maximum \code{skip} value, one limits the contiguous bits that can be skipped; this has an effect on both on insertion and deletion. One octet provides a maximum 255 skip bits, usually enough for approximately 32 bytes. More noticeably, the maximum \code{left} plus one is the maximum number of leaves in the worst-case of all-left. It is also inefficient to modify the trie with more and more keys; this requires more branches to be changed and an array insertion of the leaf.
-
-To combat these two contradictory requirements, we have broken up the trie in much the same manner as \cite{bayer1972organization}. Except in tries, contrary to B-trees, the data can not be rotated at will; instead, our trie relaxes the rules and instead uses a bitmap of which leaves are links to other structures, called trees. Thus a trie is a forest of non-empty full binary trees. A tree corresponds to a B-tree node\cite{knuth1997sorting}, that is, a contiguous area in memory. This would conflict with the terminology of a key as a leaf and individual branches, which are longer implicit.
+So the array maximum size and range is a trade-off between space and speed of having the data small and generality of having a larger range. One way to to deal with these conflicting requirements is due to \cite{bayer1972organization}, where we have fixed nodes of a given size. Except in tries, contrary to B-trees, the data can not be rotated at will; instead, our trie relaxes the rules and instead uses a bitmap of which leaves are links to other structures, called trees. Thus a trie is a forest of non-empty full binary trees. A tree corresponds to a B-tree node\cite{knuth1997sorting}, that is, a contiguous area in memory. This would conflict with the terminology of a key as a leaf and individual branches, which are longer implicit.
 
 Thus, on adding to a tree in a trie that has the maximum number of keys, we must split it into two trees. We use the fact that a binary tree of $n \ge 2$ nodes can be split into two trees not exceeding $\left\lceil \frac{2n-1}{3} \right\rceil$ nodes by starting \code{daughter} tree at the root and choosing the subtree that is larger until the bound is achieved. The \code{mother} will have an extra linking leaf.
 
@@ -547,7 +554,7 @@ A more complex example is given in Figure~\ref{star-1}. This trie has 3 fixed tr
 }
 	}
 	\subcaptionbox{memory\label{star-1:mem}}{
-\digraph[scale=0.42]{star1mem}{
+\digraph[scale=0.4]{star1mem}{
 	graph [truecolor=true, bgcolor=transparent, fontname=modern];
 	node [shape=none, fontname=modern];
 	tree0x100a04120branch0 [label = <
@@ -737,23 +744,17 @@ A more complex example is given in Figure~\ref{star-1}. This trie has 3 fixed tr
 
 The grey \code{Altair} and \code{Polaris} in the root tree, \code{Vakgimbat}, in Figure~\ref{star-1}, are samples of the the trees that are links. We could get any sample from the sub-tree, because all the bits up to bit 6 and 4, respectively, are the same in the sub-tree. Any time we are faced with an ambiguity, we arbitrarily and conveniently select the very lower of the range.
 
-\subsection{One-pass or two-pass insertion}
-
-In a one-pass algorithm, each bit of the new key is compared to a sample from the trie before the new decision bit is reached. In a two-pass algorithm, the decision bits are followed all the way to the end with the new key, and that forms an exemplar for comparison with the new key.
-
-These were tried separately, and the two-pass was superior. This only became evident only at 10~million keys; the two-pass algorithm was $\mathcal{O}(\log \text{size})$ iid, while the one-pass was more. This is because every time the right branch is taken, one must update the sample. This usually is quite fast, but asymptotically, it is $\mathcal{O}(\log \text{size})$ iid, as well. In practice, the new key will be checked against the trie for duplicates anyway; it makes sense to combine the check with the first pass.
-
 \subsection{Inserting and deleting keys}
 
 Then, to add a key to an existing trie, first we match the key's decision bits with the tree. If it doesn't have enough length to pick out one tree-key, we arbitrarily choose the left-most alphabetically. We call this the exemplar. The decision bit is found by comparing the new key and exemplar.
 
-Deleting a non-leaf key involves merging \code{skips}. However, a key can be necessary to break up the entries in the trie into sub-maximum sized \code{skips}. In this implementation, one can not delete a key that causes the rest of the trie to go into an inconsistent state. This only matters if one has longer than 32~bytes the same in adjacent keys, (it is very possible.)
+Deleting a non-leaf key involves merging \code{skips}. However, a key can be necessary to break up the entries in the trie into sub-maximum sized \code{skips}. In this implementation, one can not delete a key that causes the rest of the trie to go into an inconsistent state. For the chosen architecture, this only matters if one has longer than 32~bytes the same in adjacent keys–it is very possible for some data.
 
 \subsection{Hysteresis}
 
 The non-empty criteria of the trees avoids the pathological case where empty trees from deletion pop-up. Further, we can always join a single leaf with its parent except the in the root.
 
-With smaller, dynamic tries, it is more important to not free resources which could be used in the future. Anything less than greedy merging on deletion will have hysteresis. We also should have a zero-key-state with resources, achieved with a flag on the tree size. In the implementation, this is branch size max, but it could be leaf size zero, for example.
+With smaller, dynamic tries, it is more important to not free resources which could be used in the future. Anything less than greedy merging on deletion will have hysteresis. We also should have a zero-key-state with resources, achieved with a flag on the tree size.
 
 \subsection{Data size and order}
 
@@ -847,9 +848,14 @@ If order is needed, then a B-tree is justified. This is seen practice in, for ex
 
 Figure~\ref{compare:look} shows that prefix-matching is not any slower than a B-tree at look-up, in this case. In insertion, Figure~\ref{compare:add}, it is also $\mathcal{O}(\log \text{size})$, but it appears slower by a constant amount. Possibly because we are doing multiple descents.
 
+
 \section{Conclusion}
 
-A Patricia trie with B-tree-like allocation is a really competitive solution in it's own right. It is especially suitable if prefix matching is at all convenient, or necessary, as long as the strings fit within the maximum allowed similarity.
+A Patricia trie with B-tree-like allocation is a really competitive solution in it's own right. It is especially suitable if prefix matching is convenient, as long as the strings fit within the maximum allowed similarity.
+
+On the other hand, a B-tree could also do prefix-lookup in $\Theta(\log \text{size})$ by simulating the trie and doing two queries, one for each extremum. This is slower than the trie. Still, if one looks up a specific, small range, both the tree and the trie are bound by $\mathcal{O}(\log \text{size})$. Where the trie excels, is at looking up a wide range with a short prefix—dominated by $\mathcal{O}(\text{size of prefix})$. This is probably not useful in practice because iterating the results can take more time than getting the iterator.
+
+At the core, a trie is really a specific ordering of a general tree. It has the same order of space requirements and usually the same performance.
 
 \bibliography{trie}
 

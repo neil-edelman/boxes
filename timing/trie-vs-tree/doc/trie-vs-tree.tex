@@ -1,0 +1,359 @@
+\documentclass[14pt]{article}
+
+% input
+\bibliographystyle{ieeetr}
+\usepackage[utf8]{inputenc}
+%\usepackage{times} % font
+\usepackage{lmodern} % scalable font
+\usepackage[pdftex]{graphicx} % include graphics
+\usepackage{amsmath} % align, nobreakdash
+\usepackage[pdf,tmpdir]{graphviz} % digraph
+\usepackage{fullpage} % book margins -> std margins
+\usepackage{wrapfig} % wrapfigure
+\usepackage{subcaption} % subcaptionbox
+\usepackage[colorlinks]{hyperref} % pdf links
+\usepackage{url} % url support
+%\usepackage{comment} % comment
+
+\usepackage{siunitx}
+%\usepackage{graphicx} already
+\usepackage{latexsym}
+\usepackage{keyval}
+\usepackage{ifthen}
+\usepackage{moreverb} % verbatimtabinput
+\usepackage[siunitx, subfolder]{gnuplottex}
+
+% code doesn't wrap
+\usepackage[table]{xcolor}
+\definecolor{light-gray}{gray}{0.95}
+\newcommand{\code}[1]{\colorbox{light-gray}{\texttt{#1}}}
+
+% create new commands
+%\def\^#1{\textsuperscript{#1}}
+%\def\!{\overline}
+%\def\degree{\ensuremath{^\circ}}
+\def\Scale{0.5}
+
+% colourize titles
+\definecolor{ilrblue}{RGB}{79,166,220}
+\usepackage{titling}
+\pretitle{\vspace{-3em}\fontfamily{\sfdefault}\fontsize{18bp}{18bp}\color{ilrblue}\selectfont}
+\posttitle{\par\vspace{18bp}}
+\preauthor{\normalfont\bfseries\selectfont\MakeUppercase}
+\postauthor{\par\vspace{4bp}}
+\predate{\normalfont\selectfont}
+\postdate{\par\vspace{-8bp}}
+\usepackage{titlesec}
+\titleformat{\section}{\fontfamily{\sfdefault}\selectfont\normalsize\bfseries\color{ilrblue}\MakeUppercase}{\thesection}{1em}{}
+\titleformat{\subsection}{\fontfamily{\sfdefault}\normalsize\bfseries\color{ilrblue}}{\thesubsection}{1em}{}
+\titleformat{\subsubsection}{\fontfamily{\sfdefault}\normalsize\bfseries\color{ilrblue}\it}{\thesubsubsection}{1em}{}
+% Ewww
+\makeatletter
+\renewenvironment{abstract}{%
+    \if@twocolumn
+      \section*{\abstractname}%
+    \else \small %
+      \begin{center}%
+        {\bfseries\color{ilrblue} \abstractname\vspace{\z@}\vspace{-8bp}}%
+      \end{center}%
+      \quotation
+    \fi}
+    {\if@twocolumn\else\endquotation\fi}
+\makeatother
+
+% for hyperref
+\hypersetup{
+  linkcolor=ilrblue, % internal (figure) links
+  urlcolor=ilrblue,
+  filecolor=ilrblue,
+  citecolor=ilrblue, % bibliography links
+  pdfauthor={\@author},
+  pdftitle={\@title},
+  pdfsubject={\@title},
+  pdfpagemode=UseNone
+}
+
+\author{Neil A. Edelman}
+\title{Tries {\it vs} trees}
+\date{2024-11-22}
+
+\begin{document}
+
+\maketitle
+
+\abstract{A trie is a specific rotation of a general tree that allows input to be entered directly. Both a tree and a trie offer a maximum $\mathcal{O}(\log n)$ performance of $\mathcal{O}(n)$ space—the tree must be self-balancing and the trie's data must have independent and identically distributed differences.
+
+Our prefix-tree, digital-tree, or trie is an ordered set or map with key strings. We build a dynamic index of two-bytes {\it per} entry, only storing differences in a compact binary radix tree. To maximize locality of reference while descending the trie and minimizing update data, these are grouped together in a forest of fix-sized trees. In practice, this trie is comparable to a numerical B-tree in performance.}
+
+\section{Introduction}
+
+A trie is a tree that stores partitioned sets of strings\cite{de1959file, fredkin1960trie, jacquet1991analysis, askitis2011redesigning} so that, ``instead of basing a search method on comparisons between keys, we can make use of their representation as a sequence of digits or alphabetic characters [directly].\cite{knuth1997sorting}'' It is necessarily ordered, and allows prefix range queries.
+
+Often, only parts of the key string are important; a radix trie (compact prefix tree) skips past the parts that are not important, as \cite{askitis2007hat}. If a candidate key match is found, a full match can be made with one index from the trie.
+
+For most applications, a 256-ary trie is space-intensive; the index contains many spaces for keys that are unused. Compression schemes are available, such as re-using a pool of memory\cite{de1959file}, reducing our encoding alphabet, or take smaller than 8-bit chunks\cite{fredkin1960trie}.
+
+We use a combination binary radix trie, described in \cite{morrison1968patricia} as the PATRICIA automaton. Rather than being sparse, a Patricia-trie is a packed index. It is sometimes convenient to think of this as a full binary tree whose branches store the number of skip bits before the cursor, and splits according to 0 or 1 of the decision bit. The leaves, therefore, are keys, and any other information associated with the key, necessarily corresponding to the path through the branches. Examples of this are seen in Figure~\ref{star-0:tree} and \ref{star-1:tree}.
+
+\section{Implementation}
+
+\subsection{Encoding}
+
+\begin{figure}
+	\centering
+	\subcaptionbox{bits\label{star-0:bits}}{%
+\digraph[scale=0.6]{star0bits}{
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	tree0x100a04120branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr>
+		<td align="left" port="0">Achernar<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="1">Arcturus<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>0</td>
+		<td>1</td>
+		<td>&nbsp;</td>
+		<td>0</td>
+		<td>1</td>
+		<td>1</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+	<tr>
+		<td align="left" port="2">Sol<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td bgcolor="Grey95" border="1">0</td>
+	</tr>
+	<tr>
+		<td align="left" port="3">Vega<font color="Grey75">\detokenize{⊔}</font></td>
+		<td>0</td>
+		<td>1</td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+		<td>0</td>
+		<td bgcolor="Black" color="White" border="1"><font color="White">1</font></td>
+	</tr>
+</table>>];
+}
+	}
+	\subcaptionbox{memory\label{star-0:mem}}{
+\digraph[scale=0.5]{star0mem}{
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	tree0x100a04120branch0 [label = <
+<table border="0" cellspacing="0">
+	<tr><td colspan="3" align="left"><font color="Grey75">Vakgimbat</font> \detokenize{∑}bit=0</td></tr>
+	<hr/>
+	<tr>
+		<td><font face="Times-Italic">left</font></td>
+		<td><font face="Times-Italic">skip</font></td>
+		<td><font face="Times-Italic">leaves</font></td>
+	</tr>
+	<hr/>
+	<tr>
+		<td align="right">1</td>
+		<td align="right">3</td>
+		<td align="left" port="0">Achernar<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td align="right" bgcolor="Gray95">0</td>
+		<td align="right" bgcolor="Gray95">7</td>
+		<td align="left" port="1" bgcolor="Gray95">Arcturus<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td align="right">0</td>
+		<td align="right">1</td>
+		<td align="left" port="2">Sol<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<tr>
+		<td></td>
+		<td></td>
+		<td align="left" port="3" bgcolor="Gray95">Vega<font color="Grey75">\detokenize{⊔}</font></td>
+	</tr>
+	<hr/>
+	<tr><td></td></tr>
+</table>>];
+}
+	}
+	\subcaptionbox{tree\label{star-0:tree}}{
+\digraph[scale=\Scale]{star0tree}{
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	tree0x100a04120branch0 [label="3", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100a04120branch0 -> tree0x100a04120branch1 [arrowhead=rnormal];
+	tree0x100a04120branch0 -> tree0x100a04120branch2 [arrowhead=lnormal];
+	tree0x100a04120branch1 [label="7", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100a04120branch1 -> tree0x100a04120leaf0 [color=Gray75, arrowhead=rnormal];
+	tree0x100a04120branch1 -> tree0x100a04120leaf1 [color=Gray75, arrowhead=lnormal];
+	tree0x100a04120branch2 [label="1", shape=circle, style=filled, fillcolor=Grey95];
+	tree0x100a04120branch2 -> tree0x100a04120leaf2 [color=Gray75, arrowhead=rnormal];
+	tree0x100a04120branch2 -> tree0x100a04120leaf3 [color=Gray75, arrowhead=lnormal];
+	tree0x100a04120leaf0 [label = <Achernar<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100a04120leaf1 [label = <Arcturus<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100a04120leaf2 [label = <Sol<font color="Gray75">\detokenize{⊔}</font>>];
+	tree0x100a04120leaf3 [label = <Vega<font color="Gray75">\detokenize{⊔}</font>>];
+}
+	}
+	\caption{A trie with three different views of the data.\label{star-0}}
+\end{figure}
+
+In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{morrison1968patricia}. In C, a NUL-terminated string automatically has this property, and is ordered correctly. Keys are sorted in lexicographic order by numerical value; \code{strcmp}-order, not by any collation algorithm.
+
+Figure~\ref{star-0:bits} is a visual example of a Patricia trie, that is, a binary radix tree and skip values when bits offer no difference. Note that, in ASCII and UTF-8, \code{A} is represented by an octet with the value of 65, binary 01000001; \code{c} 99, 01100011; \code{r} 114, 01110010; \code{S} 83, 01010011; \code{V} 86, 01010110.
+
+We encode the branches in pre-order fashion, as in Figure~\ref{star-0:mem}. Each branch has a \code{left} and a \code{skip}, corresponding to how many branches are descendants on the left, and how many bits we should skip before the decision bit. With the initial range set to the total number of branches, it becomes a matter of accumulating leaf values for the right branches of a key, accessing the index skip-sequentially, until the range is zero. The right values are implicit in the range. The leaves, on the other hand, are alphabetized, in-order. There will always be one less branch than leaf; that is, this is a full (strict) binary tree with $order - 1$ branches, for $order$ keys as leaves.
+
+Figure~\ref{star-0:tree} shows the conventional full binary tree view of the same data as Figure~\ref{star-0:bits} and \ref{star-0:mem}. The branches indicate a \code{do not care} for all the skipped bits. If a query might have a difference in the skipped values, one can also check the final leaf for agreement with the found value.
+
+\subsection{Range and locality}
+
+Only when the algorithm arrives at a leaf will it go outside the \code{left, skip}. This suggests that these be placed in a contiguous index. This index should be compact as possible to fit the maximum into cache.
+
+However, in establishing a maximum \code{skip} value, one limits the contiguous bits that can be skipped; this has an effect on both on insertion and deletion. One octet provides a maximum 255 skip bits, usually enough for approximately 32 bytes. More noticeably, the maximum \code{left} plus one is the maximum number of leaves in the worst-case of all-left. It is also inefficient to modify the trie with more and more keys; this requires more branches to be changed and an array insertion of the leaf.
+
+To combat these two contradictory requirements, we have broken up the trie in much the same manner as \cite{bayer1972organization}. Except in tries, contrary to B-trees, the data can not be rotated at will; instead, our trie relaxes the rules and instead uses a bitmap of which leaves are links to other structures, called trees. Thus a trie is a forest of non-empty full binary trees. A tree corresponds to a B-tree node\cite{knuth1997sorting}, that is, a contiguous area in memory. This would conflict with the terminology of a key as a leaf and individual branches, which are longer implicit.
+
+Thus, on adding to a tree in a trie that has the maximum number of keys, we must split it into two trees. We use the fact that a binary tree of $n \ge 2$ nodes can be split into two trees not exceeding $\left\lceil \frac{2n-1}{3} \right\rceil$ nodes by starting \code{daughter} tree at the root and choosing the subtree that is larger until the bound is achieved. The \code{mother} will have an extra linking leaf.
+
+\subsection{One-pass or two-pass insertion}
+
+In a one-pass algorithm, each bit of the new key is compared to a sample from the trie before the new decision bit is reached. In a two-pass algorithm, the decision bits are followed all the way to the end with the new key, and that forms an exemplar for comparison with the new key.
+
+These were tried separately, and the two-pass was superior. This only became evident only at 10~million keys; the two-pass algorithm was $\mathcal{O}(\log \text{size})$ iid, while the one-pass was more. This is because every time the right branch is taken, one must update the sample. This usually is quite fast, but asymptotically, it is $\mathcal{O}(\log \text{size})$ iid, as well. In practice, the new key will be checked against the trie for duplicates anyway; it makes sense to combine the check with the first pass.
+
+\subsection{Inserting and deleting keys}
+
+Then, to add a key to an existing trie, first we match the key's decision bits with the tree. If it doesn't have enough length to pick out one tree-key, we arbitrarily choose the left-most alphabetically. We call this the exemplar. The decision bit is found by comparing the new key and exemplar.
+
+Deleting a non-leaf key involves merging \code{skips}. However, a key can be necessary to break up the entries in the trie into sub-maximum sized \code{skips}. In this implementation, one can not delete a key that causes the rest of the trie to go into an inconsistent state. This only matters if one has longer than 32~bytes the same in adjacent keys, (it is very possible.)
+
+\subsection{Hysteresis}
+
+The non-empty criteria of the trees avoids the pathological case where empty trees from deletion pop-up. Further, we can always join a single leaf with its parent except the in the root.
+
+With smaller, dynamic tries, it is more important to not free resources which could be used in the future. Anything less than greedy merging on deletion will have hysteresis. We also should have a zero-key-state with resources, achieved with a flag on the tree size. In the implementation, this is branch size max, but it could be leaf size zero, for example.
+
+\subsection{Data size and order}
+
+We will push the index to be as small as possible, but no more. The order, or branching factor, is the number of leaves, which is bounded by $\max(\code{left}) + 2$. We should have a zero-length flag on the length for empty but active. This is not onerous because the alignment supports a size, then $2^n-1$ index entries, then $2^n$ leaves and bits in the bitmap.
+
+\section{Analysis}
+
+\subsection{Size of a tree}
+
+\begin{figure}%
+\centering%
+\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
+#set encoding utf8
+set key font "modern,20"
+set grid
+set monochrome
+set xlabel "elements"
+set ylabel 'time (µs)'
+set format x '\tiny %g'
+set format y '\tiny %g'
+set key font "modern,20"
+set xrange [2*.99:4194304*1.01]
+set yrange [0:*]
+set key autotitle columnhead top left
+plot "trie_add.tsv" with yerrorlines title "trie add", \
+"tree_add.tsv" with yerrorlines title "tree add"
+\end{gnuplot}
+\caption{Trie {\it vs} tree.}%
+\label{timing}%
+\end{figure}%
+
+Figure~\ref{timing} shows straight insertion of different numbers of keys. It uses two-octet size for each of the branches on the index, divided evenly between \code{left} and \code{skip}. The order is how many leaves each tree holds, either keys or links.
+
+The smaller the order, the more links; this adversely affects the performance because the contents of the next index must be fetched into cache, and the trees split more often. The larger the order, the more updates to the local tree on insertion.\cite{sinha2004cache} In Figure~\ref{timing}, we see the performance noticeably suffers at low orders. Specifically, when we don't fill 64\,kB of our cache lines. A very shallow maximum performance, however, the larger the order, the more efficient use of space.
+
+\begin{figure}\centering
+\begin{subcaptionblock}{\textwidth}
+\centering
+\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
+set format x '\tiny %g'
+set format y '\tiny %g'
+set key font "modern,20"
+set grid
+set monochrome
+set xlabel "keys"
+set ylabel 'amortized time {\it per} key, (µs)'
+set yrange [0:0.5]
+set xrange [1:8388608]
+set log x
+plot \
+"trie-look.tsv" using 1:($2/$1):($3/$1) with errorlines title "trie look", \
+"tree-look.tsv" using 1:($2/$1):($3/$1) with errorlines title "tree look", \
+"table-look.tsv" using 1:($2/$1):($3/$1) with errorlines title "hash table look"
+\end{gnuplot}
+\caption{Time to lookup all keys.}
+\label{compare:look}
+\end{subcaptionblock}
+\begin{subcaptionblock}{\textwidth}
+\centering
+\begin{gnuplot}[terminal=cairolatex, terminaloptions={color dashed pdf size 6.2,3.4}]
+set format x '\tiny %g'
+set format y '\tiny %g'
+set key font "modern,20"
+set grid
+set monochrome
+set xlabel "keys"
+set ylabel 'amortized time {\it per} key, (µs)'
+set yrange [0:3]
+set xrange [1:8388608]
+set log x
+plot \
+"trie-add.tsv" using 1:($2/$1):($3/$1) with errorlines title "trie add", \
+"tree-add.tsv" using 1:($2/$1):($3/$1) with errorlines title "tree add", \
+"table-add.tsv" using 1:($2/$1):($3/$1) with errorlines title "hash table add"
+\end{gnuplot}
+\caption{Time to add all keys.}
+\label{compare:add}
+\end{subcaptionblock}
+\caption{Comparison of look-up and insertion in three different data structures.}%
+\label{compare}%
+\end{figure}%
+
+\subsection{Run-time performance}
+
+We are compressing by prefix, so generally \cite{shannon1948mathematical} should apply. In fact, \cite{tong2016smoothed} shows explicitly that, in the case where the key encoding is independent and identically distributed, the height of the trie is $\mathcal{O}(\log \text{size})$. The sufficiently iid encoding assumption is quite safe to make in practice because the strings are assumed to be a reasonably finite size.
+
+Figure~\ref{compare} shows a comparison of a hash table, a B-tree, and a trie. Each replica, a set of random ASCII non-sense syllables created with $\lambda = 16$ Poisson-distributed length.
+
+For an unordered set, a hash table is hard to beat. The hash function used is {\it djb2}, a very simple multiplicative hash. Still, the bottleneck is almost entirely in calculating the hash. Thus, the performance will be almost entirely dependent of the average length of the string times the complexity of the hash function. Using this hash table loses all the information on the relative order.
+
+If order is needed, then a B-tree is justified. This is seen practice in, for example, \code{C$^{++}$17} where \code{std::unordered\_set} is commonly a hash table and \code{std::ordered\_set} is commonly a red-black tree. Adding to the tree in Figure~\ref{compare:add} shows $\mathcal{O}(\log \text{size})$ behaviour.
+
+Figure~\ref{compare:look} shows that prefix-matching is not any slower than a B-tree at look-up, in this case. In insertion, Figure~\ref{compare:add}, it is also $\mathcal{O}(\log \text{size})$, but it appears slower by a constant amount. Possibly because we are doing multiple descents.
+
+\section{Conclusion}
+
+A Patricia trie with B-tree-like allocation is a really competitive solution in it's own right. It is especially suitable if prefix matching is at all convenient, or necessary, as long as the strings fit within the maximum allowed similarity.
+
+\bibliography{trie}
+
+\end{document}

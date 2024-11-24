@@ -25,7 +25,7 @@ static double m_sample_variance(const struct measure *const m)
 static double m_stddev(const struct measure *const m)
 	{ return sqrt(m_sample_variance(m)); }
 
-struct fixed_string { char str[12/*32*/]; };
+struct fixed_string { char str[128/*12*//*32*/]; };
 
 /** Unused—just want to get gv output. */
 static void str_filler(const char **const key) { (void)key; }
