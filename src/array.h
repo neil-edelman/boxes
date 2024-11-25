@@ -349,7 +349,7 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #endif /* !trait --> */
 
 
-#ifdef ARRAY_TO_STRING /* <!-- to string trait */
+#if defined(ARRAY_TO_STRING) && !defined(ARRAY_HEAD) /* <!-- to string trait */
 /** Thunk `e` -> `a`. */
 static void PAT_(to_string)(const PA_(type) *e, char (*const a)[12])
 	{ AT_(to_string)((const void *)e, a); }
@@ -363,12 +363,14 @@ static void PAT_(to_string)(const PA_(type) *e, char (*const a)[12])
 #undef AT_
 
 
-#if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT) /* <!-- test base */
+#if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT) \
+	&& !defined(ARRAY_HEAD) /* <!-- test base */
 #include "../test/test_array.h"
 #endif /* test base --> */
 
 
-#if defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL) /* <!-- compare trait */
+#if (defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL)) \
+	&& !defined(ARRAY_HEAD) /* <!-- compare trait */
 #ifdef ARRAY_COMPARE /* <!-- cmp */
 #define COMPARE ARRAY_COMPARE
 #else /* cmp --><!-- eq */

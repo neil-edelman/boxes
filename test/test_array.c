@@ -115,8 +115,7 @@ static int pointer_compare(const int *const*const a, const int *const*const b)
 
 
 /* This is simulating a header include. */
-#define ARRAY_NAME public
-#define ARRAY_TYPE int
+#include "public_array.h"
 #define ARRAY_HEAD
 #include "../src/array.h"
 /* And this would be the C source body -- same ARRAY_NAME and ARRAY_TYPE. */
@@ -125,11 +124,7 @@ static void public_to_string(const int *i, char (*const a)[12])
 static void public_filler(int *const i) { int_filler(i); }
 static int public_compare(const int *const a, const int *const b)
 	{ return int_compare(a, b); }
-#define ARRAY_NAME public
-#define ARRAY_TYPE int
-#define ARRAY_TEST
-#define ARRAY_COMPARE
-#define ARRAY_TO_STRING
+#include "public_array.h"
 #define ARRAY_BODY
 #include "../src/array.h"
 

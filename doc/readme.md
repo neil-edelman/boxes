@@ -84,3 +84,45 @@ On inclusion somehow from `compare.h`, supplies:
 	void <T>unique(<T> *); —contiguous
 
 I have never used this.
+
+# Structure of a box.h
+
+Comment for documentation.
+
+	/** @license 2016 Neil Edelman, distributed under the terms of the
+	[MIT License](https://opensource.org/licenses/MIT).
+	@abstract …
+
+	@subtitle … */
+
+Checking for (obvious) misconfigurations; remember that it's probably going to be called under different contexts.
+
+	#if !defined(BOX_NAME) || !defined(BOX_TYPE)
+	#error Name or tag type undefined.
+	#endif
+	…
+	#if defined(BOX_TEST) && (!defined(BOX_TRAIT) && !defined(BOX_TO_STRING) \
+		|| defined(BOX_TRAIT) && !defined(BOX_HAS_TO_STRING))
+	#error Test requires to string.
+	#endif
+	#if defined BOX_HEAD && (defined BOX_BODY || defined BOX_TRAIT)
+	#error Can not be simultaneously defined.
+	#endif
+
+idempotent includes and setup.
+
+	#ifndef BOX_H /* <!-- idempotent */
+	#define BOX_H
+	#include <stdlib.h>
+	#include <errno.h>
+	#include <assert.h>
+	#if defined(BOX_CAT_) || defined(BOX_CAT) || defined(B_) || defined(PB_)
+	#error Unexpected defines.
+	#endif
+	/* <Kernighan and Ritchie, 1988, p. 231>. */
+	#define BOX_CAT_(n, m) n ## _ ## m
+	#define BOX_CAT(n, m) BOX_CAT_(n, m)
+	#define B_(n) BOX_CAT(BOX_NAME, n)
+	#define PB_(n) BOX_CAT(box, B_(n))
+	#endif /* idempotent --> */
+
