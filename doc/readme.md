@@ -16,17 +16,17 @@
 Generally, a subset of contiguous elements built on top of a container, stored in O(1) space, valid until a topological modification of the container.
 
 Ideas:
-> iterator cursor look range subset span [view] (means similar in sql): unbounded laden full [entire], laden occupied [exists], distance size count, get acquire look first [front], last back, shift pop_front (sounds like modifying data) advance (doesn't fit with front) (I kind of like \_front) ditch_ dump_ can_ oust_ expel_ [drop_front] cut_ drain_ eject_ shed_, pop pop_back reverse retract regress recede withdraw retire recede… random?, delete, insert
+> iterator cursor look range subset span [view] (means similar in sql): unbounded laden full [entire], laden occupied [exists], distance size count, get acquire look first begin [front], last end back, shift pop_front (sounds like modifying data) advance (doesn't fit with front) (I kind of like \_front) ditch_ dump_ can_ oust_ expel_ [drop_front] cut_ drain_ eject_ shed_, pop pop_back reverse retract regress recede withdraw retire recede… random?, delete, insert
 
 	struct <T>view; —iterator, cursor
 	<T>view <T>entire(const *<T>); —entire container
 	int <T>exists(const <T>view); —not empty
-	void <T>drop_front(<T>view); —must exists; resets exists
-	<T> *front(const <T>view); —must exists
-	void <T>drop_back(<T>view); —if back is a thing
-	<T> *back(const <T>view);
+	<T> *begin(const <T>view); —must exists
+	void <T>drop_begin(<T>view); —must exists; resets exists
+	<T> *end(const <T>view); —if back/end is a thing
+	void <T>drop_end(<T>view);
 	<T>view <T>prefix(const *<T>); —all kinds of constructors
-	<T> *new_front(<T>view); —maybe we should have a new one
+	//<T> *new_front(<T>view); —maybe we should have a new one to go between
 
 General implementation:
 *box: !box -> done

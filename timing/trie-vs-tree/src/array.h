@@ -31,9 +31,9 @@
  `ARRAY_EXPECT_TRAIT` and then subsequently including the name in
  `ARRAY_TRAIT`.
 
- @param[ARRAY_HEAD, ARRAY_BODY]
+ @param[ARRAY_DECLARE_ONLY, ARRAY_DEFINE_ONLY]
  These go together to allow exporting non-static data between compilation units
- by separating the header head from the code body. `ARRAY_HEAD` needs identical
+ by separating the header head from the code body. `ARRAY_DECLARE_ONLY` needs identical
  `ARRAY_NAME` and `ARRAY_TYPE`.
 
  @std C89 */
@@ -51,7 +51,7 @@
 	|| defined(ARRAY_TRAIT) && !defined(ARRAY_HAS_TO_STRING))
 #error Test requires to string.
 #endif
-#if defined ARRAY_HEAD && (defined ARRAY_BODY || defined ARRAY_TRAIT)
+#if defined ARRAY_DECLARE_ONLY && (defined ARRAY_DEFINE_ONLY || defined ARRAY_TRAIT)
 #error Can not be simultaneously defined.
 #endif
 
@@ -84,7 +84,7 @@
 #define ARRAY_MIN_CAPACITY 3 /* > 1 */
 #endif /* !min --> */
 
-#ifndef ARRAY_BODY /* <!-- head */
+#ifndef ARRAY_DEFINE_ONLY /* <!-- head */
 
 /** A valid tag type set by `ARRAY_TYPE`. */
 typedef ARRAY_TYPE PA_(type);
@@ -103,7 +103,7 @@ struct A_(array_iterator);
 struct A_(array_iterator) { struct PA_(iterator) _; };
 
 #endif /* head --> */
-#ifndef ARRAY_HEAD /* <!-- body */
+#ifndef ARRAY_DECLARE_ONLY /* <!-- body */
 
 /** @return Iterator at end of (non-null) valid `a`. */
 static struct PA_(iterator) PA_(iterator)(struct A_(array) *const a) {
@@ -407,11 +407,11 @@ static void PAT_(to_string)(const PA_(type) *e, char (*const a)[12])
 #ifdef ARRAY_TEST
 #undef ARRAY_TEST
 #endif
-#ifdef ARRAY_BODY
-#undef ARRAY_BODY
+#ifdef ARRAY_DEFINE_ONLY
+#undef ARRAY_DEFINE_ONLY
 #endif
-#ifdef ARRAY_HEAD
-#undef ARRAY_HEAD
+#ifdef ARRAY_DECLARE_ONLY
+#undef ARRAY_DECLARE_ONLY
 #endif
 #endif /* done --> */
 #ifdef ARRAY_TRAIT

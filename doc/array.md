@@ -27,8 +27,8 @@ Stand\-alone header [\.\./src/array\.h](../src/array.h); examples [\.\./test/tes
    To string `<STR>` trait contained in [src/to\_string\.h](src/to_string.h)\. Requires `<name>[<trait>]to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
  * Parameter: ARRAY\_EXPECT\_TRAIT, ARRAY\_TRAIT  
    Named traits are obtained by including `array.h` multiple times with `ARRAY_EXPECT_TRAIT` and then subsequently including the name in `ARRAY_TRAIT`\.
- * Parameter: ARRAY\_HEAD, ARRAY\_BODY  
-   These go together to allow exporting non\-static data between compilation units by separating the header head from the code body\. `ARRAY_HEAD` needs identical `ARRAY_NAME` and `ARRAY_TYPE`\.
+ * Parameter: ARRAY\_DECLARE\_ONLY, ARRAY\_DEFINE\_ONLY  
+   These go together to allow exporting non\-static data between compilation units by separating the header head from the code body\. `ARRAY_DECLARE_ONLY` needs identical `ARRAY_NAME` and `ARRAY_TYPE`\.
  * Standard:  
    C89
 

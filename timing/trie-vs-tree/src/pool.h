@@ -101,7 +101,7 @@ struct PP_(slot) { size_t size; PP_(type) *slab; };
 #define ARRAY_NAME PP_(slot)
 #define ARRAY_TYPE struct PP_(slot)
 #ifdef POOL_HEAD
-#define ARRAY_HEAD
+#define ARRAY_DECLARE_ONLY
 #endif
 #include "array.h"
 
@@ -126,7 +126,7 @@ struct PP_(iterator) { struct PP_(slot) *slot0; size_t i; };
 #ifdef POOL_BODY /* <!-- real body: get the array functions, if separate. */
 #define ARRAY_NAME PP_(slot)
 #define ARRAY_TYPE struct PP_(slot)
-#define ARRAY_BODY
+#define ARRAY_DEFINE_ONLY
 #include "array.h"
 #endif /* real body --> */
 

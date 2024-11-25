@@ -114,19 +114,23 @@ static int pointer_compare(const int *const*const a, const int *const*const b)
 #include "../src/array.h"
 
 
-/* This is simulating a header include. */
+/* Include this in a header file for multiple translation unit. This header
+ uses `ARRAY_DECLARE_ONLY` by default. */
 #include "public_array.h"
-#define ARRAY_HEAD
-#include "../src/array.h"
-/* And this would be the C source body -- same ARRAY_NAME and ARRAY_TYPE. */
-static void public_to_string(const int *i, char (*const a)[12])
+/* This would be the C source body. Make sure the required functions are
+ declared before defining the array. */
+static void static_to_string(const int *i, char (*const a)[12])
 	{ int_to_string(i, a); }
-static void public_filler(int *const i) { int_filler(i); }
-static int public_compare(const int *const a, const int *const b)
+static void static_filler(int *const i) { int_filler(i); }
+static int static_compare(const int *const a, const int *const b)
 	{ return int_compare(a, b); }
+#define ARRAY_DEFINE_ONLY /* Overrides the default. */
 #include "public_array.h"
-#define ARRAY_BODY
-#include "../src/array.h"
+/* Wrapping all needed functions. (Compound laterals are C99.) */
+struct public_array public_array(void)
+	{ struct public_array _; _._ = static_array(); return _; }
+void public_array_(struct public_array *const _) { static_array_(&_->_); }
+void public_array_test(void) { static_array_test(); }
 
 /** Tests; assert crashes on failed test. @return `EXIT_SUCCESS`. */
 int main(void) {
@@ -147,8 +151,8 @@ int main(void) {
 	 <- probably the test is wrong, assumes contiguous. I don't know what it's
 	 doing, wrote 10 years ago. */
 	(void)pointer_array_compare_test;
-	public_array_test();
-	public_array_compare_test();
+	public_array_test(); /* Visible to #include "public_array.h". */
+	static_array_compare_test(); /* Still static. */
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

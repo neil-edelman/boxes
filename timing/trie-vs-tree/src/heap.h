@@ -115,7 +115,7 @@ typedef PH_(priority_c) PH_(node_c);
 #define ARRAY_NAME PH_(node)
 #define ARRAY_TYPE PH_(node)
 #ifdef HEAP_HEAD
-#define ARRAY_HEAD
+#define ARRAY_DECLARE_ONLY
 #endif
 #include "array.h"
 
@@ -134,7 +134,7 @@ struct PH_(iterator) { struct PAH_(iterator) _; };
 #ifdef HEAP_BODY /* <!-- real body: get the array functions, if separate. */
 #define ARRAY_NAME PH_(node)
 #define ARRAY_TYPE PH_(node)
-#define ARRAY_BODY
+#define ARRAY_DEFINE_ONLY
 #include "array.h"
 #endif /* real body --> */
 
