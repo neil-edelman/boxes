@@ -31,10 +31,8 @@
  `ARRAY_EXPECT_TRAIT` and then subsequently including the name in
  `ARRAY_TRAIT`.
 
- @param[ARRAY_DECLARE_ONLY, ARRAY_DEFINE_ONLY]
- These go together to allow exporting non-static data between compilation units
- by separating the header head from the code body. `ARRAY_DECLARE_ONLY` needs identical
- `ARRAY_NAME` and `ARRAY_TYPE`.
+ @param[ARRAY_DECLARE_ONLY]
+ For headers in different compilation units.
 
  @std C89 */
 
@@ -51,9 +49,6 @@
 	|| defined(ARRAY_TRAIT) && !defined(ARRAY_HAS_TO_STRING))
 #error Test requires to string.
 #endif
-#if defined ARRAY_DECLARE_ONLY && (defined ARRAY_DEFINE_ONLY || defined ARRAY_TRAIT)
-#error Can not be simultaneously defined.
-#endif
 
 #ifndef ARRAY_H /* <!-- idempotent */
 #define ARRAY_H
@@ -65,12 +60,15 @@
 #error Unexpected defines.
 #endif
 /* <Kernighan and Ritchie, 1988, p. 231>. */
+/* fixme: no reason to have multiple definitions for every data-structure.
+ <T>foo is fine, add another abstraction. */
 #define ARRAY_CAT_(n, m) n ## _ ## m
 #define ARRAY_CAT(n, m) ARRAY_CAT_(n, m)
 #define A_(n) ARRAY_CAT(ARRAY_NAME, n)
 #define PA_(n) ARRAY_CAT(array, A_(n))
 #endif /* idempotent --> */
 
+/* fixme: same with this. */
 #if !defined(restrict) && (!defined(__STDC__) || !defined(__STDC_VERSION__) \
 	|| __STDC_VERSION__ < 199901L)
 #define ARRAY_RESTRICT /* Undo this at the end. */
@@ -83,8 +81,6 @@
 #ifndef ARRAY_MIN_CAPACITY /* <!-- !min; */
 #define ARRAY_MIN_CAPACITY 3 /* > 1 */
 #endif /* !min --> */
-
-#ifndef ARRAY_DEFINE_ONLY /* <!-- head */
 
 /** A valid tag type set by `ARRAY_TYPE`. */
 typedef ARRAY_TYPE PA_(type);
@@ -102,7 +98,6 @@ struct PA_(iterator) { struct A_(array) *a; size_t i; };
 struct A_(array_iterator);
 struct A_(array_iterator) { struct PA_(iterator) _; };
 
-#endif /* head --> */
 #ifndef ARRAY_DECLARE_ONLY /* <!-- body */
 
 /** @return Iterator at end of (non-null) valid `a`. */
@@ -349,7 +344,8 @@ static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
 #endif /* !trait --> */
 
 
-#if defined(ARRAY_TO_STRING) && !defined(ARRAY_DECLARE_ONLY) /* <!-- to string trait */
+#if defined(ARRAY_TO_STRING) \
+	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- to string trait */
 /** Thunk `e` -> `a`. */
 static void PAT_(to_string)(const PA_(type) *e, char (*const a)[12])
 	{ AT_(to_string)((const void *)e, a); }
@@ -408,9 +404,6 @@ static void PAT_(to_string)(const PA_(type) *e, char (*const a)[12])
 #endif
 #ifdef ARRAY_TEST
 #undef ARRAY_TEST
-#endif
-#ifdef ARRAY_DEFINE_ONLY
-#undef ARRAY_DEFINE_ONLY
 #endif
 #ifdef ARRAY_DECLARE_ONLY
 #undef ARRAY_DECLARE_ONLY

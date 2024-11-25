@@ -114,17 +114,14 @@ static int pointer_compare(const int *const*const a, const int *const*const b)
 #include "../src/array.h"
 
 
-/* Include this in a header file for multiple translation unit. This header
- uses `ARRAY_DECLARE_ONLY` by default. */
-#include "public_array.h"
-/* This would be the C source body. Make sure the required functions are
+/* This shows how one might use a header. Make sure the required functions are
  declared before defining the array. */
 static void static_to_string(const int *i, char (*const a)[12])
 	{ int_to_string(i, a); }
 static void static_filler(int *const i) { int_filler(i); }
 static int static_compare(const int *const a, const int *const b)
 	{ return int_compare(a, b); }
-#define ARRAY_DEFINE_ONLY /* Overrides the default. */
+#define PUBLIC_ARRAY_DEFINE /* Invert meaning. */
 #include "public_array.h"
 /* Wrapping all needed functions. (Compound laterals are C99.) */
 struct public_array public_array(void)
