@@ -92,11 +92,16 @@ typedef ARRAY_TYPE PA_(type);
 struct A_(array) { PA_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
+/* fixme: the iterator needs to be updated into a view. */
+
 /* `a` non-null; `i >= elements` empty; insert-delete on left like C++. */
 struct PA_(iterator) { struct A_(array) *a; size_t i; };
 /** May become invalid after a topological change to any items previous. */
 struct A_(array_iterator);
 struct A_(array_iterator) { struct PA_(iterator) _; };
+
+/* fixme: a wrapper is a terrible way to make functions accessible; something
+ like ARRAY_EXPORT_CONS… #ifdef ARRAY_EXPORT_SIZE, #define static, size_t A_()… */
 
 #ifndef ARRAY_DECLARE_ONLY /* <!-- body */
 
