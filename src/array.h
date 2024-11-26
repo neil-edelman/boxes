@@ -67,6 +67,8 @@
 #	define TU_(n) T_(n)
 #	define PTU_(n) PT_(n)
 #endif
+/* For common files. */
+#define BOXTU_(n) TU_(BOX_CAT(BOX_MAJOR_NAME, n))
 
 
 #include <stdlib.h>
@@ -105,6 +107,7 @@ typedef ARRAY_TYPE PT_(type);
 
  ![States.](../doc/array/states.png) */
 struct T_(array) { PT_(type) *data; size_t size, capacity; };
+typedef struct T_(array) PT_(box);
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
 /* fixme: the iterator needs to be updated into a view. */
@@ -351,8 +354,10 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #if defined(ARRAY_TO_STRING) \
 	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- to string trait */
 /** Thunk `e` -> `a`. */
-static void PTU_(to_string)(const PT_(type) *e, char (*const a)[12])
-	{ TU_(to_string)((const void *)e, a); }
+/*static void PTU_(to_string)(const PT_(type) *e, char (*const a)[12])
+	{ TU_(to_string)((const void *)e, a); } (fixme: now we suddenly don't need
+	this? what changed? I mean, yeah, I would not want to use this hack, but
+	still…) */
 #	include "to_string.h" /** \include */
 #	undef ARRAY_TO_STRING
 #	ifndef ARRAY_TRAIT
@@ -413,6 +418,9 @@ static void PTU_(to_string)(const PT_(type) *e, char (*const a)[12])
 #		undef BOX_RESTRICT
 #		undef restrict
 #	endif
+#	undef TU_
+#	undef PTU_
+#	undef BOXTU_
 #endif
 #ifdef BOX_TRAIT
 #	undef BOX_TRAIT

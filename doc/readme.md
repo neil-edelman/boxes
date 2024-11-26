@@ -30,6 +30,8 @@ _Eg_ _foo_, private `typedef` to `strut foo`, _array_, `struct foo_array`. Stays
 	BOX_ACCESS, BOX_CONTIGUOUS
 Flags. Stays until the box is done.
 
+	typedef PT_(box), PT_(type)
+
 # Interfaces
 
 ## view

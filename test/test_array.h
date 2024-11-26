@@ -13,6 +13,7 @@ static void PT_(valid_state)(const struct T_(array) *const a) {
 	assert(a->size <= a->capacity && a->capacity <= max_size);
 }
 
+/* fixme: this will be elsewhere… it is also very good at debugging programmes. */
 /** Draw a graph of `a` to `fn` in Graphviz format. */
 static void PT_(graph)(const struct T_(array) *const a, const char *const fn) {
 	FILE *fp;

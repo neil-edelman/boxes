@@ -25,7 +25,6 @@
 	|| defined(STR_) || defined(STREXTERN_)
 #	error Unexpected defines.
 #endif
-
 #if defined(TO_STRING_H) \
 	&& (defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN))
 #	error Should be the on the first to_string in the compilation unit.
@@ -35,17 +34,9 @@
 #	endif
 #endif
 
-#if !defined(BOX_CAT) || defined(TO_STRING_CAT) || defined(PSTR_)
-#	error Unexpected preprocessor symbols.
-#endif
-
 #ifndef TO_STRING_H /* <!-- idempotent */
 #	define TO_STRING_H
 #	include <string.h>
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-#	define TO_STRING_CAT_(n, m) n ## _ ## m
-#	define TO_STRING_CAT(n, m) TO_STRING_CAT_(n, m)
-#	define PSTR_(n) TO_STRING_CAT(to_string, STR_(n))
 #	if defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN) /* <!-- ntern */
 extern char to_string_buffers[4][256];
 extern const unsigned to_string_buffers_no;
@@ -73,36 +64,18 @@ static unsigned to_string_buffer_i;
 #define TO_STRING_RIGHT ')'
 #endif
 
-#ifndef BOX_TRAIT_NAME /* <!-- !trait */
-#define STR_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), n)
-#define STRCALL_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MAJOR_NAME, \
-	BOX_MINOR_NAME), n)
-#else /* !trait --><!-- trait */
-#define STR_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), \
-	TO_STRING_CAT(BOX_TRAIT_NAME, n))
-#define STRCALL_(n) TO_STRING_CAT(TO_STRING_CAT(BOX_MAJOR_NAME, \
-	BOX_MINOR_NAME), TO_STRING_CAT(BOX_TRAIT_NAME, n))
-#endif /* trait --> */
-
-typedef BOX_MAJOR PSTR_(box);
-#ifdef BOX_KEY
-typedef BOX_KEY PSTR_(key);
-#error
-#endif
-typedef BOX_MINOR PSTR_(element);
-
 #if 0 /* <!-- documentation. */
 /** <src/to_string.h>: responsible for turning the read-only argument into a
  12-`char` null-terminated output string, passed as a pointer in the last
  argument. This function can have 2 or 3 arguments, where `<PSTR>element` might
  be a map with a key-value pair.  */
-typedef void (*PSTR_(to_string_fn))(const PSTR_(element) *, char (*)[12]);
+typedef void (*PTU_(to_string_fn))(const PT_(element) *, char (*)[12]);
 #endif /* documentation --> */
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
  256 bytes, with limitations of only printing 4 things in a single sequence
  point. @return Address of the static buffer. @order \Theta(1) @allow */
-static const char *STR_(to_string)(const PSTR_(box) *const box) {
+static const char *BOXTU_(to_string)(const PT_(box) *const box) {
 	const char comma = ',', space = ' ', ellipsis[] = "…",
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;
 	const size_t ellipsis_len = sizeof ellipsis - 1;
@@ -117,7 +90,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	to_string_buffer_i &= to_string_buffers_no - 1;
 	{ /* We do not modify `box`, but the compiler doesn't know that. */
 		/* fixme: I think I know how to do it. */
-		PSTR_(box) *promise_box;
+		PT_(box) *promise_box;
 		memcpy(&promise_box, &box, sizeof box);
 		it = PT_(iterator)(promise_box);
 	}
@@ -145,18 +118,16 @@ terminate:
 	return buffer;
 }
 
-static void PSTR_(unused_to_string_coda)(void);
-static void PSTR_(unused_to_string)(void)
-	{ STR_(to_string)(0); PSTR_(unused_to_string_coda)(); }
-static void PSTR_(unused_to_string_coda)(void) { PSTR_(unused_to_string)(); }
+static void PTU_(unused_to_string_coda)(void);
+static void PTU_(unused_to_string)(void)
+	{ BOXTU_(to_string)(0); PTU_(unused_to_string_coda)(); }
+static void PTU_(unused_to_string_coda)(void) { PTU_(unused_to_string)(); }
 
-#undef STR_
-#undef STRCALL_
 #ifdef TO_STRING_EXTERN
-#undef TO_STRING_EXTERN
+#	undef TO_STRING_EXTERN
 #endif
 #ifdef TO_STRING_INTERN
-#undef TO_STRING_INTERN
+#	undef TO_STRING_INTERN
 #endif
 #undef TO_STRING_LEFT
 #undef TO_STRING_RIGHT

@@ -27,8 +27,8 @@ static void str4_filler(struct str4 *const s)
 #define ARRAY_TO_STRING
 #include "../src/array.h"
 
-
 #if 0
+
 #define HAVE_ITERATE_H /* More tests. */
 
 /* Enum array. */
@@ -130,13 +130,16 @@ struct integer_array integer_array(void)
 void integer_array_(struct integer_array *const _) { static_array_(&_->_); }
 void integer_array_test(void) { static_array_test(); }
 
+#endif
+
 /** Tests; assert crashes on failed test. @return `EXIT_SUCCESS`. */
 int main(void) {
-	unsigned seed = /*(unsigned)clock();*/ 2394;
+	unsigned seed = (unsigned)clock() /*2394*/;
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	str4_array_test();
+#if 0
 	colour_array_test();
 	colour_array_compare_test();
 	int_array_test();
@@ -152,10 +155,8 @@ int main(void) {
 	integer_array_test(); /* Visible to #include "integer_array.h". */
 	static_array_compare_test(); /* Still static version—we have yet to define
 	 a wrapper function. */
+#endif
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
 }
-#else
-int main(void) { return EXIT_SUCCESS; }
-#endif
