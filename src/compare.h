@@ -11,6 +11,9 @@
 
  @std C89 */
 
+/* fixme: I don't like it. Maybe break it up into smaller files. Seems like
+ private and public is not really needed. Should be much simpler. 2024-11-25. */
+
 #if !defined(BOX_H) || !defined(BOX_CAT) || !defined(TU_) || !defined(PTU_) \
 	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MAJOR) \
 	|| !defined(BOX_MINOR_NAME) || !defined(BOX_MINOR) \

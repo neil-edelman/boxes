@@ -110,7 +110,8 @@ struct T_(array) { PT_(type) *data; size_t size, capacity; };
 typedef struct T_(array) PT_(box);
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
-/* fixme: the iterator needs to be updated into a view. */
+/* fixme: the iterator needs to be updated into a view. What's with all the
+ secrecy? Why not only `T_(cursor)`? */
 
 /* `a` non-null; `i >= elements` empty; insert-delete on left like C++. */
 struct PT_(iterator) { struct T_(array) *a; size_t i; };
