@@ -113,23 +113,23 @@ static int pointer_compare(const int *const*const a, const int *const*const b)
 #include "../src/array.h"
 
 
-#if 0
-/* This shows how one might use a header. Make sure the required functions are
- declared before defining the array. */
+/* Including "integer_array.h" will make other files see it. */
 static void static_to_string(const int *i, char (*const a)[12])
 	{ int_to_string(i, a); }
 static void static_filler(int *const i) { int_filler(i); }
 static int static_compare(const int *const a, const int *const b)
 	{ return int_compare(a, b); }
-#define INTEGER_ARRAY_DEFINE /* Invert meaning. */
+#define INTEGER_ARRAY_DEFINE /* Invert meaning for this compilation unit. */
 #include "integer_array.h"
-/* Wrapping all needed functions. (Compound laterals are C99.) */
+/* Wrapping all needed functions. (Compound laterals are C99.) We can then call
+ the wrapper function `integer_array_test` as a version of the static
+ "static_array_test". "static_array_compare_test" did not get a wrapper, so we
+ are forced to call the compilation-unit-local version. */
 struct integer_array integer_array(void)
 	{ struct integer_array _; _._ = static_array(); return _; }
 void integer_array_(struct integer_array *const _) { static_array_(&_->_); }
 void integer_array_test(void) { static_array_test(); }
 
-#endif
 
 /** Tests; assert crashes on failed test. @return `EXIT_SUCCESS`. */
 int main(void) {
@@ -147,11 +147,9 @@ int main(void) {
 	keyval_array_value_compare_test();
 	pointer_array_test();
 	pointer_array_compare_test();
-#if 0
-	integer_array_test(); /* Visible to #include "integer_array.h". */
-	static_array_compare_test(); /* Still static version—we have yet to define
-	 a wrapper function. */
-#endif
+	integer_array_test();
+	static_array_compare_test();
+
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;
