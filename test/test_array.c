@@ -55,7 +55,6 @@ static int colour_is_equal(const enum colour *const a,
 #include "../src/array.h"
 
 
-#if 0
 /* Int array with compare. */
 static void int_to_string(const int *i, char (*const a)[12])
 	{ sprintf(*a, "%d", *i); }
@@ -71,6 +70,7 @@ static int int_compare(const int *const a, const int *const b)
 #include "../src/array.h"
 
 
+#if 0
 /* Array with two traits. */
 struct keyval { int key; char value[12]; };
 static void keyval_filler(struct keyval *const kv)
@@ -140,9 +140,9 @@ int main(void) {
 	str4_array_test();
 	colour_array_test();
 	colour_array_compare_test();
-#if 0
 	int_array_test();
 	int_array_compare_test();
+#if 0
 	keyval_array_test();
 	keyval_array_compare_test();
 	keyval_array_value_compare_test();

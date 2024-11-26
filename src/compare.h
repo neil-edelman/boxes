@@ -33,35 +33,35 @@ typedef int (*PTU_(compare_fn))(const PTU_(type) *restrict a,
 typedef int (*PTU_(biaction_fn))(PT_(type) *restrict,
 	PT_(type) *restrict);
 
-#ifdef BOX_COMPARE /* <!-- compare: <typedef:<PTU>compare_fn>. */
+#ifdef COMPARE /* <!-- compare: <typedef:<PTU>compare_fn>. */
 
 /** <src/compare.h>, `COMPARE`: Lexicographically compares `a` to `b`. Both can
  be null, with null values before everything.
  @return `a < b`: negative; `a == b`: zero; `a > b`: positive.
  @order \O(`|a|` & `|b|`) @allow */
-static int CMP_(compare)(const PCMP_(box) *restrict const a,
-	const PCMP_(box) *restrict const b) {
-	struct BOX_(iterator) ia, ib;
+static int BOXTU_(compare)(const PT_(box) *restrict const a,
+	const PT_(box) *restrict const b) {
+	struct PT_(iterator) ia, ib;
 	if(!a) return b ? 1 : 0;
 	if(!b) return -1;
 	{ /* We do not modify, but the compiler doesn't know that. */
-		const PCMP_(box) *const rm_restrict = a;
-		PCMP_(box) *promise_box;
+		const PT_(box) *const rm_restrict = a;
+		PT_(box) *promise_box;
 		memcpy(&promise_box, &rm_restrict, sizeof a);
-		ia = BOX_(iterator)(promise_box);
+		ia = PT_(iterator)(promise_box);
 	} {
-		const PCMP_(box) *const rm_restrict = b;
-		PCMP_(box) *promise_box;
+		const PT_(box) *const rm_restrict = b;
+		PT_(box) *promise_box;
 		memcpy(&promise_box, &rm_restrict, sizeof b);
-		ib = BOX_(iterator)(promise_box);
+		ib = PT_(iterator)(promise_box);
 	}
 	for( ; ; ) {
 		int diff;
-		if(!BOX_(next)(&ia)) return BOX_(next)(&ib) ? -1 : 0;
-		else if(!BOX_(next)(&ib)) return 1;
+		if(!PT_(next)(&ia)) return PT_(next)(&ib) ? -1 : 0;
+		else if(!PT_(next)(&ib)) return 1;
 		/* Must have this function declared. */
-		if(diff = CMPCALL_(compare)((void *)BOX_(element)(&ia),
-			(void *)BOX_(element)(&ib))) return diff;
+		if(diff = TU_(compare)((void *)PT_(element)(&ia),
+			(void *)PT_(element)(&ib))) return diff;
 	}
 }
 
@@ -70,11 +70,11 @@ static int CMP_(compare)(const PCMP_(box) *restrict const a,
 /** <src/compare.h>, `COMPARE`, `BOX_ACCESS`: `box` should be partitioned
  true/false with less-then `element`. @return The first index of `a` that is
  not less than `cursor`. @order \O(log `a.size`) @allow */
-static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
-	const PCMP_(element) *const element) {
-	size_t low = 0, high = BOX_(size)(box), mid;
+static size_t BOXTU_(lower_bound)(const PT_(box) *const box,
+	const PT_(type) *const element) {
+	size_t low = 0, high = PT_(size)(box), mid;
 	while(low < high)
-		if(CMPCALL_(compare)((const void *)element, (const void *)
+		if(TU_(compare)((const void *)element, (const void *)
 			PT_(at)(box, mid = low + (high - low) / 2)) <= 0) high = mid;
 		else low = mid + 1;
 	return low;
@@ -84,11 +84,11 @@ static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
  false/true with greater-than or equal-to `element`.
  @return The first index of `box` that is greater than `element`.
  @order \O(log |`box`|) @allow */
-static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
-	const PCMP_(element) *const element) {
-	size_t low = 0, high = BOX_(size)(box), mid;
+static size_t BOXTU_(upper_bound)(const PT_(box) *const box,
+	const PT_(type) *const element) {
+	size_t low = 0, high = PT_(size)(box), mid;
 	while(low < high)
-		if(CMPCALL_(compare)((const void *)element,
+		if(TU_(compare)((const void *)element,
 			(const void *)PT_(at)(box, mid = low + (high - low) / 2)) >= 0)
 			low = mid + 1;
 		else high = mid;
@@ -100,47 +100,47 @@ static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
 /** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Copies `element` at the upper
  bound of a sorted `box`.
  @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] @allow */
-static int CMP_(insert_after)(PCMP_(box) *const box,
-	const PCMP_(element) *const element) {
+static int BOXTU_(insert_after)(PT_(box) *const box,
+	const PT_(type) *const element) {
 	size_t bound;
 	assert(box && element);
-	bound = CMP_(upper_bound)(box, element);
-	if(!BOX_(append)(box, 1)) return 0;
+	bound = BOXTU_(upper_bound)(box, element); /* hmm */
+	if(!BOXTU_(append)(box, 1)) return 0; /* hmm */
 	memmove(PT_(at)(box, bound + 1), PT_(at)(box, bound),
-		sizeof *element * (BOX_(size)(box) - bound - 1));
+		sizeof *element * (PT_(size)(box) - bound - 1));
 	memcpy(PT_(at)(box, bound), element, sizeof *element);
 	return 1;
 }
 
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
-static int PCMP_(vcompar)(const void *restrict const a,
-	const void *restrict const b) { return CMPCALL_(compare)(a, b); }
+static int PTU_(vcompar)(const void *restrict const a,
+	const void *restrict const b) { return TU_(compare)(a, b); }
 
 /** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`,
  (which has a high-context-switching cost, but is easy.)
  @order \O(|`box`| \log |`box`|) @allow */
-static void CMP_(sort)(PCMP_(box) *const box) {
-	const size_t size = BOX_(size)(box);
-	PCMP_(element) *first;
+static void BOXTU_(sort)(PT_(box) *const box) {
+	const size_t size = PT_(size)(box);
+	PT_(type) *first;
 	if(!size) return;
 	first = PT_(at)(box, 0);
 	/*if(!BOX_(is_element)(first)) return;*/ /* That was weird. */
-	qsort(first, size, sizeof *first, &PCMP_(vcompar));
+	qsort(first, size, sizeof *first, &PTU_(vcompar));
 }
 
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
-static int PCMP_(vrevers)(const void *restrict const a,
-	const void *restrict const b) { return CMPCALL_(compare)(b, a); }
+static int PTU_(vrevers)(const void *restrict const a,
+	const void *restrict const b) { return TU_(compare)(b, a); }
 
 /** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` in reverse by
  `qsort`. @order \O(|`box`| \log |`box`|) @allow */
-static void CMP_(reverse)(PCMP_(box) *const box) {
-	const size_t size = BOX_(size)(box);
-	PCMP_(element) *first;
+static void BOXTU_(reverse)(PT_(box) *const box) {
+	const size_t size = PT_(size)(box);
+	PT_(type) *first;
 	if(!size) return;
 	first = PT_(at)(box, 0);
 	/*if(!BOX_(is_element)(first)) return;*/ /* That was weird. */
-	qsort(first, size, sizeof *first, &PCMP_(vrevers));
+	qsort(first, size, sizeof *first, &PTU_(vrevers));
 }
 
 #		endif /* contiguous --> */
@@ -240,11 +240,11 @@ static void BOXTU_(unique)(PT_(box) *const box)
 static void PTU_(unused_compare_coda)(void);
 static void PTU_(unused_compare)(void) {
 #ifdef COMPARE /* <!-- compare */
-	CMP_(compare)(0, 0);
+	BOXTU_(compare)(0, 0);
 #ifdef BOX_ACCESS
-	CMP_(lower_bound)(0, 0); CMP_(upper_bound)(0, 0);
+	BOXTU_(lower_bound)(0, 0); BOXTU_(upper_bound)(0, 0);
 #ifdef BOX_CONTIGUOUS
-	CMP_(insert_after)(0, 0); CMP_(sort)(0); CMP_(reverse)(0);
+	BOXTU_(insert_after)(0, 0); BOXTU_(sort)(0); BOXTU_(reverse)(0);
 #endif
 #endif
 #endif /* compare --> */
@@ -261,7 +261,4 @@ static void PTU_(unused_compare_coda)(void) { PTU_(unused_compare)(); }
 #endif
 #ifdef COMPARE_IS_EQUAL
 #undef COMPARE_IS_EQUAL
-#endif
-#ifdef BOX_COMPARE_NAME
-#undef BOX_COMPARE_NAME
 #endif

@@ -67,14 +67,14 @@ static void PTU_(test_compactify)(void) {
 	printf("Compactified: %s.\n", T_(array_to_string)(&a));
 	assert(a.size == ts_size / 3);
 #ifdef ARRAY_COMPARE /* <!-- compare */
-	CMP_(reverse)(&a);
-	printf("Reverse: %s.\n", A_(array_to_string)(&a));
+	BOXTU_(reverse)(&a);
+	printf("Reverse: %s.\n", T_(array_to_string)(&a));
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(CMPCALL_(compare)((void *)t, (void *)(t + 1)) >= 0);
-	CMP_(sort)(&a);
-	printf("Sorted: %s.\n", A_(array_to_string)(&a));
+		assert(TU_(compare)((void *)t, (void *)(t + 1)) >= 0);
+	BOXTU_(sort)(&a);
+	printf("Sorted: %s.\n", T_(array_to_string)(&a));
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(CMPCALL_(compare)((void *)t, (void *)(t + 1)) <= 0);
+		assert(TU_(compare)((void *)t, (void *)(t + 1)) <= 0);
 #endif /* compare --> */
 	T_(array_)(&a);
 }
@@ -128,44 +128,44 @@ static void PTU_(test_compare)(void) {
 }
 
 #ifdef ARRAY_COMPARE /* <!-- comp */
-static int PCMP_(cmp_void)(const void *const a, const void *const b)
-	{ return CMP_(compare)(a, b); }
+static int PTU_(cmp_void)(const void *const a, const void *const b)
+	{ return BOXTU_(compare)(a, b); }
 #endif /* comp --> */
 
 static void PTU_(test_sort)(void) {
 #ifdef ARRAY_COMPARE /* <!-- comp */
-	/* fixme: never? */
-	struct A_(array) as[64], *a;
+	struct T_(array) as[64], *a;
 	const size_t as_size = sizeof as / sizeof *as;
-	const struct A_(array) *const as_end = as + as_size;
+	const struct T_(array) *const as_end = as + as_size;
 	int cmp;
 	printf("\ntest sort:\n");
 	/* Random array of Arrays. */
 	for(a = as; a < as_end; a++) {
 		size_t size = (unsigned)rand() / (RAND_MAX / 5 + 1), i;
-		PA_(type) *x, *x_end;
-		*a = A_(array)();
-		x = A_(array_append)(a, size);
+		PT_(type) *x, *x_end;
+		*a = T_(array)();
+		x = T_(array_append)(a, size);
 		x_end = x + size;
 		if(!size) continue;
 		assert(x);
-		for(i = 0; i < size; i++) A_(filler)(a->data + i); /* Emplace. */
-		CMP_(sort)(a);
+		for(i = 0; i < size; i++) T_(filler)(a->data + i); /* Emplace. */
+		BOXTU_(sort)(a);
 		for(x = a->data; x < x_end - 1; x++)
-			cmp = CMPCALL_(compare)((void *)x, (void *)(x + 1)),
+			cmp = TU_(compare)((void *)x, (void *)(x + 1)),
 			assert(cmp <= 0);
+		/* fixme: Why the void casts again? */
 	}
 	/* Now sort the lists. */
-	qsort(as, as_size, sizeof *as, &PCMP_(cmp_void));
+	qsort(as, as_size, sizeof *as, &PTU_(cmp_void));
 	printf("Sorted array of sorted <" QUOTE(ARRAY_NAME) ">array by "
 		   QUOTE(ARRAY_COMPARE) ":\n");
 	for(a = as; a < as_end; a++) {
-		printf("array: %s.\n", A_(array_to_string)(a));
+		printf("array: %s.\n", T_(array_to_string)(a));
 		if(a == as) continue;
-		cmp = CMP_(compare)(a - 1, a);
+		cmp = BOXTU_(compare)(a - 1, a);
 		assert(cmp <= 0);
 	}
-	for(a = as; a < as_end; a++) A_(array_)(a);
+	for(a = as; a < as_end; a++) T_(array_)(a);
 #endif /* comp --> */
 }
 
@@ -229,7 +229,7 @@ static void BOXTU_(compare_test)(void) {
 #ifdef ARRAY_TRAIT
 		QUOTE(ARRAY_TRAIT)
 #else
-		"unnamed"
+		"anonymous"
 #endif
 		">array testing compare:\n");
 	errno = 0;

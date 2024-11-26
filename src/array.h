@@ -333,6 +333,8 @@ static int T_(array_splice)(struct T_(array) *restrict const a,
 
 static void PT_(unused_base_coda)(void);
 static void PT_(unused_base)(void) {
+	/* fixme: private and public iterators? why again… surely we can think of a
+	 simpler solution. */
 	PT_(iterator)(0); PT_(iterator_at)(0, 0); PT_(element)(0);
 	PT_(next)(0); PT_(previous)(0);
 	PT_(size)(0); PT_(at)(0, 0); PT_(tell_size)(0, 0);
