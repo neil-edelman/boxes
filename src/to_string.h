@@ -95,7 +95,7 @@ static const char *TU_(to_string)(const PT_(box) *const box) {
 	}
 	*b++ = left;
 	for( ; T_(cursor_exists)(&cur); T_(cursor_next)(&cur)) {
-		t_(to_string)(T_(cursor_look)(&cur), (char (*)[12])b);
+		tu_(to_string)(T_(cursor_look)(&cur), (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;

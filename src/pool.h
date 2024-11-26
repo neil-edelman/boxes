@@ -66,11 +66,11 @@
 /** @return An order on `a`, `b` which specifies a max-heap. */
 static int poolfree_compare(const size_t a, const size_t b) { return a < b; }
 #endif /* body --> */
-#define HEAP_NAME poolfree
-#define HEAP_TYPE size_t
-#define HEAP_COMPARE &poolfree_compare
+#define BOX_NAME poolfree
+#define BOX_TYPE size_t
+#define BOX_COMPARE &poolfree_compare
 #ifdef POOL_HEAD
-#define HEAP_HEAD
+#define BOX_DELARE_ONLY
 #endif
 #include "heap.h"
 #if !defined(__STDC__) || !defined(__STDC_VERSION__) \

@@ -62,7 +62,7 @@
 #	define PT_(n) BOX_CAT(private, T_(n))
 #endif
 #ifdef BOX_TRAIT
-#	define tu_(n) BOX_CAT(BOX_TRAIT, t_(n))
+#	define tu_(n) t_(BOX_CAT(BOX_TRAIT, n))
 #	define TU_(n) T_(BOX_CAT(BOX_TRAIT, n))
 #	define PTU_(n) PT_(BOX_CAT(BOX_TRAIT, n))
 #else /* Anonymous trait. */
@@ -402,3 +402,6 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #ifdef BOX_TRAIT
 #	undef BOX_TRAIT
 #endif
+#undef tu_
+#undef TU_
+#undef PTU_

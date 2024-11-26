@@ -30,8 +30,8 @@ typedef int (*PTU_(bipredicate_fn))(PT_(type) *restrict, PT_(type) *restrict);
 /** <src/compare.h>: Three-way comparison on a totally order set; returns an
  integer value less than, equal to, greater than zero, if `a < b`, `a == b`,
  `a > b`, respectively. */
-typedef int (*PTU_(compare_fn))(const PTU_(type) *restrict a,
-	const PTU_(type) *restrict b);
+typedef int (*PTU_(compare_fn))(const PT_(type) *restrict a,
+	const PT_(type) *restrict b);
 /** <src/compare.h>: Returns a boolean given two modifiable arguments. */
 typedef int (*PTU_(biaction_fn))(PT_(type) *restrict,
 	PT_(type) *restrict);
@@ -107,8 +107,8 @@ static int TU_(insert_after)(PT_(box) *const box,
 	const PT_(type) *const element) {
 	size_t bound;
 	assert(box && element);
-	bound = TU_(upper_bound)(box, element); /* hmm */
-	if(!TU_(append)(box, 1)) return 0; /* hmm */
+	bound = TU_(upper_bound)(box, element);
+	if(!T_(append)(box, 1)) return 0;
 	memmove(T_(look)(box, bound + 1), T_(look)(box, bound),
 		sizeof *element * (T_(size)(box) - bound - 1));
 	memcpy(T_(look)(box, bound), element, sizeof *element);
@@ -154,10 +154,8 @@ static void TU_(reverse)(PT_(box) *const box) {
  (This makes `COMPARE` encompass `COMPARE_IS_EQUAL`.) However, it can not
  collide with another function!
  @implements <typedef:<PTU>bipredicate_fn> */
-static int t_(is_equal)(const PT_(type) *const restrict a,
-	const PT_(type) *const restrict b) {
-	return !tu_(compare)(a, b);
-}
+static int tu_(is_equal)(const PT_(type) *const restrict a,
+	const PT_(type) *const restrict b) { return !tu_(compare)(a, b); }
 
 #endif /* compare --> */
 
@@ -249,6 +247,7 @@ static void PTU_(unused_compare)(void) {
 	TU_(insert_after)(0, 0); TU_(sort)(0); TU_(reverse)(0);
 #endif
 #endif
+	tu_(is_equal)(0, 0);
 #endif /* compare --> */
 	TU_(is_equal)(0, 0);
 #ifdef BOX_CONTIGUOUS

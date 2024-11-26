@@ -4,9 +4,9 @@
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
 
-/** Used for `HEAP_TEST`: either, `HEAP_VALUE` (*v)->p, or (v)->p, in which it
+/** Used for `BOX_TEST`: either, `BOX_VALUE` (*v)->p, or (v)->p, in which it
  is just a wasted parameter, the return value is what's important. */
-#ifdef HEAP_VALUE
+#ifdef BOX_VALUE
 typedef PH_(priority) (*PH_(test_fn))(PH_(value) *);
 #else
 typedef PH_(priority) (*PH_(test_fn))(void);
@@ -28,7 +28,7 @@ static void PH_(graph)(const struct H_(heap) *const heap,
 		"\trankdir = BT;\n" */
 		"\tedge [arrowhead = none];\n");
 	for(i = 0; i < heap->as_array.size; i++) {
-#ifdef HEAP_VALUE
+#ifdef BOX_VALUE
 		H_(to_string)(heap->as_array.data[i].priority,
 			heap->as_array.data[i].value, &a);
 #else
@@ -54,15 +54,15 @@ static void PH_(valid)(const struct H_(heap) *const heap) {
 		size_t iparent = (i - 1) >> 1;
 		if(PH_(compare)(PH_(get_priority)(n0 + iparent),
 			PH_(get_priority)(n0 + i)) <= 0) continue;
-		PH_(graph)(heap, "graph/" QUOTE(HEAP_NAME) "-invalid.gv");
+		PH_(graph)(heap, "graph/" QUOTE(BOX_NAME) "-invalid.gv");
 		assert(0);
 		break;
 	}
 }
 
-/** Fills `node` whether it has `HEAP_VALUE` or not. */
+/** Fills `node` whether it has `BOX_VALUE` or not. */
 static void PH_(fill)(PH_(node) *const node) {
-#ifdef HEAP_VALUE
+#ifdef BOX_VALUE
 	H_(filler)(&node->priority, &node->value);
 #else
 	H_(filler)(node);
@@ -106,7 +106,7 @@ static void PH_(test_basic)(void) {
 	printf("Test many.\n");
 	for(i = 0; i < test_size_1; i++) {
 		if(!i || !(i & (i - 1))) {
-			sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu.gv",
+			sprintf(fn, "graph/" QUOTE(BOX_NAME) "-%lu.gv",
 				(unsigned long)cum_size);
 			PH_(graph)(&heap, fn);
 		}
@@ -115,7 +115,7 @@ static void PH_(test_basic)(void) {
 		success = H_(heap_add)(&heap, add), cum_size++;
 		assert(success);
 	}
-	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-done-1.gv",
+	sprintf(fn, "graph/" QUOTE(BOX_NAME) "-%lu-done-1.gv",
 		(unsigned long)cum_size);
 	PH_(graph)(&heap, fn);
 	assert(heap.as_array.size == cum_size);
@@ -128,12 +128,12 @@ static void PH_(test_basic)(void) {
 	H_(heap_append)(&heap, test_size_2), cum_size += test_size_2;
 	printf("Now size = %lu.\n", (unsigned long)heap.as_array.size);
 	assert(heap.as_array.size == cum_size);
-	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-buffer.gv", cum_size);
+	sprintf(fn, "graph/" QUOTE(BOX_NAME) "-%lu-buffer.gv", cum_size);
 	PH_(graph)(&heap, fn);
 	PH_(valid)(&heap);
 	for(i = 0; i < test_size_3; i++) {
 		if(!i || !(i & (i - 1))) {
-			sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu.gv",
+			sprintf(fn, "graph/" QUOTE(BOX_NAME) "-%lu.gv",
 				(unsigned long)cum_size);
 			PH_(graph)(&heap, fn);
 		}
@@ -142,7 +142,7 @@ static void PH_(test_basic)(void) {
 		success = H_(heap_add)(&heap, add), cum_size++;
 		assert(success);
 	}
-	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-heap.gv",
+	sprintf(fn, "graph/" QUOTE(BOX_NAME) "-%lu-heap.gv",
 		(unsigned long)cum_size);
 	PH_(graph)(&heap, fn);
 	printf("Setting up merge at %lu.\n", (unsigned long)cum_size);
@@ -151,12 +151,12 @@ static void PH_(test_basic)(void) {
 		success = H_(heap_add)(&merge, add);
 		assert(success);
 	}
-	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-merge.gv",
+	sprintf(fn, "graph/" QUOTE(BOX_NAME) "-%lu-merge.gv",
 		(unsigned long)cum_size);
 	PH_(graph)(&merge, fn);
 	PH_(valid)(&merge);
 	success = H_(heap_affix)(&heap, &merge), cum_size += merge.as_array.size;
-	sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-%lu-combined.gv",
+	sprintf(fn, "graph/" QUOTE(BOX_NAME) "-%lu-combined.gv",
 		(unsigned long)cum_size);
 	PH_(graph)(&heap, fn);
 	assert(success && heap.as_array.size == cum_size);
@@ -166,7 +166,7 @@ static void PH_(test_basic)(void) {
 		char z[12];
 		node = H_(heap_peek)(&heap);
 		assert(node);
-#ifdef HEAP_VALUE
+#ifdef BOX_VALUE
 		H_(to_string)(node->priority, node->value, &z);
 #else
 		H_(to_string)(node, &z);
@@ -174,7 +174,7 @@ static void PH_(test_basic)(void) {
 		H_(heap_pop)(&heap);
 		if(!i || !(i & (i - 1))) {
 			printf("%lu: retreving %s.\n", (unsigned long)i, z);
-			sprintf(fn, "graph/" QUOTE(HEAP_NAME) "-remove-%lu.gv",
+			sprintf(fn, "graph/" QUOTE(BOX_NAME) "-remove-%lu.gv",
 				(unsigned long)i);
 			PH_(graph)(&heap, fn);
 		}
@@ -190,21 +190,21 @@ static void PH_(test_basic)(void) {
 	assert(!H_(heap_peek)(&heap));
 }
 
-/** Will be tested on stdout. Requires `HEAP_TEST`, `HEAP_TO_STRING`, and not
+/** Will be tested on stdout. Requires `BOX_TEST`, `BOX_TO_STRING`, and not
  `NDEBUG` while defining `assert`.
- @param[param] The `void *` parameter in `HEAP_TEST`. Can be null. @allow */
+ @param[param] The `void *` parameter in `BOX_TEST`. Can be null. @allow */
 static void H_(heap_test)(void) {
-	printf("<" QUOTE(HEAP_NAME) ">heap"
-		" of priority type <" QUOTE(HEAP_TYPE) ">"
+	printf("<" QUOTE(BOX_NAME) ">heap"
+		" of priority type <" QUOTE(BOX_TYPE) ">"
 		" was created using:"
-		" HEAP_COMPARE<" QUOTE(HEAP_COMPARE) ">;"
-#ifdef HEAP_VALUE
-		" HEAP_VALUE<" QUOTE(HEAP_VALUE) ">;"
+		" BOX_COMPARE<" QUOTE(BOX_COMPARE) ">;"
+#ifdef BOX_VALUE
+		" BOX_VALUE<" QUOTE(BOX_VALUE) ">;"
 #endif
-		" HEAP_TEST <" QUOTE(HEAP_TEST) ">;"
+		" BOX_TEST <" QUOTE(BOX_TEST) ">;"
 		" testing:\n");
 	PH_(test_basic)();
-	fprintf(stderr, "Done tests of <" QUOTE(HEAP_NAME) ">heap.\n\n");
+	fprintf(stderr, "Done tests of <" QUOTE(BOX_NAME) ">heap.\n\n");
 }
 
 #undef QUOTE

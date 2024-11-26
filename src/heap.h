@@ -8,100 +8,94 @@
 
  ![Example of heap.](../doc/heap/heap.png)
 
- A <tag:<H>heap> is a binary heap, proposed by
+ A <tag:<T>heap> is a binary heap, proposed by
  <Williams, 1964, Heapsort, p. 347> using terminology of
  <Knuth, 1973, Sorting>. It can be used as an implementation of a priority
- queue. Internally, it is an array with implicit heap properties on
- <typedef:<PH>priority> and an optional <typedef:<PH>value> that is associated
- with the value.
+ queue.
 
- @param[HEAP_NAME, HEAP_TYPE]
- `<H>` that satisfies `C` naming conventions when mangled and an assignable
- type <typedef:<PH>priority> associated therewith. `HEAP_NAME` is required;
- `HEAP_TYPE` defaults to `unsigned int`. `<PH>` is private, whose names are
- prefixed in a manner to avoid collisions.
+ @param[BOX_NAME, BOX_TYPE]
+ `<T>` that satisfies `C` naming conventions when mangled. `BOX_NAME` is
+ required; `BOX_TYPE` defaults to `unsigned int`.
 
- @param[HEAP_COMPARE]
+ @param[BOX_COMPARE]
  A function satisfying <typedef:<PH>compare_fn>. Defaults to minimum-hash.
- Required if `HEAP_TYPE` is changed to an incomparable type. For example, a
+ Required if `BOX_TYPE` is changed to an incomparable type. For example, a
  maximum heap, `(a, b) -> a < b`.
 
- @param[HEAP_VALUE]
- Optional value <typedef:<PH>value>, that, on `HEAP_VALUE`, is stored in
+ @param[BOX_VALUE]
+ Optional value <typedef:<PH>value>, that, on `BOX_VALUE`, is stored in
  <tag:<H>heapnode>, which is <typedef:<PH>value>.
 
- @param[HEAP_TO_STRING]
+ @param[BOX_TO_STRING]
  To string trait `<STR>` contained in <src/to_string.h>. Require
  `<name>[<trait>]to_string` be declared as <typedef:<PSTR>to_string_fn>.
 
- @param[HEAP_EXPECT_TRAIT, HEAP_TRAIT]
+ @param[BOX_EXPECT_TRAIT, BOX_TRAIT]
  Named traits are obtained by including `heap.h` multiple times with
- `HEAP_EXPECT_TRAIT` and then subsequently including the name in
- `HEAP_TRAIT`.
+ `BOX_EXPECT_TRAIT` and then subsequently including the name in
+ `BOX_TRAIT`.
 
- @param[HEAP_HEAD, HEAP_BODY]
- These go together to allow exporting non-static data between compilation units
- by separating the header head from the code body. `HEAP_HEAD` needs identical
- `HEAP_NAME`, `HEAP_TYPE`, and `HEAP_VALUE`.
+ @param[BOX_DELARE_ONLY]
+ For headers in different compilation units.
 
  @depend [array](https://github.com/neil-edelman/array)
  @std C89 */
 
-#ifndef HEAP_NAME
-#error Name HEAP_NAME undefined.
+#ifndef BOX_NAME
+#error Name BOX_NAME undefined.
 #endif
-#if defined(HEAP_TRAIT) ^ defined(BOX_TYPE)
-#error HEAP_TRAIT name must come after HEAP_EXPECT_TRAIT.
+#if defined(BOX_TRAIT) ^ defined(BOX_TYPE)
+#error BOX_TRAIT name must come after BOX_EXPECT_TRAIT.
 #endif
-#if defined(HEAP_TEST) && (!defined(HEAP_TRAIT) && !defined(HEAP_TO_STRING) \
-	|| defined(HEAP_TRAIT) && !defined(HEAP_HAS_TO_STRING))
+#if defined(BOX_TEST) && (!defined(BOX_TRAIT) && !defined(BOX_TO_STRING) \
+	|| defined(BOX_TRAIT) && !defined(BOX_HAS_TO_STRING))
 #error Test requires to string.
 #endif
-#if defined HEAP_HEAD && (defined HEAP_BODY || defined HEAP_TRAIT)
+#if defined BOX_DELARE_ONLY && (defined BOX_BODY || defined BOX_TRAIT)
 #error Can not be simultaneously defined.
 #endif
 
-#ifndef HEAP_H /* <!-- idempotent */
-#define HEAP_H
-#if defined(HEAP_CAT_) || defined(HEAP_CAT) || defined(H_) || defined(PH_)
+#ifndef BOX_H /* <!-- idempotent */
+#define BOX_H
+#if defined(BOX_CAT_) || defined(BOX_CAT) || defined(H_) || defined(PH_)
 #error Unexpected defines.
 #endif
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#define HEAP_CAT_(n, m) n ## _ ## m
-#define HEAP_CAT(n, m) HEAP_CAT_(n, m)
-#define H_(n) HEAP_CAT(HEAP_NAME, n)
-#define PH_(n) HEAP_CAT(heap, H_(n))
+#define BOX_CAT_(n, m) n ## _ ## m
+#define BOX_CAT(n, m) BOX_CAT_(n, m)
+#define H_(n) BOX_CAT(BOX_NAME, n)
+#define PH_(n) BOX_CAT(heap, H_(n))
 #endif /* idempotent --> */
 
 #if !defined(restrict) && (!defined(__STDC__) || !defined(__STDC_VERSION__) \
 	|| __STDC_VERSION__ < 199901L)
-#define HEAP_RESTRICT /* Undo this at the end. */
+#define BOX_RESTRICT /* Undo this at the end. */
 #define restrict /* Attribute only in C99+. */
 #endif
 
 
-#ifndef HEAP_TRAIT /* <!-- base code */
+#ifndef BOX_TRAIT /* <!-- base code */
 
-#ifndef HEAP_TYPE
-#define HEAP_TYPE unsigned
+#ifndef BOX_TYPE
+#define BOX_TYPE unsigned
 #endif
 
 /* Used to refer to heap as array. */
-#define PAH_(n) HEAP_CAT(HEAP_CAT(array, PH_(node)), n)
+#define PAH_(n) BOX_CAT(BOX_CAT(array, PH_(node)), n)
 
-#ifndef HEAP_BODY /* <!-- head */
+#ifndef BOX_BODY /* <!-- head */
 
 /** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
- `unsigned int` if not set by `HEAP_TYPE`. */
-typedef HEAP_TYPE PH_(priority);
-typedef const HEAP_TYPE PH_(priority_c); /* This is assuming a lot. */
+ `unsigned int` if not set by `BOX_TYPE`. */
+typedef BOX_TYPE PH_(priority);
+typedef const BOX_TYPE PH_(priority_c); /* This is assuming a lot. */
 
-#ifdef HEAP_VALUE /* <!-- value */
-typedef HEAP_VALUE PH_(value);
-typedef const HEAP_VALUE PH_(value_c); /* Assume! */
-/** If `HEAP_VALUE` is set, this becomes <typedef:<PH>node>. */
+#ifdef BOX_VALUE /* <!-- value */
+typedef BOX_VALUE PH_(value);
+typedef const BOX_VALUE PH_(value_c); /* Assume! */
+/** If `BOX_VALUE` is set, this becomes <typedef:<PH>node>. */
 struct H_(heapnode) { PH_(priority) priority; PH_(value) value; };
-/** If `HEAP_VALUE` is set, (priority, value) set by <tag:<H>heapnode>,
+/** If `BOX_VALUE` is set, (priority, value) set by <tag:<H>heapnode>,
  otherwise it's a (priority) set directly by <typedef:<PH>priority>. */
 typedef struct H_(heapnode) PH_(node);
 typedef const struct H_(heapnode) PH_(node_c);
@@ -114,7 +108,7 @@ typedef PH_(priority_c) PH_(node_c);
 /* This relies on <src/array.h> which must be in the same directory. */
 #define ARRAY_NAME PH_(node)
 #define ARRAY_TYPE PH_(node)
-#ifdef HEAP_HEAD
+#ifdef BOX_DELARE_ONLY
 #define ARRAY_DECLARE_ONLY
 #endif
 #include "array.h"
@@ -129,9 +123,9 @@ struct H_(heap) { struct PH_(node_array) as_array; };
 struct PH_(iterator) { struct PAH_(iterator) _; };
 
 #endif /* head --> */
-#ifndef HEAP_HEAD /* <!-- body */
+#ifndef BOX_DELARE_ONLY /* <!-- body */
 
-#ifdef HEAP_BODY /* <!-- real body: get the array functions, if separate. */
+#ifdef BOX_BODY /* <!-- real body: get the array functions, if separate. */
 #define ARRAY_NAME PH_(node)
 #define ARRAY_TYPE PH_(node)
 #define ARRAY_DEFINE_ONLY
@@ -143,16 +137,16 @@ struct PH_(iterator) { struct PAH_(iterator) _; };
  comparators from `bsearch` and `qsort`; it only needs to divide entries into
  two instead of three categories. */
 typedef int (*PH_(compare_fn))(PH_(priority_c) a, PH_(priority_c) b);
-#ifndef HEAP_COMPARE /* <!-- !cmp */
-/** The default `HEAP_COMPARE` on `a` and `b` is `a > b`, which makes a
+#ifndef BOX_COMPARE /* <!-- !cmp */
+/** The default `BOX_COMPARE` on `a` and `b` is `a > b`, which makes a
  minimum-hash. @implements <typedef:<PH>compare_fn> */
 static int PH_(default_compare)(PH_(priority_c) a, PH_(priority_c) b)
 	{ return a > b; }
-#define HEAP_COMPARE &PH_(default_compare)
+#define BOX_COMPARE &PH_(default_compare)
 #endif /* !cmp --> */
-/* Check that `HEAP_COMPARE` is a function implementing
+/* Check that `BOX_COMPARE` is a function implementing
  <typedef:<PH>compare_fn>, if defined. */
-static const PH_(compare_fn) PH_(compare) = (HEAP_COMPARE);
+static const PH_(compare_fn) PH_(compare) = (BOX_COMPARE);
 
 /** @return Before `h`. @implements `forward` */
 static struct PH_(iterator) PH_(iterator)(struct H_(heap) *const h)
@@ -166,7 +160,7 @@ static int PH_(next)(struct PH_(iterator) *const it)
 
 /** Extracts the <typedef:<PH>priority> of `node`, which must not be null. */
 static PH_(priority) PH_(get_priority)(const PH_(node) *const node) {
-#ifdef HEAP_VALUE
+#ifdef BOX_VALUE
 	return node->priority;
 #else
 	return *node;
@@ -175,7 +169,7 @@ static PH_(priority) PH_(get_priority)(const PH_(node) *const node) {
 
 /** Extracts the <typedef:<PH>value> of `node`, which must not be null. */
 static PH_(value) PH_(get_value)(const PH_(node) *const node) {
-#ifdef HEAP_VALUE
+#ifdef BOX_VALUE
 	return node->value;
 #else
 	return *node;
@@ -375,7 +369,7 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #define BOX_CONTENT PH_(node)
 #define BOX_ PH_
 #define BOX_MAJOR_NAME heap
-#define BOX_NAME HEAP_NAME
+#define BOX_NAME BOX_NAME
 
 #endif /* body --> */
 
@@ -384,20 +378,20 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #endif /* base code --> */
 
 
-#ifdef HEAP_TRAIT /* <-- trait: Will be different on different includes. */
-#define BOX_TRAIT_NAME HEAP_TRAIT
-#define PHT_(n) PH_(ARRAY_CAT(HEAP_TRAIT, n))
-#define HT_(n) H_(ARRAY_CAT(HEAP_TRAIT, n))
+#ifdef BOX_TRAIT /* <-- trait: Will be different on different includes. */
+#define BOX_TRAIT_NAME BOX_TRAIT
+#define PHT_(n) PH_(ARRAY_CAT(BOX_TRAIT, n))
+#define HT_(n) H_(ARRAY_CAT(BOX_TRAIT, n))
 #else /* trait --><!-- !trait */
 #define PHT_(n) PH_(n)
 #define HT_(n) H_(n)
 #endif /* !trait --> */
 
 
-#ifdef HEAP_TO_STRING /* <!-- to string trait */
+#ifdef BOX_TO_STRING /* <!-- to string trait */
 /** Thunk `n` -> `a`. */
 static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12]) {
-#ifdef HEAP_VALUE
+#ifdef BOX_VALUE
 	HT_(to_string)(n->priority, n->value, a);
 #else
 	HT_(to_string)(n, a);
@@ -406,52 +400,52 @@ static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12]) {
 #define TO_STRING_LEFT '['
 #define TO_STRING_RIGHT ']'
 #include "to_string.h" /** \include */
-#undef HEAP_TO_STRING
-#ifndef HEAP_TRAIT
-#define HEAP_HAS_TO_STRING
+#undef BOX_TO_STRING
+#ifndef BOX_TRAIT
+#define BOX_HAS_TO_STRING
 #endif
 #endif /* to string trait --> */
 #undef PHT_
 #undef HT_
 
 
-#if defined(HEAP_TEST) && !defined(HEAP_TRAIT) /* <!-- test base */
+#if defined(BOX_TEST) && !defined(BOX_TRAIT) /* <!-- test base */
 #include "../test/test_heap.h"
 #endif /* test base --> */
 
 
-#ifdef HEAP_EXPECT_TRAIT /* <!-- more */
-#undef HEAP_EXPECT_TRAIT
+#ifdef BOX_EXPECT_TRAIT /* <!-- more */
+#undef BOX_EXPECT_TRAIT
 #else /* more --><!-- done */
 #undef BOX_TYPE
 #undef BOX_CONTENT
 #undef BOX_
 #undef BOX_MAJOR_NAME
 #undef BOX_NAME
-#undef HEAP_NAME
-#undef HEAP_TYPE
-#undef HEAP_COMPARE
-#ifdef HEAP_VALUE
-#undef HEAP_VALUE
+#undef BOX_NAME
+#undef BOX_TYPE
+#undef BOX_COMPARE
+#ifdef BOX_VALUE
+#undef BOX_VALUE
 #endif
-#ifdef HEAP_HAS_TO_STRING
-#undef HEAP_HAS_TO_STRING
+#ifdef BOX_HAS_TO_STRING
+#undef BOX_HAS_TO_STRING
 #endif
-#ifdef HEAP_TEST
-#undef HEAP_TEST
+#ifdef BOX_TEST
+#undef BOX_TEST
 #endif
-#ifdef HEAP_BODY
-#undef HEAP_BODY
+#ifdef BOX_BODY
+#undef BOX_BODY
 #endif
-#ifdef HEAP_HEAD
-#undef HEAP_HEAD
+#ifdef BOX_DELARE_ONLY
+#undef BOX_DELARE_ONLY
 #endif
 #endif /* done --> */
-#ifdef HEAP_TRAIT
-#undef HEAP_TRAIT
+#ifdef BOX_TRAIT
+#undef BOX_TRAIT
 #undef BOX_TRAIT_NAME
 #endif
-#ifdef HEAP_RESTRICT
-#undef HEAP_RESTRICT
+#ifdef BOX_RESTRICT
+#undef BOX_RESTRICT
 #undef restrict
 #endif

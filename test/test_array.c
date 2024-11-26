@@ -70,7 +70,6 @@ static int int_compare(const int *const a, const int *const b)
 #include "../src/array.h"
 
 
-#if 0
 /* Array with two traits. */
 struct keyval { int key; char value[12]; };
 static void keyval_filler(struct keyval *const kv)
@@ -97,6 +96,8 @@ static int keyval_value_compare(const struct keyval *const a,
 #define BOX_COMPARE
 #include "../src/array.h"
 
+
+#if 0
 
 static int targets[] = { 4, 2, 8, 2, 6, 5, 3, 6, 1, 2, 9, 3 };
 static void pointer_to_string(const int *const*const i, char (*const a)[12])
@@ -142,10 +143,10 @@ int main(void) {
 	colour_array_compare_test();
 	int_array_test();
 	int_array_compare_test();
-#if 0
 	keyval_array_test();
 	keyval_array_compare_test();
 	keyval_array_value_compare_test();
+#if 0
 	pointer_array_test();
 	/*pointer_array_compare_test();
 	 <- probably the test is wrong, assumes contiguous. I don't know what it's

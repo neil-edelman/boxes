@@ -11,7 +11,7 @@
 
 
 /* Minimal heap. This selects the default `unsigned int`. */
-#define HEAP_NAME min
+#define BOX_NAME min
 #include "../src/heap.h"
 
 
@@ -20,9 +20,9 @@ static void int_to_string(const unsigned *const i, char (*const z)[12])
 	{ sprintf(*z, "%u", *i); }
 static void int_filler(unsigned *const p)
 	{ *p = (unsigned)rand() / (RAND_MAX / 99 + 1) + 1; }
-#define HEAP_NAME int
-#define HEAP_TEST
-#define HEAP_TO_STRING
+#define BOX_NAME int
+#define BOX_TEST
+#define BOX_TO_STRING
 #include "../src/heap.h"
 
 
@@ -42,10 +42,10 @@ static void orc_filler(unsigned *const health, struct orc **const orc_ptr) {
 	orcish(orc->name, sizeof orc->name);
 	*orc_ptr = orc;
 }
-#define HEAP_NAME orc
-#define HEAP_VALUE struct orc *
-#define HEAP_TO_STRING
-#define HEAP_TEST
+#define BOX_NAME orc
+#define BOX_VALUE struct orc *
+#define BOX_TO_STRING
+#define BOX_TEST
 #include "../src/heap.h"
 
 
@@ -55,25 +55,25 @@ static void index_to_string(const size_t *const i, char (*const a)[12]) {
 }
 static void index_filler(size_t *const p) { *p = (size_t)rand(); }
 static int index_compare(const size_t a, const size_t b) { return a < b; }
-#define HEAP_NAME index
-#define HEAP_TYPE size_t
-#define HEAP_COMPARE &index_compare
-#define HEAP_TEST
-#define HEAP_TO_STRING
+#define BOX_NAME index
+#define BOX_TYPE size_t
+#define BOX_COMPARE &index_compare
+#define BOX_TEST
+#define BOX_TO_STRING
 #include "../src/heap.h"
 
 
 /* Heap separate header. */
-#define HEAP_NAME header
-#define HEAP_HEAD
+#define BOX_NAME header
+#define BOX_DELARE_ONLY
 #include "../src/heap.h"
 static void header_to_string(const unsigned *const i, char (*const z)[12])
 	{ int_to_string(i, z); }
 static void header_filler(unsigned *const p) { int_filler(p); }
-#define HEAP_NAME header
-#define HEAP_TEST
-#define HEAP_TO_STRING
-#define HEAP_BODY
+#define BOX_NAME header
+#define BOX_TEST
+#define BOX_TO_STRING
+#define BOX_BODY
 #include "../src/heap.h"
 
 
