@@ -147,9 +147,6 @@ int main(void) {
 	keyval_array_value_compare_test();
 	pointer_array_test();
 	pointer_array_compare_test();
-	/* <- probably the test is wrong, assumes contiguous. I don't know what it's
-	 doing, wrote 10 years ago. */
-	(void)pointer_array_compare_test;
 #if 0
 	integer_array_test(); /* Visible to #include "integer_array.h". */
 	static_array_compare_test(); /* Still static version—we have yet to define
