@@ -45,76 +45,81 @@
  Named traits are obtained by including `trie.h` multiple times with
  `TRIE_EXPECT_TRAIT` and then subsequently including the name in `TRIE_TRAIT`.
 
- @param[TREE_HEAD, TREE_BODY]
+ @param[BOX_DECLARE_ONLY, TREE_BODY]
  These go together to allow exporting non-static data between compilation units
- by separating the header head from the code body. `TREE_HEAD` needs identical
+ by separating the header head from the code body. `BOX_DECLARE_ONLY` needs identical
  `TREE_NAME`, `TREE_KEY`, and `TREE_ENTRY`.
 
  @std C89 (Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ.) */
 
 #ifndef TRIE_NAME
-#error Name TRIE_NAME undefined.
+#	error Name TRIE_NAME undefined.
 #endif
 #if defined(TRIE_TRAIT) ^ defined(BOX_TYPE)
-#error TRIE_TRAIT name must come after TRIE_EXPECT_TRAIT.
+#	error TRIE_TRAIT name must come after TRIE_EXPECT_TRAIT.
 #endif
 #if defined(TRIE_TEST) && (!defined(TRIE_TRAIT) && !defined(TRIE_TO_STRING) \
 	|| defined(TRIE_TRAIT) && !defined(TRIE_HAS_TO_STRING))
-#error Test requires to string.
+#	error Test requires to string.
 #endif
 #if defined TRIE_HEAD && (defined TRIE_BODY || defined TRIE_TRAIT)
-#error Can not be simultaneously defined.
+#	error Can not be simultaneously defined.
 #endif
 
-
-#ifndef TRIE_H /* <!-- idempotent */
-#define TRIE_H
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <assert.h>
-#include <limits.h>
+#ifndef BOX_H
+#	define BOX_H
+#	if defined(BOX_CAT_) || defined(BOX_CAT) || defined(T_) || defined(PT_)
+#		error Unexpected defines.
+#	endif
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#if defined(TRIE_CAT_) || defined(TRIE_CAT) || defined(T_) || defined(PT_)
-#error Unexpected defines.
+#	define BOX_CAT_(n, m) n ## _ ## m
+#	define BOX_CAT(n, m) BOX_CAT_(n, m)
+#	define T_(n) BOX_CAT(BOX_MINOR_NAME, n)
+#	define PT_(n) BOX_CAT(BOX_CAT(private, BOX_MAJOR_NAME), T_(n))
 #endif
-#define TRIE_CAT_(n, m) n ## _ ## m
-#define TRIE_CAT(n, m) TRIE_CAT_(n, m)
-#define T_(n) TRIE_CAT(TRIE_NAME, n)
-#define PT_(n) TRIE_CAT(trie, T_(n))
+
+#ifndef TRIE_H /* Idempotent. */
+#	define TRIE_H
+#	include <stdlib.h>
+#	include <string.h>
+#	include <errno.h>
+#	include <assert.h>
+#	include <limits.h>
 /* <http://c-faq.com/misc/bitsets.html>, except reversed for msb-first. */
-#define TRIE_MASK(n) ((1 << CHAR_BIT - 1) >> (n) % CHAR_BIT)
-#define TRIE_SLOT(n) ((n) / CHAR_BIT)
-#define TRIE_QUERY(a, n) ((a)[TRIE_SLOT(n)] & TRIE_MASK(n))
-#define TRIE_DIFF(a, b, n) \
-	(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
+#	define TRIE_MASK(n) ((1 << CHAR_BIT - 1) >> (n) % CHAR_BIT)
+#	define TRIE_SLOT(n) ((n) / CHAR_BIT)
+#	define TRIE_QUERY(a, n) ((a)[TRIE_SLOT(n)] & TRIE_MASK(n))
+#	define TRIE_DIFF(a, b, n) \
+		(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Maximum branching factor/leaves. Prefer alignment `4n`; cache `32n`. */
-#define TRIE_ORDER 256
-#if TRIE_ORDER - 2 < 1 || TRIE_ORDER - 2 > UCHAR_MAX /* Max left. */
-#error Non-zero maximum left parameter range `[1, UCHAR_MAX]`.
-#endif
+#	define TRIE_ORDER 256
+#	if TRIE_ORDER - 2 < 1 || TRIE_ORDER - 2 > UCHAR_MAX /* Max left. */
+#		error Non-zero maximum left parameter range `[1, UCHAR_MAX]`.
+#	endif
 /* `⌈(2n-1)/3⌉` nodes. */
-#define TRIE_SPLIT ((2 * (TRIE_ORDER + TRIE_ORDER - 1) - 1 + 2) / 3)
-#define TRIE_RESULT X(ERROR), X(ABSENT), X(PRESENT)
-#define X(n) TRIE_##n
+#	define TRIE_SPLIT ((2 * (TRIE_ORDER + TRIE_ORDER - 1) - 1 + 2) / 3)
+
+#	define TRIE_RESULT X(ERROR), X(ABSENT), X(PRESENT)
+#	define X(n) TRIE_##n
 /** A result of modifying the table, of which `TRIE_ERROR` is false.
 
  ![A diagram of the result states.](../doc/trie/result.png) */
 enum trie_result { TRIE_RESULT };
-#undef X
-#ifndef TREE_HEAD /* <!-- body */
-#define X(n) #n
+#	undef X
+#	ifndef BOX_DECLARE_ONLY
+#		define X(n) #n
 /** A static array of strings describing the <tag:trie_result>. */
 static const char *const trie_result_str[] = { TRIE_RESULT };
-#undef X
-#endif /* body --> */
-#undef TRIE_RESULT
+#		undef X
+#	endif
+#	undef TRIE_RESULT
+
 struct trie_branch { unsigned char left, skip; };
-#ifndef TREE_HEAD /* <!-- body */
+#	ifndef BOX_DECLARE_ONLY
 /* Construct `struct trie_bmp`. */
-#define BMP_NAME trie
-#define BMP_BITS TRIE_ORDER
-#include "bmp.h"
+#		define BMP_NAME trie
+#		define BMP_BITS TRIE_ORDER
+#		include "bmp.h"
 /** @return Whether `prefix` is the prefix of `word`.
  Used in <fn:<T>trie_prefix>. */
 static int trie_is_prefix(const char *prefix, const char *word) {
@@ -123,8 +128,8 @@ static int trie_is_prefix(const char *prefix, const char *word) {
 		if(*prefix != *word) return 0;
 	}
 }
-#endif /* body --> */
-#endif /* idempotent --> */
+#	endif
+#endif
 
 
 #ifndef TRIE_TRAIT /* <!-- base trie */

@@ -19,49 +19,51 @@
 
  @std C89 */
 
-#if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
-	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME) \
+#if !defined(BOX_H) || !defined(BOX_CAT) || !defined(T_) || !defined(PT_) \
+	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MAJOR) \
+	|| !defined(BOX_MINOR_NAME) || !defined(BOX_MINOR) \
 	|| defined(STR_) || defined(STREXTERN_)
-#error Unexpected preprocessor symbols.
+#	error Unexpected defines.
 #endif
 
 #if defined(TO_STRING_H) \
-	&& (defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN)) /* <!-- not */
-#error Should be the on the first to_string in the compilation unit.
-#else /* not --><!-- !not */
-#if defined(TO_STRING_EXTERN) && defined(TO_STRING_INTERN) /* <!-- two */
-#error These can not be defined together.
-#endif /* two --> */
-#endif /* !not --> */
+	&& (defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN))
+#	error Should be the on the first to_string in the compilation unit.
+#else
+#	if defined(TO_STRING_EXTERN) && defined(TO_STRING_INTERN)
+#		error These can not be defined together.
+#	endif
+#endif
+
+#if !defined(BOX_CAT) || defined(TO_STRING_CAT) || defined(PSTR_)
+#	error Unexpected preprocessor symbols.
+#endif
 
 #ifndef TO_STRING_H /* <!-- idempotent */
-#define TO_STRING_H
-#include <string.h>
-#if defined(TO_STRING_CAT_) || defined(TO_STRING_CAT) || defined(PSTR_)
-#error Unexpected preprocessor symbols.
-#endif
+#	define TO_STRING_H
+#	include <string.h>
 /* <Kernighan and Ritchie, 1988, p. 231>. */
-#define TO_STRING_CAT_(n, m) n ## _ ## m
-#define TO_STRING_CAT(n, m) TO_STRING_CAT_(n, m)
-#define PSTR_(n) TO_STRING_CAT(to_string, STR_(n))
-#if defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN) /* <!-- ntern */
+#	define TO_STRING_CAT_(n, m) n ## _ ## m
+#	define TO_STRING_CAT(n, m) TO_STRING_CAT_(n, m)
+#	define PSTR_(n) TO_STRING_CAT(to_string, STR_(n))
+#	if defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN) /* <!-- ntern */
 extern char to_string_buffers[4][256];
 extern const unsigned to_string_buffers_no;
 extern unsigned to_string_i;
-#ifdef TO_STRING_INTERN /* <!-- intern */
+#		ifdef TO_STRING_INTERN
 char to_string_buffers[4][256];
 const unsigned to_string_buffers_no = sizeof to_string_buffers
 	/ sizeof *to_string_buffers, to_string_buffer_size
 	= sizeof *to_string_buffers / sizeof **to_string_buffers;
 unsigned to_string_buffer_i;
-#endif /* intern --> */
-#else /* ntern --><!-- static */
+#		endif
+#	else /* ntern --><!-- static */
 static char to_string_buffers[4][256];
 static const unsigned to_string_buffers_no = sizeof to_string_buffers
 	/ sizeof *to_string_buffers, to_string_buffer_size
 	= sizeof *to_string_buffers / sizeof **to_string_buffers;
 static unsigned to_string_buffer_i;
-#endif /* static --> */
+#	endif /* static --> */
 #endif /* idempotent --> */
 
 #ifndef TO_STRING_LEFT
@@ -82,12 +84,12 @@ static unsigned to_string_buffer_i;
 	BOX_MINOR_NAME), TO_STRING_CAT(BOX_TRAIT_NAME, n))
 #endif /* trait --> */
 
-typedef BOX_TYPE PSTR_(box);
+typedef BOX_MAJOR PSTR_(box);
 #ifdef BOX_KEY
 typedef BOX_KEY PSTR_(key);
 #error
 #endif
-typedef BOX_CONTENT PSTR_(element);
+typedef BOX_MINOR PSTR_(element);
 
 #if 0 /* <!-- documentation. */
 /** <src/to_string.h>: responsible for turning the read-only argument into a
@@ -106,7 +108,7 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	const size_t ellipsis_len = sizeof ellipsis - 1;
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance;
-	struct BOX_(iterator) it;
+	struct PT_(iterator) it;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
 	assert(box && !(to_string_buffers_no & (to_string_buffers_no - 1))
@@ -114,20 +116,21 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
 	{ /* We do not modify `box`, but the compiler doesn't know that. */
+		/* fixme */
 		PSTR_(box) *promise_box;
 		memcpy(&promise_box, &box, sizeof box);
-		it = BOX_(iterator)(promise_box);
+		it = PT_(iterator)(promise_box);
 	}
 	*b++ = left;
-	while(BOX_(next)(&it)) {
-		STRCALL_(to_string)(BOX_(element)(&it), (char (*)[12])b);
+	while(PT_(next)(&it)) {
+		T_(to_string)(PT_(element)(&it), (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size_t)(b - buffer) > to_string_buffer_size - 11 - 1
 			- ellipsis_len - 1 - 1)
-			{ if(BOX_(next)(&it)) goto ellipsis; else break; }
+			{ if(PT_(next)(&it)) goto ellipsis; else break; }
 	}
 	if(is_sep) b -= 2;
 	*b++ = right;

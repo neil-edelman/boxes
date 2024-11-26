@@ -26,139 +26,159 @@
  To string `<STR>` trait contained in <src/to_string.h>. Requires
  `<name>[<trait>]to_string` be declared as <typedef:<PSTR>to_string_fn>.
 
- @param[ARRAY_EXPECT_TRAIT, ARRAY_TRAIT]
+ @param[BOX_EXPECT_TRAIT, BOX_TRAIT]
  Named traits are obtained by including `array.h` multiple times with
- `ARRAY_EXPECT_TRAIT` and then subsequently including the name in
- `ARRAY_TRAIT`.
+ `BOX_EXPECT_TRAIT` and then subsequently including the name in `BOX_TRAIT`.
 
- @param[ARRAY_DECLARE_ONLY]
+ @param[BOX_DECLARE_ONLY]
  For headers in different compilation units.
 
  @std C89 */
 
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
-#error Name or tag type undefined.
+#	error Name or tag type undefined.
 #endif
-#if defined(ARRAY_TRAIT) ^ defined(BOX_TYPE)
-#error ARRAY_TRAIT name must come after ARRAY_EXPECT_TRAIT.
+#if defined(ARRAY_TRAIT) ^ defined(BOX_MAJOR)
+#	error ARRAY_TRAIT name must come after ARRAY_EXPECT_TRAIT.
 #endif
 #if defined(ARRAY_COMPARE) && defined(ARRAY_IS_EQUAL)
-#error Only one can be defined at a time.
+#	error Only one can be defined at a time.
 #endif
 #if defined(ARRAY_TEST) && (!defined(ARRAY_TRAIT) && !defined(ARRAY_TO_STRING) \
 	|| defined(ARRAY_TRAIT) && !defined(ARRAY_HAS_TO_STRING))
-#error Test requires to string.
+#	error Test requires to string.
 #endif
 
-#ifndef ARRAY_H /* <!-- idempotent */
-#define ARRAY_H
+#ifndef BOX_H
+#	define BOX_H
+#	if defined(BOX_CAT_) || defined(BOX_CAT) || defined(T_) || defined(PT_)
+#		error Unexpected defines.
+#	endif
+/* <Kernighan and Ritchie, 1988, p. 231>. */
+#	define BOX_CAT_(n, m) n ## _ ## m
+#	define BOX_CAT(n, m) BOX_CAT_(n, m)
+#	define T_(n) BOX_CAT(BOX_MINOR_NAME, n)
+#	define PT_(n) BOX_CAT(BOX_CAT(private, BOX_MAJOR_NAME), T_(n))
+#endif
+
+/* fixme */
+#ifdef BOX_TRAIT /* <-- trait: Will be different on different includes. */
+#	define BOX_TRAIT_NAME ARRAY_TRAIT
+#	define PAT_(n) PT_(ARRAY_CAT(ARRAY_TRAIT, n))
+#	define AT_(n) T_(ARRAY_CAT(ARRAY_TRAIT, n))
+#else /* trait --><!-- !trait */
+#	define PAT_(n) PT_(n)
+#	define AT_(n) T_(n)
+#endif /* !trait --> */
+
+
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <assert.h>
-#if defined(ARRAY_CAT_) || defined(ARRAY_CAT) || defined(A_) || defined(PA_)
-#error Unexpected defines.
-#endif
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-/* fixme: no reason to have multiple definitions for every data-structure.
- <T>foo is fine, add another abstraction. */
-#define ARRAY_CAT_(n, m) n ## _ ## m
-#define ARRAY_CAT(n, m) ARRAY_CAT_(n, m)
-#define A_(n) ARRAY_CAT(ARRAY_NAME, n)
-#define PA_(n) ARRAY_CAT(array, A_(n))
-#endif /* idempotent --> */
 
-/* fixme: same with this. */
 #if !defined(restrict) && (!defined(__STDC__) || !defined(__STDC_VERSION__) \
 	|| __STDC_VERSION__ < 199901L)
-#define ARRAY_RESTRICT /* Undo this at the end. */
-#define restrict /* Attribute only in C99+. */
+#	define BOX_RESTRICT /* Undo this at the end. */
+#	define restrict /* Attribute only in C99+. */
 #endif
 
+#ifndef ARRAY_TRAIT /* Base code, necessarily first. */
 
-#ifndef ARRAY_TRAIT /* <!-- base code */
+/* Box override information stays until the box is done. */
+#	define BOX_MINOR_NAME ARRAY_NAME
+#	define BOX_MINOR PT_(type)
+#	define BOX_MAJOR_NAME array
+#	define BOX_MAJOR struct T_(array)
+#	define BOX_ACCESS
+#	define BOX_CONTIGUOUS
 
-#ifndef ARRAY_MIN_CAPACITY /* <!-- !min; */
-#define ARRAY_MIN_CAPACITY 3 /* > 1 */
-#endif /* !min --> */
+#	ifndef ARRAY_MIN_CAPACITY
+#		define ARRAY_MIN_CAPACITY 3 /* > 1 */
+#	endif
+#	if ARRAY_MIN_CAPACITY <= 1
+#		error ARRAY_MIN_CAPACITY > 1
+#	endif
 
 /** A valid tag type set by `ARRAY_TYPE`. */
-typedef ARRAY_TYPE PA_(type);
+typedef ARRAY_TYPE PT_(type);
 
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`.
 
  ![States.](../doc/array/states.png) */
-struct A_(array) { PA_(type) *data; size_t size, capacity; };
+struct T_(array) { PT_(type) *data; size_t size, capacity; };
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
 /* fixme: the iterator needs to be updated into a view. */
 
 /* `a` non-null; `i >= elements` empty; insert-delete on left like C++. */
-struct PA_(iterator) { struct A_(array) *a; size_t i; };
+struct PT_(iterator) { struct T_(array) *a; size_t i; };
 /** May become invalid after a topological change to any items previous. */
-struct A_(array_iterator);
-struct A_(array_iterator) { struct PA_(iterator) _; };
+struct T_(array_iterator);
+struct T_(array_iterator) { struct PT_(iterator) _; };
+
+
 
 /* fixme: a wrapper is a terrible way to make functions accessible; something
- like ARRAY_EXPORT_CONS… #ifdef ARRAY_EXPORT_SIZE, #define static, size_t A_()… */
+ like ARRAY_EXPORT_CONS… #ifdef ARRAY_EXPORT_SIZE, #define static, size_t T_()… */
 
-#ifndef ARRAY_DECLARE_ONLY /* <!-- body */
+#	ifndef BOX_DECLARE_ONLY /* Produce code: not for headers. */
 
 /** @return Iterator at end of (non-null) valid `a`. */
-static struct PA_(iterator) PA_(iterator)(struct A_(array) *const a) {
-	struct PA_(iterator) it;
+static struct PT_(iterator) PT_(iterator)(struct T_(array) *const a) {
+	struct PT_(iterator) it;
 	assert(a), it.a = a, it.i = (size_t)~0;
 	return it;
 }
 /** @return Iterator at element `i` of non-null `a`. */
-static struct PA_(iterator) PA_(iterator_at)(struct A_(array) *a, size_t i) {
-	struct PA_(iterator) it;
+static struct PT_(iterator) PT_(iterator_at)(struct T_(array) *a, size_t i) {
+	struct PT_(iterator) it;
 	assert(a), it.a = a, it.i = i < a->size ? i : (size_t)~0;
 	return it;
 }
 /** @return Dereference the element pointed to by valid `it`. */
-static PA_(type) *PA_(element)(struct PA_(iterator) *const it)
+static PT_(type) *PT_(element)(struct PT_(iterator) *const it)
 	{ return it->a->data + it->i; }
 /** Next `it`. @return Valid element? */
-static int PA_(next)(struct PA_(iterator) *const it) {
+static int PT_(next)(struct PT_(iterator) *const it) {
 	assert(it && it->a);
 	if(it->i >= it->a->size) it->i = (size_t)~0;
 	return ++it->i < it->a->size;
 }
 /** Previous `it`. @return Valid element? */
-static int PA_(previous)(struct PA_(iterator) *const it) {
+static int PT_(previous)(struct PT_(iterator) *const it) {
 	assert(it && it->a);
 	if(it->i > it->a->size) it->i = it->a->size; /* Clip. */
 	return --it->i < it->a->size;
 }
-/* fixme: static struct PA_(iterator)
- PA_(remove)(struct PA_(iterator) *const it) */
+/* fixme: static struct PT_(iterator)
+ PT_(remove)(struct PT_(iterator) *const it) */
 /** Size of `a`. @implements `size` */
-static size_t PA_(size)(const struct A_(array) *a) { return a ? a->size : 0; }
+static size_t PT_(size)(const struct T_(array) *a) { return a ? a->size : 0; }
 /** @return Element `idx` of `a`. @implements `at` */
-static PA_(type) *PA_(at)(const struct A_(array) *a, const size_t idx)
+static PT_(type) *PT_(at)(const struct T_(array) *a, const size_t idx)
 	{ return a->data + idx; }
 /** Writes `size` to `a`. @implements `tell_size` */
-static void PA_(tell_size)(struct A_(array) *a, const size_t size)
+static void PT_(tell_size)(struct T_(array) *a, const size_t size)
 	{ assert(a); a->size = size; }
 
 /** Zeroed data (not all-bits-zero) is initialized.
  @return An idle array. @order \Theta(1) @allow */
-static struct A_(array) A_(array)(void)
-	{ struct A_(array) a; a.data = 0, a.capacity = a.size = 0; return a; }
+static struct T_(array) T_(array)(void)
+	{ struct T_(array) a; a.data = 0, a.capacity = a.size = 0; return a; }
 
 /** If `a` is not null, destroys and returns it to idle. @allow */
-static void A_(array_)(struct A_(array) *const a)
-	{ if(a) free(a->data), *a = A_(array)(); }
+static void T_(array_)(struct T_(array) *const a)
+	{ if(a) free(a->data), *a = T_(array)(); }
 
 /** Ensures `min` capacity of `a`. Invalidates pointers in `a`. @param[min] If
  zero, does nothing. @return Success; otherwise, `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
  doesn't follow POSIX. @throws[realloc] @allow */
-static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
+static int T_(array_reserve)(struct T_(array) *const a, const size_t min) {
 	size_t c0;
-	PA_(type) *data;
+	PT_(type) *data;
 	const size_t max_size = (size_t)~0 / sizeof *a->data;
 	assert(a);
 	if(a->data) {
@@ -189,17 +209,17 @@ static int A_(array_reserve)(struct A_(array) *const a, const size_t min) {
  @return The start of the buffered space at the back of the array. If `a` is
  idle and `buffer` is zero, a null pointer is returned, otherwise null
  indicates an error. @throws[realloc] @allow */
-static PA_(type) *A_(array_buffer)(struct A_(array) *const a, const size_t n) {
+static PT_(type) *T_(array_buffer)(struct T_(array) *const a, const size_t n) {
 	assert(a);
 	if(a->size > (size_t)~0 - n) { errno = ERANGE; return 0; }
-	return A_(array_reserve)(a, a->size + n) && a->data ? a->data + a->size : 0;
+	return T_(array_reserve)(a, a->size + n) && a->data ? a->data + a->size : 0;
 }
 
 /** Appends `n` contiguous items on the back of `a`.
  @implements `append` from `BOX_CONTIGUOUS` */
-static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n) {
-	PA_(type) *b;
-	if(!(b = A_(array_buffer)(a, n))) return 0;
+static PT_(type) *PT_(append)(struct T_(array) *const a, const size_t n) {
+	PT_(type) *b;
+	if(!(b = T_(array_buffer)(a, n))) return 0;
 	assert(n <= a->capacity && a->size <= a->capacity - n);
 	return a->size += n, b;
 }
@@ -210,12 +230,12 @@ static PA_(type) *PA_(append)(struct A_(array) *const a, const size_t n) {
  function behaves as <fn:<A>array_append>.
  @return A pointer to the start of the new region, where there are `n`
  elements. @throws[realloc, ERANGE] @allow */
-static PA_(type) *A_(array_insert)(struct A_(array) *const a,
+static PT_(type) *T_(array_insert)(struct T_(array) *const a,
 	const size_t n, const size_t at) {
 	/* Investigate `n` is better than `element`; all the other are element. But
 	 also, when would I ever use this? */
 	const size_t old_size = a->size;
-	PA_(type) *const b = PA_(append)(a, n);
+	PT_(type) *const b = PT_(append)(a, n);
 	assert(a && at <= old_size);
 	if(!b) return 0;
 	memmove(a->data + at + n, a->data + at, sizeof *a->data * (old_size - at));
@@ -225,14 +245,14 @@ static PA_(type) *A_(array_insert)(struct A_(array) *const a,
 /** @return Adds (push back) one new element of `a`. The buffer space holds at
  least one element, or it may invalidate pointers in `a`.
  @order amortised \O(1) @throws[realloc, ERANGE] @allow */
-static PA_(type) *A_(array_new)(struct A_(array) *const a)
-	{ return PA_(append)(a, 1); }
+static PT_(type) *T_(array_new)(struct T_(array) *const a)
+	{ return PT_(append)(a, 1); }
 
 /** Shrinks the capacity `a` to the size, freeing unused memory. If the size is
  zero, it will be in an idle state. Invalidates pointers in `a`.
  @return Success. @throws[ERANGE, realloc] (Unlikely) `realloc` error. */
-static int A_(array_shrink)(struct A_(array) *const a) {
-	PA_(type) *data;
+static int T_(array_shrink)(struct T_(array) *const a) {
+	PT_(type) *data;
 	size_t c;
 	assert(a && a->capacity >= a->size);
 	if(!a->data) return assert(!a->size && !a->capacity), 1;
@@ -245,8 +265,8 @@ static int A_(array_shrink)(struct A_(array) *const a) {
 
 /** Removes `element` from `a`. Do not attempt to remove an element that is not
  in `a`. @order \O(`a.size`). @allow */
-static void A_(array_remove)(struct A_(array) *const a,
-	PA_(type) *const element) {
+static void T_(array_remove)(struct T_(array) *const a,
+	PT_(type) *const element) {
 	const size_t n = (size_t)(element - a->data);
 	assert(a && element && element >= a->data && element < a->data + a->size);
 	memmove(element, element + 1, sizeof *element * (--a->size - n));
@@ -254,8 +274,8 @@ static void A_(array_remove)(struct A_(array) *const a,
 
 /** Removes `datum` from `a` and replaces it with the tail. Do not attempt to
  remove an element that is not in `a`. @order \O(1). @allow */
-static void A_(array_lazy_remove)(struct A_(array) *const a,
-	PA_(type) *const datum) {
+static void T_(array_lazy_remove)(struct T_(array) *const a,
+	PT_(type) *const datum) {
 	size_t n = (size_t)(datum - a->data);
 	assert(a && datum && datum >= a->data && datum < a->data + a->size);
 	if(--a->size != n) memcpy(datum, a->data + a->size, sizeof *datum);
@@ -264,16 +284,16 @@ static void A_(array_lazy_remove)(struct A_(array) *const a,
 /** Sets `a` to be empty. That is, the size of `a` will be zero, but if it was
  previously in an active non-idle state, it continues to be.
  @order \Theta(1) @allow */
-static void A_(array_clear)(struct A_(array) *const a)
+static void T_(array_clear)(struct T_(array) *const a)
 	{ assert(a), a->size = 0; }
 
 /** @return The last element or null if `a` is empty. @order \Theta(1) @allow */
-static PA_(type) *A_(array_peek)(const struct A_(array) *const a)
+static PT_(type) *T_(array_peek)(const struct T_(array) *const a)
 	{ return assert(a), a->size ? a->data + a->size - 1 : 0; }
 
 /** @return Value from the the top of `a` that is removed or null if the array
  is empty. @order \Theta(1) @allow */
-static PA_(type) *A_(array_pop)(struct A_(array) *const a)
+static PT_(type) *T_(array_pop)(struct T_(array) *const a)
 	{ return assert(a), a->size ? a->data + --a->size : 0; }
 
 /** Adds `n` elements to the back of `a`. It will invalidate pointers in `a` if
@@ -281,20 +301,20 @@ static PA_(type) *A_(array_pop)(struct A_(array) *const a)
  @return A pointer to the elements. If `a` is idle and `n` is zero, a null
  pointer will be returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */
-static PA_(type) *A_(array_append)(struct A_(array) *const a, const size_t n)
-	{ return assert(a), PA_(append)(a, n); }
+static PT_(type) *T_(array_append)(struct T_(array) *const a, const size_t n)
+	{ return assert(a), PT_(append)(a, n); }
 
 /** Indices [`i0`, `i1`) of `a` will be replaced with a copy of `b`.
  @param[b] Can be null, which acts as empty, but cannot overlap with `a`.
  @return Success. @throws[realloc, ERANGE] @allow */
-static int A_(array_splice)(struct A_(array) *restrict const a,
-	const struct A_(array) *restrict const b,
+static int T_(array_splice)(struct T_(array) *restrict const a,
+	const struct T_(array) *restrict const b,
 	const size_t i0, const size_t i1) {
 	const size_t a_range = i1 - i0, b_range = b ? b->size : 0;
 	assert(a && a != b && i0 <= i1 && i1 <= a->size);
 	if(a_range < b_range) { /* The output is bigger. */
 		const size_t diff = b_range - a_range;
-		if(!A_(array_buffer)(a, diff)) return 0;
+		if(!T_(array_buffer)(a, diff)) return 0;
 		memmove(a->data + i1 + diff, a->data + i1,
 			(a->size - i1) * sizeof *a->data);
 		a->size += diff;
@@ -307,52 +327,43 @@ static int A_(array_splice)(struct A_(array) *restrict const a,
 	return 1;
 }
 
-/* Box override information. */
-#define BOX_TYPE struct A_(array)
-#define BOX_CONTENT PA_(type)
-#define BOX_ PA_
-#define BOX_MAJOR_NAME array
-#define BOX_MINOR_NAME ARRAY_NAME
-#define BOX_ACCESS
-#define BOX_CONTIGUOUS
+#		ifdef HAVE_ITERATE_H
+#			include "iterate.h" /** \include */
+#		endif
 
-#ifdef HAVE_ITERATE_H /* <!-- iterate */
-#include "iterate.h" /** \include */
-#endif /* iterate --> */
-
-static void PA_(unused_base_coda)(void);
-static void PA_(unused_base)(void) {
-	PA_(iterator)(0); PA_(iterator_at)(0, 0); PA_(element)(0);
-	PA_(next)(0); PA_(previous)(0);
-	PA_(size)(0); PA_(at)(0, 0); PA_(tell_size)(0, 0);
-	A_(array)(); A_(array_)(0);
-	A_(array_insert)(0, 0, 0); A_(array_new)(0);
-	A_(array_shrink)(0); A_(array_remove)(0, 0); A_(array_lazy_remove)(0, 0);
-	A_(array_clear)(0); A_(array_peek)(0); A_(array_pop)(0);
-	A_(array_append)(0, 0); A_(array_splice)(0, 0, 0, 0);
-	PA_(unused_base_coda)();
+static void PT_(unused_base_coda)(void);
+static void PT_(unused_base)(void) {
+	PT_(iterator)(0); PT_(iterator_at)(0, 0); PT_(element)(0);
+	PT_(next)(0); PT_(previous)(0);
+	PT_(size)(0); PT_(at)(0, 0); PT_(tell_size)(0, 0);
+	T_(array)(); T_(array_)(0);
+	T_(array_insert)(0, 0, 0); T_(array_new)(0);
+	T_(array_shrink)(0); T_(array_remove)(0, 0); T_(array_lazy_remove)(0, 0);
+	T_(array_clear)(0); T_(array_peek)(0); T_(array_pop)(0);
+	T_(array_append)(0, 0); T_(array_splice)(0, 0, 0, 0);
+	PT_(unused_base_coda)();
 }
-static void PA_(unused_base_coda)(void) { PA_(unused_base)(); }
+static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
-#endif /* body --> */
+#	endif /* Produce code. */
 
-#endif /* base code --> */
+#endif /* Base code. */
 
 
 #ifdef ARRAY_TRAIT /* <-- trait: Will be different on different includes. */
 #define BOX_TRAIT_NAME ARRAY_TRAIT
-#define PAT_(n) PA_(ARRAY_CAT(ARRAY_TRAIT, n))
-#define AT_(n) A_(ARRAY_CAT(ARRAY_TRAIT, n))
+#define PAT_(n) PT_(ARRAY_CAT(ARRAY_TRAIT, n))
+#define AT_(n) T_(ARRAY_CAT(ARRAY_TRAIT, n))
 #else /* trait --><!-- !trait */
-#define PAT_(n) PA_(n)
-#define AT_(n) A_(n)
+#define PAT_(n) PT_(n)
+#define AT_(n) T_(n)
 #endif /* !trait --> */
 
 
 #if defined(ARRAY_TO_STRING) \
 	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- to string trait */
 /** Thunk `e` -> `a`. */
-static void PAT_(to_string)(const PA_(type) *e, char (*const a)[12])
+static void PAT_(to_string)(const PT_(type) *e, char (*const a)[12])
 	{ AT_(to_string)((const void *)e, a); }
 #include "to_string.h" /** \include */
 #undef ARRAY_TO_STRING
@@ -394,11 +405,10 @@ static void PAT_(to_string)(const PA_(type) *e, char (*const a)[12])
 #ifdef ARRAY_EXPECT_TRAIT /* <!-- more */
 #undef ARRAY_EXPECT_TRAIT
 #else /* more --><!-- done */
-#undef BOX_TYPE
-#undef BOX_CONTENT
-#undef BOX_
-#undef BOX_MAJOR_NAME
 #undef BOX_MINOR_NAME
+#undef BOX_MINOR
+#undef BOX_MAJOR_NAME
+#undef BOX_MAJOR
 #undef BOX_ACCESS
 #undef BOX_CONTIGUOUS
 #undef ARRAY_NAME
@@ -413,12 +423,12 @@ static void PAT_(to_string)(const PA_(type) *e, char (*const a)[12])
 #ifdef ARRAY_DECLARE_ONLY
 #undef ARRAY_DECLARE_ONLY
 #endif
+#ifdef BOX_RESTRICT
+#undef BOX_RESTRICT
+#undef restrict
+#endif
 #endif /* done --> */
 #ifdef ARRAY_TRAIT
 #undef ARRAY_TRAIT
 #undef BOX_TRAIT_NAME
-#endif
-#ifdef ARRAY_RESTRICT
-#undef ARRAY_RESTRICT
-#undef restrict
 #endif

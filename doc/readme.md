@@ -9,6 +9,27 @@
 * [tree](tree.md)
 * [trie](trie.md) —requires bmp
 
+# Symbols
+
+## Symbols you can set
+
+	BOX_DECLARE_ONLY
+In a header.
+
+## Symbols used internally
+
+	BOX_H
+All boxes have this and is persistent to the end of the translation unit.
+
+	BOX_RESTRICT
+If `C90`, restrict is ignored for all the definitions until the box is done.
+
+	BOX_MINOR_NAME, BOX_MINOR, BOX_MAJOR_NAME, BOX_MAJOR
+_Eg_ _foo_, private `typedef` to `strut foo`, _array_, `struct foo_array`. Stays until the box is done.
+
+	BOX_ACCESS, BOX_CONTIGUOUS
+Flags. Stays until the box is done.
+
 # Interfaces
 
 ## view
