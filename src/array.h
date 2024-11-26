@@ -62,9 +62,11 @@
 #	define PT_(n) BOX_CAT(private, T_(n))
 #endif
 #ifdef BOX_TRAIT
+#	define tu_(n) BOX_CAT(BOX_TRAIT, t_(n))
 #	define TU_(n) T_(BOX_CAT(BOX_TRAIT, n))
 #	define PTU_(n) PT_(BOX_CAT(BOX_TRAIT, n))
 #else /* Anonymous trait. */
+#	define tu_(n) t_(n)
 #	define TU_(n) T_(n)
 #	define PTU_(n) PT_(n)
 #endif
@@ -105,25 +107,25 @@ typedef BOX_TYPE PT_(type);
  indexed up to `capacity`, which is at least `size`.
 
  ![States.](../doc/array/states.png) */
-struct T_() { PT_(type) *data; size_t size, capacity; };
-typedef struct T_() PT_(box);
+struct t_(array) { PT_(type) *data; size_t size, capacity; };
+typedef struct t_(array) PT_(box);
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
-struct T_(cursor) { struct T_() *a; size_t i; };
+struct T_(cursor) { struct t_(array) *a; size_t i; };
 
 /* fixme: a wrapper is a terrible way to make functions accessible; something
- like BOX_EXPORT_CONS… #ifdef BOX_EXPORT_SIZE, #define static, size_t T_()… */
+ like BOX_EXPORT_CONS… #ifdef BOX_EXPORT_SIZE, #define static, size_t t_(array)… */
 
 #	ifndef BOX_DECLARE_ONLY /* Produce code: not for headers. */
 
 /** @return A cursor at the beginning of a valid `a`. */
-static struct T_(cursor) T_(begin)(struct T_() *const a)
+static struct T_(cursor) T_(begin)(struct t_(array) *const a)
 	{ struct T_(cursor) cur; assert(a), cur.a = a, cur.i = 0; return cur; }
-static struct T_(cursor) T_(end)(struct T_() *const a)
+static struct T_(cursor) T_(end)(struct t_(array) *const a)
 	{ struct T_(cursor) cur; assert(a), cur.a = a, cur.i = a->size; return cur;}
 /** @return Whether the `cur` points to an element. */
 static int T_(cursor_exists)(const struct T_(cursor) *const cur)
-	{ return cur && cur->a && cur->i < cur->a->size; }
+	{ return cur && cur->a && cur->a->data && cur->i < cur->a->size; }
 /** @return Dereference the element pointed to by `cur` that exists. */
 static PT_(type) *T_(cursor_look)(struct T_(cursor) *const cur)
 	{ return cur->a->data + cur->i; }
@@ -139,28 +141,28 @@ static void T_(cursor_back)(struct T_(cursor) *const cur) {
 /* T_(cursor) T_(cursor_remove)(struct T_(cursor) *const cur)?
   T_(cursor) T_(cursor_insert)(cur)? */
 /** Size of `a`. @implements `size` */
-static size_t T_(size)(const struct T_() *a) { return a->size; }
+static size_t T_(size)(const struct t_(array) *a) { return a->size; }
 /** @return Element `idx` of `a`. @implements `at` */
-static PT_(type) *T_(look)(const struct T_() *a, const size_t idx)
+static PT_(type) *T_(look)(const struct t_(array) *a, const size_t idx)
 	{ return a->data + idx; }
 /** Writes `size` to `a`. @implements `tell_size` */
-static void T_(tell_size)(struct T_() *a, const size_t size) { a->size = size; }
+static void T_(tell_size)(struct t_(array) *a, const size_t size) { a->size = size; }
 /* fixme: why again? */
 
 /** Zeroed data (not all-bits-zero) is initialized.
  @return An idle array. @order \Theta(1) @allow */
-static struct T_() T_()(void)
-	{ struct T_() a; a.data = 0, a.capacity = a.size = 0; return a; }
+static struct t_(array) t_(array)(void)
+	{ struct t_(array) a; a.data = 0, a.capacity = a.size = 0; return a; }
 
 /** If `a` is not null, destroys and returns it to idle. @allow */
-static void T_(_)(struct T_() *const a)
-	{ if(a) free(a->data), *a = T_()(); }
+static void t_(array_)(struct t_(array) *const a)
+	{ if(a) free(a->data), *a = t_(array)(); }
 
 /** Ensures `min` capacity of `a`. Invalidates pointers in `a`. @param[min] If
  zero, does nothing. @return Success; otherwise, `errno` will be set.
  @throws[ERANGE] Tried allocating more then can fit in `size_t` or `realloc`
  doesn't follow POSIX. @throws[realloc] @allow */
-static int T_(reserve)(struct T_() *const a, const size_t min) {
+static int T_(reserve)(struct t_(array) *const a, const size_t min) {
 	size_t c0;
 	PT_(type) *data;
 	const size_t max_size = (size_t)~0 / sizeof *a->data;
@@ -192,7 +194,7 @@ static int T_(reserve)(struct T_() *const a, const size_t min) {
  @return The start of the buffered space at the back of the array. If `a` is
  idle and `buffer` is zero, a null pointer is returned, otherwise null
  indicates an error. @throws[realloc] @allow */
-static PT_(type) *T_(buffer)(struct T_() *const a, const size_t n) {
+static PT_(type) *T_(buffer)(struct t_(array) *const a, const size_t n) {
 	if(a->size > (size_t)~0 - n) { errno = ERANGE; return 0; }
 	return T_(reserve)(a, a->size + n) && a->data ? a->data + a->size : 0;
 }
@@ -203,7 +205,7 @@ static PT_(type) *T_(buffer)(struct T_() *const a, const size_t n) {
  @return A pointer to the elements. If `a` is idle and `n` is zero, a null
  pointer will be returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */
-static PT_(type) *T_(append)(struct T_() *const a, const size_t n) {
+static PT_(type) *T_(append)(struct t_(array) *const a, const size_t n) {
 	PT_(type) *b;
 	if(!(b = T_(buffer)(a, n))) return 0;
 	assert(n <= a->capacity && a->size <= a->capacity - n);
@@ -216,7 +218,7 @@ static PT_(type) *T_(append)(struct T_() *const a, const size_t n) {
  function behaves as <fn:<A>array_append>.
  @return A pointer to the start of the new region, where there are `n`
  elements. @throws[realloc, ERANGE] @allow */
-static PT_(type) *T_(insert)(struct T_() *const a,
+static PT_(type) *T_(insert)(struct t_(array) *const a,
 	const size_t n, const size_t at) {
 	/* Investigate `n` is better than `element`; all the other are element. But
 	 also, when would I ever use this? */
@@ -232,13 +234,13 @@ static PT_(type) *T_(insert)(struct T_() *const a,
 /** @return Adds (push back) one new element of `a`. The buffer space holds at
  least one element, or it may invalidate pointers in `a`.
  @order amortised \O(1) @throws[realloc, ERANGE] @allow */
-static PT_(type) *T_(new)(struct T_() *const a)
+static PT_(type) *T_(new)(struct t_(array) *const a)
 	{ return T_(append)(a, 1); }
 
 /** Shrinks the capacity `a` to the size, freeing unused memory. If the size is
  zero, it will be in an idle state. Invalidates pointers in `a`.
  @return Success. @throws[ERANGE, realloc] (Unlikely) `realloc` error. */
-static int T_(shrink)(struct T_() *const a) {
+static int T_(shrink)(struct t_(array) *const a) {
 	PT_(type) *data;
 	size_t c;
 	assert(a && a->capacity >= a->size);
@@ -252,7 +254,7 @@ static int T_(shrink)(struct T_() *const a) {
 
 /** Removes `element` from `a`. Do not attempt to remove an element that is not
  in `a`. @order \O(`a.size`). @allow */
-static void T_(remove)(struct T_() *const a,
+static void T_(remove)(struct t_(array) *const a,
 	PT_(type) *const element) {
 	const size_t n = (size_t)(element - a->data);
 	assert(a && element && element >= a->data && element < a->data + a->size);
@@ -261,7 +263,7 @@ static void T_(remove)(struct T_() *const a,
 
 /** Removes `datum` from `a` and replaces it with the tail. Do not attempt to
  remove an element that is not in `a`. @order \O(1). @allow */
-static void T_(lazy_remove)(struct T_() *const a,
+static void T_(lazy_remove)(struct t_(array) *const a,
 	PT_(type) *const datum) {
 	size_t n = (size_t)(datum - a->data);
 	assert(a && datum && datum >= a->data && datum < a->data + a->size);
@@ -271,23 +273,23 @@ static void T_(lazy_remove)(struct T_() *const a,
 /** Sets `a` to be empty. That is, the size of `a` will be zero, but if it was
  previously in an active non-idle state, it continues to be.
  @order \Theta(1) @allow */
-static void T_(clear)(struct T_() *const a)
+static void T_(clear)(struct t_(array) *const a)
 	{ assert(a), a->size = 0; }
 
 /** @return The last element or null if `a` is empty. @order \Theta(1) @allow */
-static PT_(type) *T_(peek)(const struct T_() *const a)
+static PT_(type) *T_(peek)(const struct t_(array) *const a)
 	{ return assert(a), a->size ? a->data + a->size - 1 : 0; }
 
 /** @return Value from the the top of `a` that is removed or null if the array
  is empty. @order \Theta(1) @allow */
-static PT_(type) *T_(pop)(struct T_() *const a)
+static PT_(type) *T_(pop)(struct t_(array) *const a)
 	{ return assert(a), a->size ? a->data + --a->size : 0; }
 
 /** Indices [`i0`, `i1`) of `a` will be replaced with a copy of `b`.
  @param[b] Can be null, which acts as empty, but cannot overlap with `a`.
  @return Success. @throws[realloc, ERANGE] @allow */
-static int T_(splice)(struct T_() *restrict const a,
-	const struct T_() *restrict const b,
+static int T_(splice)(struct t_(array) *restrict const a,
+	const struct t_(array) *restrict const b,
 	const size_t i0, const size_t i1) {
 	const size_t a_range = i1 - i0, b_range = b ? b->size : 0;
 	assert(a && a != b && i0 <= i1 && i1 <= a->size);
@@ -315,7 +317,7 @@ static void PT_(unused_base)(void) {
 	T_(begin)(0); T_(end)(0); T_(cursor_exists)(0); T_(cursor_look)(0);
 	T_(cursor_next)(0); T_(cursor_back)(0); T_(size)(0); T_(look)(0, 0);
 	T_(tell_size)(0, 0);
-	T_()(); T_(_)(0); T_(insert)(0, 0, 0); T_(new)(0); T_(shrink)(0);
+	t_(array)(); t_(array_)(0); T_(insert)(0, 0, 0); T_(new)(0); T_(shrink)(0);
 	T_(remove)(0, 0); T_(lazy_remove)(0, 0); T_(clear)(0); T_(peek)(0);
 	T_(pop)(0); T_(append)(0, 0); T_(splice)(0, 0, 0, 0);
 	PT_(unused_base_coda)();

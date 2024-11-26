@@ -49,7 +49,7 @@ static PT_(type) *TU_(any)(const PT_(box) *const box,
 static void TU_(each)(PT_(box) *const box, const PTU_(action_fn) action) {
 	struct T_(cursor) it;
 	assert(box && action);
-	for(T_(begin)(box); T_(cursor_exists)(&it); T_(cursor_next)(&it))
+	for(it = T_(begin)(box); T_(cursor_exists)(&it); T_(cursor_next)(&it))
 		action(T_(cursor_look)(&it));
 }
 
@@ -58,11 +58,11 @@ static void TU_(each)(PT_(box) *const box, const PTU_(action_fn) action) {
  @order \O(`box.size`) \times (\O(`predicate`) + \O(`action`)) @allow */
 static void TU_(if_each)(PT_(box) *const box,
 	const PTU_(predicate_fn) predicate, const PTU_(action_fn) action) {
-	struct T_(cursor) it = T_(begin)(box);
+	struct T_(cursor) it;
 	assert(box && predicate && action);
 	/* fixme: Could I to remove `i` from the list? */
 	/* 2024-11-25: it depends what container… but yes, inefficiently. */
-	for(T_(begin)(box); T_(cursor_exists)(&it); T_(cursor_next)(&it)) {
+	for(it = T_(begin)(box); T_(cursor_exists)(&it); T_(cursor_next)(&it)) {
 		PT_(type) *v = T_(cursor_look)(&it);
 		if(predicate(v)) action(v);
 	}

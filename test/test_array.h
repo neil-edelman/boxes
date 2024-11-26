@@ -5,7 +5,7 @@
 #define QUOTE(name) QUOTE_(name)
 
 /** @return Is `a` in a valid state? */
-static void PT_(valid_state)(const struct T_() *const a) {
+static void PT_(valid_state)(const struct t_(array) *const a) {
 	const size_t max_size = (size_t)~0 / sizeof *a->data;
 	/* Null is a valid state. */
 	if(!a) return;
@@ -15,7 +15,7 @@ static void PT_(valid_state)(const struct T_() *const a) {
 
 /* fixme: this will be elsewhere… it is also very good at debugging programmes. */
 /** Draw a graph of `a` to `fn` in Graphviz format. */
-static void PT_(graph)(const struct T_() *const a, const char *const fn) {
+static void PT_(graph)(const struct t_(array) *const a, const char *const fn) {
 	FILE *fp;
 	size_t i;
 	char z[12];
@@ -67,7 +67,7 @@ no_data:
 }
 
 static void PT_(test_basic)(void) {
-	struct T_() a = T_()();
+	struct t_(array) a = t_(array)();
 	/*struct T_(array_iterator) it;
 	char z[12];*/
 	PT_(type) items[5], *item, *item1;
@@ -205,13 +205,13 @@ static void PT_(test_basic)(void) {
 	assert(T_(peek)(&a) == 0 && a.size == 0);
 
 	printf("Destructor:\n");
-	T_(_)(&a);
+	t_(array_)(&a);
 	assert(T_(peek)(&a) == 0);
 	PT_(valid_state)(&a);
 }
 
 static void PT_(test_random)(void) {
-	struct T_() a = T_()();
+	struct t_(array) a = t_(array)();
 	const size_t mult = 1; /* For long tests. */
 	/* This parameter controls how many iterations. */
 	size_t i, i_end = 1000 * mult, size = 0;
@@ -258,13 +258,13 @@ static void PT_(test_random)(void) {
 			PT_(graph)(&a, fn);
 		}
 	}
-	T_(_)(&a);
+	t_(array_)(&a);
 }
 
 static void PT_(test_replace)(void) {
 	PT_(type) ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
-	struct T_() a = T_()(), b = T_()();
+	struct t_(array) a = t_(array)(), b = t_(array)();
 	PT_(type) *e;
 	int success;
 
@@ -344,8 +344,8 @@ static void PT_(test_replace)(void) {
 		!memcmp(ts + 0, a.data + 5, sizeof *t) &&
 		!memcmp(ts + 2, a.data + 6, sizeof *t) &&
 		!memcmp(ts + 2, a.data + 7, sizeof *t * 2));
-	T_(_)(&b);
-	T_(_)(&a);
+	t_(array_)(&b);
+	t_(array_)(&a);
 }
 
 #ifdef HAVE_ITERATE_H /* <!-- iterate */
@@ -384,7 +384,7 @@ static void PT_(test_keep)(void) {
 #ifdef HAVE_ITERATE_H
 	PT_(type) ts[17], *t, *t1, *e;
 	const size_t ts_size = sizeof ts / sizeof *ts;
-	struct T_() a = T_()(), b = T_()();
+	struct t_(array) a = t_(array)(), b = t_(array)();
 	int ret;
 	memset(ts, 0, sizeof ts); /* Valgrind. */
 	PT_(valid_state)(&a);
@@ -411,14 +411,14 @@ static void PT_(test_keep)(void) {
 	assert(ret && b.size == 2
 		&& !memcmp(ts + 0, b.data + 0, sizeof *t * 1)
 		&& !memcmp(ts + 13, b.data + 1, sizeof *t * 1));
-	T_(_)(&a);
-	T_(_)(&b);
+	t_(array_)(&a);
+	t_(array_)(&b);
 #endif
 }
 
 static void PT_(test_each)(void) {
 #ifdef HAVE_ITERATE_H
-	struct T_() empty = T_()(), one = T_()();
+	struct t_(array) empty = t_(array)(), one = t_(array)();
 	PT_(type) *t;
 	t = T_(new)(&one);
 	assert(t);
@@ -438,13 +438,13 @@ static void PT_(test_each)(void) {
 	assert(!t);
 	t = T_(any)(&one, &PT_(true));
 	assert(t == one.data);
-	T_(_)(&one);
+	t_(array_)(&one);
 #endif
 }
 
 static void PT_(test_trim)(void) {
 #ifdef HAVE_ITERATE_H
-	struct T_() a = T_()();
+	struct t_(array) a = t_(array)();
 	PT_(type) *item;
 	int is_zero;
 	/* Trim 1. */
@@ -466,12 +466,12 @@ static void PT_(test_trim)(void) {
 	memset(item, 0, sizeof *item);
 	T_(trim)(&a, &PT_(zero_filled));
 	assert(a.size == !is_zero);
-	T_(_)(&a);
+	t_(array_)(&a);
 #endif
 }
 
 static void PT_(test_insert)(void) {
-	struct T_() a = T_()();
+	struct t_(array) a = t_(array)();
 	PT_(type) original[17], solitary, *t, *t1, *e;
 	const size_t original_size = sizeof original / sizeof *original;
 	size_t i;
@@ -491,16 +491,14 @@ static void PT_(test_insert)(void) {
 			(unsigned long)i, T_(to_string)(&a));
 		T_(clear)(&a);
 	}
-	T_(_)(&a);
+	t_(array_)(&a);
 }
 
 /** `BOX_TEST`, `BOX_TO_STRING`, !`NDEBUG`: will be tested on stdout.
  @allow */
-static void T_(array_test)(void) {
+static void T_(test)(void) {
 	printf("array<" QUOTE(BOX_NAME) "> of type <" QUOTE(BOX_TYPE)
-		"> was created using: BOX_TO_STRING <" QUOTE(BOX_TO_STRING) ">; "
-		"BOX_TEST <" QUOTE(BOX_TEST) ">; testing:\n");
-	assert(T_(to_string) && T_(to_string));
+		"> was created using: BOX_TO_STRING; BOX_TEST; testing:\n");
 	PT_(test_basic)();
 	PT_(test_random)();
 	PT_(test_replace)();

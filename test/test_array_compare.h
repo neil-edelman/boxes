@@ -20,7 +20,7 @@ static int PTU_(fill_unique)(PT_(type) *const fill,
 }
 
 #if 0 /* <!-- 0: I don't think we use this anymore? */
-#ifdef ARRAY_COMPARE /* <!-- comp */
+#ifdef BOX_COMPARE /* <!-- comp */
 static int PCMP_(unique_array)(PA_(type) *const fill, const size_t size) {
 	const size_t no_try = 5000;
 	size_t attempt, i = 0;
@@ -48,7 +48,7 @@ static int PCMP_(unique_array)(PA_(type) *const fill, const size_t size) {
 
 /* fixme: This is not general. */
 static void PTU_(test_compactify)(void) {
-	struct T_() a = T_()();
+	struct t_(array) a = t_(array)();
 	PT_(type) ts[9], *t, *t1, *t_prev;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	/* `valgrind` is giving me grief if I don't do this? */
@@ -66,21 +66,21 @@ static void PTU_(test_compactify)(void) {
 	TU_(unique)(&a);
 	printf("Compactified: %s.\n", T_(to_string)(&a));
 	assert(a.size == ts_size / 3);
-#ifdef ARRAY_COMPARE /* <!-- compare */
-	BOXTU_(reverse)(&a);
-	printf("Reverse: %s.\n", T_(array_to_string)(&a));
+#ifdef BOX_COMPARE /* <!-- compare */
+	TU_(reverse)(&a);
+	printf("Reverse: %s.\n", T_(to_string)(&a));
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(TU_(compare)((void *)t, (void *)(t + 1)) >= 0);
-	BOXTU_(sort)(&a);
-	printf("Sorted: %s.\n", T_(array_to_string)(&a));
+		assert(tu_(compare)(t, t + 1) >= 0);
+	TU_(sort)(&a);
+	printf("Sorted: %s.\n", T_(to_string)(&a));
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(TU_(compare)((void *)t, (void *)(t + 1)) <= 0);
+		assert(tu_(compare)(t, t + 1) <= 0);
 #endif /* compare --> */
-	T_(_)(&a);
+	t_(array_)(&a);
 }
 
 static void PTU_(test_compare)(void) {
-	struct T_() a = T_()(), b = T_()();
+	struct t_(array) a = t_(array)(), b = t_(array)();
 	/*struct A_(array_iterator) it;*/
 	PT_(type) ts[9], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
@@ -123,49 +123,49 @@ static void PTU_(test_compare)(void) {
 	memcpy(b.data, ts, sizeof *t * ts_size);
 	printf("now b: %s.\n", T_(to_string)(&b));
 	cmp = TU_(is_equal)(&a, &b), assert(cmp);
-	T_(_)(&a);
-	T_(_)(&b);
+	t_(array_)(&a);
+	t_(array_)(&b);
 }
 
-#ifdef ARRAY_COMPARE /* <!-- comp */
+#ifdef BOX_COMPARE /* <!-- comp */
 static int PTU_(cmp_void)(const void *const a, const void *const b)
-	{ return BOXTU_(compare)(a, b); }
+	{ return TU_(compare)(a, b); }
 #endif /* comp --> */
 
 static void PTU_(test_sort)(void) {
-#ifdef ARRAY_COMPARE /* <!-- comp */
-	struct T_(array) as[64], *a;
+#ifdef BOX_COMPARE /* <!-- comp */
+	struct t_(array) as[64], *a;
 	const size_t as_size = sizeof as / sizeof *as;
-	const struct T_(array) *const as_end = as + as_size;
+	const struct t_(array) *const as_end = as + as_size;
 	int cmp;
 	printf("\ntest sort:\n");
 	/* Random array of Arrays. */
 	for(a = as; a < as_end; a++) {
 		size_t size = (unsigned)rand() / (RAND_MAX / 5 + 1), i;
 		PT_(type) *x, *x_end;
-		*a = T_(array)();
-		x = T_(array_append)(a, size);
+		*a = t_(array)();
+		x = T_(append)(a, size);
 		x_end = x + size;
 		if(!size) continue;
 		assert(x);
-		for(i = 0; i < size; i++) T_(filler)(a->data + i); /* Emplace. */
-		BOXTU_(sort)(a);
+		for(i = 0; i < size; i++) t_(filler)(a->data + i); /* Emplace. */
+		TU_(sort)(a);
 		for(x = a->data; x < x_end - 1; x++)
-			cmp = TU_(compare)((void *)x, (void *)(x + 1)),
+			cmp = tu_(compare)((void *)x, (void *)(x + 1)),
 			assert(cmp <= 0);
 		/* fixme: Why the void casts again? */
 	}
 	/* Now sort the lists. */
 	qsort(as, as_size, sizeof *as, &PTU_(cmp_void));
-	printf("Sorted array of sorted <" QUOTE(ARRAY_NAME) ">array by "
-		   QUOTE(ARRAY_COMPARE) ":\n");
+	printf("Sorted array of sorted <" QUOTE(BOX_NAME) ">array by "
+		   QUOTE(BOX_COMPARE) ":\n");
 	for(a = as; a < as_end; a++) {
-		printf("array: %s.\n", T_(array_to_string)(a));
+		printf("array: %s.\n", T_(to_string)(a));
 		if(a == as) continue;
-		cmp = BOXTU_(compare)(a - 1, a);
+		cmp = TU_(compare)(a - 1, a);
 		assert(cmp <= 0);
 	}
-	for(a = as; a < as_end; a++) T_(array_)(a);
+	for(a = as; a < as_end; a++) t_(array_)(a);
 #endif /* comp --> */
 }
 
@@ -187,14 +187,14 @@ static void PTU_(test_bounds)(void) {
 	A_(to_string)((void *)&elem, &z);
 	printf("element to compare: %s\n", z);
 	low = CMP_(lower_bound)(&a, &elem);
-	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
+	printf(QUOTE(BOX_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
 	assert(low <= a.size);
 	assert(!low || CMPCALL_(compare)((void *)(a.data + low - 1),
 		(void *)&elem) < 0);
 	assert(low == a.size || CMPCALL_(compare)((void *)&elem,
 		(void *)(a.data + low)) <= 0);
 	high = CMP_(upper_bound)(&a, &elem);
-	printf(QUOTE(ARRAY_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
+	printf(QUOTE(BOX_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
 	assert(high <= a.size);
 	assert(!high || CMPCALL_(compare)((void *)(a.data + high - 1),
 		(void *)&elem) <= 0);
@@ -213,21 +213,21 @@ static void PTU_(test_bounds)(void) {
 	for(i = 0; i < size; i++) memcpy(cont + i, &elem, sizeof elem);
 	printf("bounds: now %s.\n", A_(array_to_string)(&a));
 	low = CMP_(lower_bound)(&a, &elem);
-	printf(QUOTE(ARRAY_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
+	printf(QUOTE(BOX_COMPARE) " lower_bound: %lu.\n", (unsigned long)low);
 	assert(low == 0);
 	high = CMP_(upper_bound)(&a, &elem);
-	printf(QUOTE(ARRAY_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
+	printf(QUOTE(BOX_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
 	assert(high == a.size);
 	A_(array_)(&a);
 #endif /* compare --> */
 }
 
-/** `ARRAY_TEST`, `ARRAY_COMPARE` -> `ARRAY_TO_STRING`, !`NDEBUG`: will be
+/** `BOX_TEST`, `BOX_COMPARE` -> `BOX_TO_STRING`, !`NDEBUG`: will be
  tested on stdout. @allow */
 static void TU_(compare_test)(void) {
-	printf("<" QUOTE(ARRAY_NAME) ","
-#ifdef ARRAY_TRAIT
-		QUOTE(ARRAY_TRAIT)
+	printf("<" QUOTE(BOX_NAME) ","
+#ifdef BOX_TRAIT
+		QUOTE(BOX_TRAIT)
 #else
 		"anonymous"
 #endif
@@ -238,7 +238,7 @@ static void TU_(compare_test)(void) {
 	PTU_(test_compactify)();
 	PTU_(test_compare)();
 	assert(errno == 0);
-	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array compare.\n\n");
+	fprintf(stderr, "Done tests of <" QUOTE(BOX_NAME) ">array compare.\n\n");
 }
 
 #undef QUOTE

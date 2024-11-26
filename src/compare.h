@@ -63,8 +63,8 @@ static int TU_(compare)(const PT_(box) *restrict const a,
 		if(!T_(cursor_exists)(&ia)) return T_(cursor_exists)(&ib) ? -1 : 0;
 		else if(!T_(cursor_exists)(&ib)) return 1;
 		/* Must have this function declared. */
-		if(diff = TU_(compare)((void *)T_(cursor_look)(&ia),
-			(void *)T_(cursor_look)(&ib))) return diff;
+		if(diff = tu_(compare)(T_(cursor_look)(&ia),
+			T_(cursor_look)(&ib))) return diff;
 	}
 }
 
@@ -117,7 +117,7 @@ static int TU_(insert_after)(PT_(box) *const box,
 
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
 static int PTU_(vcompar)(const void *restrict const a,
-	const void *restrict const b) { return TU_(compare)(a, b); }
+	const void *restrict const b) { return tu_(compare)(a, b); }
 
 /** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`,
  (which has a high-context-switching cost, but is easy.)
@@ -133,7 +133,7 @@ static void TU_(sort)(PT_(box) *const box) {
 
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
 static int PTU_(vrevers)(const void *restrict const a,
-	const void *restrict const b) { return TU_(compare)(b, a); }
+	const void *restrict const b) { return tu_(compare)(b, a); }
 
 /** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` in reverse by
  `qsort`. @order \O(|`box`| \log |`box`|) @allow */
@@ -156,7 +156,7 @@ static void TU_(reverse)(PT_(box) *const box) {
  @implements <typedef:<PTU>bipredicate_fn> */
 static int t_(is_equal)(const PT_(type) *const restrict a,
 	const PT_(type) *const restrict b) {
-	return !TU_(compare)((const void *)a, (const void *)b);
+	return !tu_(compare)(a, b);
 }
 
 #endif /* compare --> */
