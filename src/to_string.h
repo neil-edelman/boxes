@@ -74,13 +74,13 @@ typedef void (*PTU_(to_string_fn))(const PT_(type) *, char (*)[12]);
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
  256 bytes, with limitations of only printing 4 things in a single sequence
  point. @return Address of the static buffer. @order \Theta(1) @allow */
-static const char *BOXTU_(to_string)(const PT_(box) *const box) {
+static const char *TU_(to_string)(const PT_(box) *const box) {
 	const char comma = ',', space = ' ', ellipsis[] = "…",
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;
 	const size_t ellipsis_len = sizeof ellipsis - 1;
 	char *const buffer = to_string_buffers[to_string_buffer_i++], *b = buffer;
 	size_t advance;
-	struct PT_(iterator) it;
+	struct T_(cursor) cur;
 	int is_sep = 0;
 	/* Minimum size: "(" "XXXXXXXXXXX" "," "…" ")" "\0". */
 	assert(box && !(to_string_buffers_no & (to_string_buffers_no - 1))
@@ -91,18 +91,20 @@ static const char *BOXTU_(to_string)(const PT_(box) *const box) {
 		/* fixme: I think I know how to do it. */
 		PT_(box) *promise_box;
 		memcpy(&promise_box, &box, sizeof box);
-		it = PT_(iterator)(promise_box);
+		cur = T_(begin)(promise_box);
 	}
 	*b++ = left;
-	while(PT_(next)(&it)) {
-		TU_(to_string)(PT_(element)(&it), (char (*)[12])b);
+	for( ; T_(cursor_exists)(&cur); T_(cursor_next)(&cur)) {
+		t_(to_string)(T_(cursor_look)(&cur), (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size_t)(b - buffer) > to_string_buffer_size - 11 - 1
-			- ellipsis_len - 1 - 1)
-			{ if(PT_(next)(&it)) goto ellipsis; else break; }
+			- ellipsis_len - 1 - 1) {
+			if(T_(cursor_next)(&cur), T_(cursor_exists)) goto ellipsis;
+			else break;
+		}
 	}
 	if(is_sep) b -= 2;
 	*b++ = right;
@@ -119,7 +121,7 @@ terminate:
 
 static void PTU_(unused_to_string_coda)(void);
 static void PTU_(unused_to_string)(void)
-	{ BOXTU_(to_string)(0); PTU_(unused_to_string_coda)(); }
+	{ TU_(to_string)(0); PTU_(unused_to_string_coda)(); }
 static void PTU_(unused_to_string_coda)(void) { PTU_(unused_to_string)(); }
 
 #ifdef TO_STRING_EXTERN

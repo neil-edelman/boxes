@@ -13,8 +13,8 @@ static int PTU_(fill_unique)(PT_(type) *const fill,
 	size_t i;
 	assert(fill);
 	for(i = 0; i < 1000; i++) {
-		T_(filler)(fill);
-		if(!neq || !TU_(is_equal)(neq, fill)) return 1;
+		t_(filler)(fill);
+		if(!neq || !t_(is_equal)(neq, fill)) return 1;
 	}
 	assert(0); return 0;
 }
@@ -48,7 +48,7 @@ static int PCMP_(unique_array)(PA_(type) *const fill, const size_t size) {
 
 /* fixme: This is not general. */
 static void PTU_(test_compactify)(void) {
-	struct T_(array) a = T_(array)();
+	struct T_() a = T_()();
 	PT_(type) ts[9], *t, *t1, *t_prev;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	/* `valgrind` is giving me grief if I don't do this? */
@@ -60,11 +60,11 @@ static void PTU_(test_compactify)(void) {
 		memcpy(t + 1, t, sizeof *t);
 		memcpy(t + 2, t, sizeof *t);
 	}
-	if(!T_(array_append)(&a, ts_size)) { assert(0); return; }
+	if(!T_(append)(&a, ts_size)) { assert(0); return; }
 	memcpy(a.data, ts, sizeof *t * ts_size);
-	printf("\ntest compactify: %s.\n", T_(array_to_string)(&a));
-	BOXTU_(unique)(&a);
-	printf("Compactified: %s.\n", T_(array_to_string)(&a));
+	printf("\ntest compactify: %s.\n", T_(to_string)(&a));
+	TU_(unique)(&a);
+	printf("Compactified: %s.\n", T_(to_string)(&a));
 	assert(a.size == ts_size / 3);
 #ifdef ARRAY_COMPARE /* <!-- compare */
 	BOXTU_(reverse)(&a);
@@ -76,11 +76,11 @@ static void PTU_(test_compactify)(void) {
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
 		assert(TU_(compare)((void *)t, (void *)(t + 1)) <= 0);
 #endif /* compare --> */
-	T_(array_)(&a);
+	T_(_)(&a);
 }
 
 static void PTU_(test_compare)(void) {
-	struct T_(array) a = T_(array)(), b = T_(array)();
+	struct T_() a = T_()(), b = T_()();
 	/*struct A_(array_iterator) it;*/
 	PT_(type) ts[9], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
@@ -89,10 +89,10 @@ static void PTU_(test_compare)(void) {
 	/* `valgrind` is giving me grief if I don't do this? */
 	memset(ts, 0, sizeof ts);
 	/* Get elements. */
-	for(t = ts, t1 = t + ts_size; t < t1; t++) TU_(filler)(t);
-	if(!T_(array_append)(&a, ts_size)) { assert(0); return; }
+	for(t = ts, t1 = t + ts_size; t < t1; t++) t_(filler)(t);
+	if(!T_(append)(&a, ts_size)) { assert(0); return; }
 	memcpy(a.data, ts, sizeof *t * ts_size);
-	printf("\ntest compare: %s.\n", T_(array_to_string)(&a));
+	printf("\ntest compare: %s.\n", T_(to_string)(&a));
 	assert(ts_size == a.size);
 #if 0 /* I don't use iterators. */
 	t = 0, i = 0;
@@ -113,18 +113,18 @@ static void PTU_(test_compare)(void) {
 	printf("done.\n");
 	assert(!i);
 #endif
-	cmp = BOXTU_(is_equal)(0, 0), assert(cmp);
+	cmp = TU_(is_equal)(0, 0), assert(cmp);
 	printf("a: %s.\n"
-		"b: %s.\n", T_(array_to_string)(&a), T_(array_to_string)(&b));
-	cmp = BOXTU_(is_equal)(&a, &b), assert(!cmp);
-	cmp = BOXTU_(is_equal)(&a, 0), assert(!cmp);
-	cmp = BOXTU_(is_equal)(0, &b), /*assert(cmp)*/assert(!cmp); /* Null == size 0. <- nah */
-	if(!T_(array_append)(&b, ts_size)) { assert(0); return; }
+		"b: %s.\n", T_(to_string)(&a), T_(to_string)(&b));
+	cmp = TU_(is_equal)(&a, &b), assert(!cmp);
+	cmp = TU_(is_equal)(&a, 0), assert(!cmp);
+	cmp = TU_(is_equal)(0, &b), /*assert(cmp)*/assert(!cmp); /* Null == size 0. <- nah */
+	if(!T_(append)(&b, ts_size)) { assert(0); return; }
 	memcpy(b.data, ts, sizeof *t * ts_size);
-	printf("now b: %s.\n", T_(array_to_string)(&b));
-	cmp = BOXTU_(is_equal)(&a, &b), assert(cmp);
-	T_(array_)(&a);
-	T_(array_)(&b);
+	printf("now b: %s.\n", T_(to_string)(&b));
+	cmp = TU_(is_equal)(&a, &b), assert(cmp);
+	T_(_)(&a);
+	T_(_)(&b);
 }
 
 #ifdef ARRAY_COMPARE /* <!-- comp */
@@ -224,7 +224,7 @@ static void PTU_(test_bounds)(void) {
 
 /** `ARRAY_TEST`, `ARRAY_COMPARE` -> `ARRAY_TO_STRING`, !`NDEBUG`: will be
  tested on stdout. @allow */
-static void BOXTU_(compare_test)(void) {
+static void TU_(compare_test)(void) {
 	printf("<" QUOTE(ARRAY_NAME) ","
 #ifdef ARRAY_TRAIT
 		QUOTE(ARRAY_TRAIT)
