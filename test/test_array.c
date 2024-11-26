@@ -97,8 +97,6 @@ static int keyval_value_compare(const struct keyval *const a,
 #include "../src/array.h"
 
 
-#if 0
-
 static int targets[] = { 4, 2, 8, 2, 6, 5, 3, 6, 1, 2, 9, 3 };
 static void pointer_to_string(const int *const*const i, char (*const a)[12])
 	{ sprintf(*a, "%d", **i); }
@@ -115,6 +113,7 @@ static int pointer_compare(const int *const*const a, const int *const*const b)
 #include "../src/array.h"
 
 
+#if 0
 /* This shows how one might use a header. Make sure the required functions are
  declared before defining the array. */
 static void static_to_string(const int *i, char (*const a)[12])
@@ -146,12 +145,12 @@ int main(void) {
 	keyval_array_test();
 	keyval_array_compare_test();
 	keyval_array_value_compare_test();
-#if 0
 	pointer_array_test();
-	/*pointer_array_compare_test();
-	 <- probably the test is wrong, assumes contiguous. I don't know what it's
+	pointer_array_compare_test();
+	/* <- probably the test is wrong, assumes contiguous. I don't know what it's
 	 doing, wrote 10 years ago. */
 	(void)pointer_array_compare_test;
+#if 0
 	integer_array_test(); /* Visible to #include "integer_array.h". */
 	static_array_compare_test(); /* Still static version—we have yet to define
 	 a wrapper function. */

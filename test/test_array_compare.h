@@ -69,12 +69,14 @@ static void PTU_(test_compactify)(void) {
 #ifdef BOX_COMPARE /* <!-- compare */
 	TU_(reverse)(&a);
 	printf("Reverse: %s.\n", T_(to_string)(&a));
+	/* "Discards qualifiers in nested pointer types" sometimes. Cast. */
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(tu_(compare)(t, t + 1) >= 0);
+		assert(tu_(compare)((const void *)t, (const void *)(t + 1)) >= 0);
 	TU_(sort)(&a);
 	printf("Sorted: %s.\n", T_(to_string)(&a));
+	/* "Discards qualifiers in nested pointer types" sometimes. Cast. */
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(tu_(compare)(t, t + 1) <= 0);
+		assert(tu_(compare)((const void *)t, (const void *)(t + 1)) <= 0);
 #endif /* compare --> */
 	t_(array_)(&a);
 }

@@ -62,9 +62,10 @@ static int TU_(compare)(const PT_(box) *restrict const a,
 		int diff;
 		if(!T_(cursor_exists)(&ia)) return T_(cursor_exists)(&ib) ? -1 : 0;
 		else if(!T_(cursor_exists)(&ib)) return 1;
-		/* Must have this function declared. */
-		if(diff = tu_(compare)(T_(cursor_look)(&ia),
-			T_(cursor_look)(&ib))) return diff;
+		/* Must have this function declared.
+		 "Discards qualifiers in nested pointer types" sometimes. Cast. */
+		if(diff = tu_(compare)((const void *)T_(cursor_look)(&ia),
+			(const void *)T_(cursor_look)(&ib))) return diff;
 	}
 }
 
@@ -155,7 +156,10 @@ static void TU_(reverse)(PT_(box) *const box) {
  collide with another function!
  @implements <typedef:<PTU>bipredicate_fn> */
 static int tu_(is_equal)(const PT_(type) *const restrict a,
-	const PT_(type) *const restrict b) { return !tu_(compare)(a, b); }
+	const PT_(type) *const restrict b) {
+	/* "Discards qualifiers in nested pointer types" sometimes. Cast. */
+	return !tu_(compare)((const void *)a, (const void *)b);
+}
 
 #endif /* compare --> */
 
