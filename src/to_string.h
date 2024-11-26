@@ -21,9 +21,8 @@
 
 #if !defined(BOX_H) || !defined(BOX_CAT) || !defined(TU_) || !defined(PTU_) \
 	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MAJOR) \
-	|| !defined(BOX_MINOR_NAME) || !defined(BOX_MINOR) \
-	|| defined(STR_) || defined(STREXTERN_)
-#	error Unexpected defines.
+	|| !defined(BOX_MINOR_NAME) || !defined(BOX_MINOR)
+#	error Unexpected preprocessor symbols.
 #endif
 #if defined(TO_STRING_H) \
 	&& (defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN))
@@ -69,7 +68,7 @@ static unsigned to_string_buffer_i;
  12-`char` null-terminated output string, passed as a pointer in the last
  argument. This function can have 2 or 3 arguments, where `<PSTR>element` might
  be a map with a key-value pair.  */
-typedef void (*PTU_(to_string_fn))(const PT_(element) *, char (*)[12]);
+typedef void (*PTU_(to_string_fn))(const PT_(type) *, char (*)[12]);
 #endif /* documentation --> */
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
@@ -125,8 +124,7 @@ static void PTU_(unused_to_string_coda)(void) { PTU_(unused_to_string)(); }
 
 #ifdef TO_STRING_EXTERN
 #	undef TO_STRING_EXTERN
-#endif
-#ifdef TO_STRING_INTERN
+#elifdef TO_STRING_INTERN
 #	undef TO_STRING_INTERN
 #endif
 #undef TO_STRING_LEFT

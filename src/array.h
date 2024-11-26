@@ -52,7 +52,7 @@
 #ifndef BOX_H
 #	define BOX_H
 #	if defined(BOX_CAT_) || defined(BOX_CAT) || defined(T_) || defined(PT_)
-#		error Unexpected defines.
+#		error Unexpected preprocessor symbols.
 #	endif
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #	define BOX_CAT_(n, m) n ## _ ## m
@@ -67,7 +67,7 @@
 #	define TU_(n) T_(n)
 #	define PTU_(n) PT_(n)
 #endif
-/* For common files. */
+/* I omitted the `BOX_MAJOR_NAME` for clarity, but for common files. */
 #define BOXTU_(n) TU_(BOX_CAT(BOX_MAJOR_NAME, n))
 
 
@@ -374,17 +374,15 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 #if (defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL)) \
 	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- compare trait */
-#	ifdef ARRAY_COMPARE /* <!-- cmp */
+#	ifdef ARRAY_COMPARE
 #		define COMPARE ARRAY_COMPARE
-#	else /* cmp --><!-- eq */
+#	else
 #		define COMPARE_IS_EQUAL ARRAY_IS_EQUAL
-#	endif /* eq --> */
+#	endif
 #	include "compare.h" /** \include */
-#	ifdef ARRAY_TEST /* <!-- test: this detects and outputs compare test. */
+#	ifdef ARRAY_TEST
 #		include "../test/test_array_compare.h"
-#	endif /* test --> */
-#	undef CMP_ /* From <compare.h>. */
-#	undef CMPCALL_
+#	endif
 #	ifdef ARRAY_COMPARE
 #		undef ARRAY_COMPARE
 #	else

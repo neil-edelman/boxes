@@ -1,3 +1,6 @@
+/* fixme: This isn't mutation tested; I would have to go into it to see what I
+ did. */
+
 #if defined(QUOTE) || defined(QUOTE_)
 #error QUOTE_? cannot be defined.
 #endif
@@ -5,13 +8,13 @@
 #define QUOTE(name) QUOTE_(name)
 
 /** Fills `fill` that is not equal to `neq` if possible. */
-static int PCMP_(fill_unique)(PA_(type) *const fill,
-	const PA_(type) *const neq) {
+static int PTU_(fill_unique)(PT_(type) *const fill,
+	const PT_(type) *const neq) {
 	size_t i;
 	assert(fill);
 	for(i = 0; i < 1000; i++) {
-		A_(filler)(fill);
-		if(!neq || !CMPCALL_(is_equal)(neq, fill)) return 1;
+		T_(filler)(fill);
+		if(!neq || !TU_(is_equal)(neq, fill)) return 1;
 	}
 	assert(0); return 0;
 }
@@ -43,24 +46,25 @@ static int PCMP_(unique_array)(PA_(type) *const fill, const size_t size) {
 #endif /* comp --> */
 #endif /* 0 */
 
-static void PCMP_(test_compactify)(void) {
-	struct A_(array) a = A_(array)();
-	PA_(type) ts[9], *t, *t1, *t_prev;
+/* fixme: This is not general. */
+static void PTU_(test_compactify)(void) {
+	struct T_(array) a = T_(array)();
+	PT_(type) ts[9], *t, *t1, *t_prev;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	/* `valgrind` is giving me grief if I don't do this? */
 	memset(ts, 0, sizeof ts);
 	/* Get elements. */
 	assert(ts_size % 3 == 0);
 	for(t_prev = 0, t = ts, t1 = t + ts_size; t < t1; t_prev = t, t += 3) {
-		if(!PCMP_(fill_unique)(t, t_prev)) { assert(0); return; }
+		if(!PTU_(fill_unique)(t, t_prev)) { assert(0); return; }
 		memcpy(t + 1, t, sizeof *t);
 		memcpy(t + 2, t, sizeof *t);
 	}
-	if(!A_(array_append)(&a, ts_size)) { assert(0); return; }
+	if(!T_(array_append)(&a, ts_size)) { assert(0); return; }
 	memcpy(a.data, ts, sizeof *t * ts_size);
-	printf("\ntest compactify: %s.\n", A_(array_to_string)(&a));
-	CMP_(unique)(&a);
-	printf("Compactified: %s.\n", A_(array_to_string)(&a));
+	printf("\ntest compactify: %s.\n", T_(array_to_string)(&a));
+	BOXTU_(unique)(&a);
+	printf("Compactified: %s.\n", T_(array_to_string)(&a));
 	assert(a.size == ts_size / 3);
 #ifdef ARRAY_COMPARE /* <!-- compare */
 	CMP_(reverse)(&a);
@@ -72,23 +76,23 @@ static void PCMP_(test_compactify)(void) {
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
 		assert(CMPCALL_(compare)((void *)t, (void *)(t + 1)) <= 0);
 #endif /* compare --> */
-	A_(array_)(&a);
+	T_(array_)(&a);
 }
 
-static void PCMP_(test_compare)(void) {
-	struct A_(array) a = A_(array)(), b = A_(array)();
+static void PTU_(test_compare)(void) {
+	struct T_(array) a = T_(array)(), b = T_(array)();
 	/*struct A_(array_iterator) it;*/
-	PA_(type) ts[9], *t, *t1;
+	PT_(type) ts[9], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	/*size_t i;*/
 	int cmp;
 	/* `valgrind` is giving me grief if I don't do this? */
 	memset(ts, 0, sizeof ts);
 	/* Get elements. */
-	for(t = ts, t1 = t + ts_size; t < t1; t++) A_(filler)(t);
-	if(!A_(array_append)(&a, ts_size)) { assert(0); return; }
+	for(t = ts, t1 = t + ts_size; t < t1; t++) TU_(filler)(t);
+	if(!T_(array_append)(&a, ts_size)) { assert(0); return; }
 	memcpy(a.data, ts, sizeof *t * ts_size);
-	printf("\ntest compare: %s.\n", A_(array_to_string)(&a));
+	printf("\ntest compare: %s.\n", T_(array_to_string)(&a));
 	assert(ts_size == a.size);
 #if 0 /* I don't use iterators. */
 	t = 0, i = 0;
@@ -109,18 +113,18 @@ static void PCMP_(test_compare)(void) {
 	printf("done.\n");
 	assert(!i);
 #endif
-	cmp = CMP_(is_equal)(0, 0), assert(cmp);
+	cmp = BOXTU_(is_equal)(0, 0), assert(cmp);
 	printf("a: %s.\n"
-		"b: %s.\n", A_(array_to_string)(&a), A_(array_to_string)(&b));
-	cmp = CMP_(is_equal)(&a, &b), assert(!cmp);
-	cmp = CMP_(is_equal)(&a, 0), assert(!cmp);
-	cmp = CMP_(is_equal)(0, &b), /*assert(cmp)*/assert(!cmp); /* Null == size 0. <- nah */
-	if(!A_(array_append)(&b, ts_size)) { assert(0); return; }
+		"b: %s.\n", T_(array_to_string)(&a), T_(array_to_string)(&b));
+	cmp = BOXTU_(is_equal)(&a, &b), assert(!cmp);
+	cmp = BOXTU_(is_equal)(&a, 0), assert(!cmp);
+	cmp = BOXTU_(is_equal)(0, &b), /*assert(cmp)*/assert(!cmp); /* Null == size 0. <- nah */
+	if(!T_(array_append)(&b, ts_size)) { assert(0); return; }
 	memcpy(b.data, ts, sizeof *t * ts_size);
-	printf("now b: %s.\n", A_(array_to_string)(&b));
-	cmp = CMP_(is_equal)(&a, &b), assert(cmp);
-	A_(array_)(&a);
-	A_(array_)(&b);
+	printf("now b: %s.\n", T_(array_to_string)(&b));
+	cmp = BOXTU_(is_equal)(&a, &b), assert(cmp);
+	T_(array_)(&a);
+	T_(array_)(&b);
 }
 
 #ifdef ARRAY_COMPARE /* <!-- comp */
@@ -128,8 +132,9 @@ static int PCMP_(cmp_void)(const void *const a, const void *const b)
 	{ return CMP_(compare)(a, b); }
 #endif /* comp --> */
 
-static void PCMP_(test_sort)(void) {
+static void PTU_(test_sort)(void) {
 #ifdef ARRAY_COMPARE /* <!-- comp */
+	/* fixme: never? */
 	struct A_(array) as[64], *a;
 	const size_t as_size = sizeof as / sizeof *as;
 	const struct A_(array) *const as_end = as + as_size;
@@ -164,8 +169,9 @@ static void PCMP_(test_sort)(void) {
 #endif /* comp --> */
 }
 
-static void PCMP_(test_bounds)(void) {
-#ifdef ARRAY_COMPARE /* <!-- compare */
+static void PTU_(test_bounds)(void) {
+#ifdef COMPARE /* <!-- compare */
+	/* fixme */
 	struct A_(array) a = A_(array)();
 	const size_t size = 10;
 	size_t i, low, high;
@@ -218,7 +224,7 @@ static void PCMP_(test_bounds)(void) {
 
 /** `ARRAY_TEST`, `ARRAY_COMPARE` -> `ARRAY_TO_STRING`, !`NDEBUG`: will be
  tested on stdout. @allow */
-static void CMP_(compare_test)(void) {
+static void BOXTU_(compare_test)(void) {
 	printf("<" QUOTE(ARRAY_NAME) ","
 #ifdef ARRAY_TRAIT
 		QUOTE(ARRAY_TRAIT)
@@ -227,10 +233,10 @@ static void CMP_(compare_test)(void) {
 #endif
 		">array testing compare:\n");
 	errno = 0;
-	PCMP_(test_sort)();
-	PCMP_(test_bounds)();
-	PCMP_(test_compactify)();
-	PCMP_(test_compare)();
+	PTU_(test_sort)();
+	PTU_(test_bounds)();
+	PTU_(test_compactify)();
+	PTU_(test_compare)();
 	assert(errno == 0);
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array compare.\n\n");
 }

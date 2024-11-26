@@ -11,52 +11,29 @@
 
  @std C89 */
 
-#if !defined(BOX_TYPE) || !defined(BOX_CONTENT) || !defined(BOX_) \
-	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MINOR_NAME) \
-	|| defined(CMP_) || !(defined(COMPARE_IS_EQUAL) ^ defined(COMPARE))
-#error Unexpected preprocessor symbols.
+#if !defined(BOX_H) || !defined(BOX_CAT) || !defined(TU_) || !defined(PTU_) \
+	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MAJOR) \
+	|| !defined(BOX_MINOR_NAME) || !defined(BOX_MINOR) \
+	|| !(defined(COMPARE_IS_EQUAL) ^ defined(COMPARE))
+#	error Unexpected preprocessor symbols.
 #endif
 
-#ifndef COMPARE_H /* <!-- idempotent */
-#define COMPARE_H
 #include <stddef.h>
 #include <limits.h>
-#if defined(COMPARE_CAT_) || defined(COMPARE_CAT) || defined(PCMP_)
-#error Unexpected defines.
-#endif
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-#define COMPARE_CAT_(n, m) n ## _ ## m
-#define COMPARE_CAT(n, m) COMPARE_CAT_(n, m)
-#define PCMP_(n) COMPARE_CAT(compare, CMP_(n))
-#endif /* idempotent --> */
 
-#ifndef BOX_TRAIT_NAME /* <!-- !trait */
-#define CMP_(n) COMPARE_CAT(COMPARE_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), n)
-#define CMPCALL_(n) COMPARE_CAT(BOX_MINOR_NAME, n)
-#else /* !trait --><!-- trait */
-#define CMP_(n) COMPARE_CAT(COMPARE_CAT(BOX_MINOR_NAME, BOX_MAJOR_NAME), \
-	COMPARE_CAT(BOX_TRAIT_NAME, n))
-#define CMPCALL_(n) COMPARE_CAT(COMPARE_CAT(BOX_MINOR_NAME, \
-	BOX_TRAIT_NAME), n)
-#endif /* trait --> */
 
-typedef BOX_TYPE PCMP_(box);
-typedef BOX_CONTENT PCMP_(element);
-
-/* fixme: Restrict not defined everywhere. Only works in _eg_ array. */
 /** <src/compare.h>: Returns a boolean given two read-only elements. */
-typedef int (*PCMP_(bipredicate_fn))(PCMP_(element) *restrict,
-	PCMP_(element) *restrict);
+typedef int (*PTU_(bipredicate_fn))(PT_(type) *restrict, PT_(type) *restrict);
 /** <src/compare.h>: Three-way comparison on a totally order set; returns an
  integer value less than, equal to, greater than zero, if `a < b`, `a == b`,
  `a > b`, respectively. */
-typedef int (*PCMP_(compare_fn))(const PCMP_(element) *restrict a,
-	const PCMP_(element) *restrict b);
+typedef int (*PTU_(compare_fn))(const PTU_(type) *restrict a,
+	const PTU_(type) *restrict b);
 /** <src/compare.h>: Returns a boolean given two modifiable arguments. */
-typedef int (*PCMP_(biaction_fn))(PCMP_(element) *restrict,
-	PCMP_(element) *restrict);
+typedef int (*PTU_(biaction_fn))(PT_(type) *restrict,
+	PT_(type) *restrict);
 
-#ifdef COMPARE /* <!-- compare: <typedef:<PCMP>compare_fn>. */
+#ifdef BOX_COMPARE /* <!-- compare: <typedef:<PTU>compare_fn>. */
 
 /** <src/compare.h>, `COMPARE`: Lexicographically compares `a` to `b`. Both can
  be null, with null values before everything.
@@ -88,7 +65,7 @@ static int CMP_(compare)(const PCMP_(box) *restrict const a,
 	}
 }
 
-#ifdef BOX_ACCESS /* <!-- access: size, at. */
+#	ifdef BOX_ACCESS /* <!-- access: size, at. */
 
 /** <src/compare.h>, `COMPARE`, `BOX_ACCESS`: `box` should be partitioned
  true/false with less-then `element`. @return The first index of `a` that is
@@ -98,7 +75,7 @@ static size_t CMP_(lower_bound)(const PCMP_(box) *const box,
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
 		if(CMPCALL_(compare)((const void *)element, (const void *)
-			BOX_(at)(box, mid = low + (high - low) / 2)) <= 0) high = mid;
+			PT_(at)(box, mid = low + (high - low) / 2)) <= 0) high = mid;
 		else low = mid + 1;
 	return low;
 }
@@ -112,13 +89,13 @@ static size_t CMP_(upper_bound)(const PCMP_(box) *const box,
 	size_t low = 0, high = BOX_(size)(box), mid;
 	while(low < high)
 		if(CMPCALL_(compare)((const void *)element,
-			(const void *)BOX_(at)(box, mid = low + (high - low) / 2)) >= 0)
+			(const void *)PT_(at)(box, mid = low + (high - low) / 2)) >= 0)
 			low = mid + 1;
 		else high = mid;
 	return low;
 }
 
-#ifdef BOX_CONTIGUOUS /* <!-- contiguous: element is pointer to array. */
+#		ifdef BOX_CONTIGUOUS /* <!-- contiguous: element is pointer to array. */
 
 /** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Copies `element` at the upper
  bound of a sorted `box`.
@@ -129,9 +106,9 @@ static int CMP_(insert_after)(PCMP_(box) *const box,
 	assert(box && element);
 	bound = CMP_(upper_bound)(box, element);
 	if(!BOX_(append)(box, 1)) return 0;
-	memmove(BOX_(at)(box, bound + 1), BOX_(at)(box, bound),
+	memmove(PT_(at)(box, bound + 1), PT_(at)(box, bound),
 		sizeof *element * (BOX_(size)(box) - bound - 1));
-	memcpy(BOX_(at)(box, bound), element, sizeof *element);
+	memcpy(PT_(at)(box, bound), element, sizeof *element);
 	return 1;
 }
 
@@ -146,7 +123,7 @@ static void CMP_(sort)(PCMP_(box) *const box) {
 	const size_t size = BOX_(size)(box);
 	PCMP_(element) *first;
 	if(!size) return;
-	first = BOX_(at)(box, 0);
+	first = PT_(at)(box, 0);
 	/*if(!BOX_(is_element)(first)) return;*/ /* That was weird. */
 	qsort(first, size, sizeof *first, &PCMP_(vcompar));
 }
@@ -161,55 +138,55 @@ static void CMP_(reverse)(PCMP_(box) *const box) {
 	const size_t size = BOX_(size)(box);
 	PCMP_(element) *first;
 	if(!size) return;
-	first = BOX_(at)(box, 0);
+	first = PT_(at)(box, 0);
 	/*if(!BOX_(is_element)(first)) return;*/ /* That was weird. */
 	qsort(first, size, sizeof *first, &PCMP_(vrevers));
 }
 
-#endif /* contiguous --> */
+#		endif /* contiguous --> */
 
-#endif /* access --> */
+#	endif /* access --> */
 
 /** !compare(`a`, `b`) == equals(`a`, `b`).
  (This makes `COMPARE` encompass `COMPARE_IS_EQUAL`.) However, it can not
  collide with another function!
- @implements <typedef:<PCMP>bipredicate_fn> */
-static int CMPCALL_(is_equal)(const PCMP_(element) *const restrict a,
-	const PCMP_(element) *const restrict b) {
-	return !CMPCALL_(compare)((const void *)a, (const void *)b);
+ @implements <typedef:<PTU>bipredicate_fn> */
+static int TU_(is_equal)(const PT_(type) *const restrict a,
+	const PT_(type) *const restrict b) {
+	return !TU_(compare)((const void *)a, (const void *)b);
 }
 
 #endif /* compare --> */
 
 /** <src/compare.h> @return If `a` piecewise equals `b`,
  which both can be null. @order \O(|`a`| & |`b`|) @allow */
-static int CMP_(is_equal)(const PCMP_(box) *restrict const a,
-	const PCMP_(box) *restrict const b) {
-	struct BOX_(iterator) ia, ib;
+static int BOXTU_(is_equal)(const PT_(box) *restrict const a,
+	const PT_(box) *restrict const b) {
+	struct PT_(iterator) ia, ib;
 	if(!a) return !b /*|| !b->size <- Null is less than empty? Easier. */;
 	if(!b) return 0;
 	{ /* We do not modify, but the compiler doesn't know that. */
-		const PCMP_(box) *const rm_restrict = a;
-		PCMP_(box) *promise_box;
+		const PT_(box) *const rm_restrict = a;
+		PT_(box) *promise_box;
 		memcpy(&promise_box, &rm_restrict, sizeof a);
-		ia = BOX_(iterator)(promise_box);
+		ia = PT_(iterator)(promise_box);
 	} {
-		const PCMP_(box) *const rm_restrict = b;
-		PCMP_(box) *promise_box;
+		const PT_(box) *const rm_restrict = b;
+		PT_(box) *promise_box;
 		memcpy(&promise_box, &rm_restrict, sizeof b);
-		ib = BOX_(iterator)(promise_box);
+		ib = PT_(iterator)(promise_box);
 	}
 	for( ; ; ) {
-		if(!BOX_(next)(&ia)) return !BOX_(next)(&ib);
-		else if(!BOX_(next)(&ib)) return 0;
-		if(!CMPCALL_(is_equal)(BOX_(element)(&ia), BOX_(element)(&ib)))
+		if(!PT_(next)(&ia)) return !PT_(next)(&ib);
+		else if(!PT_(next)(&ib)) return 0;
+		if(!TU_(is_equal)(PT_(element)(&ia), PT_(element)(&ib)))
 			return 0;
 	}
 	return 1;
 }
 
 #ifdef BOX_CONTIGUOUS /* <!-- contiguous: (array, pointer), size, at,
- tell_size. */
+ tell_size [?]. */
 
 /** <src/compare.h>, `BOX_CONTIGUOUS`: Removes consecutive duplicate elements
  in `box` lazily.
@@ -218,19 +195,19 @@ static int CMP_(is_equal)(const PCMP_(box) *restrict const a,
  can be simulated by mixing the two in the value returned. Can be null: behaves
  like false, always deleting the second element.
  @order \O(|`box`|) \times \O(`merge`) @allow */
-static void CMP_(unique_merge)(PCMP_(box) *const box,
-	const PCMP_(biaction_fn) merge) {
+static void BOXTU_(unique_merge)(PT_(box) *const box,
+	const PTU_(biaction_fn) merge) {
 	size_t target, from, cursor, choice, next, move;
-	const size_t last = BOX_(size)(box);
+	const size_t last = PT_(size)(box);
 	int is_first, is_last;
-	PCMP_(element) *dst, *src;
+	PT_(type) *dst, *src;
 	assert(box);
 	for(target = from = cursor = 0; cursor < last; cursor += next) {
 		/* Bijective `[from, cursor)` is moved lazily. */
 		for(choice = 0, next = 1; cursor + next < last; next++) {
-			/*const*/ PCMP_(element) *a = BOX_(at)(box, cursor + choice),
-				*b = BOX_(at)(box, cursor + next);
-			if(!CMPCALL_(is_equal)(a, b)) break;
+			/*const*/ PT_(type) *a = PTU_(at)(box, cursor + choice),
+				*b = PTU_(at)(box, cursor + next);
+			if(!TU_(is_equal)(a, b)) break;
 			if(merge && merge(a, b)) choice = next;
 		}
 		if(next == 1) continue;
@@ -238,29 +215,30 @@ static void CMP_(unique_merge)(PCMP_(box) *const box,
 		is_first = !choice;
 		is_last  = (choice == next - 1);
 		move = cursor - from + (size_t)is_first;
-		dst = BOX_(at)(box, target), src = BOX_(at)(box, from);
+		dst = PTU_(at)(box, target), src = PTU_(at)(box, from);
 		memmove(dst, src, sizeof *src * move), target += move;
-		if(!is_first && !is_last) dst = BOX_(at)(box, target),
-			src = BOX_(at)(box, cursor + choice),
+		if(!is_first && !is_last) dst = PT_(at)(box, target),
+			src = PT_(at)(box, cursor + choice),
 			memcpy(dst, src, sizeof *src), target++;
 		from = cursor + next - (size_t)is_last;
 	}
 	/* Last differed move. */
 	move = last - from;
-	dst = BOX_(at)(box, target), src = BOX_(at)(box, from),
+	dst = PT_(at)(box, target), src = PT_(at)(box, from),
 		memmove(dst, src, sizeof *src * move),
 		target += move, assert(target <= last);
-	BOX_(tell_size)(box, target);
+	PT_(tell_size)(box, target);
 }
 
 /** <src/compare.h>, `BOX_CONTIGUOUS`: Removes consecutive duplicate elements
  in `box`. @order \O(|`box`|) @allow */
-static void CMP_(unique)(PCMP_(box) *const box) { CMP_(unique_merge)(box, 0); }
+static void BOXTU_(unique)(PT_(box) *const box)
+	{ BOXTU_(unique_merge)(box, 0); }
 
 #endif /* contiguous --> */
 
-static void PCMP_(unused_compare_coda)(void);
-static void PCMP_(unused_compare)(void) {
+static void PTU_(unused_compare_coda)(void);
+static void PTU_(unused_compare)(void) {
 #ifdef COMPARE /* <!-- compare */
 	CMP_(compare)(0, 0);
 #ifdef BOX_ACCESS
@@ -270,13 +248,13 @@ static void PCMP_(unused_compare)(void) {
 #endif
 #endif
 #endif /* compare --> */
-	CMP_(is_equal)(0, 0);
+	BOXTU_(is_equal)(0, 0);
 #ifdef BOX_CONTIGUOUS
-	CMP_(unique_merge)(0, 0); CMP_(unique)(0);
+	BOXTU_(unique_merge)(0, 0); BOXTU_(unique)(0);
 #endif
-	PCMP_(unused_compare_coda)();
+	PTU_(unused_compare_coda)();
 }
-static void PCMP_(unused_compare_coda)(void) { PCMP_(unused_compare)(); }
+static void PTU_(unused_compare_coda)(void) { PTU_(unused_compare)(); }
 
 #ifdef COMPARE
 #undef COMPARE
@@ -287,5 +265,3 @@ static void PCMP_(unused_compare_coda)(void) { PCMP_(unused_compare)(); }
 #ifdef BOX_COMPARE_NAME
 #undef BOX_COMPARE_NAME
 #endif
-/*#undef CMP_ Need for tests. */
-/*#undef CMPCALL_ */

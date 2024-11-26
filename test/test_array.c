@@ -27,8 +27,6 @@ static void str4_filler(struct str4 *const s)
 #define ARRAY_TO_STRING
 #include "../src/array.h"
 
-#if 0
-
 #define HAVE_ITERATE_H /* More tests. */
 
 /* Enum array. */
@@ -57,6 +55,7 @@ static int colour_is_equal(const enum colour *const a,
 #include "../src/array.h"
 
 
+#if 0
 /* Int array with compare. */
 static void int_to_string(const int *i, char (*const a)[12])
 	{ sprintf(*a, "%d", *i); }
@@ -139,9 +138,9 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	str4_array_test();
-#if 0
 	colour_array_test();
 	colour_array_compare_test();
+#if 0
 	int_array_test();
 	int_array_compare_test();
 	keyval_array_test();
