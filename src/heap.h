@@ -375,7 +375,7 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #define BOX_CONTENT PH_(node)
 #define BOX_ PH_
 #define BOX_MAJOR_NAME heap
-#define BOX_MINOR_NAME HEAP_NAME
+#define BOX_NAME HEAP_NAME
 
 #endif /* body --> */
 
@@ -427,7 +427,7 @@ static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12]) {
 #undef BOX_CONTENT
 #undef BOX_
 #undef BOX_MAJOR_NAME
-#undef BOX_MINOR_NAME
+#undef BOX_NAME
 #undef HEAP_NAME
 #undef HEAP_TYPE
 #undef HEAP_COMPARE

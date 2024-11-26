@@ -30,8 +30,8 @@ static void PT_(graph)(const struct T_(array) *const a, const char *const fn) {
 		"\tarray [label=<\n"
 		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td colspan=\"3\" align=\"left\">"
-		"<font color=\"Gray75\">&lt;" QUOTE(ARRAY_NAME)
-		"&gt;array: " QUOTE(ARRAY_TYPE) "</font></td></tr>\n"
+		"<font color=\"Gray75\">&lt;" QUOTE(BOX_NAME)
+		"&gt;array: " QUOTE(BOX_TYPE) "</font></td></tr>\n"
 		"\t<hr/>\n"
 		"\t<tr>\n"
 		"\t\t<td border=\"0\" align=\"right\">size</td>\n"
@@ -97,8 +97,8 @@ static void PT_(test_basic)(void) {
 	item = T_(array_new)(&a); /* Add. */
 	assert(item && a.size == 1 && a.capacity >= 1);
 	T_(array_shrink)(&a);
-	assert(ARRAY_MIN_CAPACITY > 1);
-	assert(a.size == 1 && a.capacity == ARRAY_MIN_CAPACITY);
+	assert(BOX_MIN_CAPACITY > 1);
+	assert(a.size == 1 && a.capacity == BOX_MIN_CAPACITY);
 	item = T_(array_new)(&a); /* Add: 2. */
 	assert(item && a.size == 2 && a.capacity >= 2);
 	T_(array_clear)(&a);
@@ -253,7 +253,7 @@ static void PT_(test_random)(void) {
 		if(a.size < 1000000 && !(i & (i - 1))) {
 			char fn[32];
 			printf("%s.\n", T_(array_to_string)(&a));
-			sprintf(fn, "graph/" QUOTE(ARRAY_NAME) "-array-%lu.gv",
+			sprintf(fn, "graph/" QUOTE(BOX_NAME) "-array-%lu.gv",
 				(unsigned long)i);
 			PT_(graph)(&a, fn);
 		}
@@ -494,12 +494,12 @@ static void PT_(test_insert)(void) {
 	T_(array_)(&a);
 }
 
-/** `ARRAY_TEST`, `ARRAY_TO_STRING`, !`NDEBUG`: will be tested on stdout.
+/** `BOX_TEST`, `BOX_TO_STRING`, !`NDEBUG`: will be tested on stdout.
  @allow */
 static void T_(array_test)(void) {
-	printf("array<" QUOTE(ARRAY_NAME) "> of type <" QUOTE(ARRAY_TYPE)
-		"> was created using: ARRAY_TO_STRING <" QUOTE(ARRAY_TO_STRING) ">; "
-		"ARRAY_TEST <" QUOTE(ARRAY_TEST) ">; testing:\n");
+	printf("array<" QUOTE(BOX_NAME) "> of type <" QUOTE(BOX_TYPE)
+		"> was created using: BOX_TO_STRING <" QUOTE(BOX_TO_STRING) ">; "
+		"BOX_TEST <" QUOTE(BOX_TEST) ">; testing:\n");
 	assert(T_(to_string) && T_(array_to_string));
 	PT_(test_basic)();
 	PT_(test_random)();
@@ -508,7 +508,7 @@ static void T_(array_test)(void) {
 	PT_(test_each)();
 	PT_(test_trim)();
 	PT_(test_insert)();
-	fprintf(stderr, "Done tests of array<" QUOTE(ARRAY_NAME) ">.\n\n");
+	fprintf(stderr, "Done tests of array<" QUOTE(BOX_NAME) ">.\n\n");
 }
 
 #undef QUOTE

@@ -10,8 +10,8 @@
 
 
 /* Not used because it's not set up for testing. The minimal array. */
-#define ARRAY_NAME number
-#define ARRAY_TYPE int
+#define BOX_NAME number
+#define BOX_TYPE int
 #include "../src/array.h"
 
 
@@ -21,10 +21,10 @@ static void str4_to_string(const struct str4 *const s, char (*const a)[12])
 	{ sprintf(*a, "%.11s", s->value); }
 static void str4_filler(struct str4 *const s)
 	{ orcish(s->value, sizeof s->value); }
-#define ARRAY_NAME str4
-#define ARRAY_TYPE struct str4
-#define ARRAY_TEST
-#define ARRAY_TO_STRING
+#define BOX_NAME str4
+#define BOX_TYPE struct str4
+#define BOX_TEST
+#define BOX_TO_STRING
 #include "../src/array.h"
 
 #define HAVE_ITERATE_H /* More tests. */
@@ -47,11 +47,11 @@ static void colour_to_string(const enum colour *const c, char (*const a)[12])
 	{ assert(*c < colour_size); sprintf(*a, "%.11s", colours[*c]); }
 static int colour_is_equal(const enum colour *const a,
 	const enum colour *const b) { return *a == *b; }
-#define ARRAY_NAME colour
-#define ARRAY_TYPE enum colour
-#define ARRAY_TEST
-#define ARRAY_IS_EQUAL
-#define ARRAY_TO_STRING
+#define BOX_NAME colour
+#define BOX_TYPE enum colour
+#define BOX_TEST
+#define BOX_IS_EQUAL
+#define BOX_TO_STRING
 #include "../src/array.h"
 
 
@@ -62,11 +62,11 @@ static void int_filler(int *const i)
 	{ *i = rand() / (RAND_MAX / 1998 + 1) - 999; }
 static int int_compare(const int *const a, const int *const b)
 	{ return (*a > *b) - (*b > *a); }
-#define ARRAY_NAME int
-#define ARRAY_TYPE int
-#define ARRAY_TEST
-#define ARRAY_COMPARE
-#define ARRAY_TO_STRING
+#define BOX_NAME int
+#define BOX_TYPE int
+#define BOX_TEST
+#define BOX_COMPARE
+#define BOX_TO_STRING
 #include "../src/array.h"
 
 
@@ -85,16 +85,16 @@ static int keyval_compare(const struct keyval *const a,
 	{ return (a->key > b->key) - (a->key < b->key); }
 static int keyval_value_compare(const struct keyval *const a,
 	const struct keyval *const b) { return strcmp(a->value, b->value); }
-#define ARRAY_NAME keyval
-#define ARRAY_TYPE struct keyval
-#define ARRAY_TEST
-#define ARRAY_COMPARE
-#define ARRAY_TO_STRING
-#define ARRAY_EXPECT_TRAIT
+#define BOX_NAME keyval
+#define BOX_TYPE struct keyval
+#define BOX_TEST
+#define BOX_COMPARE
+#define BOX_TO_STRING
+#define BOX_EXPECT_TRAIT
 #include "../src/array.h"
-#define ARRAY_TRAIT value
-#define ARRAY_TO_STRING
-#define ARRAY_COMPARE
+#define BOX_TRAIT value
+#define BOX_TO_STRING
+#define BOX_COMPARE
 #include "../src/array.h"
 
 
@@ -106,11 +106,11 @@ static void pointer_filler(int **const i)
 	+ rand() / (RAND_MAX / (int)(sizeof targets / sizeof *targets) + 1); }
 static int pointer_compare(const int *const*const a, const int *const*const b)
 	{ return int_compare(*a, *b); }
-#define ARRAY_NAME pointer
-#define ARRAY_TYPE int *
-#define ARRAY_TEST
-#define ARRAY_COMPARE
-#define ARRAY_TO_STRING
+#define BOX_NAME pointer
+#define BOX_TYPE int *
+#define BOX_TEST
+#define BOX_COMPARE
+#define BOX_TO_STRING
 #include "../src/array.h"
 
 

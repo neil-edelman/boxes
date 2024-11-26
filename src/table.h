@@ -787,7 +787,7 @@ static int N_(table_remove)(struct N_(table) *const table,
 #define BOX_CONTENT struct PN_(bucket)
 #define BOX_ PN_
 #define BOX_MAJOR_NAME table
-#define BOX_MINOR_NAME TABLE_NAME
+#define BOX_NAME TABLE_NAME
 
 #ifdef HAVE_ITERATE_H /* <!-- iterate */
 #include "iterate.h" /** \include */
@@ -896,7 +896,7 @@ static void PN_D_(unused, default_coda)(void) { PN_D_(unused, default)(); }
 #undef BOX_CONTENT
 #undef BOX_
 #undef BOX_MAJOR_NAME
-#undef BOX_MINOR_NAME
+#undef BOX_NAME
 #undef TABLE_NAME
 #undef TABLE_KEY
 #undef TABLE_UINT

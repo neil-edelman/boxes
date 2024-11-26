@@ -74,7 +74,7 @@
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #	define BOX_CAT_(n, m) n ## _ ## m
 #	define BOX_CAT(n, m) BOX_CAT_(n, m)
-#	define T_(n) BOX_CAT(BOX_MINOR_NAME, n)
+#	define T_(n) BOX_CAT(BOX_NAME, n)
 #	define PT_(n) BOX_CAT(BOX_CAT(private, BOX_MAJOR_NAME), T_(n))
 #endif
 
@@ -880,7 +880,7 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #define BOX_CONTENT struct PT_(ref)
 #define BOX_ PT_
 #define BOX_MAJOR_NAME trie
-#define BOX_MINOR_NAME TRIE_NAME
+#define BOX_NAME TRIE_NAME
 
 #endif /* body --> */
 
@@ -935,7 +935,7 @@ static void PTT_(to_string)(const struct PT_(ref) r,
 #undef BOX_CONTENT
 #undef BOX_
 #undef BOX_MAJOR_NAME
-#undef BOX_MINOR_NAME
+#undef BOX_NAME
 #undef TRIE_NAME
 #ifdef TRIE_ENTRY
 #undef TRIE_ENTRY

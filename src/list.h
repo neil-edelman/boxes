@@ -311,7 +311,7 @@ static void L_(list_self_correct)(struct L_(list) *const list) {
 #define BOX_CONTENT struct L_(listlink)
 #define BOX_ PL_
 #define BOX_MAJOR_NAME list
-#define BOX_MINOR_NAME LIST_NAME
+#define BOX_NAME LIST_NAME
 
 #ifdef HAVE_ITERATE_H /* <!-- iterate */
 #include "iterate.h" /** \include */
@@ -675,7 +675,7 @@ static void PL_(unused_extra_compare_coda)(void){ PL_(unused_extra_compare)(); }
 #undef BOX_CONTENT
 #undef BOX_
 #undef BOX_MAJOR_NAME
-#undef BOX_MINOR_NAME
+#undef BOX_NAME
 #undef LIST_NAME
 #ifdef LIST_HAS_TO_STRING
 #undef LIST_HAS_TO_STRING

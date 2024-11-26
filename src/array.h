@@ -11,18 +11,18 @@
  Resizing may be necessary when increasing the size of the array; this incurs
  amortised cost, and any pointers to this memory may become stale.
 
- @param[ARRAY_NAME, ARRAY_TYPE]
+ @param[BOX_NAME, BOX_TYPE]
  `<A>` that satisfies `C` naming conventions when mangled and a valid tag-type,
  <typedef:<PA>type>, associated therewith; required. `<PA>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
- @param[ARRAY_COMPARE, ARRAY_IS_EQUAL]
+ @param[BOX_COMPARE, BOX_IS_EQUAL]
  Compare `<CMP>` trait contained in <src/compare.h>. Requires
  `<name>[<trait>]compare` to be declared as <typedef:<PCMP>compare_fn> or
  `<name>[<trait>]is_equal` to be declared as <typedef:<PCMP>bipredicate_fn>,
  respectfully, (but not both.)
 
- @param[ARRAY_TO_STRING]
+ @param[BOX_TO_STRING]
  To string `<STR>` trait contained in <src/to_string.h>. Requires
  `<name>[<trait>]to_string` be declared as <typedef:<PSTR>to_string_fn>.
 
@@ -35,17 +35,17 @@
 
  @std C89 */
 
-#if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
+#if !defined(BOX_NAME) || !defined(BOX_TYPE)
 #	error Name or tag type undefined.
 #endif
-#if defined(ARRAY_TRAIT) ^ defined(BOX_MAJOR)
-#	error ARRAY_TRAIT name must come after ARRAY_EXPECT_TRAIT.
+#if defined(BOX_TRAIT) ^ defined(BOX_MAJOR)
+#	error BOX_TRAIT name must come after BOX_EXPECT_TRAIT.
 #endif
-#if defined(ARRAY_COMPARE) && defined(ARRAY_IS_EQUAL)
+#if defined(BOX_COMPARE) && defined(BOX_IS_EQUAL)
 #	error Only one can be defined at a time.
 #endif
-#if defined(ARRAY_TEST) && (!defined(ARRAY_TRAIT) && !defined(ARRAY_TO_STRING) \
-	|| defined(ARRAY_TRAIT) && !defined(ARRAY_HAS_TO_STRING))
+#if defined(BOX_TEST) && (!defined(BOX_TRAIT) && !defined(BOX_TO_STRING) \
+	|| defined(BOX_TRAIT) && !defined(BOX_HAS_TO_STRING))
 #	error Test requires to string.
 #endif
 
@@ -57,7 +57,7 @@
 /* <Kernighan and Ritchie, 1988, p. 231>. */
 #	define BOX_CAT_(n, m) n ## _ ## m
 #	define BOX_CAT(n, m) BOX_CAT_(n, m)
-#	define T_(n) BOX_CAT(BOX_MINOR_NAME, n)
+#	define T_(n) BOX_CAT(BOX_NAME, n)
 #	define PT_(n) BOX_CAT(BOX_CAT(private, BOX_MAJOR_NAME), T_(n))
 #endif
 #ifdef BOX_TRAIT
@@ -82,25 +82,24 @@
 #	define restrict /* Attribute only in C99+. */
 #endif
 
-#ifndef ARRAY_TRAIT /* Base code, necessarily first. */
+#ifndef BOX_TRAIT /* Base code, necessarily first. */
 
 /* Box override information stays until the box is done. */
-#	define BOX_MINOR_NAME ARRAY_NAME
 #	define BOX_MINOR PT_(type)
 #	define BOX_MAJOR_NAME array
 #	define BOX_MAJOR struct T_(array)
 #	define BOX_ACCESS
 #	define BOX_CONTIGUOUS
 
-#	ifndef ARRAY_MIN_CAPACITY
-#		define ARRAY_MIN_CAPACITY 3 /* > 1 */
+#	ifndef BOX_MIN_CAPACITY
+#		define BOX_MIN_CAPACITY 3 /* > 1 */
 #	endif
-#	if ARRAY_MIN_CAPACITY <= 1
-#		error ARRAY_MIN_CAPACITY > 1
+#	if BOX_MIN_CAPACITY <= 1
+#		error BOX_MIN_CAPACITY > 1
 #	endif
 
-/** A valid tag type set by `ARRAY_TYPE`. */
-typedef ARRAY_TYPE PT_(type);
+/** A valid tag type set by `BOX_TYPE`. */
+typedef BOX_TYPE PT_(type);
 
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`.
@@ -122,7 +121,7 @@ struct T_(array_iterator) { struct PT_(iterator) _; };
 
 
 /* fixme: a wrapper is a terrible way to make functions accessible; something
- like ARRAY_EXPORT_CONS… #ifdef ARRAY_EXPORT_SIZE, #define static, size_t T_()… */
+ like BOX_EXPORT_CONS… #ifdef BOX_EXPORT_SIZE, #define static, size_t T_()… */
 
 #	ifndef BOX_DECLARE_ONLY /* Produce code: not for headers. */
 
@@ -185,12 +184,12 @@ static int T_(array_reserve)(struct T_(array) *const a, const size_t min) {
 	if(a->data) {
 		assert(a->size <= a->capacity);
 		if(min <= a->capacity) return 1;
-		c0 = a->capacity < ARRAY_MIN_CAPACITY
-			? ARRAY_MIN_CAPACITY : a->capacity;
+		c0 = a->capacity < BOX_MIN_CAPACITY
+			? BOX_MIN_CAPACITY : a->capacity;
 	} else { /* Idle. */
 		assert(!a->size && !a->capacity);
 		if(!min) return 1;
-		c0 = ARRAY_MIN_CAPACITY;
+		c0 = BOX_MIN_CAPACITY;
 	}
 	if(min > max_size) return errno = ERANGE, 0;
 	/* `c_n = a1.625^n`, approximation golden ratio `\phi ~ 1.618`. */
@@ -257,7 +256,7 @@ static int T_(array_shrink)(struct T_(array) *const a) {
 	size_t c;
 	assert(a && a->capacity >= a->size);
 	if(!a->data) return assert(!a->size && !a->capacity), 1;
-	c = a->size && a->size > ARRAY_MIN_CAPACITY ? a->size : ARRAY_MIN_CAPACITY;
+	c = a->size && a->size > BOX_MIN_CAPACITY ? a->size : BOX_MIN_CAPACITY;
 	if(!(data = realloc(a->data, sizeof *a->data * c)))
 		{ if(!errno) errno = ERANGE; return 0; }
 	a->data = data, a->capacity = c;
@@ -354,66 +353,66 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 
 
-#if defined(ARRAY_TO_STRING) \
-	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- to string trait */
+#if defined(BOX_TO_STRING) \
+	&& !defined(BOX_DECLARE_ONLY) /* <!-- to string trait */
 /** Thunk `e` -> `a`. */
 /*static void PTU_(to_string)(const PT_(type) *e, char (*const a)[12])
 	{ TU_(to_string)((const void *)e, a); } (fixme: now we suddenly don't need
 	this? what changed? I mean, yeah, I would not want to use this hack, but
 	still…) */
 #	include "to_string.h" /** \include */
-#	undef ARRAY_TO_STRING
-#	ifndef ARRAY_TRAIT
-#		define ARRAY_HAS_TO_STRING
+#	undef BOX_TO_STRING
+#	ifndef BOX_TRAIT
+#		define BOX_HAS_TO_STRING
 #	endif
 #endif /* to string trait --> */
 
 
-#if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT) \
-	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- test base */
+#if defined(BOX_TEST) && !defined(BOX_TRAIT) \
+	&& !defined(BOX_DECLARE_ONLY) /* <!-- test base */
 #	include "../test/test_array.h"
 #endif /* test base --> */
 
 
-#if (defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL)) \
-	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- compare trait */
-#	ifdef ARRAY_COMPARE
-#		define COMPARE ARRAY_COMPARE
+#if (defined(BOX_COMPARE) || defined(BOX_IS_EQUAL)) \
+	&& !defined(BOX_DECLARE_ONLY) /* <!-- compare trait */
+#	ifdef BOX_COMPARE
+#		define COMPARE BOX_COMPARE
 #	else
-#		define COMPARE_IS_EQUAL ARRAY_IS_EQUAL
+#		define COMPARE_IS_EQUAL BOX_IS_EQUAL
 #	endif
 #	include "compare.h" /** \include */
-#	ifdef ARRAY_TEST
+#	ifdef BOX_TEST
 #		include "../test/test_array_compare.h"
 #	endif
-#	ifdef ARRAY_COMPARE
-#		undef ARRAY_COMPARE
+#	ifdef BOX_COMPARE
+#		undef BOX_COMPARE
 #	else
-#		undef ARRAY_IS_EQUAL
+#		undef BOX_IS_EQUAL
 #	endif
 #endif /* compare trait --> */
 
 
-#ifdef ARRAY_EXPECT_TRAIT
-#	undef ARRAY_EXPECT_TRAIT
+#ifdef BOX_EXPECT_TRAIT
+#	undef BOX_EXPECT_TRAIT
 #else
-#	undef BOX_MINOR_NAME
+#	undef BOX_NAME
 #	undef BOX_MINOR
 #	undef BOX_MAJOR_NAME
 #	undef BOX_MAJOR
 #	undef BOX_ACCESS
 #	undef BOX_CONTIGUOUS
-#	undef ARRAY_NAME
-#	undef ARRAY_TYPE
-#	undef ARRAY_MIN_CAPACITY
-#	ifdef ARRAY_HAS_TO_STRING
-#		undef ARRAY_HAS_TO_STRING
+#	undef BOX_NAME
+#	undef BOX_TYPE
+#	undef BOX_MIN_CAPACITY
+#	ifdef BOX_HAS_TO_STRING
+#		undef BOX_HAS_TO_STRING
 #	endif
-#	ifdef ARRAY_TEST
-#		undef ARRAY_TEST
+#	ifdef BOX_TEST
+#		undef BOX_TEST
 #	endif
-#	ifdef ARRAY_DECLARE_ONLY
-#		undef ARRAY_DECLARE_ONLY
+#	ifdef BOX_DECLARE_ONLY
+#		undef BOX_DECLARE_ONLY
 #	endif
 #	ifdef BOX_RESTRICT
 #		undef BOX_RESTRICT

@@ -21,7 +21,7 @@
 
 #if !defined(BOX_H) || !defined(BOX_CAT) || !defined(TU_) || !defined(PTU_) \
 	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MAJOR) \
-	|| !defined(BOX_MINOR_NAME) || !defined(BOX_MINOR)
+	|| !defined(BOX_NAME) || !defined(BOX_MINOR)
 #	error Unexpected preprocessor symbols.
 #endif
 #if defined(TO_STRING_H) \
