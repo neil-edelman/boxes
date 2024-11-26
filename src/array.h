@@ -60,16 +60,13 @@
 #	define T_(n) BOX_CAT(BOX_MINOR_NAME, n)
 #	define PT_(n) BOX_CAT(BOX_CAT(private, BOX_MAJOR_NAME), T_(n))
 #endif
-
-/* fixme */
-#ifdef BOX_TRAIT /* <-- trait: Will be different on different includes. */
-#	define BOX_TRAIT_NAME ARRAY_TRAIT
-#	define PAT_(n) PT_(ARRAY_CAT(ARRAY_TRAIT, n))
-#	define AT_(n) T_(ARRAY_CAT(ARRAY_TRAIT, n))
-#else /* trait --><!-- !trait */
-#	define PAT_(n) PT_(n)
-#	define AT_(n) T_(n)
-#endif /* !trait --> */
+#ifdef BOX_TRAIT
+#	define TU_(n) T_(BOX_CAT(BOX_TRAIT, n))
+#	define PTU_(n) PT_(BOX_CAT(BOX_TRAIT, n))
+#else /* Anonymous trait. */
+#	define TU_(n) T_(n)
+#	define PTU_(n) PT_(n)
+#endif
 
 
 #include <stdlib.h>
@@ -350,85 +347,73 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #endif /* Base code. */
 
 
-#ifdef ARRAY_TRAIT /* <-- trait: Will be different on different includes. */
-#define BOX_TRAIT_NAME ARRAY_TRAIT
-#define PAT_(n) PT_(ARRAY_CAT(ARRAY_TRAIT, n))
-#define AT_(n) T_(ARRAY_CAT(ARRAY_TRAIT, n))
-#else /* trait --><!-- !trait */
-#define PAT_(n) PT_(n)
-#define AT_(n) T_(n)
-#endif /* !trait --> */
-
 
 #if defined(ARRAY_TO_STRING) \
 	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- to string trait */
 /** Thunk `e` -> `a`. */
-static void PAT_(to_string)(const PT_(type) *e, char (*const a)[12])
-	{ AT_(to_string)((const void *)e, a); }
-#include "to_string.h" /** \include */
-#undef ARRAY_TO_STRING
-#ifndef ARRAY_TRAIT
-#define ARRAY_HAS_TO_STRING
-#endif
+static void PTU_(to_string)(const PT_(type) *e, char (*const a)[12])
+	{ TU_(to_string)((const void *)e, a); }
+#	include "to_string.h" /** \include */
+#	undef ARRAY_TO_STRING
+#	ifndef ARRAY_TRAIT
+#		define ARRAY_HAS_TO_STRING
+#	endif
 #endif /* to string trait --> */
-#undef PAT_
-#undef AT_
 
 
 #if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT) \
 	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- test base */
-#include "../test/test_array.h"
+#	include "../test/test_array.h"
 #endif /* test base --> */
 
 
 #if (defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL)) \
 	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- compare trait */
-#ifdef ARRAY_COMPARE /* <!-- cmp */
-#define COMPARE ARRAY_COMPARE
-#else /* cmp --><!-- eq */
-#define COMPARE_IS_EQUAL ARRAY_IS_EQUAL
-#endif /* eq --> */
-#include "compare.h" /** \include */
-#ifdef ARRAY_TEST /* <!-- test: this detects and outputs compare test. */
-#include "../test/test_array_compare.h"
-#endif /* test --> */
-#undef CMP_ /* From <compare.h>. */
-#undef CMPCALL_
-#ifdef ARRAY_COMPARE
-#undef ARRAY_COMPARE
-#else
-#undef ARRAY_IS_EQUAL
-#endif
+#	ifdef ARRAY_COMPARE /* <!-- cmp */
+#		define COMPARE ARRAY_COMPARE
+#	else /* cmp --><!-- eq */
+#		define COMPARE_IS_EQUAL ARRAY_IS_EQUAL
+#	endif /* eq --> */
+#	include "compare.h" /** \include */
+#	ifdef ARRAY_TEST /* <!-- test: this detects and outputs compare test. */
+#		include "../test/test_array_compare.h"
+#	endif /* test --> */
+#	undef CMP_ /* From <compare.h>. */
+#	undef CMPCALL_
+#	ifdef ARRAY_COMPARE
+#		undef ARRAY_COMPARE
+#	else
+#		undef ARRAY_IS_EQUAL
+#	endif
 #endif /* compare trait --> */
 
 
-#ifdef ARRAY_EXPECT_TRAIT /* <!-- more */
-#undef ARRAY_EXPECT_TRAIT
-#else /* more --><!-- done */
-#undef BOX_MINOR_NAME
-#undef BOX_MINOR
-#undef BOX_MAJOR_NAME
-#undef BOX_MAJOR
-#undef BOX_ACCESS
-#undef BOX_CONTIGUOUS
-#undef ARRAY_NAME
-#undef ARRAY_TYPE
-#undef ARRAY_MIN_CAPACITY
-#ifdef ARRAY_HAS_TO_STRING
-#undef ARRAY_HAS_TO_STRING
+#ifdef ARRAY_EXPECT_TRAIT
+#	undef ARRAY_EXPECT_TRAIT
+#else
+#	undef BOX_MINOR_NAME
+#	undef BOX_MINOR
+#	undef BOX_MAJOR_NAME
+#	undef BOX_MAJOR
+#	undef BOX_ACCESS
+#	undef BOX_CONTIGUOUS
+#	undef ARRAY_NAME
+#	undef ARRAY_TYPE
+#	undef ARRAY_MIN_CAPACITY
+#	ifdef ARRAY_HAS_TO_STRING
+#		undef ARRAY_HAS_TO_STRING
+#	endif
+#	ifdef ARRAY_TEST
+#		undef ARRAY_TEST
+#	endif
+#	ifdef ARRAY_DECLARE_ONLY
+#		undef ARRAY_DECLARE_ONLY
+#	endif
+#	ifdef BOX_RESTRICT
+#		undef BOX_RESTRICT
+#		undef restrict
+#	endif
 #endif
-#ifdef ARRAY_TEST
-#undef ARRAY_TEST
-#endif
-#ifdef ARRAY_DECLARE_ONLY
-#undef ARRAY_DECLARE_ONLY
-#endif
-#ifdef BOX_RESTRICT
-#undef BOX_RESTRICT
-#undef restrict
-#endif
-#endif /* done --> */
-#ifdef ARRAY_TRAIT
-#undef ARRAY_TRAIT
-#undef BOX_TRAIT_NAME
+#ifdef BOX_TRAIT
+#	undef BOX_TRAIT
 #endif

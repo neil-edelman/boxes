@@ -19,7 +19,7 @@
 
  @std C89 */
 
-#if !defined(BOX_H) || !defined(BOX_CAT) || !defined(T_) || !defined(PT_) \
+#if !defined(BOX_H) || !defined(BOX_CAT) || !defined(TU_) || !defined(PTU_) \
 	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MAJOR) \
 	|| !defined(BOX_MINOR_NAME) || !defined(BOX_MINOR) \
 	|| defined(STR_) || defined(STREXTERN_)
@@ -116,14 +116,14 @@ static const char *STR_(to_string)(const PSTR_(box) *const box) {
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
 	{ /* We do not modify `box`, but the compiler doesn't know that. */
-		/* fixme */
+		/* fixme: I think I know how to do it. */
 		PSTR_(box) *promise_box;
 		memcpy(&promise_box, &box, sizeof box);
 		it = PT_(iterator)(promise_box);
 	}
 	*b++ = left;
 	while(PT_(next)(&it)) {
-		T_(to_string)(PT_(element)(&it), (char (*)[12])b);
+		TU_(to_string)(PT_(element)(&it), (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
