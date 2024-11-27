@@ -44,28 +44,20 @@ typedef int (*PTU_(biaction_fn))(PT_(type) *restrict,
  @order \O(`|a|` & `|b|`) @allow */
 static int TU_(compare)(const PT_(box) *restrict const a,
 	const PT_(box) *restrict const b) {
-	struct T_(cursor) ia, ib;
+	const union { const PT_(box) *const readonly; PT_(box) *promise; }
+		sly_a = { a }, sly_b = { b };
+	struct T_(cursor) i, j;
 	if(!a) return b ? 1 : 0;
 	if(!b) return -1;
-	{ /* We do not modify, but the compiler doesn't know that. */
-		const PT_(box) *const rm_restrict = a;
-		PT_(box) *promise_box;
-		memcpy(&promise_box, &rm_restrict, sizeof a);
-		ia = T_(begin)(promise_box);
-	} {
-		const PT_(box) *const rm_restrict = b;
-		PT_(box) *promise_box;
-		memcpy(&promise_box, &rm_restrict, sizeof b);
-		ib = T_(begin)(promise_box);
-	}
-	for( ; ; T_(cursor_next)(&ia), T_(cursor_next)(&ib)) {
+	for(i = T_(begin)(sly_a.promise), j = T_(begin)(sly_b.promise); ;
+		T_(cursor_next)(&i), T_(cursor_next)(&j)) {
 		int diff;
-		if(!T_(cursor_exists)(&ia)) return T_(cursor_exists)(&ib) ? -1 : 0;
-		else if(!T_(cursor_exists)(&ib)) return 1;
+		if(!T_(cursor_exists)(&i)) return T_(cursor_exists)(&j) ? -1 : 0;
+		else if(!T_(cursor_exists)(&j)) return 1;
 		/* Must have this function declared.
 		 "Discards qualifiers in nested pointer types" sometimes. Cast. */
-		if(diff = tu_(compare)((const void *)T_(cursor_look)(&ia),
-			(const void *)T_(cursor_look)(&ib))) return diff;
+		if(diff = tu_(compare)((const void *)T_(cursor_look)(&i),
+			(const void *)T_(cursor_look)(&j))) return diff;
 	}
 }
 
@@ -167,24 +159,16 @@ static int tu_(is_equal)(const PT_(type) *const restrict a,
  which both can be null. @order \O(|`a`| & |`b`|) @allow */
 static int TU_(is_equal)(const PT_(box) *restrict const a,
 	const PT_(box) *restrict const b) {
-	struct T_(cursor) ia, ib;
+	const union { const PT_(box) *const readonly; PT_(box) *promise; }
+		sly_a = { a }, sly_b = { b };
+	struct T_(cursor) i, j;
 	if(!a) return !b /*|| !b->size <- Null is less than empty? Easier. */;
 	if(!b) return 0;
-	{ /* We do not modify, but the compiler doesn't know that. */
-		const PT_(box) *const rm_restrict = a;
-		PT_(box) *promise_box;
-		memcpy(&promise_box, &rm_restrict, sizeof a);
-		ia = T_(begin)(promise_box);
-	} {
-		const PT_(box) *const rm_restrict = b;
-		PT_(box) *promise_box;
-		memcpy(&promise_box, &rm_restrict, sizeof b);
-		ib = T_(begin)(promise_box);
-	}
-	for( ; ; T_(cursor_next)(&ia), T_(cursor_next)(&ib)) {
-		if(!T_(cursor_exists)(&ia)) return !T_(cursor_exists)(&ib);
-		else if(!T_(cursor_exists)(&ib)) return 0 /* fixme ??? */;
-		if(!t_(is_equal)(T_(cursor_look)(&ia), T_(cursor_look)(&ib)))
+	for(i = T_(begin)(sly_a.promise), j = T_(begin)(sly_b.promise); ;
+		T_(cursor_next)(&i), T_(cursor_next)(&j)) {
+		if(!T_(cursor_exists)(&i)) return !T_(cursor_exists)(&j);
+		else if(!T_(cursor_exists)(&j)) return 0 /* fixme: a > b? */;
+		if(!t_(is_equal)(T_(cursor_look)(&i), T_(cursor_look)(&j)))
 			return 0;
 	}
 	return 1;
