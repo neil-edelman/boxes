@@ -10,8 +10,8 @@
 
  A <tag:<T>heap> is a binary heap, proposed by
  <Williams, 1964, Heapsort, p. 347> using terminology of
- <Knuth, 1973, Sorting>. It can be used as an implementation of a priority
- queue.
+ <Knuth, 1973, Sorting>. It is an array implementation of a priority queue. It
+ is not stable on growth.
 
  @param[BOX_NAME, BOX_TYPE]
  `<T>` that satisfies `C` naming conventions when mangled. `BOX_NAME` is

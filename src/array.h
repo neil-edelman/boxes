@@ -9,17 +9,16 @@
 
  <tag:<A>array> is a dynamic array that stores contiguous <typedef:<PA>type>.
  Resizing may be necessary when increasing the size of the array; this incurs
- amortised cost, and any pointers to this memory may become stale.
+ amortised cost. As such, the contents are not stable on growth.
 
  @param[BOX_NAME, BOX_TYPE]
- `<A>` that satisfies `C` naming conventions when mangled and a valid tag-type,
- <typedef:<PA>type>, associated therewith; required. `<PA>` is private, whose
- names are prefixed in a manner to avoid collisions.
+ `<T>` that satisfies `C` naming conventions when mangled and a valid tag-type,
+ <typedef:<PA>type>, associated therewith; required.
 
  @param[BOX_COMPARE, BOX_IS_EQUAL]
- Compare `<CMP>` trait contained in <src/compare.h>. Requires
- `<name>[<trait>]compare` to be declared as <typedef:<PCMP>compare_fn> or
- `<name>[<trait>]is_equal` to be declared as <typedef:<PCMP>bipredicate_fn>,
+ Compare trait contained in <src/compare.h>. Requires
+ `<name>[<trait>]compare` to be declared as <typedef:<PTU>compare_fn> or
+ `<name>[<trait>]is_equal` to be declared as <typedef:<PTU>bipredicate_fn>,
  respectfully, (but not both.)
 
  @param[BOX_TO_STRING]
@@ -107,7 +106,7 @@ typedef BOX_TYPE PT_(type);
  indexed up to `capacity`, which is at least `size`.
 
  ![States.](../doc/array/states.png) */
-struct t_(array) { PT_(type) *data; size_t size, capacity; };
+struct t_(array) { size_t size, capacity; PT_(type) *data; };
 typedef struct t_(array) PT_(box);
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
@@ -332,15 +331,10 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 
 #if defined(BOX_TO_STRING) \
 	&& !defined(BOX_DECLARE_ONLY) /* <!-- to string trait */
-/** Thunk `e` -> `a`. */
-/*static void PTU_(to_string)(const PT_(type) *e, char (*const a)[12])
-	{ TU_(to_string)((const void *)e, a); } (fixme: now we suddenly don't need
-	this? what changed? I mean, yeah, I would not want to use this hack, but
-	still…) */
 #	include "to_string.h" /** \include */
 #	undef BOX_TO_STRING
 #	ifndef BOX_TRAIT
-#		define BOX_HAS_TO_STRING
+#		define BOX_HAS_TO_STRING /* Warning about lack of to_string in tests. */
 #	endif
 #endif /* to string trait --> */
 
