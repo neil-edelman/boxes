@@ -9,14 +9,15 @@
 
  ![Example of Pool](../doc/pool/pool.png)
 
- <tag:<P>pool> is a memory pool that stores only one type, <typedef:<PP>type>,
- using [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation). As
+ <tag:<P>pool> is a memory pool that stores only one
+ size—<typedef:<PP>type>—using
+ [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation). As
  <Bonwick, 1994, Slab>, it helps reduce internal fragmentation from repeated
- allocation and destruction by caching contiguous blocks. A free-heap in the
- active-slab allows random-access insertions and deletions. Pointers to valid
- items in the pool are stable. If removal is ongoing and uniformly sampled
- while reaching a steady-state size, it will eventually settle in one
- contiguous region.
+ allocation and destruction by caching contiguous blocks. Pointers to valid
+ items in the pool are stable. Instead of freeing memory, a free-heap in the
+ active-slab allows lazily reusing the same space. If removal is ongoing and
+ uniformly sampled while reaching a steady-state size, it will eventually
+ settle in one contiguous region.
 
  @param[POOL_NAME, POOL_TYPE]
  `<P>` that satisfies `C` naming conventions when mangled and a valid tag type,
