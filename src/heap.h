@@ -41,7 +41,7 @@
  @std C89 */
 
 #ifndef BOX_NAME
-#error Name BOX_NAME undefined.
+#error Name undefined.
 #endif
 #if defined(BOX_TRAIT) ^ defined(BOX_TYPE)
 #error BOX_TRAIT name must come after BOX_EXPECT_TRAIT.

@@ -69,13 +69,6 @@
 #	define TU_(n) T_(n)
 #	define PTU_(n) PT_(n)
 #endif
-
-
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <assert.h>
-
 #if !defined(restrict) && (!defined(__STDC__) || !defined(__STDC_VERSION__) \
 	|| __STDC_VERSION__ < 199901L)
 #	define BOX_RESTRICT /* Undo this at the end. */
@@ -91,6 +84,11 @@
 #	define BOX_MAJOR struct T_(array)
 #	define BOX_ACCESS
 #	define BOX_CONTIGUOUS
+
+#	include <stdlib.h>
+#	include <string.h>
+#	include <errno.h>
+#	include <assert.h>
 
 #	ifndef BOX_MIN_CAPACITY
 #		define BOX_MIN_CAPACITY 3 /* > 1 */
