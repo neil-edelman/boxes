@@ -10,7 +10,10 @@
 
  <tag:<N>table> implements a set or map of <typedef:<PN>entry> as a hash table.
  It must be supplied <typedef:<PN>hash_fn> `<N>hash` and,
- <typedef:<PN>is_equal_fn> `<N>is_equal` or <typedef:<PN>unhash_fn> `<N>unhash`.
+ <typedef:<PN>is_equal_fn> `<N>is_equal` or <typedef:<PN>unhash_fn>
+ `<N>unhash`.
+
+ It is contiguous and may rearrange elements—not stable.
 
  @param[TABLE_NAME, TABLE_KEY]
  `<N>` that satisfies `C` naming conventions when mangled and a valid

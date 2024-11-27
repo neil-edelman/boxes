@@ -9,7 +9,7 @@
 
  <tag:<A>array> is a dynamic array that stores contiguous <typedef:<PA>type>.
  Resizing may be necessary when increasing the size of the array; this incurs
- amortised cost. As such, the contents are not stable on growth.
+ amortised cost. As such, the contents are not stable.
 
  @param[BOX_NAME, BOX_TYPE]
  `<T>` that satisfies `C` naming conventions when mangled and a valid tag-type,
@@ -22,8 +22,8 @@
  respectfully, (but not both.)
 
  @param[BOX_TO_STRING]
- To string `<STR>` trait contained in <src/to_string.h>. Requires
- `<name>[<trait>]to_string` be declared as <typedef:<PSTR>to_string_fn>.
+ To string trait contained in <src/to_string.h>. Requires
+ `<name>[<trait>]to_string` be declared as <typedef:<PT>to_string_fn>.
 
  @param[BOX_EXPECT_TRAIT, BOX_TRAIT]
  Named traits are obtained by including `array.h` multiple times with

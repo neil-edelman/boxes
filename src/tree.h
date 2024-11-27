@@ -12,6 +12,9 @@
  locality, this is implemented B-tree, described in
  <Bayer, McCreight, 1972, Large>.
 
+ All operations are fail-fast and will not compromise the integrity of the
+ existing tree. As a B-tree, this is not stable.
+
  @param[TREE_NAME, TREE_KEY]
  `<B>` that satisfies `C` naming conventions when mangled, required, and
  `TREE_KEY`, a type, <typedef:<PB>key>, whose default is `unsigned int`.

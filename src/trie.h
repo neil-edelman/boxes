@@ -18,7 +18,8 @@
 
  While the worse-case run-time of querying or modifying is bounded by
  \O(|`string`|), <Tong, Goebel, Lin, 2015, Smoothed> show that, in an iid
- model, a better fit is \O(\log |`trie`|), which is seen and reported here.
+ model, a better fit is \O(\log |`trie`|), which is seen and reported here. It
+ is not stable.
 
  ![Bit view of the trie.](../doc/trie/trie-bits.png)
 

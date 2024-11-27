@@ -11,7 +11,7 @@
  A <tag:<T>heap> is a binary heap, proposed by
  <Williams, 1964, Heapsort, p. 347> using terminology of
  <Knuth, 1973, Sorting>. It is an array implementation of a priority queue. It
- is not stable on growth.
+ is not stable.
 
  @param[BOX_NAME, BOX_TYPE]
  `<T>` that satisfies `C` naming conventions when mangled. `BOX_NAME` is
@@ -24,16 +24,15 @@
 
  @param[BOX_VALUE]
  Optional value <typedef:<PH>value>, that, on `BOX_VALUE`, is stored in
- <tag:<H>heapnode>, which is <typedef:<PH>value>.
+ <tag:<H>heapnode>.
 
  @param[BOX_TO_STRING]
- To string trait `<STR>` contained in <src/to_string.h>. Require
- `<name>[<trait>]to_string` be declared as <typedef:<PSTR>to_string_fn>.
+ To string trait contained in <src/to_string.h>. Require
+ `<name>[<trait>]to_string` be declared as <typedef:<PT>to_string_fn>.
 
  @param[BOX_EXPECT_TRAIT, BOX_TRAIT]
  Named traits are obtained by including `heap.h` multiple times with
- `BOX_EXPECT_TRAIT` and then subsequently including the name in
- `BOX_TRAIT`.
+ `BOX_EXPECT_TRAIT` and then subsequently including the name in `BOX_TRAIT`.
 
  @param[BOX_DELARE_ONLY]
  For headers in different compilation units.
