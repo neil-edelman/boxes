@@ -44,12 +44,12 @@ typedef int (*PTU_(biaction_fn))(PT_(type) *restrict,
  @order \O(`|a|` & `|b|`) @allow */
 static int TU_(compare)(const PT_(box) *restrict const a,
 	const PT_(box) *restrict const b) {
-	const union { const PT_(box) *const readonly; PT_(box) *promise; }
-		sly_a = { a }, sly_b = { b };
+	union { const PT_(box) *readonly; PT_(box) *promise; } sly_a, sly_b;
 	struct T_(cursor) i, j;
 	if(!a) return b ? 1 : 0;
 	if(!b) return -1;
-	for(i = T_(begin)(sly_a.promise), j = T_(begin)(sly_b.promise); ;
+	for(sly_a.readonly = a, sly_b.readonly = b,
+		i = T_(begin)(sly_a.promise), j = T_(begin)(sly_b.promise); ;
 		T_(cursor_next)(&i), T_(cursor_next)(&j)) {
 		int diff;
 		if(!T_(cursor_exists)(&i)) return T_(cursor_exists)(&j) ? -1 : 0;
@@ -159,12 +159,12 @@ static int tu_(is_equal)(const PT_(type) *const restrict a,
  which both can be null. @order \O(|`a`| & |`b`|) @allow */
 static int TU_(is_equal)(const PT_(box) *restrict const a,
 	const PT_(box) *restrict const b) {
-	const union { const PT_(box) *const readonly; PT_(box) *promise; }
-		sly_a = { a }, sly_b = { b };
+	union { const PT_(box) *readonly; PT_(box) *promise; } sly_a, sly_b;
 	struct T_(cursor) i, j;
 	if(!a) return !b /*|| !b->size <- Null is less than empty? Easier. */;
 	if(!b) return 0;
-	for(i = T_(begin)(sly_a.promise), j = T_(begin)(sly_b.promise); ;
+	for(sly_a.readonly = a, sly_b.readonly = b,
+		i = T_(begin)(sly_a.promise), j = T_(begin)(sly_b.promise); ;
 		T_(cursor_next)(&i), T_(cursor_next)(&j)) {
 		if(!T_(cursor_exists)(&i)) return !T_(cursor_exists)(&j);
 		else if(!T_(cursor_exists)(&j)) return 0 /* fixme: a > b? */;

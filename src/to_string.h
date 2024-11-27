@@ -77,8 +77,7 @@ typedef void (*PTU_(to_string_fn))(const PT_(type) *, char (*)[12]);
  256 bytes, with limitations of only printing 4 things in a single sequence
  point. @return Address of the static buffer. @order \Theta(1) @allow */
 static const char *TU_(to_string)(const PT_(box) *const box) {
-	const union { const PT_(box) *const readonly; PT_(box) *promise; }
-		slybox = { box };
+	union { const PT_(box) *readonly; PT_(box) *promise; } slybox;
 	const char comma = ',', space = ' ', ellipsis[] = "…",
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;
 	const size_t ellipsis_len = sizeof ellipsis - 1;
@@ -92,8 +91,8 @@ static const char *TU_(to_string)(const PT_(box) *const box) {
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
 	*b++ = left;
-	for(cur = T_(begin)(slybox.promise); T_(cursor_exists)(&cur);
-		T_(cursor_next)(&cur)) {
+	for(slybox.readonly = box, cur = T_(begin)(slybox.promise);
+		T_(cursor_exists)(&cur); T_(cursor_next)(&cur)) {
 		/* "Discards qualifiers in nested pointer" sometimes. Cast (back). */
 		tu_(to_string)((const void *)T_(cursor_look)(&cur), (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */

@@ -28,12 +28,11 @@ typedef int (*PTU_(predicate_fn))(const PT_(type) *);
  @order \O(`box.size`) \times \O(`predicate`) @allow */
 static PT_(type) *TU_(any)(const PT_(box) *const box,
 	const PTU_(predicate_fn) predicate) {
-	const union { const PT_(box) *const readonly; PT_(box) *promise; }
-		slybox = { box };
+	union { const PT_(box) *readonly; PT_(box) *promise; } slybox;
 	struct T_(cursor) it;
 	assert(box && predicate);
-	for(it = T_(begin)(slybox.promise); T_(cursor_exists)(&it);
-		T_(cursor_next)(&it)) {
+	for(slybox.readonly = box, it = T_(begin)(slybox.promise);
+		T_(cursor_exists)(&it); T_(cursor_next)(&it)) {
 		PT_(type) *i = T_(cursor_look)(&it);
 		if(predicate(i)) return i;
 	}
