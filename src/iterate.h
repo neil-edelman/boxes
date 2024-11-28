@@ -8,32 +8,29 @@
  @std C89 */
 /** * <src/iterate.h>: defining `HAVE_ITERATE_H` supplies functions. */
 
-#if !defined(BOX_H) || !defined(BOX_CAT) || !defined(TU_) || !defined(PTU_) \
-	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MAJOR) \
-	|| !defined(BOX_NAME) || !defined(BOX_MINOR)
-#	error Unexpected preprocessor symbols.
-#endif
+#define BOX_ALL /* Sanity check. */
+#include "box.h"
 
 #include <stddef.h>
 #include <limits.h>
 
 /** <src/iterate.h>: Operates by side-effects. */
-typedef void (*PTU_(action_fn))(PT_(type) *);
+typedef void (*pTU_(action_fn))(pT_(type) *);
 /** <src/iterate.h>: Returns a boolean given read-only. */
-typedef int (*PTU_(predicate_fn))(const PT_(type) *);
+typedef int (*pTU_(predicate_fn))(const pT_(type) *);
 
 /** <src/iterate.h>: Iterates through `box` and calls `predicate` until it
  returns true. @return The first `predicate` that returned true, or, if the
  statement is false on all, null.
  @order \O(`box.size`) \times \O(`predicate`) @allow */
-static PT_(type) *TU_(any)(const PT_(box) *const box,
-	const PTU_(predicate_fn) predicate) {
-	union { const PT_(box) *readonly; PT_(box) *promise; } slybox;
+static pT_(type) *TU_(any)(const pT_(box) *const box,
+	const pTU_(predicate_fn) predicate) {
+	union { const pT_(box) *readonly; pT_(box) *promise; } slybox;
 	struct T_(cursor) it;
 	assert(box && predicate);
 	for(slybox.readonly = box, it = T_(begin)(slybox.promise);
 		T_(cursor_exists)(&it); T_(cursor_next)(&it)) {
-		PT_(type) *i = T_(cursor_look)(&it);
+		pT_(type) *i = T_(cursor_look)(&it);
 		if(predicate(i)) return i;
 	}
 	return 0;
@@ -43,7 +40,7 @@ static PT_(type) *TU_(any)(const PT_(box) *const box,
  elements. Differs calling `action` until the iterator is one-ahead, so can
  delete elements as long as it doesn't affect the next, (specifically, a
  linked-list.) @order \O(|`box`|) \times \O(`action`) @allow */
-static void TU_(each)(PT_(box) *const box, const PTU_(action_fn) action) {
+static void TU_(each)(pT_(box) *const box, const pTU_(action_fn) action) {
 	struct T_(cursor) it;
 	assert(box && action);
 	for(it = T_(begin)(box); T_(cursor_exists)(&it); T_(cursor_next)(&it))
@@ -53,27 +50,27 @@ static void TU_(each)(PT_(box) *const box, const PTU_(action_fn) action) {
 /** <src/iterate.h>: Iterates through `box` and calls `action` on all the
  elements for which `predicate` returns true.
  @order \O(`box.size`) \times (\O(`predicate`) + \O(`action`)) @allow */
-static void TU_(if_each)(PT_(box) *const box,
-	const PTU_(predicate_fn) predicate, const PTU_(action_fn) action) {
+static void TU_(if_each)(pT_(box) *const box,
+	const pTU_(predicate_fn) predicate, const pTU_(action_fn) action) {
 	struct T_(cursor) it;
 	assert(box && predicate && action);
 	/* fixme: Could I to remove `i` from the list? */
 	/* 2024-11-25: it depends what container… but yes, inefficiently. */
 	for(it = T_(begin)(box); T_(cursor_exists)(&it); T_(cursor_next)(&it)) {
-		PT_(type) *v = T_(cursor_look)(&it);
+		pT_(type) *v = T_(cursor_look)(&it);
 		if(predicate(v)) action(v);
 	}
 }
 
 #ifdef BOX_CONTIGUOUS /* <!-- contiguous */
 
-/** <src/iterate.h>, `PT_CONTIGUOUS`: For all elements of `src`, calls `copy`,
+/** <src/iterate.h>, `pT_CONTIGUOUS`: For all elements of `src`, calls `copy`,
  and if true, lazily copies the elements to `dst`. `dst` and `src` can not be
  the same but `src` can be null, (in which case, it does nothing.)
  @order \O(|`src`|) \times \O(`copy`) @throws[realloc] @allow */
-static int TU_(copy_if)(PT_(box) *restrict const dst,
-	const PTU_(box) *restrict const src, const PTU_(predicate_fn) copy) {
-	PT_(type) *v, *fresh, *end, *rise = 0;
+static int TU_(copy_if)(pT_(box) *restrict const dst,
+	const pTU_(box) *restrict const src, const pTU_(predicate_fn) copy) {
+	pT_(type) *v, *fresh, *end, *rise = 0;
 	size_t add;
 	int difcpy = 0;
 	assert(dst && copy && dst != src);
@@ -103,9 +100,9 @@ static int TU_(copy_if)(PT_(box) *restrict const dst,
  and if false, if contiguous, lazy deletes that item, if not, eagerly. Calls
  `destruct` if not-null before deleting.
  @order \O(|`box`|) (\times O(`keep`) + O(`destruct`)) @allow */
-static void TU_(keep_if)(PT_(box) *const box,
-	const PTU_(predicate_fn) keep, const PTU_(action_fn) destruct) {
-	PT_(type) *erase = 0, *v, *retain = 0, *end;
+static void TU_(keep_if)(pT_(box) *const box,
+	const pTU_(predicate_fn) keep, const pTU_(action_fn) destruct) {
+	pT_(type) *erase = 0, *v, *retain = 0, *end;
 	int keep0 = 1, keep1 = 0;
 	assert(box && keep);
 	for(v = T_(look)(box, 0), end = v + T_(size)(box); v < end;
@@ -138,13 +135,13 @@ static void TU_(keep_if)(PT_(box) *const box,
 	T_(tell_size)(box, (size_t)(erase - T_(look)(box, 0)));
 }
 
-/** <src/iterate.h>, `PT_CONTIGUOUS`: Removes at either end of `box` the
+/** <src/iterate.h>, `pT_CONTIGUOUS`: Removes at either end of `box` the
  things that `predicate`, if it exists, returns true.
  @order \O(`box.size`) \times \O(`predicate`) @allow */
-static void TU_(trim)(PT_(box) *const box,
-	const PTU_(predicate_fn) predicate) {
+static void TU_(trim)(pT_(box) *const box,
+	const pTU_(predicate_fn) predicate) {
 	size_t right, left;
-	PT_(type) *first;
+	pT_(type) *first;
 	assert(box);
 	if(!predicate) return;
 	right = T_(size)(box);
@@ -161,11 +158,11 @@ static void TU_(trim)(PT_(box) *const box,
 
 #endif /* contiguous --> */
 
-static void PTU_(unused_iterate_coda)(void);
-static void PTU_(unused_function)(void) {
+static void pTU_(unused_iterate_coda)(void);
+static void pTU_(unused_function)(void) {
 	TU_(any)(0, 0); TU_(each)(0, 0); TU_(if_each)(0, 0, 0);
 #ifdef BOX_CONTIGUOUS
 	TU_(copy_if)(0, 0, 0); TU_(trim)(0, 0); TU_(keep_if)(0, 0, 0);
 #endif
-	PTU_(unused_iterate_coda)(); }
-static void PTU_(unused_iterate_coda)(void) { PTU_(unused_function)(); }
+	pTU_(unused_iterate_coda)(); }
+static void pTU_(unused_iterate_coda)(void) { pTU_(unused_function)(); }

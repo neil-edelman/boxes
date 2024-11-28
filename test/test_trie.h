@@ -11,12 +11,12 @@
 static const char *T_(trie_to_string)(const struct T_(trie) *);
 
 /** Works by side-effects, _ie_ fills the type with data. */
-typedef void (*PT_(action_fn))(PT_(entry) *);
+typedef void (*pT_(action_fn))(pT_(entry) *);
 
-typedef void (*PT_(tree_file_fn))(struct PT_(tree) *, size_t, FILE *);
+typedef void (*pT_(tree_file_fn))(struct pT_(tree) *, size_t, FILE *);
 
 /** Outputs a direction string for `lf` in `tr`, `{ "", "r", "l" }`. */
-static const char *PT_(leaf_to_dir)(const struct PT_(tree) *const tr,
+static const char *pT_(leaf_to_dir)(const struct pT_(tree) *const tr,
 	const unsigned lf) {
 	struct { unsigned br0, br1, lf; } t;
 	unsigned left;
@@ -32,7 +32,7 @@ static const char *PT_(leaf_to_dir)(const struct PT_(tree) *const tr,
 
 /** Given a branch `b` in `tr` branches, calculate the right child branches.
  @order \O(log `size`) */
-static unsigned PT_(right)(const struct PT_(tree) *const tr,
+static unsigned pT_(right)(const struct pT_(tree) *const tr,
 	const unsigned b) {
 	unsigned left, right, total = tr->bsize, b0 = 0;
 	assert(tr && b < tr->bsize);
@@ -48,7 +48,7 @@ static unsigned PT_(right)(const struct PT_(tree) *const tr,
 }
 
 /** @return Follows the branches to `b` in `tr` and returns the leaf. */
-static unsigned PT_(left_leaf)(const struct PT_(tree) *const tr,
+static unsigned pT_(left_leaf)(const struct pT_(tree) *const tr,
 	const unsigned b) {
 	unsigned left, right, total = tr->bsize, i = 0, b0 = 0;
 	assert(tr && b < tr->bsize);
@@ -65,7 +65,7 @@ static unsigned PT_(left_leaf)(const struct PT_(tree) *const tr,
 
 /** Graphs `tr` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
-static void PT_(graph_tree_bits)(struct PT_(tree) *const tree,
+static void pT_(graph_tree_bits)(struct pT_(tree) *const tree,
 	const size_t treebit, FILE *const fp) {
 	unsigned b, i;
 	assert(tree && fp);
@@ -73,7 +73,7 @@ static void PT_(graph_tree_bits)(struct PT_(tree) *const tree,
 		"<table border=\"0\" cellspacing=\"0\">\n", (const void *)tree);
 	/*"<table BORDER=\"0\" CELLBORDER=\"0\">\n"*/
 	for(i = 0; i <= tree->bsize; i++) {
-		const char *key = PT_(sample)(tree, i);
+		const char *key = pT_(sample)(tree, i);
 		const struct trie_branch *branch = tree->branch;
 		size_t next_branch = treebit + branch->skip;
 		const char *params, *start, *end;
@@ -114,7 +114,7 @@ static void PT_(graph_tree_bits)(struct PT_(tree) *const tree,
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->bmp, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
 		"[style = dashed, arrowhead = %snormal];\n", (const void *)tree, i,
-		(const void *)tree->leaf[i].as_link, PT_(leaf_to_dir)(tree, i));
+		(const void *)tree->leaf[i].as_link, pT_(leaf_to_dir)(tree, i));
 	/* Recurse. */
 	for(i = 0; i <= tree->bsize; i++) {
 		struct { unsigned br0, br1, lf; } in_tree;
@@ -130,13 +130,13 @@ static void PT_(graph_tree_bits)(struct PT_(tree) *const tree,
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 			bit++;
 		}
-		PT_(graph_tree_bits)(tree->leaf[i].as_link, bit, fp);
+		pT_(graph_tree_bits)(tree->leaf[i].as_link, bit, fp);
 	}
 }
 
 /** Graphs `tr` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
-static void PT_(graph_tree_mem)(struct PT_(tree) *const tree,
+static void pT_(graph_tree_mem)(struct pT_(tree) *const tree,
 	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
 	unsigned i;
@@ -157,7 +157,7 @@ static void PT_(graph_tree_mem)(struct PT_(tree) *const tree,
 		"\t<hr/>\n", (const void *)tree, orcify(tree), (unsigned long)treebit);
 	for(i = 0; i <= tree->bsize; i++) {
 		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
-		const char *key = PT_(sample)(tree, i);
+		const char *key = pT_(sample)(tree, i);
 		const unsigned is_link = trie_bmp_test(&tree->bmp, i);
 		if(i < tree->bsize) {
 			branch = tree->branch + i;
@@ -185,7 +185,7 @@ static void PT_(graph_tree_mem)(struct PT_(tree) *const tree,
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->bmp, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
 		"[style = dashed, arrowhead = %snormal];\n", (const void *)tree, i,
-		(const void *)tree->leaf[i].as_link, PT_(leaf_to_dir)(tree, i));
+		(const void *)tree->leaf[i].as_link, pT_(leaf_to_dir)(tree, i));
 	/* Recurse. */
 	for(i = 0; i <= tree->bsize; i++) {
 		struct { unsigned br0, br1, lf; } in_tree;
@@ -201,13 +201,13 @@ static void PT_(graph_tree_mem)(struct PT_(tree) *const tree,
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 			bit++;
 		}
-		PT_(graph_tree_mem)(tree->leaf[i].as_link, bit, fp);
+		pT_(graph_tree_mem)(tree->leaf[i].as_link, bit, fp);
 	}
 }
 
 /** Graphs `tr` on `fp`.`treebit` is the number of bits currently
  (recursive.) */
-static void PT_(graph_tree_logic)(struct PT_(tree) *const tr,
+static void pT_(graph_tree_logic)(struct pT_(tree) *const tr,
 	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
 	unsigned left, right, b, i;
@@ -218,7 +218,7 @@ static void PT_(graph_tree_logic)(struct PT_(tree) *const tr,
 		fprintf(fp, "\t// branches\n");
 		for(b = 0; b < tr->bsize; b++) { /* Branches. */
 			branch = tr->branch + b;
-			left = branch->left, right = PT_(right)(tr, b);
+			left = branch->left, right = pT_(right)(tr, b);
 			fprintf(fp, "\ttree%pbranch%u [label=\"%u\", shape=circle,"
 				" style=filled, fillcolor=Grey95];\n"
 				"\ttree%pbranch%u -> ", (const void *)tr, b, branch->skip,
@@ -227,9 +227,9 @@ static void PT_(graph_tree_logic)(struct PT_(tree) *const tr,
 				fprintf(fp, "tree%pbranch%u [arrowhead=rnormal];\n",
 					(const void *)tr, b + 1);
 			} else {
-				unsigned leaf = PT_(left_leaf)(tr, b);
+				unsigned leaf = pT_(left_leaf)(tr, b);
 				if(trie_bmp_test(&tr->bmp, leaf)) {
-					const struct PT_(tree) *const child =tr->leaf[leaf].as_link;
+					const struct pT_(tree) *const child =tr->leaf[leaf].as_link;
 					const char *root_str = child->bsize ? "branch" : "leaf";
 					fprintf(fp,
 					"tree%p%s0 [style=dashed, arrowhead=rnormal];\n",
@@ -245,9 +245,9 @@ static void PT_(graph_tree_logic)(struct PT_(tree) *const tr,
 				fprintf(fp, "tree%pbranch%u [arrowhead=lnormal];\n",
 					(const void *)tr, b + left + 1);
 			} else {
-				unsigned leaf = PT_(left_leaf)(tr, b) + left + 1;
+				unsigned leaf = pT_(left_leaf)(tr, b) + left + 1;
 				if(trie_bmp_test(&tr->bmp, leaf)) {
-					const struct PT_(tree) *const child =tr->leaf[leaf].as_link;
+					const struct pT_(tree) *const child =tr->leaf[leaf].as_link;
 					const char *root_str = child->bsize ? "branch" : "leaf";
 					fprintf(fp,
 					"tree%p%s0 [style=dashed, arrowhead=lnormal];\n",
@@ -264,21 +264,21 @@ static void PT_(graph_tree_logic)(struct PT_(tree) *const tr,
 	fprintf(fp, "\t// leaves\n");
 
 	for(i = 0; i <= tr->bsize; i++) if(!trie_bmp_test(&tr->bmp, i)) {
-		struct PT_(ref) ref;
+		struct pT_(ref) ref;
 		ref.tree = tr, ref.lf = i;
 		fprintf(fp,
 			"\ttree%pleaf%u [label = <%s<font color=\"Gray75\">⊔</font>>];\n",
-			(const void *)tr, i, PT_(ref_to_string)(&ref));
+			(const void *)tr, i, pT_(ref_to_string)(&ref));
 	}
 
 	for(i = 0; i <= tr->bsize; i++) if(trie_bmp_test(&tr->bmp, i))
-		PT_(graph_tree_logic)(tr->leaf[i].as_link, 0, fp);
+		pT_(graph_tree_logic)(tr->leaf[i].as_link, 0, fp);
 }
 
 /** Draw a graph of `trie` to `fn` in Graphviz format with `callback` as it's
  tree-drawing output. */
-static void PT_(graph_choose)(const struct T_(trie) *const trie,
-	const char *const fn, const PT_(tree_file_fn) callback) {
+static void pT_(graph_choose)(const struct T_(trie) *const trie,
+	const char *const fn, const pT_(tree_file_fn) callback) {
 	FILE *fp;
 	assert(trie && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
@@ -293,7 +293,7 @@ static void PT_(graph_choose)(const struct T_(trie) *const trie,
 }
 
 /** Graphs logical `trie` output to `fn` using `no` as the filename index. */
-static void PT_(graph)(const struct T_(trie) *const trie,
+static void pT_(graph)(const struct T_(trie) *const trie,
 	const char *const fn, const size_t no) {
 	const char logic[] = "-tree", mem[] = "-mem", bits[] = "-bits";
 	char copy[128], *dot;
@@ -312,18 +312,18 @@ static void PT_(graph)(const struct T_(trie) *const trie,
 
 	memcpy(copy + i_copy, bits, sizeof bits - 1);
 	memcpy(copy + i_copy + sizeof bits - 1, fn + i, fn_len - i + 1);
-	PT_(graph_choose)(trie, copy, &PT_(graph_tree_bits));
+	pT_(graph_choose)(trie, copy, &pT_(graph_tree_bits));
 	memcpy(copy + i_copy, logic, sizeof logic - 1);
 	memcpy(copy + i_copy + sizeof logic - 1, fn + i, fn_len - i + 1);
-	PT_(graph_choose)(trie, copy, &PT_(graph_tree_logic));
+	pT_(graph_choose)(trie, copy, &pT_(graph_tree_logic));
 	memcpy(copy + i_copy, mem, sizeof mem - 1);
 	memcpy(copy + i_copy + sizeof mem - 1, fn + i, fn_len - i + 1);
-	PT_(graph_choose)(trie, copy, &PT_(graph_tree_mem));
+	pT_(graph_choose)(trie, copy, &pT_(graph_tree_mem));
 }
 
 #if 0
 /** Prints `tree` to `stdout`; useful in debugging. */
-static void PT_(print)(const struct PT_(tree) *const tree) {
+static void pT_(print)(const struct pT_(tree) *const tree) {
 	const struct trie_branch *branch;
 	unsigned b, i;
 	assert(tree);
@@ -340,13 +340,13 @@ static void PT_(print)(const struct PT_(tree) *const tree) {
 	for(i = 0; i <= tree->bsize; i++)
 		printf("%s%s", i ? ", " : "", trie_bmp_test(&tree->bmp, i)
 			? orcify(tree->leaf[i].as_link)
-			: PT_(key_string)(PT_(entry_key)(tree->leaf[i].as_entry)));
+			: pT_(key_string)(pT_(entry_key)(tree->leaf[i].as_entry)));
 	printf("\n");
 }
 #endif
 
 /** Make sure `tree` is in a valid state, (and all the children.) */
-static void PT_(valid_tree)(/*const*/ struct PT_(tree) *const tree) {
+static void pT_(valid_tree)(/*const*/ struct pT_(tree) *const tree) {
 	unsigned i;
 	int cmp = 0;
 	const char *str1 = 0;
@@ -355,12 +355,12 @@ static void PT_(valid_tree)(/*const*/ struct PT_(tree) *const tree) {
 		assert(tree->branch[i].left < tree->bsize - i);
 	for(i = 0; i <= tree->bsize; i++) {
 		if(trie_bmp_test(&tree->bmp, i)) {
-			PT_(valid_tree)(tree->leaf[i].as_link);
+			pT_(valid_tree)(tree->leaf[i].as_link);
 		} else {
 			const char *str2;
-			struct PT_(ref) ref;
+			struct pT_(ref) ref;
 			ref.tree = tree, ref.lf = i;
-			str2 = PT_(ref_to_string)(&ref);
+			str2 = pT_(ref_to_string)(&ref);
 			if(str1) cmp = strcmp(str1, str2), assert(cmp < 0);
 			str1 = str2;
 		}
@@ -368,12 +368,12 @@ static void PT_(valid_tree)(/*const*/ struct PT_(tree) *const tree) {
 }
 
 /** Makes sure the `trie` is in a valid state. */
-static void PT_(valid)(const struct T_(trie) *const trie) {
+static void pT_(valid)(const struct T_(trie) *const trie) {
 	if(!trie || !trie->root) return;
-	PT_(valid_tree)(trie->root);
+	pT_(valid_tree)(trie->root);
 }
 
-static PT_(key) PT_(entry_key)(const PT_(entry) *entry) {
+static pT_(key) pT_(entry_key)(const pT_(entry) *entry) {
 #ifdef TRIE_ENTRY
 	return T_(key)(entry);
 #else
@@ -381,22 +381,22 @@ static PT_(key) PT_(entry_key)(const PT_(entry) *entry) {
 #endif
 }
 
-static void PT_(test)(void) {
+static void pT_(test)(void) {
 	struct T_(trie) trie = T_(trie)();
 	size_t i, unique, count;
 	unsigned letter_counts[UCHAR_MAX];
 	const size_t letter_counts_size
 		= sizeof letter_counts / sizeof *letter_counts;
-	struct { PT_(entry) entry; int is_in; } tests[2000], *test_end, *test;
+	struct { pT_(entry) entry; int is_in; } tests[2000], *test_end, *test;
 	const size_t tests_size = sizeof tests / sizeof *tests;
-	PT_(remit) e;
+	pT_(remit) e;
 
 	/* Idle. */
 	errno = 0;
-	PT_(valid)(0);
-	PT_(valid)(&trie);
-	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-idle.gv", 0);
-	T_(trie_)(&trie), PT_(valid)(&trie);
+	pT_(valid)(0);
+	pT_(valid)(&trie);
+	pT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-idle.gv", 0);
+	T_(trie_)(&trie), pT_(valid)(&trie);
 #if defined(TREE_ENTRY) || !defined(TRIE_KEY)
 	e = T_(trie_match)(&trie, ""), assert(!e);
 	e = T_(trie_get)(&trie, ""), assert(!e);
@@ -417,9 +417,9 @@ static void PT_(test)(void) {
 	memset(letter_counts, 0, sizeof letter_counts);
 	for(i = 0; i < tests_size; i++) {
 		int show = !((i + 1) & i) || i + 1 == tests_size;
-		PT_(key) k;
+		pT_(key) k;
 		test = tests + i;
-		k = PT_(entry_key)(&test->entry);
+		k = pT_(entry_key)(&test->entry);
 		if(show) printf("%lu: adding %s.\n", (unsigned long)i,
 #ifdef TRIE_ENTRY
 			T_(string)(T_(key)(&test->entry))
@@ -442,15 +442,15 @@ static void PT_(test)(void) {
 #endif
 			break;
 		case TRIE_PRESENT: /*printf("Key %s is in trie already.\n",
-			PT_(key_string)(key)); spam */ break;
+			pT_(key_string)(key)); spam */ break;
 		}
 		if(show) {
 			printf("Now: %s.\n", T_(trie_to_string)(&trie));
-			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-insert.gv", i);
+			pT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-insert.gv", i);
 		}
 		assert(!errno);
 	}
-	PT_(valid)(&trie);
+	pT_(valid)(&trie);
 	/* Check keys -- there's some key that's there. */
 	for(i = 0; i < tests_size; i++) {
 		const char *estring, *const tstring
@@ -487,7 +487,7 @@ static void PT_(test)(void) {
 		while(T_(trie_next)(&it)) {
 			/*e = T_(trie_element)(&it); haven't made yet */
 			/*printf("%s<%s>", output ? "" : letter,
-				PT_(key_string)(PT_(entry_key)(e)));*/
+				pT_(key_string)(pT_(entry_key)(e)));*/
 			count_letter++, output = 1;
 		}
 		/*if(output) printf("\n");*/
@@ -511,7 +511,7 @@ static void PT_(test)(void) {
 		struct T_(trie_iterator) it = T_(trie_prefix)(&trie, "");
 		assert(!T_(trie_next)(&it));
 	}
-	T_(trie_)(&trie), assert(!trie.root), PT_(valid)(&trie);
+	T_(trie_)(&trie), assert(!trie.root), pT_(valid)(&trie);
 	assert(!errno);
 }
 
@@ -519,30 +519,30 @@ static void PT_(test)(void) {
 #pragma push_macro("BOX_TYPE")
 #pragma push_macro("BOX_CONTENT")
 #pragma push_macro("BOX_")
-#pragma push_macro("BOX_MAJOR_NAME")
+#pragma push_macro("BOX_T_MAJOR_NAME")
 #pragma push_macro("BOX_NAME")
 #undef BOX_TYPE
 #undef BOX_CONTENT
 #undef BOX_
-#undef BOX_MAJOR_NAME
+#undef BOX_T_MAJOR_NAME
 #undef BOX_NAME
 /* Pointer array for random sampling. */
-#define ARRAY_NAME PT_(handle)
-#define ARRAY_TYPE PT_(entry) *
+#define ARRAY_NAME pT_(handle)
+#define ARRAY_TYPE pT_(entry) *
 #include "../src/array.h"
 /* Backing for the trie. */
-#define POOL_NAME PT_(entry)
-#define POOL_TYPE PT_(entry)
+#define POOL_NAME pT_(entry)
+#define POOL_TYPE pT_(entry)
 #include "../src/pool.h"
 #pragma pop_macro("BOX_NAME")
-#pragma pop_macro("BOX_MAJOR_NAME")
+#pragma pop_macro("BOX_T_MAJOR_NAME")
 #pragma pop_macro("BOX_")
 #pragma pop_macro("BOX_CONTENT")
 #pragma pop_macro("BOX_TYPE")
 
-static void PT_(test_random)(void) {
-	struct PT_(entry_pool) entries = PT_(entry_pool)();
-	struct PT_(handle_array) handles = PT_(handle_array)();
+static void pT_(test_random)(void) {
+	struct pT_(entry_pool) entries = pT_(entry_pool)();
+	struct pT_(handle_array) handles = pT_(handle_array)();
 	struct T_(trie) trie = T_(trie)();
 	const size_t expectation = 1000;
 	size_t i, size = 0;
@@ -557,16 +557,16 @@ static void PT_(test_random)(void) {
 		size_t j;
 		if((unsigned)rand() > size * (RAND_MAX / (2 * expectation))) {
 			/* Create item. */
-			PT_(entry) *epool, **handle
+			pT_(entry) *epool, **handle
 #ifdef TRIE_ENTRY
 				, *e
 #endif
 				;
-			PT_(key) key;
-			if(!(epool = PT_(entry_pool_new)(&entries))) goto catch;
+			pT_(key) key;
+			if(!(epool = pT_(entry_pool_new)(&entries))) goto catch;
 			T_(filler)(epool);
-			key = PT_(entry_key)(epool);
-			/*printf("Creating %s: ", PT_(key_string)(key));*/
+			key = pT_(entry_key)(epool);
+			/*printf("Creating %s: ", pT_(key_string)(key));*/
 			switch(
 #ifdef TRIE_ENTRY
 				T_(trie_try)(&trie, key, &e)
@@ -583,17 +583,17 @@ static void PT_(test_random)(void) {
 #ifdef TRIE_ENTRY
 				*e = *epool;
 #endif
-				if(!(handle = PT_(handle_array_new)(&handles))) goto catch;
+				if(!(handle = pT_(handle_array_new)(&handles))) goto catch;
 				*handle = epool;
 				break;
 			case TRIE_PRESENT:
 				/*printf("present.\n");*/
-				PT_(entry_pool_remove)(&entries, epool);
+				pT_(entry_pool_remove)(&entries, epool);
 				break;
 			}
 		} else { /* Delete item. */
 			unsigned r = (unsigned)rand() / (RAND_MAX / handles.size + 1);
-			PT_(entry) *handle = handles.data[r];
+			pT_(entry) *handle = handles.data[r];
 #ifdef TRIE_ENTRY
 			const char *const string = T_(string)(T_(key)(handle));
 #else
@@ -602,17 +602,17 @@ static void PT_(test_random)(void) {
 			int success;
 			/*printf("Deleting %s.\n", string);*/
 			success = T_(trie_remove)(&trie, string), assert(success);
-			PT_(handle_array_lazy_remove)(&handles, handles.data + r);
-			PT_(entry_pool_remove)(&entries, handle);
+			pT_(handle_array_lazy_remove)(&handles, handles.data + r);
+			pT_(entry_pool_remove)(&entries, handle);
 			size--;
 		}
 		if(fp) fprintf(fp, "%lu\n", (unsigned long)size);
 		if(i % (5 * expectation / 10) == 5 * expectation / 20)
-			PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
+			pT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
 		for(j = 0; j < handles.size; j++) {
-			PT_(remit) r;
-			/*PT_(entry) *e = T_(trie_get)(&trie,
-				PT_(key_string)(PT_(entry_key)(handles.data[j]))); */
+			pT_(remit) r;
+			/*pT_(entry) *e = T_(trie_get)(&trie,
+				pT_(key_string)(pT_(entry_key)(handles.data[j]))); */
 #ifdef TRIE_ENTRY
 			r = T_(trie_get)(&trie, T_(string)(T_(key)(handles.data[j])));
 			assert(r);
@@ -625,9 +625,9 @@ static void PT_(test_random)(void) {
 #endif
 		}
 	}
-	PT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
+	pT_(graph)(&trie, "graph/" QUOTE(TRIE_NAME) "-step.gv", i);
 	/*for(i = 0; i < handles.size; i++) printf("%s\n",
-		PT_(key_string)(PT_(entry_key)(handles.data[i])));*/
+		pT_(key_string)(pT_(entry_key)(handles.data[i])));*/
 	goto finally;
 catch:
 	perror("random test");
@@ -635,8 +635,8 @@ catch:
 finally:
 	if(fp) fclose(fp);
 	T_(trie_)(&trie);
-	PT_(entry_pool_)(&entries);
-	PT_(handle_array_)(&handles);
+	pT_(entry_pool_)(&entries);
+	pT_(handle_array_)(&handles);
 }
 
 #if 0
@@ -670,8 +670,8 @@ static void T_(trie_test)(void) {
 		" entry <" QUOTE(TRIE_ENTRY) ">"
 #endif
 		" testing using <" QUOTE(TRIE_TEST) ">:\n");
-	PT_(test)();
-	PT_(test_random)();
+	pT_(test)();
+	pT_(test_random)();
 	fprintf(stderr, "Done tests of <" QUOTE(TRIE_NAME) ">trie.\n\n");
 }
 

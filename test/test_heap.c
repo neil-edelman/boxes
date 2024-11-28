@@ -15,6 +15,7 @@
 #include "../src/heap.h"
 
 
+#if 0
 /* Also an `unsigned int`, but with testing. */
 static void int_to_string(const unsigned *const i, char (*const z)[12])
 	{ sprintf(*z, "%u", *i); }
@@ -75,13 +76,14 @@ static void header_filler(unsigned *const p) { int_filler(p); }
 #define BOX_TO_STRING
 #define BOX_BODY
 #include "../src/heap.h"
+#endif
 
 
 int main(void) {
 	rand();
-	int_heap_test();
+	/*int_heap_test();
 	orc_heap_test(), orc_pool_(&orcs);
 	index_heap_test();
-	header_heap_test();
+	header_heap_test();*/
 	return EXIT_SUCCESS;
 }

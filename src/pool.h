@@ -347,7 +347,7 @@ static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
 #define BOX_TYPE struct P_(pool)
 #define BOX_CONTENT PP_(type)
 #define BOX_ PP_
-#define BOX_MAJOR_NAME pool
+#define BOX_T_MAJOR_NAME pool
 #define BOX_NAME POOL_NAME
 
 
@@ -372,7 +372,7 @@ static void PP_(to_string)(const PP_(type) *p, char (*const a)[12])
 #undef BOX_TYPE
 #undef BOX_CONTENT
 #undef BOX_
-#undef BOX_MAJOR_NAME
+#undef BOX_T_MAJOR_NAME
 #undef BOX_NAME
 #undef POOL_NAME
 #undef POOL_TYPE

@@ -8,8 +8,8 @@
 #define QUOTE(name) QUOTE_(name)
 
 /** Fills `fill` that is not equal to `neq` if possible. */
-static int PTU_(fill_unique)(PT_(type) *const fill,
-	const PT_(type) *const neq) {
+static int pTU_(fill_unique)(pT_(type) *const fill,
+	const pT_(type) *const neq) {
 	size_t i;
 	assert(fill);
 	for(i = 0; i < 1000; i++) {
@@ -47,16 +47,16 @@ static int PCMP_(unique_array)(PA_(type) *const fill, const size_t size) {
 #endif /* 0 */
 
 /* fixme: This is not general. */
-static void PTU_(test_compactify)(void) {
+static void pTU_(test_compactify)(void) {
 	struct t_(array) a = t_(array)();
-	PT_(type) ts[9], *t, *t1, *t_prev;
+	pT_(type) ts[9], *t, *t1, *t_prev;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	/* `valgrind` is giving me grief if I don't do this? */
 	memset(ts, 0, sizeof ts);
 	/* Get elements. */
 	assert(ts_size % 3 == 0);
 	for(t_prev = 0, t = ts, t1 = t + ts_size; t < t1; t_prev = t, t += 3) {
-		if(!PTU_(fill_unique)(t, t_prev)) { assert(0); return; }
+		if(!pTU_(fill_unique)(t, t_prev)) { assert(0); return; }
 		memcpy(t + 1, t, sizeof *t);
 		memcpy(t + 2, t, sizeof *t);
 	}
@@ -81,10 +81,10 @@ static void PTU_(test_compactify)(void) {
 	t_(array_)(&a);
 }
 
-static void PTU_(test_compare)(void) {
+static void pTU_(test_compare)(void) {
 	struct t_(array) a = t_(array)(), b = t_(array)();
 	/*struct A_(array_iterator) it;*/
-	PT_(type) ts[9], *t, *t1;
+	pT_(type) ts[9], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	/*size_t i;*/
 	int cmp;
@@ -130,11 +130,11 @@ static void PTU_(test_compare)(void) {
 }
 
 #ifdef BOX_COMPARE /* <!-- comp */
-static int PTU_(cmp_void)(const void *const a, const void *const b)
+static int pTU_(cmp_void)(const void *const a, const void *const b)
 	{ return TU_(compare)(a, b); }
 #endif /* comp --> */
 
-static void PTU_(test_sort)(void) {
+static void pTU_(test_sort)(void) {
 #ifdef BOX_COMPARE /* <!-- comp */
 	struct t_(array) as[64], *a;
 	const size_t as_size = sizeof as / sizeof *as;
@@ -144,7 +144,7 @@ static void PTU_(test_sort)(void) {
 	/* Random array of Arrays. */
 	for(a = as; a < as_end; a++) {
 		size_t size = (unsigned)rand() / (RAND_MAX / 5 + 1), i;
-		PT_(type) *x, *x_end;
+		pT_(type) *x, *x_end;
 		*a = t_(array)();
 		x = T_(append)(a, size);
 		x_end = x + size;
@@ -158,7 +158,7 @@ static void PTU_(test_sort)(void) {
 		/* fixme: Why the void casts again? */
 	}
 	/* Now sort the lists. */
-	qsort(as, as_size, sizeof *as, &PTU_(cmp_void));
+	qsort(as, as_size, sizeof *as, &pTU_(cmp_void));
 	printf("Sorted array of sorted <" QUOTE(BOX_NAME) ">array by "
 		   QUOTE(BOX_COMPARE) ":\n");
 	for(a = as; a < as_end; a++) {
@@ -171,7 +171,7 @@ static void PTU_(test_sort)(void) {
 #endif /* comp --> */
 }
 
-static void PTU_(test_bounds)(void) {
+static void pTU_(test_bounds)(void) {
 #ifdef COMPARE /* <!-- compare */
 	/* fixme */
 	struct A_(array) a = A_(array)();
@@ -235,10 +235,10 @@ static void TU_(compare_test)(void) {
 #endif
 		">array testing compare:\n");
 	errno = 0;
-	PTU_(test_sort)();
-	PTU_(test_bounds)();
-	PTU_(test_compactify)();
-	PTU_(test_compare)();
+	pTU_(test_sort)();
+	pTU_(test_bounds)();
+	pTU_(test_compactify)();
+	pTU_(test_compare)();
 	assert(errno == 0);
 	fprintf(stderr, "Done tests of <" QUOTE(BOX_NAME) ">array compare.\n\n");
 }

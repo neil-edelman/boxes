@@ -14,21 +14,21 @@
  is not stable.
 
  @param[BOX_NAME, BOX_TYPE]
- `<T>` that satisfies `C` naming conventions when mangled. `BOX_NAME` is
+ `<S>` that satisfies `C` naming conventions when mangled. `BOX_NAME` is
  required; `BOX_TYPE` defaults to `unsigned int`.
 
  @param[BOX_COMPARE]
- A function satisfying <typedef:<PH>compare_fn>. Defaults to minimum-hash.
+ A function satisfying <typedef:<PS>compare_fn>. Defaults to minimum-hash.
  Required if `BOX_TYPE` is changed to an incomparable type. For example, a
  maximum heap, `(a, b) -> a < b`.
 
  @param[BOX_VALUE]
- Optional value <typedef:<PH>value>, that, on `BOX_VALUE`, is stored in
- <tag:<H>heapnode>.
+ Optional value <typedef:<PS>value>, that, on `BOX_VALUE`, is stored in
+ <tag:<S>heapnode>.
 
  @param[BOX_TO_STRING]
  To string trait contained in <src/to_string.h>. Require
- `<name>[<trait>]to_string` be declared as <typedef:<PT>to_string_fn>.
+ `<name>[<trait>]to_string` be declared as <typedef:<PS>to_string_fn>.
 
  @param[BOX_EXPECT_TRAIT, BOX_TRAIT]
  Named traits are obtained by including `heap.h` multiple times with
@@ -54,63 +54,53 @@
 #error Can not be simultaneously defined.
 #endif
 
-#ifndef BOX_H /* <!-- idempotent */
-#define BOX_H
-#if defined(BOX_CAT_) || defined(BOX_CAT) || defined(H_) || defined(PH_)
-#error Unexpected defines.
-#endif
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-#define BOX_CAT_(n, m) n ## _ ## m
-#define BOX_CAT(n, m) BOX_CAT_(n, m)
-#define H_(n) BOX_CAT(BOX_NAME, n)
-#define PH_(n) BOX_CAT(heap, H_(n))
-#endif /* idempotent --> */
+#define BOX_FORM
+#include "box.h"
 
-#if !defined(restrict) && (!defined(__STDC__) || !defined(__STDC_VERSION__) \
-	|| __STDC_VERSION__ < 199901L)
-#define BOX_RESTRICT /* Undo this at the end. */
-#define restrict /* Attribute only in C99+. */
-#endif
+#ifndef BOX_TRAIT /* Base code, necessarily first. */
 
+#	ifndef BOX_TYPE
+#	define BOX_TYPE unsigned
+#	endif
 
-#ifndef BOX_TRAIT /* <!-- base code */
-
-#ifndef BOX_TYPE
-#define BOX_TYPE unsigned
-#endif
-
-/* Used to refer to heap as array. */
-#define PAH_(n) BOX_CAT(BOX_CAT(array, PH_(node)), n)
-
-#ifndef BOX_BODY /* <!-- head */
+/* Used to refer to heap as array. */ /* fixme? */
+#	define PAH_(n) BOX_CAT(BOX_CAT(array, PH_(node)), n)
 
 /** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
  `unsigned int` if not set by `BOX_TYPE`. */
-typedef BOX_TYPE PH_(priority);
-typedef const BOX_TYPE PH_(priority_c); /* This is assuming a lot. */
+typedef BOX_TYPE PS_(priority);
+typedef const BOX_TYPE PS_(priority_c); /* This is assuming a lot? */
 
-#ifdef BOX_VALUE /* <!-- value */
-typedef BOX_VALUE PH_(value);
-typedef const BOX_VALUE PH_(value_c); /* Assume! */
+#	ifdef BOX_VALUE
+typedef BOX_VALUE PS_(value);
+typedef const BOX_VALUE PS_(value_c); /* Assume! */
 /** If `BOX_VALUE` is set, this becomes <typedef:<PH>node>. */
-struct H_(heapnode) { PH_(priority) priority; PH_(value) value; };
+struct T_(heapnode) { PS_(priority) priority; PS_(value) value; };
 /** If `BOX_VALUE` is set, (priority, value) set by <tag:<H>heapnode>,
  otherwise it's a (priority) set directly by <typedef:<PH>priority>. */
-typedef struct H_(heapnode) PH_(node);
-typedef const struct H_(heapnode) PH_(node_c);
-#else /* value --><!-- !value */
-typedef PH_(priority) PH_(value);
-typedef PH_(priority) PH_(node);
-typedef PH_(priority_c) PH_(node_c);
-#endif /* !value --> */
+typedef struct T_(heapnode) PS_(node);
+typedef const struct T_(heapnode) PS_(node_c);
+#	else
+typedef pT_(priority) pT_(value);
+typedef pT_(priority) pT_(node);
+typedef pT_(priority_c) pT_(node_c);
+#	endif
 
 /* This relies on <src/array.h> which must be in the same directory. */
-#define ARRAY_NAME PH_(node)
-#define ARRAY_TYPE PH_(node)
-#ifdef BOX_DELARE_ONLY
-#define ARRAY_DECLARE_ONLY
-#endif
-#include "array.h"
+
+#error I think the parameters that we want to change of all included boxes \
+	must be unique in different compilation units. So _eg_ BOX_NAME and \
+	BOX_NAME in array.h must absolutely be different.
+
+#	define BOX_NAME pT_(node)
+#	define BOX_TYPE pT_(node)
+#	include "array.h"
+
+/* Box override information stays until the box is done. */
+#	define BOX_T_MINOR_NAME BOX_NAME
+#	define BOX_T_NAME pT_(type)
+#	define BOX_T_MAJOR_NAME heap
+#	define BOX_T_MAJOR struct T_(heap)
 
 /** Stores the heap as an implicit binary tree in an array called `a`. To
  initialize it to an idle state, see <fn:<H>heap>, `{0}` (`C99`), or being
@@ -121,7 +111,6 @@ struct H_(heap) { struct PH_(node_array) as_array; };
 
 struct PH_(iterator) { struct PAH_(iterator) _; };
 
-#endif /* head --> */
 #ifndef BOX_DELARE_ONLY /* <!-- body */
 
 #ifdef BOX_BODY /* <!-- real body: get the array functions, if separate. */
@@ -367,7 +356,7 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #define BOX_TYPE struct H_(heap)
 #define BOX_CONTENT PH_(node)
 #define BOX_ PH_
-#define BOX_MAJOR_NAME heap
+#define BOX_T_MAJOR_NAME heap
 #define BOX_NAME BOX_NAME
 
 #endif /* body --> */
@@ -419,7 +408,7 @@ static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12]) {
 #undef BOX_TYPE
 #undef BOX_CONTENT
 #undef BOX_
-#undef BOX_MAJOR_NAME
+#undef BOX_T_MAJOR_NAME
 #undef BOX_NAME
 #undef BOX_NAME
 #undef BOX_TYPE

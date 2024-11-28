@@ -19,11 +19,9 @@
 
  @std C89 */
 
-#if !defined(BOX_H) || !defined(BOX_CAT) || !defined(TU_) || !defined(PTU_) \
-	|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MAJOR) \
-	|| !defined(BOX_NAME) || !defined(BOX_MINOR)
-#	error Unexpected preprocessor symbols.
-#endif
+#define BOX_ALL /* Sanity check. */
+#include "box.h"
+
 #if defined(TO_STRING_H) \
 	&& (defined(TO_STRING_EXTERN) || defined(TO_STRING_INTERN))
 #	error Should be the on the first to_string in the compilation unit.
@@ -70,14 +68,14 @@ static unsigned to_string_buffer_i;
  12-`char` null-terminated output string, passed as a pointer in the last
  argument. This function can have 2 or 3 arguments, where `<PSTR>element` might
  be a map with a key-value pair.  */
-typedef void (*PTU_(to_string_fn))(const PT_(type) *, char (*)[12]);
+typedef void (*pTU_(to_string_fn))(const pT_(type) *, char (*)[12]);
 #endif /* documentation --> */
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
  256 bytes, with limitations of only printing 4 things in a single sequence
  point. @return Address of the static buffer. @order \Theta(1) @allow */
-static const char *TU_(to_string)(const PT_(box) *const box) {
-	union { const PT_(box) *readonly; PT_(box) *promise; } slybox;
+static const char *TU_(to_string)(const pT_(box) *const box) {
+	union { const pT_(box) *readonly; pT_(box) *promise; } slybox;
 	const char comma = ',', space = ' ', ellipsis[] = "…",
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;
 	const size_t ellipsis_len = sizeof ellipsis - 1;
@@ -118,10 +116,10 @@ terminate:
 	return buffer;
 }
 
-static void PTU_(unused_to_string_coda)(void);
-static void PTU_(unused_to_string)(void)
-	{ TU_(to_string)(0); PTU_(unused_to_string_coda)(); }
-static void PTU_(unused_to_string_coda)(void) { PTU_(unused_to_string)(); }
+static void pTU_(unused_to_string_coda)(void);
+static void pTU_(unused_to_string)(void)
+	{ TU_(to_string)(0); pTU_(unused_to_string_coda)(); }
+static void pTU_(unused_to_string_coda)(void) { pTU_(unused_to_string)(); }
 
 #ifdef TO_STRING_EXTERN
 #	undef TO_STRING_EXTERN

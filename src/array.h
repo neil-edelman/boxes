@@ -37,7 +37,7 @@
 #if !defined(BOX_NAME) || !defined(BOX_TYPE)
 #	error Name or tag type undefined.
 #endif
-#if defined(BOX_TRAIT) ^ defined(BOX_MAJOR)
+#if defined(BOX_TRAIT) ^ defined(BOX_T_MAJOR)
 #	error BOX_TRAIT name must come after BOX_EXPECT_TRAIT.
 #endif
 #if defined(BOX_COMPARE) && defined(BOX_IS_EQUAL)
@@ -48,40 +48,16 @@
 #	error Test requires to string.
 #endif
 
-#ifndef BOX_H
-#	define BOX_H
-#	if defined(BOX_CAT_) || defined(BOX_CAT) || defined(T_) || defined(PT_)
-#		error Unexpected preprocessor symbols.
-#	endif
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-#	define BOX_CAT_(n, m) n ## _ ## m
-#	define BOX_CAT(n, m) BOX_CAT_(n, m)
-#	define t_(n) BOX_CAT(BOX_MINOR_NAME, n)
-#	define T_(n) t_(BOX_CAT(BOX_MAJOR_NAME, n))
-#	define PT_(n) BOX_CAT(private, T_(n))
-#endif
-#ifdef BOX_TRAIT
-#	define tu_(n) t_(BOX_CAT(BOX_TRAIT, n))
-#	define TU_(n) T_(BOX_CAT(BOX_TRAIT, n))
-#	define PTU_(n) PT_(BOX_CAT(BOX_TRAIT, n))
-#else /* Anonymous trait. */
-#	define tu_(n) t_(n)
-#	define TU_(n) T_(n)
-#	define PTU_(n) PT_(n)
-#endif
-#if !defined(restrict) && (!defined(__STDC__) || !defined(__STDC_VERSION__) \
-	|| __STDC_VERSION__ < 199901L)
-#	define BOX_RESTRICT /* Undo this at the end. */
-#	define restrict /* Attribute only in C99+. */
-#endif
+#define BOX_START
+#include "box.h"
 
 #ifndef BOX_TRAIT /* Base code, necessarily first. */
 
 /* Box override information stays until the box is done. */
-#	define BOX_MINOR_NAME BOX_NAME
-#	define BOX_MINOR PT_(type)
-#	define BOX_MAJOR_NAME array
-#	define BOX_MAJOR struct T_(array)
+#	define BOX_T_MINOR_NAME BOX_NAME
+#	define BOX_T_NAME pT_(type)
+#	define BOX_T_MAJOR_NAME array
+#	define BOX_T_MAJOR struct T_(array)
 #	define BOX_ACCESS
 #	define BOX_CONTIGUOUS
 
@@ -98,14 +74,14 @@
 #	endif
 
 /** A valid tag type set by `BOX_TYPE`. */
-typedef BOX_TYPE PT_(type);
+typedef BOX_TYPE pT_(type);
 
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`.
 
  ![States.](../doc/array/states.png) */
-struct t_(array) { size_t size, capacity; PT_(type) *data; };
-typedef struct t_(array) PT_(box);
+struct t_(array) { size_t size, capacity; pT_(type) *data; };
+typedef struct t_(array) pT_(box);
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 
 struct T_(cursor) { struct t_(array) *a; size_t i; };
@@ -124,7 +100,7 @@ static struct T_(cursor) T_(end)(struct t_(array) *const a)
 static int T_(cursor_exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->a && cur->a->data && cur->i < cur->a->size; }
 /** @return Dereference the element pointed to by `cur` that exists. */
-static PT_(type) *T_(cursor_look)(struct T_(cursor) *const cur)
+static pT_(type) *T_(cursor_look)(struct T_(cursor) *const cur)
 	{ return cur->a->data + cur->i; }
 /** Move next on `cur` that exists. */
 static void T_(cursor_next)(struct T_(cursor) *const cur)
@@ -140,7 +116,7 @@ static void T_(cursor_back)(struct T_(cursor) *const cur) {
 /** Size of `a`. @implements `size` */
 static size_t T_(size)(const struct t_(array) *a) { return a->size; }
 /** @return Element `idx` of `a`. @implements `at` */
-static PT_(type) *T_(look)(const struct t_(array) *a, const size_t idx)
+static pT_(type) *T_(look)(const struct t_(array) *a, const size_t idx)
 	{ return a->data + idx; }
 /** Writes `size` to `a`. @implements `tell_size` */
 static void T_(tell_size)(struct t_(array) *a, const size_t size) { a->size = size; }
@@ -161,7 +137,7 @@ static void t_(array_)(struct t_(array) *const a)
  doesn't follow POSIX. @throws[realloc] @allow */
 static int T_(reserve)(struct t_(array) *const a, const size_t min) {
 	size_t c0;
-	PT_(type) *data;
+	pT_(type) *data;
 	const size_t max_size = (size_t)~0 / sizeof *a->data;
 	if(a->data) {
 		assert(a->size <= a->capacity);
@@ -191,7 +167,7 @@ static int T_(reserve)(struct t_(array) *const a, const size_t min) {
  @return The start of the buffered space at the back of the array. If `a` is
  idle and `buffer` is zero, a null pointer is returned, otherwise null
  indicates an error. @throws[realloc] @allow */
-static PT_(type) *T_(buffer)(struct t_(array) *const a, const size_t n) {
+static pT_(type) *T_(buffer)(struct t_(array) *const a, const size_t n) {
 	if(a->size > (size_t)~0 - n) { errno = ERANGE; return 0; }
 	return T_(reserve)(a, a->size + n) && a->data ? a->data + a->size : 0;
 }
@@ -202,8 +178,8 @@ static PT_(type) *T_(buffer)(struct t_(array) *const a, const size_t n) {
  @return A pointer to the elements. If `a` is idle and `n` is zero, a null
  pointer will be returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */
-static PT_(type) *T_(append)(struct t_(array) *const a, const size_t n) {
-	PT_(type) *b;
+static pT_(type) *T_(append)(struct t_(array) *const a, const size_t n) {
+	pT_(type) *b;
 	if(!(b = T_(buffer)(a, n))) return 0;
 	assert(n <= a->capacity && a->size <= a->capacity - n);
 	return a->size += n, b;
@@ -215,12 +191,12 @@ static PT_(type) *T_(append)(struct t_(array) *const a, const size_t n) {
  function behaves as <fn:<A>array_append>.
  @return A pointer to the start of the new region, where there are `n`
  elements. @throws[realloc, ERANGE] @allow */
-static PT_(type) *T_(insert)(struct t_(array) *const a,
+static pT_(type) *T_(insert)(struct t_(array) *const a,
 	const size_t n, const size_t at) {
 	/* Investigate `n` is better than `element`; all the other are element. But
 	 also, when would I ever use this? */
 	const size_t old_size = a->size;
-	PT_(type) *const b = T_(append)(a, n);
+	pT_(type) *const b = T_(append)(a, n);
 	assert(a && at <= old_size);
 	if(!b) return 0;
 	memmove(a->data + at + n, a->data + at, sizeof *a->data * (old_size - at));
@@ -231,14 +207,14 @@ static PT_(type) *T_(insert)(struct t_(array) *const a,
 /** @return Adds (push back) one new element of `a`. The buffer space holds at
  least one element, or it may invalidate pointers in `a`.
  @order amortised \O(1) @throws[realloc, ERANGE] @allow */
-static PT_(type) *T_(new)(struct t_(array) *const a)
+static pT_(type) *T_(new)(struct t_(array) *const a)
 	{ return T_(append)(a, 1); }
 
 /** Shrinks the capacity `a` to the size, freeing unused memory. If the size is
  zero, it will be in an idle state. Invalidates pointers in `a`.
  @return Success. @throws[ERANGE, realloc] (Unlikely) `realloc` error. */
 static int T_(shrink)(struct t_(array) *const a) {
-	PT_(type) *data;
+	pT_(type) *data;
 	size_t c;
 	assert(a && a->capacity >= a->size);
 	if(!a->data) return assert(!a->size && !a->capacity), 1;
@@ -252,7 +228,7 @@ static int T_(shrink)(struct t_(array) *const a) {
 /** Removes `element` from `a`. Do not attempt to remove an element that is not
  in `a`. @order \O(`a.size`). @allow */
 static void T_(remove)(struct t_(array) *const a,
-	PT_(type) *const element) {
+	pT_(type) *const element) {
 	const size_t n = (size_t)(element - a->data);
 	assert(a && element && element >= a->data && element < a->data + a->size);
 	memmove(element, element + 1, sizeof *element * (--a->size - n));
@@ -261,7 +237,7 @@ static void T_(remove)(struct t_(array) *const a,
 /** Removes `datum` from `a` and replaces it with the tail. Do not attempt to
  remove an element that is not in `a`. @order \O(1). @allow */
 static void T_(lazy_remove)(struct t_(array) *const a,
-	PT_(type) *const datum) {
+	pT_(type) *const datum) {
 	size_t n = (size_t)(datum - a->data);
 	assert(a && datum && datum >= a->data && datum < a->data + a->size);
 	if(--a->size != n) memcpy(datum, a->data + a->size, sizeof *datum);
@@ -274,12 +250,12 @@ static void T_(clear)(struct t_(array) *const a)
 	{ assert(a), a->size = 0; }
 
 /** @return The last element or null if `a` is empty. @order \Theta(1) @allow */
-static PT_(type) *T_(peek)(const struct t_(array) *const a)
+static pT_(type) *T_(peek)(const struct t_(array) *const a)
 	{ return assert(a), a->size ? a->data + a->size - 1 : 0; }
 
 /** @return Value from the the top of `a` that is removed or null if the array
  is empty. @order \Theta(1) @allow */
-static PT_(type) *T_(pop)(struct t_(array) *const a)
+static pT_(type) *T_(pop)(struct t_(array) *const a)
 	{ return assert(a), a->size ? a->data + --a->size : 0; }
 
 /** Indices [`i0`, `i1`) of `a` will be replaced with a copy of `b`.
@@ -309,17 +285,17 @@ static int T_(splice)(struct t_(array) *restrict const a,
 #			include "iterate.h" /** \include */
 #		endif
 
-static void PT_(unused_base_coda)(void);
-static void PT_(unused_base)(void) {
+static void pT_(unused_base_coda)(void);
+static void pT_(unused_base)(void) {
 	T_(begin)(0); T_(end)(0); T_(cursor_exists)(0); T_(cursor_look)(0);
 	T_(cursor_next)(0); T_(cursor_back)(0); T_(size)(0); T_(look)(0, 0);
 	T_(tell_size)(0, 0);
 	t_(array)(); t_(array_)(0); T_(insert)(0, 0, 0); T_(new)(0); T_(shrink)(0);
 	T_(remove)(0, 0); T_(lazy_remove)(0, 0); T_(clear)(0); T_(peek)(0);
 	T_(pop)(0); T_(append)(0, 0); T_(splice)(0, 0, 0, 0);
-	PT_(unused_base_coda)();
+	pT_(unused_base_coda)();
 }
-static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
+static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #	endif /* Produce code. */
 
@@ -365,10 +341,10 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #ifdef BOX_EXPECT_TRAIT
 #	undef BOX_EXPECT_TRAIT
 #else
-#	undef BOX_MINOR_NAME
-#	undef BOX_MINOR
-#	undef BOX_MAJOR_NAME
-#	undef BOX_MAJOR
+#	undef BOX_T_MINOR_NAME
+#	undef BOX_T_NAME
+#	undef BOX_T_MAJOR_NAME
+#	undef BOX_T_MAJOR
 #	undef BOX_ACCESS
 #	undef BOX_CONTIGUOUS
 #	undef BOX_NAME
@@ -383,17 +359,9 @@ static void PT_(unused_base_coda)(void) { PT_(unused_base)(); }
 #	ifdef BOX_DECLARE_ONLY
 #		undef BOX_DECLARE_ONLY
 #	endif
-#	ifdef BOX_RESTRICT
-#		undef BOX_RESTRICT
-#		undef restrict
-#	endif
-#	undef TU_
-#	undef PTU_
-#	undef BOXTU_
 #endif
 #ifdef BOX_TRAIT
 #	undef BOX_TRAIT
 #endif
-#undef tu_
-#undef TU_
-#undef PTU_
+#define BOX_END
+#include "box.h"

@@ -5,7 +5,7 @@
 #define QUOTE(name) QUOTE_(name)
 
 /** @return Is `a` in a valid state? */
-static void PT_(valid_state)(const struct t_(array) *const a) {
+static void pT_(valid_state)(const struct t_(array) *const a) {
 	const size_t max_size = (size_t)~0 / sizeof *a->data;
 	/* Null is a valid state. */
 	if(!a) return;
@@ -15,7 +15,7 @@ static void PT_(valid_state)(const struct t_(array) *const a) {
 
 /* fixme: this will be elsewhere… it is also very good at debugging programmes. */
 /** Draw a graph of `a` to `fn` in Graphviz format. */
-static void PT_(graph)(const struct t_(array) *const a, const char *const fn) {
+static void pT_(graph)(const struct t_(array) *const a, const char *const fn) {
 	FILE *fp;
 	size_t i;
 	char z[12];
@@ -66,20 +66,20 @@ no_data:
 	fclose(fp);
 }
 
-static void PT_(test_basic)(void) {
+static void pT_(test_basic)(void) {
 	struct t_(array) a = t_(array)();
 	/*struct T_(array_iterator) it;
 	char z[12];*/
-	PT_(type) items[5], *item, *item1;
+	pT_(type) items[5], *item, *item1;
 	const size_t items_size = sizeof items / sizeof *items, big = 1000;
 	size_t i;
 
 	assert(errno == 0);
-	PT_(valid_state)(0);
+	pT_(valid_state)(0);
 
 	printf("Test empty.\n");
 	assert(errno == 0);
-	PT_(valid_state)(&a);
+	pT_(valid_state)(&a);
 
 	/* This is un-necessary, but `valgrind` reports an error if we don't. */
 	memset(items, 0, sizeof items);
@@ -103,7 +103,7 @@ static void PT_(test_basic)(void) {
 	assert(item && a.size == 2 && a.capacity >= 2);
 	T_(clear)(&a);
 	assert(T_(peek)(&a) == 0);
-	PT_(valid_state)(&a);
+	pT_(valid_state)(&a);
 
 	assert(items_size >= 3);
 	for(i = 0; i < 3; i++) {
@@ -178,7 +178,7 @@ static void PT_(test_basic)(void) {
 	T_(append)(&a, 2);
 	memcpy(item + 1, items + 3, sizeof *item * 2);
 	assert(a.size == items_size);
-	PT_(valid_state)(&a);
+	pT_(valid_state)(&a);
 	printf("Now: %s.\n", T_(to_string)(&a));
 
 	/* Peek/Pop. */
@@ -197,7 +197,7 @@ static void PT_(test_basic)(void) {
 		t_(filler)(item);
 	}
 	printf("%s.\n", T_(to_string)(&a));
-	PT_(valid_state)(&a);
+	pT_(valid_state)(&a);
 
 	printf("Clear:\n");
 	T_(clear)(&a);
@@ -207,17 +207,17 @@ static void PT_(test_basic)(void) {
 	printf("Destructor:\n");
 	t_(array_)(&a);
 	assert(T_(peek)(&a) == 0);
-	PT_(valid_state)(&a);
+	pT_(valid_state)(&a);
 }
 
-static void PT_(test_random)(void) {
+static void pT_(test_random)(void) {
 	struct t_(array) a = t_(array)();
 	const size_t mult = 1; /* For long tests. */
 	/* This parameter controls how many iterations. */
 	size_t i, i_end = 1000 * mult, size = 0;
 	/* Random. */
 	for(i = 0; i < i_end; i++) {
-		PT_(type) *data;
+		pT_(type) *data;
 		char str[12];
 		unsigned r = (unsigned)rand();
 		int is_print = !(rand() / (RAND_MAX / 50 + 1));
@@ -249,23 +249,23 @@ static void PT_(test_random)(void) {
 			size--;
 		}
 		if(is_print) printf(" Size %lu.\n", (unsigned long)a.size);
-		PT_(valid_state)(&a);
+		pT_(valid_state)(&a);
 		if(a.size < 1000000 && !(i & (i - 1))) {
 			char fn[32];
 			printf("%s.\n", T_(to_string)(&a));
 			sprintf(fn, "graph/" QUOTE(BOX_NAME) "-array-%lu.gv",
 				(unsigned long)i);
-			PT_(graph)(&a, fn);
+			pT_(graph)(&a, fn);
 		}
 	}
 	t_(array_)(&a);
 }
 
-static void PT_(test_replace)(void) {
-	PT_(type) ts[5], *t, *t1;
+static void pT_(test_replace)(void) {
+	pT_(type) ts[5], *t, *t1;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	struct t_(array) a = t_(array)(), b = t_(array)();
-	PT_(type) *e;
+	pT_(type) *e;
 	int success;
 
 	/* valgrind does not like this. */
@@ -351,7 +351,7 @@ static void PT_(test_replace)(void) {
 #ifdef HAVE_ITERATE_H /* <!-- iterate */
 /** @implements <PA>Predicate
  @return A set sequence of ones and zeros, independant of `data`. */
-static int PT_(keep_deterministic)(const PT_(type) *const data) {
+static int pT_(keep_deterministic)(const pT_(type) *const data) {
 	static size_t i;
 	static const int things[] = { 1,0,0,0,0,1,0,0,1,1, 0,1,0,1,0,1,0 };
 	const int predicate = things[i++];
@@ -359,20 +359,20 @@ static int PT_(keep_deterministic)(const PT_(type) *const data) {
 	i %= sizeof things / sizeof *things;
 	return predicate;
 }
-static int PT_(num);
+static int pT_(num);
 /** Increments a global variable, independent of `t`. @implements <PA>action */
-static void PT_(increment)(PT_(type) *const t) {
+static void pT_(increment)(pT_(type) *const t) {
 	(void)t;
-	PT_(num)++;
+	pT_(num)++;
 }
 /** True, independent of `t`.
  @implements <PA>Predicate */
-static int PT_(true)(const PT_(type) *const t) {
+static int pT_(true)(const pT_(type) *const t) {
 	(void)t;
 	return 1;
 }
 /** @implements <PA>Predicate @return Is `t` zero-filled? */
-static int PT_(zero_filled)(const PT_(type) *const t) {
+static int pT_(zero_filled)(const pT_(type) *const t) {
 	const char *c = (const char *)t, *const end = (const char *)(t + 1);
 	assert(t);
 	while(c < end) if(*c++) return 0;
@@ -380,21 +380,21 @@ static int PT_(zero_filled)(const PT_(type) *const t) {
 }
 #endif /* iterate --> */
 
-static void PT_(test_keep)(void) {
+static void pT_(test_keep)(void) {
 #ifdef HAVE_ITERATE_H
-	PT_(type) ts[17], *t, *t1, *e;
+	pT_(type) ts[17], *t, *t1, *e;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	struct t_(array) a = t_(array)(), b = t_(array)();
 	int ret;
 	memset(ts, 0, sizeof ts); /* Valgrind. */
-	PT_(valid_state)(&a);
+	pT_(valid_state)(&a);
 	for(t = ts, t1 = t + ts_size; t < t1; t++) {
 		t_(filler)(t);
 		e = T_(new)(&a), assert(e);
 		memcpy(e, t, sizeof *t);
 	}
 	printf("a = %s.\n", T_(to_string)(&a));
-	T_(keep_if)(&a, &PT_(keep_deterministic), 0);
+	T_(keep_if)(&a, &pT_(keep_deterministic), 0);
 	printf("a = k(a) = %s.\n", T_(to_string)(&a));
 	assert(a.size == 7
 		&& !memcmp(ts + 0, a.data + 0, sizeof *t * 1)
@@ -403,10 +403,10 @@ static void PT_(test_keep)(void) {
 		&& !memcmp(ts + 11, a.data + 4, sizeof *t * 1)
 		&& !memcmp(ts + 13, a.data + 5, sizeof *t * 1)
 		&& !memcmp(ts + 15, a.data + 6, sizeof *t * 1));
-	PT_(valid_state)(&a);
-	ret = T_(copy_if)(&b, 0, &PT_(keep_deterministic));
+	pT_(valid_state)(&a);
+	ret = T_(copy_if)(&b, 0, &pT_(keep_deterministic));
 	assert(ret && !b.size);
-	ret = T_(copy_if)(&b, &a, &PT_(keep_deterministic));
+	ret = T_(copy_if)(&b, &a, &pT_(keep_deterministic));
 	printf("b = k(a) = %s.\n", T_(to_string)(&b));
 	assert(ret && b.size == 2
 		&& !memcmp(ts + 0, b.data + 0, sizeof *t * 1)
@@ -416,42 +416,42 @@ static void PT_(test_keep)(void) {
 #endif
 }
 
-static void PT_(test_each)(void) {
+static void pT_(test_each)(void) {
 #ifdef HAVE_ITERATE_H
 	struct t_(array) empty = t_(array)(), one = t_(array)();
-	PT_(type) *t;
+	pT_(type) *t;
 	t = T_(new)(&one);
 	assert(t);
 	t_(filler)(t);
-	PT_(num) = 0;
-	T_(each)(&empty, &PT_(increment));
-	assert(!PT_(num));
-	T_(each)(&one, &PT_(increment));
-	assert(PT_(num) == 1);
-	PT_(num) = 0;
-	T_(if_each)(&empty, &PT_(true), &PT_(increment));
-	assert(!PT_(num));
-	T_(if_each)(&one, &PT_(true), &PT_(increment));
-	assert(PT_(num) == 1);
-	PT_(num) = 0;
-	t = T_(any)(&empty, &PT_(true));
+	pT_(num) = 0;
+	T_(each)(&empty, &pT_(increment));
+	assert(!pT_(num));
+	T_(each)(&one, &pT_(increment));
+	assert(pT_(num) == 1);
+	pT_(num) = 0;
+	T_(if_each)(&empty, &pT_(true), &pT_(increment));
+	assert(!pT_(num));
+	T_(if_each)(&one, &pT_(true), &pT_(increment));
+	assert(pT_(num) == 1);
+	pT_(num) = 0;
+	t = T_(any)(&empty, &pT_(true));
 	assert(!t);
-	t = T_(any)(&one, &PT_(true));
+	t = T_(any)(&one, &pT_(true));
 	assert(t == one.data);
 	t_(array_)(&one);
 #endif
 }
 
-static void PT_(test_trim)(void) {
+static void pT_(test_trim)(void) {
 #ifdef HAVE_ITERATE_H
 	struct t_(array) a = t_(array)();
-	PT_(type) *item;
+	pT_(type) *item;
 	int is_zero;
 	/* Trim 1. */
 	item = T_(new)(&a);
 	assert(item);
 	memset(item, 0, sizeof *item);
-	T_(trim)(&a, &PT_(zero_filled));
+	T_(trim)(&a, &pT_(zero_filled));
 	assert(a.size == 0);
 	/* Trim 3. */
 	item = T_(new)(&a);
@@ -460,31 +460,31 @@ static void PT_(test_trim)(void) {
 	item = T_(new)(&a);
 	assert(item);
 	t_(filler)(item);
-	is_zero = PT_(zero_filled)(item);
+	is_zero = pT_(zero_filled)(item);
 	item = T_(new)(&a);
 	assert(item);
 	memset(item, 0, sizeof *item);
-	T_(trim)(&a, &PT_(zero_filled));
+	T_(trim)(&a, &pT_(zero_filled));
 	assert(a.size == !is_zero);
 	t_(array_)(&a);
 #endif
 }
 
-static void PT_(test_insert)(void) {
+static void pT_(test_insert)(void) {
 	struct t_(array) a = t_(array)();
-	PT_(type) original[17], solitary, *t, *t1, *e;
+	pT_(type) original[17], solitary, *t, *t1, *e;
 	const size_t original_size = sizeof original / sizeof *original;
 	size_t i;
 	printf("Test insert:\n");
 	memset(original, 0, sizeof original); /* Valgrind. */
-	PT_(valid_state)(&a);
+	pT_(valid_state)(&a);
 	for(t = original, t1 = t + original_size; t < t1; t++) t_(filler)(t);
 	t_(filler)(&solitary);
 	for(i = 0; i <= original_size; i++) {
 		e = T_(append)(&a, original_size), assert(e);
 		memcpy(e, original, sizeof original);
 		if(!i) printf("a = %s.\n", T_(to_string)(&a));
-		PT_(valid_state)(&a);
+		pT_(valid_state)(&a);
 		e = T_(insert)(&a, 1, i), assert(e);
 		memcpy(e, &solitary, sizeof solitary);
 		printf("After insert(%lu) a = %s.\n",
@@ -499,13 +499,13 @@ static void PT_(test_insert)(void) {
 static void T_(test)(void) {
 	printf("array<" QUOTE(BOX_NAME) "> of type <" QUOTE(BOX_TYPE)
 		"> was created using: BOX_TO_STRING; BOX_TEST; testing:\n");
-	PT_(test_basic)();
-	PT_(test_random)();
-	PT_(test_replace)();
-	PT_(test_keep)();
-	PT_(test_each)();
-	PT_(test_trim)();
-	PT_(test_insert)();
+	pT_(test_basic)();
+	pT_(test_random)();
+	pT_(test_replace)();
+	pT_(test_keep)();
+	pT_(test_each)();
+	pT_(test_trim)();
+	pT_(test_insert)();
 	fprintf(stderr, "Done tests of array<" QUOTE(BOX_NAME) ">.\n\n");
 }
 
