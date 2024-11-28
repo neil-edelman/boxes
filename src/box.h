@@ -1,4 +1,4 @@
-/* Shared code. Multiplex. */
+/* Multiplex shared code. */
 #if defined(BOX_NONE) + defined(BOX_ALL) \
 	+ defined(BOX_START) + defined(BOX_END) != 1
 #	error Request one.
@@ -11,7 +11,8 @@
 		|| defined(tu_) || defined(TU_) || defined(pTU_) \
 		/* We know that these are not defined outside, though they can be
 		 undefined inside. */ \
-		|| defined(BOX_RESTRICT)
+		|| defined(BOX_RESTRICT) \
+		|| defined(BOX_ENTRY1) || defined(BOX_ENTRY2)
 #		error Unexpected preprocessor symbols.
 #	endif
 #endif
@@ -20,63 +21,80 @@
 #	undef BOX_ALL
 #	if !defined(BOX_CAT_) || !defined(BOX_CAT) || !defined(t_) || !defined(T_) \
 		|| !defined(pT_) || !defined(s_) || !defined(S_) || !defined(pS_) \
-		|| !defined(tu_) || !defined(TU_) || !defined(pTU_)
-#		error Unexpected preprocessor symbols.
+		|| !defined(tu_) || !defined(TU_) || !defined(pTU_) \
+		|| !defined(BOX_ENTRY1)
+#		error Missing preprocessor symbols.
 #	endif
 #endif
 
 #ifdef BOX_START
 #	undef BOX_START
-#	define BOX_NONE
-#	include "box.h"
+/* Allow sub-boxes, but not sub-sub-boxes. I couldn't figure it out. */
+#	ifdef BOX_ENTRY1
+#		ifdef BOX_ENTRY2
+#			error No recursion (yet.)
+#		endif
+#		define BOX_ENTRY2
+#		define BOX_ALL
+#		include "box.h"
+#	else
+#		define BOX_NONE
+#		include "box.h"
+#		define BOX_ENTRY1
 /* <Kernighan and Ritchie, 1988, p. 231>. Allow two levels for containers
  including sub-containers—this is not real recursion. */
-#	define BOX_CAT_(n, m) n ## _ ## m
-#	define BOX_CAT(n, m) BOX_CAT_(n, m)
-#	define t_(n) BOX_CAT(BOX_T_MINOR_NAME, n)
-#	define T_(n) t_(BOX_CAT(BOX_T_MAJOR_NAME, n))
-#	define pT_(n) BOX_CAT(private, T_(n))
-#	define s_(n) BOX_CAT(BOX_S_MINOR_NAME, n)
-#	define S_(n) t_(BOX_CAT(BOX_S_MAJOR_NAME, n))
-#	define pS_(n) BOX_CAT(private, S_(n))
-#	ifdef BOX_TRAIT
-#		define tu_(n) t_(BOX_CAT(BOX_TRAIT, n))
-#		define TU_(n) T_(BOX_CAT(BOX_TRAIT, n))
-#		define pTU_(n) pT_(BOX_CAT(BOX_TRAIT, n))
-#	else /* Anonymous trait. */
-#		define tu_(n) t_(n)
-#		define TU_(n) T_(n)
-#		define pTU_(n) pT_(n)
-#	endif
+#		define BOX_CAT_(n, m) n ## _ ## m
+#		define BOX_CAT(n, m) BOX_CAT_(n, m)
+#		define t_(n) BOX_CAT(BOX_T_MINOR_NAME, n)
+#		define T_(n) t_(BOX_CAT(BOX_T_MAJOR_NAME, n))
+#		define pT_(n) BOX_CAT(private, T_(n))
+#		define s_(n) BOX_CAT(BOX_S_MINOR_NAME, n)
+#		define S_(n) t_(BOX_CAT(BOX_S_MAJOR_NAME, n))
+#		define pS_(n) BOX_CAT(private, S_(n))
+#		ifdef BOX_TRAIT
+#			define tu_(n) t_(BOX_CAT(BOX_TRAIT, n))
+#			define TU_(n) T_(BOX_CAT(BOX_TRAIT, n))
+#			define pTU_(n) pT_(BOX_CAT(BOX_TRAIT, n))
+#		else /* Anonymous trait. */
+#			define tu_(n) t_(n)
+#			define TU_(n) T_(n)
+#			define pTU_(n) pT_(n)
+#		endif
 /* Attribute in C99+; ignore otherwise. */
-#	if !defined(restrict) && (!defined(__STDC__) \
-		|| !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L)
-#		define BOX_RESTRICT
-#		define restrict
+#		if !defined(restrict) && (!defined(__STDC__) \
+			|| !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L)
+#			define BOX_RESTRICT
+#			define restrict
+#		endif
+#		define BOX_ALL
+#		include "box.h"
 #	endif
-#	define BOX_ALL
-#	include "box.h"
 #endif
 
 #ifdef BOX_END
 #	undef BOX_END
 #	define BOX_ALL
 #	include "box.h"
-#	undef BOX_CAT_
-#	undef BOX_CAT
-#	undef t_
-#	undef T_
-#	undef pT_
-#	undef s_
-#	undef S_
-#	undef pS_
-#	undef tu_
-#	undef TU_
-#	undef pTU_
-#	ifdef BOX_RESTRICT
-#		undef BOX_RESTRICT
-#		undef restrict
+#	ifdef BOX_ENTRY2
+#		#undef BOX_ENTRY2
+#	else
+#		undef BOX_ENTRY1
+#		undef BOX_CAT_
+#		undef BOX_CAT
+#		undef t_
+#		undef T_
+#		undef pT_
+#		undef s_
+#		undef S_
+#		undef pS_
+#		undef tu_
+#		undef TU_
+#		undef pTU_
+#		ifdef BOX_RESTRICT
+#			undef BOX_RESTRICT
+#			undef restrict
+#		endif
+#		define BOX_NONE
+#		include "box.h"
 #	endif
-#	define BOX_NONE
-#	include "box.h"
 #endif

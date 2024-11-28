@@ -91,6 +91,9 @@ typedef pT_(priority_c) pT_(node_c);
 #error I think the parameters that we want to change of all included boxes \
 	must be unique in different compilation units. So _eg_ BOX_NAME and \
 	BOX_NAME in array.h must absolutely be different.
+/* Instead of having unique defines in every box, I think we should have
+ a global level of recursion.
+ Turns out this is very difficult; one can't count. */
 
 #	define BOX_NAME pT_(node)
 #	define BOX_TYPE pT_(node)
