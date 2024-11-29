@@ -1,6 +1,7 @@
 /* Multiplex shared code. */
 #if defined(BOX_NONE) + defined(BOX_ALL) \
-	+ defined(BOX_START) + defined(BOX_END) != 1
+	+ defined(BOX_START) + defined(BOX_END) \
+	+ defined(BOX_NAME_MISSING) + defined(BOX_NAME_PRESENT) != 1
 #	error Request one.
 #endif
 
@@ -24,6 +25,22 @@
 		|| !defined(tu_) || !defined(TU_) || !defined(pTU_) \
 		|| !defined(BOX_ENTRY1)
 #		error Missing preprocessor symbols.
+#	endif
+#endif
+
+#ifdef BOX_NAME_MISSING
+#	undef BOX_NAME_MISSING
+#	if defined(BOX_MINOR_NAME) || defined(BOX_MINOR) \
+		|| defined(BOX_MAJOR_NAME) || defined(BOX_MAJOR)
+#		error Unexpected box name.
+#	endif
+#endif
+
+#ifdef BOX_NAME_PRESENT
+#	undef BOX_NAME_PRESENT
+#	if !defined(BOX_MINOR_NAME) || !defined(BOX_MINOR) \
+		|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MAJOR)
+#		error Missing box name.
 #	endif
 #endif
 

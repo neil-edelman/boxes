@@ -58,10 +58,17 @@
 #	include <assert.h>
 
 /* Box override information stays until the box is done. */
-#	define BOX_MINOR_NAME BOX_NAME
-#	define BOX_MINOR pT_(type)
-#	define BOX_MAJOR_NAME array
-#	define BOX_MAJOR struct T_(array)
+#	ifdef BOX_ENTRY2
+#		define BOX_NAME_PRESENT
+#		include "box.h"
+#	else
+#		define BOX_NAME_MISSING
+#		include "box.h"
+#		define BOX_MINOR_NAME BOX_NAME
+#		define BOX_MINOR pT_(type)
+#		define BOX_MAJOR_NAME array
+#		define BOX_MAJOR struct T_(array)
+#	endif
 #	define BOX_ACCESS
 #	define BOX_CONTIGUOUS
 
@@ -341,7 +348,7 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	undef BOX_EXPECT_TRAIT
 #else
 #	undef BOX_MINOR_NAME
-#	undef BOX_NAME
+#	undef BOX_MINOR
 #	undef BOX_MAJOR_NAME
 #	undef BOX_MAJOR
 #	undef BOX_ACCESS
