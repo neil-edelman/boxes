@@ -54,13 +54,13 @@
 #error Can not be simultaneously defined.
 #endif
 
-#define BOX_FORM
+#define BOX_START
 #include "box.h"
 
 #ifndef BOX_TRAIT /* Base code, necessarily first. */
 
 #	ifndef BOX_TYPE
-#	define BOX_TYPE unsigned
+#		define BOX_TYPE unsigned
 #	endif
 
 /* Used to refer to heap as array. */ /* fixme? */
@@ -68,18 +68,18 @@
 
 /** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
  `unsigned int` if not set by `BOX_TYPE`. */
-typedef BOX_TYPE PS_(priority);
-typedef const BOX_TYPE PS_(priority_c); /* This is assuming a lot? */
+typedef BOX_TYPE pT_(priority);
+typedef const BOX_TYPE pT_(priority_c); /* This is assuming a lot? */
 
 #	ifdef BOX_VALUE
-typedef BOX_VALUE PS_(value);
-typedef const BOX_VALUE PS_(value_c); /* Assume! */
+typedef BOX_VALUE pT_(value);
+typedef const BOX_VALUE pT_(value_c); /* Assume! */
 /** If `BOX_VALUE` is set, this becomes <typedef:<PH>node>. */
-struct T_(heapnode) { PS_(priority) priority; PS_(value) value; };
+struct T_(heapnode) { pT_(priority) priority; pT_(value) value; };
 /** If `BOX_VALUE` is set, (priority, value) set by <tag:<H>heapnode>,
  otherwise it's a (priority) set directly by <typedef:<PH>priority>. */
-typedef struct T_(heapnode) PS_(node);
-typedef const struct T_(heapnode) PS_(node_c);
+typedef struct T_(heapnode) pT_(node);
+typedef const struct T_(heapnode) pT_(node_c);
 #	else
 typedef pT_(priority) pT_(value);
 typedef pT_(priority) pT_(node);
@@ -88,15 +88,8 @@ typedef pT_(priority_c) pT_(node_c);
 
 /* This relies on <src/array.h> which must be in the same directory. */
 
-#	error I think the parameters that we want to change of all included boxes \
-	must be unique in different compilation units. So _eg_ BOX_NAME and \
-	BOX_NAME in array.h must absolutely be different.
-/* Instead of having unique defines in every box, I think we should have
- a global level of recursion.
- Turns out this is very difficult; one can't count. */
-
-#	define BOX_NAME pT_(node)
-#	define BOX_TYPE pT_(node)
+//#	define BOX_NAME pT_(node)
+//#	define BOX_TYPE pT_(node)
 #	include "array.h"
 
 /* Box override information stays until the box is done. */
@@ -110,9 +103,9 @@ typedef pT_(priority_c) pT_(node_c);
  `static`.
 
  ![States.](../doc/heap/states.png) */
-struct H_(heap) { struct PH_(node_array) as_array; };
+struct T_(heap) { struct pT_(node_array) as_array; };
 
-struct PH_(iterator) { struct PAH_(iterator) _; };
+struct pT_(iterator) { struct pT_(cursor) _; };
 
 #ifndef BOX_DELARE_ONLY /* <!-- body */
 
