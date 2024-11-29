@@ -28,16 +28,14 @@
 
 #ifdef BOX_NAME_MISSING
 #	undef BOX_NAME_MISSING
-#	if defined(BOX_MINOR_NAME) || defined(BOX_MINOR) \
-		|| defined(BOX_MAJOR_NAME) || defined(BOX_MAJOR)
+#	if defined(BOX_MINOR_NAME) || defined(BOX_MAJOR_NAME)
 #		error Unexpected box name.
 #	endif
 #endif
 
 #ifdef BOX_NAME_PRESENT
 #	undef BOX_NAME_PRESENT
-#	if !defined(BOX_MINOR_NAME) || !defined(BOX_MINOR) \
-		|| !defined(BOX_MAJOR_NAME) || !defined(BOX_MAJOR)
+#	if !defined(BOX_MINOR_NAME) || !defined(BOX_MAJOR_NAME)
 #		error Missing box name.
 #	endif
 #endif
