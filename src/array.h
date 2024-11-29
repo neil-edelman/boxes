@@ -37,7 +37,7 @@
 #if !defined(BOX_NAME) || !defined(BOX_TYPE)
 #	error Name or tag type undefined.
 #endif
-#if defined(BOX_TRAIT) ^ defined(BOX_T_MAJOR)
+#if defined(BOX_TRAIT) ^ defined(BOX_MAJOR)
 #	error BOX_TRAIT name must come after BOX_EXPECT_TRAIT.
 #endif
 #if defined(BOX_COMPARE) && defined(BOX_IS_EQUAL)
@@ -52,19 +52,18 @@
 #include "box.h"
 
 #ifndef BOX_TRAIT /* Base code, necessarily first. */
-
-/* Box override information stays until the box is done. */
-#	define BOX_T_MINOR_NAME BOX_NAME
-#	define BOX_T_NAME pT_(type)
-#	define BOX_T_MAJOR_NAME array
-#	define BOX_T_MAJOR struct T_(array)
-#	define BOX_ACCESS
-#	define BOX_CONTIGUOUS
-
 #	include <stdlib.h>
 #	include <string.h>
 #	include <errno.h>
 #	include <assert.h>
+
+/* Box override information stays until the box is done. */
+#	define BOX_MINOR_NAME BOX_NAME
+#	define BOX_MINOR pT_(type)
+#	define BOX_MAJOR_NAME array
+#	define BOX_MAJOR struct T_(array)
+#	define BOX_ACCESS
+#	define BOX_CONTIGUOUS
 
 #	ifndef BOX_MIN_CAPACITY
 #		define BOX_MIN_CAPACITY 3 /* > 1 */
@@ -341,10 +340,10 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #ifdef BOX_EXPECT_TRAIT
 #	undef BOX_EXPECT_TRAIT
 #else
-#	undef BOX_T_MINOR_NAME
-#	undef BOX_T_NAME
-#	undef BOX_T_MAJOR_NAME
-#	undef BOX_T_MAJOR
+#	undef BOX_MINOR_NAME
+#	undef BOX_NAME
+#	undef BOX_MAJOR_NAME
+#	undef BOX_MAJOR
 #	undef BOX_ACCESS
 #	undef BOX_CONTIGUOUS
 #	undef BOX_NAME

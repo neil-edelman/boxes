@@ -45,8 +45,8 @@
  including sub-containers—this is not real recursion. */
 #		define BOX_CAT_(n, m) n ## _ ## m
 #		define BOX_CAT(n, m) BOX_CAT_(n, m)
-#		define t_(n) BOX_CAT(BOX_T_MINOR_NAME, n)
-#		define T_(n) t_(BOX_CAT(BOX_T_MAJOR_NAME, n))
+#		define t_(n) BOX_CAT(BOX_MINOR_NAME, n)
+#		define T_(n) t_(BOX_CAT(BOX_MAJOR_NAME, n))
 #		define pT_(n) BOX_CAT(private, T_(n))
 #		define s_(n) BOX_CAT(BOX_S_MINOR_NAME, n)
 #		define S_(n) t_(BOX_CAT(BOX_S_MAJOR_NAME, n))

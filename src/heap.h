@@ -88,7 +88,7 @@ typedef pT_(priority_c) pT_(node_c);
 
 /* This relies on <src/array.h> which must be in the same directory. */
 
-#error I think the parameters that we want to change of all included boxes \
+#	error I think the parameters that we want to change of all included boxes \
 	must be unique in different compilation units. So _eg_ BOX_NAME and \
 	BOX_NAME in array.h must absolutely be different.
 /* Instead of having unique defines in every box, I think we should have
@@ -100,10 +100,10 @@ typedef pT_(priority_c) pT_(node_c);
 #	include "array.h"
 
 /* Box override information stays until the box is done. */
-#	define BOX_T_MINOR_NAME BOX_NAME
-#	define BOX_T_NAME pT_(type)
-#	define BOX_T_MAJOR_NAME heap
-#	define BOX_T_MAJOR struct T_(heap)
+#	define BOX_MINOR_NAME BOX_NAME
+#	define BOX_NAME pT_(type)
+#	define BOX_MAJOR_NAME heap
+#	define BOX_MAJOR struct T_(heap)
 
 /** Stores the heap as an implicit binary tree in an array called `a`. To
  initialize it to an idle state, see <fn:<H>heap>, `{0}` (`C99`), or being
@@ -359,7 +359,7 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #define BOX_TYPE struct H_(heap)
 #define BOX_CONTENT PH_(node)
 #define BOX_ PH_
-#define BOX_T_MAJOR_NAME heap
+#define BOX_MAJOR_NAME heap
 #define BOX_NAME BOX_NAME
 
 #endif /* body --> */
@@ -411,7 +411,7 @@ static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12]) {
 #undef BOX_TYPE
 #undef BOX_CONTENT
 #undef BOX_
-#undef BOX_T_MAJOR_NAME
+#undef BOX_MAJOR_NAME
 #undef BOX_NAME
 #undef BOX_NAME
 #undef BOX_TYPE
