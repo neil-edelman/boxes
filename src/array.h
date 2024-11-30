@@ -11,7 +11,7 @@
  Resizing may be necessary when increasing the size of the array; this incurs
  amortised cost. As such, the contents are not stable.
 
- @param[BOX_NAME, BOX_TYPE]
+ @param[ARRAY_NAME, ARRAY_TYPE]
  `<T>` that satisfies `C` naming conventions when mangled and a valid tag-type,
  <typedef:<PA>type>, associated therewith; required.
 
@@ -29,12 +29,12 @@
  Named traits are obtained by including `array.h` multiple times with
  `BOX_EXPECT_TRAIT` and then subsequently including the name in `BOX_TRAIT`.
 
- @param[BOX_DECLARE_ONLY]
+ @param[ARRAY_DECLARE_ONLY]
  For headers in different compilation units.
 
  @std C89 */
 
-#if !defined(BOX_NAME) || !defined(BOX_TYPE)
+#if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
 #	error Name or tag type undefined.
 #endif
 /* #if defined(BOX_TRAIT) ^ defined(BOX_T_MAJOR)
@@ -43,8 +43,8 @@
 #if defined(BOX_COMPARE) && defined(BOX_IS_EQUAL)
 #	error Only one can be defined at a time.
 #endif
-#if defined(BOX_TEST) && (!defined(BOX_TRAIT) && !defined(BOX_TO_STRING) \
-	|| defined(BOX_TRAIT) && !defined(BOX_HAS_TO_STRING))
+#if defined(ARRAY_TEST) && (!defined(BOX_TRAIT) && !defined(BOX_TO_STRING) \
+	|| defined(BOX_TRAIT) && !defined(ARRAY_HAS_TO_STRING))
 #	error Test requires to string.
 #endif
 
@@ -58,20 +58,20 @@
 #	include <assert.h>
 
 /* Box override information stays until the box is done. */
-#	define BOX_T_MINOR BOX_NAME
+#	define BOX_T_MINOR ARRAY_NAME
 #	define BOX_T_MAJOR array
 #	define BOX_ACCESS
 #	define BOX_CONTIGUOUS
 
-#	ifndef BOX_MIN_CAPACITY
-#		define BOX_MIN_CAPACITY 3 /* > 1 */
+#	ifndef ARRAY_MIN_CAPACITY
+#		define ARRAY_MIN_CAPACITY 3 /* > 1 */
 #	endif
-#	if BOX_MIN_CAPACITY <= 1
-#		error BOX_MIN_CAPACITY > 1
+#	if ARRAY_MIN_CAPACITY <= 1
+#		error ARRAY_MIN_CAPACITY > 1
 #	endif
 
-/** A valid tag type set by `BOX_TYPE`. */
-typedef BOX_TYPE pT_(type);
+/** A valid tag type set by `ARRAY_TYPE`. */
+typedef ARRAY_TYPE pT_(type);
 
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`.
@@ -86,7 +86,7 @@ struct T_(cursor) { struct t_(array) *a; size_t i; };
 /* fixme: a wrapper is a terrible way to make functions accessible; something
  like BOX_EXPORT_CONS… #ifdef BOX_EXPORT_SIZE, #define static, size_t t_(array)… */
 
-#	ifndef BOX_DECLARE_ONLY /* Produce code: not for headers. */
+#	ifndef ARRAY_DECLARE_ONLY /* Produce code: not for headers. */
 
 /** @return A cursor at the beginning of a valid `a`. */
 static struct T_(cursor) T_(begin)(struct t_(array) *const a)
@@ -139,12 +139,12 @@ static int T_(reserve)(struct t_(array) *const a, const size_t min) {
 	if(a->data) {
 		assert(a->size <= a->capacity);
 		if(min <= a->capacity) return 1;
-		c0 = a->capacity < BOX_MIN_CAPACITY
-			? BOX_MIN_CAPACITY : a->capacity;
+		c0 = a->capacity < ARRAY_MIN_CAPACITY
+			? ARRAY_MIN_CAPACITY : a->capacity;
 	} else { /* Idle. */
 		assert(!a->size && !a->capacity);
 		if(!min) return 1;
-		c0 = BOX_MIN_CAPACITY;
+		c0 = ARRAY_MIN_CAPACITY;
 	}
 	if(min > max_size) return errno = ERANGE, 0;
 	/* `c_n = a1.625^n`, approximation golden ratio `\phi ~ 1.618`. */
@@ -215,7 +215,7 @@ static int T_(shrink)(struct t_(array) *const a) {
 	size_t c;
 	assert(a && a->capacity >= a->size);
 	if(!a->data) return assert(!a->size && !a->capacity), 1;
-	c = a->size && a->size > BOX_MIN_CAPACITY ? a->size : BOX_MIN_CAPACITY;
+	c = a->size && a->size > ARRAY_MIN_CAPACITY ? a->size : ARRAY_MIN_CAPACITY;
 	if(!(data = realloc(a->data, sizeof *a->data * c)))
 		{ if(!errno) errno = ERANGE; return 0; }
 	a->data = data, a->capacity = c;
@@ -301,30 +301,30 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 
 #if defined(BOX_TO_STRING) \
-	&& !defined(BOX_DECLARE_ONLY) /* <!-- to string trait */
+	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- to string trait */
 #	include "to_string.h" /** \include */
 #	undef BOX_TO_STRING
 #	ifndef BOX_TRAIT
-#		define BOX_HAS_TO_STRING /* Warning about lack of to_string in tests. */
+#		define ARRAY_HAS_TO_STRING /* Warning about lack of to_string in tests. */
 #	endif
 #endif /* to string trait --> */
 
 
-#if defined(BOX_TEST) && !defined(BOX_TRAIT) \
-	&& !defined(BOX_DECLARE_ONLY) /* <!-- test base */
+#if defined(ARRAY_TEST) && !defined(BOX_TRAIT) \
+	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- test base */
 #	include "../test/test_array.h"
 #endif /* test base --> */
 
 
 #if (defined(BOX_COMPARE) || defined(BOX_IS_EQUAL)) \
-	&& !defined(BOX_DECLARE_ONLY) /* <!-- compare trait */
+	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- compare trait */
 #	ifdef BOX_COMPARE
 #		define COMPARE BOX_COMPARE
 #	else
 #		define COMPARE_IS_EQUAL BOX_IS_EQUAL
 #	endif
 #	include "compare.h" /** \include */
-#	ifdef BOX_TEST
+#	ifdef ARRAY_TEST
 #		include "../test/test_array_compare.h"
 #	endif
 #	ifdef BOX_COMPARE
@@ -342,17 +342,17 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	undef BOX_T_MAJOR
 #	undef BOX_ACCESS
 #	undef BOX_CONTIGUOUS
-#	undef BOX_NAME
-#	undef BOX_TYPE
-#	undef BOX_MIN_CAPACITY
-#	ifdef BOX_HAS_TO_STRING
-#		undef BOX_HAS_TO_STRING
+#	undef ARRAY_NAME
+#	undef ARRAY_TYPE
+#	undef ARRAY_MIN_CAPACITY
+#	ifdef ARRAY_HAS_TO_STRING
+#		undef ARRAY_HAS_TO_STRING
 #	endif
-#	ifdef BOX_TEST
-#		undef BOX_TEST
+#	ifdef ARRAY_TEST
+#		undef ARRAY_TEST
 #	endif
-#	ifdef BOX_DECLARE_ONLY
-#		undef BOX_DECLARE_ONLY
+#	ifdef ARRAY_DECLARE_ONLY
+#		undef ARRAY_DECLARE_ONLY
 #	endif
 #endif
 #ifdef BOX_TRAIT

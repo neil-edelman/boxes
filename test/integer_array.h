@@ -8,9 +8,9 @@
 #define BOX_DECLARE_ONLY
 #endif
 
-#define BOX_NAME static
-#define BOX_TYPE int
-#define BOX_TEST
+#define ARRAY_NAME static
+#define ARRAY_TYPE int
+#define ARRAY_TEST
 #define BOX_COMPARE
 #define BOX_TO_STRING
 #include "../src/array.h"

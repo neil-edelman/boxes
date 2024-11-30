@@ -97,8 +97,8 @@ static void pT_(test_basic)(void) {
 	item = T_(new)(&a); /* Add. */
 	assert(item && a.size == 1 && a.capacity >= 1);
 	T_(shrink)(&a);
-	assert(BOX_MIN_CAPACITY > 1);
-	assert(a.size == 1 && a.capacity == BOX_MIN_CAPACITY);
+	assert(ARRAY_MIN_CAPACITY > 1);
+	assert(a.size == 1 && a.capacity == ARRAY_MIN_CAPACITY);
 	item = T_(new)(&a); /* Add: 2. */
 	assert(item && a.size == 2 && a.capacity >= 2);
 	T_(clear)(&a);

@@ -13,13 +13,13 @@
  <Knuth, 1973, Sorting>. It is an array implementation of a priority queue. It
  is not stable.
 
- @param[BOX_NAME, BOX_TYPE]
- `<S>` that satisfies `C` naming conventions when mangled. `BOX_NAME` is
- required; `BOX_TYPE` defaults to `unsigned int`.
+ @param[HEAP_NAME, HEAP_TYPE]
+ `<S>` that satisfies `C` naming conventions when mangled. `HEAP_NAME` is
+ required; `HEAP_TYPE` defaults to `unsigned int`.
 
  @param[BOX_COMPARE]
  A function satisfying <typedef:<PS>compare_fn>. Defaults to minimum-hash.
- Required if `BOX_TYPE` is changed to an incomparable type. For example, a
+ Required if `HEAP_TYPE` is changed to an incomparable type. For example, a
  maximum heap, `(a, b) -> a < b`.
 
  @param[BOX_VALUE]
@@ -40,7 +40,7 @@
  @depend [array](https://github.com/neil-edelman/array)
  @std C89 */
 
-#ifndef BOX_NAME
+#ifndef HEAP_NAME
 #error Name undefined.
 #endif
 #if defined(BOX_TRAIT) ^ defined(BOX_T_MAJOR)
@@ -59,59 +59,56 @@
 
 #ifndef BOX_TRAIT /* Base code, necessarily first. */
 
-#	ifndef BOX_TYPE
-#		define BOX_TYPE unsigned
+#	ifndef HEAP_TYPE
+#		define HEAP_TYPE unsigned
 #	endif
+
+/* Box override information stays until the box is done. */
+#	define BOX_S_MINOR HEAP_NAME
+#	define BOX_S_MAJOR heap
 
 /* Used to refer to heap as array. */ /* fixme? */
 //#	define PAH_(n) BOX_CAT(BOX_CAT(array, PH_(node)), n)
 
 /** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
- `unsigned int` if not set by `BOX_TYPE`. */
-typedef BOX_TYPE pT_(priority);
-typedef const BOX_TYPE pT_(priority_c); /* This is assuming a lot? */
+ `unsigned int` if not set by `HEAP_TYPE`. */
+typedef HEAP_TYPE pS_(priority);
+typedef const HEAP_TYPE pS_(priority_c); /* This is assuming a lot? */
 
 #	ifdef BOX_VALUE
-typedef BOX_VALUE pT_(value);
-typedef const BOX_VALUE pT_(value_c); /* Assume! */
+typedef BOX_VALUE pS_(value);
+typedef const BOX_VALUE pS_(value_c); /* Assume! */
 /** If `BOX_VALUE` is set, this becomes <typedef:<PH>node>. */
-struct T_(heapnode) { pT_(priority) priority; pT_(value) value; };
+struct S_(heapnode) { pS_(priority) priority; pS_(value) value; };
 /** If `BOX_VALUE` is set, (priority, value) set by <tag:<H>heapnode>,
  otherwise it's a (priority) set directly by <typedef:<PH>priority>. */
-typedef struct T_(heapnode) pT_(node);
-typedef const struct T_(heapnode) pT_(node_c);
+typedef struct S_(heapnode) pS_(node);
+typedef const struct S_(heapnode) pS_(node_c);
 #	else
-typedef pT_(priority) pT_(value);
-typedef pT_(priority) pT_(node);
-typedef pT_(priority_c) pT_(node_c);
+typedef pS_(priority) pS_(value);
+typedef pS_(priority) pS_(node);
+typedef pS_(priority_c) pS_(node_c); /* fixme? */
 #	endif
 
 /* This relies on <src/array.h> which must be in the same directory. */
 
-/*#	define BOX_MINOR_NAME_ pT_(node)
-#	define BOX_T_MINOR BOX_MINOR_NAME_*/
-/* It needs another one? */
-/*#	define BOX_T_MINOR BOX_CAT(private, T_(node))*/
-/*#		define t_(n) BOX_CAT(BOX_T_MINOR, n)
-#		define T_(n) t_(BOX_CAT(BOX_T_MAJOR, n))
-#		define pT_(n) BOX_CAT(private, T_(n))*/
-//#define pT3_(n) BOX_CAT(private, BOX_CAT(BOX_T_MINOR, BOX_CAT(BOX_T_MAJOR, n)))
-#	define BOX_T_MINOR pU_(node)
-#	define BOX_T_MAJOR array
+#	define ARRAY_NAME pS_(node)
+#	define ARRAY_TYPE pS_(node)
 #	include "array.h"
 
-/* Box override information stays until the box is done. */
-#	define BOX_T_MINOR BOX_NAME
-#	define BOX_T_MAJOR heap
 
 /** Stores the heap as an implicit binary tree in an array called `a`. To
  initialize it to an idle state, see <fn:<H>heap>, `{0}` (`C99`), or being
  `static`.
 
  ![States.](../doc/heap/states.png) */
-struct T_(heap) { struct pT_(node_array) as_array; };
+/* fixme: does not-reversing the words create a naming conflict?
+ private_min_heap_node_array */
+/* No. You needed to define BOX_S… before. */
+struct S_(heap) { struct pS_(node_array) as_array; };
 
-struct pT_(iterator) { struct pT_(cursor) _; };
+/* fixme: now we have no use for private iterators. */
+struct pS_(iterator) { struct pS_(cursor) _; };
 
 #ifndef BOX_DELARE_ONLY /* <!-- body */
 
@@ -355,11 +352,11 @@ static void PH_(unused_base)(void) {
 static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 
 /* Box override information. */
-#define BOX_TYPE struct H_(heap)
+#define HEAP_TYPE struct H_(heap)
 #define BOX_CONTENT PH_(node)
 #define BOX_ PH_
 #define BOX_T_MAJOR heap
-#define BOX_NAME BOX_NAME
+#define HEAP_NAME HEAP_NAME
 
 #endif /* body --> */
 
@@ -407,13 +404,11 @@ static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12]) {
 #ifdef BOX_EXPECT_TRAIT /* <!-- more */
 #undef BOX_EXPECT_TRAIT
 #else /* more --><!-- done */
-#undef BOX_TYPE
+#undef HEAP_NAME
+#undef HEAP_TYPE
 #undef BOX_CONTENT
 #undef BOX_
 #undef BOX_T_MAJOR
-#undef BOX_NAME
-#undef BOX_NAME
-#undef BOX_TYPE
 #undef BOX_COMPARE
 #ifdef BOX_VALUE
 #undef BOX_VALUE

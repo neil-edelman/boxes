@@ -9,7 +9,7 @@
 #	undef BOX_NONE
 #	if defined(BOX_CAT_) || defined(BOX_CAT) \
 		|| defined(t_) || defined(T_) || defined(pT_) \
-		|| defined(u_) || defined(U_) || defined(pU_) \
+		|| defined(s_) || defined(S_) || defined(pS_) \
 		|| defined(tn_) || defined(TN_) || defined(pTN_) \
 		/* We know that these are not defined outside, though they can be
 		 undefined inside. */ \
@@ -23,7 +23,7 @@
 #	undef BOX_ALL
 #	if !defined(BOX_CAT_) || !defined(BOX_CAT) \
 		|| !defined(t_) || !defined(T_) || !defined(pT_) \
-		|| !defined(u_) || !defined(U_) || !defined(pU_) \
+		|| !defined(s_) || !defined(S_) || !defined(pS_) \
 		|| !defined(tn_) || !defined(TN_) || !defined(pTN_) \
 		|| !defined(BOX_ENTRY1)
 #		error Missing preprocessor symbols.
@@ -65,9 +65,9 @@
 #		define t_(n) BOX_CAT(BOX_T_MINOR, n)
 #		define T_(n) t_(BOX_CAT(BOX_T_MAJOR, n))
 #		define pT_(n) BOX_CAT(private, T_(n))
-#		define u_(n) BOX_CAT(BOX_U_MINOR, n)
-#		define U_(n) u_(BOX_CAT(BOX_U_MAJOR, n))
-#		define pU_(n) BOX_CAT(private, U_(n))
+#		define s_(n) BOX_CAT(BOX_S_MINOR, n)
+#		define S_(n) s_(BOX_CAT(BOX_S_MAJOR, n))
+#		define pS_(n) BOX_CAT(private, S_(n))
 #		ifdef BOX_TRAIT
 #			define tn_(n) t_(BOX_CAT(BOX_TRAIT, n))
 #			define TN_(n) T_(BOX_CAT(BOX_TRAIT, n))
@@ -101,9 +101,9 @@
 #		undef t_
 #		undef T_
 #		undef pT_
-#		undef u_
-#		undef U_
-#		undef pU_
+#		undef s_
+#		undef S_
+#		undef pS_
 #		undef tn_
 #		undef TN_
 #		undef pTN_
