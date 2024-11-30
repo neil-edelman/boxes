@@ -43,7 +43,7 @@
 #ifndef BOX_NAME
 #error Name undefined.
 #endif
-#if defined(BOX_TRAIT) ^ defined(BOX_TYPE)
+#if defined(BOX_TRAIT) ^ defined(BOX_T_MAJOR)
 #error BOX_TRAIT name must come after BOX_EXPECT_TRAIT.
 #endif
 #if defined(BOX_TEST) && (!defined(BOX_TRAIT) && !defined(BOX_TO_STRING) \
@@ -64,7 +64,7 @@
 #	endif
 
 /* Used to refer to heap as array. */ /* fixme? */
-#	define PAH_(n) BOX_CAT(BOX_CAT(array, PH_(node)), n)
+//#	define PAH_(n) BOX_CAT(BOX_CAT(array, PH_(node)), n)
 
 /** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
  `unsigned int` if not set by `BOX_TYPE`. */
@@ -88,15 +88,21 @@ typedef pT_(priority_c) pT_(node_c);
 
 /* This relies on <src/array.h> which must be in the same directory. */
 
-//#	define BOX_NAME pT_(node)
-//#	define BOX_TYPE pT_(node)
+/*#	define BOX_MINOR_NAME_ pT_(node)
+#	define BOX_T_MINOR BOX_MINOR_NAME_*/
+/* It needs another one? */
+/*#	define BOX_T_MINOR BOX_CAT(private, T_(node))*/
+/*#		define t_(n) BOX_CAT(BOX_T_MINOR, n)
+#		define T_(n) t_(BOX_CAT(BOX_T_MAJOR, n))
+#		define pT_(n) BOX_CAT(private, T_(n))*/
+//#define pT3_(n) BOX_CAT(private, BOX_CAT(BOX_T_MINOR, BOX_CAT(BOX_T_MAJOR, n)))
+#	define BOX_T_MINOR pU_(node)
+#	define BOX_T_MAJOR array
 #	include "array.h"
 
 /* Box override information stays until the box is done. */
-#	define BOX_MINOR_NAME BOX_NAME
-#	define BOX_NAME pT_(type)
-#	define BOX_MAJOR_NAME heap
-#	define BOX_MAJOR struct T_(heap)
+#	define BOX_T_MINOR BOX_NAME
+#	define BOX_T_MAJOR heap
 
 /** Stores the heap as an implicit binary tree in an array called `a`. To
  initialize it to an idle state, see <fn:<H>heap>, `{0}` (`C99`), or being
@@ -352,7 +358,7 @@ static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
 #define BOX_TYPE struct H_(heap)
 #define BOX_CONTENT PH_(node)
 #define BOX_ PH_
-#define BOX_MAJOR_NAME heap
+#define BOX_T_MAJOR heap
 #define BOX_NAME BOX_NAME
 
 #endif /* body --> */
@@ -404,7 +410,7 @@ static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12]) {
 #undef BOX_TYPE
 #undef BOX_CONTENT
 #undef BOX_
-#undef BOX_MAJOR_NAME
+#undef BOX_T_MAJOR
 #undef BOX_NAME
 #undef BOX_NAME
 #undef BOX_TYPE

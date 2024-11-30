@@ -7,8 +7,10 @@
 
 #ifdef BOX_NONE
 #	undef BOX_NONE
-#	if defined(BOX_CAT_) || defined(BOX_CAT) || defined(t_) || defined(T_) \
-		|| defined(pT_) || defined(tu_) || defined(TU_) || defined(pTU_) \
+#	if defined(BOX_CAT_) || defined(BOX_CAT) \
+		|| defined(t_) || defined(T_) || defined(pT_) \
+		|| defined(u_) || defined(U_) || defined(pU_) \
+		|| defined(tn_) || defined(TN_) || defined(pTN_) \
 		/* We know that these are not defined outside, though they can be
 		 undefined inside. */ \
 		|| defined(BOX_RESTRICT) \
@@ -19,8 +21,10 @@
 
 #ifdef BOX_ALL
 #	undef BOX_ALL
-#	if !defined(BOX_CAT_) || !defined(BOX_CAT) || !defined(t_) || !defined(T_) \
-		|| !defined(pT_) || !defined(tu_) || !defined(TU_) || !defined(pTU_) \
+#	if !defined(BOX_CAT_) || !defined(BOX_CAT) \
+		|| !defined(t_) || !defined(T_) || !defined(pT_) \
+		|| !defined(u_) || !defined(U_) || !defined(pU_) \
+		|| !defined(tn_) || !defined(TN_) || !defined(pTN_) \
 		|| !defined(BOX_ENTRY1)
 #		error Missing preprocessor symbols.
 #	endif
@@ -28,14 +32,14 @@
 
 #ifdef BOX_NAME_MISSING
 #	undef BOX_NAME_MISSING
-#	if defined(BOX_MINOR_NAME) || defined(BOX_MAJOR_NAME)
+#	if defined(BOX_T_MINOR) || defined(BOX_T_MAJOR)
 #		error Unexpected box name.
 #	endif
 #endif
 
 #ifdef BOX_NAME_PRESENT
 #	undef BOX_NAME_PRESENT
-#	if !defined(BOX_MINOR_NAME) || !defined(BOX_MAJOR_NAME)
+#	if !defined(BOX_T_MINOR) || !defined(BOX_T_MAJOR)
 #		error Missing box name.
 #	endif
 #endif
@@ -58,17 +62,20 @@
  including sub-containers—this is not real recursion. */
 #		define BOX_CAT_(n, m) n ## _ ## m
 #		define BOX_CAT(n, m) BOX_CAT_(n, m)
-#		define t_(n) BOX_CAT(BOX_MINOR_NAME, n)
-#		define T_(n) t_(BOX_CAT(BOX_MAJOR_NAME, n))
+#		define t_(n) BOX_CAT(BOX_T_MINOR, n)
+#		define T_(n) t_(BOX_CAT(BOX_T_MAJOR, n))
 #		define pT_(n) BOX_CAT(private, T_(n))
+#		define u_(n) BOX_CAT(BOX_U_MINOR, n)
+#		define U_(n) u_(BOX_CAT(BOX_U_MAJOR, n))
+#		define pU_(n) BOX_CAT(private, U_(n))
 #		ifdef BOX_TRAIT
-#			define tu_(n) t_(BOX_CAT(BOX_TRAIT, n))
-#			define TU_(n) T_(BOX_CAT(BOX_TRAIT, n))
-#			define pTU_(n) pT_(BOX_CAT(BOX_TRAIT, n))
+#			define tn_(n) t_(BOX_CAT(BOX_TRAIT, n))
+#			define TN_(n) T_(BOX_CAT(BOX_TRAIT, n))
+#			define pTN_(n) pT_(BOX_CAT(BOX_TRAIT, n))
 #		else /* Anonymous trait. */
-#			define tu_(n) t_(n)
-#			define TU_(n) T_(n)
-#			define pTU_(n) pT_(n)
+#			define tn_(n) t_(n)
+#			define TN_(n) T_(n)
+#			define pTN_(n) pT_(n)
 #		endif
 /* Attribute in C99+; ignore otherwise. */
 #		if !defined(restrict) && (!defined(__STDC__) \
@@ -94,9 +101,12 @@
 #		undef t_
 #		undef T_
 #		undef pT_
-#		undef tu_
-#		undef TU_
-#		undef pTU_
+#		undef u_
+#		undef U_
+#		undef pU_
+#		undef tn_
+#		undef TN_
+#		undef pTN_
 #		ifdef BOX_RESTRICT
 #			undef BOX_RESTRICT
 #			undef restrict

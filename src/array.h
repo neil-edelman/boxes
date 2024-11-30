@@ -37,9 +37,9 @@
 #if !defined(BOX_NAME) || !defined(BOX_TYPE)
 #	error Name or tag type undefined.
 #endif
-#if defined(BOX_TRAIT) ^ defined(BOX_MAJOR_NAME)
+/* #if defined(BOX_TRAIT) ^ defined(BOX_T_MAJOR)
 #	error BOX_TRAIT name must come after BOX_EXPECT_TRAIT.
-#endif
+#endif */
 #if defined(BOX_COMPARE) && defined(BOX_IS_EQUAL)
 #	error Only one can be defined at a time.
 #endif
@@ -58,15 +58,8 @@
 #	include <assert.h>
 
 /* Box override information stays until the box is done. */
-#	ifdef BOX_ENTRY2
-#		define BOX_NAME_PRESENT
-#		include "box.h"
-#	else
-#		define BOX_NAME_MISSING
-#		include "box.h"
-#		define BOX_MINOR_NAME BOX_NAME
-#		define BOX_MAJOR_NAME array
-#	endif
+#	define BOX_T_MINOR BOX_NAME
+#	define BOX_T_MAJOR array
 #	define BOX_ACCESS
 #	define BOX_CONTIGUOUS
 
@@ -345,8 +338,8 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #ifdef BOX_EXPECT_TRAIT
 #	undef BOX_EXPECT_TRAIT
 #else
-#	undef BOX_MINOR_NAME
-#	undef BOX_MAJOR_NAME
+#	undef BOX_T_MINOR
+#	undef BOX_T_MAJOR
 #	undef BOX_ACCESS
 #	undef BOX_CONTIGUOUS
 #	undef BOX_NAME

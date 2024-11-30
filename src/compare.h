@@ -19,14 +19,14 @@
 
 
 /** <src/compare.h>: Returns a boolean given two read-only elements. */
-typedef int (*pTU_(bipredicate_fn))(pT_(type) *restrict, pT_(type) *restrict);
+typedef int (*pTN_(bipredicate_fn))(pT_(type) *restrict, pT_(type) *restrict);
 /** <src/compare.h>: Three-way comparison on a totally order set; returns an
  integer value less than, equal to, greater than zero, if `a < b`, `a == b`,
  `a > b`, respectively. */
-typedef int (*pTU_(compare_fn))(const pT_(type) *restrict a,
+typedef int (*pTN_(compare_fn))(const pT_(type) *restrict a,
 	const pT_(type) *restrict b);
 /** <src/compare.h>: Returns a boolean given two modifiable arguments. */
-typedef int (*pTU_(biaction_fn))(pT_(type) *restrict,
+typedef int (*pTN_(biaction_fn))(pT_(type) *restrict,
 	pT_(type) *restrict);
 
 #ifdef COMPARE /* <!-- compare: <typedef:<PTU>compare_fn>. */
@@ -35,7 +35,7 @@ typedef int (*pTU_(biaction_fn))(pT_(type) *restrict,
  be null, with null values before everything.
  @return `a < b`: negative; `a == b`: zero; `a > b`: positive.
  @order \O(`|a|` & `|b|`) @allow */
-static int TU_(compare)(const pT_(box) *restrict const a,
+static int TN_(compare)(const pT_(box) *restrict const a,
 	const pT_(box) *restrict const b) {
 	union { const pT_(box) *readonly; pT_(box) *promise; } sly_a, sly_b;
 	struct T_(cursor) i, j;
@@ -49,7 +49,7 @@ static int TU_(compare)(const pT_(box) *restrict const a,
 		else if(!T_(cursor_exists)(&j)) return 1;
 		/* Must have this function declared.
 		 "Discards qualifiers in nested pointer types" sometimes. Cast. */
-		if(diff = tu_(compare)((const void *)T_(cursor_look)(&i),
+		if(diff = tn_(compare)((const void *)T_(cursor_look)(&i),
 			(const void *)T_(cursor_look)(&j))) return diff;
 	}
 }
@@ -59,11 +59,11 @@ static int TU_(compare)(const pT_(box) *restrict const a,
 /** <src/compare.h>, `COMPARE`, `BOX_ACCESS`: `box` should be partitioned
  true/false with less-then `element`. @return The first index of `a` that is
  not less than `cursor`. @order \O(log `a.size`) @allow */
-static size_t TU_(lower_bound)(const pT_(box) *const box,
+static size_t TN_(lower_bound)(const pT_(box) *const box,
 	const pT_(type) *const element) {
 	size_t low = 0, high = T_(size)(box), mid;
 	while(low < high)
-		if(TU_(compare)((const void *)element, (const void *)
+		if(TN_(compare)((const void *)element, (const void *)
 			T_(look)(box, mid = low + (high - low) / 2)) <= 0) high = mid;
 		else low = mid + 1;
 	return low;
@@ -73,11 +73,11 @@ static size_t TU_(lower_bound)(const pT_(box) *const box,
  false/true with greater-than or equal-to `element`.
  @return The first index of `box` that is greater than `element`.
  @order \O(log |`box`|) @allow */
-static size_t TU_(upper_bound)(const pT_(box) *const box,
+static size_t TN_(upper_bound)(const pT_(box) *const box,
 	const pT_(type) *const element) {
 	size_t low = 0, high = T_(size)(box), mid;
 	while(low < high)
-		if(TU_(compare)((const void *)element,
+		if(TN_(compare)((const void *)element,
 			(const void *)T_(look)(box, mid = low + (high - low) / 2)) >= 0)
 			low = mid + 1;
 		else high = mid;
@@ -89,11 +89,11 @@ static size_t TU_(upper_bound)(const pT_(box) *const box,
 /** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Copies `element` at the upper
  bound of a sorted `box`.
  @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] @allow */
-static int TU_(insert_after)(pT_(box) *const box,
+static int TN_(insert_after)(pT_(box) *const box,
 	const pT_(type) *const element) {
 	size_t bound;
 	assert(box && element);
-	bound = TU_(upper_bound)(box, element);
+	bound = TN_(upper_bound)(box, element);
 	if(!T_(append)(box, 1)) return 0;
 	memmove(T_(look)(box, bound + 1), T_(look)(box, bound),
 		sizeof *element * (T_(size)(box) - bound - 1));
@@ -102,34 +102,34 @@ static int TU_(insert_after)(pT_(box) *const box,
 }
 
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
-static int pTU_(vcompar)(const void *restrict const a,
-	const void *restrict const b) { return tu_(compare)(a, b); }
+static int pTN_(vcompar)(const void *restrict const a,
+	const void *restrict const b) { return tn_(compare)(a, b); }
 
 /** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`,
  (which has a high-context-switching cost, but is easy.)
  @order \O(|`box`| \log |`box`|) @allow */
-static void TU_(sort)(pT_(box) *const box) {
+static void TN_(sort)(pT_(box) *const box) {
 	const size_t size = T_(size)(box);
 	pT_(type) *first;
 	if(!size) return;
 	first = T_(look)(box, 0);
 	/*if(!BOX_(is_element)(first)) return;*/ /* That was weird. */
-	qsort(first, size, sizeof *first, &pTU_(vcompar));
+	qsort(first, size, sizeof *first, &pTN_(vcompar));
 }
 
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
-static int pTU_(vrevers)(const void *restrict const a,
-	const void *restrict const b) { return tu_(compare)(b, a); }
+static int pTN_(vrevers)(const void *restrict const a,
+	const void *restrict const b) { return tn_(compare)(b, a); }
 
 /** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` in reverse by
  `qsort`. @order \O(|`box`| \log |`box`|) @allow */
-static void TU_(reverse)(pT_(box) *const box) {
+static void TN_(reverse)(pT_(box) *const box) {
 	const size_t size = T_(size)(box);
 	pT_(type) *first;
 	if(!size) return;
 	first = T_(look)(box, 0);
 	/*if(!BOX_(is_element)(first)) return;*/ /* That was weird. */
-	qsort(first, size, sizeof *first, &pTU_(vrevers));
+	qsort(first, size, sizeof *first, &pTN_(vrevers));
 }
 
 #		endif /* contiguous --> */
@@ -140,17 +140,17 @@ static void TU_(reverse)(pT_(box) *const box) {
  (This makes `COMPARE` encompass `COMPARE_IS_EQUAL`.) However, it can not
  collide with another function!
  @implements <typedef:<PTU>bipredicate_fn> */
-static int tu_(is_equal)(const pT_(type) *const restrict a,
+static int tn_(is_equal)(const pT_(type) *const restrict a,
 	const pT_(type) *const restrict b) {
 	/* "Discards qualifiers in nested pointer types" sometimes. Cast. */
-	return !tu_(compare)((const void *)a, (const void *)b);
+	return !tn_(compare)((const void *)a, (const void *)b);
 }
 
 #endif /* compare --> */
 
 /** <src/compare.h> @return If `a` piecewise equals `b`,
  which both can be null. @order \O(|`a`| & |`b`|) @allow */
-static int TU_(is_equal)(const pT_(box) *restrict const a,
+static int TN_(is_equal)(const pT_(box) *restrict const a,
 	const pT_(box) *restrict const b) {
 	union { const pT_(box) *readonly; pT_(box) *promise; } sly_a, sly_b;
 	struct T_(cursor) i, j;
@@ -177,8 +177,8 @@ static int TU_(is_equal)(const pT_(box) *restrict const a,
  can be simulated by mixing the two in the value returned. Can be null: behaves
  like false, always deleting the second element.
  @order \O(|`box`|) \times \O(`merge`) @allow */
-static void TU_(unique_merge)(pT_(box) *const box,
-	const pTU_(biaction_fn) merge) {
+static void TN_(unique_merge)(pT_(box) *const box,
+	const pTN_(biaction_fn) merge) {
 	size_t target, from, cursor, choice, next, move;
 	const size_t last = T_(size)(box);
 	int is_first, is_last;
@@ -214,29 +214,29 @@ static void TU_(unique_merge)(pT_(box) *const box,
 
 /** <src/compare.h>, `BOX_CONTIGUOUS`: Removes consecutive duplicate elements
  in `box`. @order \O(|`box`|) @allow */
-static void TU_(unique)(pT_(box) *const box) { TU_(unique_merge)(box, 0); }
+static void TN_(unique)(pT_(box) *const box) { TN_(unique_merge)(box, 0); }
 
 #endif /* contiguous --> */
 
-static void pTU_(unused_compare_coda)(void);
-static void pTU_(unused_compare)(void) {
+static void pTN_(unused_compare_coda)(void);
+static void pTN_(unused_compare)(void) {
 #ifdef COMPARE /* <!-- compare */
-	TU_(compare)(0, 0);
+	TN_(compare)(0, 0);
 #ifdef BOX_ACCESS
-	TU_(lower_bound)(0, 0); TU_(upper_bound)(0, 0);
+	TN_(lower_bound)(0, 0); TN_(upper_bound)(0, 0);
 #ifdef BOX_CONTIGUOUS
-	TU_(insert_after)(0, 0); TU_(sort)(0); TU_(reverse)(0);
+	TN_(insert_after)(0, 0); TN_(sort)(0); TN_(reverse)(0);
 #endif
 #endif
-	tu_(is_equal)(0, 0);
+	tn_(is_equal)(0, 0);
 #endif /* compare --> */
-	TU_(is_equal)(0, 0);
+	TN_(is_equal)(0, 0);
 #ifdef BOX_CONTIGUOUS
-	TU_(unique_merge)(0, 0); TU_(unique)(0);
+	TN_(unique_merge)(0, 0); TN_(unique)(0);
 #endif
-	pTU_(unused_compare_coda)();
+	pTN_(unused_compare_coda)();
 }
-static void pTU_(unused_compare_coda)(void) { pTU_(unused_compare)(); }
+static void pTN_(unused_compare_coda)(void) { pTN_(unused_compare)(); }
 
 #ifdef COMPARE
 #undef COMPARE
