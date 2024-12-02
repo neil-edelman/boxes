@@ -15,18 +15,18 @@
 #include "../src/heap.h"
 
 
-#if 0
 /* Also an `unsigned int`, but with testing. */
 static void int_to_string(const unsigned *const i, char (*const z)[12])
 	{ sprintf(*z, "%u", *i); }
 static void int_filler(unsigned *const p)
 	{ *p = (unsigned)rand() / (RAND_MAX / 99 + 1) + 1; }
 #define HEAP_NAME int
-#define BOX_TEST
+#define HEAP_TEST
 #define BOX_TO_STRING
 #include "../src/heap.h"
 
 
+#if 0
 /* Value pointer along with a priority. We have to store values somewhere, so
  we use a pool, (which depends on `heap`, it has evolved.) */
 struct orc { char name[12]; };

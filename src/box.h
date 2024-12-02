@@ -9,7 +9,7 @@
 #	undef BOX_NONE
 #	if defined(BOX_CAT_) || defined(BOX_CAT) \
 		|| defined(t_) || defined(T_) || defined(pT_) \
-		|| defined(s_) || defined(S_) || defined(pS_) \
+		/*|| defined(s_) || defined(S_) || defined(pS_)*/ \
 		|| defined(tn_) || defined(TN_) || defined(pTN_) \
 		/* We know that these are not defined outside, though they can be
 		 undefined inside. */ \
@@ -23,7 +23,7 @@
 #	undef BOX_ALL
 #	if !defined(BOX_CAT_) || !defined(BOX_CAT) \
 		|| !defined(t_) || !defined(T_) || !defined(pT_) \
-		|| !defined(t2_) || !defined(T2_) || !defined(pT2_) \
+		/*|| !defined(t2_) || !defined(T2_) || !defined(pT2_)*/ \
 		|| !defined(tn_) || !defined(TN_) || !defined(pTN_) \
 		|| !defined(BOX_ENTRY1)
 #		error Missing preprocessor symbols.
@@ -46,9 +46,11 @@
 
 #ifdef BOX_START
 #	undef BOX_START
-/* Allow sub-boxes, but not sub-sub-boxes. I couldn't figure it out. */
+/* Allow sub-boxes, but not sub-sub-boxes. */
 #	ifdef BOX_ENTRY1
+#		warning recursion 1
 #		ifdef BOX_ENTRY2
+#			warning recursion 2
 #			error No recursion (yet.)
 #		endif
 #		define BOX_ENTRY2
@@ -65,9 +67,9 @@
 #		define t_(n) BOX_CAT(BOX_MINOR, n)
 #		define T_(n) t_(BOX_CAT(BOX_MAJOR, n))
 #		define pT_(n) BOX_CAT(private, T_(n))
-#		define t2_(n) BOX_CAT(BOX_MINOR2, n)
+/*#		define t2_(n) BOX_CAT(BOX_MINOR2, n)
 #		define T2_(n) t2_(BOX_CAT(BOX_MAJOR2, n))
-#		define pT2_(n) BOX_CAT(private, T2_(n))
+#		define pT2_(n) BOX_CAT(private, T2_(n))*/
 #		ifdef BOX_TRAIT
 #			define tn_(n) t_(BOX_CAT(BOX_TRAIT, n))
 #			define TN_(n) T_(BOX_CAT(BOX_TRAIT, n))
@@ -101,9 +103,9 @@
 #		undef t_
 #		undef T_
 #		undef pT_
-#		undef t2_
+/*#		undef t2_
 #		undef T2_
-#		undef pT2_
+#		undef pT2_*/
 #		undef tn_
 #		undef TN_
 #		undef pTN_
