@@ -15,19 +15,19 @@
  `<T>` that satisfies `C` naming conventions when mangled and a valid tag-type,
  <typedef:<PA>type>, associated therewith; required.
 
- @param[BOX_COMPARE, BOX_IS_EQUAL]
+ @param[ARRAY_COMPARE, ARRAY_IS_EQUAL]
  Compare trait contained in <src/compare.h>. Requires
  `<name>[<trait>]compare` to be declared as <typedef:<PTU>compare_fn> or
  `<name>[<trait>]is_equal` to be declared as <typedef:<PTU>bipredicate_fn>,
  respectfully, (but not both.)
 
- @param[BOX_TO_STRING]
+ @param[ARRAY_TO_STRING]
  To string trait contained in <src/to_string.h>. Requires
  `<name>[<trait>]to_string` be declared as <typedef:<PT>to_string_fn>.
 
- @param[BOX_EXPECT_TRAIT, BOX_TRAIT]
+ @param[ARRAY_EXPECT_TRAIT, ARRAY_TRAIT]
  Named traits are obtained by including `array.h` multiple times with
- `BOX_EXPECT_TRAIT` and then subsequently including the name in `BOX_TRAIT`.
+ `ARRAY_EXPECT_TRAIT` and then subsequently including the name in `ARRAY_TRAIT`.
 
  @param[ARRAY_DECLARE_ONLY]
  For headers in different compilation units.
@@ -37,21 +37,24 @@
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
 #	error Name or tag type undefined.
 #endif
-/* #if defined(BOX_TRAIT) ^ defined(BOX_MAJOR)
-#	error BOX_TRAIT name must come after BOX_EXPECT_TRAIT.
-#endif */
-#if defined(BOX_COMPARE) && defined(BOX_IS_EQUAL)
+#if !defined(BOX_ENTRY1) && (defined(ARRAY_TRAIT) ^ defined(BOX_MAJOR))
+#	error ARRAY_TRAIT name must come after ARRAY_EXPECT_TRAIT.
+#endif
+#if defined(ARRAY_COMPARE) && defined(ARRAY_IS_EQUAL)
 #	error Only one can be defined at a time.
 #endif
-#if defined(ARRAY_TEST) && (!defined(BOX_TRAIT) && !defined(BOX_TO_STRING) \
-	|| defined(BOX_TRAIT) && !defined(ARRAY_HAS_TO_STRING))
+#if defined(ARRAY_TEST) && (!defined(ARRAY_TRAIT) && !defined(ARRAY_TO_STRING) \
+	|| defined(ARRAY_TRAIT) && !defined(ARRAY_HAS_TO_STRING))
 #	error Test requires to string.
 #endif
 
+#ifdef ARRAY_TRAIT
+#	define BOX_TRAIT ARRAY_TRAIT /* Ifdef in <box.h>. */
+#endif
 #define BOX_START
 #include "box.h"
 
-#ifndef BOX_TRAIT /* Base code, necessarily first. */
+#ifndef ARRAY_TRAIT /* Base code, necessarily first. */
 #	include <stdlib.h>
 #	include <string.h>
 #	include <errno.h>
@@ -297,45 +300,49 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #endif /* Base code. */
 
+#ifdef ARRAY_TRAIT
+#	define BOX_TRAIT ARRAY_TRAIT
+#endif
+#ifndef ARRAY_DECARE_ONLY /* Produce code. */
 
-
-#if defined(BOX_TO_STRING) \
-	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- to string trait */
-#	include "to_string.h" /** \include */
-#	undef BOX_TO_STRING
-#	ifndef BOX_TRAIT
-#		define ARRAY_HAS_TO_STRING /* Warning about lack of to_string in tests. */
+#	if defined(ARRAY_TO_STRING)
+#		include "to_string.h" /** \include */
+#		undef ARRAY_TO_STRING
+#		ifndef ARRAY_TRAIT
+#			define ARRAY_HAS_TO_STRING /* Warning about tests. */
+#		endif
 #	endif
-#endif /* to string trait --> */
 
-
-#if defined(ARRAY_TEST) && !defined(BOX_TRAIT) \
-	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- test base */
-#	include "../test/test_array.h"
-#endif /* test base --> */
-
-
-#if (defined(BOX_COMPARE) || defined(BOX_IS_EQUAL)) \
-	&& !defined(ARRAY_DECLARE_ONLY) /* <!-- compare trait */
-#	ifdef BOX_COMPARE
-#		define COMPARE BOX_COMPARE
-#	else
-#		define COMPARE_IS_EQUAL BOX_IS_EQUAL
+#	if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT)
+#		include "../test/test_array.h"
 #	endif
-#	include "compare.h" /** \include */
-#	ifdef ARRAY_TEST
-#		include "../test/test_array_compare.h"
+
+#	if (defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL))
+#		ifdef ARRAY_COMPARE
+#			define COMPARE ARRAY_COMPARE
+#		else
+#			define COMPARE_IS_EQUAL ARRAY_IS_EQUAL
+#		endif
+#		include "compare.h" /** \include */
+#		ifdef ARRAY_TEST
+#			include "../test/test_array_compare.h"
+#		endif
+#		ifdef ARRAY_COMPARE
+#			undef ARRAY_COMPARE
+#		else
+#			undef ARRAY_IS_EQUAL
+#		endif
 #	endif
-#	ifdef BOX_COMPARE
-#		undef BOX_COMPARE
-#	else
-#		undef BOX_IS_EQUAL
-#	endif
-#endif /* compare trait --> */
+
+#endif /* Produce code. */
+#ifdef ARRAY_TRAIT
+#	undef ARRAY_TRAIT
+#	undef BOX_TRAIT
+#endif
 
 
-#ifdef BOX_EXPECT_TRAIT
-#	undef BOX_EXPECT_TRAIT
+#ifdef ARRAY_EXPECT_TRAIT
+#	undef ARRAY_EXPECT_TRAIT
 #else
 #	undef BOX_MINOR
 #	undef BOX_MAJOR
@@ -353,9 +360,6 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	ifdef ARRAY_DECLARE_ONLY
 #		undef ARRAY_DECLARE_ONLY
 #	endif
-#endif
-#ifdef BOX_TRAIT
-#	undef BOX_TRAIT
 #endif
 #define BOX_END
 #include "box.h"

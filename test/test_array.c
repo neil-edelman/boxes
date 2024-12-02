@@ -24,7 +24,7 @@ static void str4_filler(struct str4 *const s)
 #define ARRAY_NAME str4
 #define ARRAY_TYPE struct str4
 #define ARRAY_TEST
-#define BOX_TO_STRING
+#define ARRAY_TO_STRING
 #include "../src/array.h"
 
 #define HAVE_ITERATE_H /* More tests. */
@@ -50,8 +50,8 @@ static int colour_is_equal(const enum colour *const a,
 #define ARRAY_NAME colour
 #define ARRAY_TYPE enum colour
 #define ARRAY_TEST
-#define BOX_IS_EQUAL
-#define BOX_TO_STRING
+#define ARRAY_IS_EQUAL
+#define ARRAY_TO_STRING
 #include "../src/array.h"
 
 
@@ -65,8 +65,8 @@ static int int_compare(const int *const a, const int *const b)
 #define ARRAY_NAME int
 #define ARRAY_TYPE int
 #define ARRAY_TEST
-#define BOX_COMPARE
-#define BOX_TO_STRING
+#define ARRAY_COMPARE
+#define ARRAY_TO_STRING
 #include "../src/array.h"
 
 
@@ -87,13 +87,13 @@ static int keyval_value_compare(const struct keyval *const a,
 #define ARRAY_NAME keyval
 #define ARRAY_TYPE struct keyval
 #define ARRAY_TEST
-#define BOX_COMPARE
-#define BOX_TO_STRING
-#define BOX_EXPECT_TRAIT
+#define ARRAY_COMPARE
+#define ARRAY_TO_STRING
+#define ARRAY_EXPECT_TRAIT
 #include "../src/array.h"
-#define BOX_TRAIT value
-#define BOX_TO_STRING
-#define BOX_COMPARE
+#define ARRAY_TRAIT value
+#define ARRAY_TO_STRING
+#define ARRAY_COMPARE
 #include "../src/array.h"
 
 
@@ -108,8 +108,8 @@ static int pointer_compare(const int *const*const a, const int *const*const b)
 #define ARRAY_NAME pointer
 #define ARRAY_TYPE int *
 #define ARRAY_TEST
-#define BOX_COMPARE
-#define BOX_TO_STRING
+#define ARRAY_COMPARE
+#define ARRAY_TO_STRING
 #include "../src/array.h"
 
 
