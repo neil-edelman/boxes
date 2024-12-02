@@ -284,7 +284,7 @@ static pT_(type) *T_(new)(struct t_(pool) *const pool) {
 		/* Cheating: we prefer the minimum index from a max-heap, but it
 		 doesn't really matter, so take the one off the array used for heap. */
 		size_t *free;
-		free = private_poolfree_heap_node_array_pop(&pool->free0.as_array);
+		free = private_poolfree_heap_priority_array_pop(&pool->free0.as_array);
 		return assert(free), pool->slots.data[0].slab + *free;
 	}
 	/* The free-heap is empty; guaranteed by <fn:<PP>buffer>. */
