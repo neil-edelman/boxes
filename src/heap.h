@@ -30,9 +30,9 @@
  To string trait contained in <src/to_string.h>. Require
  `<name>[<trait>]to_string` be declared as <typedef:<PS>to_string_fn>.
 
- @param[BOX_EXPECT_TRAIT, HEAP_TRAIT]
+ @param[HEAP_EXPECT_TRAIT, HEAP_TRAIT]
  Named traits are obtained by including `heap.h` multiple times with
- `BOX_EXPECT_TRAIT` and then subsequently including the name in `HEAP_TRAIT`.
+ `HEAP_EXPECT_TRAIT` and then subsequently including the name in `HEAP_TRAIT`.
 
  @param[HEAP_DECLARE_ONLY]
  For headers in different compilation units.
@@ -341,6 +341,10 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #		endif
 #	endif
 
+#	if defined(HEAP_TEST) && !defined(HEAP_TRAIT)
+#		include "../test/test_heap.h"
+#	endif
+
 #endif /* Produce code. */
 #ifdef HEAP_TRAIT
 #	undef HEAP_TRAIT
@@ -348,43 +352,13 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #endif
 
 
-#ifdef HEAP_TO_STRING /* <!-- to string trait */
-/** Thunk `n` -> `a`. */
-static void PHT_(to_string)(const pT_(node) *n, char (*const a)[12]) {
-#	ifdef HEAP_VALUE
-	HT_(to_string)(n->priority, n->value, a);
-#	else
-	HT_(to_string)(n, a);
-#	endif
-}
-#	define TO_STRING_LEFT '['
-#	define TO_STRING_RIGHT ']'
-#	include "to_string.h" /** \include */
-#	undef HEAP_TO_STRING
-#	ifndef HEAP_TRAIT
-#		define HEAP_HAS_TO_STRING
-#	endif
-#endif /* to string trait --> */
-#undef PHT_
-#undef HT_
-
-
-#if defined(HEAP_TEST) && !defined(HEAP_TRAIT) /* <!-- test base */
-#	include "../test/test_heap.h"
-#endif /* test base --> */
-
-
-#ifdef BOX_EXPECT_TRAIT
-#	undef BOX_EXPECT_TRAIT
+#ifdef HEAP_EXPECT_TRAIT
+#	undef HEAP_EXPECT_TRAIT
 #else
 #	undef BOX_MINOR
 #	undef BOX_MAJOR
 #	undef HEAP_NAME
 #	undef HEAP_TYPE
-
-#	undef BOX_CONTENT
-#	undef BOX_
-#	undef BOX_MAJOR
 #	ifdef HEAP_VALUE
 #		undef HEAP_VALUE
 #	endif
@@ -394,15 +368,9 @@ static void PHT_(to_string)(const pT_(node) *n, char (*const a)[12]) {
 #	ifdef HEAP_TEST
 #		undef HEAP_TEST
 #	endif
-#	ifdef BOX_BODY
-#		undef BOX_BODY
-#	endif
 #	ifdef HEAP_DECLARE_ONLY
 #		undef HEAP_DECLARE_ONLY
 #	endif
-#endif
-#ifdef HEAP_TRAIT
-#	undef HEAP_TRAIT
 #endif
 #define BOX_END
 #include "box.h"

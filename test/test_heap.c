@@ -67,8 +67,8 @@ static int index_less(const size_t a, const size_t b) { return a < b; }
 
 #if 0
 /* Heap separate header. */
-#define HEAP_NAME header
-#define BOX_DELARE_ONLY
+#define HEAP_NAME static
+#define HEAP_DELARE_ONLY
 #include "../src/heap.h"
 static void header_to_string(const unsigned *const i, char (*const z)[12])
 	{ int_to_string(i, z); }
