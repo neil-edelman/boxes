@@ -287,7 +287,7 @@ static void pT_(test_states)(void) {
 		&& pool.capacity0 == size[2] && pool.free0.as_array.size == 0);
 
 	printf("Destructor:\n");
-	T_()(&pool);
+	t_(pool_)(&pool);
 	pT_(valid_state)(&pool);
 	printf("Done basic tests.\n\n");
 }
@@ -344,7 +344,7 @@ static void pT_(test_random)(void) {
 			(unsigned long)i);
 		pT_(graph)(&pool, graph_fn);
 	}
-	T_()(&pool);
+	t_(pool_)(&pool);
 }
 
 /** The list will be tested on stdout; requires `POOL_TEST` and not `NDEBUG`.
