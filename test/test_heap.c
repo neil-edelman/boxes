@@ -65,20 +65,17 @@ static int index_less(const size_t a, const size_t b) { return a < b; }
 #include "../src/heap.h"
 
 
-#if 0
-/* Heap separate header. */
-#define HEAP_NAME static
-#define HEAP_DELARE_ONLY
-#include "../src/heap.h"
-static void header_to_string(const unsigned *const i, char (*const z)[12])
-	{ int_to_string(i, z); }
-static void header_filler(unsigned *const p) { int_filler(p); }
-#define HEAP_NAME header
-#define BOX_TEST
-#define HEAP_TO_STRING
-#define BOX_BODY
-#include "../src/heap.h"
-#endif
+static int static_less(const int a, const int b) { return a > b; }
+static void static_to_string(const int *const i, char (*const z)[12])
+	{ sprintf(*z, "%d", *i); }
+static void static_filler(int *const p)
+	{ *p = (int)rand() / (RAND_MAX / 99 + 1) + 1; }
+#define HEADER_HEAP_DEFINE
+#include "header_heap.h"
+struct header_heap header_heap(void)
+	{ struct header_heap _; _._ = static_heap(); return _; }
+void header_heap_(struct header_heap *const _) { static_heap_(&_->_); }
+void header_heap_test(void) { static_heap_test(); }
 
 
 int main(void) {
@@ -86,6 +83,6 @@ int main(void) {
 	int_heap_test();
 	/*orc_heap_test(), orc_pool_(&orcs);*/
 	index_heap_test();
-	/*header_heap_test();*/
+	header_heap_test();
 	return EXIT_SUCCESS;
 }

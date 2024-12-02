@@ -4,19 +4,14 @@
 #define HEAP_DECLARE_ONLY
 #endif
 
-#define ARRAY_NAME static
-#define ARRAY_TYPE int
-#define ARRAY_TEST
-#define ARRAY_COMPARE
-#define ARRAY_TO_STRING
-#include "../src/array.h"
+#define HEAP_NAME static
+#define HEAP_TYPE int
+#define HEAP_TEST
+#define HEAP_TO_STRING
+#include "../src/heap.h"
 
-/* Encase `static_array` in `integer_array`. Could just use
- `static_array integer_array()` but that's ugly. */
-struct integer_array { struct static_array _; };
+struct header_heap { struct static_heap _; };
 
-/* All the functions are static, so we must build wrapper functions on all that
- we need. This is tedious and fragile, so if you have any ideas… */
-struct integer_array integer_array(void);
-void integer_array_(struct integer_array *);
-void integer_array_test(void);
+struct header_heap header_heap(void);
+void header_heap_(struct header_heap *);
+void header_heap_test(void);
