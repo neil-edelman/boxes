@@ -72,8 +72,6 @@
 /** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
  `unsigned int` if not set by `HEAP_TYPE`. */
 typedef HEAP_TYPE pT_(priority);
-/* fixme: Are you sure you need this, now? `<pT>priority`? */
-typedef const HEAP_TYPE pT_(priority_c); /* This is assuming a lot? */
 
 #	ifdef HEAP_VALUE
 typedef HEAP_VALUE pT_(value);
@@ -83,11 +81,9 @@ struct T_(heapnode) { pT_(priority) priority; pT_(value) value; };
 /** If `HEAP_VALUE` is set, (priority, value) set by <tag:<H>heapnode>,
  otherwise it's a (priority) set directly by <typedef:<PH>priority>. */
 typedef struct T_(heapnode) pT_(node);
-typedef const struct T_(heapnode) pT_(node_c);
 #	else
 typedef pT_(priority) pT_(value);
 typedef pT_(priority) pT_(node);
-typedef pT_(priority_c) pT_(node_c); /* fixme? */
 #	endif
 
 /* Temporary. Avoid recursion. This must match <box.h>. */
@@ -119,7 +115,7 @@ struct T_(cursor) { struct pT_(node_array_cursor) _; };
  two instead of three categories. Compatible, but less strict then the
  comparators from `bsearch` and `qsort`. For example, `return a > b` or
  `return strcmp(a, b)` would give a minimum-hash. */
-typedef int (*pT_(less_fn))(pT_(priority_c) a, pT_(priority_c) b);
+typedef int (*pT_(less_fn))(const pT_(priority) a, const pT_(priority) b);
 
 static struct T_(cursor) T_(begin)(struct t_(heap) *const h)
 	{ struct T_(cursor) it; it._ = pT_(node_array_begin)(&h->as_array); return it; }
