@@ -321,36 +321,30 @@ static void pT_(unused_base)(void) {
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
-
-
-#ifdef POOL_TO_STRING /* <!-- string */
+#	ifdef POOL_TO_STRING /* <!-- string */
+#		undef POOL_TO_STRING
 /** Thunk `p` -> `a`. */
 /*static void pT_(to_string)(const pT_(type) *p, char (*const a)[12])
 	{ T_(to_string)((const void *)p, a); }*/
-#define TO_STRING_LEFT '['
-#define TO_STRING_RIGHT ']'
-#include "to_string.h"
-#undef POOL_TO_STRING
-#endif
+#		define TO_STRING_LEFT '['
+#		define TO_STRING_RIGHT ']'
+#		include "to_string.h"
+#	endif
 
+#	ifdef POOL_TEST /* <!-- test */
+#		undef POOL_TEST
+#		include "../test/test_pool.h"
+#	endif /* test --> */
 
-#ifdef POOL_TEST /* <!-- test */
-#include "../test/test_pool.h"
-#undef POOL_TEST
-#endif /* test --> */
+#endif /* Produce code. */
 
-#endif /* body --> */
-
-#undef BOX_TYPE
-#undef BOX_CONTENT
-#undef BOX_
+#undef BOX_MINOR
 #undef BOX_MAJOR
-#undef BOX_NAME
 #undef POOL_NAME
 #undef POOL_TYPE
 #undef POOL_SLAB_MIN_CAPACITY
 #ifdef POOL_DECLARE_ONLY
-#undef POOL_DECLARE_ONLY
+#	undef POOL_DECLARE_ONLY
 #endif
 #define BOX_END
 #include "box.h"

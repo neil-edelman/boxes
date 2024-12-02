@@ -332,10 +332,10 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #ifndef HEAP_DECARE_ONLY /* Produce code. */
 
 #	if defined(HEAP_TO_STRING)
+#		undef HEAP_TO_STRING
 #		define TO_STRING_LEFT '['
 #		define TO_STRING_RIGHT ']'
 #		include "to_string.h" /** \include */
-#		undef HEAP_TO_STRING
 #		ifndef HEAP_TRAIT
 #			define HEAP_HAS_TO_STRING /* Warning about tests. */
 #		endif

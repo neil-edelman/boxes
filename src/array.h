@@ -305,8 +305,8 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #ifndef ARRAY_DECARE_ONLY /* Produce code. */
 
 #	if defined(ARRAY_TO_STRING)
-#		include "to_string.h" /** \include */
 #		undef ARRAY_TO_STRING
+#		include "to_string.h" /** \include */
 #		ifndef ARRAY_TRAIT
 #			define ARRAY_HAS_TO_STRING /* Warning about tests. */
 #		endif

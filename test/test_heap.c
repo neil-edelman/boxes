@@ -28,7 +28,6 @@ static void int_filler(unsigned *const p)
 #include "../src/heap.h"
 
 
-#if 0
 /* Value pointer along with a priority. We have to store values somewhere, so
  we use a pool, (which depends on `heap`, it has evolved.) */
 struct orc { char name[12]; };
@@ -45,12 +44,13 @@ static void orc_filler(unsigned *const health, struct orc **const orc_ptr) {
 	orcish(orc->name, sizeof orc->name);
 	*orc_ptr = orc;
 }
+static int orc_less(const struct orc *const a, const struct orc *const b)
+	{ return strcmp(a->name, b->name); }
 #define HEAP_NAME orc
-#define BOX_VALUE struct orc *
+#define HEAP_VALUE struct orc *
 #define HEAP_TO_STRING
-#define BOX_TEST
+#define HEAP_TEST
 #include "../src/heap.h"
-#endif
 
 
 /* Maximum heap with a `size_t`. */
@@ -81,7 +81,7 @@ void header_heap_test(void) { static_heap_test(); }
 int main(void) {
 	rand();
 	int_heap_test();
-	/*orc_heap_test(), orc_pool_(&orcs);*/
+	orc_heap_test(), orc_pool_(&orcs);
 	index_heap_test();
 	header_heap_test();
 	return EXIT_SUCCESS;
