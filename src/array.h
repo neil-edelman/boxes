@@ -300,7 +300,6 @@ static void pT_(unused_base)(void) {
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #	endif /* Produce code. */
-
 #endif /* Base code. */
 
 #ifndef ARRAY_DECARE_ONLY /* Produce code. */

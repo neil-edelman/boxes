@@ -17,7 +17,7 @@
  `<S>` that satisfies `C` naming conventions when mangled. `HEAP_NAME` is
  required; `HEAP_TYPE` defaults to `unsigned int`.
 
- @param[BOX_DISORDERED]
+ @param[HEAP_DISORDERED]
  A function satisfying <typedef:<pT>disordered_fn>. Defaults to minimum-hash.
  Required if `HEAP_TYPE` is changed to an incomparable type. For example, a
  maximum heap, `(a, b) -> a < b`.
@@ -26,13 +26,13 @@
  Optional value <typedef:<PS>value>, that, on `HEAP_VALUE`, is stored in
  <tag:<S>heapnode>.
 
- @param[BOX_TO_STRING]
+ @param[HEAP_TO_STRING]
  To string trait contained in <src/to_string.h>. Require
  `<name>[<trait>]to_string` be declared as <typedef:<PS>to_string_fn>.
 
- @param[BOX_EXPECT_TRAIT, BOX_TRAIT]
+ @param[BOX_EXPECT_TRAIT, HEAP_TRAIT]
  Named traits are obtained by including `heap.h` multiple times with
- `BOX_EXPECT_TRAIT` and then subsequently including the name in `BOX_TRAIT`.
+ `BOX_EXPECT_TRAIT` and then subsequently including the name in `HEAP_TRAIT`.
 
  @param[HEAP_DECLARE_ONLY]
  For headers in different compilation units.
@@ -43,21 +43,24 @@
 #ifndef HEAP_NAME
 #error Name undefined.
 #endif
-#if defined(BOX_TRAIT) ^ defined(BOX_MAJOR)
-#error BOX_TRAIT name must come after BOX_EXPECT_TRAIT.
+#if !defined(BOX_ENTRY1) && (defined(HEAP_TRAIT) ^ defined(BOX_MAJOR))
+#	error HEAP_TRAIT name must come after HEAP_EXPECT_TRAIT.
 #endif
-#if defined(HEAP_TEST) && (!defined(BOX_TRAIT) && !defined(BOX_TO_STRING) \
-	|| defined(BOX_TRAIT) && !defined(HEAP_HAS_TO_STRING))
+#if defined(HEAP_TEST) && (!defined(HEAP_TRAIT) && !defined(HEAP_TO_STRING) \
+	|| defined(HEAP_TRAIT) && !defined(HEAP_HAS_TO_STRING))
 #error Test requires to string.
 #endif
-#if defined HEAP_DECLARE_ONLY && (defined BOX_BODY || defined BOX_TRAIT)
-#error Can not be simultaneously defined.
+#if defined(BOX_TRAIT) && !defined(HEAP_TRAIT)
+#	error Unexpected.
 #endif
 
+#ifdef HEAP_TRAIT
+#	define BOX_TRAIT HEAP_TRAIT /* Ifdef in <box.h>. */
+#endif
 #define BOX_START
 #include "box.h"
 
-#ifndef BOX_TRAIT /* Base code, necessarily first. */
+#ifndef HEAP_TRAIT /* Base code, necessarily first. */
 
 #	define BOX_MINOR HEAP_NAME
 #	define BOX_MAJOR heap
@@ -69,7 +72,7 @@
 /** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
  `unsigned int` if not set by `HEAP_TYPE`. */
 typedef HEAP_TYPE pT_(priority);
-/* fixme: Are you sure you need this, now? */
+/* fixme: Are you sure you need this, now? `<pT>priority`? */
 typedef const HEAP_TYPE pT_(priority_c); /* This is assuming a lot? */
 
 #	ifdef HEAP_VALUE
@@ -110,29 +113,20 @@ struct T_(cursor) { struct pT_(node_array_cursor) _; };
 
 #	ifndef HEAP_DECLARE_ONLY /* <!-- body */
 
-#		ifdef BOX_BODY /* <!-- real body: get the array functions, if separate. */
+//#		ifdef BOX_BODY /* <!-- real body: get the array functions, if separate. */
 // wtf? why is this even here?
 //#define ARRAY_NAME pT_(node)
 //#define ARRAY_TYPE pT_(node)
 //#define ARRAY_DEFINE_ONLY
 //#include "array.h"
-#		endif /* real body --> */
+//#		endif /* real body --> */
 
 /** Inducing a strict weak order by returning a positive result if `a` is
  out-of-order with respect to `b`. It only needs to divide entries into
  two instead of three categories—is compatible, but less strict then the
- comparators from `bsearch` and `qsort`. */
-typedef int (*pT_(disordered_fn))(pT_(priority_c) a, pT_(priority_c) b);
-#		ifndef BOX_DISORDERED
-/** The default `BOX_DISORDERED` on `a` and `b` is `a > b`, which makes a
- minimum-hash. @implements <typedef:<PH>compare_fn> */
-static int pT_(default_disordered)(pT_(priority_c) a, pT_(priority_c) b)
-	{ return a > b; }
-#			define BOX_DISORDERED &pT_(default_disordered)
-#		endif
-/* Check that `BOX_DISORDERED` is a function implementing
- <typedef:<PH>compare_fn>, if defined. */
-static const pT_(disordered_fn) pT_(disordered) = (BOX_DISORDERED);
+ comparators from `bsearch` and `qsort`. For example, `return a > b` or
+ `return strcmp(a, b)` would give a minimum-hash. */
+typedef int (*pT_(less_fn))(pT_(priority_c) a, pT_(priority_c) b);
 
 static struct T_(cursor) T_(begin)(struct t_(heap) *const h)
 	{ struct T_(cursor) it; it._ = pT_(node_array_begin)(&h->as_array); return it; }
@@ -170,7 +164,7 @@ static void pT_(sift_up)(struct t_(heap) *const heap, pT_(node) *const node) {
 		size_t i_up;
 		do { /* Note: don't change the `<=`; it's a queue. */
 			i_up = (i - 1) >> 1;
-			if(pT_(disordered)(pT_(get_priority)(n0 + i_up), p) <= 0) break;
+			if(t_(less)(pT_(get_priority)(n0 + i_up), p) <= 0) break;
 			n0[i] = n0[i_up];
 		} while((i = i_up));
 	}
@@ -188,10 +182,10 @@ static void pT_(sift_down)(struct t_(heap) *const heap) {
 	const pT_(priority) down_p = pT_(get_priority)(down);
 	while(i < half) {
 		c = (i << 1) + 1;
-		if(c + 1 < size && pT_(disordered)(pT_(get_priority)(n0 + c),
+		if(c + 1 < size && t_(less)(pT_(get_priority)(n0 + c),
 			pT_(get_priority)(n0 + c + 1)) > 0) c++;
 		child = n0 + c;
-		if(pT_(disordered)(down_p, pT_(get_priority)(child)) <= 0) break;
+		if(t_(less)(down_p, pT_(get_priority)(child)) <= 0) break;
 		n0[i] = *child;
 		i = c;
 	}
@@ -210,16 +204,16 @@ static void pT_(sift_down_i)(struct t_(heap) *const heap, size_t i) {
 	int temp_valid = 0;
 	while(i < half) {
 		c = (i << 1) + 1;
-		if(c + 1 < size && pT_(disordered)(pT_(get_priority)(n0 + c),
+		if(c + 1 < size && t_(less)(pT_(get_priority)(n0 + c),
 			pT_(get_priority)(n0 + c + 1)) > 0) c++;
 		child = n0 + c;
 		if(temp_valid) {
-			if(pT_(disordered)(pT_(get_priority)(&temp),
+			if(t_(less)(pT_(get_priority)(&temp),
 				pT_(get_priority)(child)) <= 0) break;
 		} else {
 			/* Only happens on the first compare when `i` is in it's original
 			 position. */
-			if(pT_(disordered)(pT_(get_priority)(n0 + i),
+			if(t_(less)(pT_(get_priority)(n0 + i),
 				pT_(get_priority)(child)) <= 0) break;
 			temp = n0[i], temp_valid = 1;
 		}
@@ -342,21 +336,29 @@ static void pT_(unused_base)(void) {
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
-#	endif /* body --> */
+#	endif /* Produce code. */
 #endif /* Base code. */
 
+#ifndef HEAP_DECARE_ONLY /* Produce code. */
 
-#ifdef BOX_TRAIT /* <-- trait: Will be different on different includes. */
-#	define BOX_TRAIT_NAME BOX_TRAIT
-#	define PHT_(n) pT_(ARRAY_CAT(BOX_TRAIT, n))
-#	define HT_(n) H_(ARRAY_CAT(BOX_TRAIT, n))
-#else /* trait --><!-- !trait */
-#	define PHT_(n) pT_(n)
-#	define HT_(n) H_(n)
-#endif /* !trait --> */
+#	if defined(HEAP_TO_STRING)
+#		define TO_STRING_LEFT '['
+#		define TO_STRING_RIGHT ']'
+#		include "to_string.h" /** \include */
+#		undef HEAP_TO_STRING
+#		ifndef HEAP_TRAIT
+#			define HEAP_HAS_TO_STRING /* Warning about tests. */
+#		endif
+#	endif
+
+#endif /* Produce code. */
+#ifdef HEAP_TRAIT
+#	undef HEAP_TRAIT
+#	undef BOX_TRAIT
+#endif
 
 
-#ifdef BOX_TO_STRING /* <!-- to string trait */
+#ifdef HEAP_TO_STRING /* <!-- to string trait */
 /** Thunk `n` -> `a`. */
 static void PHT_(to_string)(const pT_(node) *n, char (*const a)[12]) {
 #	ifdef HEAP_VALUE
@@ -368,8 +370,8 @@ static void PHT_(to_string)(const pT_(node) *n, char (*const a)[12]) {
 #	define TO_STRING_LEFT '['
 #	define TO_STRING_RIGHT ']'
 #	include "to_string.h" /** \include */
-#	undef BOX_TO_STRING
-#	ifndef BOX_TRAIT
+#	undef HEAP_TO_STRING
+#	ifndef HEAP_TRAIT
 #		define HEAP_HAS_TO_STRING
 #	endif
 #endif /* to string trait --> */
@@ -377,7 +379,7 @@ static void PHT_(to_string)(const pT_(node) *n, char (*const a)[12]) {
 #undef HT_
 
 
-#if defined(HEAP_TEST) && !defined(BOX_TRAIT) /* <!-- test base */
+#if defined(HEAP_TEST) && !defined(HEAP_TRAIT) /* <!-- test base */
 #	include "../test/test_heap.h"
 #endif /* test base --> */
 
@@ -393,7 +395,6 @@ static void PHT_(to_string)(const pT_(node) *n, char (*const a)[12]) {
 #	undef BOX_CONTENT
 #	undef BOX_
 #	undef BOX_MAJOR
-#	undef BOX_DISORDERED
 #	ifdef HEAP_VALUE
 #		undef HEAP_VALUE
 #	endif
@@ -410,8 +411,8 @@ static void PHT_(to_string)(const pT_(node) *n, char (*const a)[12]) {
 #		undef HEAP_DECLARE_ONLY
 #	endif
 #endif
-#ifdef BOX_TRAIT
-#	undef BOX_TRAIT
+#ifdef HEAP_TRAIT
+#	undef HEAP_TRAIT
 #endif
 #define BOX_END
 #include "box.h"
