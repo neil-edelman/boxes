@@ -114,17 +114,9 @@ struct T_(cursor) { struct pT_(node_array_cursor) _; };
 
 #	ifndef HEAP_DECLARE_ONLY /* <!-- body */
 
-//#		ifdef BOX_BODY /* <!-- real body: get the array functions, if separate. */
-// wtf? why is this even here?
-//#define ARRAY_NAME pT_(node)
-//#define ARRAY_TYPE pT_(node)
-//#define ARRAY_DEFINE_ONLY
-//#include "array.h"
-//#		endif /* real body --> */
-
 /** Inducing a strict weak order by returning a positive result if `a` is
  out-of-order with respect to `b`. It only needs to divide entries into
- two instead of three categories—is compatible, but less strict then the
+ two instead of three categories. Compatible, but less strict then the
  comparators from `bsearch` and `qsort`. For example, `return a > b` or
  `return strcmp(a, b)` would give a minimum-hash. */
 typedef int (*pT_(less_fn))(pT_(priority_c) a, pT_(priority_c) b);
