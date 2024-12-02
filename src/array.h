@@ -47,6 +47,9 @@
 	|| defined(ARRAY_TRAIT) && !defined(ARRAY_HAS_TO_STRING))
 #	error Test requires to string.
 #endif
+#if defined(BOX_TRAIT) && !defined(ARRAY_TRAIT)
+#	error Unexpected.
+#endif
 
 #ifdef ARRAY_TRAIT
 #	define BOX_TRAIT ARRAY_TRAIT /* Ifdef in <box.h>. */
@@ -359,6 +362,9 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif
 #	ifdef ARRAY_DECLARE_ONLY
 #		undef ARRAY_DECLARE_ONLY
+#	endif
+#	ifdef ARRAY_TRAIT
+#		undef ARRAY_TRAIT
 #	endif
 #endif
 #define BOX_END
