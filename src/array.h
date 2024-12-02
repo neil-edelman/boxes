@@ -303,9 +303,6 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #endif /* Base code. */
 
-#ifdef ARRAY_TRAIT
-#	define BOX_TRAIT ARRAY_TRAIT
-#endif
 #ifndef ARRAY_DECARE_ONLY /* Produce code. */
 
 #	if defined(ARRAY_TO_STRING)
@@ -362,9 +359,6 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif
 #	ifdef ARRAY_DECLARE_ONLY
 #		undef ARRAY_DECLARE_ONLY
-#	endif
-#	ifdef ARRAY_TRAIT
-#		undef ARRAY_TRAIT
 #	endif
 #endif
 #define BOX_END
