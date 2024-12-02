@@ -24,10 +24,8 @@
  <typedef:<PP>type>, associated therewith; required. `<PP>` is private, whose
  names are prefixed in a manner to avoid collisions.
 
- @param[POOL_HEAD, POOL_BODY]
- These go together to allow exporting non-static data between compilation units
- by separating the header head from the code body. `POOL_HEAD` needs identical
- `POOL_NAME` and `POOL_TYPE`.
+ @param[POOL_DECLARE_ONLY]
+ For headers in different compilation units.
 
  @depend [array](https://github.com/neil-edelman/array)
  @depend [heap](https://github.com/neil-edelman/heap)
@@ -41,116 +39,88 @@
  the first slab, so this is not very useful except for debugging. */
 
 #if !defined(POOL_NAME) || !defined(POOL_TYPE)
-#error Name or tag type undefined.
+#	error Name or tag type undefined.
 #endif
 #if defined(POOL_TEST) && !defined(POOL_TO_STRING)
 #error Test requires to string.
 #endif
-#if defined POOL_HEAD && defined POOL_BODY
-#error Can not be simultaneously defined.
-#endif
 
-#ifndef POOL_H /* <!-- idempotent */
-#define POOL_H
+#if !defined(POOL_H) && !defined(POOL_DECLARE_ONLY)
+#	define POOL_H
+/** @return An order on `a`, `b` which specifies a max-heap. */
+static int poolfree_less(const size_t a, const size_t b) { return a < b; }
+
+#	define HEAP_NAME poolfree
+#	define HEAP_TYPE size_t
+#	include "heap.h"
+#endif
+#if !defined(__STDC__) || !defined(__STDC_VERSION__) \
+	|| __STDC_VERSION__ < 199901L /* < C99 */
+#	define POOL_CAST (const void *)
+#else /* < C99 --><!-- >= C99 */
+#	include <stdint.h>
+#	define POOL_CAST (const uintptr_t)(const void *)
+#endif /* >= C99 --> */
+
+#define BOX_START
+#include "box.h"
+
 #include <stdlib.h>
 #include <assert.h>
 #include <errno.h>
-#if defined(POOL_CAT_) || defined(POOL_CAT) || defined(P_) || defined(PP_)
-#error Unexpected defines.
-#endif
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-#define POOL_CAT_(n, m) n ## _ ## m
-#define POOL_CAT(n, m) POOL_CAT_(n, m)
-#define P_(n) POOL_CAT(POOL_NAME, n)
-#define PP_(n) POOL_CAT(pool, P_(n))
-#ifndef POOL_HEAD /* <!-- body */
-/** @return An order on `a`, `b` which specifies a max-heap. */
-static int poolfree_compare(const size_t a, const size_t b) { return a < b; }
-#endif /* body --> */
-#define BOX_NAME poolfree
-#define BOX_TYPE size_t
-#define BOX_COMPARE &poolfree_compare
-#ifdef POOL_HEAD
-#define BOX_DELARE_ONLY
-#endif
-#include "heap.h"
-#if !defined(__STDC__) || !defined(__STDC_VERSION__) \
-	|| __STDC_VERSION__ < 199901L /* < C99 */
-#define POOL_CAST (const void *)
-#else /* < C99 --><!-- >= C99 */
-#include <stdint.h>
-#define POOL_CAST (const uintptr_t)(const void *)
-#endif /* >= C99 --> */
-#endif /* idempotent --> */
 
+#define BOX_MINOR POOL_NAME
+#define BOX_MAJOR pool
 
 /* Undocumented: set the initial size. */
-#ifndef POOL_SLAB_MIN_CAPACITY /* <!-- !min */
-#define POOL_SLAB_MIN_CAPACITY 8
-#endif /* !min --> */
-#if POOL_SLAB_MIN_CAPACITY < 2
-#error Pool slab capacity error.
+#ifndef POOL_SLAB_MIN_CAPACITY
+#	define POOL_SLAB_MIN_CAPACITY 8
 #endif
-
-#ifndef POOL_BODY /* <!-- head */
+#if POOL_SLAB_MIN_CAPACITY < 2
+#	error Pool slab capacity error.
+#endif
 
 /** A valid tag type set by `POOL_TYPE`. */
-typedef POOL_TYPE PP_(type);
+typedef POOL_TYPE pT_(type);
 
 /* Goes into a slab-sorted array. */
-struct PP_(slot) { size_t size; PP_(type) *slab; };
-#define ARRAY_NAME PP_(slot)
-#define ARRAY_TYPE struct PP_(slot)
-#ifdef POOL_HEAD
-#define ARRAY_DECLARE_ONLY
-#endif
+struct pT_(slot) { size_t size; pT_(type) *slab; };
+
+/* Temporary. Avoid recursion. This must match <box.h>. */
+#undef BOX_MINOR
+#undef BOX_MAJOR
+#define pTpool_(n) BOX_CAT(private, BOX_CAT(POOL_NAME, BOX_CAT(pool, n)))
+#define ARRAY_NAME pTpool_(slot)
+#define ARRAY_TYPE struct pTpool_(slot)
+/* This relies on <array.h> which must be in the same directory. */
 #include "array.h"
+#undef pTpool_
+#define BOX_MINOR POOL_NAME
+#define BOX_MAJOR pool
 
 /** A zeroed pool is a valid state. To instantiate to an idle state, see
  <fn:<P>pool>, `{0}` (`C99`,) or being `static`.
 
  ![States.](../doc/pool/states.png) */
-struct P_(pool) {
-	struct PP_(slot_array) slots;
+struct t_(pool) {
+	struct pT_(slot_array) slots;
 	struct poolfree_heap free0; /* Free-heap in slab-zero. */
 	size_t capacity0; /* Capacity of slab-zero. */
 };
+typedef struct t_(pool) pT_(box);
 
 /* It is very useful in debugging, is required contract, but only iterates on
  `slot0` and ignores the free-heap. This is a memory-manager, we don't have
- enough information to do otherwise. Only goes one-way. */
-struct PP_(iterator) { struct PP_(slot) *slot0; size_t i; };
+ enough information to do otherwise. */
+struct T_(cursor) { struct pT_(slot) *slot0; size_t i; };
 
-#endif /* head --> */
-#ifndef POOL_HEAD /* <!-- body */
-
-#ifdef POOL_BODY /* <!-- real body: get the array functions, if separate. */
-#define ARRAY_NAME PP_(slot)
-#define ARRAY_TYPE struct PP_(slot)
-#define ARRAY_DEFINE_ONLY
-#include "array.h"
-#endif /* real body --> */
-
-/** @return Before `p`. @implements `forward` */
-static struct PP_(iterator) PP_(iterator)(const struct P_(pool) *const p)
-	{ struct PP_(iterator) it; it.slot0 = p && p->slots.data
-	? p->slots.data + 0 : 0, it.i = (size_t)~0; return it; }
-/** `it` element. */
-static PP_(type) *PP_(element)(struct PP_(iterator) *const it)
-	{ return it->slot0->slab + it->i; }
-/** @return Whether moved to next `it`. @implements `next` */
-static int PP_(next)(struct PP_(iterator) *const it) {
-	assert(it);
-	if(!it->slot0) return 0;
-	it->i++;
-	return it->i < it->slot0->size;
-}
+#ifndef POOL_DECLARE_ONLY
 
 /** @return Index of slot that is higher than `x` in `slots`, but treating zero
  as special. @order \O(\log `slots`) */
-static size_t PP_(upper)(const struct PP_(slot_array) *const slots,
-	const PP_(type) *const x) {
-	const struct PP_(slot) *const base = slots->data;
+static size_t pT_(upper)(const struct pT_(slot_array) *const slots,
+	const pT_(type) *const x) {
+	const struct pT_(slot) *const base = slots->data;
 	size_t n, b0, b1;
 	assert(slots && x);
 	if(!(n = slots->size)) return 0;
@@ -169,12 +139,11 @@ static size_t PP_(upper)(const struct PP_(slot_array) *const slots,
 	}
 	return b0 + ((const void *)x >= (const void *)base[slots->size - 1].slab);
 }
-
 /** Which slot contains the slab that has `x` in `pool`?
  @order \O(\log `slots`), \O(\log \log `size`)? */
-static size_t PP_(slot_idx)(const struct P_(pool) *const pool,
-	const PP_(type) *const x) {
-	struct PP_(slot) *const base = pool->slots.data;
+static size_t pT_(slot_idx)(const struct t_(pool) *const pool,
+	const pT_(type) *const x) {
+	struct pT_(slot) *const base = pool->slots.data;
 	size_t up;
 	assert(pool && pool->slots.size && base && x);
 	/* There's only one option. */
@@ -184,17 +153,16 @@ static size_t PP_(slot_idx)(const struct P_(pool) *const pool,
 		return assert(pool->slots.size >= 1
 		&& (const void *)x >= (const void *)base[0].slab
 		&& (const void *)x < (const void *)(base[0].slab + pool->capacity0)), 0;
-	up = PP_(upper)(&pool->slots, x);
+	up = pT_(upper)(&pool->slots, x);
 	return assert(up), up - 1;
 }
-
 /** Makes sure there are space for `n` further items in `pool`.
  @return Success. */
-static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
+static int pT_(buffer)(struct t_(pool) *const pool, const size_t n) {
 	const size_t min_size = POOL_SLAB_MIN_CAPACITY,
-		max_size = (size_t)-1 / sizeof(PP_(type));
-	struct PP_(slot) *base = pool->slots.data, *slot;
-	PP_(type) *slab;
+		max_size = (size_t)-1 / sizeof(pT_(type));
+	struct pT_(slot) *base = pool->slots.data, *slot;
+	pT_(type) *slab;
 	size_t c, insert;
 	int is_recycled = 0;
 	assert(pool && min_size <= max_size && pool->capacity0 <= max_size &&
@@ -209,7 +177,7 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 	if(!n || pool->slots.size && n <= pool->capacity0
 		- base[0].size + pool->free0.as_array.size) return 1; /* Enough. */
 	if(max_size < n) return errno = ERANGE, 1; /* Request unsatisfiable. */
-	if(!PP_(slot_array_buffer)(&pool->slots, 1)) return 0;
+	if(!pT_(slot_array_buffer)(&pool->slots, 1)) return 0;
 	base = pool->slots.data; /* It may have moved! */
 
 	/* Figure out the capacity of the next slab. */
@@ -231,23 +199,22 @@ static int PP_(buffer)(struct P_(pool) *const pool, const size_t n) {
 
 	/* Evict slot 0. */
 	if(!pool->slots.size) insert = 0;
-	else insert = PP_(upper)(&pool->slots, base[0].slab);
+	else insert = pT_(upper)(&pool->slots, base[0].slab);
 	assert(insert <= pool->slots.size);
-	slot = PP_(slot_array_insert)(&pool->slots, 1, insert);
+	slot = pT_(slot_array_insert)(&pool->slots, 1, insert);
 	assert(slot); /* Made space for it before. */
 	slot->slab = base[0].slab, slot->size = base[0].size;
 	base[0].slab = slab, base[0].size = 0;
 	return 1;
 }
-
 /** Either `data` in `pool` is in a secondary slab, in which case it decrements
  the size, or it's the zero-slab, where it gets added to the free-heap.
  @return Success. It may fail due to a free-heap memory allocation error.
  @order Amortized \O(\log \log `items`) @throws[realloc] */
-static int PP_(remove)(struct P_(pool) *const pool,
-	const PP_(type) *const data) {
-	size_t c = PP_(slot_idx)(pool, data);
-	struct PP_(slot) *slot = pool->slots.data + c;
+static int pT_(remove)(struct t_(pool) *const pool,
+	const pT_(type) *const data) {
+	size_t c = pT_(slot_idx)(pool, data);
+	struct pT_(slot) *slot = pool->slots.data + c;
 	assert(pool && pool->slots.size && data);
 	if(!c) { /* It's in the zero-slot, we need to deal with the free-heap. */
 		const size_t idx = (size_t)(data - slot->slab);
@@ -263,50 +230,61 @@ static int PP_(remove)(struct P_(pool) *const pool,
 			}
 		} else if(!poolfree_heap_add(&pool->free0, idx)) return 0;
 	} else if(assert(slot->size), !--slot->size) {
-		PP_(type) *const slab = slot->slab;
-		PP_(slot_array_remove)(&pool->slots, pool->slots.data + c);
+		pT_(type) *const slab = slot->slab;
+		pT_(slot_array_remove)(&pool->slots, pool->slots.data + c);
 		free(slab);
 	}
 	return 1;
 }
 
+static struct T_(cursor) T_(begin)(const struct t_(pool) *const p)
+	{ struct T_(cursor) cur; cur.slot0 = p && p->slots.data
+	? p->slots.data + 0 : 0, cur.i = (size_t)~0; return cur; }
+static int T_(cursor_exists)(const struct T_(cursor) *const cur)
+	{ return cur && cur->slot0 && cur->slot0->slab
+	&& cur->i < cur->slot0->size; }
+static pT_(type) *T_(cursor_look)(struct T_(cursor) *const cur)
+	{ return cur->slot0->slab + cur->i; }
+static void T_(cursor_next)(struct T_(cursor) *const cur)
+	{ if(cur->i == (size_t)~0) cur->slot0 = 0; else cur->i++; }
+
 /** @return An idle pool. @order \Theta(1) @allow */
-static struct P_(pool) P_(pool)(void) { struct P_(pool) p;
-	p.slots = PP_(slot_array)(), p.free0 = poolfree_heap(), p.capacity0 = 0;
+static struct t_(pool) t_(pool)(void) { struct t_(pool) p;
+	p.slots = pT_(slot_array)(), p.free0 = poolfree_heap(), p.capacity0 = 0;
 	return p; }
 
 /** Destroys `pool` and returns it to idle. @order \O(\log `data`) @allow */
-static void P_(pool_)(struct P_(pool) *const pool) {
-	struct PP_(slot) *s, *s_end;
+static void t_(pool_)(struct t_(pool) *const pool) {
+	struct pT_(slot) *s, *s_end;
 	if(!pool) return;
 	for(s = pool->slots.data, s_end = s + pool->slots.size; s < s_end; s++)
 		assert(s->slab), free(s->slab);
-	PP_(slot_array_)(&pool->slots);
+	pT_(slot_array_)(&pool->slots);
 	poolfree_heap_(&pool->free0);
-	*pool = P_(pool)();
+	*pool = t_(pool)();
 }
 
 /** Ensure capacity of at least `n` further items in `pool`. Pre-sizing is
  better for contiguous blocks, but takes up that memory.
  @return Success. @throws[ERANGE, malloc] @allow */
-static int P_(pool_buffer)(struct P_(pool) *const pool, const size_t n) {
-	return assert(pool), PP_(buffer)(pool, n);
+static int T_(buffer)(struct t_(pool) *const pool, const size_t n) {
+	return assert(pool), pT_(buffer)(pool, n);
 }
 
 /** This pointer is constant until it gets <fn:<P>pool_remove>.
  @return A pointer to a new uninitialized element from `pool`.
  @throws[ERANGE, malloc] @order amortised O(1) @allow */
-static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
-	struct PP_(slot) *slot0;
+static pT_(type) *T_(new)(struct t_(pool) *const pool) {
+	struct pT_(slot) *slot0;
 	assert(pool);
-	if(!PP_(buffer)(pool, 1)) return 0;
+	if(!pT_(buffer)(pool, 1)) return 0;
 	assert(pool->slots.size && (pool->free0.as_array.size ||
 		pool->slots.data[0].size < pool->capacity0));
 	if(poolfree_heap_size(&pool->free0)) {
 		/* Cheating: we prefer the minimum index from a max-heap, but it
 		 doesn't really matter, so take the one off the array used for heap. */
 		size_t *free;
-		free = heap_poolfree_node_array_pop(&pool->free0.as_array);
+		free = private_poolfree_heap_node_array_pop(&pool->free0.as_array);
 		return assert(free), pool->slots.data[0].slab + *free;
 	}
 	/* The free-heap is empty; guaranteed by <fn:<PP>buffer>. */
@@ -319,13 +297,13 @@ static PP_(type) *P_(pool_new)(struct P_(pool) *const pool) {
  @return Success. @order \O(\log (`slab0-free-heap` | `slabs`))
  @throws[malloc] Because of lazy deletion, remove can actually demand memory
  when `data` requires adding to the free-heap. @allow */
-static int P_(pool_remove)(struct P_(pool) *const pool,
-	PP_(type) *const data) { return PP_(remove)(pool, data); }
+static int T_(remove)(struct t_(pool) *const pool,
+	pT_(type) *const data) { return pT_(remove)(pool, data); }
 
 /** Removes all from `pool`, but keeps it's active state, only freeing the
  smaller blocks. @order \O(\log `items`) @allow */
-static void P_(pool_clear)(struct P_(pool) *const pool) {
-	struct PP_(slot) *s, *s_end;
+static void T_(clear)(struct t_(pool) *const pool) {
+	struct pT_(slot) *s, *s_end;
 	assert(pool);
 	if(!pool->slots.size) { assert(!pool->free0.as_array.size); return; }
 	for(s = pool->slots.data + 1, s_end = s - 1 + pool->slots.size;
@@ -335,26 +313,20 @@ static void P_(pool_clear)(struct P_(pool) *const pool) {
 	poolfree_heap_clear(&pool->free0);
 }
 
-static void PP_(unused_base_coda)(void);
-static void PP_(unused_base)(void) {
-	PP_(iterator)(0); PP_(element)(0); PP_(next)(0);
-	P_(pool)(); P_(pool_)(0); P_(pool_buffer)(0, 0); P_(pool_new)(0);
-	P_(pool_remove)(0, 0); P_(pool_clear)(0); PP_(unused_base_coda)();
+static void pT_(unused_base_coda)(void);
+static void pT_(unused_base)(void) {
+	T_(begin)(0); T_(cursor_exists)(0); T_(cursor_look)(0); T_(cursor_next)(0);
+	t_(pool)(); t_(pool_)(0); T_(buffer)(0, 0); T_(new)(0);
+	T_(remove)(0, 0); T_(clear)(0); pT_(unused_base_coda)();
 }
-static void PP_(unused_base_coda)(void) { PP_(unused_base)(); }
+static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
-/* Box override information. */
-#define BOX_TYPE struct P_(pool)
-#define BOX_CONTENT PP_(type)
-#define BOX_ PP_
-#define BOX_MAJOR pool
-#define BOX_NAME POOL_NAME
 
 
 #ifdef POOL_TO_STRING /* <!-- string */
 /** Thunk `p` -> `a`. */
-static void PP_(to_string)(const PP_(type) *p, char (*const a)[12])
-	{ P_(to_string)((const void *)p, a); }
+/*static void pT_(to_string)(const pT_(type) *p, char (*const a)[12])
+	{ T_(to_string)((const void *)p, a); }*/
 #define TO_STRING_LEFT '['
 #define TO_STRING_RIGHT ']'
 #include "to_string.h"
@@ -377,9 +349,8 @@ static void PP_(to_string)(const PP_(type) *p, char (*const a)[12])
 #undef POOL_NAME
 #undef POOL_TYPE
 #undef POOL_SLAB_MIN_CAPACITY
-#ifdef POOL_BODY
-#undef POOL_BODY
+#ifdef POOL_DECLARE_ONLY
+#undef POOL_DECLARE_ONLY
 #endif
-#ifdef POOL_HEAD
-#undef POOL_HEAD
-#endif
+#define BOX_END
+#include "box.h"

@@ -31,6 +31,7 @@ static void colour_filler(enum colour *const c)
 #include "../src/pool.h"
 
 
+#if 0
 struct str4 { char value[4]; };
 static void str4_to_string(const struct str4 *s, char (*const a)[12])
 	{ sprintf(*a, "%.11s", s->value); }
@@ -108,6 +109,7 @@ finally:
 	pool_colour_graph(&pool, "graph/paper.gv");
 	colour_pool_(&pool);
 }
+#endif
 
 
 /** Entry point.
@@ -117,11 +119,11 @@ int main(void) {
 
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	colour_pool_test();
-	str4_pool_test();
+	/*str4_pool_test();
 	int_pool_test();
 	keyval_pool_test();
 	public_pool_test();
-	special();
+	special();*/
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

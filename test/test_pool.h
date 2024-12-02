@@ -10,16 +10,16 @@
 #define QUOTE(name) QUOTE_(name)
 
 /** Operates by side-effects. */
-typedef void (*PP_(action_fn))(PP_(type) *);
+typedef void (*pT_(action_fn))(pT_(type) *);
 
 /** Graphs `pool` output to `fn`. */
-static void PP_(graph)(const struct P_(pool) *const pool,
+static void pT_(graph)(const struct t_(pool) *const pool,
 	const char *const fn) {
 	FILE *fp;
 	char str[12];
 	size_t i, j;
-	struct PP_(slot) *slot;
-	PP_(type) *slab;
+	struct pT_(slot) *slot;
+	pT_(type) *slab;
 
 	assert(pool && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
@@ -133,7 +133,7 @@ no_free0:
 				fprintf(fp, "<font color=\"Gray50\" face=\"Times-Italic\">%lu</font>",
 					(unsigned long)j);
 			} else {
-				P_(to_string)(slab + j, &str);
+				t_(to_string)(slab + j, &str);
 				fprintf(fp, "%s", str);
 			}
 			fprintf(fp, "</td></tr>\n");
@@ -158,7 +158,7 @@ no_slots:
 }
 
 /** Crashes if `pool` is not in a valid state. */
-static void PP_(valid_state)(const struct P_(pool) *const pool) {
+static void pT_(valid_state)(const struct t_(pool) *const pool) {
 	size_t i;
 	if(!pool) return;
 	/* If there's no capacity, there's no slots. */
@@ -180,9 +180,9 @@ static void PP_(valid_state)(const struct P_(pool) *const pool) {
 	}
 }
 
-static void PP_(test_states)(void) {
-	struct P_(pool) pool = P_(pool)();
-	PP_(type) *t, *slab;
+static void pT_(test_states)(void) {
+	struct t_(pool) pool = t_(pool)();
+	pT_(type) *t, *slab;
 	const size_t size[] = { 9, 14, 22 };
 	enum { CHUNK1_IS_ZERO, CHUNK2_IS_ZERO } conf = CHUNK1_IS_ZERO;
 	size_t i;
@@ -191,37 +191,37 @@ static void PP_(test_states)(void) {
 
 	printf("Test null.\n");
 	errno = 0;
-	PP_(valid_state)(0);
+	pT_(valid_state)(0);
 
 	printf("Empty.\n");
-	PP_(valid_state)(&pool);
-	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-01-idle.gv");
+	pT_(valid_state)(&pool);
+	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-01-idle.gv");
 
 	/** `<P>filler` must be a function implementing <typedef:<PP>action_fn>. */
 	printf("One element.\n");
-	t = P_(pool_new)(&pool), assert(t), P_(filler)(t), PP_(valid_state)(&pool);
-	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-02-one.gv");
+	t = T_(new)(&pool), assert(t), t_(filler)(t), pT_(valid_state)(&pool);
+	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-02-one.gv");
 
 	printf("Remove.\n");
-	r = P_(pool_remove)(&pool, pool.slots.data[0].slab + 0), assert(r),
-		PP_(valid_state)(&pool);
-	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-03-remove.gv");
+	r = T_(remove)(&pool, pool.slots.data[0].slab + 0), assert(r),
+		pT_(valid_state)(&pool);
+	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-03-remove.gv");
 
 	printf("Pool buffer %lu.\n", (unsigned long)size[0]);
-	r = P_(pool_buffer)(&pool, size[0]), assert(r), PP_(valid_state)(&pool);
-	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-04-buffer.gv");
+	r = T_(buffer)(&pool, size[0]), assert(r), pT_(valid_state)(&pool);
+	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-04-buffer.gv");
 
-	for(i = 0; i < size[0]; i++) t = P_(pool_new)(&pool), assert(t),
-		P_(filler)(t), PP_(valid_state)(&pool);
+	for(i = 0; i < size[0]; i++) t = T_(new)(&pool), assert(t),
+		t_(filler)(t), pT_(valid_state)(&pool);
 	assert(pool.slots.size == 1);
-	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-05-one-slab.gv");
-	for(i = 0; i < size[1]; i++) t = P_(pool_new)(&pool), assert(t),
-		P_(filler)(t), PP_(valid_state)(&pool);
+	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-05-one-slab.gv");
+	for(i = 0; i < size[1]; i++) t = T_(new)(&pool), assert(t),
+		t_(filler)(t), pT_(valid_state)(&pool);
 	assert(pool.slots.size == 2);
-	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-06-two-slabs.gv");
-	t = P_(pool_new)(&pool), assert(t), P_(filler)(t), PP_(valid_state)(&pool);
+	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-06-two-slabs.gv");
+	t = T_(new)(&pool), assert(t), t_(filler)(t), pT_(valid_state)(&pool);
 	assert(pool.slots.size == 3);
-	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-07-three-slabs.gv");
+	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-07-three-slabs.gv");
 	/* It's `malloc` whether, `conf = { 0: { 2, 0, 1 }, 1: { 2, 1, 0 } }`. */
 	if(pool.slots.data[1].size == size[0]) conf = CHUNK1_IS_ZERO;
 	else assert(pool.slots.data[1].size == size[1]);
@@ -230,28 +230,28 @@ static void PP_(test_states)(void) {
 	assert(pool.slots.data[0].size == 1);
 	printf("%s is %u, %s is %u.\n", orcify(pool.slots.data[1].slab), conf,
 		orcify(pool.slots.data[2].slab), !conf);
-	t = pool.slots.data[!conf + 1].slab + 0, P_(to_string)(t, &z);
+	t = pool.slots.data[!conf + 1].slab + 0, t_(to_string)(t, &z);
 	printf("Removing index-zero %s from slab %u %s.\n", z, !conf + 1,
 		orcify(pool.slots.data[!conf + 1].slab));
-	P_(pool_remove)(&pool, t), PP_(valid_state)(&pool);
-	t = pool.slots.data[0].slab + 0, P_(to_string)(t, &z);
+	T_(remove)(&pool, t), pT_(valid_state)(&pool);
+	t = pool.slots.data[0].slab + 0, t_(to_string)(t, &z);
 	printf("Removing index-zero %s from slab %u %s.\n", z, 0,
 		orcify(pool.slots.data[0].slab));
-	P_(pool_remove)(&pool, pool.slots.data[0].slab + 0);
-	PP_(valid_state)(&pool);
+	T_(remove)(&pool, pool.slots.data[0].slab + 0);
+	pT_(valid_state)(&pool);
 	assert(pool.slots.data[conf + 1].size == size[0]);
 	slab = pool.slots.data[conf + 1].slab;
 	printf("Removing all in slab %s.\n", orcify(slab));
-	for(i = 0; i < size[0]; i++) P_(pool_remove)(&pool, slab + i);
-	PP_(valid_state)(&pool);
-	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-08-remove-slab.gv");
+	for(i = 0; i < size[0]; i++) T_(remove)(&pool, slab + i);
+	pT_(valid_state)(&pool);
+	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-08-remove-slab.gv");
 	assert(pool.slots.size == 2);
-	P_(pool_clear)(&pool);
+	T_(clear)(&pool);
 	assert(pool.slots.size == 1);
-	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-09-clear.gv");
+	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-09-clear.gv");
 
 	/* Remove at random. */
-	for(i = 0; i < size[2]; i++) t = P_(pool_new)(&pool), assert(t), P_(filler)(t), PP_(valid_state)(&pool);
+	for(i = 0; i < size[2]; i++) t = T_(new)(&pool), assert(t), t_(filler)(t), pT_(valid_state)(&pool);
 	{
 		const size_t n1 = size[2] - 1, n0 = n1 >> 1;
 		size_t n;
@@ -272,36 +272,36 @@ static void PP_(test_states)(void) {
 			bits |= rnd_bit;
 		}
 		for(i = 0; i < size[2]; i++) if(bits & (1 << i))
-			P_(pool_remove)(&pool, pool.slots.data[0].slab + i);
+			T_(remove)(&pool, pool.slots.data[0].slab + i);
 		i = n0;
 	}
-	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-10-remove.gv");
+	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-10-remove.gv");
 	assert(pool.slots.size == 1 && pool.slots.data[0].size == size[2]
 		&& pool.capacity0 == size[2] && pool.free0.as_array.size == i);
 
 	/* Add at random to an already removed. */
-	while(i) t = P_(pool_new)(&pool), assert(t),
-		P_(filler)(t), PP_(valid_state)(&pool), i--;
-	PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-11-replace.gv");
+	while(i) t = T_(new)(&pool), assert(t),
+		t_(filler)(t), pT_(valid_state)(&pool), i--;
+	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-11-replace.gv");
 	assert(pool.slots.size == 1 && pool.slots.data[0].size == size[2]
 		&& pool.capacity0 == size[2] && pool.free0.as_array.size == 0);
 
 	printf("Destructor:\n");
-	P_(pool_)(&pool);
-	PP_(valid_state)(&pool);
+	T_()(&pool);
+	pT_(valid_state)(&pool);
 	printf("Done basic tests.\n\n");
 }
 
-static void PP_(test_random)(void) {
-	struct P_(pool) pool = P_(pool)();
+static void pT_(test_random)(void) {
+	struct t_(pool) pool = t_(pool)();
 	/* This parameter controls how big the pool wants to be. */
-	struct { size_t size; PP_(type) *data[2*5000/*10*/]; } test;
+	struct { size_t size; pT_(type) *data[2*5000/*10*/]; } test;
 	const size_t test_size = sizeof test.data / sizeof *test.data,
 		length = 120000; /* Controls how many iterations. */
 	size_t i;
 	char graph_fn[64];
 	const size_t graph_max = 100000;
-	PP_(type) *data, **ptr;
+	pT_(type) *data, **ptr;
 
 	test.size = 0;
 	for(i = 0; i < length; i++) {
@@ -310,10 +310,10 @@ static void PP_(test_random)(void) {
 		int is_print = !(i & (i - 1));
 		if(r > test.size * (RAND_MAX / test_size) && test.size < test_size) {
 			/* Create. */
-			data = P_(pool_new)(&pool);
+			data = T_(new)(&pool);
 			if(!data) { perror("Error"), assert(0); return;}
-			P_(filler)(data);
-			P_(to_string)(data, &str);
+			t_(filler)(data);
+			t_(to_string)(data, &str);
 			if(is_print) printf("%lu: Created %s.\n", (unsigned long)i, str);
 			test.data[test.size++] = data;
 		} else {
@@ -321,11 +321,11 @@ static void PP_(test_random)(void) {
 			int ret;
 			assert(test.size);
 			ptr = test.data + (unsigned)rand() / (RAND_MAX / test.size + 1);
-			P_(to_string)(*ptr, &str);
+			t_(to_string)(*ptr, &str);
 			if(is_print) printf("%lu: Removing %s.\n", (unsigned long)i, str);
-			ret = P_(pool_remove)(&pool, *ptr);
+			ret = T_(remove)(&pool, *ptr);
 			assert(ret || (perror("Removing"),
-				PP_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-rem-err.gv"), 0));
+				pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-rem-err.gv"), 0));
 			/* test.remove(ptr) */
 			memmove(ptr, ptr + 1,
 				sizeof *test.data * (--test.size - (size_t)(ptr - test.data)));
@@ -334,33 +334,26 @@ static void PP_(test_random)(void) {
 		if(is_print && i < graph_max) {
 			sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-step-%lu.gv",
 				(unsigned long)(i + 1));
-			PP_(graph)(&pool, graph_fn);
-			printf("%s.\n", P_(pool_to_string)(&pool));
+			pT_(graph)(&pool, graph_fn);
+			printf("%s.\n", T_(to_string)(&pool));
 		}
-		PP_(valid_state)(&pool);
+		pT_(valid_state)(&pool);
 	}
 	if(i < graph_max) {
 		sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-step-%lu-end.gv",
 			(unsigned long)i);
-		PP_(graph)(&pool, graph_fn);
+		pT_(graph)(&pool, graph_fn);
 	}
-	P_(pool_)(&pool);
+	T_()(&pool);
 }
 
 /** The list will be tested on stdout; requires `POOL_TEST` and not `NDEBUG`.
  @allow */
-static void P_(pool_test)(void) {
+static void T_(test)(void) {
 	printf("<" QUOTE(POOL_NAME) ">pool: of type <" QUOTE(POOL_TYPE)
-		"> was created using: "
-#ifdef POOL_TO_STRING
-		"POOL_TO_STRING<" QUOTE(POOL_TO_STRING) ">; "
-#endif
-#ifdef POOL_TEST
-		"POOL_TEST<" QUOTE(POOL_TEST) ">; "
-#endif
-		"testing:\n");
-	PP_(test_states)();
-	PP_(test_random)();
+		"> was created using: POOL_TO_STRING; POOL_TEST; testing:\n");
+	pT_(test_states)();
+	pT_(test_random)();
 	fprintf(stderr, "Done tests of <" QUOTE(POOL_NAME) ">pool.\n\n");
 }
 
