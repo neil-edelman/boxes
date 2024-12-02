@@ -67,28 +67,15 @@
  `unsigned int` if not set by `HEAP_TYPE`. */
 typedef HEAP_TYPE pT_(priority);
 
-#	ifdef HEAP_VALUE
-typedef HEAP_VALUE pT_(value);
-typedef const HEAP_VALUE pT_(value_c); /* Assume! */
-/** If `HEAP_VALUE` is set, this becomes <typedef:<PH>node>. */
-struct T_(heapnode) { pT_(priority) priority; pT_(value) value; };
-/** If `HEAP_VALUE` is set, (priority, value) set by <tag:<H>heapnode>,
- otherwise it's a (priority) set directly by <typedef:<PH>priority>. */
-typedef struct T_(heapnode) pT_(node);
-#	else
-typedef pT_(priority) pT_(value);
-typedef pT_(priority) pT_(node);
-#	endif
-
 /* Temporary. Avoid recursion. This must match <box.h>. */
 #	undef BOX_MINOR
 #	undef BOX_MAJOR
-#	define pT2_(n) BOX_CAT(private, BOX_CAT(HEAP_NAME, BOX_CAT(heap, n)))
-#	define ARRAY_NAME pT2_(node)
-#	define ARRAY_TYPE pT2_(node)
+#	define pTheap_(n) BOX_CAT(private, BOX_CAT(HEAP_NAME, BOX_CAT(heap, n)))
+#	define ARRAY_NAME pTheap_(priority)
+#	define ARRAY_TYPE pTheap_(priority)
 /* This relies on <array.h> which must be in the same directory. */
 #	include "array.h"
-#	undef pT2_
+#	undef pTheap_
 #	define BOX_MINOR HEAP_NAME
 #	define BOX_MAJOR heap
 
@@ -97,10 +84,10 @@ typedef pT_(priority) pT_(node);
  `static`.
 
  ![States.](../doc/heap/states.png) */
-struct t_(heap) { struct pT_(node_array) as_array; };
+struct t_(heap) { struct pT_(priority_array) as_array; };
 typedef struct t_(heap) pT_(box);
 
-struct T_(cursor) { struct pT_(node_array_cursor) _; };
+struct T_(cursor) { struct pT_(priority_array_cursor) _; };
 
 #	ifndef HEAP_DECLARE_ONLY /* <!-- body */
 
@@ -112,47 +99,30 @@ struct T_(cursor) { struct pT_(node_array_cursor) _; };
 typedef int (*pT_(less_fn))(const pT_(priority) a, const pT_(priority) b);
 
 static struct T_(cursor) T_(begin)(struct t_(heap) *const h)
-	{ struct T_(cursor) it; it._ = pT_(node_array_begin)(&h->as_array); return it; }
+	{ struct T_(cursor) it; it._ = pT_(priority_array_begin)(&h->as_array);
+	return it; }
 static int T_(cursor_exists)(struct T_(cursor) *const cur)
-	{ return pT_(node_array_cursor_exists)(&cur->_); }
-static pT_(node) *T_(cursor_look)(struct T_(cursor) *const cur)
-	{ return pT_(node_array_cursor_look)(&cur->_); }
+	{ return pT_(priority_array_cursor_exists)(&cur->_); }
+static pT_(priority) *T_(cursor_look)(struct T_(cursor) *const cur)
+	{ return pT_(priority_array_cursor_look)(&cur->_); }
 static void T_(cursor_next)(struct T_(cursor) *const cur)
-	{ pT_(node_array_cursor_next)(&cur->_); }
+	{ pT_(priority_array_cursor_next)(&cur->_); }
 
-/** Extracts the <typedef:<PH>priority> of `node`, which must not be null. */
-static pT_(priority) pT_(get_priority)(const pT_(node) *const node) {
-#		ifdef HEAP_VALUE
-	return node->priority;
-#		else
-	return *node;
-#		endif
-}
-/** Extracts the <typedef:<PH>value> of `node`, which must not be null. */
-static pT_(value) pT_(get_value)(const pT_(node) *const node) {
-#		ifdef HEAP_VALUE
-	return node->value;
-#		else
-	return *node;
-#		endif
-}
 /** Find the spot in `heap` where `node` goes and put it there.
  @param[heap] At least one entry; the last entry will be replaced by `node`.
  @order \O(log `size`) */
-static void pT_(sift_up)(struct t_(heap) *const heap, pT_(node) *const node) {
-	pT_(node) *const n0 = heap->as_array.data;
-	pT_(priority) p = pT_(get_priority)(node);
-	size_t i = heap->as_array.size - 1;
+static void pT_(sift_up)(struct t_(heap) *const heap, pT_(priority) n) {
+	pT_(priority) *const n0 = heap->as_array.data;
+	size_t i = heap->as_array.size - 1, i_up;
 	if(i) {
-		size_t i_up;
 		do { /* Note: don't change the `<=`; it's a queue. */
 			i_up = (i - 1) >> 1;
 			/* Make sure that `<HEAP_NAME>_less` is defined. */
-			if(t_(less)(pT_(get_priority)(n0 + i_up), p) <= 0) break;
+			if(t_(less)(n0[i_up], n) <= 0) break;
 			n0[i] = n0[i_up];
 		} while((i = i_up));
 	}
-	n0[i] = *node;
+	n0[i] = n;
 }
 /** Pop the head of `heap` and restore the heap by sifting down the last
  element. @param[heap] At least one entry. The head is popped, and the size
@@ -161,15 +131,13 @@ static void pT_(sift_down)(struct t_(heap) *const heap) {
 	const size_t size = (assert(heap && heap->as_array.size),
 		--heap->as_array.size), half = size >> 1;
 	size_t i = 0, c;
-	pT_(node) *const n0 = heap->as_array.data,
+	pT_(priority) *const n0 = heap->as_array.data,
 		*const down = n0 + size /* Put it at the top. */, *child;
-	const pT_(priority) down_p = pT_(get_priority)(down);
 	while(i < half) {
 		c = (i << 1) + 1;
-		if(c + 1 < size && t_(less)(pT_(get_priority)(n0 + c),
-			pT_(get_priority)(n0 + c + 1)) > 0) c++;
+		if(c + 1 < size && t_(less)(n0[c], n0[c + 1]) > 0) c++;
 		child = n0 + c;
-		if(t_(less)(down_p, pT_(get_priority)(child)) <= 0) break;
+		if(t_(less)(*down, *child) <= 0) break;
 		n0[i] = *child;
 		i = c;
 	}
@@ -184,21 +152,18 @@ static void pT_(sift_down_i)(struct t_(heap) *const heap, size_t i) {
 		heap->as_array.size), half = size >> 1;
 	size_t c;
 	/* Uninitialized variable warning suppression. */
-	pT_(node) *const n0 = heap->as_array.data, *child, temp = *(&temp);
+	pT_(priority) *const n0 = heap->as_array.data, *child, temp = *(&temp);
 	int temp_valid = 0;
 	while(i < half) {
 		c = (i << 1) + 1;
-		if(c + 1 < size && t_(less)(pT_(get_priority)(n0 + c),
-			pT_(get_priority)(n0 + c + 1)) > 0) c++;
+		if(c + 1 < size && t_(less)(n0[c], n0[c + 1]) > 0) c++;
 		child = n0 + c;
 		if(temp_valid) {
-			if(t_(less)(pT_(get_priority)(&temp),
-				pT_(get_priority)(child)) <= 0) break;
+			if(t_(less)(temp, *child) <= 0) break;
 		} else {
 			/* Only happens on the first compare when `i` is in it's original
 			 position. */
-			if(t_(less)(pT_(get_priority)(n0 + i),
-				pT_(get_priority)(child)) <= 0) break;
+			if(t_(less)(n0[i], *child) <= 0) break;
 			temp = n0[i], temp_valid = 1;
 		}
 		n0[i] = *child;
@@ -213,8 +178,8 @@ static void pT_(heapify)(struct t_(heap) *const heap) {
 		(pT_(sift_down_i)(heap, i), i); i--);
 }
 /** Removes from `heap`. Must have a non-zero size. */
-static pT_(node) pT_(remove)(struct t_(heap) *const heap) {
-	const pT_(node) result = *heap->as_array.data;
+static pT_(priority) pT_(remove)(struct t_(heap) *const heap) {
+	const pT_(priority) result = *heap->as_array.data;
 	assert(heap);
 	if(heap->as_array.size > 1) {
 		pT_(sift_down)(heap);
@@ -228,18 +193,18 @@ static pT_(node) pT_(remove)(struct t_(heap) *const heap) {
 /** Zeroed data (not all-bits-zero) is initialised.
  @return An idle heap. @order \Theta(1) @allow */
 static struct t_(heap) t_(heap)(void)
-	{ struct t_(heap) heap; heap.as_array = pT_(node_array)(); return heap; }
+	{ struct t_(heap) heap; heap.as_array = pT_(priority_array)(); return heap; }
 
 /** Returns `heap` to the idle state where it takes no dynamic memory.
  @order \Theta(1) @allow */
 static void t_(heap_)(struct t_(heap) *const heap)
-	{ if(heap) pT_(node_array_)(&heap->as_array); }
+	{ if(heap) pT_(priority_array_)(&heap->as_array); }
 
 /** Sets `heap` to be empty. That is, the size of `heap` will be zero, but if
  it was previously in an active non-idle state, it continues to be.
  @param[heap] If null, does nothing. @order \Theta(1) @allow */
 static void T_(clear)(struct t_(heap) *const heap)
-	{ assert(heap), pT_(node_array_clear)(&heap->as_array); }
+	{ assert(heap), pT_(priority_array_clear)(&heap->as_array); }
 
 /** @return If the `heap` is not null, returns it's size. @allow */
 static size_t T_(size)(const struct t_(heap) *const heap)
@@ -247,23 +212,23 @@ static size_t T_(size)(const struct t_(heap) *const heap)
 
 /** Copies `node` into `heap`.
  @return Success. @throws[ERANGE, realloc] @order \O(log `heap.size`) @allow */
-static int T_(add)(struct t_(heap) *const heap, pT_(node) node) {
+static int T_(add)(struct t_(heap) *const heap, pT_(priority) node) {
 	assert(heap);
-	return pT_(node_array_new)(&heap->as_array) && (pT_(sift_up)(heap, &node), 1);
+	return pT_(priority_array_new)(&heap->as_array) && (pT_(sift_up)(heap, node), 1);
 }
 
 /** @return The value of the lowest element in `heap` or null when the heap is
  empty. @order \O(1) @allow */
-static pT_(node) *T_(peek)(const struct t_(heap) *const heap)
+static pT_(priority) *T_(peek)(const struct t_(heap) *const heap)
 	{ return assert(heap), heap->as_array.size ? heap->as_array.data : 0; }
 
 /** Only defined when <fn:<H>heap_size> returns true. Removes the lowest
  element. @return The value of the lowest element in `heap`.
  @order \O(\log `size`) @allow */
-static pT_(value) T_(pop)(struct t_(heap) *const heap) {
-	pT_(node) n;
+static pT_(priority) T_(pop)(struct t_(heap) *const heap) {
+	pT_(priority) n;
 	return assert(heap && heap->as_array.size),
-		(n = pT_(remove)(heap), pT_(get_value)(&n));
+		(n = pT_(remove)(heap), n);
 }
 
 /** The capacity of `heap` will be increased to at least `n` elements beyond
@@ -274,8 +239,8 @@ static pT_(value) T_(pop)(struct t_(heap) *const heap) {
  @return The start of the buffered space. If `a` is idle and `buffer` is zero,
  a null pointer is returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */
-static pT_(node) *T_(buffer)(struct t_(heap) *const heap,
-	const size_t n) { return pT_(node_array_buffer)(&heap->as_array, n); }
+static pT_(priority) *T_(buffer)(struct t_(heap) *const heap,
+	const size_t n) { return pT_(priority_array_buffer)(&heap->as_array, n); }
 
 /** Adds and heapifies `n` elements to `heap`. Uses <Floyd, 1964, Treesort> to
  sift-down all the internal nodes of heap. The heap elements must exist, see
@@ -283,11 +248,11 @@ static pT_(node) *T_(buffer)(struct t_(heap) *const heap,
  @param[n] If zero, returns true without heapifying.
  @return Success. @order \O(`heap.size` + `n`) <Doberkat, 1984, Floyd> @allow */
 static void T_(append)(struct t_(heap) *const heap, const size_t n) {
-	pT_(node) *more;
+	pT_(priority) *more;
 	/* In practice, pushing uninitialized elements onto the heap does not make
 	 sense, so we assert that the elements exist first. */
 	assert(heap && n <= heap->as_array.capacity - heap->as_array.size);
-	more = pT_(node_array_append)(&heap->as_array, n), assert(more);
+	more = pT_(priority_array_append)(&heap->as_array, n), assert(more);
 	if(n) pT_(heapify)(heap);
 }
 
@@ -296,14 +261,14 @@ static void T_(append)(struct t_(heap) *const heap, const size_t n) {
  @order \O(`heap.size` + `copy.size`) @throws[ERANGE, realloc] @allow */
 static int T_(affix)(struct t_(heap) *restrict const heap,
 	const struct t_(heap) *restrict const master) {
-	pT_(node) *n;
+	pT_(priority) *n;
 	assert(heap);
 	if(!master || !master->as_array.size) return 1;
 	assert(master->as_array.data);
-	if(!(n = pT_(node_array_buffer)(&heap->as_array, master->as_array.size)))
+	if(!(n = pT_(priority_array_buffer)(&heap->as_array, master->as_array.size)))
 		return 0;
 	memcpy(n, master->as_array.data, sizeof *n * master->as_array.size);
-	n = pT_(node_array_append)(&heap->as_array, master->as_array.size),
+	n = pT_(priority_array_append)(&heap->as_array, master->as_array.size),
 		assert(n);
 	pT_(heapify)(heap);
 	return 1;
@@ -311,7 +276,7 @@ static int T_(affix)(struct t_(heap) *restrict const heap,
 
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
-	pT_(node) unused; memset(&unused, 0, sizeof unused);
+	pT_(priority) unused; memset(&unused, 0, sizeof unused);
 	T_(begin)(0); T_(cursor_exists)(0); T_(cursor_look)(0); T_(cursor_next)(0);
 	t_(heap)(); t_(heap_)(0); T_(clear)(0); T_(size)(0);
 	T_(add)(0, unused); T_(peek)(0); T_(pop)(0);
