@@ -164,6 +164,7 @@ static void pT_(sift_up)(struct t_(heap) *const heap, pT_(node) *const node) {
 		size_t i_up;
 		do { /* Note: don't change the `<=`; it's a queue. */
 			i_up = (i - 1) >> 1;
+			/* Make sure that `<HEAP_NAME>_less` is defined. */
 			if(t_(less)(pT_(get_priority)(n0 + i_up), p) <= 0) break;
 			n0[i] = n0[i_up];
 		} while((i = i_up));
