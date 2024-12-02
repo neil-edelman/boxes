@@ -13,18 +13,12 @@
  <Knuth, 1973, Sorting>. It is an array implementation of a priority queue. It
  is not stable.
 
+ A function satisfying <typedef:<pT>less_fn>. For example, a maximum heap,
+ `(a, b) -> a < b`.
+
  @param[HEAP_NAME, HEAP_TYPE]
  `<S>` that satisfies `C` naming conventions when mangled. `HEAP_NAME` is
  required; `HEAP_TYPE` defaults to `unsigned int`.
-
- @param[HEAP_DISORDERED]
- A function satisfying <typedef:<pT>disordered_fn>. Defaults to minimum-hash.
- Required if `HEAP_TYPE` is changed to an incomparable type. For example, a
- maximum heap, `(a, b) -> a < b`.
-
- @param[HEAP_VALUE]
- Optional value <typedef:<PS>value>, that, on `HEAP_VALUE`, is stored in
- <tag:<S>heapnode>.
 
  @param[HEAP_TO_STRING]
  To string trait contained in <src/to_string.h>. Require
