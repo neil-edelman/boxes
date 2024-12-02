@@ -108,6 +108,7 @@ typedef pT_(priority_c) pT_(node_c); /* fixme? */
 
  ![States.](../doc/heap/states.png) */
 struct t_(heap) { struct pT_(node_array) as_array; };
+typedef struct t_(heap) pT_(box);
 
 struct T_(cursor) { struct pT_(node_array_cursor) _; };
 

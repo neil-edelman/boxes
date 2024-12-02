@@ -16,8 +16,8 @@ static int min_less(const unsigned a, const unsigned b) { return a < b; }
 #include "../src/heap.h"
 
 
-#if 0
 /* Also an `unsigned int`, but with testing. */
+static int int_less(const unsigned a, const unsigned b) { return a < b; }
 static void int_to_string(const unsigned *const i, char (*const z)[12])
 	{ sprintf(*z, "%u", *i); }
 static void int_filler(unsigned *const p)
@@ -28,6 +28,7 @@ static void int_filler(unsigned *const p)
 #include "../src/heap.h"
 
 
+#if 0
 /* Value pointer along with a priority. We have to store values somewhere, so
  we use a pool, (which depends on `heap`, it has evolved.) */
 struct orc { char name[12]; };
@@ -49,22 +50,22 @@ static void orc_filler(unsigned *const health, struct orc **const orc_ptr) {
 #define HEAP_TO_STRING
 #define BOX_TEST
 #include "../src/heap.h"
+#endif
 
 
 /* Maximum heap with a `size_t`. */
-static void index_to_string(const size_t *const i, char (*const a)[12]) {
-	sprintf(*a, "%lu", (unsigned long)*i);
-}
+static void index_to_string(const size_t *const i, char (*const a)[12])
+	{ sprintf(*a, "%lu", (unsigned long)*i); }
 static void index_filler(size_t *const p) { *p = (size_t)rand(); }
-static int index_compare(const size_t a, const size_t b) { return a < b; }
+static int index_less(const size_t a, const size_t b) { return a < b; }
 #define HEAP_NAME index
 #define HEAP_TYPE size_t
-#define BOX_COMPARE &index_compare
-#define BOX_TEST
+#define HEAP_TEST
 #define HEAP_TO_STRING
 #include "../src/heap.h"
 
 
+#if 0
 /* Heap separate header. */
 #define HEAP_NAME header
 #define BOX_DELARE_ONLY
@@ -82,9 +83,9 @@ static void header_filler(unsigned *const p) { int_filler(p); }
 
 int main(void) {
 	rand();
-	/*int_heap_test();
-	orc_heap_test(), orc_pool_(&orcs);
+	int_heap_test();
+	/*orc_heap_test(), orc_pool_(&orcs);*/
 	index_heap_test();
-	header_heap_test();*/
+	/*header_heap_test();*/
 	return EXIT_SUCCESS;
 }

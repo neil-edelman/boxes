@@ -497,8 +497,8 @@ static void pT_(test_insert)(void) {
 /** `BOX_TEST`, `BOX_TO_STRING`, !`NDEBUG`: will be tested on stdout.
  @allow */
 static void T_(test)(void) {
-	printf("array<" QUOTE(BOX_NAME) "> of type <" QUOTE(BOX_TYPE)
-		"> was created using: BOX_TO_STRING; BOX_TEST; testing:\n");
+	printf("<" QUOTE(BOX_NAME) ">array of type <" QUOTE(BOX_TYPE)
+		"> was created using: ARRAY_TO_STRING; ARRAY_TEST; testing:\n");
 	pT_(test_basic)();
 	pT_(test_random)();
 	pT_(test_replace)();
@@ -506,7 +506,7 @@ static void T_(test)(void) {
 	pT_(test_each)();
 	pT_(test_trim)();
 	pT_(test_insert)();
-	fprintf(stderr, "Done tests of array<" QUOTE(BOX_NAME) ">.\n\n");
+	fprintf(stderr, "Done tests of <" QUOTE(BOX_NAME) ">array.\n\n");
 }
 
 #undef QUOTE

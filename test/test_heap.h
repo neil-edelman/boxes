@@ -52,7 +52,7 @@ static void pT_(valid)(const struct t_(heap) *const heap) {
 	if(!(n0 = heap->as_array.data)) { assert(!heap->as_array.size); return; }
 	for(i = 1; i < heap->as_array.size; i++) {
 		size_t iparent = (i - 1) >> 1;
-		if(pT_(compare)(pT_(get_priority)(n0 + iparent),
+		if(t_(less)(pT_(get_priority)(n0 + iparent),
 			pT_(get_priority)(n0 + i)) <= 0) continue;
 		pT_(graph)(heap, "graph/" QUOTE(BOX_NAME) "-invalid.gv");
 		assert(0);
@@ -181,7 +181,7 @@ static void pT_(test_basic)(void) {
 		assert(heap.as_array.size == i - 1 && T_(size)(&heap) == i - 1);
 		pT_(valid)(&heap);
 		if(i != cum_size)
-			assert(pT_(disordered)(last_priority, pT_(get_priority)(node)) <= 0);
+			assert(t_(less)(last_priority, pT_(get_priority)(node)) <= 0);
 		last_priority = pT_(get_priority)(node);
 	}
 	printf("Destructor:\n");
@@ -194,17 +194,16 @@ static void pT_(test_basic)(void) {
  `NDEBUG` while defining `assert`.
  @param[param] The `void *` parameter in `HEAP_TEST`. Can be null. @allow */
 static void T_(test)(void) {
-	printf("<" QUOTE(BOX_NAME) ">heap"
-		" of priority type <" QUOTE(BOX_TYPE) ">"
+	printf("<" QUOTE(HEAP_NAME) ">heap"
+		" of priority type <" QUOTE(HEAP_TYPE) ">"
 		" was created using:"
-		" BOX_COMPARE<" QUOTE(BOX_COMPARE) ">;"
 #ifdef HEAP_VALUE
 		" HEAP_VALUE<" QUOTE(HEAP_VALUE) ">;"
 #endif
-		" HEAP_TEST <" QUOTE(HEAP_TEST) ">;"
+		" HEAP_TO_STRING; HEAP_TEST;"
 		" testing:\n");
 	pT_(test_basic)();
-	fprintf(stderr, "Done tests of <" QUOTE(BOX_NAME) ">heap.\n\n");
+	fprintf(stderr, "Done tests of <" QUOTE(HEAP_NAME) ">heap.\n\n");
 }
 
 #undef QUOTE
