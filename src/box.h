@@ -23,7 +23,7 @@
 #	undef BOX_ALL
 #	if !defined(BOX_CAT_) || !defined(BOX_CAT) \
 		|| !defined(t_) || !defined(T_) || !defined(pT_) \
-		|| !defined(s_) || !defined(S_) || !defined(pS_) \
+		|| !defined(t2_) || !defined(T2_) || !defined(pT2_) \
 		|| !defined(tn_) || !defined(TN_) || !defined(pTN_) \
 		|| !defined(BOX_ENTRY1)
 #		error Missing preprocessor symbols.
@@ -32,14 +32,14 @@
 
 #ifdef BOX_NAME_MISSING
 #	undef BOX_NAME_MISSING
-#	if defined(BOX_T_MINOR) || defined(BOX_T_MAJOR)
+#	if defined(BOX_MINOR) || defined(BOX_MAJOR)
 #		error Unexpected box name.
 #	endif
 #endif
 
 #ifdef BOX_NAME_PRESENT
 #	undef BOX_NAME_PRESENT
-#	if !defined(BOX_T_MINOR) || !defined(BOX_T_MAJOR)
+#	if !defined(BOX_MINOR) || !defined(BOX_MAJOR)
 #		error Missing box name.
 #	endif
 #endif
@@ -62,12 +62,12 @@
  including sub-containers—this is not real recursion. */
 #		define BOX_CAT_(n, m) n ## _ ## m
 #		define BOX_CAT(n, m) BOX_CAT_(n, m)
-#		define t_(n) BOX_CAT(BOX_T_MINOR, n)
-#		define T_(n) t_(BOX_CAT(BOX_T_MAJOR, n))
+#		define t_(n) BOX_CAT(BOX_MINOR, n)
+#		define T_(n) t_(BOX_CAT(BOX_MAJOR, n))
 #		define pT_(n) BOX_CAT(private, T_(n))
-#		define s_(n) BOX_CAT(BOX_S_MINOR, n)
-#		define S_(n) s_(BOX_CAT(BOX_S_MAJOR, n))
-#		define pS_(n) BOX_CAT(private, S_(n))
+#		define t2_(n) BOX_CAT(BOX_MINOR2, n)
+#		define T2_(n) t2_(BOX_CAT(BOX_MAJOR2, n))
+#		define pT2_(n) BOX_CAT(private, T2_(n))
 #		ifdef BOX_TRAIT
 #			define tn_(n) t_(BOX_CAT(BOX_TRAIT, n))
 #			define TN_(n) T_(BOX_CAT(BOX_TRAIT, n))
@@ -93,7 +93,7 @@
 #	define BOX_ALL
 #	include "box.h"
 #	ifdef BOX_ENTRY2
-#		#undef BOX_ENTRY2
+#		undef BOX_ENTRY2
 #	else
 #		undef BOX_ENTRY1
 #		undef BOX_CAT_
@@ -101,9 +101,9 @@
 #		undef t_
 #		undef T_
 #		undef pT_
-#		undef s_
-#		undef S_
-#		undef pS_
+#		undef t2_
+#		undef T2_
+#		undef pT2_
 #		undef tn_
 #		undef TN_
 #		undef pTN_

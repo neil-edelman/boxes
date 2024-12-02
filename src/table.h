@@ -789,7 +789,7 @@ static int N_(table_remove)(struct N_(table) *const table,
 #define BOX_TYPE struct N_(table)
 #define BOX_CONTENT struct PN_(bucket)
 #define BOX_ PN_
-#define BOX_T_MAJOR table
+#define BOX_MAJOR table
 #define BOX_NAME TABLE_NAME
 
 #ifdef HAVE_ITERATE_H /* <!-- iterate */
@@ -898,7 +898,7 @@ static void PN_D_(unused, default_coda)(void) { PN_D_(unused, default)(); }
 #undef BOX_TYPE
 #undef BOX_CONTENT
 #undef BOX_
-#undef BOX_T_MAJOR
+#undef BOX_MAJOR
 #undef BOX_NAME
 #undef TABLE_NAME
 #undef TABLE_KEY

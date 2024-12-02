@@ -76,7 +76,7 @@
 #	define BOX_CAT_(n, m) n ## _ ## m
 #	define BOX_CAT(n, m) BOX_CAT_(n, m)
 #	define T_(n) BOX_CAT(BOX_NAME, n)
-#	define pT_(n) BOX_CAT(BOX_CAT(private, BOX_T_MAJOR), T_(n))
+#	define pT_(n) BOX_CAT(BOX_CAT(private, BOX_MAJOR), T_(n))
 #endif
 
 #ifndef TRIE_H /* Idempotent. */
@@ -880,7 +880,7 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #define BOX_TYPE struct T_(trie)
 #define BOX_CONTENT struct pT_(ref)
 #define BOX_ pT_
-#define BOX_T_MAJOR trie
+#define BOX_MAJOR trie
 #define BOX_NAME TRIE_NAME
 
 #endif /* body --> */
@@ -935,7 +935,7 @@ static void PTT_(to_string)(const struct pT_(ref) r,
 #undef BOX_TYPE
 #undef BOX_CONTENT
 #undef BOX_
-#undef BOX_T_MAJOR
+#undef BOX_MAJOR
 #undef BOX_NAME
 #undef TRIE_NAME
 #ifdef TRIE_ENTRY

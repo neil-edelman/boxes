@@ -37,7 +37,7 @@
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
 #	error Name or tag type undefined.
 #endif
-/* #if defined(BOX_TRAIT) ^ defined(BOX_T_MAJOR)
+/* #if defined(BOX_TRAIT) ^ defined(BOX_MAJOR)
 #	error BOX_TRAIT name must come after BOX_EXPECT_TRAIT.
 #endif */
 #if defined(BOX_COMPARE) && defined(BOX_IS_EQUAL)
@@ -57,10 +57,9 @@
 #	include <errno.h>
 #	include <assert.h>
 
-/* Box override information stays until the box is done. */
-#	define BOX_T_MINOR ARRAY_NAME
-#	define BOX_T_MAJOR array
-#	define BOX_ACCESS
+#	define BOX_MINOR ARRAY_NAME
+#	define BOX_MAJOR array
+#	define BOX_ACCESS /* fixme: Have all the functions individually. */
 #	define BOX_CONTIGUOUS
 
 #	ifndef ARRAY_MIN_CAPACITY
@@ -338,8 +337,8 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #ifdef BOX_EXPECT_TRAIT
 #	undef BOX_EXPECT_TRAIT
 #else
-#	undef BOX_T_MINOR
-#	undef BOX_T_MAJOR
+#	undef BOX_MINOR
+#	undef BOX_MAJOR
 #	undef BOX_ACCESS
 #	undef BOX_CONTIGUOUS
 #	undef ARRAY_NAME

@@ -519,12 +519,12 @@ static void pT_(test)(void) {
 #pragma push_macro("BOX_TYPE")
 #pragma push_macro("BOX_CONTENT")
 #pragma push_macro("BOX_")
-#pragma push_macro("BOX_T_MAJOR")
+#pragma push_macro("BOX_MAJOR")
 #pragma push_macro("BOX_NAME")
 #undef BOX_TYPE
 #undef BOX_CONTENT
 #undef BOX_
-#undef BOX_T_MAJOR
+#undef BOX_MAJOR
 #undef BOX_NAME
 /* Pointer array for random sampling. */
 #define ARRAY_NAME pT_(handle)
@@ -535,7 +535,7 @@ static void pT_(test)(void) {
 #define POOL_TYPE pT_(entry)
 #include "../src/pool.h"
 #pragma pop_macro("BOX_NAME")
-#pragma pop_macro("BOX_T_MAJOR")
+#pragma pop_macro("BOX_MAJOR")
 #pragma pop_macro("BOX_")
 #pragma pop_macro("BOX_CONTENT")
 #pragma pop_macro("BOX_TYPE")

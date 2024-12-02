@@ -17,8 +17,8 @@
  `<S>` that satisfies `C` naming conventions when mangled. `HEAP_NAME` is
  required; `HEAP_TYPE` defaults to `unsigned int`.
 
- @param[BOX_COMPARE]
- A function satisfying <typedef:<PS>compare_fn>. Defaults to minimum-hash.
+ @param[BOX_DISORDERED]
+ A function satisfying <typedef:<pT>disordered_fn>. Defaults to minimum-hash.
  Required if `HEAP_TYPE` is changed to an incomparable type. For example, a
  maximum heap, `(a, b) -> a < b`.
 
@@ -43,7 +43,7 @@
 #ifndef HEAP_NAME
 #error Name undefined.
 #endif
-#if defined(BOX_TRAIT) ^ defined(BOX_T_MAJOR)
+#if defined(BOX_TRAIT) ^ defined(BOX_MAJOR)
 #error BOX_TRAIT name must come after BOX_EXPECT_TRAIT.
 #endif
 #if defined(BOX_TEST) && (!defined(BOX_TRAIT) && !defined(BOX_TO_STRING) \
@@ -58,176 +58,166 @@
 #include "box.h"
 
 #ifndef BOX_TRAIT /* Base code, necessarily first. */
+#	define BOX_MINOR HEAP_NAME
+#	define BOX_MAJOR heap
 
 #	ifndef HEAP_TYPE
 #		define HEAP_TYPE unsigned
 #	endif
 
-/* Box override information stays until the box is done. */
-#	define BOX_S_MINOR HEAP_NAME
-#	define BOX_S_MAJOR heap
-
-/* Used to refer to heap as array. */ /* fixme? */
-//#	define PAH_(n) BOX_CAT(BOX_CAT(array, PH_(node)), n)
-
 /** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
  `unsigned int` if not set by `HEAP_TYPE`. */
-typedef HEAP_TYPE pS_(priority);
-typedef const HEAP_TYPE pS_(priority_c); /* This is assuming a lot? */
+typedef HEAP_TYPE pT_(priority);
+typedef const HEAP_TYPE pT_(priority_c); /* This is assuming a lot? */
 
 #	ifdef BOX_VALUE
-typedef BOX_VALUE pS_(value);
-typedef const BOX_VALUE pS_(value_c); /* Assume! */
+typedef BOX_VALUE pT_(value);
+typedef const BOX_VALUE pT_(value_c); /* Assume! */
 /** If `BOX_VALUE` is set, this becomes <typedef:<PH>node>. */
-struct S_(heapnode) { pS_(priority) priority; pS_(value) value; };
+struct T_(heapnode) { pT_(priority) priority; pT_(value) value; };
 /** If `BOX_VALUE` is set, (priority, value) set by <tag:<H>heapnode>,
  otherwise it's a (priority) set directly by <typedef:<PH>priority>. */
-typedef struct S_(heapnode) pS_(node);
-typedef const struct S_(heapnode) pS_(node_c);
+typedef struct T_(heapnode) pT_(node);
+typedef const struct T_(heapnode) pT_(node_c);
 #	else
-typedef pS_(priority) pS_(value);
-typedef pS_(priority) pS_(node);
-typedef pS_(priority_c) pS_(node_c); /* fixme? */
+typedef pT_(priority) pT_(value);
+typedef pT_(priority) pT_(node);
+typedef pT_(priority_c) pT_(node_c); /* fixme? */
 #	endif
 
-/* This relies on <src/array.h> which must be in the same directory. */
-
-#	define ARRAY_NAME pS_(node)
-#	define ARRAY_TYPE pS_(node)
+/* This relies on <array.h> which must be in the same directory. */
+#	undef BOX_MINOR
+#	undef BOX_MAJOR
+#	define BOX_MINOR2 HEAP_NAME
+#	define BOX_MAJOR2 heap
+#	define ARRAY_NAME pT2_(node)
+#	define ARRAY_TYPE pT2_(node)
 #	include "array.h"
+#	define BOX_MINOR HEAP_NAME
+#	define BOX_MAJOR heap
 
-
-/** Stores the heap as an implicit binary tree in an array called `a`. To
+/** Stores the heap as an array—implicit binary tree in an array called `a`. To
  initialize it to an idle state, see <fn:<H>heap>, `{0}` (`C99`), or being
  `static`.
 
  ![States.](../doc/heap/states.png) */
-/* fixme: does not-reversing the words create a naming conflict?
- private_min_heap_node_array */
-/* No. You needed to define BOX_S… before. */
-struct S_(heap) { struct pS_(node_array) as_array; };
+struct t_(heap) { struct pT_(node_array) as_array; };
 
-/* fixme: now we have no use for private iterators. */
-struct pS_(iterator) { struct pS_(cursor) _; };
+struct T_(cursor) { struct pT_(node_array_cursor) _; };
 
-#ifndef BOX_DELARE_ONLY /* <!-- body */
+#	ifndef BOX_DELARE_ONLY /* <!-- body */
 
-#ifdef BOX_BODY /* <!-- real body: get the array functions, if separate. */
-#define ARRAY_NAME PH_(node)
-#define ARRAY_TYPE PH_(node)
-#define ARRAY_DEFINE_ONLY
-#include "array.h"
-#endif /* real body --> */
+#		ifdef BOX_BODY /* <!-- real body: get the array functions, if separate. */
+// wtf? why is this even here?
+//#define ARRAY_NAME pT_(node)
+//#define ARRAY_TYPE pT_(node)
+//#define ARRAY_DEFINE_ONLY
+//#include "array.h"
+#		endif /* real body --> */
 
-/** Returns a positive result if `a` is out-of-order with respect to `b`,
- inducing a strict weak order. This is compatible, but less strict then the
- comparators from `bsearch` and `qsort`; it only needs to divide entries into
- two instead of three categories. */
-typedef int (*PH_(compare_fn))(PH_(priority_c) a, PH_(priority_c) b);
-#ifndef BOX_COMPARE /* <!-- !cmp */
-/** The default `BOX_COMPARE` on `a` and `b` is `a > b`, which makes a
+/** Inducing a strict weak order by returning a positive result if `a` is
+ out-of-order with respect to `b`. It only needs to divide entries into
+ two instead of three categories—is compatible, but less strict then the
+ comparators from `bsearch` and `qsort`. */
+typedef int (*pT_(disordered_fn))(pT_(priority_c) a, pT_(priority_c) b);
+#		ifndef BOX_DISORDERED
+/** The default `BOX_DISORDERED` on `a` and `b` is `a > b`, which makes a
  minimum-hash. @implements <typedef:<PH>compare_fn> */
-static int PH_(default_compare)(PH_(priority_c) a, PH_(priority_c) b)
+static int pT_(default_disordered)(pT_(priority_c) a, pT_(priority_c) b)
 	{ return a > b; }
-#define BOX_COMPARE &PH_(default_compare)
-#endif /* !cmp --> */
-/* Check that `BOX_COMPARE` is a function implementing
+#			define BOX_DISORDERED &pT_(default_disordered)
+#		endif
+/* Check that `BOX_DISORDERED` is a function implementing
  <typedef:<PH>compare_fn>, if defined. */
-static const PH_(compare_fn) PH_(compare) = (BOX_COMPARE);
+static const pT_(disordered_fn) pT_(disordered) = (BOX_DISORDERED);
 
-/** @return Before `h`. @implements `forward` */
-static struct PH_(iterator) PH_(iterator)(struct H_(heap) *const h)
-	{ struct PH_(iterator) it; it._ = PAH_(iterator)(&h->as_array); return it; }
-/** @return Dereferences `it`. */
-static PH_(node) *PH_(element)(struct PH_(iterator) *const it)
-	{ return PAH_(element)(&it->_); }
-/** @return Next `it`. */
-static int PH_(next)(struct PH_(iterator) *const it)
-	{ return PAH_(next)(&it->_); }
+static struct T_(cursor) T_(begin)(struct t_(heap) *const h)
+	{ struct T_(cursor) it; it._ = pT_(node_array_begin)(&h->as_array); return it; }
+static int T_(cursor_exists)(struct T_(cursor) *const cur)
+	{ return pT_(node_array_cursor_exists)(&cur->_); }
+static pT_(node) *T_(cursor_look)(struct T_(cursor) *const cur)
+	{ return pT_(node_array_cursor_look)(&cur->_); }
+static void T_(cursor_next)(struct T_(cursor) *const cur)
+	{ pT_(node_array_cursor_next)(&cur->_); }
 
 /** Extracts the <typedef:<PH>priority> of `node`, which must not be null. */
-static PH_(priority) PH_(get_priority)(const PH_(node) *const node) {
+static pT_(priority) pT_(get_priority)(const pT_(node) *const node) {
 #ifdef BOX_VALUE
 	return node->priority;
 #else
 	return *node;
 #endif
 }
-
 /** Extracts the <typedef:<PH>value> of `node`, which must not be null. */
-static PH_(value) PH_(get_value)(const PH_(node) *const node) {
+static pT_(value) pT_(get_value)(const pT_(node) *const node) {
 #ifdef BOX_VALUE
 	return node->value;
 #else
 	return *node;
 #endif
 }
-
 /** Find the spot in `heap` where `node` goes and put it there.
  @param[heap] At least one entry; the last entry will be replaced by `node`.
  @order \O(log `size`) */
-static void PH_(sift_up)(struct H_(heap) *const heap, PH_(node) *const node) {
-	PH_(node) *const n0 = heap->as_array.data;
-	PH_(priority) p = PH_(get_priority)(node);
+static void pT_(sift_up)(struct t_(heap) *const heap, pT_(node) *const node) {
+	pT_(node) *const n0 = heap->as_array.data;
+	pT_(priority) p = pT_(get_priority)(node);
 	size_t i = heap->as_array.size - 1;
-	assert(heap && heap->as_array.size && node);
 	if(i) {
 		size_t i_up;
 		do { /* Note: don't change the `<=`; it's a queue. */
 			i_up = (i - 1) >> 1;
-			if(PH_(compare)(PH_(get_priority)(n0 + i_up), p) <= 0) break;
+			if(pT_(disordered)(pT_(get_priority)(n0 + i_up), p) <= 0) break;
 			n0[i] = n0[i_up];
 		} while((i = i_up));
 	}
 	n0[i] = *node;
 }
-
 /** Pop the head of `heap` and restore the heap by sifting down the last
  element. @param[heap] At least one entry. The head is popped, and the size
  will be one less. */
-static void PH_(sift_down)(struct H_(heap) *const heap) {
+static void pT_(sift_down)(struct t_(heap) *const heap) {
 	const size_t size = (assert(heap && heap->as_array.size),
 		--heap->as_array.size), half = size >> 1;
 	size_t i = 0, c;
-	PH_(node) *const n0 = heap->as_array.data,
+	pT_(node) *const n0 = heap->as_array.data,
 		*const down = n0 + size /* Put it at the top. */, *child;
-	const PH_(priority) down_p = PH_(get_priority)(down);
+	const pT_(priority) down_p = pT_(get_priority)(down);
 	while(i < half) {
 		c = (i << 1) + 1;
-		if(c + 1 < size && PH_(compare)(PH_(get_priority)(n0 + c),
-			PH_(get_priority)(n0 + c + 1)) > 0) c++;
+		if(c + 1 < size && pT_(disordered)(pT_(get_priority)(n0 + c),
+			pT_(get_priority)(n0 + c + 1)) > 0) c++;
 		child = n0 + c;
-		if(PH_(compare)(down_p, PH_(get_priority)(child)) <= 0) break;
+		if(pT_(disordered)(down_p, pT_(get_priority)(child)) <= 0) break;
 		n0[i] = *child;
 		i = c;
 	}
 	n0[i] = *down;
 }
-
 /** Restore the `heap` by permuting the elements so `i` is in the proper place.
  This reads from the an arbitrary leaf-node into a temporary value, so is
  slightly more complex than <fn:<PH>sift_down>, but the same thing.
  @param[heap] At least `i + 1` entries. */
-static void PH_(sift_down_i)(struct H_(heap) *const heap, size_t i) {
+static void pT_(sift_down_i)(struct t_(heap) *const heap, size_t i) {
 	const size_t size = (assert(heap && i < heap->as_array.size),
 		heap->as_array.size), half = size >> 1;
 	size_t c;
 	/* Uninitialized variable warning suppression. */
-	PH_(node) *const n0 = heap->as_array.data, *child, temp = *(&temp);
+	pT_(node) *const n0 = heap->as_array.data, *child, temp = *(&temp);
 	int temp_valid = 0;
 	while(i < half) {
 		c = (i << 1) + 1;
-		if(c + 1 < size && PH_(compare)(PH_(get_priority)(n0 + c),
-			PH_(get_priority)(n0 + c + 1)) > 0) c++;
+		if(c + 1 < size && pT_(disordered)(pT_(get_priority)(n0 + c),
+			pT_(get_priority)(n0 + c + 1)) > 0) c++;
 		child = n0 + c;
 		if(temp_valid) {
-			if(PH_(compare)(PH_(get_priority)(&temp),
-				PH_(get_priority)(child)) <= 0) break;
+			if(pT_(disordered)(pT_(get_priority)(&temp),
+				pT_(get_priority)(child)) <= 0) break;
 		} else {
 			/* Only happens on the first compare when `i` is in it's original
 			 position. */
-			if(PH_(compare)(PH_(get_priority)(n0 + i),
-				PH_(get_priority)(child)) <= 0) break;
+			if(pT_(disordered)(pT_(get_priority)(n0 + i),
+				pT_(get_priority)(child)) <= 0) break;
 			temp = n0[i], temp_valid = 1;
 		}
 		n0[i] = *child;
@@ -235,21 +225,18 @@ static void PH_(sift_down_i)(struct H_(heap) *const heap, size_t i) {
 	}
 	if(temp_valid) n0[i] = temp;
 }
-
 /** Create a `heap` from an array. @order \O(`heap.size`) */
-static void PH_(heapify)(struct H_(heap) *const heap) {
+static void pT_(heapify)(struct t_(heap) *const heap) {
 	size_t i;
-	assert(heap);
 	if(heap->as_array.size > 1) for(i = heap->as_array.size / 2 - 1;
-		(PH_(sift_down_i)(heap, i), i); i--);
+		(pT_(sift_down_i)(heap, i), i); i--);
 }
-
 /** Removes from `heap`. Must have a non-zero size. */
-static PH_(node) PH_(remove)(struct H_(heap) *const heap) {
-	const PH_(node) result = *heap->as_array.data;
+static pT_(node) pT_(remove)(struct t_(heap) *const heap) {
+	const pT_(node) result = *heap->as_array.data;
 	assert(heap);
 	if(heap->as_array.size > 1) {
-		PH_(sift_down)(heap);
+		pT_(sift_down)(heap);
 	} else {
 		assert(heap->as_array.size == 1);
 		heap->as_array.size = 0;
@@ -259,42 +246,43 @@ static PH_(node) PH_(remove)(struct H_(heap) *const heap) {
 
 /** Zeroed data (not all-bits-zero) is initialised.
  @return An idle heap. @order \Theta(1) @allow */
-static struct H_(heap) H_(heap)(void)
-	{ struct H_(heap) heap; heap.as_array = PH_(node_array)(); return heap; }
+static struct t_(heap) t_(heap)(void)
+	{ struct t_(heap) heap; heap.as_array = pT_(node_array)(); return heap; }
 
 /** Returns `heap` to the idle state where it takes no dynamic memory.
  @order \Theta(1) @allow */
-static void H_(heap_)(struct H_(heap) *const heap)
-	{ if(heap) PH_(node_array_)(&heap->as_array); }
+static void t_(heap_)(struct t_(heap) *const heap)
+	{ if(heap) pT_(node_array_)(&heap->as_array); }
 
 /** Sets `heap` to be empty. That is, the size of `heap` will be zero, but if
  it was previously in an active non-idle state, it continues to be.
  @param[heap] If null, does nothing. @order \Theta(1) @allow */
-static void H_(heap_clear)(struct H_(heap) *const heap)
-	{ assert(heap), PH_(node_array_clear)(&heap->as_array); }
+static void T_(clear)(struct t_(heap) *const heap)
+	{ assert(heap), pT_(node_array_clear)(&heap->as_array); }
 
 /** @return If the `heap` is not null, returns it's size. @allow */
-static size_t H_(heap_size)(const struct H_(heap) *const heap)
+static size_t T_(size)(const struct t_(heap) *const heap)
 	{ return heap ? heap->as_array.size : 0; }
 
 /** Copies `node` into `heap`.
  @return Success. @throws[ERANGE, realloc] @order \O(log `heap.size`) @allow */
-static int H_(heap_add)(struct H_(heap) *const heap, PH_(node) node) {
+static int T_(add)(struct t_(heap) *const heap, pT_(node) node) {
 	assert(heap);
-	return PH_(node_array_new)(&heap->as_array) && (PH_(sift_up)(heap, &node), 1);
+	return pT_(node_array_new)(&heap->as_array) && (pT_(sift_up)(heap, &node), 1);
 }
 
 /** @return The value of the lowest element in `heap` or null when the heap is
  empty. @order \O(1) @allow */
-static PH_(node) *H_(heap_peek)(const struct H_(heap) *const heap)
+static pT_(node) *T_(peek)(const struct t_(heap) *const heap)
 	{ return assert(heap), heap->as_array.size ? heap->as_array.data : 0; }
 
 /** Only defined when <fn:<H>heap_size> returns true. Removes the lowest
  element. @return The value of the lowest element in `heap`.
  @order \O(\log `size`) @allow */
-static PH_(value) H_(heap_pop)(struct H_(heap) *const heap) {
-	PH_(node) n;
-	return assert(heap && heap->as_array.size), (n = PH_(remove)(heap), PH_(get_value)(&n));
+static pT_(value) T_(pop)(struct t_(heap) *const heap) {
+	pT_(node) n;
+	return assert(heap && heap->as_array.size),
+		(n = pT_(remove)(heap), pT_(get_value)(&n));
 }
 
 /** The capacity of `heap` will be increased to at least `n` elements beyond
@@ -305,79 +293,79 @@ static PH_(value) H_(heap_pop)(struct H_(heap) *const heap) {
  @return The start of the buffered space. If `a` is idle and `buffer` is zero,
  a null pointer is returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */
-static PH_(node) *H_(heap_buffer)(struct H_(heap) *const heap,
-	const size_t n) { return PH_(node_array_buffer)(&heap->as_array, n); }
+static pT_(node) *T_(buffer)(struct t_(heap) *const heap,
+	const size_t n) { return pT_(node_array_buffer)(&heap->as_array, n); }
 
 /** Adds and heapifies `n` elements to `heap`. Uses <Floyd, 1964, Treesort> to
  sift-down all the internal nodes of heap. The heap elements must exist, see
  <fn:<H>heap_buffer>.
  @param[n] If zero, returns true without heapifying.
  @return Success. @order \O(`heap.size` + `n`) <Doberkat, 1984, Floyd> @allow */
-static void H_(heap_append)(struct H_(heap) *const heap, const size_t n) {
-	PH_(node) *more;
+static void T_(append)(struct t_(heap) *const heap, const size_t n) {
+	pT_(node) *more;
 	/* In practice, pushing uninitialized elements onto the heap does not make
 	 sense, so we assert that the elements exist first. */
 	assert(heap && n <= heap->as_array.capacity - heap->as_array.size);
-	more = PH_(node_array_append)(&heap->as_array, n), assert(more);
-	if(n) PH_(heapify)(heap);
+	more = pT_(node_array_append)(&heap->as_array, n), assert(more);
+	if(n) pT_(heapify)(heap);
 }
 
 /** Shallow-copies and heapifies `master` into `heap`.
  @param[master] If null, does nothing. @return Success.
  @order \O(`heap.size` + `copy.size`) @throws[ERANGE, realloc] @allow */
-static int H_(heap_affix)(struct H_(heap) *restrict const heap,
-	const struct H_(heap) *restrict const master) {
-	PH_(node) *n;
+static int T_(affix)(struct t_(heap) *restrict const heap,
+	const struct t_(heap) *restrict const master) {
+	pT_(node) *n;
 	assert(heap);
 	if(!master || !master->as_array.size) return 1;
 	assert(master->as_array.data);
-	if(!(n = PH_(node_array_buffer)(&heap->as_array, master->as_array.size)))
+	if(!(n = pT_(node_array_buffer)(&heap->as_array, master->as_array.size)))
 		return 0;
 	memcpy(n, master->as_array.data, sizeof *n * master->as_array.size);
-	n = PH_(node_array_append)(&heap->as_array, master->as_array.size),
+	n = pT_(node_array_append)(&heap->as_array, master->as_array.size),
 		assert(n);
-	PH_(heapify)(heap);
+	pT_(heapify)(heap);
 	return 1;
 }
 
-static void PH_(unused_base_coda)(void);
-static void PH_(unused_base)(void) {
-	PH_(node) unused; memset(&unused, 0, sizeof unused);
-	PH_(iterator)(0); PH_(element)(0); PH_(next)(0);
-	H_(heap)(); H_(heap_)(0); H_(heap_clear)(0); H_(heap_size)(0);
-	H_(heap_add)(0, unused); H_(heap_peek)(0); H_(heap_pop)(0);
-	H_(heap_buffer)(0, 0); H_(heap_append)(0, 0); H_(heap_affix)(0, 0);
-	PH_(unused_base_coda)();
+static void pT_(unused_base_coda)(void);
+static void pT_(unused_base)(void) {
+	pT_(node) unused; memset(&unused, 0, sizeof unused);
+	T_(begin)(0); T_(cursor_exists)(0); T_(cursor_look)(0); T_(cursor_next)(0);
+	t_(heap)(); t_(heap_)(0); T_(clear)(0); T_(size)(0);
+	T_(add)(0, unused); T_(peek)(0); T_(pop)(0);
+	T_(buffer)(0, 0); T_(append)(0, 0); T_(affix)(0, 0);
+	pT_(unused_base_coda)();
 }
-static void PH_(unused_base_coda)(void) { PH_(unused_base)(); }
+static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 /* Box override information. */
-#define HEAP_TYPE struct H_(heap)
-#define BOX_CONTENT PH_(node)
+#define HEAP_TYPE struct t_(heap)
+#define BOX_CONTENT pT_(node)
 #define BOX_ PH_
-#define BOX_T_MAJOR heap
+#define BOX_MAJOR heap
 #define HEAP_NAME HEAP_NAME
 
 #endif /* body --> */
 
-#undef PAH_ /* From referring to a heap as an array. */
+//#undef PAH_ /* From referring to a heap as an array. */
 
 #endif /* base code --> */
 
 
 #ifdef BOX_TRAIT /* <-- trait: Will be different on different includes. */
 #define BOX_TRAIT_NAME BOX_TRAIT
-#define PHT_(n) PH_(ARRAY_CAT(BOX_TRAIT, n))
+#define PHT_(n) pT_(ARRAY_CAT(BOX_TRAIT, n))
 #define HT_(n) H_(ARRAY_CAT(BOX_TRAIT, n))
 #else /* trait --><!-- !trait */
-#define PHT_(n) PH_(n)
+#define PHT_(n) pT_(n)
 #define HT_(n) H_(n)
 #endif /* !trait --> */
 
 
 #ifdef BOX_TO_STRING /* <!-- to string trait */
 /** Thunk `n` -> `a`. */
-static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12]) {
+static void PHT_(to_string)(const pT_(node) *n, char (*const a)[12]) {
 #ifdef BOX_VALUE
 	HT_(to_string)(n->priority, n->value, a);
 #else
@@ -408,8 +396,8 @@ static void PHT_(to_string)(const PH_(node) *n, char (*const a)[12]) {
 #undef HEAP_TYPE
 #undef BOX_CONTENT
 #undef BOX_
-#undef BOX_T_MAJOR
-#undef BOX_COMPARE
+#undef BOX_MAJOR
+#undef BOX_DISORDERED
 #ifdef BOX_VALUE
 #undef BOX_VALUE
 #endif

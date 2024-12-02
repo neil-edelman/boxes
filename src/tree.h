@@ -1592,7 +1592,7 @@ static void PB_(unused_base_coda)(void) { PB_(unused_base)(); }
 #define BOX_TYPE struct B_(tree)
 #define BOX_CONTENT struct PB_(ref)
 #define BOX_ PB_
-#define BOX_T_MAJOR tree
+#define BOX_MAJOR tree
 #define BOX_NAME TREE_NAME
 
 #endif /* body --> */
@@ -1675,7 +1675,7 @@ static void PB_D_(unused, default_coda)(void) { PB_D_(unused, default)(); }
 #undef BOX_TYPE
 #undef BOX_CONTENT
 #undef BOX_
-#undef BOX_T_MAJOR
+#undef BOX_MAJOR
 #undef BOX_NAME
 #undef TREE_NAME
 #undef TREE_KEY
