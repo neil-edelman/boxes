@@ -43,7 +43,6 @@ static void str4_filler(struct str4 *const s)
 #include "../src/pool.h"
 
 
-#if 0
 static void int_to_string(const int *i, char (*const a)[12])
 	{ sprintf(*a, "%d", *i); }
 static void int_filler(int *const i)
@@ -71,19 +70,15 @@ static void keyval_to_string(const struct keyval *const kv,
 
 
 /* Separate head/body. */
-#define POOL_NAME public
-#define POOL_TYPE enum colour
-#define POOL_HEAD
-#include "../src/pool.h"
-static void public_to_string(const enum colour *c, char (*const a)[12])
+static void static_to_string(const enum colour *c, char (*const a)[12])
 	{ colour_to_string(c, a); }
-static void public_filler(enum colour *const c) { colour_filler(c); }
-#define POOL_NAME public
-#define POOL_TYPE enum colour
-#define POOL_TO_STRING
-#define POOL_TEST
-#define POOL_BODY
-#include "../src/pool.h"
+static void static_filler(enum colour *const c) { colour_filler(c); }
+#define HEADER_POOL_DEFINE
+#include "header_pool.h"
+struct header_pool header_pool(void)
+	{ struct header_pool _; _._ = static_pool(); return _; }
+void header_pool_(struct header_pool *const _) { static_pool_(&_->_); }
+void header_pool_test(void) { static_pool_test(); }
 
 
 /** For paper. */
@@ -106,10 +101,9 @@ static void special(void) {
 		is[r] = 0;
 	}
 finally:
-	pool_colour_graph(&pool, "graph/paper.gv");
+	private_colour_pool_graph(&pool, "graph/paper.gv");
 	colour_pool_(&pool);
 }
-#endif
 
 
 /** Entry point.
@@ -120,10 +114,10 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	colour_pool_test();
 	str4_pool_test();
-	/*int_pool_test();
+	int_pool_test();
 	keyval_pool_test();
-	public_pool_test();
-	special();*/
+	header_pool_test();
+	special();
 	printf("Test success.\n\n");
 
 	return EXIT_SUCCESS;

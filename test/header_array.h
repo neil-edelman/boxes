@@ -3,9 +3,9 @@
  more convenient to have implicit declarations unless otherwise stated. We make
  up a preprocessor variable that flips them. */
 #ifdef HEADER_ARRAY_DEFINE
-#undef HEADER_ARRAY_DEFINE
+#	undef HEADER_ARRAY_DEFINE
 #else
-#define ARRAY_DECLARE_ONLY
+#	define ARRAY_DECLARE_ONLY
 #endif
 
 #define ARRAY_NAME static

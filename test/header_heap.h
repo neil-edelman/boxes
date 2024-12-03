@@ -1,7 +1,7 @@
 #ifdef HEADER_HEAP_DEFINE
-#undef HEADER_HEAP_DEFINE
+#	undef HEADER_HEAP_DEFINE
 #else
-#define HEAP_DECLARE_ONLY
+#	define HEAP_DECLARE_ONLY
 #endif
 
 #define HEAP_NAME static
