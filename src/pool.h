@@ -239,7 +239,7 @@ static int pT_(remove)(struct t_(pool) *const pool,
 
 static struct T_(cursor) T_(begin)(const struct t_(pool) *const p)
 	{ struct T_(cursor) cur; cur.slot0 = p && p->slots.data
-	? p->slots.data + 0 : 0, cur.i = (size_t)~0; return cur; }
+	? p->slots.data + 0 : 0, cur.i = 0; return cur; }
 static int T_(cursor_exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->slot0 && cur->slot0->slab
 	&& cur->i < cur->slot0->size; }
