@@ -23,7 +23,7 @@ static void pT_(graph)(const struct t_(heap) *const heap,
 		"\tedge [arrowhead = none];\n");
 	for(i = 0; i < heap->as_array.size; i++) {
 		const pT_(priority) *const p = heap->as_array.data + i;
-		t_(to_string)(/* Because fuck you. */(const void *)p, &a);
+		t_(to_string)(p, &a);
 		fprintf(fp, "\t\tn%lu [label=\"%s\"];\n", (unsigned long)i, a);
 		if(!i) continue;
 		fprintf(fp, "\t\tn%lu -> n%lu;\n",
@@ -51,7 +51,13 @@ static void pT_(valid)(const struct t_(heap) *const heap) {
 
 static void pT_(test_basic)(void) {
 	struct t_(heap) heap = t_(heap)(), merge = t_(heap)();
-	pT_(priority) add, *node, x, last_priority = 0;
+	pT_(priority) add, *node, x;
+#ifndef TEST_HEAP_ZERO
+	pT_(priority) last_priority = 0;
+#else
+	pT_(priority) last_priority = TEST_HEAP_ZERO;
+#	undef TEST_HEAP_ZERO
+#endif
 	const size_t test_size_1 = 11, test_size_2 = 31, test_size_3 = 4000/*0*/;
 	size_t i, cum_size = 0;
 	char fn[64];

@@ -212,10 +212,9 @@ static size_t T_(size)(const struct t_(heap) *const heap)
 
 /** Copies `node` into `heap`.
  @return Success. @throws[ERANGE, realloc] @order \O(log `heap.size`) @allow */
-static int T_(add)(struct t_(heap) *const heap, pT_(priority) node) {
-	assert(heap);
-	return pT_(priority_array_new)(&heap->as_array) && (pT_(sift_up)(heap, node), 1);
-}
+static int T_(add)(struct t_(heap) *const heap, pT_(priority) node)
+	{ return assert(heap), pT_(priority_array_new)(&heap->as_array)
+		&& (pT_(sift_up)(heap, node), 1); }
 
 /** @return The value of the lowest element in `heap` or null when the heap is
  empty. @order \O(1) @allow */
