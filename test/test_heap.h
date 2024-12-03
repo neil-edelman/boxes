@@ -70,7 +70,7 @@ static void pT_(test_basic)(void) {
 	t_(heap_)(&heap);
 	assert(!heap.as_array.size);
 	assert(!T_(peek)(&heap));
-	/*assert(!T_(pop)(&heap));*/
+	/*assert(!T_(pop)(&heap)); No. */
 	pT_(valid)(&heap);
 	assert(!errno);
 
@@ -82,7 +82,9 @@ static void pT_(test_basic)(void) {
 	node = T_(peek)(&heap);
 	pT_(valid)(&heap);
 	x = T_(pop)(&heap), cum_size--;
-	assert(*node == add && add == x && heap.as_array.size == cum_size);
+	assert(!t_(less)(*node, add) && !t_(less)(add, *node)
+		&& !t_(less)(add, x) && !t_(less)(x, add)
+		&& heap.as_array.size == cum_size);
 	pT_(valid)(&heap);
 
 	printf("Test many.\n");
