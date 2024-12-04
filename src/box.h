@@ -43,10 +43,9 @@
 
 #ifdef BOX_START
 #	undef BOX_START
-/* Allow sub-boxes, but not sub-sub-boxes. */
 #	ifdef BOX_ENTRY1
 #		ifdef BOX_ENTRY2
-#			error No recursion (yet.)
+#			error Three levels of recursion is not supported (yet?)
 #		endif
 #		define BOX_ENTRY2
 #		define BOX_ALL

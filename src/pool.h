@@ -346,5 +346,6 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #ifdef POOL_DECLARE_ONLY
 #	undef POOL_DECLARE_ONLY
 #endif
+#undef POOL_CAST
 #define BOX_END
 #include "box.h"
