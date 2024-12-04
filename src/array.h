@@ -7,23 +7,23 @@
 
  ![Example of array.](../doc/array/array.png)
 
- <tag:<A>array> is a dynamic array that stores contiguous <typedef:<PA>type>.
+ <tag:<t>array> is a dynamic array that stores contiguous <typedef:<pT>type>.
  Resizing may be necessary when increasing the size of the array; this incurs
  amortised cost. As such, the contents are not stable.
 
  @param[ARRAY_NAME, ARRAY_TYPE]
- `<T>` that satisfies `C` naming conventions when mangled and a valid tag-type,
- <typedef:<PA>type>, associated therewith; required.
+ `<t>` that satisfies `C` naming conventions when mangled and a valid tag-type,
+ <typedef:<pT>type>, associated therewith; required.
 
  @param[ARRAY_COMPARE, ARRAY_IS_EQUAL]
  Compare trait contained in <src/compare.h>. Requires
- `<name>[<trait>]compare` to be declared as <typedef:<PTU>compare_fn> or
- `<name>[<trait>]is_equal` to be declared as <typedef:<PTU>bipredicate_fn>,
+ `<name>[<trait>]compare` to be declared as <typedef:<pTN>compare_fn> or
+ `<name>[<trait>]is_equal` to be declared as <typedef:<pTN>bipredicate_fn>,
  respectfully, (but not both.)
 
  @param[ARRAY_TO_STRING]
  To string trait contained in <src/to_string.h>. Requires
- `<name>[<trait>]to_string` be declared as <typedef:<PT>to_string_fn>.
+ `<name>[<trait>]to_string` be declared as <typedef:<pT>to_string_fn>.
 
  @param[ARRAY_EXPECT_TRAIT, ARRAY_TRAIT]
  Named traits are obtained by including `array.h` multiple times with

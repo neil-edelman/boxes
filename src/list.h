@@ -7,14 +7,14 @@
 
  ![Example of a stochastic skip-list.](../doc/list/list.png)
 
- In parlance of <Thareja 2014, Structures>, <tag:<L>list> is a circular
- header, or sentinel, to a doubly-linked list of <tag:<L>listlink>. This is a
+ In parlance of <Thareja 2014, Structures>, <tag:<t>list> is a circular
+ header, or sentinel, to a doubly-linked list of <tag:<t>listlink>. This is a
  closed structure, such that with with a pointer to any element, it is possible
  to extract the entire list. The links will be generally in a larger container
  type.
 
  @param[LIST_NAME]
- `<L>` that satisfies `C` naming conventions when mangled; required. `<PL>` is
+ `<t>` that satisfies `C` naming conventions when mangled; required. `<PL>` is
  private, whose names are prefixed in a manner to avoid collisions.
 
  @param[LIST_COMPARE, LIST_IS_EQUAL]

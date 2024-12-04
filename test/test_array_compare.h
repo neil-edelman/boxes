@@ -8,7 +8,7 @@
 #define QUOTE(name) QUOTE_(name)
 
 /** Fills `fill` that is not equal to `neq` if possible. */
-static int pTN_(fill_unique)(pT_(type) *const fill,
+static int pTR_(fill_unique)(pT_(type) *const fill,
 	const pT_(type) *const neq) {
 	size_t i;
 	assert(fill);
@@ -47,7 +47,7 @@ static int PCMP_(unique_array)(PA_(type) *const fill, const size_t size) {
 #endif /* 0 */
 
 /* fixme: This is not general. */
-static void pTN_(test_compactify)(void) {
+static void pTR_(test_compactify)(void) {
 	struct t_(array) a = t_(array)();
 	pT_(type) ts[9], *t, *t1, *t_prev;
 	const size_t ts_size = sizeof ts / sizeof *ts;
@@ -56,32 +56,32 @@ static void pTN_(test_compactify)(void) {
 	/* Get elements. */
 	assert(ts_size % 3 == 0);
 	for(t_prev = 0, t = ts, t1 = t + ts_size; t < t1; t_prev = t, t += 3) {
-		if(!pTN_(fill_unique)(t, t_prev)) { assert(0); return; }
+		if(!pTR_(fill_unique)(t, t_prev)) { assert(0); return; }
 		memcpy(t + 1, t, sizeof *t);
 		memcpy(t + 2, t, sizeof *t);
 	}
 	if(!T_(append)(&a, ts_size)) { assert(0); return; }
 	memcpy(a.data, ts, sizeof *t * ts_size);
 	printf("\ntest compactify: %s.\n", T_(to_string)(&a));
-	TN_(unique)(&a);
+	TR_(unique)(&a);
 	printf("Compactified: %s.\n", T_(to_string)(&a));
 	assert(a.size == ts_size / 3);
 #ifdef BOX_COMPARE /* <!-- compare */
-	TN_(reverse)(&a);
+	TR_(reverse)(&a);
 	printf("Reverse: %s.\n", T_(to_string)(&a));
 	/* "Discards qualifiers in nested pointer types" sometimes. Cast. */
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(tn_(compare)((const void *)t, (const void *)(t + 1)) >= 0);
-	TN_(sort)(&a);
+		assert(tr_(compare)((const void *)t, (const void *)(t + 1)) >= 0);
+	TR_(sort)(&a);
 	printf("Sorted: %s.\n", T_(to_string)(&a));
 	/* "Discards qualifiers in nested pointer types" sometimes. Cast. */
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
-		assert(tn_(compare)((const void *)t, (const void *)(t + 1)) <= 0);
+		assert(tr_(compare)((const void *)t, (const void *)(t + 1)) <= 0);
 #endif /* compare --> */
 	t_(array_)(&a);
 }
 
-static void pTN_(test_compare)(void) {
+static void pTR_(test_compare)(void) {
 	struct t_(array) a = t_(array)(), b = t_(array)();
 	/*struct A_(array_iterator) it;*/
 	pT_(type) ts[9], *t, *t1;
@@ -115,26 +115,26 @@ static void pTN_(test_compare)(void) {
 	printf("done.\n");
 	assert(!i);
 #endif
-	cmp = TN_(is_equal)(0, 0), assert(cmp);
+	cmp = TR_(is_equal)(0, 0), assert(cmp);
 	printf("a: %s.\n"
 		"b: %s.\n", T_(to_string)(&a), T_(to_string)(&b));
-	cmp = TN_(is_equal)(&a, &b), assert(!cmp);
-	cmp = TN_(is_equal)(&a, 0), assert(!cmp);
-	cmp = TN_(is_equal)(0, &b), /*assert(cmp)*/assert(!cmp); /* Null == size 0. <- nah */
+	cmp = TR_(is_equal)(&a, &b), assert(!cmp);
+	cmp = TR_(is_equal)(&a, 0), assert(!cmp);
+	cmp = TR_(is_equal)(0, &b), /*assert(cmp)*/assert(!cmp); /* Null == size 0. <- nah */
 	if(!T_(append)(&b, ts_size)) { assert(0); return; }
 	memcpy(b.data, ts, sizeof *t * ts_size);
 	printf("now b: %s.\n", T_(to_string)(&b));
-	cmp = TN_(is_equal)(&a, &b), assert(cmp);
+	cmp = TR_(is_equal)(&a, &b), assert(cmp);
 	t_(array_)(&a);
 	t_(array_)(&b);
 }
 
 #ifdef BOX_COMPARE /* <!-- comp */
-static int pTN_(cmp_void)(const void *const a, const void *const b)
-	{ return TN_(compare)(a, b); }
+static int pTR_(cmp_void)(const void *const a, const void *const b)
+	{ return TR_(compare)(a, b); }
 #endif /* comp --> */
 
-static void pTN_(test_sort)(void) {
+static void pTR_(test_sort)(void) {
 #ifdef BOX_COMPARE /* <!-- comp */
 	struct t_(array) as[64], *a;
 	const size_t as_size = sizeof as / sizeof *as;
@@ -151,27 +151,27 @@ static void pTN_(test_sort)(void) {
 		if(!size) continue;
 		assert(x);
 		for(i = 0; i < size; i++) t_(filler)(a->data + i); /* Emplace. */
-		TN_(sort)(a);
+		TR_(sort)(a);
 		for(x = a->data; x < x_end - 1; x++)
-			cmp = tn_(compare)((void *)x, (void *)(x + 1)),
+			cmp = tr_(compare)((void *)x, (void *)(x + 1)),
 			assert(cmp <= 0);
 		/* fixme: Why the void casts again? */
 	}
 	/* Now sort the lists. */
-	qsort(as, as_size, sizeof *as, &pTN_(cmp_void));
+	qsort(as, as_size, sizeof *as, &pTR_(cmp_void));
 	printf("Sorted array of sorted <" QUOTE(BOX_NAME) ">array by "
 		   QUOTE(BOX_COMPARE) ":\n");
 	for(a = as; a < as_end; a++) {
 		printf("array: %s.\n", T_(to_string)(a));
 		if(a == as) continue;
-		cmp = TN_(compare)(a - 1, a);
+		cmp = TR_(compare)(a - 1, a);
 		assert(cmp <= 0);
 	}
 	for(a = as; a < as_end; a++) t_(array_)(a);
 #endif /* comp --> */
 }
 
-static void pTN_(test_bounds)(void) {
+static void pTR_(test_bounds)(void) {
 #ifdef COMPARE /* <!-- compare */
 	/* fixme */
 	struct A_(array) a = A_(array)();
@@ -226,7 +226,7 @@ static void pTN_(test_bounds)(void) {
 
 /** `BOX_TEST`, `BOX_COMPARE` -> `BOX_TO_STRING`, !`NDEBUG`: will be
  tested on stdout. @allow */
-static void TN_(compare_test)(void) {
+static void TR_(compare_test)(void) {
 	printf("<" QUOTE(BOX_NAME) ","
 #ifdef BOX_TRAIT
 		QUOTE(BOX_TRAIT)
@@ -235,10 +235,10 @@ static void TN_(compare_test)(void) {
 #endif
 		">array testing compare:\n");
 	errno = 0;
-	pTN_(test_sort)();
-	pTN_(test_bounds)();
-	pTN_(test_compactify)();
-	pTN_(test_compare)();
+	pTR_(test_sort)();
+	pTR_(test_bounds)();
+	pTR_(test_compactify)();
+	pTR_(test_compare)();
 	assert(errno == 0);
 	fprintf(stderr, "Done tests of <" QUOTE(BOX_NAME) ">array compare.\n\n");
 }

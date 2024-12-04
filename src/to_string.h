@@ -68,13 +68,13 @@ static unsigned to_string_buffer_i;
  12-`char` null-terminated output string, passed as a pointer in the last
  argument. This function can have 2 or 3 arguments, where `<PSTR>element` might
  be a map with a key-value pair.  */
-typedef void (*pTN_(to_string_fn))(const pT_(type) *, char (*)[12]);
+typedef void (*pTR_(to_string_fn))(const pT_(type) *, char (*)[12]);
 #endif /* documentation --> */
 
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
  256 bytes, with limitations of only printing 4 things in a single sequence
  point. @return Address of the static buffer. @order \Theta(1) @allow */
-static const char *TN_(to_string)(const pT_(box) *const box) {
+static const char *TR_(to_string)(const pT_(box) *const box) {
 	union { const pT_(box) *readonly; pT_(box) *promise; } slybox;
 	const char comma = ',', space = ' ', ellipsis[] = "…",
 		left = TO_STRING_LEFT, right = TO_STRING_RIGHT;
@@ -92,7 +92,7 @@ static const char *TN_(to_string)(const pT_(box) *const box) {
 	for(slybox.readonly = box, cur = T_(begin)(slybox.promise);
 		T_(cursor_exists)(&cur); T_(cursor_next)(&cur)) {
 		/* "Discards qualifiers in nested pointer" sometimes. Cast (back). */
-		tn_(to_string)((const void *)T_(cursor_look)(&cur), (char (*)[12])b);
+		tr_(to_string)((const void *)T_(cursor_look)(&cur), (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;
@@ -116,10 +116,10 @@ terminate:
 	return buffer;
 }
 
-static void pTN_(unused_to_string_coda)(void);
-static void pTN_(unused_to_string)(void)
-	{ TN_(to_string)(0); pTN_(unused_to_string_coda)(); }
-static void pTN_(unused_to_string_coda)(void) { pTN_(unused_to_string)(); }
+static void pTR_(unused_to_string_coda)(void);
+static void pTR_(unused_to_string)(void)
+	{ TR_(to_string)(0); pTR_(unused_to_string_coda)(); }
+static void pTR_(unused_to_string_coda)(void) { pTR_(unused_to_string)(); }
 
 #ifdef TO_STRING_EXTERN
 #	undef TO_STRING_EXTERN

@@ -9,7 +9,7 @@
 #	undef BOX_NONE
 #	if defined(BOX_CAT_) || defined(BOX_CAT) \
 		|| defined(t_) || defined(T_) || defined(pT_) \
-		|| defined(tn_) || defined(TN_) || defined(pTN_) \
+		|| defined(tr_) || defined(TR_) || defined(pTR_) \
 		/* We know that these are not defined outside, though they can be
 		 undefined inside. */ \
 		|| defined(BOX_RESTRICT) || defined(BOX_ENTRY1) || defined(BOX_ENTRY2)
@@ -21,7 +21,7 @@
 #	undef BOX_ALL
 #	if !defined(BOX_CAT_) || !defined(BOX_CAT) \
 		|| !defined(t_) || !defined(T_) || !defined(pT_) \
-		|| !defined(tn_) || !defined(TN_) || !defined(pTN_) \
+		|| !defined(tr_) || !defined(TR_) || !defined(pTR_) \
 		|| !defined(BOX_ENTRY1)
 #		error Missing preprocessor symbols.
 #	endif
@@ -63,13 +63,13 @@
 #		define T_(n) t_(BOX_CAT(BOX_MAJOR, n))
 #		define pT_(n) BOX_CAT(private, T_(n))
 #		ifdef BOX_TRAIT
-#			define tn_(n) t_(BOX_CAT(BOX_TRAIT, n))
-#			define TN_(n) T_(BOX_CAT(BOX_TRAIT, n))
-#			define pTN_(n) pT_(BOX_CAT(BOX_TRAIT, n))
+#			define tr_(n) t_(BOX_CAT(BOX_TRAIT, n))
+#			define TR_(n) T_(BOX_CAT(BOX_TRAIT, n))
+#			define pTR_(n) pT_(BOX_CAT(BOX_TRAIT, n))
 #		else /* Anonymous trait. */
-#			define tn_(n) t_(n)
-#			define TN_(n) T_(n)
-#			define pTN_(n) pT_(n)
+#			define tr_(n) t_(n)
+#			define TR_(n) T_(n)
+#			define pTR_(n) pT_(n)
 #		endif
 /* Attribute in C99+; ignore otherwise. */
 #		if !defined(restrict) && (!defined(__STDC__) \
@@ -95,9 +95,9 @@
 #		undef t_
 #		undef T_
 #		undef pT_
-#		undef tn_
-#		undef TN_
-#		undef pTN_
+#		undef tr_
+#		undef TR_
+#		undef pTR_
 #		ifdef BOX_RESTRICT
 #			undef BOX_RESTRICT
 #			undef restrict
