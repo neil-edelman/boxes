@@ -7,12 +7,12 @@
 #include <stdlib.h>	/* EXIT rand */
 #include <stdio.h>  /* printf */
 
-static const char *PL_(colour);
-static size_t PL_(offset); /* The list's offset to the parent. */
+static const char *pT_(colour);
+static size_t pT_(offset); /* The list's offset to the parent. */
 
 /** Names `l`. `dir` is either 0, it names the node, or positive/negative to
  name edges. */
-static char *PL_(name)(const struct L_(listlink) *const l) {
+static char *pT_(name)(const struct t_(listlink) *const l) {
 	static char z[8][64];
 	static unsigned n;
 	char *y = z[n];
@@ -20,10 +20,10 @@ static char *PL_(name)(const struct L_(listlink) *const l) {
 	assert(l);
 	/* Normal or sentinel. */
 	if(l->prev && l->next) {
-		const void *node = (const void *)((const char *)l - PL_(offset));
+		const void *node = (const void *)((const char *)l - pT_(offset));
 		sprintf(y, "n%p", node);
 	} else {
-		sprintf(y, "list_%s:%s", PL_(colour), l->next ? "head" : "tail");
+		sprintf(y, "list_%s:%s", pT_(colour), l->next ? "head" : "tail");
 	}
 	return y;
 }
@@ -34,13 +34,13 @@ static char *PL_(name)(const struct L_(listlink) *const l) {
  @param[offset] For printing multiple lists, offset to the parent type.
  @param[is_nodes] Print nodes; if one is printing the same list, different
  order, then this would be off. */
-static void PL_(subgraph)(struct L_(list) *const list, FILE *const fp,
+static void pT_(subgraph)(struct t_(list) *const list, FILE *const fp,
 	const char *const colour, const size_t offset, const int is_nodes) {
-	struct L_(listlink) *link;
+	struct t_(listlink) *link;
 	char a[12];
 	assert(list && fp && colour);
-	PL_(colour) = colour;
-	PL_(offset) = offset;
+	pT_(colour) = colour;
+	pT_(offset) = offset;
 	fprintf(fp, "\tlist_%s [label=<\n"
 		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td align=\"left\" border=\"0\"><font color=\"Gray75\">&lt;"
@@ -51,37 +51,37 @@ static void PL_(subgraph)(struct L_(list) *const list, FILE *const fp,
 		" bgcolor=\"Grey95\">head</td></tr>\n"
 		"\t<hr/>\n"
 		"\t<tr><td></td></tr>\n"
-		"</table>>, style=none, shape=plain];\n", PL_(colour));
+		"</table>>, style=none, shape=plain];\n", pT_(colour));
 	assert(list->u.flat.next && !list->u.flat.zero && list->u.flat.prev);
 	if(!list->u.flat.next->prev) { /* Empty: drawing has to make an exception. */
 		assert(!list->u.flat.prev->next);
 		fprintf(fp, "\tlist_%s:tail -> list_%s:head"
 			" [color=\"%s4\", style=\"dotted\", arrowhead=\"empty\"];\n"
 			"\tlist_%s:head -> list_%s:tail [color=\"%s\"];\n",
-			PL_(colour), PL_(colour), PL_(colour),
-			PL_(colour), PL_(colour), PL_(colour));
+			pT_(colour), pT_(colour), pT_(colour),
+			pT_(colour), pT_(colour), pT_(colour));
 	} else {
 		fprintf(fp, "\tlist_%s:tail -> %s"
 			" [color=\"%s4\", style=\"dotted\", arrowhead=\"empty\"];\n"
 			"\tlist_%s:head -> %s [color=\"%s\"];\n",
-			PL_(colour), PL_(name)(list->u.flat.prev), colour,
-			PL_(colour), PL_(name)(list->u.flat.next), colour);
+			pT_(colour), pT_(name)(list->u.flat.prev), colour,
+			pT_(colour), pT_(name)(list->u.flat.next), colour);
 	}
-	for(link = L_(list_head)(list); link; link = L_(list_next)(link)) {
+	for(link = T_(head)(list); link; link = T_(next)(link)) {
 		if(is_nodes) {
-			L_(to_string)(link, &a);
-			fprintf(fp, "\t%s [label=\"%s\"];\n", PL_(name)(link), a);
+			t_(to_string)(link, &a);
+			fprintf(fp, "\t%s [label=\"%s\"];\n", pT_(name)(link), a);
 		}
 		fprintf(fp, "\t%s -> %s [color=\"%s\"];\n"
 			"\t%s -> %s [color=\"%s4\", style=\"dotted\","
 			" arrowhead=\"empty\"];\n",
-			PL_(name)(link), PL_(name)(link->next), colour,
-			PL_(name)(link), PL_(name)(link->prev), colour);
+			pT_(name)(link), pT_(name)(link->next), colour,
+			pT_(name)(link), pT_(name)(link->prev), colour);
 	}
 }
 
 /** Graph `list` in `fn`. */
-static void PL_(graph)(struct L_(list) *const list, const char *const fn) {
+static void pT_(graph)(struct t_(list) *const list, const char *const fn) {
 	FILE *fp;
 	assert(list && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
@@ -90,7 +90,7 @@ static void PL_(graph)(struct L_(list) *const list, const char *const fn) {
 		"\tgraph [truecolor=true, bgcolor=transparent, fontname=modern];\n"
 		"\tnode [fillcolor=\"Gray95\", fontname=modern,"
 		" style=filled, shape=box];\n");
-	PL_(subgraph)(list, fp, "royalblue", 0, 1);
+	pT_(subgraph)(list, fp, "royalblue", 0, 1);
 	fprintf(fp, "\tnode [colour=\"Red\"];\n"
 		"}\n");
 	fclose(fp);
@@ -100,9 +100,9 @@ static void PL_(graph)(struct L_(list) *const list, const char *const fn) {
  on which `link` is a part and expect `count`. `list` must have at least one
  element, (it can't be the head of tail.)
  @order \O(|`list`|) */
-static void PL_(floyd)(const struct L_(listlink) *link, const size_t count) {
+static void pT_(floyd)(const struct t_(listlink) *link, const size_t count) {
 	size_t fw = 0, b1 = 0, b2 = 0;
-	const struct L_(listlink) *hare = link, *turtle = hare;
+	const struct t_(listlink) *hare = link, *turtle = hare;
 	assert(link && link->next && link->prev);
 	while(hare->prev->prev) {
 		hare = hare->prev;
@@ -125,139 +125,139 @@ static void PL_(floyd)(const struct L_(listlink) *link, const size_t count) {
 }
 /** Debug: ensures that `list` has no cycles and that it has `count`
  elements. */
-static void PL_(count)(const struct L_(list) *const list, const size_t count) {
-	const struct L_(listlink) *const head = &list->u.as_head.head,
+static void pT_(count)(const struct t_(list) *const list, const size_t count) {
+	const struct t_(listlink) *const head = &list->u.as_head.head,
 		*const tail = &list->u.as_tail.tail, *first;
 	assert(list && head && tail && !list->u.flat.zero);
 	first = head->next, assert(first);
 	if(first == tail) {
 		assert(tail->prev == head && !count);
 	} else {
-		PL_(floyd)(first, count);
+		pT_(floyd)(first, count);
 	}
 }
 
 #ifdef HAVE_ITERATE_H /* <!-- */
 /** Returns `0,1,0,1,...` whatever `link`. */
-static int PL_(parity)(const struct L_(listlink) *const link) {
+static int pT_(parity)(const struct t_(listlink) *const link) {
 	static int p;
 	(void)(link);
 	return !(p = !p);
 }
 /** Returns true whatever `link`. */
-static int PL_(true)(const struct L_(listlink) *const link) {
+static int pT_(true)(const struct t_(listlink) *const link) {
 	(void)(link);
 	return 1;
 }
 #endif /* --> */
 
 /** Passed `parent_new` and `parent`, tests basic functionality. */
-static void PL_(test_basic)(struct L_(listlink) *(*const parent_new)(void *),
+static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
 	void *const parent) {
-	struct L_(list) l1, l2;
-	struct L_(listlink) *link, *link_first = 0, *link_last = 0;
+	struct t_(list) l1, l2;
+	struct t_(listlink) *link, *link_first = 0, *link_last = 0;
 	const size_t test_size = 10;
 	size_t i;
 	assert(parent_new && parent);
-	L_(list_clear)(&l1), L_(list_clear)(&l2);
+	T_(clear)(&l1), T_(clear)(&l2);
 	printf("Basic tests of <" QUOTE(LIST_NAME) ">list:\n");
-	PL_(count)(&l1, 0);
+	pT_(count)(&l1, 0);
 	/* Test positions null. */
-	link = L_(list_head)(&l1), assert(!link);
-	link = L_(list_tail)(&l1), assert(!link);
+	link = T_(head)(&l1), assert(!link);
+	link = T_(tail)(&l1), assert(!link);
 	/* Test returns on null and empty. */
-	link = L_(list_shift)(&l1), assert(!link);
-	link = L_(list_pop)(&l1), assert(!link);
+	link = T_(shift)(&l1), assert(!link);
+	link = T_(pop)(&l1), assert(!link);
 	/* Add */
 	printf("Adding %lu elements to l1.\n", (unsigned long)test_size);
 	for(i = 0; i < test_size; i++) {
 		char z[12];
 		if(!(link = parent_new(parent))) { assert(0); return; }
 		/* Must have these functions defined. */
-		L_(filler)(link);
-		L_(to_string)(link, &z);
+		t_(filler)(link);
+		t_(to_string)(link, &z);
 		printf("Adding %s.\n", z);
-		L_(list_push)(&l1, link);
+		T_(push)(&l1, link);
 		if(i == 0) link_first = link;
 		link_last = link;
 	}
-	PL_(graph)(&l1, "graph/" QUOTE(LIST_NAME) "-small.gv");
-	PL_(count)(&l1, test_size);
-	printf("l1 = %s.\n", L_(list_to_string)(&l1));
+	pT_(graph)(&l1, "graph/" QUOTE(LIST_NAME) "-small.gv");
+	pT_(count)(&l1, test_size);
+	printf("l1 = %s.\n", T_(to_string)(&l1));
 	/* Test positions when contents. */
-	link = L_(list_head)(&l1), assert(link == link_first);
-	link = L_(list_tail)(&l1), assert(link == link_last);
-	link = L_(list_previous)(link), assert(link);
-	link = L_(list_next)(link), assert(link == link_last);
+	link = T_(head)(&l1), assert(link == link_first);
+	link = T_(tail)(&l1), assert(link == link_last);
+	link = T_(previous)(link), assert(link);
+	link = T_(next)(link), assert(link == link_last);
 	/* Test remove contents. */
-	link = L_(list_shift)(&l1), assert(link == link_first);
-	link = L_(list_pop)(&l1), assert(link = link_last);
-	PL_(count)(&l1, test_size - 2);
-	L_(list_unshift)(&l1, link_first);
-	L_(list_push)(&l1, link_last);
-	PL_(count)(&l1, test_size);
-	link = L_(list_head)(&l1), assert(link == link_first);
-	link = L_(list_tail)(&l1), assert(link == link_last);
-	printf("After removing and adding: l1 = %s.\n", L_(list_to_string)(&l1));
+	link = T_(shift)(&l1), assert(link == link_first);
+	link = T_(pop)(&l1), assert(link = link_last);
+	pT_(count)(&l1, test_size - 2);
+	T_(unshift)(&l1, link_first);
+	T_(push)(&l1, link_last);
+	pT_(count)(&l1, test_size);
+	link = T_(head)(&l1), assert(link == link_first);
+	link = T_(tail)(&l1), assert(link == link_last);
+	printf("After removing and adding: l1 = %s.\n", T_(to_string)(&l1));
 #ifdef HAVE_ITERATE_H /* <!-- iterator */
 	assert(l2.u.as_head.head.next);
 	/* Test movement. */
-	PL_(count)(&l1, test_size);
-	PL_(count)(&l2, 0);
-	L_(list_to_if)(&l1, &l2, &PL_(parity));
+	pT_(count)(&l1, test_size);
+	pT_(count)(&l2, 0);
+	T_(to_if)(&l1, &l2, &pT_(parity));
 	printf("Transferring all odds: l1 = %s; l2 = %s.\n",
-		L_(list_to_string)(&l1), L_(list_to_string)(&l2));
-	PL_(count)(&l1, test_size / 2);
-	PL_(count)(&l2, test_size - test_size / 2);
-	assert(L_(list_head)(&l1) == link_first);
+		T_(to_string)(&l1), T_(to_string)(&l2));
+	pT_(count)(&l1, test_size / 2);
+	pT_(count)(&l2, test_size - test_size / 2);
+	assert(T_(head)(&l1) == link_first);
 	assert(l2.u.as_head.head.next);
 	printf("l1 = %s; l2 = %s.\n",
-		L_(list_to_string)(&l1), L_(list_to_string)(&l2));
-	L_(list_to_before)(&l2, link_first->next);
+		T_(to_string)(&l1), T_(to_string)(&l2));
+	T_(to_before)(&l2, link_first->next);
 	printf("l1 = %s; l2 = %s.\n",
-		L_(list_to_string)(&l1), L_(list_to_string)(&l2));
+		T_(to_string)(&l1), T_(to_string)(&l2));
 	assert(l2.u.as_head.head.next);
-	PL_(count)(&l1, test_size);
+	pT_(count)(&l1, test_size);
 	assert(l2.u.as_head.head.next);
-	PL_(count)(&l2, 0);
-	assert(L_(list_head)(&l1) == link_first);
+	pT_(count)(&l2, 0);
+	assert(T_(head)(&l1) == link_first);
 	printf("Back: l1 = %s; l2 = %s.\n",
-		L_(list_to_string)(&l1), L_(list_to_string)(&l2));
-	L_(list_to)(&l1, &l2);
-	PL_(count)(&l1, 0);
-	PL_(count)(&l2, test_size);
-	assert(L_(list_head)(&l2) == link_first);
+		T_(to_string)(&l1), T_(to_string)(&l2));
+	T_(to)(&l1, &l2);
+	pT_(count)(&l1, 0);
+	pT_(count)(&l2, test_size);
+	assert(T_(head)(&l2) == link_first);
 	printf("***HERE***\n");
 	/* Test any. */
-	link = L_(list_any)(&l1, &PL_(true)), assert(!link);
-	link = L_(list_any)(&l2, &PL_(true)), assert(link == link_first);
+	link = T_(any)(&l1, &pT_(true)), assert(!link);
+	link = T_(any)(&l2, &pT_(true)), assert(link == link_first);
 	/* Test add before/after. */
 	if(!(link = parent_new(parent))) { assert(0); return; }
 	L_(filler)(link);
-	L_(list_add_before)(L_(list_head)(&l2), link);
-	link_first = L_(list_head)(&l2);
+	T_(add_before)(T_(head)(&l2), link);
+	link_first = T_(head)(&l2);
 	assert(link == link_first);
-	PL_(count)(&l2, test_size + 1);
+	pT_(count)(&l2, test_size + 1);
 	if(!(link = parent_new(parent))) { assert(0); return; }
 	L_(filler)(link);
-	L_(list_add_before)(L_(list_tail)(&l2), link);
-	PL_(count)(&l2, test_size + 2);
+	T_(add_before)(T_(tail)(&l2), link);
+	pT_(count)(&l2, test_size + 2);
 #endif /* iterator --> */
-	L_(list_clear)(&l2);
-	PL_(count)(&l2, 0);
+	T_(clear)(&l2);
+	pT_(count)(&l2, 0);
 }
 
 /** The linked-list will be tested on stdout. `LIST_TEST` has to be set.
  @param[parent_new, parent] Responsible for creating new objects and returning
  the list. @allow */
-static void L_(list_test)(struct L_(listlink) *(*const parent_new)(void *),
+static void T_(test)(struct t_(listlink) *(*const parent_new)(void *),
 	void *const parent) {
 	printf("<" QUOTE(LIST_NAME) ">list was created using: "
 #ifdef LIST_COMPARE
-		"LIST_COMPARE: <" QUOTE(LIST_COMPARE) ">; "
+		"LIST_COMPARE; "
 #endif
 		"testing:\n");
-	PL_(test_basic)(parent_new, parent);
+	pT_(test_basic)(parent_new, parent);
 	printf("Done tests of " QUOTE(LIST_NAME) ".\n\n");
 }
 

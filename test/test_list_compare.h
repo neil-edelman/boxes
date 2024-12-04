@@ -15,15 +15,15 @@ static int PCMP_(compar)(const void *const a, const void *const b)
 	{ return CMP_(compare)(a, b); }
 
 /** Passed `parent_new` and `parent`, tests sort and meta-sort. */
-static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
+static void PL_(test_sort)(struct t_(listlink) *(*const parent_new)(void *),
 	void *const parent) {
-	struct L_(list) lists[64], *list;
+	struct t_(list) lists[64], *list;
 	const size_t lists_size = sizeof lists / sizeof *lists;
-	struct L_(list) *const lists_end = lists + lists_size;
+	struct t_(list) *const lists_end = lists + lists_size;
 	int cmp;
 	{ /* Just one, so we can be sure <fn:<L>list_self_correct> works. */
-		struct L_(list) eg1, eg2;
-		struct L_(listlink) *link;
+		struct t_(list) eg1, eg2;
+		struct t_(listlink) *link;
 		char z[12];
 		L_(list_clear)(&eg1), L_(list_clear)(&eg2);
 		if(!(link = parent_new(parent))) { assert(0); return; }
@@ -55,7 +55,7 @@ static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
 	/* Random lists. */
 	for(list = lists; list < lists_end; list++) {
 		size_t no_links = (unsigned)rand() / (RAND_MAX / 5 + 1);
-		struct L_(listlink) *link, *link_a, *link_b;
+		struct t_(listlink) *link, *link_a, *link_b;
 		L_(list_clear)(list);
 		while(no_links) {
 			if(!(link = parent_new(parent))) { assert(0); return; }
@@ -87,20 +87,20 @@ static void PL_(test_sort)(struct L_(listlink) *(*const parent_new)(void *),
 /** Set up the incredibly contrived example involving `la`, `lb`, `result`, and
  `a`, `b`, `b_alt`, `c`, `d` for <fn:<PL>test_binary>, where `a = ()`,
  `b = (A,B,D)`, and `c = (B,C)`. */
-static void PL_(reset_b)(struct L_(list) *const la, struct L_(list) *const lb,
-	struct L_(list) *const result, struct L_(listlink) *const a,
-	struct L_(listlink) *const b, struct L_(listlink) *const b_alt,
-	struct L_(listlink) *const c, struct L_(listlink) *const d) {
+static void PL_(reset_b)(struct t_(list) *const la, struct t_(list) *const lb,
+	struct t_(list) *const result, struct t_(listlink) *const a,
+	struct t_(listlink) *const b, struct t_(listlink) *const b_alt,
+	struct t_(listlink) *const c, struct t_(listlink) *const d) {
 	assert(la && lb && result && a && b && b_alt && c && d);
 	L_(list_clear)(la), L_(list_clear)(lb), L_(list_clear)(result);
 	L_(list_push)(la, a), L_(list_push)(la, b), L_(list_push)(la, d);
 	L_(list_push)(lb, b_alt), L_(list_push)(lb, c);
 }
 /** Verifies that `list` is `a`, `b`, `c`, `d`, null. */
-static void PL_(exact)(struct L_(list) *const list,
-	const struct L_(listlink) *const a, const struct L_(listlink) *const b,
-	const struct L_(listlink) *const c, const struct L_(listlink) *const d) {
-	struct L_(listlink) *i;
+static void PL_(exact)(struct t_(list) *const list,
+	const struct t_(listlink) *const a, const struct t_(listlink) *const b,
+	const struct t_(listlink) *const c, const struct t_(listlink) *const d) {
+	struct t_(listlink) *i;
 	assert(list);
 	i = L_(list_head)(list), assert(i == a);
 	if(!i) return;
@@ -114,10 +114,10 @@ static void PL_(exact)(struct L_(list) *const list,
 }
 
 /** Passed `parent_new` and `parent`, tests binary operations. */
-static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
+static void PL_(test_binary)(struct t_(listlink) *(*const parent_new)(void *),
 	void *const parent) {
-	struct L_(list) la, lb, result;
-	struct L_(listlink) *link, *a = 0, *b = 0, *b_alt = 0, *c = 0, *d = 0;
+	struct t_(list) la, lb, result;
+	struct t_(listlink) *link, *a = 0, *b = 0, *b_alt = 0, *c = 0, *d = 0;
 	int cmp;
 	L_(list_clear)(&la);
 	/* Test nulls, (Not comprehensive.) */
@@ -135,7 +135,7 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 	assert(!L_(list_head)(&la));
 	{
 		const size_t no_try = 5000;
-		struct L_(list) x, y;
+		struct t_(list) x, y;
 		size_t i;
 		L_(list_clear)(&x), L_(list_clear)(&y);
 		/* By the PHP, this should be more than enough to get at least the
@@ -206,7 +206,7 @@ static void PL_(test_binary)(struct L_(listlink) *(*const parent_new)(void *),
 /** The linked-list will be tested on stdout. `LIST_TEST` has to be set.
  @param[parent_new, parent] Responsible for creating new objects and returning
  the list. @allow */
-static void CMP_(compare_test)(struct L_(listlink)
+static void CMP_(compare_test)(struct t_(listlink)
 	*(*const parent_new)(void *), void *const parent) {
 	printf("<" QUOTE(LIST_NAME) ">list testing <"
 #ifdef LIST_COMPARE_NAME
