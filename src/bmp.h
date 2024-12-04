@@ -22,21 +22,19 @@
 #error BMP_BITS too small.
 #endif
 
-#ifndef BMP_H /* <!-- idempotent */
-#define BMP_H
+#define BOX_START
+#include "box.h"
+
 #include <string.h>
 #include <limits.h>
 #include <assert.h>
-#if defined(BMP_CAT_) || defined(BMP_CAT) || defined(M_) || defined(PM_)
-#error Unexpected defines.
-#endif
-/* <Kernighan and Ritchie, 1988, p. 231>. */
-#define BMP_CAT_(n, m) n ## _ ## m
-#define BMP_CAT(n, m) BMP_CAT_(n, m)
-#define M_(n) BMP_CAT(BMP_NAME, n)
-#define PM_(n) BMP_CAT(bmp, M_(n))
+
+#ifndef BMP_H
+#	define BMP_H
 /** The underlying array type. */
 typedef unsigned bmpchunk;
+#endif
+
 /* <http://c-faq.com/misc/bitsets.html>, except reversed for msb-first. */
 #define BMP_MAX (~(bmpchunk)0)
 #define BMP_CHUNK (sizeof(bmpchunk) * CHAR_BIT)
@@ -49,20 +47,22 @@ typedef unsigned bmpchunk;
 #define BMP_SET(a, x) ((a)[BMP_SLOT(x)] |= BMP_MASK(x))
 #define BMP_CLEAR(a, x) ((a)[BMP_SLOT(x)] &= ~(BMP_MASK(x)))
 #define BMP_TOGGLE(a, x) ((a)[BMP_SLOT(x)] ^= BMP_MASK(x))
-#endif /* idempotent --> */
+
+#define BOX_MINOR BMP_NAME
+#define BOX_MAJOR bmp
 
 /** An array of `BMP_BITS` bits, (taking up the next multiple of
  `sizeof(bmpchunk)` \times `CHARBIT`.) */
-struct M_(bmp) { bmpchunk chunk[BMP_CHUNKS]; };
+struct t_(bmp) { bmpchunk chunk[BMP_CHUNKS]; };
 
 /** Sets `a` to all false. @allow */
-static void M_(bmp_clear_all)(struct M_(bmp) *const a)
+static void T_(clear_all)(struct t_(bmp) *const a)
 	{ assert(a); memset(a, 0, sizeof *a); }
 
 /** Copies and overwrites `b` with `bit_offset` range `bit_range` from `a`.
  Left over is filled with zeros. `bit_range` cannot be zero. @fixme Untested. */
-static void M_(bmp_copy)(struct M_(bmp) *const a, const unsigned bit_offset,
-	const unsigned bit_range, struct M_(bmp) *const b) {
+static void T_(copy)(struct t_(bmp) *const a, const unsigned bit_offset,
+	const unsigned bit_range, struct t_(bmp) *const b) {
 	struct { unsigned hi, lo; } i, j;
 	unsigned rest;
 	assert(a && b && bit_range && bit_offset + bit_range < BMP_BITS);
@@ -79,7 +79,7 @@ static void M_(bmp_copy)(struct M_(bmp) *const a, const unsigned bit_offset,
 }
 
 /** Inverts all entries of `a`. @allow */
-static void M_(bmp_invert_all)(struct M_(bmp) *const a) {
+static void T_(invert_all)(struct t_(bmp) *const a) {
 	size_t i;
 	assert(a);
 	for(i = 0; i < sizeof a->chunk / sizeof *a->chunk; i++)
@@ -91,23 +91,23 @@ static void M_(bmp_invert_all)(struct M_(bmp) *const a) {
 
 /** @return Projects the eigenvalue of bit `x` of `a`. Either zero of
  non-zero, but not necessarily one. @allow */
-static unsigned M_(bmp_test)(const struct M_(bmp) *const a, const unsigned x)
+static unsigned T_(test)(const struct t_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); return BMP_AT(a->chunk, x); }
 
 /** Sets bit `x` in `a`. @allow */
-static void M_(bmp_set)(struct M_(bmp) *const a, const unsigned x)
+static void T_(set)(struct t_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); BMP_SET(a->chunk, x); }
 
 /** Clears bit `x` in `a`. @allow */
-static void M_(bmp_clear)(struct M_(bmp) *const a, const unsigned x)
+static void T_(clear)(struct t_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); BMP_CLEAR(a->chunk, x); }
 
 /** Toggles bit `x` in `a`. @allow */
-static void M_(bmp_toggle)(struct M_(bmp) *const a, const unsigned x)
+static void T_(toggle)(struct t_(bmp) *const a, const unsigned x)
 	{ assert(a && x < BMP_BITS); BMP_TOGGLE(a->chunk, x); }
 
 /** Inserts `n` zeros at `x` in `a`. The `n` right bits are discarded. @allow */
-static void M_(bmp_insert)(struct M_(bmp) *const a,
+static void T_(insert)(struct t_(bmp) *const a,
 	const unsigned x, const unsigned n) {
 	struct { unsigned hi, lo; } move, first;
 	unsigned i;
@@ -135,7 +135,7 @@ static void M_(bmp_insert)(struct M_(bmp) *const a,
 
 /** Removes `n` at `x` in `a`. The `n` bits coming from the right are zero.
  @allow */
-static void M_(bmp_remove)(struct M_(bmp) *const a,
+static void T_(remove)(struct t_(bmp) *const a,
 	const unsigned x, const unsigned n) {
 	struct { unsigned hi, lo; } move, first;
 	unsigned i;
@@ -161,19 +161,36 @@ static void M_(bmp_remove)(struct M_(bmp) *const a,
 }
 
 #ifdef BMP_TEST /* <!-- test */
-#include "../test/test_bmp.h" /* (not needed) \include */
+#	include "../test/test_bmp.h" /* (not needed) \include */
 #endif /* test --> */
 
-static void PM_(unused_base_coda)(void);
-static void PM_(unused_base)(void) {
-	M_(bmp_clear_all)(0); M_(bmp_copy)(0, 0, 0, 0); M_(bmp_invert_all)(0);
-	M_(bmp_set)(0, 0); M_(bmp_clear)(0, 0); M_(bmp_toggle)(0, 0);
-	PM_(unused_base_coda)();
+static void pT_(unused_base_coda)(void);
+static void pT_(unused_base)(void) {
+	T_(clear_all)(0); T_(copy)(0, 0, 0, 0); T_(invert_all)(0);
+	T_(set)(0, 0); T_(clear)(0, 0); T_(toggle)(0, 0);
+	pT_(unused_base_coda)();
 }
-static void PM_(unused_base_coda)(void) { PM_(unused_base)(); }
+static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
+#undef BMP_MAX
+#undef BMP_CHUNK
+#undef BMP_CHUNKS
+#undef BMP_CHUNK_HI
+#undef BMP_MASK
+#undef BMP_SLOT
+#undef BMP_AT
+#undef BMP_DIFF
+#undef BMP_SET
+#undef BMP_CLEAR
+#undef BMP_TOGGLE
+
+#undef BOX_MINOR
+#undef BOX_MAJOR
 #undef BMP_NAME
 #undef BMP_BITS
 #ifdef BMP_TEST
-#undef BMP_TEST
+#	undef BMP_TEST
 #endif
+
+#define BOX_END
+#include "box.h"
