@@ -30,8 +30,8 @@ static void pT_(graph)(const struct t_(array) *const a, const char *const fn) {
 		"\tarray [label=<\n"
 		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td colspan=\"3\" align=\"left\">"
-		"<font color=\"Gray75\">&lt;" QUOTE(BOX_NAME)
-		"&gt;array: " QUOTE(BOX_TYPE) "</font></td></tr>\n"
+		"<font color=\"Gray75\">&lt;" QUOTE(ARRAY_NAME)
+		"&gt;array: " QUOTE(ARRAY_TYPE) "</font></td></tr>\n"
 		"\t<hr/>\n"
 		"\t<tr>\n"
 		"\t\t<td border=\"0\" align=\"right\">size</td>\n"
@@ -251,9 +251,9 @@ static void pT_(test_random)(void) {
 		if(is_print) printf(" Size %lu.\n", (unsigned long)a.size);
 		pT_(valid_state)(&a);
 		if(a.size < 1000000 && !(i & (i - 1))) {
-			char fn[32];
+			char fn[128];
 			printf("%s.\n", T_(to_string)(&a));
-			sprintf(fn, "graph/" QUOTE(BOX_NAME) "-array-%lu.gv",
+			sprintf(fn, "graph/array/" QUOTE(ARRAY_NAME) "-array-%lu.gv",
 				(unsigned long)i);
 			pT_(graph)(&a, fn);
 		}
@@ -494,10 +494,9 @@ static void pT_(test_insert)(void) {
 	t_(array_)(&a);
 }
 
-/** `BOX_TEST`, `BOX_TO_STRING`, !`NDEBUG`: will be tested on stdout.
- @allow */
+/** Will be tested on stdout. @allow */
 static void T_(test)(void) {
-	printf("<" QUOTE(BOX_NAME) ">array of type <" QUOTE(BOX_TYPE)
+	printf("<" QUOTE(ARRAY_NAME) ">array of type <" QUOTE(ARRAY_TYPE)
 		"> was created using: ARRAY_TO_STRING; ARRAY_TEST; testing:\n");
 	pT_(test_basic)();
 	pT_(test_random)();
@@ -506,7 +505,7 @@ static void T_(test)(void) {
 	pT_(test_each)();
 	pT_(test_trim)();
 	pT_(test_insert)();
-	fprintf(stderr, "Done tests of <" QUOTE(BOX_NAME) ">array.\n\n");
+	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array.\n\n");
 }
 
 #undef QUOTE

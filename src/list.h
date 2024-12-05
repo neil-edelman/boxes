@@ -91,16 +91,36 @@ struct t_(list) {
 };
 typedef struct t_(list) pT_(box);
 
-#	ifndef LIST_DECLARE_ONLY /* Produce code: not for headers. */
-
 /* Since this is a permutation, the iteration is defined by none other then
  itself. Not especially useful, but contracted to other files.
  @implements `iterator` */
 struct T_(cursor) { struct t_(listlink) *link; };
+
+#	ifndef LIST_DECLARE_ONLY /* Produce code: not for headers. */
+
+/** @return The head of `list` or null. */
+static struct t_(listlink) *T_(head)(struct t_(list) *const list) {
+	struct t_(listlink) *head; assert(list);
+	return (head = list->u.flat.next) && head->next ? head : 0;
+}
+/** @return The tail of `list` or null. */
+static struct t_(listlink) *T_(tail)(struct t_(list) *const list) {
+	struct t_(listlink) *tail; assert(list);
+	return (tail = list->u.flat.prev) && tail->prev ? tail : 0;
+}
+/** @return The previous of `link` or null. */
+static struct t_(listlink) *T_(previous)(struct t_(listlink) *const link) {
+	struct t_(listlink) *prev;
+	return link && (prev = link->prev) && prev->prev ? prev : 0;
+}
+/** @return The next of `link` or null. */
+static struct t_(listlink) *T_(next)(struct t_(listlink) *const link) {
+	struct t_(listlink) *next;
+	return link && (next = link->next) && next->next ? next : 0;
+}
 /** @return A pointer to the first in `l` (can be null). */
 static struct T_(cursor) T_(begin)(struct t_(list) *const l)
-	{ struct T_(cursor) cur; assert(l); cur.link = &l->u.as_head.head;
-	return cur; }
+	{ struct T_(cursor) cur; cur.link = l ? T_(head)(l) : 0; return cur; }
 /** @return Whether the `cur` points to an element. */
 static int T_(cursor_exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->link && cur->link->next; }
@@ -125,30 +145,6 @@ static void pT_(move)(struct t_(list) *restrict const from,
 	from->u.flat.next = &from->u.as_tail.tail;
 	from->u.flat.prev = &from->u.as_head.head;
 }
-
-/** @return The head of `list` or null. */
-static struct t_(listlink) *T_(head)(struct t_(list) *const list) {
-	struct t_(listlink) *head; assert(list);
-	head = list->u.flat.next;
-	return head && head->next ? head : 0;
-}
-/** @return The tail of `list` or null. */
-static struct t_(listlink) *T_(tail)(struct t_(list) *const list) {
-	struct t_(listlink) *tail; assert(list);
-	tail = list->u.flat.prev;
-	return tail && tail->prev ? tail : 0;
-}
-/** @return The previous of `link` or null. */
-static struct t_(listlink) *T_(previous)(struct t_(listlink) *const link) {
-	struct t_(listlink) *prev;
-	return link && (prev = link->prev) && prev->prev ? prev : 0;
-}
-/** @return The next of `link` or null. */
-static struct t_(listlink) *T_(next)(struct t_(listlink) *const link) {
-	struct t_(listlink) *next;
-	return link && (next = link->next) && next->next ? next : 0;
-}
-
 /** Clear `list`. */
 static void pT_(clear)(struct t_(list) *const list) {
 	list->u.flat.next = &list->u.as_tail.tail;

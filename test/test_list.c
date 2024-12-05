@@ -266,7 +266,7 @@ static struct panda *panda_from_pool_combined(struct panda_pool *const pool,
 }
 static void panda_graph(struct name_list *const n,
 	struct where_list *const w, struct fero_list *const f) {
-	const char *fn = "graph/pandas.gv";
+	const char *fn = "graph/list/pandas.gv";
 	FILE *fp;
 	assert(n && w && f);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
@@ -417,9 +417,8 @@ static void skip_clear(struct skip_list *const skip) {
 	layer1_list_clear(&skip->l1list);
 	layer2_list_clear(&skip->l2list);
 }
-/* See <graph/skip.gv>. */
 static void skip_graph(struct skip_list *const skip) {
-	const char *fn = "graph/skip.gv";
+	const char *fn = "graph/list/skip.gv";
 	FILE *fp;
 	assert(skip);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }

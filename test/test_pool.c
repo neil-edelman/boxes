@@ -101,7 +101,7 @@ static void special(void) {
 		is[r] = 0;
 	}
 finally:
-	private_colour_pool_graph(&pool, "graph/paper.gv");
+	private_colour_pool_graph(&pool, "graph/pool/paper.gv");
 	colour_pool_(&pool);
 }
 

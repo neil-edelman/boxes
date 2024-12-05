@@ -43,7 +43,7 @@ static void pT_(valid)(const struct t_(heap) *const heap) {
 	for(i = 1; i < heap->as_array.size; i++) {
 		size_t iparent = (i - 1) >> 1;
 		if(t_(less)(n0[iparent], n0[i]) <= 0) continue;
-		pT_(graph)(heap, "graph/" QUOTE(BOX_NAME) "-invalid.gv");
+		pT_(graph)(heap, "graph/heap/" QUOTE(HEAP_NAME) "-invalid.gv");
 		assert(0);
 		break;
 	}
@@ -60,7 +60,7 @@ static void pT_(test_basic)(void) {
 #endif
 	const size_t test_size_1 = 11, test_size_2 = 31, test_size_3 = 4000/*0*/;
 	size_t i, cum_size = 0;
-	char fn[64];
+	char fn[128];
 	int success, ret;
 
 	printf("Test empty.\n");
@@ -90,7 +90,7 @@ static void pT_(test_basic)(void) {
 	printf("Test many.\n");
 	for(i = 0; i < test_size_1; i++) {
 		if(!i || !(i & (i - 1))) {
-			sprintf(fn, "graph/" QUOTE(BOX_NAME) "-%lu.gv",
+			sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-%lu.gv",
 				(unsigned long)cum_size);
 			pT_(graph)(&heap, fn);
 		}
@@ -99,7 +99,7 @@ static void pT_(test_basic)(void) {
 		success = T_(add)(&heap, add), cum_size++;
 		assert(success);
 	}
-	sprintf(fn, "graph/" QUOTE(BOX_NAME) "-%lu-done-1.gv",
+	sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-%lu-done-1.gv",
 		(unsigned long)cum_size);
 	pT_(graph)(&heap, fn);
 	assert(heap.as_array.size == cum_size);
@@ -112,12 +112,12 @@ static void pT_(test_basic)(void) {
 	T_(append)(&heap, test_size_2), cum_size += test_size_2;
 	printf("Now size = %lu.\n", (unsigned long)heap.as_array.size);
 	assert(heap.as_array.size == cum_size);
-	sprintf(fn, "graph/" QUOTE(BOX_NAME) "-%lu-buffer.gv", cum_size);
+	sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-%lu-buffer.gv", cum_size);
 	pT_(graph)(&heap, fn);
 	pT_(valid)(&heap);
 	for(i = 0; i < test_size_3; i++) {
 		if(!i || !(i & (i - 1))) {
-			sprintf(fn, "graph/" QUOTE(BOX_NAME) "-%lu.gv",
+			sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-%lu.gv",
 				(unsigned long)cum_size);
 			pT_(graph)(&heap, fn);
 		}
@@ -126,7 +126,7 @@ static void pT_(test_basic)(void) {
 		success = T_(add)(&heap, add), cum_size++;
 		assert(success);
 	}
-	sprintf(fn, "graph/" QUOTE(BOX_NAME) "-%lu-heap.gv",
+	sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-%lu-heap.gv",
 		(unsigned long)cum_size);
 	pT_(graph)(&heap, fn);
 	printf("Setting up merge at %lu.\n", (unsigned long)cum_size);
@@ -135,12 +135,12 @@ static void pT_(test_basic)(void) {
 		success = T_(add)(&merge, add);
 		assert(success);
 	}
-	sprintf(fn, "graph/" QUOTE(BOX_NAME) "-%lu-merge.gv",
+	sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-%lu-merge.gv",
 		(unsigned long)cum_size);
 	pT_(graph)(&merge, fn);
 	pT_(valid)(&merge);
 	success = T_(affix)(&heap, &merge), cum_size += merge.as_array.size;
-	sprintf(fn, "graph/" QUOTE(BOX_NAME) "-%lu-combined.gv",
+	sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-%lu-combined.gv",
 		(unsigned long)cum_size);
 	pT_(graph)(&heap, fn);
 	assert(success && heap.as_array.size == cum_size);
@@ -154,7 +154,7 @@ static void pT_(test_basic)(void) {
 		T_(pop)(&heap);
 		if(!i || !(i & (i - 1))) {
 			printf("%lu: retreving %s.\n", (unsigned long)i, z);
-			sprintf(fn, "graph/" QUOTE(BOX_NAME) "-remove-%lu.gv",
+			sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-remove-%lu.gv",
 				(unsigned long)i);
 			pT_(graph)(&heap, fn);
 		}

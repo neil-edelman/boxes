@@ -195,33 +195,33 @@ static void pT_(test_states)(void) {
 
 	printf("Empty.\n");
 	pT_(valid_state)(&pool);
-	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-01-idle.gv");
+	pT_(graph)(&pool, "graph/pool/" QUOTE(POOL_NAME) "-01-idle.gv");
 
 	/** `<P>filler` must be a function implementing <typedef:<PP>action_fn>. */
 	printf("One element.\n");
 	t = T_(new)(&pool), assert(t), t_(filler)(t), pT_(valid_state)(&pool);
-	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-02-one.gv");
+	pT_(graph)(&pool, "graph/pool/" QUOTE(POOL_NAME) "-02-one.gv");
 
 	printf("Remove.\n");
 	r = T_(remove)(&pool, pool.slots.data[0].slab + 0), assert(r),
 		pT_(valid_state)(&pool);
-	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-03-remove.gv");
+	pT_(graph)(&pool, "graph/pool/" QUOTE(POOL_NAME) "-03-remove.gv");
 
 	printf("Pool buffer %lu.\n", (unsigned long)size[0]);
 	r = T_(buffer)(&pool, size[0]), assert(r), pT_(valid_state)(&pool);
-	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-04-buffer.gv");
+	pT_(graph)(&pool, "graph/pool/" QUOTE(POOL_NAME) "-04-buffer.gv");
 
 	for(i = 0; i < size[0]; i++) t = T_(new)(&pool), assert(t),
 		t_(filler)(t), pT_(valid_state)(&pool);
 	assert(pool.slots.size == 1);
-	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-05-one-slab.gv");
+	pT_(graph)(&pool, "graph/pool/" QUOTE(POOL_NAME) "-05-one-slab.gv");
 	for(i = 0; i < size[1]; i++) t = T_(new)(&pool), assert(t),
 		t_(filler)(t), pT_(valid_state)(&pool);
 	assert(pool.slots.size == 2);
-	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-06-two-slabs.gv");
+	pT_(graph)(&pool, "graph/pool/" QUOTE(POOL_NAME) "-06-two-slabs.gv");
 	t = T_(new)(&pool), assert(t), t_(filler)(t), pT_(valid_state)(&pool);
 	assert(pool.slots.size == 3);
-	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-07-three-slabs.gv");
+	pT_(graph)(&pool, "graph/pool/" QUOTE(POOL_NAME) "-07-three-slabs.gv");
 	/* It's `malloc` whether, `conf = { 0: { 2, 0, 1 }, 1: { 2, 1, 0 } }`. */
 	if(pool.slots.data[1].size == size[0]) conf = CHUNK1_IS_ZERO;
 	else assert(pool.slots.data[1].size == size[1]);
@@ -244,11 +244,11 @@ static void pT_(test_states)(void) {
 	printf("Removing all in slab %s.\n", orcify(slab));
 	for(i = 0; i < size[0]; i++) T_(remove)(&pool, slab + i);
 	pT_(valid_state)(&pool);
-	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-08-remove-slab.gv");
+	pT_(graph)(&pool, "graph/pool/" QUOTE(POOL_NAME) "-08-remove-slab.gv");
 	assert(pool.slots.size == 2);
 	T_(clear)(&pool);
 	assert(pool.slots.size == 1);
-	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-09-clear.gv");
+	pT_(graph)(&pool, "graph/pool/" QUOTE(POOL_NAME) "-09-clear.gv");
 
 	/* Remove at random. */
 	for(i = 0; i < size[2]; i++) t = T_(new)(&pool), assert(t), t_(filler)(t), pT_(valid_state)(&pool);
@@ -275,14 +275,14 @@ static void pT_(test_states)(void) {
 			T_(remove)(&pool, pool.slots.data[0].slab + i);
 		i = n0;
 	}
-	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-10-remove.gv");
+	pT_(graph)(&pool, "graph/pool/" QUOTE(POOL_NAME) "-10-remove.gv");
 	assert(pool.slots.size == 1 && pool.slots.data[0].size == size[2]
 		&& pool.capacity0 == size[2] && pool.free0.as_array.size == i);
 
 	/* Add at random to an already removed. */
 	while(i) t = T_(new)(&pool), assert(t),
 		t_(filler)(t), pT_(valid_state)(&pool), i--;
-	pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-11-replace.gv");
+	pT_(graph)(&pool, "graph/pool/" QUOTE(POOL_NAME) "-11-replace.gv");
 	assert(pool.slots.size == 1 && pool.slots.data[0].size == size[2]
 		&& pool.capacity0 == size[2] && pool.free0.as_array.size == 0);
 
@@ -325,14 +325,15 @@ static void pT_(test_random)(void) {
 			if(is_print) printf("%lu: Removing %s.\n", (unsigned long)i, str);
 			ret = T_(remove)(&pool, *ptr);
 			assert(ret || (perror("Removing"),
-				pT_(graph)(&pool, "graph/" QUOTE(POOL_NAME) "-rem-err.gv"), 0));
+				pT_(graph)(&pool,
+				"graph/pool/" QUOTE(POOL_NAME) "-rem-err.gv"), 0));
 			/* test.remove(ptr) */
 			memmove(ptr, ptr + 1,
 				sizeof *test.data * (--test.size - (size_t)(ptr - test.data)));
 		}
 		if(is_print) printf("test.size: %lu.\n", (unsigned long)test.size);
 		if(is_print && i < graph_max) {
-			sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-step-%lu.gv",
+			sprintf(graph_fn, "graph/pool/" QUOTE(POOL_NAME) "-step-%lu.gv",
 				(unsigned long)(i + 1));
 			pT_(graph)(&pool, graph_fn);
 			printf("%s.\n", T_(to_string)(&pool));
@@ -340,7 +341,7 @@ static void pT_(test_random)(void) {
 		pT_(valid_state)(&pool);
 	}
 	if(i < graph_max) {
-		sprintf(graph_fn, "graph/" QUOTE(POOL_NAME) "-step-%lu-end.gv",
+		sprintf(graph_fn, "graph/pool/" QUOTE(POOL_NAME) "-step-%lu-end.gv",
 			(unsigned long)i);
 		pT_(graph)(&pool, graph_fn);
 	}

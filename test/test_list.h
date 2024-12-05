@@ -125,7 +125,8 @@ static void pT_(floyd)(const struct t_(listlink) *link, const size_t count) {
 }
 /** Debug: ensures that `list` has no cycles and that it has `count`
  elements. */
-static void pT_(count)(const struct t_(list) *const list, const size_t count) {
+static void pT_(assert_count)(const struct t_(list) *const list,
+	const size_t count) {
 	const struct t_(listlink) *const head = &list->u.as_head.head,
 		*const tail = &list->u.as_tail.tail, *first;
 	assert(list && head && tail && !list->u.flat.zero);
@@ -161,7 +162,7 @@ static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
 	assert(parent_new && parent);
 	T_(clear)(&l1), T_(clear)(&l2);
 	printf("Basic tests of <" QUOTE(LIST_NAME) ">list:\n");
-	pT_(count)(&l1, 0);
+	pT_(assert_count)(&l1, 0);
 	/* Test positions null. */
 	link = T_(head)(&l1), assert(!link);
 	link = T_(tail)(&l1), assert(!link);
@@ -181,8 +182,8 @@ static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
 		if(i == 0) link_first = link;
 		link_last = link;
 	}
-	pT_(graph)(&l1, "graph/" QUOTE(LIST_NAME) "-small.gv");
-	pT_(count)(&l1, test_size);
+	pT_(graph)(&l1, "graph/list/" QUOTE(LIST_NAME) "-small.gv");
+	pT_(assert_count)(&l1, test_size);
 	printf("l1 = %s.\n", T_(to_string)(&l1));
 	/* Test positions when contents. */
 	link = T_(head)(&l1), assert(link == link_first);
@@ -192,23 +193,23 @@ static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
 	/* Test remove contents. */
 	link = T_(shift)(&l1), assert(link == link_first);
 	link = T_(pop)(&l1), assert(link = link_last);
-	pT_(count)(&l1, test_size - 2);
+	pT_(assert_count)(&l1, test_size - 2);
 	T_(unshift)(&l1, link_first);
 	T_(push)(&l1, link_last);
-	pT_(count)(&l1, test_size);
+	pT_(assert_count)(&l1, test_size);
 	link = T_(head)(&l1), assert(link == link_first);
 	link = T_(tail)(&l1), assert(link == link_last);
 	printf("After removing and adding: l1 = %s.\n", T_(to_string)(&l1));
 #ifdef HAVE_ITERATE_H /* <!-- iterator */
 	assert(l2.u.as_head.head.next);
 	/* Test movement. */
-	pT_(count)(&l1, test_size);
-	pT_(count)(&l2, 0);
+	pT_(assert_count)(&l1, test_size);
+	pT_(assert_count)(&l2, 0);
 	T_(to_if)(&l1, &l2, &pT_(parity));
 	printf("Transferring all odds: l1 = %s; l2 = %s.\n",
 		T_(to_string)(&l1), T_(to_string)(&l2));
-	pT_(count)(&l1, test_size / 2);
-	pT_(count)(&l2, test_size - test_size / 2);
+	pT_(assert_count)(&l1, test_size / 2);
+	pT_(assert_count)(&l2, test_size - test_size / 2);
 	assert(T_(head)(&l1) == link_first);
 	assert(l2.u.as_head.head.next);
 	printf("l1 = %s; l2 = %s.\n",
@@ -217,18 +218,19 @@ static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
 	printf("l1 = %s; l2 = %s.\n",
 		T_(to_string)(&l1), T_(to_string)(&l2));
 	assert(l2.u.as_head.head.next);
-	pT_(count)(&l1, test_size);
+	pT_(assert_count)(&l1, test_size);
 	assert(l2.u.as_head.head.next);
-	pT_(count)(&l2, 0);
+	pT_(assert_count)(&l2, 0);
 	assert(T_(head)(&l1) == link_first);
 	printf("Back: l1 = %s; l2 = %s.\n",
 		T_(to_string)(&l1), T_(to_string)(&l2));
 	T_(to)(&l1, &l2);
-	pT_(count)(&l1, 0);
-	pT_(count)(&l2, test_size);
+	pT_(assert_count)(&l1, 0);
+	pT_(assert_count)(&l2, test_size);
 	assert(T_(head)(&l2) == link_first);
 	printf("***HERE***\n");
 	/* Test any. */
+	pT_(assert_count)(&l1, 0);
 	link = T_(any)(&l1, &pT_(true)), assert(!link);
 	link = T_(any)(&l2, &pT_(true)), assert(link == link_first);
 	/* Test add before/after. */
@@ -237,14 +239,14 @@ static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
 	T_(add_before)(T_(head)(&l2), link);
 	link_first = T_(head)(&l2);
 	assert(link == link_first);
-	pT_(count)(&l2, test_size + 1);
+	pT_(assert_count)(&l2, test_size + 1);
 	if(!(link = parent_new(parent))) { assert(0); return; }
 	t_(filler)(link);
 	T_(add_before)(T_(tail)(&l2), link);
-	pT_(count)(&l2, test_size + 2);
+	pT_(assert_count)(&l2, test_size + 2);
 #endif /* iterator --> */
 	T_(clear)(&l2);
-	pT_(count)(&l2, 0);
+	pT_(assert_count)(&l2, 0);
 }
 
 /** The linked-list will be tested on stdout. `LIST_TEST` has to be set.
