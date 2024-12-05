@@ -275,11 +275,11 @@ static void panda_graph(struct name_list *const n,
 		"\tgraph [truecolor=true, bgcolor=transparent, fontface=modern];\n"
 		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n");
 	/* Hack: overriding private. */
-	list_name_subgraph(n, fp, "Royalblue",
+	private_name_list_subgraph(n, fp, "Royalblue",
 		offsetof(struct panda, name_node), 1);
-	list_where_subgraph(w, fp, "Firebrick",
+	private_where_list_subgraph(w, fp, "Firebrick",
 		offsetof(struct panda, where_node), 0);
-	list_fero_subgraph(f, fp, "DarkSeagreen",
+	private_fero_list_subgraph(f, fp, "DarkSeagreen",
 		offsetof(struct panda, fero_node), 0);
 	fprintf(fp, "\tnode [colour=\"Red\"];\n"
 		"}\n");
@@ -426,11 +426,11 @@ static void skip_graph(struct skip_list *const skip) {
 	fprintf(fp, "digraph {\n"
 		"\tfontface=modern;\n"
 		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\"];\n");
-	list_layer0_subgraph(&skip->l0list, fp, "Royalblue",
+	private_layer0_list_subgraph(&skip->l0list, fp, "Royalblue",
 		offsetof(struct skip, l0), 1);
-	list_layer1_subgraph(&skip->l1list, fp, "Firebrick",
+	private_layer1_list_subgraph(&skip->l1list, fp, "Firebrick",
 		offsetof(struct skip, l1), 0);
-	list_layer2_subgraph(&skip->l2list, fp, "DarkSeagreen",
+	private_layer2_list_subgraph(&skip->l2list, fp, "DarkSeagreen",
 		offsetof(struct skip, l2), 0);
 	fprintf(fp, "\tnode [colour=\"Red\"];\n"
 		"}\n");

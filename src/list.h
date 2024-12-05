@@ -268,6 +268,8 @@ static void T_(self_correct)(struct t_(list) *const list) {
 }
 
 #		ifdef HAVE_ITERATE_H /* <!-- iterate */
+/* fixme: I don't know if this is good? */
+typedef struct t_(listlink) pT_(type);
 #			include "iterate.h" /** \include */
 /** HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if
  `predicate` is true.
@@ -336,12 +338,12 @@ static void TR_(merge)(struct t_(list) *restrict const to,
 	/* Empty. */
 	if(!(f = from->u.flat.next)->next) return;
 	if(!(t = to->u.flat.next)->next)
-		{ PL_(move)(from, &to->u.as_tail.tail); return; }
+		{ pT_(move)(from, &to->u.as_tail.tail); return; }
 	/* Exclude sentinel. */
 	from->u.flat.prev->next = to->u.flat.prev->next = 0;
 	/* Merge. */
 	for( ; ; ) {
-		if(L_(compare)(t, f) <= 0) {
+		if(t_(compare)(t, f) <= 0) {
 			t->prev = prev, prev = *x = t, x = &t->next;
 			if(!(t = t->next)) { *x = f; goto from_left; }
 		} else {
@@ -369,7 +371,7 @@ static void pTR_(merge_runs)(struct t_(listlink) **const head_ptr) {
 		*const prev = a->prev;
 	assert(head_ptr && a && b);
 	for( ; ; ) {
-		if(L_(compare)(a, b) <= 0) {
+		if(t_(compare)(a, b) <= 0) {
 			*x = a, x = &a->next;
 			if(!(a = a->next)) { *x = b; break; }
 		} else {
@@ -381,13 +383,13 @@ static void pTR_(merge_runs)(struct t_(listlink) **const head_ptr) {
 }
 /** The list form of `list` is restored from `head` in stack form with two
  runs. */
-static void pTR(merge_final)(struct t_(list) *const list,
+static void pTR_(merge_final)(struct t_(list) *const list,
 	struct t_(listlink) *head) {
 	struct t_(listlink) *prev = 0, **x = &list->u.flat.next,
 		*b = head, *a = head->prev;
 	assert(list && b && a && !a->prev);
 	for( ; ; ) {
-		if(L_(compare)(a, b) <= 0) {
+		if(t_(compare)(a, b) <= 0) {
 			a->prev = prev, prev = *x = a, x = &a->next;
 			if(!(a = a->next)) { a = *x = b; break; }
 		} else {
@@ -417,7 +419,7 @@ static void TR_(sort)(struct t_(list) *const list) {
 	/* Identify runs of monotonicity until `b` sentinel. */
 	run.count = 0, run.prev = 0, run.head = a;
 	for(c = b->next; c; a = b, b = c, c = c->next) {
-		cmp = L_(compare)(b, a);
+		cmp = t_(compare)(b, a);
 		switch(mono + (0 < cmp) - (cmp < 0)) {
 			/* Valley and mountain inflection. */
 		case INC - 1: a->next = 0; /* _Sic_. */
@@ -438,7 +440,7 @@ static void TR_(sort)(struct t_(list) *const list) {
 		if(run.count) {
 			size_t rc;
 			for(rc = run.count - 1; rc & 1; rc >>= 1)
-				PCMP_(merge_runs)(&run.prev);
+				pTR_(merge_runs)(&run.prev);
 		}
 		/* Add to runs, advance; `b` becomes `a` forthwith. */
 		run.head->prev = run.prev, run.prev = run.head, run.count++;
@@ -462,8 +464,8 @@ static void TR_(sort)(struct t_(list) *const list) {
 	/* (Actually slower to merge the last one eagerly. So do nothing.) */
 	run.head->prev = run.prev, run.count++;
 	/* Merge leftovers from the other direction, saving one for final. */
-	while(run.head->prev->prev) PCMP_(merge_runs)(&run.head);
-	PCMP_(merge_final)(list, run.head);
+	while(run.head->prev->prev) pTR_(merge_runs)(&run.head);
+	pTR_(merge_final)(list, run.head);
 }
 /** `alist` `op` `blist` -> `result`. Prefers `a` to `b` when equal. Either
  could be null. @order \O(|`a`| + |`b`|) */
@@ -481,38 +483,38 @@ static void pTR_(boolean)(struct t_(list) *restrict const alist,
 		&& (!alist || (alist != blist)));
 	if(a && b) {
 		while(a->next && b->next) {
-			comp = L_(compare)(a, b);
+			comp = t_(compare)(a, b);
 			if(comp < 0) {
 				temp = a, a = a->next;
 				if(op & LIST_SUBTRACTION_AB) {
-					PL_(rm)(temp);
-					if(result) PL_(push)(result, temp);
+					pT_(rm)(temp);
+					if(result) pT_(push)(result, temp);
 				}
 			} else if(comp > 0) {
 				temp = b, b = b->next;
 				if(op & LIST_SUBTRACTION_BA) {
-					PL_(rm)(temp);
-					if(result) PL_(push)(result, temp);
+					pT_(rm)(temp);
+					if(result) pT_(push)(result, temp);
 				}
 			} else {
 				temp = a, a = a->next, b = b->next;
 				if(op & LIST_INTERSECTION) {
-					PL_(rm)(temp);
-					if(result) PL_(push)(result, temp);
+					pT_(rm)(temp);
+					if(result) pT_(push)(result, temp);
 				}
 			}
 		}
 	}
 	if(a && op & LIST_DEFAULT_A) {
 		while((temp = a, a = a->next)) {
-			PL_(rm)(temp);
-			if(result) PL_(push)(result, temp);
+			pT_(rm)(temp);
+			if(result) pT_(push)(result, temp);
 		}
 	}
 	if(b && op & LIST_DEFAULT_B) {
 		while((temp = b, b = b->next)) {
-			PL_(rm)(temp);
-			if(result) PL_(push)(result, temp);
+			pT_(rm)(temp);
+			if(result) pT_(push)(result, temp);
 		}
 	}
 }
@@ -573,12 +575,12 @@ static void TR_(duplicates_to)(struct t_(list) *restrict const from,
 	assert(from);
 	if(!(b = a->next)) return;
 	while(b->next) {
-		if(!L_(is_equal)(a, b)) {
+		if(!t_(is_equal)(a, b)) {
 			a = b, b = b->next;
 		} else {
 			temp = b, b = b->next;
-			PL_(rm)(temp);
-			if(to) PL_(push)(to, temp);
+			pT_(rm)(temp);
+			if(to) pT_(push)(to, temp);
 		}
 	}
 }

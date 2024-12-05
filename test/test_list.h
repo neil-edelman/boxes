@@ -233,13 +233,13 @@ static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
 	link = T_(any)(&l2, &pT_(true)), assert(link == link_first);
 	/* Test add before/after. */
 	if(!(link = parent_new(parent))) { assert(0); return; }
-	L_(filler)(link);
+	t_(filler)(link);
 	T_(add_before)(T_(head)(&l2), link);
 	link_first = T_(head)(&l2);
 	assert(link == link_first);
 	pT_(count)(&l2, test_size + 1);
 	if(!(link = parent_new(parent))) { assert(0); return; }
-	L_(filler)(link);
+	t_(filler)(link);
 	T_(add_before)(T_(tail)(&l2), link);
 	pT_(count)(&l2, test_size + 2);
 #endif /* iterator --> */
