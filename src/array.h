@@ -77,7 +77,6 @@
 
 /** A valid tag type set by `ARRAY_TYPE`. */
 typedef ARRAY_TYPE pT_(type);
-typedef pT_(type) *pT_(contents);
 
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`.

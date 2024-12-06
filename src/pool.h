@@ -82,7 +82,6 @@ static int poolfree_less(const size_t a, const size_t b) { return a < b; }
 
 /** A valid tag type set by `POOL_TYPE`. */
 typedef POOL_TYPE pT_(type);
-typedef pT_(type) pT_(contents);
 
 /* Goes into a slab-sorted array. */
 struct pT_(slot) { size_t size; pT_(type) *slab; };

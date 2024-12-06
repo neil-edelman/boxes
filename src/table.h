@@ -156,8 +156,6 @@ typedef pT_(key) pT_(value);
 typedef pT_(key) pT_(entry);
 #	endif
 
-typedef pT_(entry) pT_(contents);
-
 /* Address is hash modulo size of table. Any occupied buckets at the head of
  the linked structure are closed, that is, the address equals the index. These
  form a linked table, possibly with other, open buckets that have the same
