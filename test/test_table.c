@@ -237,13 +237,12 @@ static void test_default(void) {
 }
 
 
-#if 0
 /** Test iteration removal. */
 static void test_it(void) {
 	struct zodiac_table z = zodiac_table();
-	struct zodiac_table_iterator zit;
+	struct zodiac_table_cursor zit;
 	struct int_table t = int_table();
-	struct int_table_iterator it;
+	struct int_table_cursor it;
 	const int no_till = 1000, no_till2 = no_till * 2;
 	int n;
 
@@ -252,33 +251,33 @@ static void test_it(void) {
 		|| !zodiac_table_try(&z, Gemini) || !zodiac_table_try(&z, Aries)
 		|| !zodiac_table_try(&z, Virgo) || !zodiac_table_try(&z, Libra)
 		|| !zodiac_table_try(&z, Taurus)) goto catch;
-	table_zodiac_graph(&z, "graph/table/it-z0.gv");
+	private_zodiac_table_graph(&z, "graph/table/it-z0.gv");
 	printf("Remove all zodiac one at a time.\n");
-	zit = zodiac_table_iterator(&z), n = 0;
-	while(zodiac_table_next(&zit)) {
+	for(zit = zodiac_table_begin(&z), n = 0; zodiac_table_cursor_exists(&zit);
+		zodiac_table_cursor_next(&zit)) {
 		char fn[64];
-		printf("On %s.\n", zodiac[zodiac_table_key(&zit)]);
-		if(!zodiac_table_iterator_remove(&zit)) printf("(that's weird?)\n");
+		printf("On %s.\n", zodiac[zodiac_table_cursor_key(&zit)]);
+		if(!zodiac_table_cursor_remove(&zit)) printf("(that's weird?)\n");
 		sprintf(fn, "graph/table/it-z%d.gv", ++n);
-		table_zodiac_graph(&z, fn);
+		private_zodiac_table_graph(&z, fn);
 	}
 	assert(!z.size);
 	zodiac_table_(&z);
 
 	printf("Testing iteration with elements [0, %d).\n", no_till2);
 	for(n = 0; n < no_till2; n++) if(!int_table_try(&t, n)) goto catch;
-	table_int_graph(&t, "graph/table/it0.gv");
+	private_int_table_graph(&t, "graph/table/it0.gv");
 	assert(t.size == no_till2);
 	/* Even ones get deleted. */
 	printf("Remove: ");
-	it = int_table_iterator(&t);
-	while(int_table_next(&it)) if(!(int_table_key(&it) & 1)
-		&& !int_table_iterator_remove(&it)) printf("(that's weird?)");
+	for(it = int_table_begin(&t); int_table_cursor_exists(&it);
+		int_table_cursor_next(&it)) if(!(int_table_cursor_key(&it) & 1)
+		&& !int_table_cursor_remove(&it)) printf("(that's weird?)");
 	printf("done.\n");
-	table_int_graph(&t, "graph/table/it1.gv");
+	private_int_table_graph(&t, "graph/table/it1.gv");
 	assert(t.size == no_till);
-	it = int_table_iterator(&t);
-	while(int_table_next(&it)) assert(int_table_key(&it) & 1);
+	for(it = int_table_begin(&t); int_table_cursor_exists(&it);
+		int_table_cursor_next(&it)) assert(int_table_cursor_key(&it) & 1);
 	goto finally;
 catch:
 	perror("it"), assert(0);
@@ -289,6 +288,7 @@ finally:
 }
 
 
+#if 0
 /* <https://stackoverflow.com/q/59091226/2472827>. */
 struct boat_record { int best_time, points; };
 static unsigned boat_hash(const int x) { return int_hash(x); }
@@ -834,9 +834,9 @@ int main(void) {
 	int_table_test(0);
 	vec4_table_test(&vec4s), vec4_pool_(&vec4s);
 	test_default();
+	test_it();
 #if 0
 	star_table_test(0);
-	test_it();
 	stars();
 	boat_club();
 	linked_dict();

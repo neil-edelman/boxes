@@ -14,6 +14,11 @@ Maybe deque will be useful? a linked list of nodes of increasing size, starts at
 Maybe we should have a `box.h` to store shared code? It's not much. Maybe error
 reporting goes there.
 
+`C90` requires identifiers to be a minimum of 31 significant initial characters in an internal
+identifier or a macro name. If your compiler is `C89` and does the very minimum, it
+probably won't be enough to differentiate all the private symbols. One may have to
+abbreviate.
+
 # Symbols
 
 ## Symbols you can set
