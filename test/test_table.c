@@ -47,13 +47,12 @@ static void zodiac_filler(void *const zero, enum zodiac *const z) {
 #define TABLE_NAME zodiac
 #define TABLE_KEY enum zodiac
 #define TABLE_UNHASH /* If you can, inverse is less space and simpler. */
-#define TABLE_UINT unsigned char /*<-small unsigned*/ /* `size_t` overkill. */
+#define TABLE_UINT unsigned char /* `size_t` overkill. */
 #define TABLE_TEST /* Testing requires to string. */
 #define TABLE_TO_STRING /* Requires <../src/to_string.h>. */
 #include "../src/table.h"
 
 
-#if 0
 /* String set. */
 
 /* A pool is convenient for testing because it allows deletion at random. */
@@ -95,6 +94,7 @@ static void string_to_string(const char *const s, char (*const a)[12])
 #include "../src/table.h"
 
 
+#if 0
 /* Integer set with inverse hash to avoid storing the hash at all. */
 #if UINT_MAX >= 4294967295 /* >= 32-bits */
 /** <https://nullprogram.com/blog/2018/07/31/>
@@ -823,14 +823,16 @@ static void public_filler(void *const zero, enum zodiac *const z)
 
 
 int main(void) {
-#if 0
 	struct str16_pool strings = str16_pool();
+#if 0
 	struct vec4_pool vec4s = vec4_pool();
 #endif
 	zodiac_table_test(0); /* Don't require any space. */
 #if 0
 	public_table_test(0); /* Export public functions of zodiac. */
+#endif
 	string_table_test(&strings), str16_pool_(&strings);
+#if 0
 	uint_table_test(0);
 	int_table_test(0);
 	vec4_table_test(&vec4s), vec4_pool_(&vec4s);

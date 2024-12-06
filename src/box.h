@@ -64,10 +64,12 @@
 #		ifdef BOX_TRAIT
 #			define tr_(n) t_(BOX_CAT(BOX_TRAIT, n))
 #			define TR_(n) T_(BOX_CAT(BOX_TRAIT, n))
+#			define T_R_(n, m) T_(BOX_CAT(n, BOX_CAT(BOX_TRAIT, n)))
 #			define pTR_(n) pT_(BOX_CAT(BOX_TRAIT, n))
 #		else /* Anonymous trait. */
 #			define tr_(n) t_(n)
 #			define TR_(n) T_(n)
+#			define T_R_(n, m) T_(BOX_CAT(n, m))
 #			define pTR_(n) pT_(n)
 #		endif
 /* Attribute in C99+; ignore otherwise. */
@@ -96,6 +98,7 @@
 #		undef pT_
 #		undef tr_
 #		undef TR_
+#		undef T_R_
 #		undef pTR_
 #		ifdef BOX_RESTRICT
 #			undef BOX_RESTRICT

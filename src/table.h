@@ -29,7 +29,8 @@
 
  @param[TABLE_UINT]
  This is <typedef:<PN>uint>, the unsigned type of hash of the key given by
- <typedef:<PN>hash_fn>; defaults to `size_t`.
+ <typedef:<PN>hash_fn>; defaults to `size_t`. Usually this can be set to the
+ more sensible value `uint32_t` in C99's `stdint.h`.
 
  @param[TABLE_DEFAULT]
  Default trait; a <typedef:<PN>value> used in <fn:<N>table<D>get>.
@@ -314,7 +315,7 @@ static int pT_(equal_buckets)(/*pT_(key_c) a, pT_(key_c) b (maybe it's fixed?)*/
 	return (void)a, (void)b, 1;
 #		else
 	/* Must have this function declared. */
-	return T_(is_equal)(a, b);
+	return t_(is_equal)(a, b);
 #		endif
 }
 /** `table` will be searched linearly for `key` which has `hash`. */
@@ -830,20 +831,20 @@ static void pTR_(to_string)(const struct pT_(bucket) *const b,
  @return The value associated with `key` in `table`, (which can be null.) If
  no such value exists, the `TABLE_DEFAULT` for this trait is returned.
  @order Average \O(1); worst \O(n). @allow */
-static pT_(value) N_D_(table, get)(struct T_(table) *const table,
+static pT_(value) T_R_(table, get)(struct t_(table) *const table,
 	const pT_(key) key) {
 	struct pT_(bucket) *bucket;
 	/* `TABLE_DEFAULT` is a valid <tag:<PN>value>. */
-	const pT_(value) PN_D_(default, value) = TABLE_DEFAULT;
+	const pT_(value) pTR_(default_value) = TABLE_DEFAULT;
 	/* Function `<N>hash` must be defined by the user. */
 	return table && table->buckets
-		&& (bucket = pT_(query)(table, key, T_(hash)(key)))
-		? pT_(bucket_value)(bucket) : PN_D_(default, value);
+		&& (bucket = pT_(query)(table, key, t_(hash)(key)))
+		? pT_(bucket_value)(bucket) : pTR_(default_value);
 }
-static void PN_D_(unused, default_coda)(void);
-static void PN_D_(unused, default)(void) { pT_(key) k; memset(&k, 0, sizeof k);
-	N_D_(table, get)(0, k); PN_D_(unused, default_coda)(); }
-static void PN_D_(unused, default_coda)(void) { PN_D_(unused, default)(); }
+static void pTR_(unused_default_coda)(void);
+static void pTR_(unused_default)(void) { pT_(key) k; memset(&k, 0, sizeof k);
+	T_R_(table, get)(0, k); pTR_(unused_default_coda)(); }
+static void pTR_(unused_default_coda)(void) { pTR_(unused_default)(); }
 #		undef TABLE_DEFAULT
 #	endif /* default trait --> */
 
