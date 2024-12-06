@@ -168,7 +168,6 @@ static void int_filler(void *const zero, int *const s) {
 #include "../src/table.h"
 
 
-#if 0
 /** Vector hash implemented as a pointer. This is kind of a silly example
  because it's easily homomorphic to a set of integers, but pretend we had a big
  problem space, (such an example would be difficult to describe succinctly.) */
@@ -210,6 +209,7 @@ static void vec4_to_string(const struct vec4 *const v4, char (*const a)[12]) {
 #include "../src/table.h"
 
 
+#if 0
 /** Too lazy to do separate tests. */
 static void test_default(void) {
 	struct int_table t = int_table();
@@ -824,9 +824,7 @@ static void public_filler(void *const zero, enum zodiac *const z)
 
 int main(void) {
 	struct str16_pool strings = str16_pool();
-#if 0
 	struct vec4_pool vec4s = vec4_pool();
-#endif
 	zodiac_table_test(0); /* Don't require any space. */
 #if 0
 	public_table_test(0); /* Export public functions of zodiac. */
@@ -834,8 +832,8 @@ int main(void) {
 	string_table_test(&strings), str16_pool_(&strings);
 	uint_table_test(0);
 	int_table_test(0);
-#if 0
 	vec4_table_test(&vec4s), vec4_pool_(&vec4s);
+#if 0
 	star_table_test(0);
 	test_default();
 	test_it();
