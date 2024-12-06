@@ -94,7 +94,6 @@ static void string_to_string(const char *const s, char (*const a)[12])
 #include "../src/table.h"
 
 
-#if 0
 /* Integer set with inverse hash to avoid storing the hash at all. */
 #if UINT_MAX >= 4294967295 /* >= 32-bits */
 /** <https://nullprogram.com/blog/2018/07/31/>
@@ -169,6 +168,7 @@ static void int_filler(void *const zero, int *const s) {
 #include "../src/table.h"
 
 
+#if 0
 /** Vector hash implemented as a pointer. This is kind of a silly example
  because it's easily homomorphic to a set of integers, but pretend we had a big
  problem space, (such an example would be difficult to describe succinctly.) */
@@ -832,9 +832,9 @@ int main(void) {
 	public_table_test(0); /* Export public functions of zodiac. */
 #endif
 	string_table_test(&strings), str16_pool_(&strings);
-#if 0
 	uint_table_test(0);
 	int_table_test(0);
+#if 0
 	vec4_table_test(&vec4s), vec4_pool_(&vec4s);
 	star_table_test(0);
 	test_default();

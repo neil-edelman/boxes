@@ -52,7 +52,7 @@
 #if !defined(TABLE_NAME) || !defined(TABLE_KEY)
 #	error Name TABLE_NAME or tag type TABLE_KEY undefined.
 #endif
-#if defined(TABLE_TRAIT) ^ defined(BOX_TYPE)
+#if !defined(BOX_ENTRY1) && (defined(TABLE_TRAIT) ^ defined(BOX_MAJOR))
 #	error TABLE_TRAIT name must come after TABLE_EXPECT_TRAIT.
 #endif
 #if defined(TABLE_TEST) && (!defined(TABLE_TRAIT) && !defined(TABLE_TO_STRING) \
