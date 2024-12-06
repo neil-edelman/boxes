@@ -794,7 +794,30 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #		undef TABLE_TO_STRING
 #		define TO_STRING_LEFT '{'
 #		define TO_STRING_RIGHT '}'
+#		define ptr_(n) BOX_CAT(private, tr_(n))
+/** Thunk because `pT_(bucket)` should not be visible. */
+static void ptr_(to_string)(const struct pT_(bucket) *const b,
+	char (*const a)[12]) {
+#		ifdef TABLE_VALUE
+	tr_(to_string)(pT_(bucket_key)(b), pT_(bucket_value)(b), a);
+#		else
+	tr_(to_string)(pT_(bucket_key)(b), a);
+#		endif
+}
+#		undef ptr_
+#		undef tr_
+#		ifdef BOX_TRAIT
+#			define tr_(n) BOX_CAT(private, t_(BOX_CAT(BOX_TRAIT, n)))
+#		else
+#			define tr_(n) BOX_CAT(private, t_(n))
+#		endif
 #		include "to_string.h" /** \include */
+#		undef tr_
+#		ifdef BOX_TRAIT
+#			define tr_(n) t_(BOX_CAT(BOX_TRAIT, n))
+#		else
+#			define tr_(n) t_(n)
+#		endif
 #		ifndef TABLE_TRAIT
 #			define TABLE_HAS_TO_STRING /* Warning about tests. */
 #		endif
