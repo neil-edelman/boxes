@@ -66,6 +66,7 @@
 /** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
  `unsigned int` if not set by `HEAP_TYPE`. */
 typedef HEAP_TYPE pT_(priority);
+typedef pT_(priority) pT_(contents);
 
 /* Temporary. Avoid recursion. This must match <box.h>. */
 #	undef BOX_MINOR

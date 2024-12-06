@@ -2,10 +2,10 @@
  return a key which is part of a larger aggregate structure. `fill` is
  initialized except if <typedef:<PN>entry> contains a value, the value will be
  a valid pointer to a temporary space for copying. */
-typedef int (*const PN_(fill_fn))(void *, PN_(entry) *fill);
+typedef int (*const pT_(fill_fn))(void *, pT_(entry) *fill);
 
 #if defined(QUOTE) || defined(QUOTE_)
-#error QUOTE_? cannot be defined.
+#	error QUOTE_? cannot be defined.
 #endif
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
@@ -13,38 +13,38 @@ typedef int (*const PN_(fill_fn))(void *, PN_(entry) *fill);
 #include <stdio.h>  /* fprintf FILE */
 #include <math.h>   /* sqrt NAN? */
 #ifndef NAN /* <https://stackoverflow.com/questions/5714131/nan-literal-in-c> */
-#define NAN (0. / 0.)
+#	define NAN (0. / 0.)
 #endif
 #include <string.h> /* memset */
 
-static size_t PN_(count_bucket)(const struct N_(table) *const table,
-	PN_(uint) idx) {
-	struct PN_(bucket) *bucket;
-	PN_(uint) next;
+static size_t pT_(count_bucket)(const struct t_(table) *const table,
+	pT_(uint) idx) {
+	struct pT_(bucket) *bucket;
+	pT_(uint) next;
 	size_t no = 0;
-	assert(table && idx < PN_(capacity)(table));
+	assert(table && idx < pT_(capacity)(table));
 	bucket = table->buckets + idx;
 	if((next = bucket->next) == TABLE_NULL
-		|| idx != PN_(chain_head)(table, bucket->hash)) return 0;
+		|| idx != pT_(chain_head)(table, bucket->hash)) return 0;
 	for( ; no++, next != TABLE_END;
 		next = bucket->next, assert(next != TABLE_NULL)) {
 		idx = next;
-		assert(idx < PN_(capacity)(table)
+		assert(idx < pT_(capacity)(table)
 			/* We want to count intermediates.
-			 && PN_(in_stack_range)(hash, idx) */);
+			 && pT_(in_stack_range)(hash, idx) */);
 		bucket = table->buckets + idx;
 	}
 	return no;
 }
 
 #ifndef TEST_TABLE_H
-#define TEST_TABLE_H
+#	define TEST_TABLE_H
 /** <Welford1962Note>: population variance: `ssdm/n`,
  sample variance: `ssdm/(n-1)`. */
 struct table_stats { size_t n, max; double mean, ssdm; };
 #endif
 /** Update one sample point of `value`. */
-static void PN_(update)(struct table_stats *const st, const size_t value) {
+static void pT_(update)(struct table_stats *const st, const size_t value) {
 	double d, v = (double)value;
 	if(st->max < value) st->max = value;
 	d = v - st->mean;
@@ -52,14 +52,14 @@ static void PN_(update)(struct table_stats *const st, const size_t value) {
 	st->ssdm += d * (v - st->mean);
 }
 /** Collect stats on `hash`. */
-static struct table_stats PN_(collect)(const struct N_(table) *const table) {
+static struct table_stats pT_(collect)(const struct t_(table) *const table) {
 	struct table_stats st = { 0, 0, 0.0, 0.0 };
-	PN_(uint) i, i_end;
+	pT_(uint) i, i_end;
 	if(!table || !table->buckets) return st;
-	for(i = 0, i_end = PN_(capacity)(table); i < i_end; i++) {
+	for(i = 0, i_end = pT_(capacity)(table); i < i_end; i++) {
 		size_t no;
 		/* I'm sure there's a cheaper way to do it. */
-		for(no = PN_(count_bucket)(table, i); no; no--) PN_(update)(&st, no);
+		for(no = pT_(count_bucket)(table, i); no; no--) pT_(update)(&st, no);
 	}
 	return st;
 }
@@ -67,11 +67,11 @@ static struct table_stats PN_(collect)(const struct N_(table) *const table) {
 /** Draw a diagram of `hash` written to `fn` in
  [Graphviz](https://www.graphviz.org/) format.
  @order \O(|`hash.bins`| + |`hash.items`|) */
-static void PN_(graph)(const struct N_(table) *const table,
+static void pT_(graph)(const struct t_(table) *const table,
 	const char *const fn) {
 	FILE *fp;
 	size_t i, i_end;
-	struct table_stats st = PN_(collect)(table);
+	struct table_stats st = pT_(collect)(table);
 	assert(table && fn);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	printf("*** %s\n", fn);
@@ -109,7 +109,7 @@ static void PN_(graph)(const struct N_(table) *const table,
 		"\thash -> data;\n"
 		"\t{ rank=same; hash; data; }\n",
 		(unsigned long)st.n,
-		table->buckets ? (unsigned long)PN_(capacity)(table) : 0,
+		table->buckets ? (unsigned long)pT_(capacity)(table) : 0,
 		st.n ? st.mean : (double)NAN, st.n > 1
 		? sqrt(st.ssdm / (double)(st.n - 1)) : (double)NAN,
 		(unsigned long)st.max);
@@ -125,23 +125,23 @@ static void PN_(graph)(const struct N_(table) *const table,
 		"\t\t<td border=\"0\"><font face=\"Times-Italic\">next</font></td>\n"
 		"\t</tr>\n"
 		"\t<hr/>\n");
-	for(i = 0, i_end = PN_(capacity)(table); i < i_end; i++) {
+	for(i = 0, i_end = pT_(capacity)(table); i < i_end; i++) {
 		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "",
 			*const top = (table->top & ~TABLE_HIGH) == i
 			? (table->top & TABLE_HIGH) ? " border=\"1\"" : " border=\"2\"" : "";
-		struct PN_(bucket) *b = table->buckets + i;
+		struct pT_(bucket) *b = table->buckets + i;
 		fprintf(fp, "\t<tr>\n"
 			"\t\t<td align=\"right\"%s%s>"
 			"<font face=\"Times-Italic\">0x%lx</font></td>\n",
 			top, bgc, (unsigned long)i);
 		if(b->next != TABLE_NULL) {
 			const char *const closed
-				= PN_(chain_head)(table, b->hash) == i ? "⬤" : "◯";
+				= pT_(chain_head)(table, b->hash) == i ? "⬤" : "◯";
 			char z[12];
 #ifdef TABLE_VALUE
-			N_(to_string)(PN_(bucket_key)(b), PN_(bucket_value)(b), &z);
+			t_(to_string)(pT_(bucket_key)(b), pT_(bucket_value)(b), &z);
 #else
-			N_(to_string)(PN_(bucket_key)(b), &z);
+			t_(to_string)(pT_(bucket_key)(b), &z);
 #endif
 			fprintf(fp, "\t\t<td align=\"right\"%s>0x%lx</td>\n"
 				"\t\t<td align=\"left\"%s>"
@@ -167,11 +167,11 @@ static void PN_(graph)(const struct N_(table) *const table,
 		"\t<tr><td colspan=\"4\"></td></tr>\n"
 		"</table>>];\n");
 	fprintf(fp, "\tnode [shape=plain, fillcolor=none]\n");
-	for(i = 0, i_end = PN_(capacity)(table); i < i_end; i++) {
-		struct PN_(bucket) *b = table->buckets + i;
-		PN_(uint) left, right;
+	for(i = 0, i_end = pT_(capacity)(table); i < i_end; i++) {
+		struct pT_(bucket) *b = table->buckets + i;
+		pT_(uint) left, right;
 		if((right = b->next) == TABLE_NULL || right == TABLE_END) continue;
-		if(PN_(chain_head)(table, b->hash) != i) {
+		if(pT_(chain_head)(table, b->hash) != i) {
 			fprintf(fp, "\ti0x%lx [label=\"0x%lx\", fontcolor=\"Gray\"];\n"
 				"\tdata:%lu -> i0x%lx [color=\"Gray\"];\n",
 				(unsigned long)right, (unsigned long)right,
@@ -202,21 +202,21 @@ end:
 /** Draw a histogram of `hash` written to `fn` in
  [Gnuplot](http://www.gnuplot.info/) format.
  @order \O(|`hash.bins`| + |`hash.items`|) */
-static void PN_(histogram)(const struct N_(table) *const table,
+static void pT_(histogram)(const struct t_(table) *const table,
 	const char *const fn) {
 	FILE *fp;
 	size_t histogram[64], hs, h;
 	const size_t histogram_size = sizeof histogram / sizeof *histogram;
 	/* Stats for fit. fixme: This is stats for expected value, I don't think
 	 they are the same. */
-	struct table_stats st = PN_(collect)(table);
+	struct table_stats st = pT_(collect)(table);
 	assert(table && fn);
 	memset(histogram, 0, sizeof histogram);
 	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
 	if(table->buckets) {
-		PN_(uint) i, i_end = PN_(capacity)(table);
+		pT_(uint) i, i_end = pT_(capacity)(table);
 		for(i = 0; i < i_end; i++) {
-			size_t bucket = PN_(count_bucket)(table, i);
+			size_t bucket = pT_(count_bucket)(table, i);
 			/* The bins are `0,1,2,...,[histogram_size - 1, \infty]`. */
 			if(bucket >= histogram_size) bucket = histogram_size - 1;
 			histogram[bucket]++;
@@ -247,16 +247,17 @@ static void PN_(histogram)(const struct N_(table) *const table,
 }
 
 /** @return Equality of entries `a` and `b`. */
-static int PN_(eq_key)(PN_(key_c) a, PN_(key_c) b) {
+static int pT_(eq_key)(/*pT_(key_c) a, pT_(key_c) b*/
+	const pT_(key) a, const pT_(key) b) {
 #ifdef TABLE_UNHASH /* Compare in <typedef:<PN>uint> space. */
-	return N_(hash)(a) == N_(hash)(b);
+	return t_(hash)(a) == t_(hash)(b);
 #else
-	return N_(is_equal)(a, b);
+	return t_(is_equal)(a, b);
 #endif
 }
 
 /** @return Key from `e`. */
-static PN_(key) PN_(entry_key)(PN_(entry) e) {
+static pT_(key) pT_(entry_key)(pT_(entry) e) {
 #ifdef TABLE_VALUE
 	return e.key;
 #else
@@ -266,8 +267,8 @@ static PN_(key) PN_(entry_key)(PN_(entry) e) {
 
 /** Assertion function for seeing if `hash` is in a valid state.
  @order \O(|`hash.bins`| + |`hash.items`|) */
-static void PN_(legit)(const struct N_(table) *const table) {
-	PN_(uint) i, i_end;
+static void pT_(legit)(const struct t_(table) *const table) {
+	pT_(uint) i, i_end;
 	size_t size = 0, end = 0, start = 0;
 	if(!table) return; /* Null. */
 	if(!table->buckets) { /* Idle. */
@@ -275,32 +276,32 @@ static void PN_(legit)(const struct N_(table) *const table) {
 		return;
 	}
 	assert(table->log_capacity >= 3);
-	for(i = 0, i_end = PN_(capacity)(table); i < i_end; i++) {
-		struct PN_(bucket) *b = table->buckets + i;
+	for(i = 0, i_end = pT_(capacity)(table); i < i_end; i++) {
+		struct pT_(bucket) *b = table->buckets + i;
 		if(b->next == TABLE_NULL) continue;
 		size++;
 		if(b->next == TABLE_END) end++;
-		if(i == PN_(chain_head)(table, b->hash)) start++;
+		if(i == pT_(chain_head)(table, b->hash)) start++;
 	}
 	assert(table->size == size && end == start && size >= start);
 }
 
 /** Passed `parent_new` and `parent` from <fn:<N>hash_test>. */
-static void PN_(test_basic)(void *const parent) {
+static void pT_(test_basic)(void *const parent) {
 	struct {
 		struct sample {
-			PN_(entry) entry;
+			pT_(entry) entry;
 			int is_in;
 		} sample[1000];
 		size_t count;
 	} trials;
 	const size_t trial_size = sizeof trials.sample / sizeof *trials.sample,
-		max_graph = ((PN_(uint))~0) > 1000 ? 1000 : ((PN_(uint))~0);
+		max_graph = ((pT_(uint))~0) > 1000 ? 1000 : ((pT_(uint))~0);
 	size_t i;
-	PN_(uint) b, b_end, count1, count2;
+	pT_(uint) b, b_end, count1, count2;
 	char z[12];
-	struct N_(table) table = N_(table)();
-	struct N_(table_iterator) it;
+	struct t_(table) table = t_(table)();
+	struct T_(cursor) it;
 	int success;
 	assert(trial_size > 1);
 	/* Pre-computation. O(element_size*(element_size-1)/2); this places a limit
@@ -311,50 +312,50 @@ static void PN_(test_basic)(void *const parent) {
 /*#ifdef TABLE_VALUE
 		s->entry.value = &s.temp_value;
 #endif*/
-		N_(filler)(parent, &s->entry);
+		t_(filler)(parent, &s->entry);
 #ifdef TABLE_VALUE
-		N_(to_string)(PN_(entry_key)(s->entry), s->entry.value, &z);
+		t_(to_string)(pT_(entry_key)(s->entry), s->entry.value, &z);
 #else
-		N_(to_string)(PN_(entry_key)(s->entry), &z);
+		t_(to_string)(pT_(entry_key)(s->entry), &z);
 #endif
 		/* Is supposed to be in set. */
 		s->is_in = 0;
-		for(j = 0; j < i && !PN_(eq_key)(PN_(entry_key)(s->entry),
-			PN_(entry_key)(trials.sample[j].entry)); j++);
+		for(j = 0; j < i && !pT_(eq_key)(pT_(entry_key)(s->entry),
+			pT_(entry_key)(trials.sample[j].entry)); j++);
 		if(j == i) s->is_in = 1;
 	}
 	/* Test idle. */
-	PN_(legit)(&table);
+	pT_(legit)(&table);
 	assert(!table.buckets && !table.log_capacity && !table.size);
-	PN_(legit)(&table);
-	PN_(graph)(&table, "graph/" QUOTE(TABLE_NAME) "-0.gv");
-	success = N_(table_buffer)(&table, 1);
+	pT_(legit)(&table);
+	pT_(graph)(&table, "graph/table/" QUOTE(TABLE_NAME) "-0.gv");
+	success = T_(buffer)(&table, 1);
 	assert(success && table.buckets && table.log_capacity == 3 && !table.size);
-	success = N_(table_buffer)(&table, 1);
+	success = T_(buffer)(&table, 1);
 	assert(success && table.buckets && table.log_capacity == 3 && !table.size);
-	N_(table_clear)(&table);
+	T_(clear)(&table);
 	assert(table.buckets && table.log_capacity == 3 && !table.size);
 	{ /* Test negative `get_or`. */
-		PN_(key) key = PN_(entry_key)(trials.sample[0].entry);
-		PN_(value) ret, def;
+		pT_(key) key = pT_(entry_key)(trials.sample[0].entry);
+		pT_(value) ret, def;
 		int cmp;
 		memset(&def, 1, sizeof def);
-		ret = N_(table_get_or)(&table, key, def);
+		ret = T_(get_or)(&table, key, def);
 		cmp = memcmp(&ret, &def, sizeof def);
 		assert(!cmp);
 	}
-	N_(table_)(&table);
+	t_(table_)(&table);
 	assert(!table.buckets && table.log_capacity == 0 && !table.size);
 	/* Test placing items. */
 	for(i = 0; i < trial_size; i++) {
-		struct { PN_(uint) before, after; } size;
+		struct { pT_(uint) before, after; } size;
 		enum table_result result;
 		const struct sample *s = trials.sample + i;
-		PN_(key) key, eject, zero;
+		pT_(key) key, eject, zero;
 		memset(&eject, 0, sizeof eject);
 		memset(&zero, 0, sizeof zero);
 		size.before = table.size;
-		result = N_(table_policy)(&table, PN_(entry_key)(s->entry), &eject, 0);
+		result = T_(policy)(&table, pT_(entry_key)(s->entry), &eject, 0);
 		size.after = table.size;
 		if(s->is_in) {
 			assert(!memcmp(&eject, &zero, sizeof zero)
@@ -363,50 +364,50 @@ static void PN_(test_basic)(void *const parent) {
 			assert(result == TABLE_PRESENT && size.before == size.after);
 		}
 #ifdef TABLE_VALUE
-		success = N_(table_query)(&table, PN_(entry_key)(s->entry), &key, 0);
+		success = T_(query)(&table, pT_(entry_key)(s->entry), &key, 0);
 #else
-		success = N_(table_query)(&table, PN_(entry_key)(s->entry), &key);
+		success = T_(query)(&table, pT_(entry_key)(s->entry), &key);
 #endif
-		assert(success && PN_(eq_key)(PN_(entry_key)(s->entry), key));
+		assert(success && pT_(eq_key)(pT_(entry_key)(s->entry), key));
 		if(table.size < max_graph && !(i & (i - 1)) || i + 1 == trial_size) {
 			char fn[64];
 #ifdef TABLE_VALUE
-			N_(to_string)(PN_(entry_key)(s->entry), s->entry.value, &z);
+			t_(to_string)(pT_(entry_key)(s->entry), s->entry.value, &z);
 #else
-			N_(to_string)(PN_(entry_key)(s->entry), &z);
+			t_(to_string)(pT_(entry_key)(s->entry), &z);
 #endif
 			/*fix printf("%lu. Store \"%s\" result %s, table %s.\n", (unsigned long)i,
-				z, table_result_str[result], N_(table_to_string)(&table));*/
-			sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-%lu.gv",
+				z, table_result_str[result], T_(table_to_string)(&table));*/
+			sprintf(fn, "graph/table/" QUOTE(TABLE_NAME) "-%lu.gv",
 				(unsigned long)i+1);
-			PN_(graph)(&table, fn);
+			pT_(graph)(&table, fn);
 		}
-		PN_(legit)(&table);
+		pT_(legit)(&table);
 	}
 	{
 		char fn[64];
-		sprintf(fn, "graph/histogram-" QUOTE(TABLE_NAME) "-%u.gnu",
+		sprintf(fn, "graph/table/histogram-" QUOTE(TABLE_NAME) "-%u.gnu",
 			(unsigned)trial_size);
-		PN_(histogram)(&table, fn);
+		pT_(histogram)(&table, fn);
 	}
 	printf("Go through the table and see if we can get all the items out.\n");
-	{ PN_(value) def; memset(&def, 0, sizeof def);
+	{ pT_(value) def; memset(&def, 0, sizeof def);
 		for(i = 0; i < trial_size; i++) {
 		const struct sample *s = trials.sample + i;
-		const PN_(key) key = PN_(entry_key)(s->entry);
-		PN_(key) result;
-		PN_(value) value;
-		const PN_(value) *sample_value;
+		const pT_(key) key = pT_(entry_key)(s->entry);
+		pT_(key) result;
+		pT_(value) value;
+		const pT_(value) *sample_value;
 		int /*cmp,*/ is;
-		is = N_(table_contains)(&table, key);
+		is = T_(contains)(&table, key);
 		assert(is);
 #ifdef TABLE_VALUE
-		is = N_(table_query)(&table, key, &result, &value);
+		is = T_(query)(&table, key, &result, &value);
 #else
-		is = N_(table_query)(&table, key, &result);
+		is = T_(query)(&table, key, &result);
 #endif
-		assert(is && PN_(eq_key)(PN_(entry_key)(s->entry), result));
-		value = N_(table_get_or)(&table, key, def);
+		assert(is && pT_(eq_key)(pT_(entry_key)(s->entry), result));
+		value = T_(get_or)(&table, key, def);
 #ifdef TABLE_VALUE
 		sample_value = &s->entry.value;
 #else
@@ -419,36 +420,36 @@ static void PN_(test_basic)(void *const parent) {
 		assert(!cmp);*/ /* <- not doing what I think in vect4 */
 		(void)value, (void)sample_value;
 	}}
-	printf("Table: %s.\n", N_(table_to_string)(&table));
+	printf("Table: %s.\n", T_(to_string)(&table));
 	printf("Count:\n");
-	it = N_(table_iterator)(&table), count1 = 0;
-	while(N_(table_next)(&it)) count1++;
+	for(it = T_(begin)(&table), count1 = 0; T_(cursor_exists)(&it);
+		T_(cursor_next)(&it)) count1++;
 	assert(count1 == table.size);
 	/* Is it kosher? Yes, but it doesn't test anything. Use iterator. */
-	it = N_(table_iterator)(&table), count2 = 0;
-	while(N_(table_next)(&it)) {
+	for(it = T_(begin)(&table), count2 = 0; T_(cursor_exists)(&it);
+		T_(cursor_next)(&it)) {
 		count2++;
-		N_(table_iterator_remove)(&it);
-		/*sprintf(fn, "graph/" QUOTE(TABLE_NAME) "-end-%u.gv", ++count);
-		PN_(graph)(&table, fn);*/
+		T_(cursor_remove)(&it);
+		/*sprintf(fn, "graph/table/" QUOTE(TABLE_NAME) "-end-%u.gv", ++count);
+		pT_(graph)(&table, fn);*/
 	}
-	PN_(graph)(&table, "graph/" QUOTE(TABLE_NAME) "-end.gv");
+	pT_(graph)(&table, "graph/table/" QUOTE(TABLE_NAME) "-end.gv");
 	assert(count1 == count2);
 	/* Clear. */
-	N_(table_clear)(&table);
-	PN_(graph)(&table, "graph/" QUOTE(TABLE_NAME) "-clear.gv");
-	PN_(legit)(&table);
-	for(b = 0, b_end = b + PN_(capacity)(&table); b < b_end; b++)
+	T_(clear)(&table);
+	pT_(graph)(&table, "graph/table/" QUOTE(TABLE_NAME) "-clear.gv");
+	pT_(legit)(&table);
+	for(b = 0, b_end = b + pT_(capacity)(&table); b < b_end; b++)
 		assert(table.buckets[b].next == TABLE_NULL);
 	assert(table.size == 0);
-	printf("Clear: %s.\n", N_(table_to_string)(&table));
+	printf("Clear: %s.\n", T_(to_string)(&table));
 	for(i = 0; i < trial_size; i++) { /* Make sure to test it again. */
 		const struct sample *s = trials.sample + i;
 		enum table_result result;
-		result = N_(table_policy)(&table, PN_(entry_key)(s->entry), 0, 0);
+		result = T_(policy)(&table, pT_(entry_key)(s->entry), 0, 0);
 		assert(result == TABLE_PRESENT || result == TABLE_ABSENT);
 	}
-	N_(table_)(&table);
+	t_(table_)(&table);
 	assert(!table.buckets && !table.log_capacity && !table.size);
 }
 
@@ -459,7 +460,7 @@ static void PN_(test_basic)(void *const parent) {
  <tag:<N>hashlink> and `TABLE_TEST` is not allowed to go over the limits of the
  data key. @param[parent] The parameter passed to `parent_new`. Ignored if
  `parent_new` is null. @allow */
-static void N_(table_test)(void *const parent) {
+static void T_(test)(void *const parent) {
 	printf("<" QUOTE(TABLE_NAME) ">table of key <" QUOTE(TABLE_KEY)
 		"> was created using: "
 		"TABLE_UINT <" QUOTE(TABLE_UINT) ">; "
@@ -470,7 +471,7 @@ static void N_(table_test)(void *const parent) {
 		"TABLE_VALUE <" QUOTE(TABLE_VALUE) ">; "
 #endif
 		"testing%s:\n", parent ? "(pointer)" : "");
-	PN_(test_basic)(parent);
+	pT_(test_basic)(parent);
 	fprintf(stderr, "Done tests of <" QUOTE(TABLE_NAME) ">hash.\n\n");
 }
 

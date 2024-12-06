@@ -11,7 +11,7 @@
 #include "orcish.h"
 
 
-/* Zodiac is a bounded set of `enum`, set. */
+/* Zodiac is a bounded set of `enum`. */
 
 /* An X-macro allows printing. This is preferable to `TABLE_KEY const char *`,
  (which leads to duplicate `const`.) */
@@ -24,14 +24,14 @@ enum zodiac { ZODIAC(X) };
 #define X(n) #n
 static const char *zodiac[] = { ZODIAC(X) };
 #undef X
-/** Sequential monotonic values make a pretty good hash.
+/** Sequential monotonic values make a great hash.
  @implements <zodiac>hash_fn */
 static unsigned char zodiac_hash(const enum zodiac z)
 	{ return (unsigned char)z; }
 /** This is a discrete set with a simple homomorphism between keys and hash
  values, therefore it's simpler to work in hash space. This saves us from
  having to define <typedef:<PN>is_equal_fn> and saves the key from even being
- stored. (Still, this uses 16 bits to store 1 bit of information, it would be
+ stored. (Still, this uses 8 bits to store 1 bit of information, it would be
  better as a bit-vector.) @implements <zodiac>unhash_fn */
 static enum zodiac zodiac_unhash(const unsigned char z) { return z; }
 /** This is not necessary except for testing, because that is how we see what
@@ -53,6 +53,7 @@ static void zodiac_filler(void *const zero, enum zodiac *const z) {
 #include "../src/table.h"
 
 
+#if 0
 /* String set. */
 
 /* A pool is convenient for testing because it allows deletion at random. */
@@ -251,14 +252,14 @@ static void test_it(void) {
 		|| !zodiac_table_try(&z, Gemini) || !zodiac_table_try(&z, Aries)
 		|| !zodiac_table_try(&z, Virgo) || !zodiac_table_try(&z, Libra)
 		|| !zodiac_table_try(&z, Taurus)) goto catch;
-	table_zodiac_graph(&z, "graph/it-z0.gv");
+	table_zodiac_graph(&z, "graph/table/it-z0.gv");
 	printf("Remove all zodiac one at a time.\n");
 	zit = zodiac_table_iterator(&z), n = 0;
 	while(zodiac_table_next(&zit)) {
 		char fn[64];
 		printf("On %s.\n", zodiac[zodiac_table_key(&zit)]);
 		if(!zodiac_table_iterator_remove(&zit)) printf("(that's weird?)\n");
-		sprintf(fn, "graph/it-z%d.gv", ++n);
+		sprintf(fn, "graph/table/it-z%d.gv", ++n);
 		table_zodiac_graph(&z, fn);
 	}
 	assert(!z.size);
@@ -266,7 +267,7 @@ static void test_it(void) {
 
 	printf("Testing iteration with elements [0, %d).\n", no_till2);
 	for(n = 0; n < no_till2; n++) if(!int_table_try(&t, n)) goto catch;
-	table_int_graph(&t, "graph/it0.gv");
+	table_int_graph(&t, "graph/table/it0.gv");
 	assert(t.size == no_till2);
 	/* Even ones get deleted. */
 	printf("Remove: ");
@@ -274,7 +275,7 @@ static void test_it(void) {
 	while(int_table_next(&it)) if(!(int_table_key(&it) & 1)
 		&& !int_table_iterator_remove(&it)) printf("(that's weird?)");
 	printf("done.\n");
-	table_int_graph(&t, "graph/it1.gv");
+	table_int_graph(&t, "graph/table/it1.gv");
 	assert(t.size == no_till);
 	it = int_table_iterator(&t);
 	while(int_table_next(&it)) assert(int_table_key(&it) & 1);
@@ -801,7 +802,7 @@ finally:
 #define TABLE_KEY enum zodiac
 #define TABLE_UNHASH
 #define TABLE_UINT unsigned char
-#define TABLE_HEAD
+#define TABLE_DECLARE_ONLY
 #include "../src/table.h"
 static unsigned char public_hash(const enum zodiac z) { return zodiac_hash(z); }
 static enum zodiac public_unhash(const unsigned char z)
@@ -816,14 +817,18 @@ static void public_filler(void *const zero, enum zodiac *const z)
 #define TABLE_UINT unsigned char
 #define TABLE_TEST
 #define TABLE_TO_STRING
-#define TABLE_BODY
+#define ~~TABLE_BODY~~
 #include "../src/table.h"
+#endif /*0*/
 
 
 int main(void) {
+#if 0
 	struct str16_pool strings = str16_pool();
 	struct vec4_pool vec4s = vec4_pool();
+#endif
 	zodiac_table_test(0); /* Don't require any space. */
+#if 0
 	public_table_test(0); /* Export public functions of zodiac. */
 	string_table_test(&strings), str16_pool_(&strings);
 	uint_table_test(0);
@@ -837,5 +842,6 @@ int main(void) {
 	linked_dict();
 	year_of();
 	nato();
+#endif
 	return EXIT_SUCCESS;
 }

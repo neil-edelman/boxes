@@ -77,6 +77,7 @@ enum list_operation { /* Dummy ensures closed. */
 
  ![States.](../doc/list/node-states.png) */
 struct t_(listlink) { struct t_(listlink) *next, *prev; };
+typedef struct t_(listlink) pT_(contents);
 
 /** Serves as head and tail sentinel for a linked-list of <tag:<t>listlink>.
 
