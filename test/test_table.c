@@ -209,7 +209,6 @@ static void vec4_to_string(const struct vec4 *const v4, char (*const a)[12]) {
 #include "../src/table.h"
 
 
-#if 0
 /** Too lazy to do separate tests. */
 static void test_default(void) {
 	struct int_table t = int_table();
@@ -238,6 +237,7 @@ static void test_default(void) {
 }
 
 
+#if 0
 /** Test iteration removal. */
 static void test_it(void) {
 	struct zodiac_table z = zodiac_table();
@@ -833,9 +833,9 @@ int main(void) {
 	uint_table_test(0);
 	int_table_test(0);
 	vec4_table_test(&vec4s), vec4_pool_(&vec4s);
+	test_default();
 #if 0
 	star_table_test(0);
-	test_default();
 	test_it();
 	stars();
 	boat_club();
