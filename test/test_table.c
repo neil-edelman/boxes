@@ -288,7 +288,6 @@ finally:
 }
 
 
-#if 0
 /* <https://stackoverflow.com/q/59091226/2472827>. */
 struct boat_record { int best_time, points; };
 static unsigned boat_hash(const int x) { return int_hash(x); }
@@ -301,7 +300,7 @@ static int boat_unhash(const unsigned h) { return int_unhash(h); }
 #include "../src/table.h"
 static void boat_club(void) {
 	struct boat_table boats = boat_table();
-	struct boat_table_iterator it;
+	struct boat_table_cursor it;
 	size_t i;
 	printf("Boat club races:\n");
 	for(i = 0; i < 1000; i++) {
@@ -329,10 +328,11 @@ static void boat_club(void) {
 	}
 	printf("Final score:\n"
 		"id\tbest\tpoints\n");
-	it = boat_table_iterator(&boats);
-	while(boat_table_next(&it))
-		printf("%d\t%d\t%d\n", boat_table_key(&it),
-		boat_table_value(&it)->best_time, boat_table_value(&it)->points);
+	for(it = boat_table_begin(&boats); boat_table_cursor_exists(&it);
+		boat_table_cursor_next(&it))
+		printf("%d\t%d\t%d\n", boat_table_cursor_key(&it),
+		boat_table_cursor_value(&it)->best_time,
+		boat_table_cursor_value(&it)->points);
 	goto finally;
 catch:
 	perror("boats"), assert(0);
@@ -342,6 +342,7 @@ finally:
 }
 
 
+#if 0
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
  Sol. As a real example, this is silly; it would be much better suited to
  `gperf` because the data is known beforehand. Also, see <fn:hash_zodiac>.
@@ -835,10 +836,10 @@ int main(void) {
 	vec4_table_test(&vec4s), vec4_pool_(&vec4s);
 	test_default();
 	test_it();
+	boat_club();
 #if 0
 	star_table_test(0);
 	stars();
-	boat_club();
 	linked_dict();
 	year_of();
 	nato();

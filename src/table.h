@@ -535,7 +535,7 @@ static pT_(key) T_(cursor_key)(const struct T_(cursor) *const cur)
 /** @return If `it` has an element, returns it's value, if `TABLE_VALUE`.
  @allow */
 static pT_(value) *T_(cursor_value)(const struct T_(cursor) *const cur)
-	{ return &cur->table->buckets[cut->i].value; }
+	{ return &cur->table->buckets[cur->i].value; }
 #		endif
 /** Move to next on `cur` that exists. */
 static void T_(cursor_next)(struct T_(cursor) *const cur)
@@ -625,7 +625,7 @@ static int T_(query)(struct t_(table) *const table, const pT_(key) key,
 	pT_(key) *result, pT_(value) *value) {
 	struct pT_(bucket) *bucket;
 	if(!table || !table->buckets
-		|| !(bucket = pT_(query)(table, key, T_(hash)(key)))) return 0;
+		|| !(bucket = pT_(query)(table, key, t_(hash)(key)))) return 0;
 	if(result) *result = pT_(bucket_key)(bucket);
 	if(value) *value = bucket->value;
 	return 1;
@@ -673,7 +673,7 @@ static enum table_result T_(try)(struct t_(table) *const table,
 static enum table_result pT_(assign)(struct t_(table) *const table,
 	pT_(key) key, pT_(value) **const content) {
 	struct pT_(bucket) *bucket;
-	const pT_(uint) hash = T_(hash)(key);
+	const pT_(uint) hash = t_(hash)(key);
 	enum table_result result;
 	assert(table && content);
 	if(table->buckets && (bucket = pT_(query)(table, key, hash))) {
@@ -777,8 +777,7 @@ static void pT_(unused_base)(void) {
 	T_(buffer)(0, 0); T_(clear)(0); T_(contains)(0, k); T_(get_or)(0, k, v);
 	T_(update)(0, k, 0); T_(policy)(0, k, 0, 0); T_(remove)(0, k);
 #		ifdef TABLE_VALUE
-	T_(cursor_value)(0);
-	T_(table_value)(0); T_(table_query)(0, k, 0, 0); T_(table_assign)(0, k, 0);
+	T_(cursor_value)(0); T_(query)(0, k, 0, 0); T_(assign)(0, k, 0);
 #		else
 	T_(query)(0, k, 0); T_(try)(0, e);
 #		endif
