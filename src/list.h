@@ -263,9 +263,12 @@ static void T_(self_correct)(struct t_(list) *const list) {
 	}
 }
 
-#		ifdef HAVE_ITERATE_H /* <!-- iterate */
-/* fixme: I don't know if this is good? */
+/* fixme: test coverage fails, see table. */
+/* fixme: I don't know if this is good? but compare.h and iterate.h both have
+ item. */
 typedef struct t_(listlink) pT_(type);
+
+#		ifdef HAVE_ITERATE_H /* <!-- iterate */
 #			include "iterate.h" /** \include */
 /** HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if
  `predicate` is true.

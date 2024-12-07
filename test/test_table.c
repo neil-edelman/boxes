@@ -342,7 +342,6 @@ finally:
 }
 
 
-#if 0
 /* <https://en.wikipedia.org/wiki/List_of_brightest_stars> and light-years from
  Sol. As a real example, this is silly; it would be much better suited to
  `gperf` because the data is known beforehand. Also, see <fn:hash_zodiac>.
@@ -405,6 +404,31 @@ static void star_filler(void *const zero, struct star_table_entry *const star) {
 	(void)zero, assert(!zero);
 	star->key = star_names[r];
 	star->value = star_distances[r];
+}
+
+
+/** Contrived example for paper. */
+static void stars(void) {
+	struct star_table stars = star_table();
+	const size_t s_array[] = { 0, 1, 8, 9, 11, 16, 17, 20, 22, 25, 49 };
+	size_t i;
+	for(i = 0; i < sizeof s_array / sizeof *s_array; i++) {
+		size_t s = s_array[i];
+		char *key = star_names[s];
+		double distance = star_distances[s], *content;
+		printf("%lu: %s -> %f\n", (unsigned long)s, key, distance);
+		if(star_table_assign(&stars, key, &content) != TABLE_ABSENT)
+			goto catch; /* Unique names. */
+		*content = distance;
+	}
+	printf("%s.\n", star_table_to_string(&stars));
+	private_star_table_graph(&stars, "doc/table-precursor/star-raw.gv");
+	goto finally;
+catch:
+	assert(0);
+finally:
+	star_table_(&stars);
+	printf("\n");
 }
 
 
@@ -708,7 +732,7 @@ static void nato(void) {
 	/* Pre-allocate one node for each letter. */
 	struct nato_node list[sizeof alphabet / sizeof *alphabet];
 	struct nato_table nato = nato_table();
-	struct nato_table_iterator it;
+	struct nato_table_cursor it;
 	size_t length_of_word;
 	struct nato_value *value;
 	size_t i;
@@ -725,11 +749,11 @@ static void nato(void) {
 	}
 	printf("NATO phonetic alphabet letter count histogram\n"
 		"length\tcount\twords\n");
-	it = nato_table_iterator(&nato);
-	while(nato_table_next(&it)) {
+	for(it = nato_table_begin(&nato); nato_table_cursor_exists(&it);
+		nato_table_cursor_next(&it)) {
 		struct nato_node *w;
-		length_of_word = nato_table_key(&it);
-		value = nato_table_value(&it);
+		length_of_word = nato_table_cursor_key(&it);
+		value = nato_table_cursor_value(&it);
 		printf("%lu\t%lu\t{", (unsigned long)length_of_word,
 			(unsigned long)value->occurrences);
 		w = value->head;
@@ -773,63 +797,27 @@ finally:
 }
 
 
-/** Contrived example for paper. */
-static void stars(void) {
-	struct star_table stars = star_table();
-	const size_t s_array[] = { 0, 1, 8, 9, 11, 16, 17, 20, 22, 25, 49 };
-	size_t i;
-	for(i = 0; i < sizeof s_array / sizeof *s_array; i++) {
-		size_t s = s_array[i];
-		char *key = star_names[s];
-		double distance = star_distances[s], *content;
-		printf("%lu: %s -> %f\n", (unsigned long)s, key, distance);
-		if(star_table_assign(&stars, key, &content) != TABLE_ABSENT)
-			goto catch; /* Unique names. */
-		*content = distance;
-	}
-	printf("%s.\n", star_table_to_string(&stars));
-	table_star_graph(&stars, "doc/table-precursor/star-raw.gv");
-	goto finally;
-catch:
-	assert(0);
-finally:
-	star_table_(&stars);
-	printf("\n");
-}
-
-
-/* Simulated going in header. */
-#define TABLE_NAME public
-#define TABLE_KEY enum zodiac
-#define TABLE_UNHASH
-#define TABLE_UINT unsigned char
-#define TABLE_DECLARE_ONLY
-#include "../src/table.h"
-static unsigned char public_hash(const enum zodiac z) { return zodiac_hash(z); }
-static enum zodiac public_unhash(const unsigned char z)
+/* Just use another one to test inclusion in a header. */
+static unsigned char static_hash(const enum zodiac z)
+	{ return zodiac_hash(z); }
+static enum zodiac static_unhash(const unsigned char z)
 	{ return zodiac_unhash(z); }
-static void public_to_string(const enum zodiac z, char (*const a)[12])
+static void static_to_string(const enum zodiac z, char (*const a)[12])
 	{ zodiac_to_string(z, a); }
-static void public_filler(void *const zero, enum zodiac *const z)
+static void static_filler(void *const zero, enum zodiac *const z)
 	{ zodiac_filler(zero, z); }
-#define TABLE_NAME public
-#define TABLE_KEY enum zodiac
-#define TABLE_UNHASH
-#define TABLE_UINT unsigned char
-#define TABLE_TEST
-#define TABLE_TO_STRING
-#define ~~TABLE_BODY~~
-#include "../src/table.h"
-#endif /*0*/
+#define HEADER_TABLE_DEFINE
+#include "header_table.h"
+struct header_table header_table(void)
+	{ struct header_table _; _._ = static_table(); return _; }
+void header_table_(struct header_table *const _) { static_table_(&_->_); }
+void header_table_test(void) { static_table_test(0); }
 
 
 int main(void) {
 	struct str16_pool strings = str16_pool();
 	struct vec4_pool vec4s = vec4_pool();
 	zodiac_table_test(0); /* Don't require any space. */
-#if 0
-	public_table_test(0); /* Export public functions of zodiac. */
-#endif
 	string_table_test(&strings), str16_pool_(&strings);
 	uint_table_test(0);
 	int_table_test(0);
@@ -837,12 +825,11 @@ int main(void) {
 	test_default();
 	test_it();
 	boat_club();
-#if 0
 	star_table_test(0);
 	stars();
 	linked_dict();
 	year_of();
 	nato();
-#endif
+	header_table_test();
 	return EXIT_SUCCESS;
 }
