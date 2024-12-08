@@ -121,8 +121,8 @@ static size_t T_(size)(const struct t_(array) *a) { return a->size; }
 static pT_(type) *T_(at)(const struct t_(array) *a, const size_t idx)
 	{ return a->data + idx; }
 /** Writes `size` to `a`. @implements `tell_size` */
-static void T_(tell_size)(struct t_(array) *a, const size_t size) { a->size = size; }
-/* fixme: why again? */
+static void T_(tell_size)(struct t_(array) *a, const size_t size)
+	{ a->size = size; }
 
 /** Zeroed data (not all-bits-zero) is initialized.
  @return An idle array. @order \Theta(1) @allow */

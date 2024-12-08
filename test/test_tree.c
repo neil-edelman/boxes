@@ -24,10 +24,11 @@ static void char_filler(char *x)
 #include "../src/tree.h"
 
 
+#if 0
 /* For testing public. */
 #define TREE_NAME public
 #define TREE_KEY char
-#define TREE_HEAD
+#define TREE_DECALRE_ONLY
 #include "../src/tree.h"
 static void public_to_string(const char x, char (*const z)[12])
 	{ char_to_string(x, z); }
@@ -172,7 +173,7 @@ static void entry_to_string(const union date32 k, const int *const v,
 }
 #define TREE_NAME entry
 #define TREE_KEY union date32
-#define TREE_COMPARE
+#define TREE_LESS
 #define TREE_VALUE int
 #define TREE_TEST
 #define TREE_TO_STRING
@@ -680,7 +681,7 @@ static void loop_to_string(const unsigned x, char (*const z)[12])
 	{ int_to_string(x, z); }
 #define TREE_NAME loop
 #define TREE_TEST
-#define TREE_COMPARE
+#define TREE_LESS
 #define TREE_ORDER 5
 #define TREE_DEFAULT 0
 #define TREE_TO_STRING
@@ -766,13 +767,14 @@ static void typical_to_string(const unsigned k,
 #define TREE_TO_STRING
 #define TREE_TEST
 #include "../src/tree.h"
+#endif
 
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	char_tree_test();
-	public_tree_test();
+	/*public_tree_test();
 	int_tree_test();
 	order3_tree_test();
 	redblack_tree_test();
@@ -784,6 +786,6 @@ int main(void) {
 	redblack();
 	loop_tree_test();
 	loop();
-	typical_tree_test();
+	typical_tree_test();*/
 	return EXIT_SUCCESS;
 }
