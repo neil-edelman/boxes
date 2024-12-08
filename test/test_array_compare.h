@@ -224,12 +224,12 @@ static void pTR_(test_bounds)(void) {
 #endif /* compare --> */
 }
 
-/** `BOX_TEST`, `BOX_COMPARE` -> `BOX_TO_STRING`, !`NDEBUG`: will be
+/** `ARRAY_TEST`, `BOX_COMPARE` -> `ARRAY_TO_STRING`, !`NDEBUG`: will be
  tested on stdout. @allow */
 static void TR_(compare_test)(void) {
-	printf("<" QUOTE(BOX_NAME) ","
+	printf("<" QUOTE(ARRAY_NAME) ","
 #ifdef BOX_TRAIT
-		QUOTE(BOX_TRAIT)
+		QUOTE(ARRAY_TRAIT)
 #else
 		"anonymous"
 #endif
@@ -240,7 +240,7 @@ static void TR_(compare_test)(void) {
 	pTR_(test_compactify)();
 	pTR_(test_compare)();
 	assert(errno == 0);
-	fprintf(stderr, "Done tests of <" QUOTE(BOX_NAME) ">array compare.\n\n");
+	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array compare.\n\n");
 }
 
 #undef QUOTE
