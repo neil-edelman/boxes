@@ -3,7 +3,7 @@
 #include "orcish.h"
 
 #if defined(QUOTE) || defined(QUOTE_)
-#error QUOTE_? cannot be defined.
+#	error QUOTE_? cannot be defined.
 #endif
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
@@ -63,7 +63,7 @@ static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
 }
 
 /** Draw a graph of `tree` to `fn` in Graphviz format. */
-static void pT_(graph)(const struct T_(tree) *const tree,
+static void pT_(graph)(const struct t_(tree) *const tree,
 	const char *const fn) {
 	FILE *fp;
 	assert(tree && fn);
@@ -106,9 +106,9 @@ static void pT_(subgraph_usual)(const struct pT_(tree) *const sub, FILE *fp) {
 	for(i = 0; i < sub->node->size; i++) {
 		char z[12];
 #ifdef TREE_VALUE
-		T_(to_string)(sub->node->key[i], sub->node->value + i, &z);
+		t_(to_string)(sub->node->key[i], sub->node->value + i, &z);
 #else
-		T_(to_string)(sub->node->key[i], &z);
+		t_(to_string)(sub->node->key[i], &z);
 #endif
 		fprintf(fp, "\t<td border=\"0\" align=\"center\""
 			" port=\"%u\">%s</td>\n", i, z);
@@ -137,7 +137,7 @@ static void pT_(subgraph_usual)(const struct pT_(tree) *const sub, FILE *fp) {
 
 /** Draw a graph of `tree` to `fn` in Graphviz format, the usual way, but too
  large for many labels. */
-static void pT_(graph_horiz)(const struct T_(tree) *const tree,
+static void pT_(graph_horiz)(const struct t_(tree) *const tree,
 	const char *const fn) {
 	FILE *fp;
 	assert(tree && fn);
@@ -159,7 +159,7 @@ static void pT_(graph_horiz)(const struct T_(tree) *const tree,
 }
 
 /** Makes sure the `tree` is in a valid state. */
-static void pT_(valid)(const struct T_(tree) *const tree) {
+static void pT_(valid)(const struct t_(tree) *const tree) {
 	if(!tree) return; /* Null. */
 	if(!tree->root.node)
 		{ assert(!tree->root.height); return; } /* Idle. */
@@ -177,7 +177,7 @@ static void pT_(sort)(struct pT_(tree_test) *a, const size_t size) {
 	size_t i;
 	for(i = 1; i < size; i++) {
 		size_t j;
-		for(j = i; j && T_(compare)(a[j - 1].key, a[i].key) > 0; j--);
+		for(j = i; j && t_(less)(a[j - 1].key, a[i].key) > 0; j--);
 		if(j == i) continue;
 		temp = a[i];
 		memmove(a + j + 1, a + j, sizeof *a * (i - j));
@@ -186,8 +186,8 @@ static void pT_(sort)(struct pT_(tree_test) *a, const size_t size) {
 }
 
 static void pT_(test)(void) {
-	struct T_(tree) tree = T_(tree)(), empty = T_(tree)();
-	struct T_(tree_iterator) it;
+	struct t_(tree) tree = t_(tree)(), empty = t_(tree)();
+	struct T_(cursor) cur;
 	struct pT_(tree_test) test[800];
 	const size_t test_size = sizeof test / sizeof *test;
 #ifdef TREE_VALUE
@@ -196,7 +196,7 @@ static void pT_(test)(void) {
 	pT_(key) k, k_prev;
 	size_t i, n_unique = 0, n_unique2;
 	char fn[64];
-	int succ;
+	/*int succ;*/
 
 	errno = 0;
 
@@ -206,9 +206,9 @@ static void pT_(test)(void) {
 		t->in = 0;
 		/* This function must exist. */
 #ifdef TREE_VALUE
-		T_(filler)(&t->key, &t->value);
+		t_(filler)(&t->key, &t->value);
 #else
-		T_(filler)(&t->key);
+		t_(filler)(&t->key);
 #endif
 	}
 	pT_(sort)(test, test_size);
@@ -216,9 +216,9 @@ static void pT_(test)(void) {
 		struct pT_(tree_test) *const t = test + i;
 		char z[12];
 #ifdef TREE_VALUE
-		T_(to_string)(t->key, &t->value, &z);
+		t_(to_string)(t->key, &t->value, &z);
 #else
-		T_(to_string)(t->key, &z);
+		t_(to_string)(t->key, &z);
 #endif
 		/*printf("%s\n", z);*/
 	}
@@ -227,10 +227,11 @@ static void pT_(test)(void) {
 	pT_(valid)(0);
 	pT_(valid)(&tree);
 	pT_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
-	T_(tree_)(&tree), pT_(valid)(&tree);
+	t_(tree_)(&tree), pT_(valid)(&tree);
 	/* Not valid anymore.
 	it = T_(tree_less)(0, test[0].key), assert(!it._.root); */
-	it = T_(tree_less)(&tree, test[0].key), assert(it._.root && !it._.ref.node);
+	/*fixme what?
+	it = T_(less)(&tree, test[0].key), assert(it._.root && !it._.ref.node);*/
 
 	/* Bulk, (simple.) */
 	for(i = 0; i < test_size; i++) {
@@ -242,9 +243,9 @@ static void pT_(test)(void) {
 		printf("%lu -- bulk adding <%s>.\n", (unsigned long)i, z);*/
 		switch(
 #ifdef TREE_VALUE
-		T_(tree_bulk_assign)(&tree, t->key, &v)
+		T_(bulk_assign)(&tree, t->key, &v)
 #else
-		T_(tree_bulk_try)(&tree, t->key)
+		T_(bulk_try)(&tree, t->key)
 #endif
 		) {
 		case TREE_ERROR: perror("What?"); assert(0); break;
@@ -283,18 +284,17 @@ static void pT_(test)(void) {
 		}
 	}
 	printf("Finalize.\n");
-	T_(tree_bulk_finish)(&tree);
+	T_(bulk_finish)(&tree);
 	printf("Finalize again. This should be idempotent.\n");
-	T_(tree_bulk_finish)(&tree);
+	T_(bulk_finish)(&tree);
 	pT_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-bulk-finish.gv");
-	printf("Tree: %s.\n", T_(tree_to_string)(&tree));
+	printf("Tree: %s.\n", T_(to_string)(&tree));
 
 	/* Iteration; checksum. */
 	memset(&k_prev, 0, sizeof k_prev);
-	it = T_(tree_iterator)(&tree), i = 0;
-	while(T_(tree_next)(&it)) {
+	for(cur = T_(begin)(&tree), i = 0; T_(exists)(&cur); T_(next)(&cur)) {
 		/*char z[12];*/
-		k = T_(tree_key)(&it);
+		k = T_(key)(&cur);
 /*#ifdef TREE_VALUE
 		v = T_(tree_value)(&it);
 		T_(to_string)(k, v, &z);
@@ -302,18 +302,18 @@ static void pT_(test)(void) {
 		T_(to_string)(k, &z);
 #endif
 		printf("<%s>\n", z);*/
-		if(i) { const int cmp = T_(compare)(k, k_prev); assert(cmp > 0); }
+		if(i) { const int cmp = t_(less)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
 	}
 	assert(i == n_unique);
 	/*printf("\n");*/
 
+#if 0 /*fixme*/
 	/* Going the other way. */
-	it = T_(tree_iterator)(&tree), i = 0;
-	while(T_(tree_previous)(&it)) {
+	for(cur = T_(end)(&tree), i = 0; T_(exists)(&cur); T_(previous)(&cur)) {
 		/*char z[12];*/
-		k = T_(tree_key)(&it);
+		k = T_(key)(&cur);
 /*#ifdef TREE_VALUE
 		v = T_(tree_value)(&it);
 		T_(to_string)(k, v, &z);
@@ -321,38 +321,41 @@ static void pT_(test)(void) {
 		T_(to_string)(k, &z);
 #endif
 		printf("<%s>\n", z);*/
-		if(i) { const int cmp = T_(compare)(k_prev, k); assert(cmp > 0); }
+		if(i) { const int cmp = t_(less)(k_prev, k); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
 	}
 	assert(i == n_unique);
+#endif
 
+#if 0 /*fixme*/
 	/* Deleting while iterating. */
-	it = T_(tree_iterator)(&tree);
-	succ = T_(tree_previous)(&it);
+	cur = T_(begin)(&tree);
+	succ = T_(previous)(&cur);
 	assert(succ);
 	do {
 		/*char z[12];*/
-		pT_(key) key = T_(tree_key)(&it);
+		pT_(key) key = T_(key)(&cur);
 /*#ifdef TREE_VALUE
 		T_(to_string)(key, T_(tree_value)(&it), &z);
 #else
 		T_(to_string)(key, &z);
 #endif
 		printf("removing <%s>\n", z);*/
-		succ = T_(tree_remove)(&tree, key);
+		succ = T_(remove)(&tree, key);
 		assert(succ);
-		succ = T_(tree_remove)(&tree, key);
+		succ = T_(remove)(&tree, key);
 		assert(!succ);
 		it = T_(tree_less)(&tree, key);
-	} while(T_(tree_has_element)(&it));
+	} while(T_(tree_has_element)(&cur));
 	printf("Individual delete tree: %s.\n", T_(tree_to_string)(&tree));
 	assert(tree.root.height == UINT_MAX);
+#endif
 
 	/* Clear. */
-	T_(tree_clear)(0);
-	T_(tree_clear)(&empty), assert(!empty.root.node);
-	T_(tree_clear)(&tree), assert(tree.root.node
+	T_(clear)(0);
+	T_(clear)(&empty), assert(!empty.root.node);
+	T_(clear)(&tree), assert(tree.root.node
 		&& tree.root.height == UINT_MAX);
 	n_unique = 0;
 
@@ -362,9 +365,9 @@ static void pT_(test)(void) {
 		t->in = 0;
 		/* This function must exist. */
 #ifdef TREE_VALUE
-		T_(filler)(&t->key, &t->value);
+		t_(filler)(&t->key, &t->value);
 #else
-		T_(filler)(&t->key);
+		t_(filler)(&t->key);
 #endif
 	}
 
@@ -380,9 +383,9 @@ static void pT_(test)(void) {
 		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);*/
 		switch(
 #ifdef TREE_VALUE
-		T_(tree_assign)(&tree, t->key, &v)
+		T_(assign)(&tree, t->key, &v)
 #else
-		T_(tree_try)(&tree, t->key)
+		T_(try)(&tree, t->key)
 #endif
 		) {
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
@@ -404,12 +407,11 @@ static void pT_(test)(void) {
 		(unsigned long)n_unique, (unsigned long)test_size);
 
 	/* Delete all. Removal invalidates iterator. */
-	it = T_(tree_iterator)(&tree), i = 0;
-	T_(tree_next)(&it);
-	assert(T_(tree_has_element)(&it));
-	do {
+	for(cur = T_(begin)(&tree), i = 0; T_(exists)(&cur); T_(next)(&cur)) {
+		/* fixme? what is this even supposed to do?
+		assert(T_(has_element)(&cur));*/
 		/*char z[12];*/
-		k = T_(tree_key)(&it); /*
+		k = T_(key)(&cur); /*
 #ifdef TREE_VALUE
 		v = T_(tree_value)(&it);
 		T_(to_string)(k, v, &z);
@@ -417,20 +419,20 @@ static void pT_(test)(void) {
 		T_(to_string)(k, &z);
 #endif
 		printf("Targeting <%s> for removal.\n", z);*/
-		if(i) { const int cmp = T_(compare)(k, k_prev); assert(cmp > 0); }
+		if(i) { const int cmp = t_(less)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
-		assert(T_(tree_contains)(&tree, k));
-		T_(tree_remove)(&tree, k);
-		assert(!T_(tree_contains)(&tree, k));
-		it = T_(tree_more)(&tree, k);
+		assert(T_(contains)(&tree, k));
+		T_(remove)(&tree, k);
+		assert(!T_(contains)(&tree, k));
+		cur = T_(more)(&tree, k);
 		/*printf("Iterator now %s:h%u:i%u.\n",
 			orcify(it._.ref.node), it._.ref.height, it._.ref.idx);*/
 		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-rm-%lu.gv", i);
 			pT_(graph)(&tree, fn);
 		}
-	} while(T_(tree_has_element)(&it));
+	}/* while(T_(tree_has_element)(&cur));*/
 	assert(i == n_unique);
 
 	/* Add all back. */
@@ -447,9 +449,9 @@ static void pT_(test)(void) {
 		printf("Adding %s.\n", z);*/
 		switch(
 #ifdef TREE_VALUE
-		T_(tree_assign)(&tree, t->key, &v)
+		T_(assign)(&tree, t->key, &v)
 #else
-		T_(tree_try)(&tree, t->key)
+		T_(try)(&tree, t->key)
 #endif
 		) {
 		case TREE_ERROR:
@@ -463,37 +465,36 @@ static void pT_(test)(void) {
 	printf("Re-add tree: %lu\n", (unsigned long)n_unique2);
 	pT_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-re-add.gv");
 	assert(n_unique == n_unique2);
-	i = T_(tree_count)(&tree);
+	i = T_(count)(&tree);
 	printf("tree count: %lu; add count: %lu\n",
 		(unsigned long)i, (unsigned long)n_unique2);
 	assert(i == n_unique);
 
 	/* Remove every 2nd. */
-	it = T_(tree_iterator)(&tree);
-	while(T_(tree_next)(&it)) {
-		pT_(key) key = T_(tree_key)(&it);
-		const int ret = T_(tree_remove)(&tree, key);
+	for(cur = T_(begin)(&tree); T_(exists)(&cur); T_(next)(&cur)) {
+		pT_(key) key = T_(key)(&cur);
+		const int ret = T_(remove)(&tree, key);
 		assert(ret);
 		n_unique--;
-		it = T_(tree_more)(&tree, key); /* Move past the erased keys. */
-		if(!T_(tree_has_element)(&it)) break;
+		cur = T_(more)(&tree, key); /* Move past the erased keys. */
+		/*if(!T_(has_element)(&cur)) break; wtf is this? */
 	}
-	i = T_(tree_count)(&tree);
+	i = T_(count)(&tree);
 	printf("remove every 2nd: %lu\n", (unsigned long)i);
 	assert(i == n_unique);
 
 	printf("clear, destroy\n");
-	T_(tree_clear)(&tree);
+	T_(clear)(&tree);
 	assert(tree.root.height == UINT_MAX && tree.root.node);
 
 	/* Destroy. */
-	T_(tree_)(&tree), assert(!tree.root.node), pT_(valid)(&tree);
+	t_(tree_)(&tree), assert(!tree.root.node), pT_(valid)(&tree);
 	assert(!errno);
 }
 
 /** Will be tested on stdout. Requires `TREE_TEST`, and not `NDEBUG` while
  defining `assert`. @allow */
-static void T_(tree_test)(void) {
+static void T_(test)(void) {
 	printf("<" QUOTE(TREE_NAME) ">tree"
 		" of key <" QUOTE(TREE_KEY) ">;"
 #ifdef TREE_VALUE

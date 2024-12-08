@@ -237,7 +237,7 @@ static int T_(exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->root && cur->root->node
 	&& cur->root->height != UINT_MAX; }
 /** @return Dereference the element pointed to by `cur` that exists. */
-static struct pT_(ref) T_(look)(struct T_(cursor) *const cur) {
+static struct pT_(ref) *T_(look)(struct T_(cursor) *const cur) {
 	/* Iterator empty; tree non-empty; point at first. */
 	if(!cur->ref.node) {
 		cur->ref.height = cur->root->height;
@@ -246,8 +246,17 @@ static struct pT_(ref) T_(look)(struct T_(cursor) *const cur) {
 			cur->ref.height--);
 		cur->ref.idx = 0;
 	}
-	return cur->ref;
+	return &cur->ref;
 }
+/** @return Extract the key from `it` when it points at a valid index. @allow */
+static pT_(key) T_(key)(const struct T_(cursor) *const cur)
+	{ return cur->ref.node->key[cur->ref.idx]; }
+#		ifdef TREE_VALUE /* <!-- map */
+/** @return Extract the value from `it` when it points at a valid index, if
+ `TREE_VALUE`. @allow */
+static pT_(value) *T_(value)(const struct T_(cursor) *const cur)
+	{ return cur->ref.node->value + cur->ref.idx; }
+#		endif /* map --> */
 /** Move next on `cur` that exists. */
 static void T_(next)(struct T_(cursor) *const cur) {
 	struct pT_(ref) next;
@@ -1545,15 +1554,6 @@ static int T_(next)(struct T_(cursor) *const it)
 /** @return Whether `it` still points at a valid index. @allow */
 static int T_(tree_previous)(struct T_(tree_iterator) *const it)
 	{ return assert(it), pT_(previous)(&it->_); }
-/** @return Extract the key from `it` when it points at a valid index. @allow */
-static pT_(key) T_(tree_key)(const struct T_(tree_iterator) *const it)
-	{ return it->_.ref.node->key[it->_.ref.idx]; }
-#		ifdef TREE_VALUE /* <!-- map */
-/** @return Extract the value from `it` when it points at a valid index, if
- `TREE_VALUE`. @allow */
-static pT_(value) *T_(tree_value)(const struct T_(tree_iterator) *const it)
-	{ return it->_.ref.node->value + it->_.ref.idx; }
-#		endif /* map --> */
 #		endif
 
 static void pT_(unused_base_coda)(void);
@@ -1582,12 +1582,12 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	if defined(TREE_TO_STRING)
 #		undef TREE_TO_STRING
 /** Thunk because `pT_(ref)` should not be visible. */
-static void pTR_(to_string)(const struct pT_(ref) r,
+static void pTR_(to_string)(const struct pT_(ref) *const r,
 	char (*const a)[12]) {
 #		ifdef TREE_VALUE
-	tr_(to_string)(r.node->key[r.idx], r.node->value + r.idx, a);
+	tr_(to_string)(r->node->key[r->idx], r->node->value + r->idx, a);
 #		else
-	tr_(to_string)(r.node->key[r.idx], a);
+	tr_(to_string)(r->node->key[r->idx], a);
 #		endif
 }
 #		define BOX_THUNK
@@ -1605,27 +1605,25 @@ static void pTR_(to_string)(const struct pT_(ref) r,
 #	endif
 
 #	ifdef TREE_DEFAULT /* <!-- default trait */
-/* `TREE_DEFAULT` is a valid <tag:<pT>value>. */
-const pT_(value) pTR_(default_value) = TREE_DEFAULT;
-
 /** This is functionally identical to <fn:<B>tree_get_or>, but a with a trait
  specifying a constant default value.
  @return The value associated with `key` in `tree`, (which can be null.) If
  no such value exists, the `TREE_DEFAULT` is returned.
  @order \O(\log |`tree`|). @allow */
-static pT_(value) B_D_(tree, get)(const struct T_(tree) *const tree,
+static pT_(value) T_R_(tree, get)(const struct t_(tree) *const tree,
 	const pT_(key) key) {
-	struct pT_(ref) ref;
+	const pT_(value) pTR_(default_value) = TREE_DEFAULT;
+	struct pT_(ref) ref; /* `TREE_DEFAULT` is a valid <tag:<pT>value>. */
 	return tree && tree->root.node && tree->root.height != UINT_MAX
 		&& (ref = pT_(lookup_find)(tree->root, key)).node
-		? *pT_(ref_to_valuep)(ref) : PB_D_(default, value);
+		? *pT_(ref_to_valuep)(ref) : pTR_(default_value);
 }
-static void PB_D_(unused, default_coda)(void);
-static void PB_D_(unused, default)(void) {
+static void pTR_(unused_default_coda)(void);
+static void pTR_(unused_default)(void) {
 	pT_(key) k; memset(&k, 0, sizeof k);
-	B_D_(tree, get)(0, k); PB_D_(unused, default_coda)();
+	T_R_(tree, get)(0, k); pTR_(unused_default_coda)();
 }
-static void PB_D_(unused, default_coda)(void) { PB_D_(unused, default)(); }
+static void pTR_(unused_default_coda)(void) { pTR_(unused_default)(); }
 #		undef TREE_DEFAULT
 #	endif /* default trait --> */
 
