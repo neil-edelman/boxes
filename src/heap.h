@@ -105,8 +105,8 @@ static int T_(exists)(struct T_(cursor) *const cur)
 	{ return pT_(priority_array_exists)(&cur->_); }
 static pT_(priority) *T_(look)(struct T_(cursor) *const cur)
 	{ return pT_(priority_array_look)(&cur->_); }
-static void T_(cursor_next)(struct T_(cursor) *const cur)
-	{ pT_(priority_array_cursor_next)(&cur->_); }
+static void T_(next)(struct T_(cursor) *const cur)
+	{ pT_(priority_array_next)(&cur->_); }
 
 /** Find the spot in `heap` where `node` goes and put it there.
  @param[heap] At least one entry; the last entry will be replaced by `node`.
@@ -276,7 +276,7 @@ static int T_(affix)(struct t_(heap) *restrict const heap,
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	pT_(priority) unused; memset(&unused, 0, sizeof unused);
-	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(cursor_next)(0);
+	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(next)(0);
 	t_(heap)(); t_(heap_)(0); T_(clear)(0); T_(size)(0);
 	T_(add)(0, unused); T_(peek)(0); T_(pop)(0);
 	T_(buffer)(0, 0); T_(append)(0, 0); T_(affix)(0, 0);

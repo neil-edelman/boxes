@@ -105,10 +105,10 @@ static int T_(exists)(const struct T_(cursor) *const cur)
 static pT_(type) *T_(look)(struct T_(cursor) *const cur)
 	{ return cur->a->data + cur->i; }
 /** Move next on `cur` that exists. */
-static void T_(cursor_next)(struct T_(cursor) *const cur)
+static void T_(next)(struct T_(cursor) *const cur)
 	{ if(cur->i == (size_t)~0) cur->a = 0; else cur->i++; }
-/** Move back on `cur` that exists. */
-static void T_(cursor_back)(struct T_(cursor) *const cur) {
+/** Move back on `cur` that exists. @fixme Test coverage. */
+static void T_(back)(struct T_(cursor) *const cur) {
 	if(cur->i > cur->a->size) cur->i = cur->a->size; /* Clip. */
 	if(!cur->i) cur->a = 0;
 	else cur->i--;
@@ -290,7 +290,7 @@ static int T_(splice)(struct t_(array) *restrict const a,
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	T_(begin)(0); T_(end)(0); T_(exists)(0); T_(look)(0);
-	T_(cursor_next)(0); T_(cursor_back)(0); T_(size)(0); T_(at)(0, 0);
+	T_(next)(0); T_(back)(0); T_(size)(0); T_(at)(0, 0);
 	T_(tell_size)(0, 0);
 	t_(array)(); t_(array_)(0); T_(insert)(0, 0, 0); T_(new)(0); T_(shrink)(0);
 	T_(remove)(0, 0); T_(lazy_remove)(0, 0); T_(clear)(0); T_(peek)(0);

@@ -538,10 +538,10 @@ static pT_(value) *T_(cursor_value)(const struct T_(cursor) *const cur)
 	{ return &cur->table->buckets[cur->i].value; }
 #		endif
 /** Move to next on `cur` that exists. */
-static void T_(cursor_next)(struct T_(cursor) *const cur)
+static void T_(next)(struct T_(cursor) *const cur)
 	{ cur->i++; /* Will be precisely set on exists. */ }
 /** Removes the entry at `cur`. Whereas <fn:<T>remove> invalidates the
- cursor, this corrects `cur` so <fn:<T>cursor_next> is the next entry. To use
+ cursor, this corrects `cur` so <fn:<T>next> is the next entry. To use
  the cursor after this, one must move to the next.
  @return Success, or there was no entry at the iterator's position, (anymore.)
  @allow */

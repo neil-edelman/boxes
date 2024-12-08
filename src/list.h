@@ -128,7 +128,7 @@ static int T_(exists)(const struct T_(cursor) *const cur)
 static struct t_(listlink) *T_(look)(struct T_(cursor) *const cur)
 	{ return cur->link; }
 /** @return Advances `it`. */
-static void T_(cursor_next)(struct T_(cursor) *const cur)
+static void T_(next)(struct T_(cursor) *const cur)
 	{ cur->link = cur->link->next; }
 
 /** Cats all `from` (can be null) in front of `after`; `from` will be empty
@@ -288,7 +288,7 @@ static void T_(to_if)(struct t_(list) *restrict const from,
 
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
-	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(cursor_next)(0);
+	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(next)(0);
 	T_(head)(0); T_(tail)(0); T_(link_previous)(0); T_(link_next)(0);
 	T_(clear)(0); T_(add_before)(0, 0); T_(add_after)(0, 0);
 	T_(unshift)(0, 0); T_(push)(0, 0); T_(remove)(0);
