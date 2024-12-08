@@ -118,7 +118,7 @@ static void T_(cursor_back)(struct T_(cursor) *const cur) {
 /** Size of `a`. @implements `size` */
 static size_t T_(size)(const struct t_(array) *a) { return a->size; }
 /** @return Element `idx` of `a`. @implements `at` */
-static pT_(type) *T_(look)(const struct t_(array) *a, const size_t idx)
+static pT_(type) *T_(at)(const struct t_(array) *a, const size_t idx)
 	{ return a->data + idx; }
 /** Writes `size` to `a`. @implements `tell_size` */
 static void T_(tell_size)(struct t_(array) *a, const size_t size) { a->size = size; }
@@ -290,7 +290,7 @@ static int T_(splice)(struct t_(array) *restrict const a,
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	T_(begin)(0); T_(end)(0); T_(cursor_exists)(0); T_(cursor_look)(0);
-	T_(cursor_next)(0); T_(cursor_back)(0); T_(size)(0); T_(look)(0, 0);
+	T_(cursor_next)(0); T_(cursor_back)(0); T_(size)(0); T_(at)(0, 0);
 	T_(tell_size)(0, 0);
 	t_(array)(); t_(array_)(0); T_(insert)(0, 0, 0); T_(new)(0); T_(shrink)(0);
 	T_(remove)(0, 0); T_(lazy_remove)(0, 0); T_(clear)(0); T_(peek)(0);

@@ -75,7 +75,7 @@ static int TR_(copy_if)(pT_(box) *restrict const dst,
 	int difcpy = 0;
 	assert(dst && copy && dst != src);
 	if(!src) return 1;
-	for(v = T_(look)(src, 0), end = v + T_(size)(src); v < end; v++) {
+	for(v = T_(at)(src, 0), end = v + T_(size)(src); v < end; v++) {
 		/* Not falling/rising. */
 		if(!(!!rise ^ (difcpy = copy(v)))) continue;
 		if(difcpy) { /* Rising edge. */
@@ -105,7 +105,7 @@ static void TR_(keep_if)(pT_(box) *const box,
 	pT_(type) *erase = 0, *v, *retain = 0, *end;
 	int keep0 = 1, keep1 = 0;
 	assert(box && keep);
-	for(v = T_(look)(box, 0), end = v + T_(size)(box); v < end;
+	for(v = T_(at)(box, 0), end = v + T_(size)(box); v < end;
 		keep0 = keep1, v++) {
 		if(!(keep1 = !!keep(v)) && destruct)
 			destruct(v);
@@ -131,8 +131,8 @@ static void TR_(keep_if)(pT_(box) *const box,
 		erase += n;
 	}
 	/* Adjust the size. */
-	assert((size_t)(erase - T_(look)(box, 0)) <= T_(size)(box));
-	T_(tell_size)(box, (size_t)(erase - T_(look)(box, 0)));
+	assert((size_t)(erase - T_(at)(box, 0)) <= T_(size)(box));
+	T_(tell_size)(box, (size_t)(erase - T_(at)(box, 0)));
 }
 
 /** <src/iterate.h>, `pT_CONTIGUOUS`: Removes at either end of `box` the
@@ -145,7 +145,7 @@ static void TR_(trim)(pT_(box) *const box,
 	assert(box);
 	if(!predicate) return;
 	right = T_(size)(box);
-	first = T_(look)(box, 0);
+	first = T_(at)(box, 0);
 	while(right && predicate(first + right - 1))
 		right--;
 	for(left = 0; left < right
