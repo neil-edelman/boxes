@@ -92,7 +92,7 @@ static const char *TR_(to_string)(const pT_(box) *const box) {
 	for(slybox.readonly = box, cur = T_(begin)(slybox.promise);
 		T_(cursor_exists)(&cur); T_(cursor_next)(&cur)) {
 		/* "Discards qualifiers in nested pointer" sometimes. Cast (back). */
-		tr_(to_string)((const void *)T_(cursor_look)(&cur), (char (*)[12])b);
+		tr_(to_string)((const void *)T_(look)(&cur), (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;

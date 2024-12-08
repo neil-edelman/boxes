@@ -49,8 +49,8 @@ static int TR_(compare)(const pT_(box) *restrict const a,
 		else if(!T_(cursor_exists)(&j)) return 1;
 		/* Must have this function declared.
 		 "Discards qualifiers in nested pointer types" sometimes. Cast. */
-		if(diff = tr_(compare)((const void *)T_(cursor_look)(&i),
-			(const void *)T_(cursor_look)(&j))) return diff;
+		if(diff = tr_(compare)((const void *)T_(look)(&i),
+			(const void *)T_(look)(&j))) return diff;
 	}
 }
 
@@ -161,7 +161,7 @@ static int TR_(is_equal)(const pT_(box) *restrict const a,
 		T_(cursor_next)(&i), T_(cursor_next)(&j)) {
 		if(!T_(cursor_exists)(&i)) return !T_(cursor_exists)(&j);
 		else if(!T_(cursor_exists)(&j)) return 0 /* fixme: a > b? */;
-		if(!t_(is_equal)(T_(cursor_look)(&i), T_(cursor_look)(&j)))
+		if(!t_(is_equal)(T_(look)(&i), T_(look)(&j)))
 			return 0;
 	}
 	return 1;
