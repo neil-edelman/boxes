@@ -529,12 +529,12 @@ static int T_(exists)(/*const*/ struct T_(cursor) *const cur) {
 static struct pT_(bucket) *T_(look)(const struct T_(cursor) *const cur)
 	{ return cur->table->buckets + cur->i; }
 /** @return If `it` has an element, returns it's key. @allow */
-static pT_(key) T_(cursor_key)(const struct T_(cursor) *const cur)
+static pT_(key) T_(key)(const struct T_(cursor) *const cur)
 	{ return pT_(bucket_key)(cur->table->buckets + cur->i); }
 #		ifdef TABLE_VALUE
 /** @return If `it` has an element, returns it's value, if `TABLE_VALUE`.
  @allow */
-static pT_(value) *T_(cursor_value)(const struct T_(cursor) *const cur)
+static pT_(value) *T_(value)(const struct T_(cursor) *const cur)
 	{ return &cur->table->buckets[cur->i].value; }
 #		endif
 /** Move to next on `cur` that exists. */
@@ -771,13 +771,13 @@ static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	pT_(entry) e; pT_(key) k; pT_(value) v;
 	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
-	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(cursor_key)(0);
+	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(key)(0);
 	T_(cursor_remove)(0);
 	t_(table)(); t_(table_)(0);
 	T_(buffer)(0, 0); T_(clear)(0); T_(contains)(0, k); T_(get_or)(0, k, v);
 	T_(update)(0, k, 0); T_(policy)(0, k, 0, 0); T_(remove)(0, k);
 #		ifdef TABLE_VALUE
-	T_(cursor_value)(0); T_(query)(0, k, 0, 0); T_(assign)(0, k, 0);
+	T_(value)(0); T_(query)(0, k, 0, 0); T_(assign)(0, k, 0);
 #		else
 	T_(query)(0, k, 0); T_(try)(0, e);
 #		endif

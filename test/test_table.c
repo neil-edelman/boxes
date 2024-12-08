@@ -256,7 +256,7 @@ static void test_it(void) {
 	for(zit = zodiac_table_begin(&z), n = 0; zodiac_table_exists(&zit);
 		zodiac_table_next(&zit)) {
 		char fn[64];
-		printf("On %s.\n", zodiac[zodiac_table_cursor_key(&zit)]);
+		printf("On %s.\n", zodiac[zodiac_table_key(&zit)]);
 		if(!zodiac_table_cursor_remove(&zit)) printf("(that's weird?)\n");
 		sprintf(fn, "graph/table/it-z%d.gv", ++n);
 		private_zodiac_table_graph(&z, fn);
@@ -271,13 +271,13 @@ static void test_it(void) {
 	/* Even ones get deleted. */
 	printf("Remove: ");
 	for(it = int_table_begin(&t); int_table_exists(&it); int_table_next(&it))
-		if(!(int_table_cursor_key(&it) & 1)
+		if(!(int_table_key(&it) & 1)
 		&& !int_table_cursor_remove(&it)) printf("(that's weird?)");
 	printf("done.\n");
 	private_int_table_graph(&t, "graph/table/it1.gv");
 	assert(t.size == no_till);
 	for(it = int_table_begin(&t); int_table_exists(&it); int_table_next(&it))
-		assert(int_table_cursor_key(&it) & 1);
+		assert(int_table_key(&it) & 1);
 	goto finally;
 catch:
 	perror("it"), assert(0);
@@ -330,9 +330,8 @@ static void boat_club(void) {
 		"id\tbest\tpoints\n");
 	for(it = boat_table_begin(&boats); boat_table_exists(&it);
 		boat_table_next(&it))
-		printf("%d\t%d\t%d\n", boat_table_cursor_key(&it),
-		boat_table_cursor_value(&it)->best_time,
-		boat_table_cursor_value(&it)->points);
+		printf("%d\t%d\t%d\n", boat_table_key(&it),
+		boat_table_value(&it)->best_time, boat_table_value(&it)->points);
 	goto finally;
 catch:
 	perror("boats"), assert(0);
@@ -752,8 +751,8 @@ static void nato(void) {
 	for(it = nato_table_begin(&nato); nato_table_exists(&it);
 		nato_table_next(&it)) {
 		struct nato_node *w;
-		length_of_word = nato_table_cursor_key(&it);
-		value = nato_table_cursor_value(&it);
+		length_of_word = nato_table_key(&it);
+		value = nato_table_value(&it);
 		printf("%lu\t%lu\t{", (unsigned long)length_of_word,
 			(unsigned long)value->occurrences);
 		w = value->head;
