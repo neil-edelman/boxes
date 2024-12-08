@@ -65,7 +65,7 @@ static void pT_(test_sort)(struct t_(listlink) *(*const parent_new)(void *),
 		}
 		T_(sort)(list);
 		for(link_a = 0, link_b = T_(head)(list); link_b;
-			link_a = link_b, link_b = T_(next)(link_b)) {
+			link_a = link_b, link_b = T_(link_next)(link_b)) {
 			if(!link_a) continue;
 			cmp = tr_(compare)(link_a, link_b);
 			assert(cmp <= 0);
@@ -104,13 +104,13 @@ static void pT_(exact)(struct t_(list) *const list,
 	assert(list);
 	i = T_(head)(list), assert(i == a);
 	if(!i) return;
-	i = T_(next)(i), assert(i == b);
+	i = T_(link_next)(i), assert(i == b);
 	if(!i) return;
-	i = T_(next)(i), assert(i == c);
+	i = T_(link_next)(i), assert(i == c);
 	if(!i) return;
-	i = T_(next)(i), assert(i == d);
+	i = T_(link_next)(i), assert(i == d);
 	if(!i) return;
-	i = T_(next)(i), assert(!i);
+	i = T_(link_next)(i), assert(!i);
 }
 
 /** Passed `parent_new` and `parent`, tests binary operations. */
@@ -153,14 +153,14 @@ static void pT_(test_binary)(struct t_(listlink) *(*const parent_new)(void *),
 			/* `x = (A,...,B,C,D,...)` and `y = {[A],B,...}`. */
 			if(!(a = T_(head)(&x))) continue;
 			if(!(b = T_(head)(&y))) continue;
-			if(tr_(compare)(a, b) == 0 && !(b = T_(next)(b)))
+			if(tr_(compare)(a, b) == 0 && !(b = T_(link_next)(b)))
 				continue;
 			assert(tr_(compare)(a, b) < 0);
-			for(c = T_(next)(a); c && tr_(compare)(c, b) < 0;
-				c = T_(next)(c));
+			for(c = T_(link_next)(a); c && tr_(compare)(c, b) < 0;
+				c = T_(link_next)(c));
 			assert(c && tr_(compare)(c, b) == 0);
 			b_alt = c;
-			if(!(c = T_(next)(c)) || !(d = T_(next)(c))) continue;
+			if(!(c = T_(link_next)(c)) || !(d = T_(link_next)(c))) continue;
 			break;
 		}
 		if(i == no_try) {

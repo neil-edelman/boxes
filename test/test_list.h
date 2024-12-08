@@ -67,7 +67,7 @@ static void pT_(subgraph)(struct t_(list) *const list, FILE *const fp,
 			pT_(colour), pT_(name)(list->u.flat.prev), colour,
 			pT_(colour), pT_(name)(list->u.flat.next), colour);
 	}
-	for(link = T_(head)(list); link; link = T_(next)(link)) {
+	for(link = T_(head)(list); link; link = T_(link_next)(link)) {
 		if(is_nodes) {
 			t_(to_string)(link, &a);
 			fprintf(fp, "\t%s [label=\"%s\"];\n", pT_(name)(link), a);
@@ -188,8 +188,8 @@ static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
 	/* Test positions when contents. */
 	link = T_(head)(&l1), assert(link == link_first);
 	link = T_(tail)(&l1), assert(link == link_last);
-	link = T_(previous)(link), assert(link);
-	link = T_(next)(link), assert(link == link_last);
+	link = T_(link_previous)(link), assert(link);
+	link = T_(link_next)(link), assert(link == link_last);
 	/* Test remove contents. */
 	link = T_(shift)(&l1), assert(link == link_first);
 	link = T_(pop)(&l1), assert(link = link_last);

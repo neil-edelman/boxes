@@ -109,12 +109,12 @@ static struct t_(listlink) *T_(tail)(struct t_(list) *const list) {
 	return (tail = list->u.flat.prev) && tail->prev ? tail : 0;
 }
 /** @return The previous of `link` or null. */
-static struct t_(listlink) *T_(previous)(struct t_(listlink) *const link) {
+static struct t_(listlink) *T_(link_previous)(struct t_(listlink) *const link) {
 	struct t_(listlink) *prev;
 	return link && (prev = link->prev) && prev->prev ? prev : 0;
 }
 /** @return The next of `link` or null. */
-static struct t_(listlink) *T_(next)(struct t_(listlink) *const link) {
+static struct t_(listlink) *T_(link_next)(struct t_(listlink) *const link) {
 	struct t_(listlink) *next;
 	return link && (next = link->next) && next->next ? next : 0;
 }
@@ -289,7 +289,7 @@ static void T_(to_if)(struct t_(list) *restrict const from,
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(cursor_next)(0);
-	T_(head)(0); T_(tail)(0); T_(previous)(0); T_(next)(0);
+	T_(head)(0); T_(tail)(0); T_(link_previous)(0); T_(link_next)(0);
 	T_(clear)(0); T_(add_before)(0, 0); T_(add_after)(0, 0);
 	T_(unshift)(0, 0); T_(push)(0, 0); T_(remove)(0);
 	T_(shift)(0); T_(pop)(0); T_(to)(0, 0);
