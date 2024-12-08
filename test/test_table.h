@@ -422,11 +422,11 @@ static void pT_(test_basic)(void *const parent) {
 	}}
 	printf("Table: %s.\n", T_(to_string)(&table));
 	printf("Count:\n");
-	for(it = T_(begin)(&table), count1 = 0; T_(cursor_exists)(&it);
+	for(it = T_(begin)(&table), count1 = 0; T_(exists)(&it);
 		T_(cursor_next)(&it)) count1++;
 	assert(count1 == table.size);
 	/* Is it kosher? Yes, but it doesn't test anything. Use iterator. */
-	for(it = T_(begin)(&table), count2 = 0; T_(cursor_exists)(&it);
+	for(it = T_(begin)(&table), count2 = 0; T_(exists)(&it);
 		T_(cursor_next)(&it)) {
 		count2++;
 		T_(cursor_remove)(&it);

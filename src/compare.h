@@ -45,8 +45,8 @@ static int TR_(compare)(const pT_(box) *restrict const a,
 		i = T_(begin)(sly_a.promise), j = T_(begin)(sly_b.promise); ;
 		T_(cursor_next)(&i), T_(cursor_next)(&j)) {
 		int diff;
-		if(!T_(cursor_exists)(&i)) return T_(cursor_exists)(&j) ? -1 : 0;
-		else if(!T_(cursor_exists)(&j)) return 1;
+		if(!T_(exists)(&i)) return T_(exists)(&j) ? -1 : 0;
+		else if(!T_(exists)(&j)) return 1;
 		/* Must have this function declared.
 		 "Discards qualifiers in nested pointer types" sometimes. Cast. */
 		if(diff = tr_(compare)((const void *)T_(look)(&i),
@@ -159,8 +159,8 @@ static int TR_(is_equal)(const pT_(box) *restrict const a,
 	for(sly_a.readonly = a, sly_b.readonly = b,
 		i = T_(begin)(sly_a.promise), j = T_(begin)(sly_b.promise); ;
 		T_(cursor_next)(&i), T_(cursor_next)(&j)) {
-		if(!T_(cursor_exists)(&i)) return !T_(cursor_exists)(&j);
-		else if(!T_(cursor_exists)(&j)) return 0 /* fixme: a > b? */;
+		if(!T_(exists)(&i)) return !T_(exists)(&j);
+		else if(!T_(exists)(&j)) return 0 /* fixme: a > b? */;
 		if(!t_(is_equal)(T_(look)(&i), T_(look)(&j)))
 			return 0;
 	}

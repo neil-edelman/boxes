@@ -99,7 +99,7 @@ static struct T_(cursor) T_(begin)(struct t_(array) *const a)
 static struct T_(cursor) T_(end)(struct t_(array) *const a)
 	{ struct T_(cursor) cur; assert(a), cur.a = a, cur.i = a->size; return cur;}
 /** @return Whether the `cur` points to an element. */
-static int T_(cursor_exists)(const struct T_(cursor) *const cur)
+static int T_(exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->a && cur->a->data && cur->i < cur->a->size; }
 /** @return Dereference the element pointed to by `cur` that exists. */
 static pT_(type) *T_(look)(struct T_(cursor) *const cur)
@@ -289,7 +289,7 @@ static int T_(splice)(struct t_(array) *restrict const a,
 
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
-	T_(begin)(0); T_(end)(0); T_(cursor_exists)(0); T_(look)(0);
+	T_(begin)(0); T_(end)(0); T_(exists)(0); T_(look)(0);
 	T_(cursor_next)(0); T_(cursor_back)(0); T_(size)(0); T_(at)(0, 0);
 	T_(tell_size)(0, 0);
 	t_(array)(); t_(array_)(0); T_(insert)(0, 0, 0); T_(new)(0); T_(shrink)(0);

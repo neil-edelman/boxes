@@ -240,7 +240,7 @@ static int pT_(remove)(struct t_(pool) *const pool,
 static struct T_(cursor) T_(begin)(const struct t_(pool) *const p)
 	{ struct T_(cursor) cur; cur.slot0 = p && p->slots.data
 	? p->slots.data + 0 : 0, cur.i = 0; return cur; }
-static int T_(cursor_exists)(const struct T_(cursor) *const cur)
+static int T_(exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->slot0 && cur->slot0->slab
 	&& cur->i < cur->slot0->size; }
 static pT_(type) *T_(look)(struct T_(cursor) *const cur)
@@ -315,7 +315,7 @@ static void T_(clear)(struct t_(pool) *const pool) {
 
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
-	T_(begin)(0); T_(cursor_exists)(0); T_(look)(0); T_(cursor_next)(0);
+	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(cursor_next)(0);
 	t_(pool)(); t_(pool_)(0); T_(buffer)(0, 0); T_(new)(0);
 	T_(remove)(0, 0); T_(clear)(0); pT_(unused_base_coda)();
 }

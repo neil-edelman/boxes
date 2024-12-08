@@ -90,7 +90,7 @@ static const char *TR_(to_string)(const pT_(box) *const box) {
 	to_string_buffer_i &= to_string_buffers_no - 1;
 	*b++ = left;
 	for(slybox.readonly = box, cur = T_(begin)(slybox.promise);
-		T_(cursor_exists)(&cur); T_(cursor_next)(&cur)) {
+		T_(exists)(&cur); T_(cursor_next)(&cur)) {
 		/* "Discards qualifiers in nested pointer" sometimes. Cast (back). */
 		tr_(to_string)((const void *)T_(look)(&cur), (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
@@ -99,7 +99,7 @@ static const char *TR_(to_string)(const pT_(box) *const box) {
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size_t)(b - buffer) > to_string_buffer_size - 11 - 1
 			- ellipsis_len - 1 - 1) {
-			if(T_(cursor_next)(&cur), T_(cursor_exists)) goto ellipsis;
+			if(T_(cursor_next)(&cur), T_(exists)) goto ellipsis;
 			else break; /* Almost overflow. */
 		}
 	}

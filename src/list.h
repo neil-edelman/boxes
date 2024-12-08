@@ -122,7 +122,7 @@ static struct t_(listlink) *T_(next)(struct t_(listlink) *const link) {
 static struct T_(cursor) T_(begin)(struct t_(list) *const l)
 	{ struct T_(cursor) cur; cur.link = l ? T_(head)(l) : 0; return cur; }
 /** @return Whether the `cur` points to an element. */
-static int T_(cursor_exists)(const struct T_(cursor) *const cur)
+static int T_(exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->link && cur->link->next; }
 /** @return Link to `it`, which is just itself. */
 static struct t_(listlink) *T_(look)(struct T_(cursor) *const cur)
@@ -288,7 +288,7 @@ static void T_(to_if)(struct t_(list) *restrict const from,
 
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
-	T_(begin)(0); T_(cursor_exists)(0); T_(look)(0); T_(cursor_next)(0);
+	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(cursor_next)(0);
 	T_(head)(0); T_(tail)(0); T_(previous)(0); T_(next)(0);
 	T_(clear)(0); T_(add_before)(0, 0); T_(add_after)(0, 0);
 	T_(unshift)(0, 0); T_(push)(0, 0); T_(remove)(0);

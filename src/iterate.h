@@ -29,7 +29,7 @@ static pT_(type) *TR_(any)(const pT_(box) *const box,
 	struct T_(cursor) it;
 	assert(box && predicate);
 	for(slybox.readonly = box, it = T_(begin)(slybox.promise);
-		T_(cursor_exists)(&it); T_(cursor_next)(&it)) {
+		T_(exists)(&it); T_(cursor_next)(&it)) {
 		pT_(type) *i = T_(look)(&it);
 		if(predicate(i)) return i;
 	}
@@ -43,7 +43,7 @@ static pT_(type) *TR_(any)(const pT_(box) *const box,
 static void TR_(each)(pT_(box) *const box, const pTR_(action_fn) action) {
 	struct T_(cursor) it;
 	assert(box && action);
-	for(it = T_(begin)(box); T_(cursor_exists)(&it); T_(cursor_next)(&it))
+	for(it = T_(begin)(box); T_(exists)(&it); T_(cursor_next)(&it))
 		action(T_(look)(&it));
 }
 
@@ -56,7 +56,7 @@ static void TR_(if_each)(pT_(box) *const box,
 	assert(box && predicate && action);
 	/* fixme: Could I to remove `i` from the list? */
 	/* 2024-11-25: it depends what container… but yes, inefficiently. */
-	for(it = T_(begin)(box); T_(cursor_exists)(&it); T_(cursor_next)(&it)) {
+	for(it = T_(begin)(box); T_(exists)(&it); T_(cursor_next)(&it)) {
 		pT_(type) *v = T_(look)(&it);
 		if(predicate(v)) action(v);
 	}

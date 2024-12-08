@@ -510,7 +510,7 @@ static enum table_result pT_(put_key)(struct t_(table) *const table,
 static struct T_(cursor) T_(begin)(struct t_(table) *const table)
 	{ struct T_(cursor) it; it.table = table, it.i = 0; return it; }
 /** @return Whether the `cur` points to an element. */
-static int T_(cursor_exists)(/*const*/ struct T_(cursor) *const cur) {
+static int T_(exists)(/*const*/ struct T_(cursor) *const cur) {
 	const struct t_(table) *t;
 	pT_(uint) limit;
 	if(!cur || !(t = cur->table) || !cur->table->buckets /* Idle */) return 0;
@@ -771,7 +771,7 @@ static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	pT_(entry) e; pT_(key) k; pT_(value) v;
 	memset(&e, 0, sizeof e); memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
-	T_(begin)(0); T_(cursor_exists)(0); T_(look)(0); T_(cursor_key)(0);
+	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(cursor_key)(0);
 	T_(cursor_remove)(0);
 	t_(table)(); t_(table_)(0);
 	T_(buffer)(0, 0); T_(clear)(0); T_(contains)(0, k); T_(get_or)(0, k, v);
