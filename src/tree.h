@@ -1015,7 +1015,7 @@ grow: /* Leaf is full. */ {
  @return Either `TREE_ERROR` (false) and doesn't touch `tree`, `TREE_ABSENT`
  and adds a new key with `key`, or `TREE_PRESENT` there was already an existing
  key. @throws[malloc] @order \Theta(\log |`tree`|) @allow */
-static enum tree_result T_(assign)(struct T_(tree) *const tree,
+static enum tree_result T_(assign)(struct t_(tree) *const tree,
 	const pT_(key) key, pT_(value) **const valuep)
 	{ return assert(tree), pT_(update)(&tree->root, key, 0, valuep); }
 #		else /* map --><!-- set */
@@ -1039,7 +1039,7 @@ static enum tree_result T_(try)(struct t_(tree) *const tree,
  @return Either `TREE_ERROR` (false,) `errno` is set and doesn't touch `tree`;
  `TREE_ABSENT`, adds a new key; or `TREE_PRESENT`, there was already an
  existing key. @throws[malloc] @order \Theta(\log |`tree`|) @allow */
-static enum tree_result T_(tree_update)(struct T_(tree) *const tree,
+static enum tree_result T_(update)(struct t_(tree) *const tree,
 	const pT_(key) key, pT_(key) *const eject, pT_(value) **const value)
 	{ return assert(tree), pT_(update)(&tree->root, key, eject, value); }
 #		else /* map --><!-- set */

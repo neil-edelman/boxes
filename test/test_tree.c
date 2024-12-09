@@ -24,12 +24,46 @@ static void char_filler(char *x)
 #include "../src/tree.h"
 
 
-#if 0
+/** Static bounds check. */
+static void char_bounds(void) {
+	struct char_tree tree = char_tree();
+	const char correct_right[] = {
+		/*a*/'b', 'b', 'd', 'd',
+		/*e*/'f', 'f', 'h', 'h',
+		/*i*/'j', 'j', '_', '_' },
+	correct_left[] = {
+		/*a*/'_', 'b', 'b', 'd',
+		/*e*/'d', 'f', 'f', 'h',
+		/*i*/'h', 'j', 'j', 'j' };
+	char i;
+	char_tree_bulk_try(&tree, 'b');
+	char_tree_bulk_try(&tree, 'd');
+	char_tree_bulk_try(&tree, 'f');
+	char_tree_bulk_try(&tree, 'h');
+	char_tree_bulk_try(&tree, 'j');
+	char_tree_bulk_finish(&tree);
+	private_char_tree_graph(&tree, "graph/tree/char-bounds.gv");
+	printf("right:\n");
+	for(i = 'a'; i < 'm'; i++) {
+		char right = char_tree_more_or(&tree, i, '_');
+		printf("%c\t%c\t(%c)\n", i, right, correct_right[(int)i-'a']);
+		assert(right == correct_right[(int)i-'a']);
+	}
+	printf("left:\n");
+	for(i = 'a'; i < 'm'; i++) {
+		char left = char_tree_less_or(&tree, i, '_');
+		printf("%c\t%c\t(%c)\n", i, left, correct_left[(int)i-'a']);
+		assert(left == correct_left[(int)i-'a']);
+	}
+	char_tree_(&tree);
+}
+
+
 /* Unsigned numbers: testing framework. */
-/** @implements <typedef:<PSZ>to_string_fn> */
+/** @implements <typedef:<pT>to_string_fn> */
 static void int_to_string(const unsigned x, char (*const z)[12])
 	{ /*assert(*x < 10000000000),*/ sprintf(*z, "%u", x); }
-/** @implements <typedef:<PB>action_fn> */
+/** @implements <typedef:<pT>action_fn> */
 static void int_filler(unsigned *x)
 	{ *x = (unsigned)rand() / (RAND_MAX / 1000 + 1); }
 #define TREE_NAME int
@@ -62,6 +96,7 @@ static void redblack_filler(unsigned *const k, unsigned *const v) {
 #include "../src/tree.h"
 
 
+#if 0
 /* Unsigned numbers and values. Prototype a value. */
 static void pair_filler(unsigned *const x, unsigned *const y) {
 	int_filler(x);
@@ -162,40 +197,6 @@ static void entry_to_string(const union date32 k, const int *const v,
 #define TREE_TO_STRING
 #include "../src/tree.h"
 
-
-/** Static bounds check. */
-static void char_bounds(void) {
-	struct char_tree tree = char_tree();
-	const char correct_right[] = {
-		/*a*/'b', 'b', 'd', 'd',
-		/*e*/'f', 'f', 'h', 'h',
-		/*i*/'j', 'j', '_', '_' },
-	correct_left[] = {
-		/*a*/'_', 'b', 'b', 'd',
-		/*e*/'d', 'f', 'f', 'h',
-		/*i*/'h', 'j', 'j', 'j' };
-	char i;
-	char_tree_bulk_try(&tree, 'b');
-	char_tree_bulk_try(&tree, 'd');
-	char_tree_bulk_try(&tree, 'f');
-	char_tree_bulk_try(&tree, 'h');
-	char_tree_bulk_try(&tree, 'j');
-	char_tree_bulk_finish(&tree);
-	tree_char_graph(&tree, "graph/tree/char-bounds.gv");
-	printf("right:\n");
-	for(i = 'a'; i < 'm'; i++) {
-		char right = char_tree_more_or(&tree, i, '_');
-		printf("%c\t%c\t(%c)\n", i, right, correct_right[(int)i-'a']);
-		assert(right == correct_right[(int)i-'a']);
-	}
-	printf("left:\n");
-	for(i = 'a'; i < 'm'; i++) {
-		char left = char_tree_less_or(&tree, i, '_');
-		printf("%c\t%c\t(%c)\n", i, left, correct_left[(int)i-'a']);
-		assert(left == correct_left[(int)i-'a']);
-	}
-	char_tree_(&tree);
-}
 
 /** Order 3 integer tree set; it's hard to make a simpler example. */
 static void order3(void) {
@@ -769,14 +770,13 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	char_tree_test();
-	/*
+	char_bounds();
 	int_tree_test();
 	order3_tree_test();
 	redblack_tree_test();
-	pair_tree_test();
+	/*pair_tree_test();
 	star_tree_test();
 	entry_tree_test();
-	char_bounds();
 	order3();
 	redblack();
 	loop_tree_test();
