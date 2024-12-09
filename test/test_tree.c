@@ -95,8 +95,81 @@ static void redblack_filler(unsigned *const k, unsigned *const v) {
 #define TREE_TEST
 #include "../src/tree.h"
 
+/** This tests the order 4 tree map above the automatic tests. */
+static void redblack(void) {
+	struct redblack_tree tree = redblack_tree();
+	unsigned i, n, *value, calc_size;
+	struct { unsigned x; int in; } rnd[10];
+	const unsigned rnd_size = sizeof rnd / sizeof *rnd;
+	const size_t redblack_order
+		= sizeof tree.root.node->key / sizeof *tree.root.node->key + 1;
+	printf("Redblack: order %lu.\n", redblack_order);
+	assert(redblack_order == 4);
 
-#if 0
+	/* Random. */
+	for(i = 0; i < rnd_size; i++) rnd[i].x = rand() & 65535, rnd[i].in = 0;
+	{
+		unsigned v = redblack_tree_get_or(&tree, 0, 42);
+		assert(v == 42);
+	}
+
+	/* In tree. */
+	for(n = 0, i = 0; i < rnd_size; i++) {
+		unsigned v;
+		switch(redblack_tree_assign(&tree, rnd[i].x, &value)) {
+		case TREE_ERROR: goto catch;
+		case TREE_PRESENT: printf("%u already in tree\n", rnd[i].x); break;
+		case TREE_ABSENT: *value = rnd[i].x; rnd[i].in = 1; n++; break;
+		}
+		if(!(i & (i + 1)) || i == rnd_size - 1) {
+			char fn[64];
+			sprintf(fn, "graph/tree/rb-rnd-%u.gv", (unsigned)i);
+			private_redblack_tree_graph(&tree, fn);
+		}
+		v = redblack_tree_get_or(&tree, rnd[i].x, 0);
+		assert(v == *value && v == rnd[i].x);
+	}
+	printf("Redblack tree %u/%u: %s.\n",
+		n, rnd_size, redblack_tree_to_string(&tree));
+	calc_size = (unsigned)redblack_tree_count(&tree);
+	assert(calc_size == n);
+	while(n) {
+		assert(tree.root.height != UINT_MAX);
+		i = (unsigned)rand() / (RAND_MAX / n + 1);
+		printf("Drew %u -> %u which is %sin.\n",
+			i, rnd[i].x, rnd[i].in ? "" : "not ");
+		if(redblack_tree_remove(&tree, rnd[i].x)) {
+			assert(rnd[i].in);
+			rnd[i].in = 0;
+			if(/*!(n & (n + 1)) || n == rnd_size - 1*/1) {
+				char fn[64];
+				sprintf(fn, "graph/tree/rb-rnd-rm-%u.gv", calc_size - n);
+				private_redblack_tree_graph(&tree, fn);
+			}
+			n--;
+			if(i != n) rnd[i] = rnd[n];
+		} else {
+			assert(!rnd[i].in);
+		}
+		{ /* Verify */
+			size_t count = redblack_tree_count(&tree);
+			assert(n == count);
+		}
+		for(i = 0; i <= n; i++) {
+			unsigned v = redblack_tree_get_or(&tree, rnd[i].x, 0);
+			assert(!rnd[i].in || rnd[i].x == v);
+		}
+	}
+	assert(tree.root.height == UINT_MAX);
+	goto finally;
+catch:
+	perror("redblack");
+	assert(0);
+finally:
+	redblack_tree_(&tree);
+}
+
+
 /* Unsigned numbers and values. Prototype a value. */
 static void pair_filler(unsigned *const x, unsigned *const y) {
 	int_filler(x);
@@ -165,6 +238,7 @@ typedef const char *const_str;
 #include "../src/tree.h"
 
 
+#if 0
 /* §6.7.2.1/P11 implementation defined; hopefully it will work. This is so
  convenient, but completely unspecified; the other option is to manually
  mask-off the bits for every value, and use a union name, which is painful. */
@@ -579,80 +653,6 @@ finally:
 	order3_tree_(&copy);
 }
 
-/** This tests the order 4 tree map. */
-static void redblack(void) {
-	struct redblack_tree tree = redblack_tree();
-	unsigned i, n, *value, calc_size;
-	struct { unsigned x; int in; } rnd[10];
-	const unsigned rnd_size = sizeof rnd / sizeof *rnd;
-	const size_t redblack_order
-		= sizeof tree.root.node->key / sizeof *tree.root.node->key + 1;
-	printf("Redblack: order %lu.\n", redblack_order);
-	assert(redblack_order == 4);
-
-	/* Random. */
-	for(i = 0; i < rnd_size; i++) rnd[i].x = rand() & 65535, rnd[i].in = 0;
-	{
-		unsigned v = redblack_tree_get_or(&tree, 0, 42);
-		assert(v == 42);
-	}
-
-	/* In tree. */
-	for(n = 0, i = 0; i < rnd_size; i++) {
-		unsigned v;
-		switch(redblack_tree_assign(&tree, rnd[i].x, &value)) {
-		case TREE_ERROR: goto catch;
-		case TREE_PRESENT: printf("%u already in tree\n", rnd[i].x); break;
-		case TREE_ABSENT: *value = rnd[i].x; rnd[i].in = 1; n++; break;
-		}
-		if(!(i & (i + 1)) || i == rnd_size - 1) {
-			char fn[64];
-			sprintf(fn, "graph/tree/rb-rnd-%u.gv", (unsigned)i);
-			tree_redblack_graph(&tree, fn);
-		}
-		v = redblack_tree_get_or(&tree, rnd[i].x, 0);
-		assert(v == *value && v == rnd[i].x);
-	}
-	printf("Redblack tree %u/%u: %s.\n",
-		n, rnd_size, redblack_tree_to_string(&tree));
-	calc_size = (unsigned)redblack_tree_count(&tree);
-	assert(calc_size == n);
-	while(n) {
-		assert(tree.root.height != UINT_MAX);
-		i = (unsigned)rand() / (RAND_MAX / n + 1);
-		printf("Drew %u -> %u which is %sin.\n",
-			i, rnd[i].x, rnd[i].in ? "" : "not ");
-		if(redblack_tree_remove(&tree, rnd[i].x)) {
-			assert(rnd[i].in);
-			rnd[i].in = 0;
-			if(/*!(n & (n + 1)) || n == rnd_size - 1*/1) {
-				char fn[64];
-				sprintf(fn, "graph/tree/rb-rnd-rm-%u.gv", calc_size - n);
-				tree_redblack_graph(&tree, fn);
-			}
-			n--;
-			if(i != n) rnd[i] = rnd[n];
-		} else {
-			assert(!rnd[i].in);
-		}
-		{ /* Verify */
-			size_t count = redblack_tree_count(&tree);
-			assert(n == count);
-		}
-		for(i = 0; i <= n; i++) {
-			unsigned v = redblack_tree_get_or(&tree, rnd[i].x, 0);
-			assert(!rnd[i].in || rnd[i].x == v);
-		}
-	}
-	assert(tree.root.height == UINT_MAX);
-	goto finally;
-catch:
-	perror("redblack");
-	assert(0);
-finally:
-	redblack_tree_(&tree);
-}
-
 
 /* Has distinguishable keys going to the same key value. This may be useful,
  for example, if one allocates keys. Also has default values. */
@@ -774,11 +774,11 @@ int main(void) {
 	int_tree_test();
 	order3_tree_test();
 	redblack_tree_test();
-	/*pair_tree_test();
-	star_tree_test();
-	entry_tree_test();
-	order3();
 	redblack();
+	pair_tree_test();
+	star_tree_test();
+	/*entry_tree_test();
+	order3();
 	loop_tree_test();
 	loop();
 	typical_tree_test();*/
