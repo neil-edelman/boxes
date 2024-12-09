@@ -476,7 +476,8 @@ static struct T_(cursor) T_(less)(struct t_(tree) *const tree,
 	struct T_(cursor) cur;
 	assert(tree);
 	if(!(cur.root = &tree->root)) return cur;
-	cur.ref = pT_(less)(tree->root, x);
+	/* This ensures that it doesn't start again. */
+	if(!(cur.ref = pT_(less)(tree->root, x)).node) cur.root = 0;
 	return cur;
 }
 /** @return Cursor in `tree` such that <fn:<B>tree_more> is the smallest key
@@ -487,7 +488,8 @@ static struct T_(cursor) T_(more)(struct t_(tree) *const tree,
 	struct T_(cursor) cur;
 	assert(tree);
 	if(!(cur.root = &tree->root)) return cur;
-	cur.ref = pT_(more)(tree->root, x);
+	/* This ensures that it doesn't start again. */
+	if(!(cur.ref = pT_(more)(tree->root, x)).node) cur.root = 0;
 	return cur;
 }
 

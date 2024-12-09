@@ -81,6 +81,387 @@ static void order3_to_string(const unsigned x, char (*const z)[12])
 #define TREE_TO_STRING
 #include "../src/tree.h"
 
+/** Order 3 integer tree set; it's hard to make a simpler example. */
+static void order3(void) {
+	struct order3_tree between = order3_tree(),
+		rnd = order3_tree(),
+		even = order3_tree(), even_clone = order3_tree(),
+		consecutive = order3_tree(),
+		removal = order3_tree(),
+		copy = order3_tree();
+	unsigned i;
+	const unsigned size_rnd = 100;
+	struct order3_tree_cursor cur;
+	unsigned v;
+	int ret;
+	const size_t order3_order
+		= sizeof rnd.root.node->key / sizeof *rnd.root.node->key + 1;
+	printf("manual: order3 order %lu\n", order3_order);
+	assert(order3_order == 3);
+
+	/* Lookup between nodes. */
+	if(!order3_tree_bulk_try(&between, 100)
+		|| !order3_tree_bulk_try(&between, 200)
+		|| !order3_tree_bulk_try(&between, 300)) goto catch;
+	ret = order3_tree_bulk_finish(&between);
+	assert(ret);
+	private_order3_tree_graph_horiz(&between, "graph/tree/between.gv");
+
+	v = order3_tree_more_or(&between, 50, 0), assert(v == 100);
+	v = order3_tree_more_or(&between, 150, 0), assert(v == 200);
+	v = order3_tree_more_or(&between, 250, 0), assert(v == 300);
+	v = order3_tree_more_or(&between, 300, 0), assert(v == 300);
+	v = order3_tree_more_or(&between, 350, 0), assert(!v);
+
+	cur = order3_tree_more(&between, 50);
+	printf("more(50), %s:%u.\n",
+		orcify(cur.ref.node), cur.ref.idx);
+	assert(order3_tree_exists(&cur));
+	v = order3_tree_key(&cur), assert(v == 100);
+	printf("->%u.\n", v);
+
+	cur = order3_tree_more(&between, 150);
+	printf("more(150), %s:%u.\n",
+		orcify(cur.ref.node), cur.ref.idx);
+	assert(order3_tree_exists(&cur));
+	v = order3_tree_key(&cur), assert(v == 200);
+	printf("->%u.\n", v);
+
+	cur = order3_tree_more(&between, 200);
+	printf("more(200), %s:%u.\n",
+		orcify(cur.ref.node), cur.ref.idx);
+	assert(order3_tree_exists(&cur));
+	v = order3_tree_key(&cur), assert(v == 200);
+	printf("->%u.\n", v);
+	/*it = order3_tree_right_next(&between, 200);
+	ret = order3_tree_previous(&it, &v), assert(ret && v == 100);
+	printf("previous %u.\n", v);*/
+
+	cur = order3_tree_more(&between, 250);
+	printf("more(250), %s:%u.\n",
+		orcify(cur.ref.node), cur.ref.idx);
+	assert(order3_tree_exists(&cur));
+	v = order3_tree_key(&cur), assert(v == 300);
+	printf("->%u.\n", v);
+
+	cur = order3_tree_more(&between, 350);
+	printf("right next 350, %s:%u.\n",
+		orcify(cur.ref.node), cur.ref.idx);
+	assert(!order3_tree_exists(&cur));
+	printf("->dne.\n");
+
+	v = order3_tree_less_or(&between, 50, 0), assert(!v);
+	v = order3_tree_less_or(&between, 150, 0), assert(v == 100);
+	v = order3_tree_less_or(&between, 250, 0), assert(v == 200);
+	v = order3_tree_less_or(&between, 300, 0), assert(v == 300);
+	v = order3_tree_less_or(&between, 350, 0), assert(v == 300);
+
+	cur = order3_tree_less(&between, 50);
+	printf("less(50), %s:%u.\n",
+		orcify(cur.ref.node), cur.ref.idx);
+	assert(!order3_tree_exists(&cur));
+	printf("->dne.\n");
+
+	cur = order3_tree_less(&between, 150);
+	printf("less(150), %s:%u.\n",
+		orcify(cur.ref.node), cur.ref.idx);
+	assert(order3_tree_exists(&cur));
+	v = order3_tree_key(&cur), assert(v == 100);
+	printf("->%u.\n", v);
+
+	cur = order3_tree_less(&between, 200);
+	printf("less(200), %s:%u.\n",
+		orcify(cur.ref.node), cur.ref.idx);
+	assert(order3_tree_exists(&cur));
+	v = order3_tree_key(&cur), assert(v == 200);
+	printf("->%u.\n", v);
+
+	cur = order3_tree_less(&between, 250);
+	printf("less(250), %s:%u.\n",
+		orcify(cur.ref.node), cur.ref.idx);
+	assert(order3_tree_exists(&cur));
+	v = order3_tree_key(&cur), assert(v == 200);
+	printf("->%u.\n", v);
+
+	cur = order3_tree_less(&between, 350);
+	printf("less(350), %s:%u\n",
+		orcify(cur.ref.node), cur.ref.idx);
+	assert(order3_tree_exists(&cur));
+	v = order3_tree_key(&cur), assert(v == 300);
+	printf("->%u.\n", v);
+
+	/* Test greatest lower/least higher bound again. */
+	order3_tree_clear(&between);
+	order3_tree_bulk_try(&between, 10);
+	order3_tree_bulk_try(&between, 20);
+	order3_tree_bulk_try(&between, 30);
+	order3_tree_bulk_try(&between, 40);
+	order3_tree_bulk_try(&between, 50);
+	order3_tree_bulk_try(&between, 60);
+	order3_tree_bulk_try(&between, 70);
+	order3_tree_bulk_try(&between, 80);
+	order3_tree_bulk_finish(&between);
+	private_order3_tree_graph_horiz(&between, "graph/tree/left.gv");
+	v = order3_tree_less_or(&between, 10, 0), assert(v == 10);
+	v = order3_tree_less_or(&between, 80, 0), assert(v == 80);
+	v = order3_tree_less_or(&between, 55, 0), assert(v == 50);
+	v = order3_tree_less_or(&between, 85, 0), assert(v == 80);
+	v = order3_tree_less_or(&between, 15, 0), assert(v == 10);
+	v = order3_tree_less_or(&between, 5, 0), assert(!v);
+	v = order3_tree_more_or(&between, 10, 0), assert(v == 10);
+	v = order3_tree_more_or(&between, 80, 0), assert(v == 80);
+	v = order3_tree_more_or(&between, 55, 0), assert(v == 60);
+	v = order3_tree_more_or(&between, 85, 0), assert(!v);
+	v = order3_tree_more_or(&between, 15, 0), assert(v == 20);
+	v = order3_tree_more_or(&between, 5, 0), assert(v == 10);
+
+	/* For the paper. */
+	order3_tree_clear(&between);
+	order3_tree_bulk_try(&between, 1);
+	order3_tree_bulk_try(&between, 2);
+	if(!order3_tree_clone(&copy, &between)) goto catch;
+	private_order3_tree_graph_horiz(&copy, "graph/tree/bulk2.gv");
+	order3_tree_bulk_try(&between, 3);
+	if(!order3_tree_clone(&copy, &between)) goto catch;
+	private_order3_tree_graph_horiz(&copy, "graph/tree/bulk3.gv");
+	order3_tree_bulk_try(&copy, 4);
+	private_order3_tree_graph_horiz(&copy, "graph/tree/bulk4.gv");
+	if(!order3_tree_clone(&copy, &between)) goto catch;
+	order3_tree_bulk_finish(&copy);
+	private_order3_tree_graph_horiz(&copy, "graph/tree/bulk3-finish.gv");
+
+	/* Random. */
+	for(i = 0; i < size_rnd; i++) {
+		unsigned x = rand() & 65535;
+		printf("__%u) add random value %u__\n", (unsigned)i, x);
+		switch(order3_tree_try(&rnd, x)) {
+		case TREE_ERROR: goto catch;
+		case TREE_PRESENT: printf("%u already in tree\n", x); break;
+		case TREE_ABSENT: printf("%u added\n", x); break;
+		}
+		if(!(i & (i + 1)) || i == size_rnd - 1) {
+			char fn[64];
+			sprintf(fn, "graph/tree/rnd-%u.gv", (unsigned)i);
+			private_order3_tree_graph(&rnd, fn);
+		}
+	}
+
+	{ /* Full add test, nodes, `\sum_{n=0}^{h} m^n = \frac{m^{h+1}-1}{m-1}`,
+		 gives keys, `m^{h+1}-1`, three levels. */
+		const size_t size = order3_order * order3_order * order3_order - 1;
+		for(i = 0; i < size; i++) /* Even for odd spaces between them. */
+			if(!order3_tree_bulk_try(&even, ((unsigned)i + 1) * 2)) assert(0);
+		order3_tree_bulk_finish(&even); /* Does nothing, in this case. */
+		private_order3_tree_graph_horiz(&even, "graph/tree/even-1.gv");
+		for(i = 0; i <= size; i++) {
+			char fn[64];
+			if(!order3_tree_clone(&even_clone, &even)) goto catch;
+			if(i == 4) private_order3_tree_graph_horiz(&even_clone,
+				"graph/tree/even-clone-9-pre.gv");
+			if(!order3_tree_try(&even_clone, (unsigned)i * 2 + 1)) goto catch;
+			sprintf(fn, "graph/tree/even-clone-%u.gv", (unsigned)i * 2 + 1);
+			private_order3_tree_graph_horiz(&even_clone, fn);
+		}
+	}
+
+	{ /* Rm tdd. */
+		int in[3 * 3 * 3 - 1];
+		const unsigned size = sizeof in / sizeof *in;
+		unsigned n;
+		memset(&in, 0, sizeof in);
+		for(n = 0; n < size; n++) {
+			if(!(order3_tree_bulk_try(&removal, n + 1))) goto catch;
+			in[n] = 1;
+		}
+		order3_tree_bulk_finish(&even);
+		/* Leaf, no redistributing needed. */
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-0.gv");
+		order3_tree_remove(&removal, 14), in[13] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-1.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		/* Leaf, free the node; distribute one level above. */
+		order3_tree_remove(&removal, 13), in[12] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-2.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		/* Other side. */
+		order3_tree_remove(&removal, 12), in[11] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-3.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		/* Merge three ways: lower. */
+		if(!order3_tree_clone(&copy, &removal)) goto catch;
+		private_order3_tree_graph_horiz(&copy, "graph/tree/removal-4a0.gv");
+		order3_tree_remove(&copy, 10), in[9] = 0;
+		private_order3_tree_graph_horiz(&copy, "graph/tree/removal-4a1.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&copy, n + 1) == in[n]);
+		in[9] = 1;
+		/* Middle. */
+		if(!order3_tree_clone(&copy, &removal)) goto catch;
+		private_order3_tree_graph_horiz(&copy, "graph/tree/removal-4b0.gv");
+		order3_tree_remove(&copy, 15), in[14] = 0;
+		private_order3_tree_graph_horiz(&copy, "graph/tree/removal-4b1.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&copy, n + 1) == in[n]);
+		in[14] = 1;
+		/* High. */
+		if(!order3_tree_clone(&copy, &removal)) goto catch;
+		private_order3_tree_graph_horiz(&copy, "graph/tree/removal-4c0.gv");
+		order3_tree_remove(&copy, 17), in[16] = 0;
+		private_order3_tree_graph_horiz(&copy, "graph/tree/removal-4c1.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&copy, n + 1) == in[n]);
+		in[16] = 1;
+		/* Already done. */
+		order3_tree_remove(&removal, 15), in[14] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-5b.gv");
+		order3_tree_remove(&removal, 16), in[15] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-5c.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		/* Multi-level. */
+		order3_tree_remove(&removal, 10), in[9] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-6.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		/* In root. */
+		order3_tree_remove(&removal, 18), in[17] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-7.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		order3_tree_remove(&removal, 17), in[16] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-8.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		order3_tree_remove(&removal, 19), in[18] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-9.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		order3_tree_remove(&removal, 20), in[19] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-10.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		order3_tree_remove(&removal, 21), in[20] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-11.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		order3_tree_remove(&removal, 22), in[21] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-12.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		order3_tree_remove(&removal, 11), in[10] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-13.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		order3_tree_remove(&removal, 9), in[8] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-14.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		order3_tree_remove(&removal, 8), in[7] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-15.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		order3_tree_remove(&removal, 7), in[6] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-16.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		order3_tree_remove(&removal, 6), in[5] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-17.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		order3_tree_remove(&removal, 5), in[4] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-18.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		order3_tree_remove(&removal, 4), in[3] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-19.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		/* There are some states that haven't been tested. */
+		if(!order3_tree_clone(&removal, &copy)) goto catch;
+		for(n = 0; n < size; n++) in[n] = 1;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-b-6.gv");
+		in[11] = 0, in[12] = 0, in[13] = 0, in[16] = 0;
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		order3_tree_remove(&removal, 3), in[2] = 0;
+		order3_tree_remove(&removal, 2), in[1] = 0;
+		order3_tree_remove(&removal, 4), in[3] = 0;
+		order3_tree_remove(&removal, 6), in[5] = 0;
+		order3_tree_remove(&removal, 5), in[4] = 0;
+		order3_tree_remove(&removal, 7), in[6] = 0;
+		order3_tree_remove(&removal, 9), in[8] = 0;
+		order3_tree_remove(&removal, 1), in[0] = 0;
+		order3_tree_remove(&removal, 8), in[7] = 0;
+		order3_tree_remove(&removal, 10), in[9] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-b-7.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		order3_tree_remove(&removal, 11), in[10] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-b-8.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		/* Yay. Now to try deleting the rest. */
+		order3_tree_remove(&removal, 21), in[20] = 0;
+		order3_tree_remove(&removal, 20), in[19] = 0;
+		order3_tree_remove(&removal, 22), in[21] = 0;
+		order3_tree_remove(&removal, 19), in[18] = 0;
+		order3_tree_remove(&removal, 18), in[17] = 0;
+		order3_tree_remove(&removal, 16), in[15] = 0;
+		order3_tree_remove(&removal, 24), in[23] = 0;
+		order3_tree_remove(&removal, 23), in[22] = 0;
+		order3_tree_remove(&removal, 25), in[24] = 0;
+		order3_tree_remove(&removal, 15), in[14] = 0;
+		order3_tree_remove(&removal, 26), in[25] = 0;
+		private_order3_tree_graph_horiz(&removal, "graph/tree/removal-b-9.gv");
+		for(n = 0; n < size; n++)
+			assert(order3_tree_contains(&removal, n + 1) == in[n]);
+		assert(removal.root.height == UINT_MAX && removal.root.node);
+		for(n = 0; n < size; n++) assert(!in[n]);
+		{
+			int success = order3_tree_remove(&removal, 0);
+			assert(!success);
+		}
+	}
+
+	{ /* Consecutive. */
+		const size_t size = 4 * order3_order - 1;
+		char fn[64];
+		for(i = 0; i < size; i++) {
+			unsigned x = (unsigned)i + 1;
+			/*printf("__%u) Going to add consecutive %u__\n", (unsigned)i, x);*/
+			switch(order3_tree_try(&consecutive, x)) {
+			case TREE_ERROR: goto catch;
+			case TREE_PRESENT: /*printf("%u already in tree\n", x);*/ break;
+			case TREE_ABSENT: /*printf("%u added\n", x);*/ break;
+			}
+			sprintf(fn, "graph/tree/consecutive-%u.gv", (unsigned)i);
+			private_order3_tree_graph(&consecutive, fn);
+		}
+		for(i = 0; i < size; i++) {
+			unsigned x = (unsigned)i + 1;
+			/*printf("__%u) Going to remove %u__\n", (unsigned)i, x);*/
+			if(!order3_tree_remove(&consecutive, x)) assert(0);
+			sprintf(fn, "graph/tree/consecutive-rm-%u.gv", (unsigned)x);
+			private_order3_tree_graph(&consecutive, fn);
+		}
+	}
+
+	goto finally;
+catch:
+	perror("manual_unsigned");
+	assert(0);
+finally:
+	order3_tree_(&between);
+	order3_tree_(&rnd);
+	order3_tree_(&removal);
+	order3_tree_(&even), order3_tree_(&even_clone);
+	order3_tree_(&consecutive);
+	order3_tree_(&copy);
+}
+
 
 /* Unsigned numbers: testing framework. */
 static void redblack_to_string(const unsigned key, const unsigned *const value,
@@ -272,388 +653,6 @@ static void entry_to_string(const union date32 k, const int *const v,
 #include "../src/tree.h"
 
 
-/** Order 3 integer tree set; it's hard to make a simpler example. */
-static void order3(void) {
-	struct order3_tree between = order3_tree(),
-		rnd = order3_tree(),
-		even = order3_tree(), even_clone = order3_tree(),
-		consecutive = order3_tree(),
-		removal = order3_tree(),
-		copy = order3_tree();
-	unsigned i;
-	const unsigned size_rnd = 100;
-	struct order3_tree_iterator it;
-	unsigned v;
-	int ret;
-	const size_t order3_order
-		= sizeof rnd.root.node->key / sizeof *rnd.root.node->key + 1;
-	printf("manual: order3 order %lu\n", order3_order);
-	assert(order3_order == 3);
-
-	/* Lookup between nodes. */
-	if(!order3_tree_bulk_try(&between, 100)
-		|| !order3_tree_bulk_try(&between, 200)
-		|| !order3_tree_bulk_try(&between, 300)) goto catch;
-	ret = order3_tree_bulk_finish(&between);
-	assert(ret);
-	tree_order3_graph_horiz(&between, "graph/tree/between.gv");
-
-	v = order3_tree_more_or(&between, 50, 0), assert(v == 100);
-	v = order3_tree_more_or(&between, 150, 0), assert(v == 200);
-	v = order3_tree_more_or(&between, 250, 0), assert(v == 300);
-	v = order3_tree_more_or(&between, 300, 0), assert(v == 300);
-	v = order3_tree_more_or(&between, 350, 0), assert(!v);
-
-	it = order3_tree_more(&between, 50);
-	printf("more(50), %s:%u.\n",
-		orcify(it._.ref.node), it._.ref.idx);
-	assert(order3_tree_has_element(&it));
-	v = order3_tree_key(&it), assert(v == 100);
-	printf("->%u.\n", v);
-
-	it = order3_tree_more(&between, 150);
-	printf("more(150), %s:%u.\n",
-		orcify(it._.ref.node), it._.ref.idx);
-	assert(order3_tree_has_element(&it));
-	v = order3_tree_key(&it), assert(v == 200);
-	printf("->%u.\n", v);
-
-	it = order3_tree_more(&between, 200);
-	printf("more(200), %s:%u.\n",
-		orcify(it._.ref.node), it._.ref.idx);
-	assert(order3_tree_has_element(&it));
-	v = order3_tree_key(&it), assert(v == 200);
-	printf("->%u.\n", v);
-	/*it = order3_tree_right_next(&between, 200);
-	ret = order3_tree_previous(&it, &v), assert(ret && v == 100);
-	printf("previous %u.\n", v);*/
-
-	it = order3_tree_more(&between, 250);
-	printf("more(250), %s:%u.\n",
-		orcify(it._.ref.node), it._.ref.idx);
-	assert(order3_tree_has_element(&it));
-	v = order3_tree_key(&it), assert(v == 300);
-	printf("->%u.\n", v);
-
-	it = order3_tree_more(&between, 350);
-	printf("right next 350, %s:%u.\n",
-		orcify(it._.ref.node), it._.ref.idx);
-	assert(!order3_tree_has_element(&it));
-	printf("->dne.\n");
-
-	v = order3_tree_less_or(&between, 50, 0), assert(!v);
-	v = order3_tree_less_or(&between, 150, 0), assert(v == 100);
-	v = order3_tree_less_or(&between, 250, 0), assert(v == 200);
-	v = order3_tree_less_or(&between, 300, 0), assert(v == 300);
-	v = order3_tree_less_or(&between, 350, 0), assert(v == 300);
-
-	it = order3_tree_less(&between, 50);
-	printf("less(50), %s:%u.\n",
-		orcify(it._.ref.node), it._.ref.idx);
-	assert(!order3_tree_has_element(&it));
-	printf("->dne.\n");
-
-	it = order3_tree_less(&between, 150);
-	printf("less(150), %s:%u.\n",
-		orcify(it._.ref.node), it._.ref.idx);
-	assert(order3_tree_has_element(&it));
-	v = order3_tree_key(&it), assert(v == 100);
-	printf("->%u.\n", v);
-
-	it = order3_tree_less(&between, 200);
-	printf("less(200), %s:%u.\n",
-		orcify(it._.ref.node), it._.ref.idx);
-	assert(order3_tree_has_element(&it));
-	v = order3_tree_key(&it), assert(v == 200);
-	printf("->%u.\n", v);
-
-	it = order3_tree_less(&between, 250);
-	printf("less(250), %s:%u.\n",
-		orcify(it._.ref.node), it._.ref.idx);
-	assert(order3_tree_has_element(&it));
-	v = order3_tree_key(&it), assert(v == 200);
-	printf("->%u.\n", v);
-
-	it = order3_tree_less(&between, 350);
-	printf("less(350), %s:%u\n",
-		orcify(it._.ref.node), it._.ref.idx);
-	assert(order3_tree_has_element(&it));
-	v = order3_tree_key(&it), assert(v == 300);
-	printf("->%u.\n", v);
-
-	/* Test greatest lower/least higher bound again. */
-	order3_tree_clear(&between);
-	order3_tree_bulk_try(&between, 10);
-	order3_tree_bulk_try(&between, 20);
-	order3_tree_bulk_try(&between, 30);
-	order3_tree_bulk_try(&between, 40);
-	order3_tree_bulk_try(&between, 50);
-	order3_tree_bulk_try(&between, 60);
-	order3_tree_bulk_try(&between, 70);
-	order3_tree_bulk_try(&between, 80);
-	order3_tree_bulk_finish(&between);
-	tree_order3_graph_horiz(&between, "graph/tree/left.gv");
-	v = order3_tree_less_or(&between, 10, 0), assert(v == 10);
-	v = order3_tree_less_or(&between, 80, 0), assert(v == 80);
-	v = order3_tree_less_or(&between, 55, 0), assert(v == 50);
-	v = order3_tree_less_or(&between, 85, 0), assert(v == 80);
-	v = order3_tree_less_or(&between, 15, 0), assert(v == 10);
-	v = order3_tree_less_or(&between, 5, 0), assert(!v);
-	v = order3_tree_more_or(&between, 10, 0), assert(v == 10);
-	v = order3_tree_more_or(&between, 80, 0), assert(v == 80);
-	v = order3_tree_more_or(&between, 55, 0), assert(v == 60);
-	v = order3_tree_more_or(&between, 85, 0), assert(!v);
-	v = order3_tree_more_or(&between, 15, 0), assert(v == 20);
-	v = order3_tree_more_or(&between, 5, 0), assert(v == 10);
-
-	/* For the paper. */
-	order3_tree_clear(&between);
-	order3_tree_bulk_try(&between, 1);
-	order3_tree_bulk_try(&between, 2);
-	if(!order3_tree_clone(&copy, &between)) goto catch;
-	tree_order3_graph_horiz(&copy, "graph/tree/bulk2.gv");
-	order3_tree_bulk_try(&between, 3);
-	if(!order3_tree_clone(&copy, &between)) goto catch;
-	tree_order3_graph_horiz(&copy, "graph/tree/bulk3.gv");
-	order3_tree_bulk_try(&copy, 4);
-	tree_order3_graph_horiz(&copy, "graph/tree/bulk4.gv");
-	if(!order3_tree_clone(&copy, &between)) goto catch;
-	order3_tree_bulk_finish(&copy);
-	tree_order3_graph_horiz(&copy, "graph/tree/bulk3-finish.gv");
-
-	/* Random. */
-	for(i = 0; i < size_rnd; i++) {
-		unsigned x = rand() & 65535;
-		printf("__%u) add random value %u__\n", (unsigned)i, x);
-		switch(order3_tree_try(&rnd, x)) {
-		case TREE_ERROR: goto catch;
-		case TREE_PRESENT: printf("%u already in tree\n", x); break;
-		case TREE_ABSENT: printf("%u added\n", x); break;
-		}
-		if(!(i & (i + 1)) || i == size_rnd - 1) {
-			char fn[64];
-			sprintf(fn, "graph/tree/rnd-%u.gv", (unsigned)i);
-			tree_order3_graph(&rnd, fn);
-		}
-	}
-
-	{ /* Full add test, nodes, `\sum_{n=0}^{h} m^n = \frac{m^{h+1}-1}{m-1}`,
-		 gives keys, `m^{h+1}-1`, three levels. */
-		const size_t size = order3_order * order3_order * order3_order - 1;
-		for(i = 0; i < size; i++) /* Even for odd spaces between them. */
-			if(!order3_tree_bulk_try(&even, ((unsigned)i + 1) * 2)) assert(0);
-		order3_tree_bulk_finish(&even); /* Does nothing, in this case. */
-		tree_order3_graph_horiz(&even, "graph/tree/even-1.gv");
-		for(i = 0; i <= size; i++) {
-			char fn[64];
-			if(!order3_tree_clone(&even_clone, &even)) goto catch;
-			if(i == 4) tree_order3_graph_horiz(&even_clone,
-				"graph/tree/even-clone-9-pre.gv");
-			if(!order3_tree_try(&even_clone, (unsigned)i * 2 + 1)) goto catch;
-			sprintf(fn, "graph/tree/even-clone-%u.gv", (unsigned)i * 2 + 1);
-			tree_order3_graph_horiz(&even_clone, fn);
-		}
-	}
-
-	{ /* Rm tdd. */
-		int in[3 * 3 * 3 - 1];
-		const unsigned size = sizeof in / sizeof *in;
-		unsigned n;
-		memset(&in, 0, sizeof in);
-		for(n = 0; n < size; n++) {
-			if(!(order3_tree_bulk_try(&removal, n + 1))) goto catch;
-			in[n] = 1;
-		}
-		order3_tree_bulk_finish(&even);
-		/* Leaf, no redistributing needed. */
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-0.gv");
-		order3_tree_remove(&removal, 14), in[13] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-1.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		/* Leaf, free the node; distribute one level above. */
-		order3_tree_remove(&removal, 13), in[12] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-2.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		/* Other side. */
-		order3_tree_remove(&removal, 12), in[11] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-3.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		/* Merge three ways: lower. */
-		if(!order3_tree_clone(&copy, &removal)) goto catch;
-		tree_order3_graph_horiz(&copy, "graph/tree/removal-4a0.gv");
-		order3_tree_remove(&copy, 10), in[9] = 0;
-		tree_order3_graph_horiz(&copy, "graph/tree/removal-4a1.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&copy, n + 1) == in[n]);
-		in[9] = 1;
-		/* Middle. */
-		if(!order3_tree_clone(&copy, &removal)) goto catch;
-		tree_order3_graph_horiz(&copy, "graph/tree/removal-4b0.gv");
-		order3_tree_remove(&copy, 15), in[14] = 0;
-		tree_order3_graph_horiz(&copy, "graph/tree/removal-4b1.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&copy, n + 1) == in[n]);
-		in[14] = 1;
-		/* High. */
-		if(!order3_tree_clone(&copy, &removal)) goto catch;
-		tree_order3_graph_horiz(&copy, "graph/tree/removal-4c0.gv");
-		order3_tree_remove(&copy, 17), in[16] = 0;
-		tree_order3_graph_horiz(&copy, "graph/tree/removal-4c1.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&copy, n + 1) == in[n]);
-		in[16] = 1;
-		/* Already done. */
-		order3_tree_remove(&removal, 15), in[14] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-5b.gv");
-		order3_tree_remove(&removal, 16), in[15] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-5c.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		/* Multi-level. */
-		order3_tree_remove(&removal, 10), in[9] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-6.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		/* In root. */
-		order3_tree_remove(&removal, 18), in[17] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-7.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		order3_tree_remove(&removal, 17), in[16] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-8.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		order3_tree_remove(&removal, 19), in[18] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-9.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		order3_tree_remove(&removal, 20), in[19] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-10.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		order3_tree_remove(&removal, 21), in[20] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-11.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		order3_tree_remove(&removal, 22), in[21] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-12.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		order3_tree_remove(&removal, 11), in[10] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-13.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		order3_tree_remove(&removal, 9), in[8] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-14.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		order3_tree_remove(&removal, 8), in[7] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-15.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		order3_tree_remove(&removal, 7), in[6] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-16.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		order3_tree_remove(&removal, 6), in[5] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-17.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		order3_tree_remove(&removal, 5), in[4] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-18.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		order3_tree_remove(&removal, 4), in[3] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-19.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		/* There are some states that haven't been tested. */
-		if(!order3_tree_clone(&removal, &copy)) goto catch;
-		for(n = 0; n < size; n++) in[n] = 1;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-b-6.gv");
-		in[11] = 0, in[12] = 0, in[13] = 0, in[16] = 0;
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		order3_tree_remove(&removal, 3), in[2] = 0;
-		order3_tree_remove(&removal, 2), in[1] = 0;
-		order3_tree_remove(&removal, 4), in[3] = 0;
-		order3_tree_remove(&removal, 6), in[5] = 0;
-		order3_tree_remove(&removal, 5), in[4] = 0;
-		order3_tree_remove(&removal, 7), in[6] = 0;
-		order3_tree_remove(&removal, 9), in[8] = 0;
-		order3_tree_remove(&removal, 1), in[0] = 0;
-		order3_tree_remove(&removal, 8), in[7] = 0;
-		order3_tree_remove(&removal, 10), in[9] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-b-7.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		order3_tree_remove(&removal, 11), in[10] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-b-8.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		/* Yay. Now to try deleting the rest. */
-		order3_tree_remove(&removal, 21), in[20] = 0;
-		order3_tree_remove(&removal, 20), in[19] = 0;
-		order3_tree_remove(&removal, 22), in[21] = 0;
-		order3_tree_remove(&removal, 19), in[18] = 0;
-		order3_tree_remove(&removal, 18), in[17] = 0;
-		order3_tree_remove(&removal, 16), in[15] = 0;
-		order3_tree_remove(&removal, 24), in[23] = 0;
-		order3_tree_remove(&removal, 23), in[22] = 0;
-		order3_tree_remove(&removal, 25), in[24] = 0;
-		order3_tree_remove(&removal, 15), in[14] = 0;
-		order3_tree_remove(&removal, 26), in[25] = 0;
-		tree_order3_graph_horiz(&removal, "graph/tree/removal-b-9.gv");
-		for(n = 0; n < size; n++)
-			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		assert(removal.root.height == UINT_MAX && removal.root.node);
-		for(n = 0; n < size; n++) assert(!in[n]);
-		{
-			int success = order3_tree_remove(&removal, 0);
-			assert(!success);
-		}
-	}
-
-	{ /* Consecutive. */
-		const size_t size = 4 * order3_order - 1;
-		char fn[64];
-		for(i = 0; i < size; i++) {
-			unsigned x = (unsigned)i + 1;
-			/*printf("__%u) Going to add consecutive %u__\n", (unsigned)i, x);*/
-			switch(order3_tree_try(&consecutive, x)) {
-			case TREE_ERROR: goto catch;
-			case TREE_PRESENT: /*printf("%u already in tree\n", x);*/ break;
-			case TREE_ABSENT: /*printf("%u added\n", x);*/ break;
-			}
-			sprintf(fn, "graph/tree/consecutive-%u.gv", (unsigned)i);
-			tree_order3_graph(&consecutive, fn);
-		}
-		for(i = 0; i < size; i++) {
-			unsigned x = (unsigned)i + 1;
-			/*printf("__%u) Going to remove %u__\n", (unsigned)i, x);*/
-			if(!order3_tree_remove(&consecutive, x)) assert(0);
-			sprintf(fn, "graph/tree/consecutive-rm-%u.gv", (unsigned)x);
-			tree_order3_graph(&consecutive, fn);
-		}
-	}
-
-	goto finally;
-catch:
-	perror("manual_unsigned");
-	assert(0);
-finally:
-	order3_tree_(&between);
-	order3_tree_(&rnd);
-	order3_tree_(&removal);
-	order3_tree_(&even), order3_tree_(&even_clone);
-	order3_tree_(&consecutive);
-	order3_tree_(&copy);
-}
-
-
 /* Has distinguishable keys going to the same key value. This may be useful,
  for example, if one allocates keys. Also has default values. */
 /** @implements <typedef:<PB>action_fn> */
@@ -773,12 +772,12 @@ int main(void) {
 	char_bounds();
 	int_tree_test();
 	order3_tree_test();
+	order3();
 	redblack_tree_test();
 	redblack();
 	pair_tree_test();
 	star_tree_test();
 	/*entry_tree_test();
-	order3();
 	loop_tree_test();
 	loop();
 	typical_tree_test();*/
