@@ -233,11 +233,9 @@ static struct T_(cursor) T_(begin)(struct t_(tree) *const tree) {
 	return cur;
 }
 /** @return Whether the `cur` points to an element. */
-static int T_(exists)(const struct T_(cursor) *const cur)
-	{ return cur && cur->root && cur->root->node
-	&& cur->root->height != UINT_MAX; }
-/** @return Dereference the element pointed to by `cur` that exists. */
-static struct pT_(ref) *T_(look)(struct T_(cursor) *const cur) {
+static int T_(exists)(struct T_(cursor) *const cur) {
+	if(!cur || !cur->root || !cur->root->node || cur->root->height == UINT_MAX)
+		return 0;
 	/* Iterator empty; tree non-empty; point at first. */
 	if(!cur->ref.node) {
 		cur->ref.height = cur->root->height;
@@ -246,6 +244,10 @@ static struct pT_(ref) *T_(look)(struct T_(cursor) *const cur) {
 			cur->ref.height--);
 		cur->ref.idx = 0;
 	}
+	return 1;
+}
+/** @return Dereference the element pointed to by `cur` that exists. */
+static struct pT_(ref) *T_(look)(struct T_(cursor) *const cur) {
 	return &cur->ref;
 }
 /** @return Extract the key from `it` when it points at a valid index. @allow */
@@ -1559,13 +1561,14 @@ static int T_(tree_previous)(struct T_(tree_iterator) *const it)
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	pT_(key) k; pT_(value) v; memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
-
+	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(key)(0);
+	T_(next)(0); T_(previous)(0); T_(less)(0, 0); T_(more)(0, 0);
 	t_(tree)(); t_(tree_)(0); T_(clear)(0); T_(count)(0);
 	T_(contains)(0, k); T_(get_or)(0, k, v);
 	T_(less_or)(0, k, k); T_(more_or)(0, k, k);
 #ifdef TREE_VALUE
-	T_(tree_bulk_assign)(0, k, 0); T_(tree_assign)(0, k, 0);
-	T_(tree_update)(0, k, 0, 0); T_(tree_value)(0);
+	T_(bulk_assign)(0, k, 0); T_(assign)(0, k, 0);
+	T_(update)(0, k, 0, 0); T_(value)(0);
 #else
 	T_(bulk_try)(0, k); T_(try)(0, k); T_(update)(0, k, 0);
 #endif

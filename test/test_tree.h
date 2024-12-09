@@ -226,7 +226,7 @@ static void pT_(test)(void) {
 	/* Idle. */
 	pT_(valid)(0);
 	pT_(valid)(&tree);
-	pT_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-idle.gv");
+	pT_(graph)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-idle.gv");
 	t_(tree_)(&tree), pT_(valid)(&tree);
 	/* Not valid anymore.
 	it = T_(tree_less)(0, test[0].key), assert(!it._.root); */
@@ -279,7 +279,7 @@ static void pT_(test)(void) {
 
 
 		if(!(i & (i + 1)) || i == test_size - 1) {
-			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-bulk-%lu.gv", i + 1);
+			sprintf(fn, "graph/tree/" QUOTE(TREE_NAME) "-bulk-%lu.gv", i + 1);
 			pT_(graph)(&tree, fn);
 		}
 	}
@@ -287,7 +287,7 @@ static void pT_(test)(void) {
 	T_(bulk_finish)(&tree);
 	printf("Finalize again. This should be idempotent.\n");
 	T_(bulk_finish)(&tree);
-	pT_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-bulk-finish.gv");
+	pT_(graph)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-bulk-finish.gv");
 	printf("Tree: %s.\n", T_(to_string)(&tree));
 
 	/* Iteration; checksum. */
@@ -399,7 +399,7 @@ static void pT_(test)(void) {
 			/*printf("<%s> added\n", z);*/ break;
 		}
 		if(!(i & (i + 1)) || i == test_size - 1) {
-			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-add-%lu.gv", i + 1);
+			sprintf(fn, "graph/tree/" QUOTE(TREE_NAME) "-add-%lu.gv", i + 1);
 			pT_(graph)(&tree, fn);
 		}
 	}
@@ -407,16 +407,14 @@ static void pT_(test)(void) {
 		(unsigned long)n_unique, (unsigned long)test_size);
 
 	/* Delete all. Removal invalidates iterator. */
-	for(cur = T_(begin)(&tree), i = 0; T_(exists)(&cur); T_(next)(&cur)) {
-		/* fixme? what is this even supposed to do?
-		assert(T_(has_element)(&cur));*/
+	for(cur = T_(begin)(&tree), i = 0; T_(exists)(&cur); ) {
 		/*char z[12];*/
-		k = T_(key)(&cur); /*
-#ifdef TREE_VALUE
+		k = T_(key)(&cur);
+/*#ifdef TREE_VALUE
 		v = T_(tree_value)(&it);
-		T_(to_string)(k, v, &z);
+		t_(to_string)(k, v, &z);
 #else
-		T_(to_string)(k, &z);
+		t_(to_string)(k, &z);
 #endif
 		printf("Targeting <%s> for removal.\n", z);*/
 		if(i) { const int cmp = t_(less)(k, k_prev); assert(cmp > 0); }
@@ -427,12 +425,12 @@ static void pT_(test)(void) {
 		assert(!T_(contains)(&tree, k));
 		cur = T_(more)(&tree, k);
 		/*printf("Iterator now %s:h%u:i%u.\n",
-			orcify(it._.ref.node), it._.ref.height, it._.ref.idx);*/
+			orcify(cur.ref.node), cur.ref.height, cur.ref.idx);*/
 		if(!(i & (i + 1)) || i == test_size - 1) {
-			sprintf(fn, "graph/" QUOTE(TREE_NAME) "-rm-%lu.gv", i);
+			sprintf(fn, "graph/tree/" QUOTE(TREE_NAME) "-rm-%lu.gv", i);
 			pT_(graph)(&tree, fn);
 		}
-	}/* while(T_(tree_has_element)(&cur));*/
+	}
 	assert(i == n_unique);
 
 	/* Add all back. */
@@ -463,7 +461,7 @@ static void pT_(test)(void) {
 #endif
 	}
 	printf("Re-add tree: %lu\n", (unsigned long)n_unique2);
-	pT_(graph)(&tree, "graph/" QUOTE(TREE_NAME) "-re-add.gv");
+	pT_(graph)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-re-add.gv");
 	assert(n_unique == n_unique2);
 	i = T_(count)(&tree);
 	printf("tree count: %lu; add count: %lu\n",
