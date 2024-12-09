@@ -66,7 +66,7 @@
 #	error Unexpected.
 #endif
 
-#ifdef ARRAY_TRAIT
+#ifdef TREE_TRAIT
 #	define BOX_TRAIT TREE_TRAIT /* Ifdef in <box.h>. */
 #endif
 #define BOX_START
@@ -283,6 +283,7 @@ static void T_(next)(struct T_(cursor) *const cur) {
 			a0 = 0;
 			while(a0 < a1) {
 				const unsigned m = (a0 + a1) / 2;
+				/* <t>less must be declared. */
 				if(t_(less)(x, tree.node->key[m]) > 0) a0 = m + 1;
 				else a1 = m;
 			}
@@ -1564,7 +1565,7 @@ static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	pT_(key) k; pT_(value) v; memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
 	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(key)(0);
-	T_(next)(0); T_(previous)(0); T_(less)(0, 0); T_(more)(0, 0);
+	T_(next)(0); T_(previous)(0); T_(less)(0, k); T_(more)(0, k);
 	t_(tree)(); t_(tree_)(0); T_(clear)(0); T_(count)(0);
 	T_(contains)(0, k); T_(get_or)(0, k, v);
 	T_(less_or)(0, k, k); T_(more_or)(0, k, k);
@@ -1647,6 +1648,9 @@ static void pTR_(unused_default_coda)(void) { pTR_(unused_default)(); }
 #	undef TREE_NAME
 #	undef TREE_KEY
 #	undef TREE_ORDER
+#	ifdef TREE_LESS
+#		undef TREE_LESS
+#	endif
 #	ifdef TREE_VALUE
 #		undef TREE_VALUE
 #	endif

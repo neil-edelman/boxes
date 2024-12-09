@@ -619,7 +619,6 @@ typedef const char *const_str;
 #include "../src/tree.h"
 
 
-#if 0
 /* §6.7.2.1/P11 implementation defined; hopefully it will work. This is so
  convenient, but completely unspecified; the other option is to manually
  mask-off the bits for every value, and use a union name, which is painful. */
@@ -628,7 +627,7 @@ union date32 {
 	uint32_t u32;
 	struct { unsigned day : 5, month : 4, year : 23; } d; /* Usually works. */
 };
-static int entry_compare(const union date32 a, const union date32 b)
+static int entry_less(const union date32 a, const union date32 b)
 	{ return a.u32 > b.u32; }
 static void entry_filler(union date32 *const k, int *const v) {
 	k->u32 = (uint32_t)rand();
@@ -653,12 +652,13 @@ static void entry_to_string(const union date32 k, const int *const v,
 #include "../src/tree.h"
 
 
+#if 0
 /* Has distinguishable keys going to the same key value. This may be useful,
  for example, if one allocates keys. Also has default values. */
 /** @implements <typedef:<PB>action_fn> */
 static void loop_filler(unsigned *const x)
 	{ *x = (unsigned)rand() / (RAND_MAX / 100000 + 1); }
-static int loop_compare(const unsigned a, const unsigned b)
+static int loop_less(const unsigned a, const unsigned b)
 	{ return (a % 100) > (b % 100); }
 static void loop_to_string(const unsigned x, char (*const z)[12])
 	{ int_to_string(x, z); }
@@ -683,11 +683,11 @@ static void loop(void) {
 	status = loop_tree_try(&tree, 3), assert(status == TREE_ABSENT);
 	status = loop_tree_try(&tree, 101), assert(status == TREE_PRESENT);
 	ret = loop_tree_get_or(&tree, 1, 0), assert(ret == 1);
-	tree_loop_graph_horiz(&tree, "graph/tree/loop1.gv");
+	private_loop_tree_graph_horiz(&tree, "graph/tree/loop1.gv");
 	status = loop_tree_update(&tree, 101, &eject);
 	assert(status == TREE_PRESENT && eject == 1);
 	ret = loop_tree_get_or(&tree, 1, 0), assert(ret == 101); /* ~= 1 */
-	tree_loop_graph_horiz(&tree, "graph/tree/loop2.gv");
+	private_loop_tree_graph_horiz(&tree, "graph/tree/loop2.gv");
 	ret = loop_tree_get_or(&tree, 3, 0), assert(ret == 3);
 	ret = loop_tree_get_or(&tree, 4, 0), assert(ret == 0);
 	ret = loop_tree_get(&tree, 3), assert(ret == 3);
@@ -734,7 +734,7 @@ static void loop(void) {
 	if(!loop_tree_try(&tree, 20)) { assert(0); return; }
 	if(!loop_tree_try(&tree, 21)) { assert(0); return; }
 	if(!loop_tree_try(&tree, 22)) { assert(0); return; }
-	tree_loop_graph_horiz(&tree, "graph/tree/loop3.gv"); /* For title. */
+	private_loop_tree_graph_horiz(&tree, "graph/tree/loop3.gv"); /* For title. */
 	loop_tree_(&tree);
 }
 
@@ -777,8 +777,8 @@ int main(void) {
 	redblack();
 	pair_tree_test();
 	star_tree_test();
-	/*entry_tree_test();
-	loop_tree_test();
+	entry_tree_test();
+	/*loop_tree_test();
 	loop();
 	typical_tree_test();*/
 	header_tree_test();
