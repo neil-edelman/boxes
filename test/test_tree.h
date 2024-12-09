@@ -475,7 +475,6 @@ static void pT_(test)(void) {
 		assert(ret);
 		n_unique--;
 		cur = T_(more)(&tree, key); /* Move past the erased keys. */
-		/*if(!T_(has_element)(&cur)) break; wtf is this? */
 	}
 	i = T_(count)(&tree);
 	printf("remove every 2nd: %lu\n", (unsigned long)i);
