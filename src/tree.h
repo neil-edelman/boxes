@@ -53,16 +53,26 @@
  @std C89 */
 
 #if !defined(TREE_NAME)
-#error Name undefined.
+#	error Name undefined.
 #endif
 #if !defined(BOX_ENTRY1) && (defined(TREE_TRAIT) ^ defined(BOX_MAJOR))
+#	ifdef TREE_TRAIT
+#		error Both.
+#	else
+#		error NEITHER.
+#	endif
+#	ifdef BOX_MAJOR
+#		error Both.
+#	else
+#		error NEITHER.
+#	endif
 #	error TREE_TRAIT name must come after TREE_EXPECT_TRAIT.
 #endif
 #if defined(TREE_TEST) && (!defined(TREE_TRAIT) && !defined(TREE_TO_STRING) \
 	|| defined(TREE_TRAIT) && !defined(TREE_HAS_TO_STRING))
 #error Test requires to string.
 #endif
-#if defined(BOX_TRAIT) && !defined(ARRAY_TRAIT)
+#if defined(BOX_TRAIT) && !defined(TREE_TRAIT)
 #	error Unexpected.
 #endif
 
@@ -1634,8 +1644,8 @@ static void pTR_(unused_default_coda)(void) { pTR_(unused_default)(); }
 #	endif /* default trait --> */
 
 #endif /* Produce code. */
-#ifdef TABLE_TRAIT
-#	undef TABLE_TRAIT
+#ifdef TREE_TRAIT
+#	undef TREE_TRAIT
 #	undef BOX_TRAIT
 #endif
 
@@ -1648,11 +1658,11 @@ static void pTR_(unused_default_coda)(void) { pTR_(unused_default)(); }
 #	undef TREE_NAME
 #	undef TREE_KEY
 #	undef TREE_ORDER
-#	ifdef TREE_LESS
-#		undef TREE_LESS
-#	endif
 #	ifdef TREE_VALUE
 #		undef TREE_VALUE
+#	endif
+#	ifdef TREE_LESS
+#		undef TREE_LESS
 #	endif
 #	ifdef TREE_HAS_TO_STRING
 #		undef TREE_HAS_TO_STRING
@@ -1660,8 +1670,8 @@ static void pTR_(unused_default_coda)(void) { pTR_(unused_default)(); }
 #	ifdef TREE_TEST
 #		undef TREE_TEST
 #	endif
-#	ifdef TREE_DECALRE_ONLY
-#		undef TREE_DECALRE_ONLY
+#	ifdef TREE_DECLARE_ONLY
+#		undef TREE_DECLARE_ONLY
 #	endif
 #endif
 #define BOX_END

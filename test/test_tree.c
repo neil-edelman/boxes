@@ -652,7 +652,6 @@ static void entry_to_string(const union date32 k, const int *const v,
 #include "../src/tree.h"
 
 
-#if 0
 /* Has distinguishable keys going to the same key value. This may be useful,
  for example, if one allocates keys. Also has default values. */
 /** @implements <typedef:<PB>action_fn> */
@@ -739,6 +738,7 @@ static void loop(void) {
 }
 
 
+#if 0
 struct typical_value { int a, b; };
 static void typical_filler(unsigned *const k, struct typical_value **v)
 	{ int_filler(k); *v = 0; }
@@ -778,8 +778,8 @@ int main(void) {
 	pair_tree_test();
 	star_tree_test();
 	entry_tree_test();
-	/*loop_tree_test();
-	loop();
+	loop_tree_test();
+	/*loop();
 	typical_tree_test();*/
 	header_tree_test();
 	return EXIT_SUCCESS;

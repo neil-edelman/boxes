@@ -105,8 +105,6 @@ static const char *const table_result_str[] = { TABLE_RESULT };
 #	define BOX_MAJOR table
 #	define BOX_MINOR TABLE_NAME
 
-//#define BOX_TYPE struct T_(table)
-//#define BOX_CONTENT struct pT_(bucket)
 #	ifndef TABLE_UINT
 #		define TABLE_UINT size_t
 #	endif
