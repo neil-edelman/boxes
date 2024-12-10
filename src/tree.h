@@ -56,16 +56,6 @@
 #	error Name undefined.
 #endif
 #if !defined(BOX_ENTRY1) && (defined(TREE_TRAIT) ^ defined(BOX_MAJOR))
-#	ifdef TREE_TRAIT
-#		error Both.
-#	else
-#		error NEITHER.
-#	endif
-#	ifdef BOX_MAJOR
-#		error Both.
-#	else
-#		error NEITHER.
-#	endif
 #	error TREE_TRAIT name must come after TREE_EXPECT_TRAIT.
 #endif
 #if defined(TREE_TEST) && (!defined(TREE_TRAIT) && !defined(TREE_TO_STRING) \
@@ -1553,24 +1543,6 @@ finally:
 	return success;
 }
 
-/* fixme: what? */
-#		if 0
-/** @return Whether valid `it` is pointing to an element. This is the same as
- the return value from <fn:<B>tree_next> and <fn:<B>tree_previous> but intended
- for <fn:<B>tree_less> and <fn:<B>tree_more> because there's no check for
- validity. @allow */
-static int T_(has_element)(const struct T_(cursor) *const it) {
-	return assert(it), it->root && it->ref.node
-		&& it->ref.idx <= it->ref.node->size;
-}
-/** @return Whether `it` still points at a valid index. @allow */
-static int T_(next)(struct T_(cursor) *const it)
-	{ return assert(it), pT_(next)(&it->_); }
-/** @return Whether `it` still points at a valid index. @allow */
-static int T_(tree_previous)(struct T_(tree_iterator) *const it)
-	{ return assert(it), pT_(previous)(&it->_); }
-#		endif
-
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	pT_(key) k; pT_(value) v; memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
@@ -1579,12 +1551,12 @@ static void pT_(unused_base)(void) {
 	t_(tree)(); t_(tree_)(0); T_(clear)(0); T_(count)(0);
 	T_(contains)(0, k); T_(get_or)(0, k, v);
 	T_(less_or)(0, k, k); T_(more_or)(0, k, k);
-#ifdef TREE_VALUE
+#		ifdef TREE_VALUE
 	T_(bulk_assign)(0, k, 0); T_(assign)(0, k, 0);
 	T_(update)(0, k, 0, 0); T_(value)(0);
-#else
+#		else
 	T_(bulk_try)(0, k); T_(try)(0, k); T_(update)(0, k, 0);
-#endif
+#		endif
 	T_(bulk_finish)(0); T_(remove)(0, k); T_(clone)(0, 0);
 	pT_(unused_base_coda)();
 }

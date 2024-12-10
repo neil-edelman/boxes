@@ -654,7 +654,7 @@ static void entry_to_string(const union date32 k, const int *const v,
 
 /* Has distinguishable keys going to the same key value. This may be useful,
  for example, if one allocates keys. Also has default values. */
-/** @implements <typedef:<PB>action_fn> */
+/** @implements <typedef:<pT>action_fn> */
 static void loop_filler(unsigned *const x)
 	{ *x = (unsigned)rand() / (RAND_MAX / 100000 + 1); }
 static int loop_less(const unsigned a, const unsigned b)
@@ -676,6 +676,7 @@ static void loop_to_string(const unsigned x, char (*const z)[12])
 static void loop(void) {
 	struct loop_tree tree = loop_tree();
 	enum tree_result status;
+	struct loop_tree_cursor cur;
 	unsigned ret, eject;
 	status = loop_tree_try(&tree, 1), assert(status == TREE_ABSENT);
 	status = loop_tree_try(&tree, 2), assert(status == TREE_ABSENT);
@@ -694,22 +695,31 @@ static void loop(void) {
 	ret = loop_tree_meaning_get(&tree, 3), assert(ret == 3);
 	ret = loop_tree_meaning_get(&tree, 0), assert(ret == 42);
 
-#if 0 /*fixme*/
 	ret = loop_tree_more_or(&tree, 3, 0), assert(ret == 3);
 	ret = loop_tree_more_or(&tree, 4, 0), assert(ret == 0);
-	ret = loop_tree_right(&tree, 0), assert(ret == 101);
-	ret = loop_tree_right(&tree, 4), assert(ret == 0);
-	ret = loop_tree_meaning_right(&tree, 0), assert(ret == 101);
-	ret = loop_tree_meaning_right(&tree, 4), assert(ret == 42); /* No glb. */
+	/* fixme: more_or returns a value but more returns a cursor? lol. That is
+	 terrible. There are so many cursors, values, and ranges, I don't think
+	 it's feasible to have the all? I know why C++ it is transparent. what we
+	 need is a range object that could be applied to the tree? */
+	cur = loop_tree_more(&tree, 0),
+		assert(loop_tree_exists(&cur) && loop_tree_key(&cur) == 101);
+	cur = loop_tree_more(&tree, 4), assert(!loop_tree_exists(&cur));
+	/* This is no longer a function. */
+	/*ret = loop_tree_meaning_more(&tree, 0),
+		assert(loop_tree_exists(&cur) && loop_tree_key(&cur) == 101);
+	ret = loop_tree_meaning_right(&tree, 4), assert(ret == 42); *//* No glb. */
+
+	ret = loop_tree_meaning_get(&tree, 0), assert(ret == 42);
+	ret = loop_tree_meaning_get(&tree, 1), assert(ret == 101);
 
 	ret = loop_tree_less_or(&tree, 3, 0), assert(ret == 3);
 	ret = loop_tree_less_or(&tree, 4, 0), assert(ret == 3);
-	ret = loop_tree_left(&tree, 0), assert(ret == 0);
-	ret = loop_tree_left(&tree, 4), assert(ret == 3);
-	ret = loop_tree_meaning_left(&tree, 0), assert(ret == 42); /* No lub. */
-	ret = loop_tree_meaning_left(&tree, 4), assert(ret == 3);
-#endif
-	
+	cur = loop_tree_less(&tree, 0), assert(!loop_tree_exists(&cur));
+	cur = loop_tree_less(&tree, 4),
+		assert(loop_tree_exists(&cur) && loop_tree_key(&cur) == 3);
+	/*ret = loop_tree_meaning_left(&tree, 0), assert(ret == 42);*/ /* No lub. */
+	/*ret = loop_tree_meaning_left(&tree, 4), assert(ret == 3);*/
+
 	loop_tree_(&tree);
 	if(!loop_tree_try(&tree, 8)) { assert(0); return; }
 	if(!loop_tree_try(&tree, 4)) { assert(0); return; }
@@ -779,8 +789,8 @@ int main(void) {
 	star_tree_test();
 	entry_tree_test();
 	loop_tree_test();
-	/*loop();
-	typical_tree_test();*/
+	loop();
+	/*typical_tree_test();*/
 	header_tree_test();
 	return EXIT_SUCCESS;
 }
