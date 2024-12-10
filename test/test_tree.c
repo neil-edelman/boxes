@@ -748,7 +748,6 @@ static void loop(void) {
 }
 
 
-#if 0
 struct typical_value { int a, b; };
 static void typical_filler(unsigned *const k, struct typical_value **v)
 	{ int_filler(k); *v = 0; }
@@ -760,7 +759,6 @@ static void typical_to_string(const unsigned k,
 #define TREE_TO_STRING
 #define TREE_TEST
 #include "../src/tree.h"
-#endif
 
 
 /* Test inclusion in a header. */
@@ -790,7 +788,7 @@ int main(void) {
 	entry_tree_test();
 	loop_tree_test();
 	loop();
-	/*typical_tree_test();*/
+	typical_tree_test();
 	header_tree_test();
 	return EXIT_SUCCESS;
 }
