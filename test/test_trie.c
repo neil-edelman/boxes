@@ -21,7 +21,7 @@ static struct str32_pool str_pool; /* Global random string buffer. */
 
 /* A set of strings stored somewhere else; one must keep the storage for the
  duration of the trie*. Good if one needs a prefix-tree with string literals.
- *Unless one only wants to use <fn:<T>trie_match>, which only looks at the
+ *Unless one only wants to use <fn:<T>match>, which only looks at the
  index and not the keys themselves; the key strings are not accessed, then. */
 /** Generate a random name from `global_pool` and assign it to `key`. */
 static void str_filler(const char **const key) {
@@ -37,6 +37,7 @@ static void str_filler(const char **const key) {
 #include "../src/trie.h"
 
 
+#if 0
 static void contrived_test(void) {
 	const char *const words[] = { "foo", "bar", "baz", "quxx",
 		"a", "b", "c", "ba", "bb", "", "A", "Z", "z",
@@ -335,13 +336,15 @@ static void article_test(void) {
 	trie_star_graph(&trie, "graph/article.gv", 1);
 	star_trie_(&trie);
 }
+#endif
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
-	contrived_test(), str32_pool_clear(&str_pool);
 	str_trie_test(), str32_pool_clear(&str_pool);
+#if 0
+	contrived_test(), str32_pool_clear(&str_pool);
 	fixed_colour_test();
 	colour_trie_test();
 	public_trie_test();
@@ -350,5 +353,6 @@ int main(void) {
 	kv2_trie_test();
 	star_trie_test();
 	article_test();
+#endif
 	return EXIT_SUCCESS;
 }

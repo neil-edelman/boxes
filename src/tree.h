@@ -48,7 +48,7 @@
  @param[TREE_DECLARE_ONLY]
  For headers in different compilation units.
 
- @fixme merge, difference
+ @fixme merge, difference, trie
 
  @std C89 */
 
@@ -122,9 +122,6 @@ struct tree_node_count { size_t branches, leaves; };
 
 #	define BOX_MINOR TREE_NAME
 #	define BOX_MAJOR tree
-
-/*#define BOX_TYPE struct T_(tree)
-#define BOX_CONTENT struct pT_(ref)*/
 
 /** Ordered type used by <typedef:<pT>compare_fn>; defaults to `unsigned`. */
 typedef TREE_KEY pT_(key);
@@ -1565,7 +1562,7 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif /* body --> */
 #endif /* base code --> */
 
-#ifndef TREE_DECARE_ONLY /* Produce code. */
+#ifndef TREE_DECLARE_ONLY /* Produce code. */
 
 #	if defined(TREE_TO_STRING)
 #		undef TREE_TO_STRING

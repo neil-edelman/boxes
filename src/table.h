@@ -117,7 +117,8 @@ typedef TABLE_UINT pT_(uint);
 /** Valid tag type defined by `TABLE_KEY` used for keys. If `TABLE_UNHASH` is
  not defined, a copy of this value will be stored in the internal buckets. */
 typedef TABLE_KEY pT_(key);
-//typedef const TABLE_KEY pT_(key_c); /* Works 90%? */
+/*I don't think I need this? I said that last time.
+ typedef const TABLE_KEY pT_(key_c);*/ /* Works 90%? */
 
 #	if 0 /* <!-- documentation */
 /** A map from <typedef:<pT>key_c> onto <typedef:<pT>uint>, called `<t>hash`,
