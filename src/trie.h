@@ -178,9 +178,9 @@ typedef struct t_(trie) pT_(box);
 struct pT_(ref) { struct pT_(tree) *tree; unsigned lf; };
 
 /* A range of words. */
-struct T_(cursor) {
+struct T_(cursor) { /* fixme: This is very wasteful? at least re-arrange? */
 	struct pT_(tree) *root;
-	struct pT_(ref) cur, end;
+	struct pT_(ref) start, end;
 };
 
 #	ifndef TRIE_DECLARE_ONLY /* <!-- body */
@@ -191,6 +191,7 @@ struct T_(cursor) {
 static const char *t_(string)(const char *const key) { return key; }
 #		endif
 
+/* fixme: This is terrible! */
 /** @return Given `ref`, get the remit, which is either a pointer or the entry
  itself. */
 static pT_(remit) pT_(ref_to_remit)(const struct pT_(ref) *const ref) {
@@ -223,7 +224,7 @@ static void pT_(higher_entry)(struct pT_(ref) *ref) {
 		ref->tree = ref->tree->leaf[ref->lf].as_link,
 		ref->lf = ref->tree->bsize;
 }
-/** This is a convince function.
+/** This is a convince function for <fn:<pT>match_prefix>.
  @return The leftmost entry string at `lf` of `tree`. */
 static const char *pT_(sample)(struct pT_(tree) *const tree,
 	const unsigned lf) {
@@ -232,8 +233,8 @@ static const char *pT_(sample)(struct pT_(tree) *const tree,
 	return pT_(ref_to_string)(&ref);
 }
 
-/** Looks at only the index of `trie` (non-null) for potential `prefix`
- matches, and stores them in `it`. */
+/** @return Looks at only the index of `trie` (non-null) for potential `prefix`
+ matches. */
 static struct T_(cursor) pT_(match_prefix)
 	(const struct t_(trie) *const trie, const char *const prefix) {
 	struct T_(cursor) cur;
@@ -262,10 +263,10 @@ static struct T_(cursor) pT_(match_prefix)
 finally:
 		assert(br0 <= br1 && lf - br0 + br1 <= tree->bsize);
 		cur.root = trie->root;
-		cur.cur.tree = cur.end.tree = tree;
-		/* Such that <fn:<PT>next> is the first and end is greater than. */
-		cur.cur.lf = lf, pT_(lower_entry)(&cur.cur), cur.cur.lf--;
-		cur.end.lf = lf + br1 - br0, pT_(higher_entry)(&cur.end), cur.end.lf++;
+		cur.start.tree = cur.end.tree = tree;
+		/* Such that <fn:<T>next> is the first and end is greater than. */
+		cur.start.lf = lf, pT_(lower_entry)(&cur.start)/*, cur.start.lf--*/;
+		cur.end.lf = lf + br1 - br0, pT_(higher_entry)(&cur.end)/*, cur.end.lf++*/;
 		break;
 	}
 	return cur;
@@ -273,28 +274,31 @@ finally:
 /** @return The first element of a non-null `trie`. */
 static struct T_(cursor) T_(begin)(const struct t_(trie) *const trie)
 	{ return pT_(match_prefix)(trie, ""); }
+/** @return Is `cur` valid. */
+static int T_(exists)(const struct T_(cursor) *const cur)
+	{ return cur && cur->root; }
 /** @return Extracts the reference from a valid, non-null `cur`. */
 static struct pT_(ref) T_(look)(const struct T_(cursor) *const cur)
-	{ return cur->cur; }
+	{ return cur->start; }
 /** Advancing `cur` to the next element.
  @order \O(\log |`trie`|) @allow */
 static void T_(next)(struct T_(cursor) *const cur) {
 	assert(cur);
 	if(!cur->root || cur->root->bsize == USHRT_MAX)
 		{ cur->root = 0; return; } /* Empty. */
-	assert(cur->cur.tree && cur->end.tree
-		&& cur->end.lf < cur->end.tree->bsize + 2 /* +1 plus [) */);
+	assert(cur->start.tree && cur->end.tree
+		&& cur->end.lf < cur->end.tree->bsize + 1);
 	/* Stop when getting to the end of the range. */
-	if(cur->cur.tree == cur->end.tree && cur->cur.lf + 1 >= cur->end.lf)
+	if(cur->start.tree == cur->end.tree && cur->start.lf >= cur->end.lf)
 		{ cur->root = 0; return; }
-	if(cur->cur.lf + 1 <= cur->cur.tree->bsize) { /* It's in the same tree. */
-		cur->cur.lf++;
+	if(cur->start.lf + 1 <= cur->start.tree->bsize) {
+		cur->start.lf++; /* It's in the same tree. */
 	} else { /* Going to go off the end. */
-		const char *const sample = pT_(sample)(cur->cur.tree, cur->cur.lf);
-		const struct pT_(tree) *old = cur->cur.tree;
+		const char *const sample = pT_(sample)(cur->start.tree, cur->start.lf);
+		const struct pT_(tree) *old = cur->start.tree;
 		struct pT_(tree) *next = cur->root;
 		size_t bit = 0;
-		cur->cur.tree = 0;
+		cur->start.tree = 0;
 		while(next != old) {
 			unsigned br0 = 0, br1 = next->bsize, lf = 0;
 			while(br0 < br1) {
@@ -306,16 +310,15 @@ static void T_(next)(struct T_(cursor) *const cur) {
 					br0 += branch->left + 1, lf += branch->left + 1;
 				bit++;
 			}
-			if(lf < next->bsize) cur->cur.tree = next, cur->cur.lf = lf + 1;
+			if(lf < next->bsize) cur->start.tree = next, cur->start.lf = lf + 1;
 			assert(trie_bmp_test(&next->bmp, lf)); /* The old. */
 			next = next->leaf[lf].as_link;
 		}
-		/* End of iteration. Should not get here because iteration will stop
-		 one before the end. */
-		if(!cur->cur.tree)
+		/* End of iteration. Should not get here—all ranged iterators. */
+		if(!cur->start.tree)
 			{ cur->root = 0; return; }
 	}
-	pT_(lower_entry)(&cur->cur);
+	pT_(lower_entry)(&cur->start);
 }
 /** @return A set to strings that start with `prefix` in `trie`.
  It is valid until a topological change to `trie`. Calling <fn:<T>next> will
@@ -329,9 +332,9 @@ static struct T_(cursor) T_(prefix)(struct t_(trie) *const trie,
 	cur = pT_(match_prefix)(trie, prefix);
 	/* Make sure actually a prefix. */
 	if(cur.root) {
-		struct pT_(ref) next = cur.cur;
+		struct pT_(ref) next = cur.start;
 		next.lf++;
-		assert(cur.cur.tree && cur.end.tree);
+		assert(cur.start.tree && cur.end.tree);
 		if(next.tree == cur.end.tree && next.lf >= cur.end.lf /* Empty. */
 			|| !trie_is_prefix(prefix, pT_(ref_to_string)(&next)))
 			cur.root = 0;
@@ -341,7 +344,7 @@ static struct T_(cursor) T_(prefix)(struct t_(trie) *const trie,
 
 /** @return The entry at a valid, non-null `cur`. @allow */
 static pT_(remit) T_(entry)(const struct T_(cursor) *const cur)
-	{ return pT_(ref_to_remit)(&cur->cur); }
+	{ return pT_(ref_to_remit)(&cur->start); }
 
 /** Destroys `tree`'s children and sets invalid state.
  @order \O(|`tree`|) both time and space. */
