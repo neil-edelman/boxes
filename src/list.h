@@ -308,6 +308,12 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #	if defined(LIST_TO_STRING)
 #		undef LIST_TO_STRING
+/** Type of `LIST_TO_STRING` needed function `<tr>to_string`. Responsible for
+ turning the read-only argument into a 12-max-`char` output string. */
+typedef void (*pTR_(to_string_fn))(const struct t_(listlink) *, char (*)[12]);
+/** Thunk. One must implement `<tr>to_string`. */
+static void pTR_(to_string)(const struct T_(cursor) *const cur,
+	char (*const a)[12]) { tr_(to_string)(cur->link, a); }
 #		include "to_string.h" /** \include */
 #		ifndef LIST_TRAIT
 #			define LIST_HAS_TO_STRING /* Warning about tests. */

@@ -63,14 +63,6 @@ static unsigned to_string_buffer_i;
 #define TO_STRING_RIGHT ')'
 #endif
 
-#if 0 /* <!-- documentation. */
-/** <src/to_string.h>: responsible for turning the read-only argument into a
- 12-`char` null-terminated output string, passed as a pointer in the last
- argument. This function can have 2 or 3 arguments, where `<PSTR>element` might
- be a map with a key-value pair.  */
-typedef void (*pTR_(to_string_fn))(const pT_(type) *, char (*)[12]);
-#endif /* documentation --> */
-
 /** <src/to_string.h>: print the contents of `box` in a static string buffer of
  256 bytes, with limitations of only printing 4 things in a single sequence
  point. @return Address of the static buffer. @order \Theta(1) @allow */
@@ -91,8 +83,7 @@ static const char *TR_(to_string)(const pT_(box) *const box) {
 	*b++ = left;
 	for(slybox.readonly = box, cur = T_(begin)(slybox.promise);
 		T_(exists)(&cur); T_(next)(&cur)) {
-		/* "Discards qualifiers in nested pointer" sometimes. Cast (back). */
-		tr_(to_string)((const void *)T_(look)(&cur), (char (*)[12])b);
+		pTR_(to_string)(&cur, (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
 		is_sep = 1, *b++ = comma, *b++ = space;

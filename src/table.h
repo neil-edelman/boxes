@@ -791,21 +791,28 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #	if defined(TABLE_TO_STRING)
 #		undef TABLE_TO_STRING
-#		define TO_STRING_LEFT '{'
-#		define TO_STRING_RIGHT '}'
-static void pTR_(to_string)(const struct pT_(bucket) *const b,
+#		ifdef TABLE_VALUE
+/** Type of `TABLE_TO_STRING` needed function `<tr>to_string`. Responsible for
+ turning the read-only argument into a 12-max-`char` output string. `<pT>value`
+ is omitted when it's a set. */
+typedef void (*pTR_(to_string_fn))(const pT_(key), const pT_(value) *,
+	char (*)[12]);
+#		else
+typedef void (*pTR_(to_string_fn))(const pT_(key), char (*)[12]);
+#		endif
+/** Thunk. One must implement `<tr>to_string`. */
+static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12]) {
+	const struct pT_(bucket) *const b = cur->table->buckets + cur->i;
 #		ifdef TABLE_VALUE
 	tr_(to_string)(pT_(bucket_key)(b), pT_(bucket_value)(b), a);
 #		else
 	tr_(to_string)(pT_(bucket_key)(b), a);
 #		endif
 }
-#		define BOX_THUNK
-#		include "box.h"
+#		define TO_STRING_LEFT '{'
+#		define TO_STRING_RIGHT '}'
 #		include "to_string.h" /** \include */
-#		define BOX_UNTHUNK
-#		include "box.h"
 #		ifndef TABLE_TRAIT
 #			define TABLE_HAS_TO_STRING /* Warning about tests. */
 #		endif

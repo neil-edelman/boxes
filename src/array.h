@@ -85,7 +85,6 @@ typedef ARRAY_TYPE pT_(type);
 struct t_(array) { size_t size, capacity; pT_(type) *data; };
 typedef struct t_(array) pT_(box);
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
-
 struct T_(cursor) { struct t_(array) *a; size_t i; };
 
 /* fixme: a wrapper is a terrible way to make functions accessible; something
@@ -306,6 +305,13 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #	if defined(ARRAY_TO_STRING)
 #		undef ARRAY_TO_STRING
+/** Type of `ARRAY_TO_STRING` needed function `<tr>to_string`. Responsible for
+ turning the read-only argument into a 12-max-`char` output string. */
+typedef void (*pTR_(to_string_fn))(const pT_(type) *, char (*)[12]);
+/** Thunk. One must implement `<tr>to_string`. */
+static void pTR_(to_string)(const struct T_(cursor) *const cur,
+	char (*const a)[12])
+	{ tr_(to_string)((const void *)&cur->a->data[cur->i], a); }
 #		include "to_string.h" /** \include */
 #		ifndef ARRAY_TRAIT
 #			define ARRAY_HAS_TO_STRING /* Warning about tests. */

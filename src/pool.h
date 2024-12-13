@@ -323,9 +323,13 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #	ifdef POOL_TO_STRING /* <!-- string */
 #		undef POOL_TO_STRING
-/** Thunk `p` -> `a`. */
-/*static void pT_(to_string)(const pT_(type) *p, char (*const a)[12])
-	{ T_(to_string)((const void *)p, a); }*/
+/** Type of `POOL_TO_STRING` needed function `<tr>to_string`. Responsible for
+ turning the read-only argument into a 12-max-`char` output string. */
+typedef void (*pTR_(to_string_fn))(const pT_(type) *, char (*)[12]);
+/** Thunk. One must implement `<tr>to_string`. */
+static void pTR_(to_string)(const struct T_(cursor) *const cur,
+	char (*const a)[12])
+	{ tr_(to_string)(&cur->slot0->slab[cur->i], a); }
 #		define TO_STRING_LEFT '['
 #		define TO_STRING_RIGHT ']'
 #		include "to_string.h"

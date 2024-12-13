@@ -1,8 +1,7 @@
 /* Multiplex shared code. Pre-processor commands can't be a part of a macro. */
 #if defined(BOX_NONE) + defined(BOX_ALL) \
 	+ defined(BOX_START) + defined(BOX_END) \
-	+ defined(BOX_NAME_MISSING) + defined(BOX_NAME_PRESENT) \
-	+ defined(BOX_THUNK) + defined(BOX_UNTHUNK) != 1
+	+ defined(BOX_NAME_MISSING) + defined(BOX_NAME_PRESENT) != 1
 #	error Request one.
 #endif
 
@@ -107,21 +106,5 @@
 #		endif
 #		define BOX_NONE
 #		include "box.h"
-#	endif
-#endif
-
-#ifdef BOX_THUNK
-#	undef BOX_THUNK
-#	undef tr_
-#	define tr_ pTR_
-#endif
-
-#ifdef BOX_UNTHUNK
-#	undef BOX_UNTHUNK
-#	undef tr_
-#	ifdef BOX_TRAIT
-#		define tr_(n) t_(BOX_CAT(BOX_TRAIT, n))
-#	else
-#		define tr_(n) t_(n)
 #	endif
 #endif

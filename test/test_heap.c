@@ -37,12 +37,11 @@ static void npc_to_string(const struct npc *const npc, char (*const a)[12])
 #define POOL_NAME orc
 #define POOL_TYPE struct orc
 #include "../src/pool.h"
-static struct orc_pool orcs; /* Already initialized. */
+static struct orc_pool orcs;
 static void npc_filler(struct npc *const npc) {
 	struct orc *orc = orc_pool_new(&orcs);
 	if(!orc) { assert(0); exit(EXIT_FAILURE); }
 	orcish(orc->name, sizeof orc->name);
-	/* Writing directly into the priority. */
 	npc->health = (unsigned)rand() / (RAND_MAX / 99 + 1);
 	npc->orc = orc;
 }

@@ -1566,20 +1566,22 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #	if defined(TREE_TO_STRING)
 #		undef TREE_TO_STRING
-/** Thunk because `pT_(ref)` should not be visible. */
-static void pTR_(to_string)(const struct pT_(ref) *const r,
+/** Type of `TABLE_TO_STRING` needed function `<tr>to_string`. Responsible for
+ turning the read-only argument into a 12-max-`char` output string. `<pT>value`
+ is omitted when it's a set. */
+typedef void (*pTR_(to_string_fn))(const pT_(key), const pT_(value) *,
+	char (*)[12]);
+/** Thunk. One must implement `<tr>to_string`. */
+static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12]) {
 #		ifdef TREE_VALUE
-	tr_(to_string)(r->node->key[r->idx], r->node->value + r->idx, a);
+	tr_(to_string)(cur->ref.node->key[cur->ref.idx],
+		cur->ref.node->value + cur->ref.idx, a);
 #		else
-	tr_(to_string)(r->node->key[r->idx], a);
+	tr_(to_string)(cur->ref.node->key[cur->ref.idx], a);
 #		endif
 }
-#		define BOX_THUNK
-#		include "box.h"
 #		include "to_string.h" /** \include */
-#		define BOX_UNTHUNK
-#		include "box.h"
 #		ifndef TREE_TRAIT
 #			define TREE_HAS_TO_STRING /* Warning about tests. */
 #		endif

@@ -86,7 +86,6 @@ typedef HEAP_TYPE pT_(priority);
  ![States.](../doc/heap/states.png) */
 struct t_(heap) { struct pT_(priority_array) as_array; };
 typedef struct t_(heap) pT_(box);
-
 struct T_(cursor) { struct pT_(priority_array_cursor) _; };
 
 #	ifndef HEAP_DECLARE_ONLY /* <!-- body */
@@ -291,6 +290,13 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #	if defined(HEAP_TO_STRING)
 #		undef HEAP_TO_STRING
+/** Type of `HEAP_TO_STRING` needed function `<tr>to_string`. Responsible for
+ turning the read-only argument into a 12-max-`char` output string. */
+typedef void (*pTR_(to_string_fn))(const pT_(priority) *, char (*)[12]);
+/** Thunk. One must implement `<tr>to_string`. */
+static void pTR_(to_string)(const struct T_(cursor) *const cur,
+	char (*const a)[12])
+	{ tr_(to_string)((const void *)&cur->_.a->data[cur->_.i], a); }
 #		define TO_STRING_LEFT '['
 #		define TO_STRING_RIGHT ']'
 #		include "to_string.h" /** \include */
