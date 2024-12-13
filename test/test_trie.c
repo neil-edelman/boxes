@@ -239,7 +239,6 @@ static void str8_filler(struct str8 *const s) {
 #include "../src/trie.h"
 
 
-#if 0
 /** A map from string key implemented as a pointer to unsigned value. We no
  longer have a way to output the keys automatically. The user must copy the key
  into the pointer manually. */
@@ -319,19 +318,15 @@ static void star_filler(struct star *const star) {
 
 
 /* Public separating header/body. */
-#define TRIE_NAME public
-#define TRIE_KEY enum colour
-#define TRIE_HEAD
-#include "../src/trie.h"
-static const char *public_string(const enum colour c)
+static const char *static_string(const enum colour c)
 	{ return colour_string(c); }
-static void public_filler(enum colour *const c) { colour_filler(c); }
-#define TRIE_NAME public
-#define TRIE_KEY enum colour
-#define TRIE_TO_STRING
-#define TRIE_TEST
-#define TRIE_BODY
-#include "../src/trie.h"
+static void static_filler(enum colour *const c) { colour_filler(c); }
+#define HEADER_TRIE_DEFINE
+#include "header_trie.h"
+struct header_trie header_trie(void)
+	{ struct header_trie _; _._ = static_trie(); return _; }
+void header_trie_(struct header_trie *const _) { static_trie_(&_->_); }
+void header_trie_test(void) { static_trie_test(); }
 
 
 static void article_test(void) {
@@ -347,7 +342,7 @@ static void article_test(void) {
 		entry->name = star->name;
 		entry->distance = star->distance;
 	}
-	trie_star_graph(&trie, "graph/trie/article.gv", 0);
+	private_star_trie_graph(&trie, "graph/trie/article.gv", 0);
 	star_trie_clear(&trie);
 	for(i = 0; i < sizeof list2 / sizeof *list2; i++) {
 		const struct star *const star = stars + list2[i];
@@ -355,12 +350,12 @@ static void article_test(void) {
 		if(!star_trie_try(&trie, star->name, &entry)) { assert(0); break; }
 		entry->name = star->name;
 		entry->distance = star->distance;
-		trie_star_graph(&trie, "graph/trie/article.gv", i + 1000);
+		private_star_trie_graph(&trie, "graph/trie/article.gv", i + 1000);
 	}
-	trie_star_graph(&trie, "graph/trie/article.gv", 1);
+	private_star_trie_graph(&trie, "graph/trie/article.gv", 1);
 	star_trie_(&trie);
 }
-#endif
+
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
@@ -371,12 +366,10 @@ int main(void) {
 	fixed_colour_test();
 	colour_trie_test();
 	str8_trie_test();
-#if 0
 	kv1_trie_test(), str32_pool_(&str_pool);
 	kv2_trie_test();
 	star_trie_test();
-	public_trie_test();
+	header_trie_test();
 	article_test();
-#endif
 	return EXIT_SUCCESS;
 }
