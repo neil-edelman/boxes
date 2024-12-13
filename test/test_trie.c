@@ -37,7 +37,6 @@ static void str_filler(const char **const key) {
 #include "../src/trie.h"
 
 
-#if 0
 static void contrived_test(void) {
 	const char *const words[] = { "foo", "bar", "baz", "quxx",
 		"a", "b", "c", "ba", "bb", "", "A", "Z", "z",
@@ -56,11 +55,11 @@ static void contrived_test(void) {
 		" bmp: %lu\n"
 		" leaf: %lu\n"
 		" whole struct: %lu\n",
-		(unsigned long)offsetof(struct trie_str_tree, bsize),
-		(unsigned long)offsetof(struct trie_str_tree, branch),
-		(unsigned long)offsetof(struct trie_str_tree, bmp),
-		(unsigned long)offsetof(struct trie_str_tree, leaf),
-		(unsigned long)sizeof(struct trie_str_tree));
+		(unsigned long)offsetof(struct private_str_trie_tree, bsize),
+		(unsigned long)offsetof(struct private_str_trie_tree, branch),
+		(unsigned long)offsetof(struct private_str_trie_tree, bmp),
+		(unsigned long)offsetof(struct private_str_trie_tree, leaf),
+		(unsigned long)sizeof(struct private_str_trie_tree));
 	assert(CHAR_BIT == 8 && ' ' ^ '!' == 1); /* Assumed UTF-8 for tests. */
 	errno = 0;
 	r = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ");
@@ -73,7 +72,7 @@ static void contrived_test(void) {
 	assert(r == TRIE_ABSENT);
 	success = str_trie_remove(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa!");
 	assert(!success && errno == EILSEQ), errno = 0;
-	trie_str_graph(&t, "graph/contrived-max.gv", 0);
+	private_str_trie_graph(&t, "graph/trie/contrived-max.gv", 0);
 	str_trie_clear(&t);
 	for(count = 0, i = 0; i < sizeof words / sizeof *words; i++) {
 		const char *const word = words[i];
@@ -84,7 +83,7 @@ static void contrived_test(void) {
 		case TRIE_PRESENT: printf("\"%s\" already there.\n", word);
 			continue;
 		}
-		trie_str_graph(&t, "graph/contrived-insert.gv", i);
+		private_str_trie_graph(&t, "graph/trie/contrived-insert.gv", i);
 	}
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
 		const char *const get = str_trie_get(&t, words[i]);
@@ -94,13 +93,13 @@ static void contrived_test(void) {
 	for(count2 = 0, i = 0; i < sizeof letters / sizeof *letters; i++) {
 		char letter[2];
 		unsigned count_letter = 0;
-		struct str_trie_iterator it;
+		struct str_trie_cursor cur;
 		const char *str;
 		int output = 0;
 		letter[0] = (char)i, letter[1] = '\0';
-		it = str_trie_prefix(&t, letter);
-		while(str_trie_next(&it/*, &str*/)) {
-			str = str_trie_entry(&it);
+		for(cur = str_trie_prefix(&t, letter); str_trie_exists(&cur);
+			str_trie_next(&cur)) {
+			str = str_trie_entry(&cur);
 			printf("%s<%s>", output ? ", " : letter, str);
 			count_letter++, output = 1;
 		}
@@ -118,9 +117,9 @@ static void contrived_test(void) {
 	{
 		r = str_trie_try(&t, "a"), assert(r == TRIE_PRESENT);
 		r = str_trie_try(&t, "yo"), assert(r == TRIE_ABSENT);
-		trie_str_graph(&t, "graph/yo.gv", 0);
+		private_str_trie_graph(&t, "graph/trie/yo.gv", 0);
 		success = str_trie_remove(&t, "yo"), assert(success);
-		trie_str_graph(&t, "graph/yo.gv", 1);
+		private_str_trie_graph(&t, "graph/trie/yo.gv", 1);
 	}
 	success = str_trie_remove(&t, "yo"), assert(!success);
 	for(i = 0; i < sizeof words / sizeof *words; i++) {
@@ -129,13 +128,14 @@ static void contrived_test(void) {
 		success = str_trie_remove(&t, word);
 		if(success) count--;
 		else printf("Didn't find <%s>.\n", word);
-		trie_str_graph(&t, "graph/contrived-delete.gv", i);
+		private_str_trie_graph(&t, "graph/trie/contrived-delete.gv", i);
 	}
 	assert(!count);
 	str_trie_(&t);
 }
 
 
+#if 0
 /* Set of `enum colour`. The set is necessarily alphabetically ordered, and can
  efficiently tell which colour names are starting with a prefix. This stores
  2 bytes overhead and an `enum colour` for each in the set. It forwards one
@@ -174,9 +174,9 @@ static void fixed_colour_test(void) {
 		|| !colour_trie_try(&trie, Yellow)
 		|| !colour_trie_try(&trie, Lime)
 		|| !colour_trie_try(&trie, Steel)) { assert(0); goto catch; }
-	trie_colour_graph(&trie, "graph/colour-fixed.gv", 0);
+	trie_colour_graph(&trie, "graph/trie/colour-fixed.gv", 0);
 	colour_trie_remove(&trie, "Steel");
-	trie_colour_graph(&trie, "graph/colour-fixed.gv", 1);
+	trie_colour_graph(&trie, "graph/trie/colour-fixed.gv", 1);
 	it = colour_trie_prefix(&trie, "");
 	ret = colour_trie_next(&it), assert(ret && colour_trie_entry(&it) == Black);
 	ret = colour_trie_next(&it), assert(ret && colour_trie_entry(&it) == Lime);
@@ -323,7 +323,7 @@ static void article_test(void) {
 		entry->name = star->name;
 		entry->distance = star->distance;
 	}
-	trie_star_graph(&trie, "graph/article.gv", 0);
+	trie_star_graph(&trie, "graph/trie/article.gv", 0);
 	star_trie_clear(&trie);
 	for(i = 0; i < sizeof list2 / sizeof *list2; i++) {
 		const struct star *const star = stars + list2[i];
@@ -331,9 +331,9 @@ static void article_test(void) {
 		if(!star_trie_try(&trie, star->name, &entry)) { assert(0); break; }
 		entry->name = star->name;
 		entry->distance = star->distance;
-		trie_star_graph(&trie, "graph/article.gv", i + 1000);
+		trie_star_graph(&trie, "graph/trie/article.gv", i + 1000);
 	}
-	trie_star_graph(&trie, "graph/article.gv", 1);
+	trie_star_graph(&trie, "graph/trie/article.gv", 1);
 	star_trie_(&trie);
 }
 #endif
@@ -343,8 +343,8 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	str_trie_test(), str32_pool_clear(&str_pool);
-#if 0
 	contrived_test(), str32_pool_clear(&str_pool);
+#if 0
 	fixed_colour_test();
 	colour_trie_test();
 	public_trie_test();

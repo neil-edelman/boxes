@@ -35,7 +35,7 @@
  @std C89 */
 
 #ifndef HEAP_NAME
-#error Name undefined.
+#	error Name undefined.
 #endif
 #if !defined(BOX_ENTRY1) && (defined(HEAP_TRAIT) ^ defined(BOX_MAJOR))
 #	error HEAP_TRAIT name must come after HEAP_EXPECT_TRAIT.

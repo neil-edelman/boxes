@@ -837,6 +837,7 @@ static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
 
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
+	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(next)(0);
 	t_(trie)(); t_(trie_)(0); T_(clear)(0);
 	T_(next)(0);
 #		if defined(TREE_ENTRY) || !defined(TRIE_KEY)
@@ -862,9 +863,12 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	ifdef TRIE_TO_STRING
 #		undef TRIE_TO_STRING
 /** Thunk because `pT_(ref)` should not be visible. */
-static void pTR_(to_string)(const struct pT_(ref) r,
+static void pTR_(to_string)(const struct T_(cursor) *const cur
+	/*const struct pT_(ref) r*/,
 	char (*const a)[12]) {
-	const char *from = pT_(ref_to_string)(&r);
+	/* fixme: This is the same code used again and again in all traits. */
+	assert(cur && cur->root);
+	const char *from = pT_(ref_to_string)(&cur->start);
 	unsigned i;
 	char *to = *a;
 	assert(a);
@@ -874,11 +878,7 @@ static void pTR_(to_string)(const struct pT_(ref) r,
 	}
 	*to = '\0';
 }
-#		define BOX_THUNK
-#		include "box.h"
 #		include "to_string.h" /** \include */
-#		define BOX_UNTHUNK
-#		include "box.h"
 #		ifndef TRIE_TRAIT
 #			define TRIE_HAS_TO_STRING /* Warning about tests. */
 #		endif
