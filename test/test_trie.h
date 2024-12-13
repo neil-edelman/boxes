@@ -375,7 +375,7 @@ static void pT_(valid)(const struct t_(trie) *const trie) {
 
 static pT_(key) pT_(entry_key)(const pT_(entry) *entry) {
 #ifdef TRIE_ENTRY
-	return T_(key)(entry);
+	return t_(key)(entry);
 #else
 	return *entry;
 #endif
@@ -422,7 +422,7 @@ static void pT_(test)(void) {
 		k = pT_(entry_key)(&test->entry);
 		if(show) printf("%lu: adding %s.\n", (unsigned long)i,
 #ifdef TRIE_ENTRY
-			t_(string)(T_(key)(&test->entry))
+			t_(string)(t_(key)(&test->entry))
 #else
 			t_(string)(test->entry)
 #endif
@@ -455,7 +455,7 @@ static void pT_(test)(void) {
 	for(i = 0; i < tests_size; i++) {
 		const char *estring, *const tstring
 #ifdef TRIE_ENTRY
-			= t_(string)(T_(key)(&tests[i].entry));
+			= t_(string)(t_(key)(&tests[i].entry));
 #else
 			= t_(string)(tests[i].entry);
 #endif
@@ -469,7 +469,7 @@ static void pT_(test)(void) {
 		}
 #endif
 #ifdef TRIE_ENTRY
-		estring = t_(string)(T_(key)(e));
+		estring = t_(string)(t_(key)(e));
 #else
 		estring = t_(string)(e);
 #endif
@@ -589,7 +589,7 @@ static void pT_(test_random)(void) {
 			unsigned r = (unsigned)rand() / (RAND_MAX / handles.size + 1);
 			pT_(entry) *handle = handles.data[r];
 #ifdef TRIE_ENTRY
-			const char *const string = t_(string)(T_(key)(handle));
+			const char *const string = t_(string)(t_(key)(handle));
 #else
 			const char *const string = t_(string)(*handle);
 #endif
@@ -608,7 +608,7 @@ static void pT_(test_random)(void) {
 			/*pT_(entry) *e = T_(get)(&trie,
 				pT_(key_string)(pT_(entry_key)(handles.data[j]))); */
 #ifdef TRIE_ENTRY
-			r = T_(get)(&trie, t_(string)(T_(key)(handles.data[j])));
+			r = T_(get)(&trie, t_(string)(t_(key)(handles.data[j])));
 			assert(r);
 #elif !defined(TRIE_KEY)
 			r = T_(get)(&trie, t_(string)(*handles.data[j]));

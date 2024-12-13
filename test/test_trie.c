@@ -11,7 +11,7 @@
 #include "orcish.h"
 
 
-/** For testing -- have a pool of random names. */
+/** For testing—have a pool of random names. */
 struct str32 { char str[32]; };
 #define POOL_NAME str32
 #define POOL_TYPE struct str32
@@ -214,23 +214,6 @@ finally:
 }
 
 
-#if 0
-/* Public separating header/body. */
-#define TRIE_NAME public
-#define TRIE_KEY enum colour
-#define TRIE_HEAD
-#include "../src/trie.h"
-static const char *public_string(const enum colour c)
-	{ return colour_string(c); }
-static void public_filler(enum colour *const c) { colour_filler(c); }
-#define TRIE_NAME public
-#define TRIE_KEY enum colour
-#define TRIE_TO_STRING
-#define TRIE_TEST
-#define TRIE_BODY
-#include "../src/trie.h"
-
-
 /* Stores a value in the leaf itself and not externally. Optimally, would be a
  pointer's length. It's entirely self-contained inside the trie, with the
  downside of moving data. */
@@ -256,6 +239,7 @@ static void str8_filler(struct str8 *const s) {
 #include "../src/trie.h"
 
 
+#if 0
 /** A map from string key implemented as a pointer to unsigned value. We no
  longer have a way to output the keys automatically. The user must copy the key
  into the pointer manually. */
@@ -334,6 +318,22 @@ static void star_filler(struct star *const star) {
 #include "../src/trie.h"
 
 
+/* Public separating header/body. */
+#define TRIE_NAME public
+#define TRIE_KEY enum colour
+#define TRIE_HEAD
+#include "../src/trie.h"
+static const char *public_string(const enum colour c)
+	{ return colour_string(c); }
+static void public_filler(enum colour *const c) { colour_filler(c); }
+#define TRIE_NAME public
+#define TRIE_KEY enum colour
+#define TRIE_TO_STRING
+#define TRIE_TEST
+#define TRIE_BODY
+#include "../src/trie.h"
+
+
 static void article_test(void) {
 	/* Set TRIE_LEFT_MAX = 5. */
 	unsigned list1[] = { 0, 5, 6, 10 },
@@ -370,12 +370,12 @@ int main(void) {
 	contrived_test(), str32_pool_clear(&str_pool);
 	fixed_colour_test();
 	colour_trie_test();
-#if 0
-	public_trie_test();
 	str8_trie_test();
+#if 0
 	kv1_trie_test(), str32_pool_(&str_pool);
 	kv2_trie_test();
 	star_trie_test();
+	public_trie_test();
 	article_test();
 #endif
 	return EXIT_SUCCESS;

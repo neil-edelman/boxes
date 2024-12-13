@@ -808,7 +808,7 @@ static enum trie_result T_(try)(struct t_(trie) *const trie,
 	const pT_(key) key, pT_(entry) **const entry) {
 	enum trie_result result;
 	struct pT_(ref) r;
-	assert(trie && T_(string)(key));
+	assert(trie && t_(string)(key));
 	if(result = pT_(add)(trie, key, &r)) *entry = &r.tree->leaf[r.lf].as_entry;
 	return result;
 }
