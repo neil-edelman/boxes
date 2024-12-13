@@ -42,7 +42,8 @@ static void contrived_test(void) {
 		"a", "b", "c", "ba", "bb", "", "A", "Z", "z",
 		"a", "b", "â", "cc", "ccc", "cccc", "ccccc", "cccccc",
 		"foobar", "foo", "dictionary", "dictionaries" };
-	unsigned i, count_insert, count_retrieve, count3 = 0, first_letters[UCHAR_MAX];
+	unsigned i, count_insert, count_retrieve, count_sentinel = 0,
+		first_letters[UCHAR_MAX];
 	struct str_trie t = str_trie();
 	enum trie_result r;
 	int success;
@@ -113,20 +114,21 @@ static void contrived_test(void) {
 			str_trie_next(&cur)) {
 			str = str_trie_entry(&cur);
 			count_letter++;
-			printf("%s %u:\"%s\":<%s>:%u", output ? ", " : "", i, letter, str, count_letter);
+			printf("%s <%s>", output ? ", " : "", str);
 			output = 1;
 		}
-		if(output) printf("\n");
+		if(output) printf("; that was %u:\"%s\", count %u.\n",
+			i, letter, count_letter);
 		if(i) {
 			assert(count_letter == first_letters[i]);
 			count_retrieve += count_letter;
-		} else { /* Sentinel. */
-			count3 = count_letter;
-			if(str_trie_get(&t, "")) count_retrieve++;
+		} else { /* Sentinel, "". All the trie has been retrieved. */
+			count_sentinel = count_letter;
+			if(str_trie_get(&t, "")) count_retrieve++; /* We might have "". */
 		}
 	}
 	assert(count_retrieve == count_insert);
-	assert(count3 == count_insert);
+	assert(count_sentinel == count_insert);
 	{
 		r = str_trie_try(&t, "a"), assert(r == TRIE_PRESENT);
 		r = str_trie_try(&t, "yo"), assert(r == TRIE_ABSENT);
