@@ -330,15 +330,9 @@ static struct T_(cursor) T_(prefix)(struct t_(trie) *const trie,
 	struct T_(cursor) cur;
 	assert(trie && prefix);
 	cur = pT_(match_prefix)(trie, prefix);
-	/* Make sure actually a prefix. */
-	if(cur.root) {
-		struct pT_(ref) next = cur.start;
-		next.lf++;
-		assert(cur.start.tree && cur.end.tree);
-		if(next.tree == cur.end.tree && next.lf >= cur.end.lf /* Empty. */
-			|| !trie_is_prefix(prefix, pT_(ref_to_string)(&next)))
-			cur.root = 0;
-	}
+	/* Make sure actually a prefix by choosing one of the words and testing. */
+	if(cur.root && !trie_is_prefix(prefix, pT_(ref_to_string)(&cur.start)))
+		cur.root = 0;
 	return cur;
 }
 
@@ -863,15 +857,13 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	ifdef TRIE_TO_STRING
 #		undef TRIE_TO_STRING
 /** Thunk because `pT_(ref)` should not be visible. */
-static void pTR_(to_string)(const struct T_(cursor) *const cur
-	/*const struct pT_(ref) r*/,
+static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12]) {
 	/* fixme: This is the same code used again and again in all traits. */
-	assert(cur && cur->root);
 	const char *from = pT_(ref_to_string)(&cur->start);
 	unsigned i;
 	char *to = *a;
-	assert(a);
+	assert(cur && cur->root && a);
 	for(i = 0; i < 11; from++, i++) {
 		*to++ = *from;
 		if(*from == '\0') return;

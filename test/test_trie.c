@@ -42,13 +42,15 @@ static void contrived_test(void) {
 		"a", "b", "c", "ba", "bb", "", "A", "Z", "z",
 		"a", "b", "â", "cc", "ccc", "cccc", "ccccc", "cccccc",
 		"foobar", "foo", "dictionary", "dictionaries" };
-	unsigned i, count, count2, count3 = 0, letters[UCHAR_MAX];
+	unsigned i, count_insert, count_retrieve, count3 = 0, first_letters[UCHAR_MAX];
 	struct str_trie t = str_trie();
 	enum trie_result r;
 	int success;
 	/* Histogram of letters. */
-	memset(letters, 0, sizeof letters);
+	memset(first_letters, 0, sizeof first_letters);
 	printf("Contrived manual test of set <str>trie.\n");
+
+	/* Info about offsets. */
 	printf("offset in <str>tree:\n"
 		" bsize: %lu\n"
 		" branch: %lu\n"
@@ -62,6 +64,8 @@ static void contrived_test(void) {
 		(unsigned long)sizeof(struct private_str_trie_tree));
 	assert(CHAR_BIT == 8 && ' ' ^ '!' == 1); /* Assumed UTF-8 for tests. */
 	errno = 0;
+
+	/* Test limits of tries. */
 	r = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ");
 	assert(r == TRIE_ABSENT);
 	r = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 256 */
@@ -74,14 +78,20 @@ static void contrived_test(void) {
 	assert(!success && errno == EILSEQ), errno = 0;
 	private_str_trie_graph(&t, "graph/trie/contrived-max.gv", 0);
 	str_trie_clear(&t);
-	for(count = 0, i = 0; i < sizeof words / sizeof *words; i++) {
+
+	/* Insert all words. */
+	for(count_insert = 0, i = 0; i < sizeof words / sizeof *words; i++) {
 		const char *const word = words[i];
 		/* printf("word: %s\n", word); */
 		switch(str_trie_try(&t, word)) {
-		case TRIE_ERROR: perror("trie"); assert(0); break;
-		case TRIE_ABSENT: count++, letters[(unsigned char)*word]++; break;
-		case TRIE_PRESENT: printf("\"%s\" already there.\n", word);
-			continue;
+		case TRIE_ERROR:
+			perror("trie"); assert(0); break;
+		case TRIE_ABSENT:
+			count_insert++;
+			first_letters[(unsigned char)*word]++;
+			break;
+		case TRIE_PRESENT:
+			printf("\"%s\" already there.\n", word); continue;
 		}
 		private_str_trie_graph(&t, "graph/trie/contrived-insert.gv", i);
 	}
@@ -89,8 +99,10 @@ static void contrived_test(void) {
 		const char *const get = str_trie_get(&t, words[i]);
 		assert(get && !strcmp(words[i], get));
 	}
+
 	/* Add up all the letters; should be equal to the overall count. */
-	for(count2 = 0, i = 0; i < sizeof letters / sizeof *letters; i++) {
+	for(count_retrieve = 0, i = 0;
+		i < sizeof first_letters / sizeof *first_letters; i++) {
 		char letter[2];
 		unsigned count_letter = 0;
 		struct str_trie_cursor cur;
@@ -100,20 +112,21 @@ static void contrived_test(void) {
 		for(cur = str_trie_prefix(&t, letter); str_trie_exists(&cur);
 			str_trie_next(&cur)) {
 			str = str_trie_entry(&cur);
-			printf("%s<%s>", output ? ", " : letter, str);
-			count_letter++, output = 1;
+			count_letter++;
+			printf("%s %u:\"%s\":<%s>:%u", output ? ", " : "", i, letter, str, count_letter);
+			output = 1;
 		}
 		if(output) printf("\n");
 		if(i) {
-			assert(count_letter == letters[i]);
-			count2 += count_letter;
+			assert(count_letter == first_letters[i]);
+			count_retrieve += count_letter;
 		} else { /* Sentinel. */
 			count3 = count_letter;
-			if(str_trie_get(&t, "")) count2++;
+			if(str_trie_get(&t, "")) count_retrieve++;
 		}
 	}
-	assert(count2 == count);
-	assert(count3 == count);
+	assert(count_retrieve == count_insert);
+	assert(count3 == count_insert);
 	{
 		r = str_trie_try(&t, "a"), assert(r == TRIE_PRESENT);
 		r = str_trie_try(&t, "yo"), assert(r == TRIE_ABSENT);
@@ -126,11 +139,11 @@ static void contrived_test(void) {
 		const char *const word = words[i];
 		printf("Delete <%s>.\n", word);
 		success = str_trie_remove(&t, word);
-		if(success) count--;
+		if(success) count_insert--;
 		else printf("Didn't find <%s>.\n", word);
 		private_str_trie_graph(&t, "graph/trie/contrived-delete.gv", i);
 	}
-	assert(!count);
+	assert(!count_insert);
 	str_trie_(&t);
 }
 
