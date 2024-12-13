@@ -9,10 +9,11 @@
 * [tree](tree.md)
 * [trie](trie.md) —requires bmp
 
+Fix documentation generator.
+`graph.h` HAS_GRAPH_H?
 Maybe deque will be useful? a linked list of nodes of increasing size, starts at 64, starts at
 1/3 the way in.
-Maybe we should have a `box.h` to store shared code? It's not much. Maybe error
-reporting goes there.
+Maybe error reporting goes in `box.h`?
 
 `C90` requires identifiers to be a minimum of 31 significant initial characters in an internal
 identifier or a macro name. If your compiler is `C89` and does the very minimum, it
