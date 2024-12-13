@@ -150,7 +150,6 @@ static void contrived_test(void) {
 }
 
 
-#if 0
 /* Set of `enum colour`. The set is necessarily alphabetically ordered, and can
  efficiently tell which colour names are starting with a prefix. This stores
  2 bytes overhead and an `enum colour` for each in the set. It forwards one
@@ -182,22 +181,31 @@ static void colour_filler(enum colour *const c)
 
 static void fixed_colour_test(void) {
 	struct colour_trie trie = colour_trie();
-	struct colour_trie_iterator it;
+	struct colour_trie_cursor cur;
 	int ret;
+	enum colour colour;
 	if(!colour_trie_try(&trie, Black)
 		|| !colour_trie_try(&trie, Red)
 		|| !colour_trie_try(&trie, Yellow)
 		|| !colour_trie_try(&trie, Lime)
 		|| !colour_trie_try(&trie, Steel)) { assert(0); goto catch; }
-	trie_colour_graph(&trie, "graph/trie/colour-fixed.gv", 0);
+	private_colour_trie_graph(&trie, "graph/trie/colour-fixed.gv", 0);
 	colour_trie_remove(&trie, "Steel");
-	trie_colour_graph(&trie, "graph/trie/colour-fixed.gv", 1);
-	it = colour_trie_prefix(&trie, "");
-	ret = colour_trie_next(&it), assert(ret && colour_trie_entry(&it) == Black);
-	ret = colour_trie_next(&it), assert(ret && colour_trie_entry(&it) == Lime);
-	ret = colour_trie_next(&it), assert(ret && colour_trie_entry(&it) == Red);
-	ret = colour_trie_next(&it), assert(ret && colour_trie_entry(&it) == Yellow);
-	ret = colour_trie_next(&it), assert(!ret);
+	private_colour_trie_graph(&trie, "graph/trie/colour-fixed.gv", 1);
+	cur = colour_trie_prefix(&trie, "");
+	ret = colour_trie_exists(&cur), assert(ret);
+	colour = colour_trie_entry(&cur), assert(colour == Black);
+	colour_trie_next(&cur);
+	ret = colour_trie_exists(&cur), assert(ret);
+	colour = colour_trie_entry(&cur), assert(colour == Lime);
+	colour_trie_next(&cur);
+	ret = colour_trie_exists(&cur), assert(ret);
+	colour = colour_trie_entry(&cur), assert(colour == Red);
+	colour_trie_next(&cur);
+	ret = colour_trie_exists(&cur), assert(ret);
+	colour = colour_trie_entry(&cur), assert(colour == Yellow);
+	colour_trie_next(&cur);
+	ret = colour_trie_exists(&cur), assert(!ret);
 	goto finally;
 catch:
 	perror("fixed colour trie");
@@ -206,6 +214,7 @@ finally:
 }
 
 
+#if 0
 /* Public separating header/body. */
 #define TRIE_NAME public
 #define TRIE_KEY enum colour
@@ -359,9 +368,9 @@ int main(void) {
 	errno = 0;
 	str_trie_test(), str32_pool_clear(&str_pool);
 	contrived_test(), str32_pool_clear(&str_pool);
-#if 0
 	fixed_colour_test();
 	colour_trie_test();
+#if 0
 	public_trie_test();
 	str8_trie_test();
 	kv1_trie_test(), str32_pool_(&str_pool);

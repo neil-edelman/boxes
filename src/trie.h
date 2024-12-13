@@ -280,6 +280,11 @@ static int T_(exists)(const struct T_(cursor) *const cur)
 /** @return Extracts the reference from a valid, non-null `cur`. */
 static struct pT_(ref) T_(look)(const struct T_(cursor) *const cur)
 	{ return cur->start; }
+/*static const char *T_(key)(const struct T_(cursor) *const cur)
+	{ return pT_(ref_to_string)(&cur->start); }*/
+#		ifdef TRIE_ENTRY
+/* fixme? */
+#		endif
 /** Advancing `cur` to the next element.
  @order \O(\log |`trie`|) @allow */
 static void T_(next)(struct T_(cursor) *const cur) {
@@ -336,6 +341,7 @@ static struct T_(cursor) T_(prefix)(struct t_(trie) *const trie,
 	return cur;
 }
 
+/* fixme? remit? */
 /** @return The entry at a valid, non-null `cur`. @allow */
 static pT_(remit) T_(entry)(const struct T_(cursor) *const cur)
 	{ return pT_(ref_to_remit)(&cur->start); }
@@ -752,7 +758,7 @@ static pT_(remit) T_(get)(const struct t_(trie) *const trie,
 		#else /* pointer --><!-- enum? */
 
 /** `string` match for `trie` -> `remit`. */
-static enum trie_result T_(match)(const struct T_(trie) *const trie,
+static enum trie_result T_(match)(const struct t_(trie) *const trie,
 	const char *const string, pT_(remit) *const remit) {
 	struct pT_(ref) ref;
 	if(trie && string && pT_(match)(trie, string, &ref)) {
@@ -763,7 +769,7 @@ static enum trie_result T_(match)(const struct T_(trie) *const trie,
 }
 
 /** `string` exact match for `trie` -> `remit`. */
-static enum trie_result T_(get)(const struct T_(trie) *const trie,
+static enum trie_result T_(get)(const struct t_(trie) *const trie,
 	const char *const string, pT_(remit) *const remit) {
 	struct pT_(ref) ref;
 	if(trie && string && pT_(get)(trie, string, &ref)) {
@@ -831,7 +837,7 @@ static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
 
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
-	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(next)(0);
+	T_(begin)(0); T_(exists)(0); T_(look)(0); /*T_(key)(0);*/ T_(next)(0);
 	t_(trie)(); t_(trie_)(0); T_(clear)(0);
 	T_(next)(0);
 #		if defined(TREE_ENTRY) || !defined(TRIE_KEY)
