@@ -15,9 +15,9 @@
 #include <limits.h>
 
 /** <src/iterate.h>: Operates by side-effects. */
-typedef void (*pTR_(action_fn))(pT_(type) *);
+typedef void (*pT_(action_fn))(pT_(type) *);
 /** <src/iterate.h>: Returns a boolean given read-only. */
-typedef int (*pTR_(predicate_fn))(const pT_(type) *);
+typedef int (*pT_(predicate_fn))(const pT_(type) *);
 
 /** <src/iterate.h>: Iterates through `box` and calls `predicate` until it
  returns true. @return The first `predicate` that returned true, or, if the

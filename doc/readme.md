@@ -9,16 +9,20 @@
 * [tree](tree.md)
 * [trie](trie.md) —requires bmp
 
+`C90` requires identifiers to be a minimum of 31 significant initial characters in an internal
+identifier or a macro name. If one's compiler is `C89` and does the very minimum, it
+probably won't be enough to differentiate all the private symbols. One may have to
+abbreviate.
+
+## Fixme
+
 Fix documentation generator.
 `graph.h` HAS_GRAPH_H?
 Maybe deque will be useful? a linked list of nodes of increasing size, starts at 64, starts at
 1/3 the way in.
 Maybe error reporting goes in `box.h`?
-
-`C90` requires identifiers to be a minimum of 31 significant initial characters in an internal
-identifier or a macro name. If your compiler is `C89` and does the very minimum, it
-probably won't be enough to differentiate all the private symbols. One may have to
-abbreviate.
+Rethink `compare.h` and `iterate.h`.
+Get `cdoc` to recognize `.svg`.
 
 # Symbols
 

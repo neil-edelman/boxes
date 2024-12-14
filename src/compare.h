@@ -6,8 +6,8 @@
  Interface defined by box.
 
  @param[COMPARE_IS_EQUAL, COMPARE]
- Function implementing <typedef:<PCMP>is_equal_fn> or
- <typedef:<PCMP>compare_fn>. One is required, (but not two.)
+ Function implementing <typedef:<pT>bipredicate_fn> or
+ <typedef:<pT>compare_fn>. One is required, but not two.
 
  @std C89 */
 
@@ -19,17 +19,17 @@
 
 
 /** <src/compare.h>: Returns a boolean given two read-only elements. */
-typedef int (*pTR_(bipredicate_fn))(pT_(type) *restrict, pT_(type) *restrict);
+typedef int (*pT_(bipredicate_fn))(pT_(type) *restrict, pT_(type) *restrict);
 /** <src/compare.h>: Three-way comparison on a totally order set; returns an
  integer value less than, equal to, greater than zero, if `a < b`, `a == b`,
  `a > b`, respectively. */
-typedef int (*pTR_(compare_fn))(const pT_(type) *restrict a,
+typedef int (*pT_(compare_fn))(const pT_(type) *restrict a,
 	const pT_(type) *restrict b);
 /** <src/compare.h>: Returns a boolean given two modifiable arguments. */
-typedef int (*pTR_(biaction_fn))(pT_(type) *restrict,
+typedef int (*pT_(biaction_fn))(pT_(type) *restrict,
 	pT_(type) *restrict);
 
-#ifdef COMPARE /* <!-- compare: <typedef:<PTU>compare_fn>. */
+#ifdef COMPARE /* <!-- compare: <typedef:<pT>compare_fn>. */
 
 /** <src/compare.h>, `COMPARE`: Lexicographically compares `a` to `b`. Both can
  be null, with null values before everything.
@@ -139,7 +139,7 @@ static void TR_(reverse)(pT_(box) *const box) {
 /** !compare(`a`, `b`) == equals(`a`, `b`).
  (This makes `COMPARE` encompass `COMPARE_IS_EQUAL`.) However, it can not
  collide with another function!
- @implements <typedef:<pTR>bipredicate_fn> */
+ @implements <typedef:<pT>bipredicate_fn> */
 static int tr_(is_equal)(const pT_(type) *const restrict a,
 	const pT_(type) *const restrict b) {
 	/* "Discards qualifiers in nested pointer types" sometimes. Cast. */
@@ -178,7 +178,7 @@ static int TR_(is_equal)(const pT_(box) *restrict const a,
  like false, always deleting the second element.
  @order \O(|`box`|) \times \O(`merge`) @allow */
 static void TR_(unique_merge)(pT_(box) *const box,
-	const pTR_(biaction_fn) merge) {
+	const pT_(biaction_fn) merge) {
 	size_t target, from, cursor, choice, next, move;
 	const size_t last = T_(size)(box);
 	int is_first, is_last;

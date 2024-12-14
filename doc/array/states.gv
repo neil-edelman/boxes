@@ -5,9 +5,9 @@ digraph {
 	null [label = "uninitialized\l|undetermined state\l", fillcolor = pink];
 	static [label = "idle\l|\{0\}\l"];
 	dynamic [label = "active\l|memory allocated;\lcould have size zero\l"];
-	null -> static [label = "<A>array"];
-	static -> dynamic [label = "<A>array_new\n<A>array_buffer\n..."];
-	dynamic -> static [label = "<A>array_"];
-	static -> static [label = "<A>array_clear"]
-	dynamic -> dynamic [label = "<A>array_clear"]
+	null -> static [label = "<T>array"];
+	static -> dynamic [label = "<T>array_new\n<T>array_buffer\n..."];
+	dynamic -> static [label = "<T>array_"];
+	static -> static [label = "<T>array_clear"]
+	dynamic -> dynamic [label = "<T>array_clear"]
 }

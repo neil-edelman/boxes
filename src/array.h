@@ -17,13 +17,12 @@
 
  @param[ARRAY_COMPARE, ARRAY_IS_EQUAL]
  Compare trait contained in <src/compare.h>. Requires
- `<name>[<trait>]compare` to be declared as <typedef:<pTR>compare_fn> or
- `<name>[<trait>]is_equal` to be declared as <typedef:<pTR>bipredicate_fn>,
+ `<name>[<trait>]compare` to be declared as <typedef:<pT>compare_fn> or
+ `<name>[<trait>]is_equal` to be declared as <typedef:<pT>bipredicate_fn>,
  respectfully, (but not both.)
 
  @param[ARRAY_TO_STRING]
- To string trait contained in <src/to_string.h>. Requires
- `<name>[<trait>]to_string` be declared as <typedef:<pTR>to_string_fn>.
+ To string trait contained in <src/to_string.h>. See <typedef:<pT>to_string_fn>.
 
  @param[ARRAY_EXPECT_TRAIT, ARRAY_TRAIT]
  Named traits are obtained by including `array.h` multiple times with
@@ -95,9 +94,6 @@ struct T_(cursor) { struct t_(array) *a; size_t i; };
 /** @return A cursor at the beginning of a valid `a`. */
 static struct T_(cursor) T_(begin)(struct t_(array) *const a)
 	{ struct T_(cursor) cur; assert(a), cur.a = a, cur.i = 0; return cur; }
-/** @return A cursor at the end of a valid `a`. */
-static struct T_(cursor) T_(end)(struct t_(array) *const a)
-	{ struct T_(cursor) cur; assert(a), cur.a = a, cur.i = a->size; return cur;}
 /** @return Whether the `cur` points to an element. */
 static int T_(exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->a && cur->a->data && cur->i < cur->a->size; }
@@ -107,15 +103,10 @@ static pT_(type) *T_(look)(struct T_(cursor) *const cur)
 /** Move next on `cur` that exists. */
 static void T_(next)(struct T_(cursor) *const cur)
 	{ if(cur->i == (size_t)~0) cur->a = 0; else cur->i++; }
-/** Move back on `cur` that exists. @fixme Test coverage. */
-static void T_(back)(struct T_(cursor) *const cur) {
-	if(cur->i > cur->a->size) cur->i = cur->a->size; /* Clip. */
-	if(!cur->i) cur->a = 0;
-	else cur->i--;
-}
-/* T_(cursor) T_(cursor_remove)(struct T_(cursor) *const cur)?
-  T_(cursor) T_(cursor_insert)(cur)? */
-/** Size of `a`. @implements `size` */
+
+/* fixme: This is satisfying `compare.h` contracts; probably should re-think
+ those. */
+/** Size of `a`. @implements `size`. */
 static size_t T_(size)(const struct t_(array) *a) { return a->size; }
 /** @return Element `idx` of `a`. @implements `at` */
 static pT_(type) *T_(at)(const struct t_(array) *a, const size_t idx)
@@ -124,7 +115,7 @@ static pT_(type) *T_(at)(const struct t_(array) *a, const size_t idx)
 static void T_(tell_size)(struct t_(array) *a, const size_t size)
 	{ a->size = size; }
 
-/** Zeroed data (not all-bits-zero) is initialized.
+/** Zeroed data (not all-bits-zero) is initialized, as well.
  @return An idle array. @order \Theta(1) @allow */
 static struct t_(array) t_(array)(void)
 	{ struct t_(array) a; a.data = 0, a.capacity = a.size = 0; return a; }
@@ -289,9 +280,8 @@ static int T_(splice)(struct t_(array) *restrict const a,
 
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
-	T_(begin)(0); T_(end)(0); T_(exists)(0); T_(look)(0);
-	T_(next)(0); T_(back)(0); T_(size)(0); T_(at)(0, 0);
-	T_(tell_size)(0, 0);
+	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(next)(0);
+	T_(size)(0); T_(at)(0, 0); T_(tell_size)(0, 0);
 	t_(array)(); t_(array_)(0); T_(insert)(0, 0, 0); T_(new)(0); T_(shrink)(0);
 	T_(remove)(0, 0); T_(lazy_remove)(0, 0); T_(clear)(0); T_(peek)(0);
 	T_(pop)(0); T_(append)(0, 0); T_(splice)(0, 0, 0, 0);
@@ -306,9 +296,12 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #	if defined(ARRAY_TO_STRING)
 #		undef ARRAY_TO_STRING
-/** Type of `ARRAY_TO_STRING` needed function `<tr>to_string`. Responsible for
- turning the read-only argument into a 12-max-`char` output string. */
-typedef void (*pTR_(to_string_fn))(const pT_(type) *, char (*)[12]);
+#		ifndef ARRAY_TRAIT
+/** Type of `ARRAY_TO_STRING` required function `<tr>to_string`. Responsible
+ for turning the read-only argument into a 12-max-`char` output string. For
+ example, one could have `foo_to_string()` to get `foo_array_to_string()`. */
+typedef void (*pT_(to_string_fn))(const pT_(type) *, char (*)[12]);
+#		endif
 /** Thunk(`cur`, `a`). One must implement `<tr>to_string`. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12])
