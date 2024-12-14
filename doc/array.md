@@ -1,6 +1,6 @@
 # array\.h #
 
-Stand\-alone header [\.\./src/array\.h](../src/array.h); examples [\.\./test/test\_array\.c](../test/test_array.c)\.
+Header [\.\./src/array\.h](../src/array.h); examples [\.\./test/test\_array\.c](../test/test_array.c)\.
 
 ## Contiguous dynamic array ##
 

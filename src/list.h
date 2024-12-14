@@ -14,18 +14,14 @@
  type.
 
  @param[LIST_NAME]
- `<t>` that satisfies `C` naming conventions when mangled; required. `<PL>` is
- private, whose names are prefixed in a manner to avoid collisions.
+ `<t>` that satisfies `C` naming conventions when mangled; required.
 
  @param[LIST_COMPARE, LIST_IS_EQUAL]
- Compare `<CMP>` trait contained in <src/compare.h>. Requires
- `<name>[<trait>]compare` to be declared as <typedef:<PCMP>compare_fn> or
- `<name>[<trait>]is_equal` to be declared as <typedef:<PCMP>bipredicate_fn>,
- respectfully, (but not both.)
+ Compare trait contained in <src/compare.h>. See <typedef:<pT>compare_fn> or
+ <typedef:<pT>bipredicate_fn>, (but not both.)
 
  @param[LIST_TO_STRING]
- To string trait `<STR>` contained in <src/to_string.h>. Require
- `<name>[<trait>]to_string` be declared as <typedef:<PSTR>to_string_fn>.
+ To string trait contained in <src/to_string.h>. See <typedef:<pT>to_string_fn>.
 
  @param[LIST_EXPECT_TRAIT, LIST_TRAIT]
  Named traits are obtained by including `array.h` multiple times with
@@ -124,10 +120,10 @@ static struct T_(cursor) T_(begin)(struct t_(list) *const l)
 /** @return Whether the `cur` points to an element. */
 static int T_(exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->link && cur->link->next; }
-/** @return Link to `it`, which is just itself. */
+/** @return Link to `cur`, which is just itself. */
 static struct t_(listlink) *T_(look)(struct T_(cursor) *const cur)
 	{ return cur->link; }
-/** @return Advances `it`. */
+/** @return Advances `cur`. */
 static void T_(next)(struct T_(cursor) *const cur)
 	{ cur->link = cur->link->next; }
 
@@ -308,10 +304,12 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #	if defined(LIST_TO_STRING)
 #		undef LIST_TO_STRING
-/** Type of `LIST_TO_STRING` needed function `<tr>to_string`. Responsible for
- turning the read-only argument into a 12-max-`char` output string. */
-typedef void (*pTR_(to_string_fn))(const struct t_(listlink) *, char (*)[12]);
-/** Thunk. One must implement `<tr>to_string`. */
+#		ifndef ARRAY_TRAIT
+/** The type of the required `<tr>to_string`. Responsible for turning the
+ read-only argument into a 12-max-`char` output string. */
+typedef void (*pT_(to_string_fn))(const struct t_(listlink) *, char (*)[12]);
+#		endif
+/** Thunk(`cur`, `a`). One must implement `<tr>to_string`. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12]) { tr_(to_string)(cur->link, a); }
 #		include "to_string.h" /** \include */
@@ -571,7 +569,7 @@ static void TR_(xor_to)(struct t_(list) *restrict const a,
 /** Moves all local-duplicates of `from` to the end of `to`.
 
  For example, if `from` is `(A, B, B, A)`, it would concatenate the second
- `(B)` to `to` and leave `(A, B, A)` in `from`. If one <fn:<CMP>sort> `from`
+ `(B)` to `to` and leave `(A, B, A)` in `from`. If one <fn:<TR>sort> `from`
  first, `(A, A, B, B)`, the global duplicates will be transferred, `(A, B)`.
  @order \O(|`from`|) @allow */
 static void TR_(duplicates_to)(struct t_(list) *restrict const from,
@@ -615,10 +613,6 @@ static void pTR_(unused_extra_compare_coda)(void){pTR_(unused_extra_compare)();}
 #	undef LIST_TRAIT
 #	undef BOX_TRAIT
 #endif
-
-/** Thunk `l` -> `a`. */
-/*static void PLT_(to_string)(const struct t_(listlink) *l, char (*const a)[12])
-	{ LT_(to_string)(l, a); }*/
 
 #ifdef LIST_EXPECT_TRAIT
 #	undef LIST_EXPECT_TRAIT

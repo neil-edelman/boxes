@@ -5,9 +5,9 @@ digraph {
 	null [ label = "uninitialized\l|undetermined state\l", fillcolor = pink ];
 	static [ label = "idle\l|\{0\}\l" ];
 	dynamic [ label = "active\l|memory allocated;\lcould have size zero\l" ];
-	null -> static [ label = "<H>heap" ];
-	static -> dynamic [ label = "<H>heap_add\n<H>heap_buffer\n<H>heap_append\n..." ];
-	dynamic -> static [ label = "<H>heap_" ];
-	static -> static [ label = "<H>heap_clear" ];
-	dynamic -> dynamic [ label = "<H>heap_clear" ];
+	null -> static [ label = "<t>heap" ];
+	static -> dynamic [ label = "<T>add\n<T>buffer\n<T>append\n..." ];
+	dynamic -> static [ label = "<t>heap_" ];
+	static -> static [ label = "<T>clear" ];
+	dynamic -> dynamic [ label = "<T>clear" ];
 }

@@ -1,6 +1,6 @@
 # bmp\.h #
 
-Stand\-alone header [\.\./src/bmp\.h](../src/bmp.h); examples [\.\./test/test\_bmp\.c](../test/test_bmp.c)\.
+Header [\.\./src/bmp\.h](../src/bmp.h); examples [\.\./test/test\_bmp\.c](../test/test_bmp.c)\.
 
 ## Fixed bit\-field ##
 
@@ -13,10 +13,10 @@ Stand\-alone header [\.\./src/bmp\.h](../src/bmp.h); examples [\.\./test/test\_b
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-`<M>bmp` is a bit\-field of `BMP_BITS` bits\. The representation in memory is most\-signifiant bit first\.
+`<t>bmp` is a bit\-field of `BMP_BITS` bits\. The representation in memory is most\-signifiant bit first\.
 
  * Parameter: BMP\_NAME, BMP\_BITS  
-   `<M>` that satisfies `C` naming conventions when mangled and a number of bits associated therewith, which must be positive; required\. `<PM>` is private, whose names are prefixed in a manner to avoid collisions\.
+   `<t>` that satisfies `C` naming conventions when mangled and a number of bits associated therewith, which must be positive; required\.
  * Standard:  
    C89/90
 
