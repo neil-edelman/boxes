@@ -17,17 +17,20 @@
 #include <stddef.h>
 #include <limits.h>
 
-
-/** <src/compare.h>: Returns a boolean given two read-only elements. */
-typedef int (*pT_(bipredicate_fn))(pT_(type) *restrict, pT_(type) *restrict);
-/** <src/compare.h>: Three-way comparison on a totally order set; returns an
- integer value less than, equal to, greater than zero, if `a < b`, `a == b`,
- `a > b`, respectively. */
+#ifndef COMPARE_H
+#	define COMPARE_H
+/** <src/compare.h>: The type of the required `<tr>compare`. Three-way
+ comparison on a totally order set; returns an integer value less than, equal
+ to, greater than zero, if `a < b`, `a == b`, `a > b`, respectively. */
 typedef int (*pT_(compare_fn))(const pT_(type) *restrict a,
 	const pT_(type) *restrict b);
+/** <src/compare.h>: The type of the required `<tr>is_equal`. Returns a
+ symmetric boolean given two read-only elements. */
+typedef int (*pT_(bipredicate_fn))(pT_(type) *restrict, pT_(type) *restrict);
 /** <src/compare.h>: Returns a boolean given two modifiable arguments. */
 typedef int (*pT_(biaction_fn))(pT_(type) *restrict,
 	pT_(type) *restrict);
+#endif
 
 #ifdef COMPARE /* <!-- compare: <typedef:<pT>compare_fn>. */
 

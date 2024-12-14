@@ -16,10 +16,8 @@
  <typedef:<pT>type>, associated therewith; required.
 
  @param[ARRAY_COMPARE, ARRAY_IS_EQUAL]
- Compare trait contained in <src/compare.h>. Requires
- `<name>[<trait>]compare` to be declared as <typedef:<pT>compare_fn> or
- `<name>[<trait>]is_equal` to be declared as <typedef:<pT>bipredicate_fn>,
- respectfully, (but not both.)
+ Compare trait contained in <src/compare.h>. See <typedef:<pT>compare_fn> or
+ <typedef:<pT>bipredicate_fn>, (but not both.)
 
  @param[ARRAY_TO_STRING]
  To string trait contained in <src/to_string.h>. See <typedef:<pT>to_string_fn>.
@@ -297,9 +295,8 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	if defined(ARRAY_TO_STRING)
 #		undef ARRAY_TO_STRING
 #		ifndef ARRAY_TRAIT
-/** Type of `ARRAY_TO_STRING` required function `<tr>to_string`. Responsible
- for turning the read-only argument into a 12-max-`char` output string. For
- example, one could have `foo_to_string()` to get `foo_array_to_string()`. */
+/** The type of the required `<tr>to_string`. Responsible for turning the
+ read-only argument into a 12-max-`char` output string. */
 typedef void (*pT_(to_string_fn))(const pT_(type) *, char (*)[12]);
 #		endif
 /** Thunk(`cur`, `a`). One must implement `<tr>to_string`. */
@@ -358,6 +355,9 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	endif
 #	ifdef ARRAY_DECLARE_ONLY
 #		undef ARRAY_DECLARE_ONLY
+#	endif
+#	ifdef COMPARE_H
+#		undef COMPARE_H
 #	endif
 #endif
 #define BOX_END

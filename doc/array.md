@@ -5,9 +5,8 @@ Stand\-alone header [\.\./src/array\.h](../src/array.h); examples [\.\./test/tes
 ## Contiguous dynamic array ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;pT&gt;type](#user-content-typedef-9b5be28b), [&lt;pTR&gt;action_fn](#user-content-typedef-93439a66), [&lt;pTR&gt;predicate_fn](#user-content-typedef-6293cba5), [&lt;pTR&gt;to_string_fn](#user-content-typedef-d00960b3), [&lt;pTR&gt;bipredicate_fn](#user-content-typedef-cec76a40), [&lt;pTR&gt;compare_fn](#user-content-typedef-a1dda3af), [&lt;pTR&gt;biaction_fn](#user-content-typedef-c699afa9)
+ * [Typedef Aliases](#user-content-typedef): [&lt;pT&gt;type](#user-content-typedef-9b5be28b), [&lt;pT&gt;action_fn](#user-content-typedef-348726ce), [&lt;pT&gt;predicate_fn](#user-content-typedef-ad32e23d), [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b), [&lt;pT&gt;compare_fn](#user-content-typedef-223b1937), [&lt;pT&gt;bipredicate_fn](#user-content-typedef-4ab43b88), [&lt;pT&gt;biaction_fn](#user-content-typedef-5082f141)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;t&gt;array](#user-content-tag-9c4cf562)
- * [General Declarations](#user-content-data): [a](#user-content-data-e40c292c)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -23,9 +22,9 @@ Stand\-alone header [\.\./src/array\.h](../src/array.h); examples [\.\./test/tes
  * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
    `<t>` that satisfies `C` naming conventions when mangled and a valid tag\-type, [&lt;pT&gt;type](#user-content-typedef-9b5be28b), associated therewith; required\.
  * Parameter: ARRAY\_COMPARE, ARRAY\_IS\_EQUAL  
-   Compare trait contained in [src/compare\.h](src/compare.h)\. Requires `<name>[<trait>]compare` to be declared as [&lt;pTR&gt;compare_fn](#user-content-typedef-a1dda3af) or `<name>[<trait>]is_equal` to be declared as [&lt;pTR&gt;bipredicate_fn](#user-content-typedef-cec76a40), respectfully, \(but not both\.\)
+   Compare trait contained in [src/compare\.h](src/compare.h)\. See [&lt;pT&gt;compare_fn](#user-content-typedef-223b1937) or [&lt;pT&gt;bipredicate_fn](#user-content-typedef-4ab43b88), \(but not both\.\)
  * Parameter: ARRAY\_TO\_STRING  
-   To string trait contained in [src/to\_string\.h](src/to_string.h)\. Requires `<name>[<trait>]to_string` be declared as [&lt;pTR&gt;to_string_fn](#user-content-typedef-d00960b3)\.
+   To string trait contained in [src/to\_string\.h](src/to_string.h)\. See [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)\.
  * Parameter: ARRAY\_EXPECT\_TRAIT, ARRAY\_TRAIT  
    Named traits are obtained by including `array.h` multiple times with `ARRAY_EXPECT_TRAIT` and then subsequently including the name in `ARRAY_TRAIT`\.
  * Parameter: ARRAY\_DECLARE\_ONLY  
@@ -44,49 +43,49 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 
 
-### <a id = "user-content-typedef-93439a66" name = "user-content-typedef-93439a66">&lt;pTR&gt;action_fn</a> ###
+### <a id = "user-content-typedef-348726ce" name = "user-content-typedef-348726ce">&lt;pT&gt;action_fn</a> ###
 
-<code>typedef void(*<strong>&lt;pTR&gt;action_fn</strong>)(&lt;pT&gt;type *);</code>
+<code>typedef void(*<strong>&lt;pT&gt;action_fn</strong>)(&lt;pT&gt;type *);</code>
 
 [src/iterate\.h](src/iterate.h): Operates by side\-effects\.
 
 
 
-### <a id = "user-content-typedef-6293cba5" name = "user-content-typedef-6293cba5">&lt;pTR&gt;predicate_fn</a> ###
+### <a id = "user-content-typedef-ad32e23d" name = "user-content-typedef-ad32e23d">&lt;pT&gt;predicate_fn</a> ###
 
-<code>typedef int(*<strong>&lt;pTR&gt;predicate_fn</strong>)(const &lt;pT&gt;type *);</code>
+<code>typedef int(*<strong>&lt;pT&gt;predicate_fn</strong>)(const &lt;pT&gt;type *);</code>
 
 [src/iterate\.h](src/iterate.h): Returns a boolean given read\-only\.
 
 
 
-### <a id = "user-content-typedef-d00960b3" name = "user-content-typedef-d00960b3">&lt;pTR&gt;to_string_fn</a> ###
+### <a id = "user-content-typedef-4442127b" name = "user-content-typedef-4442127b">&lt;pT&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;pTR&gt;to_string_fn</strong>)(const &lt;pT&gt;type *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;pT&gt;to_string_fn</strong>)(const &lt;pT&gt;type *, char(*)[12]);</code>
 
-Type of `ARRAY_TO_STRING` needed function `<tr>to_string`\. Responsible for turning the read\-only argument into a 12\-max\-`char` output string\.
-
-
-
-### <a id = "user-content-typedef-cec76a40" name = "user-content-typedef-cec76a40">&lt;pTR&gt;bipredicate_fn</a> ###
-
-<code>typedef int(*<strong>&lt;pTR&gt;bipredicate_fn</strong>)(&lt;pT&gt;type *restrict, &lt;pT&gt;type *restrict);</code>
-
-[src/compare\.h](src/compare.h): Returns a boolean given two read\-only elements\.
+The type of the required `<tr>to_string`\. Responsible for turning the read\-only argument into a 12\-max\-`char` output string\.
 
 
 
-### <a id = "user-content-typedef-a1dda3af" name = "user-content-typedef-a1dda3af">&lt;pTR&gt;compare_fn</a> ###
+### <a id = "user-content-typedef-223b1937" name = "user-content-typedef-223b1937">&lt;pT&gt;compare_fn</a> ###
 
-<code>typedef int(*<strong>&lt;pTR&gt;compare_fn</strong>)(const &lt;pT&gt;type *restrict a, const &lt;pT&gt;type *restrict b);</code>
+<code>typedef int(*<strong>&lt;pT&gt;compare_fn</strong>)(const &lt;pT&gt;type *restrict a, const &lt;pT&gt;type *restrict b);</code>
 
-[src/compare\.h](src/compare.h): Three\-way comparison on a totally order set; returns an integer value less than, equal to, greater than zero, if `a < b`, `a == b`, `a > b`, respectively\.
+[src/compare\.h](src/compare.h): The type of the required `<tr>compare`\. Three\-way comparison on a totally order set; returns an integer value less than, equal to, greater than zero, if `a < b`, `a == b`, `a > b`, respectively\.
 
 
 
-### <a id = "user-content-typedef-c699afa9" name = "user-content-typedef-c699afa9">&lt;pTR&gt;biaction_fn</a> ###
+### <a id = "user-content-typedef-4ab43b88" name = "user-content-typedef-4ab43b88">&lt;pT&gt;bipredicate_fn</a> ###
 
-<code>typedef int(*<strong>&lt;pTR&gt;biaction_fn</strong>)(&lt;pT&gt;type *restrict, &lt;pT&gt;type *restrict);</code>
+<code>typedef int(*<strong>&lt;pT&gt;bipredicate_fn</strong>)(&lt;pT&gt;type *restrict, &lt;pT&gt;type *restrict);</code>
+
+[src/compare\.h](src/compare.h): The type of the required `<tr>is_equal`\. Returns a symmetric boolean given two read\-only elements\.
+
+
+
+### <a id = "user-content-typedef-5082f141" name = "user-content-typedef-5082f141">&lt;pT&gt;biaction_fn</a> ###
+
+<code>typedef int(*<strong>&lt;pT&gt;biaction_fn</strong>)(&lt;pT&gt;type *restrict, &lt;pT&gt;type *restrict);</code>
 
 [src/compare\.h](src/compare.h): Returns a boolean given two modifiable arguments\.
 
@@ -104,20 +103,6 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 
 
-## <a id = "user-content-data" name = "user-content-data">General Declarations</a> ##
-
-### <a id = "user-content-data-e40c292c" name = "user-content-data-e40c292c">a</a> ###
-
-<code>static void &lt;t&gt;array_(struct &lt;t&gt;array *const <strong>a</strong>){ if(a)free(a -&gt;data), *a = &lt;t&gt;array(); } static int &lt;T&gt;reserve(struct &lt;t&gt;array *const a, const size_t min){ size_t c0; &lt;pT&gt;type *data; const size_t max_size =(size_t)~0 /sizeof *a -&gt;data; if(a -&gt;data){ assert(a -&gt;size &lt;=a -&gt;capacity); if(min &lt;=a -&gt;capacity)return 1; c0 = a -&gt;capacity &lt;ARRAY_MIN_CAPACITY ?ARRAY_MIN_CAPACITY :a -&gt;capacity; } else { assert(!a -&gt;size &amp;&amp;!a -&gt;capacity); if(!min)return 1; c0 = ARRAY_MIN_CAPACITY; } if(min &gt;max_size)return errno = ERANGE, 0; while(c0 &lt;min){ size_t c1 = c0 +(c0 &gt;&gt;1)+(c0 &gt;&gt;3); if(c0 &gt;=c1){ c0 = max_size; break; } c0 = c1; } if(!(data = realloc(a -&gt;data, sizeof *a -&gt;data *c0))){ if(!errno)errno = ERANGE; return 0; } a -&gt;data = data, a -&gt;capacity = c0; return 1; } static &lt;pT&gt;type *&lt;T&gt;buffer(struct &lt;t&gt;array *const a, const size_t n){ if(a -&gt;size &gt;(size_t)~0 -n){ errno = ERANGE; return 0; } return &lt;T&gt;reserve(a, a -&gt;size +n)&amp;&amp;a -&gt;data ?a -&gt;data +a -&gt;size :0; } static &lt;pT&gt;type *&lt;T&gt;append(struct &lt;t&gt;array *const a, const size_t n){ &lt;pT&gt;type *b; if(!(b = &lt;T&gt;buffer(a, n)))return 0; assert(n &lt;=a -&gt;capacity &amp;&amp;a -&gt;size &lt;=a -&gt;capacity -n); return a -&gt;size +=n, b; } static &lt;pT&gt;type *&lt;T&gt;insert(struct &lt;t&gt;array *const a, const size_t n, const size_t at){ const size_t old_size = a -&gt;size; &lt;pT&gt;type *const b = &lt;T&gt;append(a, n); assert(a &amp;&amp;at &lt;=old_size); if(!b)return 0; memmove(a -&gt;data +at +n, a -&gt;data +at, sizeof *a -&gt;data *(old_size -at)); return a -&gt;data +at; } static &lt;pT&gt;type *&lt;T&gt;new(struct &lt;t&gt;array *const a){ return &lt;T&gt;append(a, 1); } static int &lt;T&gt;shrink(struct &lt;t&gt;array *const a){ &lt;pT&gt;type *data; size_t c; assert(a &amp;&amp;a -&gt;capacity &gt;=a -&gt;size); if(!a -&gt;data)return assert(!a -&gt;size &amp;&amp;!a -&gt;capacity), 1; c = a -&gt;size &amp;&amp;a -&gt;size &gt;ARRAY_MIN_CAPACITY ?a -&gt;size :ARRAY_MIN_CAPACITY; if(!(data = realloc(a -&gt;data, sizeof *a -&gt;data *c))){ if(!errno)errno = ERANGE; return 0; } a -&gt;data = data, a -&gt;capacity = c; return 1; } static void &lt;T&gt;remove(struct &lt;t&gt;array *const a, &lt;pT&gt;type *const element){ const size_t n =(size_t)(element -a -&gt;data); assert(a &amp;&amp;element &amp;&amp;element &gt;=a -&gt;data &amp;&amp;element &lt;a -&gt;data +a -&gt;size); memmove(element, element +1, sizeof *element *(--a -&gt;size -n)); } static void &lt;T&gt;lazy_remove(struct &lt;t&gt;array *const a, &lt;pT&gt;type *const datum){ size_t n =(size_t)(datum -a -&gt;data); assert(a &amp;&amp;datum &amp;&amp;datum &gt;=a -&gt;data &amp;&amp;datum &lt;a -&gt;data +a -&gt;size); if(--a -&gt;size !=n)memcpy(datum, a -&gt;data +a -&gt;size, sizeof *datum); } static void &lt;T&gt;clear(struct &lt;t&gt;array *const a){ assert(a), a -&gt;size = 0; } static &lt;pT&gt;type *&lt;T&gt;peek(const struct &lt;t&gt;array *const a){ return assert(a), a -&gt;size ?a -&gt;data +a -&gt;size -1 :0; } static &lt;pT&gt;type *&lt;T&gt;pop(struct &lt;t&gt;array *const a){ return assert(a), a -&gt;size ?a -&gt;data +--a -&gt;size :0; } static int &lt;T&gt;splice(struct &lt;t&gt;array *restrict const a, const struct &lt;t&gt;array *restrict const b, const size_t i0, const size_t i1){ const size_t a_range = i1 -i0, b_range = b ?b -&gt;size :0; assert(a &amp;&amp;a !=b &amp;&amp;i0 &lt;=i1 &amp;&amp;i1 &lt;=a -&gt;size); if(a_range &lt;b_range){ const size_t diff = b_range -a_range; if(!&lt;T&gt;buffer(a, diff))return 0; memmove(a -&gt;data +i1 +diff, a -&gt;data +i1,(a -&gt;size -i1)*sizeof *a -&gt;data); a -&gt;size +=diff; } else if(b_range &lt;a_range){ memmove(a -&gt;data +i0 +b_range, a -&gt;data +i1,(a -&gt;size -i1)*sizeof *a -&gt;data); a -&gt;size -=a_range -b_range; } if(b)memcpy(a -&gt;data +i0, b -&gt;data, b -&gt;size *sizeof *a -&gt;data); return 1; }</code>
-
-If `a` is not null, destroys and returns it to idle\. Ensures `min` capacity of `a`\. Invalidates pointers in `a`\. The capacity of `a` will be increased to at least `n` elements beyond the size\. Invalidates any pointers in `a`\. Adds `n` elements to the back of `a`\. It will invalidate pointers in `a` if `n` is greater than the buffer space\. Adds `n` un\-initialised elements at position `at` in `a`\. It will invalidate any pointers in `a` if the buffer holds too few elements\. Shrinks the capacity `a` to the size, freeing unused memory\. If the size is zero, it will be in an idle state\. Invalidates pointers in `a`\. Removes `element` from `a`\. Do not attempt to remove an element that is not in `a`\. Removes `datum` from `a` and replaces it with the tail\. Do not attempt to remove an element that is not in `a`\. Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was previously in an active non\-idle state, it continues to be\. Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
-
- * Implements:  
-   `append` from `BOX_CONTIGUOUS`
-
-
-
-
 ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##
 
 <table>
@@ -125,6 +110,30 @@ If `a` is not null, destroys and returns it to idle\. Ensures `min` capacity of 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
 <tr><td align = right>static struct &lt;t&gt;array</td><td><a href = "#user-content-fn-9c4cf562">&lt;t&gt;array</a></td><td></td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-4a260f07">&lt;t&gt;array_</a></td><td>a</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-8319dfb7">&lt;T&gt;reserve</a></td><td>a, min</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-c6b6f48f">&lt;T&gt;buffer</a></td><td>a, n</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-faa8ce4d">&lt;T&gt;append</a></td><td>a, n</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-e80ff7d4">&lt;T&gt;insert</a></td><td>a, n, at</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-222fef85">&lt;T&gt;new</a></td><td>a</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-56806709">&lt;T&gt;remove</a></td><td>a, element</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-5b1cd3ec">&lt;T&gt;lazy_remove</a></td><td>a, datum</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-7f4a964e">&lt;T&gt;clear</a></td><td>a</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-1900dfa2">&lt;T&gt;peek</a></td><td>a</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-3e8e8234">&lt;T&gt;pop</a></td><td>a</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-dbd2279">&lt;T&gt;splice</a></td><td>a, b, i0, i1</td></tr>
 
 <tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-443f2b31">&lt;TR&gt;any</a></td><td>box, predicate</td></tr>
 
@@ -168,12 +177,168 @@ If `a` is not null, destroys and returns it to idle\. Ensures `min` capacity of 
 
 <code>static struct &lt;t&gt;array <strong>&lt;t&gt;array</strong>(void)</code>
 
-Zeroed data \(not all\-bits\-zero\) is initialized\.
+Zeroed data \(not all\-bits\-zero\) is initialized, as well\.
 
  * Return:  
    An idle array\.
  * Order:  
    &#920;\(1\)
+
+
+
+
+### <a id = "user-content-fn-4a260f07" name = "user-content-fn-4a260f07">&lt;t&gt;array_</a> ###
+
+<code>static void <strong>&lt;t&gt;array_</strong>(struct &lt;t&gt;array *const <em>a</em>)</code>
+
+If `a` is not null, destroys and returns it to idle\.
+
+
+
+### <a id = "user-content-fn-8319dfb7" name = "user-content-fn-8319dfb7">&lt;T&gt;reserve</a> ###
+
+<code>static int <strong>&lt;T&gt;reserve</strong>(struct &lt;t&gt;array *const <em>a</em>, const size_t <em>min</em>)</code>
+
+Ensures `min` capacity of `a`\. Invalidates pointers in `a`\.
+
+ * Parameter: _min_  
+   If zero, does nothing\.
+ * Return:  
+   Success; otherwise, `errno` will be set\.
+ * Exceptional return: ERANGE  
+   Tried allocating more then can fit in `size_t` or `realloc` doesn't follow POSIX\.
+ * Exceptional return: realloc  
+
+
+
+
+### <a id = "user-content-fn-c6b6f48f" name = "user-content-fn-c6b6f48f">&lt;T&gt;buffer</a> ###
+
+<code>static &lt;pT&gt;type *<strong>&lt;T&gt;buffer</strong>(struct &lt;t&gt;array *const <em>a</em>, const size_t <em>n</em>)</code>
+
+The capacity of `a` will be increased to at least `n` elements beyond the size\. Invalidates any pointers in `a`\.
+
+ * Return:  
+   The start of the buffered space at the back of the array\. If `a` is idle and `buffer` is zero, a null pointer is returned, otherwise null indicates an error\.
+ * Exceptional return: realloc  
+
+
+
+
+### <a id = "user-content-fn-faa8ce4d" name = "user-content-fn-faa8ce4d">&lt;T&gt;append</a> ###
+
+<code>static &lt;pT&gt;type *<strong>&lt;T&gt;append</strong>(struct &lt;t&gt;array *const <em>a</em>, const size_t <em>n</em>)</code>
+
+Adds `n` elements to the back of `a`\. It will invalidate pointers in `a` if `n` is greater than the buffer space\.
+
+ * Return:  
+   A pointer to the elements\. If `a` is idle and `n` is zero, a null pointer will be returned, otherwise null indicates an error\.
+ * Exceptional return: realloc, ERANGE  
+ * Implements:  
+   `append` from `BOX_CONTIGUOUS`
+
+
+
+
+### <a id = "user-content-fn-e80ff7d4" name = "user-content-fn-e80ff7d4">&lt;T&gt;insert</a> ###
+
+<code>static &lt;pT&gt;type *<strong>&lt;T&gt;insert</strong>(struct &lt;t&gt;array *const <em>a</em>, const size_t <em>n</em>, const size_t <em>at</em>)</code>
+
+Adds `n` un\-initialised elements at position `at` in `a`\. It will invalidate any pointers in `a` if the buffer holds too few elements\.
+
+ * Parameter: _at_  
+   A number smaller than or equal to `a.size`; if `a.size`, this function behaves as [&lt;T&gt;append](#user-content-fn-faa8ce4d)\.
+ * Return:  
+   A pointer to the start of the new region, where there are `n` elements\.
+ * Exceptional return: realloc, ERANGE  
+
+
+
+
+### <a id = "user-content-fn-222fef85" name = "user-content-fn-222fef85">&lt;T&gt;new</a> ###
+
+<code>static &lt;pT&gt;type *<strong>&lt;T&gt;new</strong>(struct &lt;t&gt;array *const <em>a</em>)</code>
+
+ * Return:  
+   Adds \(push back\) one new element of `a`\. The buffer space holds at least one element, or it may invalidate pointers in `a`\.
+ * Exceptional return: realloc, ERANGE  
+ * Order:  
+   amortised &#927;\(1\)
+
+
+
+
+### <a id = "user-content-fn-56806709" name = "user-content-fn-56806709">&lt;T&gt;remove</a> ###
+
+<code>static void <strong>&lt;T&gt;remove</strong>(struct &lt;t&gt;array *const <em>a</em>, &lt;pT&gt;type *const <em>element</em>)</code>
+
+Removes `element` from `a`\. Do not attempt to remove an element that is not in `a`\.
+
+ * Order:  
+   &#927;\(`a.size`\)\.
+
+
+
+
+### <a id = "user-content-fn-5b1cd3ec" name = "user-content-fn-5b1cd3ec">&lt;T&gt;lazy_remove</a> ###
+
+<code>static void <strong>&lt;T&gt;lazy_remove</strong>(struct &lt;t&gt;array *const <em>a</em>, &lt;pT&gt;type *const <em>datum</em>)</code>
+
+Removes `datum` from `a` and replaces it with the tail\. Do not attempt to remove an element that is not in `a`\.
+
+ * Order:  
+   &#927;\(1\)\.
+
+
+
+
+### <a id = "user-content-fn-7f4a964e" name = "user-content-fn-7f4a964e">&lt;T&gt;clear</a> ###
+
+<code>static void <strong>&lt;T&gt;clear</strong>(struct &lt;t&gt;array *const <em>a</em>)</code>
+
+Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was previously in an active non\-idle state, it continues to be\.
+
+ * Order:  
+   &#920;\(1\)
+
+
+
+
+### <a id = "user-content-fn-1900dfa2" name = "user-content-fn-1900dfa2">&lt;T&gt;peek</a> ###
+
+<code>static &lt;pT&gt;type *<strong>&lt;T&gt;peek</strong>(const struct &lt;t&gt;array *const <em>a</em>)</code>
+
+ * Return:  
+   The last element or null if `a` is empty\.
+ * Order:  
+   &#920;\(1\)
+
+
+
+
+### <a id = "user-content-fn-3e8e8234" name = "user-content-fn-3e8e8234">&lt;T&gt;pop</a> ###
+
+<code>static &lt;pT&gt;type *<strong>&lt;T&gt;pop</strong>(struct &lt;t&gt;array *const <em>a</em>)</code>
+
+ * Return:  
+   Value from the the top of `a` that is removed or null if the array is empty\.
+ * Order:  
+   &#920;\(1\)
+
+
+
+
+### <a id = "user-content-fn-dbd2279" name = "user-content-fn-dbd2279">&lt;T&gt;splice</a> ###
+
+<code>static int <strong>&lt;T&gt;splice</strong>(struct &lt;t&gt;array *restrict const <em>a</em>, const struct &lt;t&gt;array *restrict const <em>b</em>, const size_t <em>i0</em>, const size_t <em>i1</em>)</code>
+
+Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
+
+ * Parameter: _b_  
+   Can be null, which acts as empty, but cannot overlap with `a`\.
+ * Return:  
+   Success\.
+ * Exceptional return: realloc, ERANGE  
 
 
 
@@ -364,7 +529,7 @@ Zeroed data \(not all\-bits\-zero\) is initialized\.
 
 ### <a id = "user-content-fn-24266775" name = "user-content-fn-24266775">&lt;TR&gt;unique_merge</a> ###
 
-<code>static void <strong>&lt;TR&gt;unique_merge</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;biaction_fn <em>merge</em>)</code>
+<code>static void <strong>&lt;TR&gt;unique_merge</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;biaction_fn <em>merge</em>)</code>
 
 [src/compare\.h](src/compare.h), `BOX_CONTIGUOUS`: Removes consecutive duplicate elements in `box` lazily\.
 
