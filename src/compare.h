@@ -139,7 +139,7 @@ static void TR_(reverse)(pT_(box) *const box) {
 /** !compare(`a`, `b`) == equals(`a`, `b`).
  (This makes `COMPARE` encompass `COMPARE_IS_EQUAL`.) However, it can not
  collide with another function!
- @implements <typedef:<PTU>bipredicate_fn> */
+ @implements <typedef:<pTR>bipredicate_fn> */
 static int tr_(is_equal)(const pT_(type) *const restrict a,
 	const pT_(type) *const restrict b) {
 	/* "Discards qualifiers in nested pointer types" sometimes. Cast. */

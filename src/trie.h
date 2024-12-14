@@ -39,7 +39,7 @@
  @param[TRIE_TO_STRING]
  To string trait contained in <src/to_string.h>. The unnamed trait is
  automatically supplied by the string, but others require
-`<name><trait>to_string` be declared as <typedef:<pT>to_string_fn>.
+`<name><trait>to_string` be declared as <typedef:<pTR>to_string_fn>.
 
  @param[TRIE_EXPECT_TRAIT, TRIE_TRAIT]
  Named traits are obtained by including `trie.h` multiple times with
@@ -141,7 +141,7 @@ typedef const char *pT_(key);
  <typedef:<pT>key_fn>; otherwise a set and <typedef:<pT>entry> and
  <typedef:<pT>key> are the same. */
 typedef TRIE_ENTRY pT_(entry);
-/** Remit is either an extra indirection on <typedef:<PT>entry> on `TRIE_ENTRY`
+/** Remit is either an extra indirection on <typedef:<pT>entry> on `TRIE_ENTRY`
  or not. */
 typedef pT_(entry) *pT_(remit);
 #	else
@@ -167,7 +167,7 @@ struct pT_(tree) {
 	struct trie_bmp bmp;
 	union pT_(leaf) leaf[TRIE_ORDER];
 };
-/** To initialize it to an idle state, see <fn:<T>trie>, `{0}`, or being
+/** To initialize it to an idle state, see <fn:<t>trie>, `{0}`, or being
  `static`.
 
  ![States.](../doc/trie/states.png) */
@@ -441,7 +441,7 @@ static int pT_(split)(struct pT_(tree) *const tree) {
 	return 1;
 }
 
-/** Open up an uninitialized space in a non-full `tree`. Used in <fn:<PT>add>.
+/** Open up an uninitialized space in a non-full `tree`. Used in <fn:<pT>add>.
  @param[tree, tree_bit] The start of the tree.
  @param[key, diff_bit] New key and where the new key differs from the tree.
  @return The index of the uninitialized leaf. */
@@ -798,7 +798,7 @@ static enum trie_result T_(try)(struct t_(trie) *const trie,
 
  If `TRIE_ENTRY` was specified and the return is `TRIE_ABSENT`, the trie is in
  an invalid state until filling in the key with an equivalent `key`. (Because
- <typedef:<PT>key> is not invertible in this case, it is agnostic of the method
+ <typedef:<pT>key> is not invertible in this case, it is agnostic of the method
  of setting the key.)
  @order \O(\log |`trie`|)
  @throws[EILSEQ] The string has a distinguishing run of bytes with a
@@ -862,7 +862,8 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #	ifdef TRIE_TO_STRING
 #		undef TRIE_TO_STRING
-/** Thunk because `pT_(ref)` should not be visible. */
+#		ifndef TRIE_TRAIT
+/** Thunk(`cur`, `a`), transforming a cursor to the key string. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12]) {
 	/* fixme: This is the same code used again and again in all traits. */
@@ -876,6 +877,15 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	}
 	*to = '\0';
 }
+#		else
+/** Type of `TRIE_TO_STRING` needed function `<tr>to_string`. Responsible for
+ turning the read-only argument into a 12-max-`char` output string. `<pT>value`
+ is omitted when it's a set. Only available to named traits, the
+ `TRIE_TO_STRING` of the anonymous trait is implicitly the string itself. */
+typedef void (*pTR_(to_string_fn))(const pT_(key), const pT_(entry) *,
+	char (*)[12]);
+#			error Haven't make test yet. Don't see how it would be so useful.
+#		endif
 #		include "to_string.h" /** \include */
 #		ifndef TRIE_TRAIT
 #			define TRIE_HAS_TO_STRING /* Warning about tests. */

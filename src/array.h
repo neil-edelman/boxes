@@ -17,13 +17,13 @@
 
  @param[ARRAY_COMPARE, ARRAY_IS_EQUAL]
  Compare trait contained in <src/compare.h>. Requires
- `<name>[<trait>]compare` to be declared as <typedef:<pTN>compare_fn> or
- `<name>[<trait>]is_equal` to be declared as <typedef:<pTN>bipredicate_fn>,
+ `<name>[<trait>]compare` to be declared as <typedef:<pTR>compare_fn> or
+ `<name>[<trait>]is_equal` to be declared as <typedef:<pTR>bipredicate_fn>,
  respectfully, (but not both.)
 
  @param[ARRAY_TO_STRING]
  To string trait contained in <src/to_string.h>. Requires
- `<name>[<trait>]to_string` be declared as <typedef:<pT>to_string_fn>.
+ `<name>[<trait>]to_string` be declared as <typedef:<pTR>to_string_fn>.
 
  @param[ARRAY_EXPECT_TRAIT, ARRAY_TRAIT]
  Named traits are obtained by including `array.h` multiple times with
@@ -95,6 +95,7 @@ struct T_(cursor) { struct t_(array) *a; size_t i; };
 /** @return A cursor at the beginning of a valid `a`. */
 static struct T_(cursor) T_(begin)(struct t_(array) *const a)
 	{ struct T_(cursor) cur; assert(a), cur.a = a, cur.i = 0; return cur; }
+/** @return A cursor at the end of a valid `a`. */
 static struct T_(cursor) T_(end)(struct t_(array) *const a)
 	{ struct T_(cursor) cur; assert(a), cur.a = a, cur.i = a->size; return cur;}
 /** @return Whether the `cur` points to an element. */
@@ -189,7 +190,7 @@ static pT_(type) *T_(append)(struct t_(array) *const a, const size_t n) {
 /** Adds `n` un-initialised elements at position `at` in `a`. It will
  invalidate any pointers in `a` if the buffer holds too few elements.
  @param[at] A number smaller than or equal to `a.size`; if `a.size`, this
- function behaves as <fn:<A>array_append>.
+ function behaves as <fn:<T>append>.
  @return A pointer to the start of the new region, where there are `n`
  elements. @throws[realloc, ERANGE] @allow */
 static pT_(type) *T_(insert)(struct t_(array) *const a,
@@ -308,7 +309,7 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 /** Type of `ARRAY_TO_STRING` needed function `<tr>to_string`. Responsible for
  turning the read-only argument into a 12-max-`char` output string. */
 typedef void (*pTR_(to_string_fn))(const pT_(type) *, char (*)[12]);
-/** Thunk. One must implement `<tr>to_string`. */
+/** Thunk(`cur`, `a`). One must implement `<tr>to_string`. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12])
 	{ tr_(to_string)((const void *)&cur->a->data[cur->i], a); }
