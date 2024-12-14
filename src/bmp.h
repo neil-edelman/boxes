@@ -5,21 +5,20 @@
 
  @subtitle Fixed bit-field
 
- `<M>bmp` is a bit-field of `BMP_BITS` bits. The representation in memory is
+ `<t>bmp` is a bit-field of `BMP_BITS` bits. The representation in memory is
  most-signifiant bit first.
 
  @param[BMP_NAME, BMP_BITS]
- `<M>` that satisfies `C` naming conventions when mangled and a number of bits
- associated therewith, which must be positive; required. `<PM>` is private,
- whose names are prefixed in a manner to avoid collisions.
+ `<t>` that satisfies `C` naming conventions when mangled and a number of bits
+ associated therewith, which must be positive; required.
 
  @std C89/90 */
 
 #if !defined(BMP_NAME) || !defined(BMP_BITS)
-#error Name BMP_NAME or unsigned number BMP_BITS undefined.
+#	error Name BMP_NAME or unsigned number BMP_BITS undefined.
 #endif
 #if BMP_BITS < 1
-#error BMP_BITS too small.
+#	error BMP_BITS too small.
 #endif
 
 #define BOX_START
@@ -160,9 +159,9 @@ static void T_(remove)(struct t_(bmp) *const a,
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
-#ifdef BMP_TEST /* <!-- test */
+#ifdef BMP_TEST
 #	include "../test/test_bmp.h" /* (not needed) \include */
-#endif /* test --> */
+#endif
 
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {

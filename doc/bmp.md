@@ -6,7 +6,7 @@ Stand\-alone header [\.\./src/bmp\.h](../src/bmp.h); examples [\.\./test/test\_b
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [bmpchunk](#user-content-typedef-1f500d15)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;M&gt;bmp](#user-content-tag-45973bd7)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;t&gt;bmp](#user-content-tag-7a20983c)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -35,9 +35,9 @@ The underlying array type\.
 
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
-### <a id = "user-content-tag-45973bd7" name = "user-content-tag-45973bd7">&lt;M&gt;bmp</a> ###
+### <a id = "user-content-tag-7a20983c" name = "user-content-tag-7a20983c">&lt;t&gt;bmp</a> ###
 
-<code>struct <strong>&lt;M&gt;bmp</strong> { bmpchunk chunk[BMP_CHUNKS]; };</code>
+<code>struct <strong>&lt;t&gt;bmp</strong> { bmpchunk chunk[BMP_CHUNKS]; };</code>
 
 An array of `BMP_BITS` bits, \(taking up the next multiple of `sizeof(bmpchunk)` &#215; `CHARBIT`\.\)
 
@@ -49,21 +49,21 @@ An array of `BMP_BITS` bits, \(taking up the next multiple of `sizeof(bmpchunk)`
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-c9cf907d">&lt;M&gt;bmp_clear_all</a></td><td>a</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-7b089536">&lt;T&gt;clear_all</a></td><td>a</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-f9b9cdb0">&lt;M&gt;bmp_invert_all</a></td><td>a</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-40a9d9d">&lt;T&gt;invert_all</a></td><td>a</td></tr>
 
-<tr><td align = right>static unsigned</td><td><a href = "#user-content-fn-3e108dc">&lt;M&gt;bmp_test</a></td><td>a, x</td></tr>
+<tr><td align = right>static unsigned</td><td><a href = "#user-content-fn-1deccc11">&lt;T&gt;test</a></td><td>a, x</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-b3f65e98">&lt;M&gt;bmp_set</a></td><td>a, x</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-997e5bef">&lt;T&gt;set</a></td><td>a, x</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-3441b8e5">&lt;M&gt;bmp_clear</a></td><td>a, x</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-7f4a964e">&lt;T&gt;clear</a></td><td>a, x</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-27f85a04">&lt;M&gt;bmp_toggle</a></td><td>a, x</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-378030f9">&lt;T&gt;toggle</a></td><td>a, x</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-422a6f9d">&lt;M&gt;bmp_insert</a></td><td>a, x, n</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-e80ff7d4">&lt;T&gt;insert</a></td><td>a, x, n</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-530e280">&lt;M&gt;bmp_remove</a></td><td>a, x, n</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-56806709">&lt;T&gt;remove</a></td><td>a, x, n</td></tr>
 
 </table>
 
@@ -71,25 +71,25 @@ An array of `BMP_BITS` bits, \(taking up the next multiple of `sizeof(bmpchunk)`
 
 ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
 
-### <a id = "user-content-fn-c9cf907d" name = "user-content-fn-c9cf907d">&lt;M&gt;bmp_clear_all</a> ###
+### <a id = "user-content-fn-7b089536" name = "user-content-fn-7b089536">&lt;T&gt;clear_all</a> ###
 
-<code>static void <strong>&lt;M&gt;bmp_clear_all</strong>(struct &lt;M&gt;bmp *const <em>a</em>)</code>
+<code>static void <strong>&lt;T&gt;clear_all</strong>(struct &lt;t&gt;bmp *const <em>a</em>)</code>
 
 Sets `a` to all false\.
 
 
 
-### <a id = "user-content-fn-f9b9cdb0" name = "user-content-fn-f9b9cdb0">&lt;M&gt;bmp_invert_all</a> ###
+### <a id = "user-content-fn-40a9d9d" name = "user-content-fn-40a9d9d">&lt;T&gt;invert_all</a> ###
 
-<code>static void <strong>&lt;M&gt;bmp_invert_all</strong>(struct &lt;M&gt;bmp *const <em>a</em>)</code>
+<code>static void <strong>&lt;T&gt;invert_all</strong>(struct &lt;t&gt;bmp *const <em>a</em>)</code>
 
 Inverts all entries of `a`\.
 
 
 
-### <a id = "user-content-fn-3e108dc" name = "user-content-fn-3e108dc">&lt;M&gt;bmp_test</a> ###
+### <a id = "user-content-fn-1deccc11" name = "user-content-fn-1deccc11">&lt;T&gt;test</a> ###
 
-<code>static unsigned <strong>&lt;M&gt;bmp_test</strong>(const struct &lt;M&gt;bmp *const <em>a</em>, const unsigned <em>x</em>)</code>
+<code>static unsigned <strong>&lt;T&gt;test</strong>(const struct &lt;t&gt;bmp *const <em>a</em>, const unsigned <em>x</em>)</code>
 
  * Return:  
    Projects the eigenvalue of bit `x` of `a`\. Either zero of non\-zero, but not necessarily one\.
@@ -97,41 +97,41 @@ Inverts all entries of `a`\.
 
 
 
-### <a id = "user-content-fn-b3f65e98" name = "user-content-fn-b3f65e98">&lt;M&gt;bmp_set</a> ###
+### <a id = "user-content-fn-997e5bef" name = "user-content-fn-997e5bef">&lt;T&gt;set</a> ###
 
-<code>static void <strong>&lt;M&gt;bmp_set</strong>(struct &lt;M&gt;bmp *const <em>a</em>, const unsigned <em>x</em>)</code>
+<code>static void <strong>&lt;T&gt;set</strong>(struct &lt;t&gt;bmp *const <em>a</em>, const unsigned <em>x</em>)</code>
 
 Sets bit `x` in `a`\.
 
 
 
-### <a id = "user-content-fn-3441b8e5" name = "user-content-fn-3441b8e5">&lt;M&gt;bmp_clear</a> ###
+### <a id = "user-content-fn-7f4a964e" name = "user-content-fn-7f4a964e">&lt;T&gt;clear</a> ###
 
-<code>static void <strong>&lt;M&gt;bmp_clear</strong>(struct &lt;M&gt;bmp *const <em>a</em>, const unsigned <em>x</em>)</code>
+<code>static void <strong>&lt;T&gt;clear</strong>(struct &lt;t&gt;bmp *const <em>a</em>, const unsigned <em>x</em>)</code>
 
 Clears bit `x` in `a`\.
 
 
 
-### <a id = "user-content-fn-27f85a04" name = "user-content-fn-27f85a04">&lt;M&gt;bmp_toggle</a> ###
+### <a id = "user-content-fn-378030f9" name = "user-content-fn-378030f9">&lt;T&gt;toggle</a> ###
 
-<code>static void <strong>&lt;M&gt;bmp_toggle</strong>(struct &lt;M&gt;bmp *const <em>a</em>, const unsigned <em>x</em>)</code>
+<code>static void <strong>&lt;T&gt;toggle</strong>(struct &lt;t&gt;bmp *const <em>a</em>, const unsigned <em>x</em>)</code>
 
 Toggles bit `x` in `a`\.
 
 
 
-### <a id = "user-content-fn-422a6f9d" name = "user-content-fn-422a6f9d">&lt;M&gt;bmp_insert</a> ###
+### <a id = "user-content-fn-e80ff7d4" name = "user-content-fn-e80ff7d4">&lt;T&gt;insert</a> ###
 
-<code>static void <strong>&lt;M&gt;bmp_insert</strong>(struct &lt;M&gt;bmp *const <em>a</em>, const unsigned <em>x</em>, const unsigned <em>n</em>)</code>
+<code>static void <strong>&lt;T&gt;insert</strong>(struct &lt;t&gt;bmp *const <em>a</em>, const unsigned <em>x</em>, const unsigned <em>n</em>)</code>
 
 Inserts `n` zeros at `x` in `a`\. The `n` right bits are discarded\.
 
 
 
-### <a id = "user-content-fn-530e280" name = "user-content-fn-530e280">&lt;M&gt;bmp_remove</a> ###
+### <a id = "user-content-fn-56806709" name = "user-content-fn-56806709">&lt;T&gt;remove</a> ###
 
-<code>static void <strong>&lt;M&gt;bmp_remove</strong>(struct &lt;M&gt;bmp *const <em>a</em>, const unsigned <em>x</em>, const unsigned <em>n</em>)</code>
+<code>static void <strong>&lt;T&gt;remove</strong>(struct &lt;t&gt;bmp *const <em>a</em>, const unsigned <em>x</em>, const unsigned <em>n</em>)</code>
 
 Removes `n` at `x` in `a`\. The `n` bits coming from the right are zero\.
 
