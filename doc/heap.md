@@ -5,8 +5,8 @@ Header [\.\./src/heap\.h](../src/heap.h) depends on [\.\./src/array\.h](../src/a
 ## Priority\-queue ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PH&gt;priority](#user-content-typedef-775cba47), [&lt;PH&gt;node](#user-content-typedef-23ae637f), [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533), [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;H&gt;heapnode](#user-content-tag-9938042f), [&lt;H&gt;heap](#user-content-tag-8ef1078f)
+ * [Typedef Aliases](#user-content-typedef): [&lt;pT&gt;priority](#user-content-typedef-d8673cbb), [&lt;pT&gt;less_fn](#user-content-typedef-ca992ecb), [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;t&gt;heap](#user-content-tag-65a3115b)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -15,22 +15,20 @@ Header [\.\./src/heap\.h](../src/heap.h) depends on [\.\./src/array\.h](../src/a
 
 ![Example of heap.](../doc/heap/heap.png)
 
-A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. It can be used as an implementation of a priority queue\. Internally, it is an array with implicit heap properties on [&lt;PH&gt;priority](#user-content-typedef-775cba47) and an optional [&lt;PH&gt;value](#user-content-typedef-a55b7cd4) that is associated with the value\.
+A [&lt;t&gt;heap](#user-content-tag-65a3115b) is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. It is an array implementation of a priority queue\. It is not stable\.
+
+A function satisfying [&lt;pT&gt;less_fn](#user-content-typedef-ca992ecb) called `<t>less` must be declared\. For example, a maximum heap, `(a, b) -> a < b`\.
 
 
 
  * Parameter: HEAP\_NAME, HEAP\_TYPE  
-   `<H>` that satisfies `C` naming conventions when mangled and an assignable type [&lt;PH&gt;priority](#user-content-typedef-775cba47) associated therewith\. `HEAP_NAME` is required; `HEAP_TYPE` defaults to `unsigned int`\. `<PH>` is private, whose names are prefixed in a manner to avoid collisions\.
- * Parameter: HEAP\_COMPARE  
-   A function satisfying [&lt;PH&gt;compare_fn](#user-content-typedef-dee13533)\. Defaults to minimum\-hash\. Required if `HEAP_TYPE` is changed to an incomparable type\. For example, a maximum heap, `(a, b) -> a < b`\.
- * Parameter: HEAP\_VALUE  
-   Optional value [&lt;PH&gt;value](#user-content-typedef-a55b7cd4), that, on `HEAP_VALUE`, is stored in [&lt;H&gt;heapnode](#user-content-tag-9938042f), which is [&lt;PH&gt;value](#user-content-typedef-a55b7cd4)\.
+   `<t>` that satisfies `C` naming conventions when mangled\. `HEAP_NAME` is required; `HEAP_TYPE` defaults to `unsigned int`\.
  * Parameter: HEAP\_TO\_STRING  
-   To string trait `<STR>` contained in [src/to\_string\.h](src/to_string.h)\. Require `<name>[<trait>]to_string` be declared as [&lt;PSTR&gt;to_string_fn](#user-content-typedef-8a8349ca)\.
+   To string trait contained in [src/to\_string\.h](src/to_string.h)\. See [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)\.
  * Parameter: HEAP\_EXPECT\_TRAIT, HEAP\_TRAIT  
    Named traits are obtained by including `heap.h` multiple times with `HEAP_EXPECT_TRAIT` and then subsequently including the name in `HEAP_TRAIT`\.
- * Parameter: HEAP\_HEAD, HEAP\_BODY  
-   These go together to allow exporting non\-static data between compilation units by separating the header head from the code body\. `HEAP_HEAD` needs identical `HEAP_NAME`, `HEAP_TYPE`, and `HEAP_VALUE`\.
+ * Parameter: HEAP\_DECLARE\_ONLY  
+   For headers in different compilation units\.
  * Standard:  
    C89
  * Dependancies:  
@@ -39,53 +37,37 @@ A [&lt;H&gt;heap](#user-content-tag-8ef1078f) is a binary heap, proposed by [Wil
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
-### <a id = "user-content-typedef-775cba47" name = "user-content-typedef-775cba47">&lt;PH&gt;priority</a> ###
+### <a id = "user-content-typedef-d8673cbb" name = "user-content-typedef-d8673cbb">&lt;pT&gt;priority</a> ###
 
-<code>typedef HEAP_TYPE <strong>&lt;PH&gt;priority</strong>;</code>
+<code>typedef HEAP_TYPE <strong>&lt;pT&gt;priority</strong>;</code>
 
-Valid assignable type used for priority in [&lt;PH&gt;node](#user-content-typedef-23ae637f)\. Defaults to `unsigned int` if not set by `HEAP_TYPE`\.
-
-
-
-### <a id = "user-content-typedef-23ae637f" name = "user-content-typedef-23ae637f">&lt;PH&gt;node</a> ###
-
-<code>typedef struct &lt;H&gt;heapnode <strong>&lt;PH&gt;node</strong>;</code>
-
-If `HEAP_VALUE` is set, \(priority, value\) set by [&lt;H&gt;heapnode](#user-content-tag-9938042f), otherwise it's a \(priority\) set directly by [&lt;PH&gt;priority](#user-content-typedef-775cba47)\.
+Valid assignable type used for priority\. Defaults to `unsigned int` if not set by `HEAP_TYPE`\.
 
 
 
-### <a id = "user-content-typedef-dee13533" name = "user-content-typedef-dee13533">&lt;PH&gt;compare_fn</a> ###
+### <a id = "user-content-typedef-ca992ecb" name = "user-content-typedef-ca992ecb">&lt;pT&gt;less_fn</a> ###
 
-<code>typedef int(*<strong>&lt;PH&gt;compare_fn</strong>)(&lt;PH&gt;priority_c a, &lt;PH&gt;priority_c b);</code>
+<code>typedef int(*<strong>&lt;pT&gt;less_fn</strong>)(const &lt;pT&gt;priority a, const &lt;pT&gt;priority b);</code>
 
-Returns a positive result if `a` is out\-of\-order with respect to `b`, inducing a strict weak order\. This is compatible, but less strict then the comparators from `bsearch` and `qsort`; it only needs to divide entries into two instead of three categories\.
+Inducing a strict weak order by returning a positive result if `a` is out\-of\-order with respect to `b`\. It only needs to divide entries into two instead of three categories\. Compatible, but less strict then the comparators from `bsearch` and `qsort`\. For example, `return a > b` or `return strcmp(a, b)` would give a minimum\-hash\.
 
 
 
-### <a id = "user-content-typedef-8a8349ca" name = "user-content-typedef-8a8349ca">&lt;PSTR&gt;to_string_fn</a> ###
+### <a id = "user-content-typedef-4442127b" name = "user-content-typedef-4442127b">&lt;pT&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;PSTR&gt;to_string_fn</strong>)(const &lt;PSTR&gt;element *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;pT&gt;to_string_fn</strong>)(const &lt;pT&gt;priority *, char(*)[12]);</code>
 
-[src/to\_string\.h](src/to_string.h): responsible for turning the read\-only argument into a 12\-`char` null\-terminated output string, passed as a pointer in the last argument\. This function can have 2 or 3 arguments, where `<PSTR>element` might be a map with a key\-value pair\.
+The type of the required `<tr>to_string`\. Responsible for turning the read\-only argument into a 12\-max\-`char` output string\.
 
 
 
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
-### <a id = "user-content-tag-9938042f" name = "user-content-tag-9938042f">&lt;H&gt;heapnode</a> ###
+### <a id = "user-content-tag-65a3115b" name = "user-content-tag-65a3115b">&lt;t&gt;heap</a> ###
 
-<code>struct <strong>&lt;H&gt;heapnode</strong> { &lt;PH&gt;priority priority; &lt;PH&gt;value value; };</code>
+<code>struct <strong>&lt;t&gt;heap</strong> { struct &lt;pT&gt;priority_array as_array; };</code>
 
-If `HEAP_VALUE` is set, this becomes [&lt;PH&gt;node](#user-content-typedef-23ae637f)\.
-
-
-
-### <a id = "user-content-tag-8ef1078f" name = "user-content-tag-8ef1078f">&lt;H&gt;heap</a> ###
-
-<code>struct <strong>&lt;H&gt;heap</strong> { struct &lt;PH&gt;node_array as_array; };</code>
-
-Stores the heap as an implicit binary tree in an array called `a`\. To initialize it to an idle state, see [&lt;H&gt;heap](#user-content-fn-8ef1078f), `{0}` \(`C99`\), or being `static`\.
+Stores the heap as an array—implicit binary tree in an array called `a`\. See [&lt;t&gt;heap](#user-content-fn-65a3115b)\.
 
 ![States.](../doc/heap/states.png)
 
@@ -97,27 +79,27 @@ Stores the heap as an implicit binary tree in an array called `a`\. To initializ
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static struct &lt;H&gt;heap</td><td><a href = "#user-content-fn-8ef1078f">&lt;H&gt;heap</a></td><td></td></tr>
+<tr><td align = right>static struct &lt;t&gt;heap</td><td><a href = "#user-content-fn-65a3115b">&lt;t&gt;heap</a></td><td></td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-d56f4c70">&lt;H&gt;heap_</a></td><td>heap</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-3b3c94c">&lt;t&gt;heap_</a></td><td>heap</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-d3572b1d">&lt;H&gt;heap_clear</a></td><td>heap</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-7f4a964e">&lt;T&gt;clear</a></td><td>heap</td></tr>
 
-<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-2f5a4cc1">&lt;H&gt;heap_size</a></td><td>heap</td></tr>
+<tr><td align = right>static size_t</td><td><a href = "#user-content-fn-93717268">&lt;T&gt;size</a></td><td>heap</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-42cb2b13">&lt;H&gt;heap_add</a></td><td>heap, node</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-7b8ec2e0">&lt;T&gt;add</a></td><td>heap, node</td></tr>
 
-<tr><td align = right>static &lt;PH&gt;node *</td><td><a href = "#user-content-fn-921d7df">&lt;H&gt;heap_peek</a></td><td>heap</td></tr>
+<tr><td align = right>static &lt;pT&gt;priority *</td><td><a href = "#user-content-fn-1900dfa2">&lt;T&gt;peek</a></td><td>heap</td></tr>
 
-<tr><td align = right>static &lt;PH&gt;value</td><td><a href = "#user-content-fn-2cd270b7">&lt;H&gt;heap_pop</a></td><td>heap</td></tr>
+<tr><td align = right>static &lt;pT&gt;priority</td><td><a href = "#user-content-fn-3e8e8234">&lt;T&gt;pop</a></td><td>heap</td></tr>
 
-<tr><td align = right>static &lt;PH&gt;node *</td><td><a href = "#user-content-fn-4355676a">&lt;H&gt;heap_buffer</a></td><td>heap, n</td></tr>
+<tr><td align = right>static &lt;pT&gt;priority *</td><td><a href = "#user-content-fn-c6b6f48f">&lt;T&gt;buffer</a></td><td>heap, n</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-9c9f1648">&lt;H&gt;heap_append</a></td><td>heap, n</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-faa8ce4d">&lt;T&gt;append</a></td><td>heap, n</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-380c6f8a">&lt;H&gt;heap_affix</a></td><td>heap, master</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-89684f9d">&lt;T&gt;affix</a></td><td>heap, master</td></tr>
 
-<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-751c6337">&lt;STR&gt;to_string</a></td><td>box</td></tr>
+<tr><td align = right>static const char *</td><td><a href = "#user-content-fn-260f8348">&lt;TR&gt;to_string</a></td><td>box</td></tr>
 
 </table>
 
@@ -125,9 +107,9 @@ Stores the heap as an implicit binary tree in an array called `a`\. To initializ
 
 ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
 
-### <a id = "user-content-fn-8ef1078f" name = "user-content-fn-8ef1078f">&lt;H&gt;heap</a> ###
+### <a id = "user-content-fn-65a3115b" name = "user-content-fn-65a3115b">&lt;t&gt;heap</a> ###
 
-<code>static struct &lt;H&gt;heap <strong>&lt;H&gt;heap</strong>(void)</code>
+<code>static struct &lt;t&gt;heap <strong>&lt;t&gt;heap</strong>(void)</code>
 
 Zeroed data \(not all\-bits\-zero\) is initialised\.
 
@@ -139,9 +121,9 @@ Zeroed data \(not all\-bits\-zero\) is initialised\.
 
 
 
-### <a id = "user-content-fn-d56f4c70" name = "user-content-fn-d56f4c70">&lt;H&gt;heap_</a> ###
+### <a id = "user-content-fn-3b3c94c" name = "user-content-fn-3b3c94c">&lt;t&gt;heap_</a> ###
 
-<code>static void <strong>&lt;H&gt;heap_</strong>(struct &lt;H&gt;heap *const <em>heap</em>)</code>
+<code>static void <strong>&lt;t&gt;heap_</strong>(struct &lt;t&gt;heap *const <em>heap</em>)</code>
 
 Returns `heap` to the idle state where it takes no dynamic memory\.
 
@@ -151,9 +133,9 @@ Returns `heap` to the idle state where it takes no dynamic memory\.
 
 
 
-### <a id = "user-content-fn-d3572b1d" name = "user-content-fn-d3572b1d">&lt;H&gt;heap_clear</a> ###
+### <a id = "user-content-fn-7f4a964e" name = "user-content-fn-7f4a964e">&lt;T&gt;clear</a> ###
 
-<code>static void <strong>&lt;H&gt;heap_clear</strong>(struct &lt;H&gt;heap *const <em>heap</em>)</code>
+<code>static void <strong>&lt;T&gt;clear</strong>(struct &lt;t&gt;heap *const <em>heap</em>)</code>
 
 Sets `heap` to be empty\. That is, the size of `heap` will be zero, but if it was previously in an active non\-idle state, it continues to be\.
 
@@ -165,9 +147,9 @@ Sets `heap` to be empty\. That is, the size of `heap` will be zero, but if it wa
 
 
 
-### <a id = "user-content-fn-2f5a4cc1" name = "user-content-fn-2f5a4cc1">&lt;H&gt;heap_size</a> ###
+### <a id = "user-content-fn-93717268" name = "user-content-fn-93717268">&lt;T&gt;size</a> ###
 
-<code>static size_t <strong>&lt;H&gt;heap_size</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code>
+<code>static size_t <strong>&lt;T&gt;size</strong>(const struct &lt;t&gt;heap *const <em>heap</em>)</code>
 
  * Return:  
    If the `heap` is not null, returns it's size\.
@@ -175,9 +157,9 @@ Sets `heap` to be empty\. That is, the size of `heap` will be zero, but if it wa
 
 
 
-### <a id = "user-content-fn-42cb2b13" name = "user-content-fn-42cb2b13">&lt;H&gt;heap_add</a> ###
+### <a id = "user-content-fn-7b8ec2e0" name = "user-content-fn-7b8ec2e0">&lt;T&gt;add</a> ###
 
-<code>static int <strong>&lt;H&gt;heap_add</strong>(struct &lt;H&gt;heap *const <em>heap</em>, &lt;PH&gt;node <em>node</em>)</code>
+<code>static int <strong>&lt;T&gt;add</strong>(struct &lt;t&gt;heap *const <em>heap</em>, &lt;pT&gt;priority <em>node</em>)</code>
 
 Copies `node` into `heap`\.
 
@@ -190,9 +172,9 @@ Copies `node` into `heap`\.
 
 
 
-### <a id = "user-content-fn-921d7df" name = "user-content-fn-921d7df">&lt;H&gt;heap_peek</a> ###
+### <a id = "user-content-fn-1900dfa2" name = "user-content-fn-1900dfa2">&lt;T&gt;peek</a> ###
 
-<code>static &lt;PH&gt;node *<strong>&lt;H&gt;heap_peek</strong>(const struct &lt;H&gt;heap *const <em>heap</em>)</code>
+<code>static &lt;pT&gt;priority *<strong>&lt;T&gt;peek</strong>(const struct &lt;t&gt;heap *const <em>heap</em>)</code>
 
  * Return:  
    The value of the lowest element in `heap` or null when the heap is empty\.
@@ -202,11 +184,11 @@ Copies `node` into `heap`\.
 
 
 
-### <a id = "user-content-fn-2cd270b7" name = "user-content-fn-2cd270b7">&lt;H&gt;heap_pop</a> ###
+### <a id = "user-content-fn-3e8e8234" name = "user-content-fn-3e8e8234">&lt;T&gt;pop</a> ###
 
-<code>static &lt;PH&gt;value <strong>&lt;H&gt;heap_pop</strong>(struct &lt;H&gt;heap *const <em>heap</em>)</code>
+<code>static &lt;pT&gt;priority <strong>&lt;T&gt;pop</strong>(struct &lt;t&gt;heap *const <em>heap</em>)</code>
 
-Only defined when [&lt;H&gt;heap_size](#user-content-fn-2f5a4cc1) returns true\. Removes the lowest element\.
+Only defined when [&lt;T&gt;size](#user-content-fn-93717268) returns true\. Removes the lowest element\.
 
  * Return:  
    The value of the lowest element in `heap`\.
@@ -216,11 +198,11 @@ Only defined when [&lt;H&gt;heap_size](#user-content-fn-2f5a4cc1) returns true\.
 
 
 
-### <a id = "user-content-fn-4355676a" name = "user-content-fn-4355676a">&lt;H&gt;heap_buffer</a> ###
+### <a id = "user-content-fn-c6b6f48f" name = "user-content-fn-c6b6f48f">&lt;T&gt;buffer</a> ###
 
-<code>static &lt;PH&gt;node *<strong>&lt;H&gt;heap_buffer</strong>(struct &lt;H&gt;heap *const <em>heap</em>, const size_t <em>n</em>)</code>
+<code>static &lt;pT&gt;priority *<strong>&lt;T&gt;buffer</strong>(struct &lt;t&gt;heap *const <em>heap</em>, const size_t <em>n</em>)</code>
 
-The capacity of `heap` will be increased to at least `n` elements beyond the size\. Invalidates pointers in `heap`\. All the elements `heap.as_array.size` <= `index` < `heap.as_array.capacity` can be used to construct new elements without immediately making them part of the heap, then [&lt;H&gt;heap_append](#user-content-fn-9c9f1648)\.
+The capacity of `heap` will be increased to at least `n` elements beyond the size\. Invalidates pointers in `heap`\. All the elements `heap.as_array.size` <= `index` < `heap.as_array.capacity` can be used to construct new elements without immediately making them part of the heap, then [&lt;T&gt;append](#user-content-fn-faa8ce4d)\.
 
  * Return:  
    The start of the buffered space\. If `a` is idle and `buffer` is zero, a null pointer is returned, otherwise null indicates an error\.
@@ -229,11 +211,11 @@ The capacity of `heap` will be increased to at least `n` elements beyond the siz
 
 
 
-### <a id = "user-content-fn-9c9f1648" name = "user-content-fn-9c9f1648">&lt;H&gt;heap_append</a> ###
+### <a id = "user-content-fn-faa8ce4d" name = "user-content-fn-faa8ce4d">&lt;T&gt;append</a> ###
 
-<code>static void <strong>&lt;H&gt;heap_append</strong>(struct &lt;H&gt;heap *const <em>heap</em>, const size_t <em>n</em>)</code>
+<code>static void <strong>&lt;T&gt;append</strong>(struct &lt;t&gt;heap *const <em>heap</em>, const size_t <em>n</em>)</code>
 
-Adds and heapifies `n` elements to `heap`\. Uses [Floyd, 1964, Treesort](https://scholar.google.ca/scholar?q=Floyd%2C+1964%2C+Treesort) to sift\-down all the internal nodes of heap\. The heap elements must exist, see [&lt;H&gt;heap_buffer](#user-content-fn-4355676a)\.
+Adds and heapifies `n` elements to `heap`\. Uses [Floyd, 1964, Treesort](https://scholar.google.ca/scholar?q=Floyd%2C+1964%2C+Treesort) to sift\-down all the internal nodes of heap\. The heap elements must exist, see [&lt;T&gt;buffer](#user-content-fn-c6b6f48f)\.
 
  * Parameter: _n_  
    If zero, returns true without heapifying\.
@@ -245,9 +227,9 @@ Adds and heapifies `n` elements to `heap`\. Uses [Floyd, 1964, Treesort](https:/
 
 
 
-### <a id = "user-content-fn-380c6f8a" name = "user-content-fn-380c6f8a">&lt;H&gt;heap_affix</a> ###
+### <a id = "user-content-fn-89684f9d" name = "user-content-fn-89684f9d">&lt;T&gt;affix</a> ###
 
-<code>static int <strong>&lt;H&gt;heap_affix</strong>(struct &lt;H&gt;heap *restrict const <em>heap</em>, const struct &lt;H&gt;heap *restrict const <em>master</em>)</code>
+<code>static int <strong>&lt;T&gt;affix</strong>(struct &lt;t&gt;heap *restrict const <em>heap</em>, const struct &lt;t&gt;heap *restrict const <em>master</em>)</code>
 
 Shallow\-copies and heapifies `master` into `heap`\.
 
@@ -262,9 +244,9 @@ Shallow\-copies and heapifies `master` into `heap`\.
 
 
 
-### <a id = "user-content-fn-751c6337" name = "user-content-fn-751c6337">&lt;STR&gt;to_string</a> ###
+### <a id = "user-content-fn-260f8348" name = "user-content-fn-260f8348">&lt;TR&gt;to_string</a> ###
 
-<code>static const char *<strong>&lt;STR&gt;to_string</strong>(const &lt;PSTR&gt;box *const <em>box</em>)</code>
+<code>static const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>)</code>
 
 [src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
 

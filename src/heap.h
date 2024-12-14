@@ -8,21 +8,20 @@
 
  ![Example of heap.](../doc/heap/heap.png)
 
- A <tag:<T>heap> is a binary heap, proposed by
+ A <tag:<t>heap> is a binary heap, proposed by
  <Williams, 1964, Heapsort, p. 347> using terminology of
  <Knuth, 1973, Sorting>. It is an array implementation of a priority queue. It
  is not stable.
 
- A function satisfying <typedef:<pT>less_fn>. For example, a maximum heap,
- `(a, b) -> a < b`.
+ A function satisfying <typedef:<pT>less_fn> called `<t>less` must be declared.
+ For example, a maximum heap, `(a, b) -> a < b`.
 
  @param[HEAP_NAME, HEAP_TYPE]
- `<S>` that satisfies `C` naming conventions when mangled. `HEAP_NAME` is
+ `<t>` that satisfies `C` naming conventions when mangled. `HEAP_NAME` is
  required; `HEAP_TYPE` defaults to `unsigned int`.
 
  @param[HEAP_TO_STRING]
- To string trait contained in <src/to_string.h>. Require
- `<name>[<trait>]to_string` be declared as <typedef:<PS>to_string_fn>.
+ To string trait contained in <src/to_string.h>. See <typedef:<pT>to_string_fn>.
 
  @param[HEAP_EXPECT_TRAIT, HEAP_TRAIT]
  Named traits are obtained by including `heap.h` multiple times with
@@ -63,8 +62,8 @@
 #		define HEAP_TYPE unsigned
 #	endif
 
-/** Valid assignable type used for priority in <typedef:<PH>node>. Defaults to
- `unsigned int` if not set by `HEAP_TYPE`. */
+/** Valid assignable type used for priority. Defaults to `unsigned int` if not
+ set by `HEAP_TYPE`. */
 typedef HEAP_TYPE pT_(priority);
 
 /* Temporary. Avoid recursion. This must match <box.h>. */
@@ -79,9 +78,8 @@ typedef HEAP_TYPE pT_(priority);
 #	define BOX_MINOR HEAP_NAME
 #	define BOX_MAJOR heap
 
-/** Stores the heap as an array—implicit binary tree in an array called `a`. To
- initialize it to an idle state, see <fn:<H>heap>, `{0}` (`C99`), or being
- `static`.
+/** Stores the heap as an array—implicit binary tree in an array called `a`.
+ See <fn:<t>heap>.
 
  ![States.](../doc/heap/states.png) */
 struct t_(heap) { struct pT_(priority_array) as_array; };
@@ -97,17 +95,22 @@ struct T_(cursor) { struct pT_(priority_array_cursor) _; };
  `return strcmp(a, b)` would give a minimum-hash. */
 typedef int (*pT_(less_fn))(const pT_(priority) a, const pT_(priority) b);
 
+/** @return An iterator at the beginning of `h`. */
 static struct T_(cursor) T_(begin)(struct t_(heap) *const h)
 	{ struct T_(cursor) it; it._ = pT_(priority_array_begin)(&h->as_array);
 	return it; }
+/** @return Non-zero if `cur` points to a valid entry. */
 static int T_(exists)(struct T_(cursor) *const cur)
 	{ return pT_(priority_array_exists)(&cur->_); }
+/** @return The <typedef:<pT>priority> pointer that at which a valid `cur`
+ points. */
 static pT_(priority) *T_(look)(struct T_(cursor) *const cur)
 	{ return pT_(priority_array_look)(&cur->_); }
+/** Move to the next of a valid `cur`. */
 static void T_(next)(struct T_(cursor) *const cur)
 	{ pT_(priority_array_next)(&cur->_); }
 
-/** Find the spot in `heap` where `node` goes and put it there.
+/** Find the spot in `heap` where `n` goes and put it there.
  @param[heap] At least one entry; the last entry will be replaced by `node`.
  @order \O(log `size`) */
 static void pT_(sift_up)(struct t_(heap) *const heap, pT_(priority) n) {
@@ -144,7 +147,7 @@ static void pT_(sift_down)(struct t_(heap) *const heap) {
 }
 /** Restore the `heap` by permuting the elements so `i` is in the proper place.
  This reads from the an arbitrary leaf-node into a temporary value, so is
- slightly more complex than <fn:<PH>sift_down>, but the same thing.
+ slightly more complex than <fn:<pT>sift_down>, but the same thing.
  @param[heap] At least `i + 1` entries. */
 static void pT_(sift_down_i)(struct t_(heap) *const heap, size_t i) {
 	const size_t size = (assert(heap && i < heap->as_array.size),
@@ -220,8 +223,8 @@ static int T_(add)(struct t_(heap) *const heap, pT_(priority) node)
 static pT_(priority) *T_(peek)(const struct t_(heap) *const heap)
 	{ return assert(heap), heap->as_array.size ? heap->as_array.data : 0; }
 
-/** Only defined when <fn:<H>heap_size> returns true. Removes the lowest
- element. @return The value of the lowest element in `heap`.
+/** Only defined when <fn:<T>size> returns true. Removes the lowest element.
+ @return The value of the lowest element in `heap`.
  @order \O(\log `size`) @allow */
 static pT_(priority) T_(pop)(struct t_(heap) *const heap) {
 	pT_(priority) n;
@@ -233,7 +236,7 @@ static pT_(priority) T_(pop)(struct t_(heap) *const heap) {
  the size. Invalidates pointers in `heap`. All the elements
  `heap.as_array.size` <= `index` < `heap.as_array.capacity` can be used to
  construct new elements without immediately making them part of the heap, then
- <fn:<H>heap_append>.
+ <fn:<T>append>.
  @return The start of the buffered space. If `a` is idle and `buffer` is zero,
  a null pointer is returned, otherwise null indicates an error.
  @throws[realloc, ERANGE] @allow */
@@ -242,7 +245,7 @@ static pT_(priority) *T_(buffer)(struct t_(heap) *const heap,
 
 /** Adds and heapifies `n` elements to `heap`. Uses <Floyd, 1964, Treesort> to
  sift-down all the internal nodes of heap. The heap elements must exist, see
- <fn:<H>heap_buffer>.
+ <fn:<T>buffer>.
  @param[n] If zero, returns true without heapifying.
  @return Success. @order \O(`heap.size` + `n`) <Doberkat, 1984, Floyd> @allow */
 static void T_(append)(struct t_(heap) *const heap, const size_t n) {
@@ -290,10 +293,12 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #	if defined(HEAP_TO_STRING)
 #		undef HEAP_TO_STRING
-/** Type of `HEAP_TO_STRING` needed function `<tr>to_string`. Responsible for
- turning the read-only argument into a 12-max-`char` output string. */
-typedef void (*pTR_(to_string_fn))(const pT_(priority) *, char (*)[12]);
-/** Thunk. One must implement `<tr>to_string`. */
+#		ifndef HEAP_TRAIT
+/** The type of the required `<tr>to_string`. Responsible for turning the
+ read-only argument into a 12-max-`char` output string. */
+typedef void (*pT_(to_string_fn))(const pT_(priority) *, char (*)[12]);
+#		endif
+/** Thunk(`cur`, `a`). One must implement `<tr>to_string`. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12])
 	{ tr_(to_string)((const void *)&cur->_.a->data[cur->_.i], a); }

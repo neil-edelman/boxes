@@ -1,7 +1,7 @@
 /** @license 2021 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Stand-alone header <../src/bmp.h>; examples <../test/test_bmp.c>.
+ @abstract Header <../src/bmp.h>; examples <../test/test_bmp.c>.
 
  @subtitle Fixed bit-field
 
