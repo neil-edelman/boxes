@@ -13,7 +13,7 @@ Header [\.\./\.\./src/array\.h](../../src/array.h); examples [\.\./\.\./test/tes
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of array.](array.png)
+![Example of array.](../../doc/array/array.png)
 
 [&lt;t&gt;array](#user-content-tag-9c4cf562) is a dynamic array that stores contiguous [&lt;pT&gt;type](#user-content-typedef-9b5be28b)\. Resizing may be necessary when increasing the size of the array; this incurs amortised cost\. As such, the contents are not stable\.
 
@@ -32,7 +32,7 @@ Header [\.\./\.\./src/array\.h](../../src/array.h); examples [\.\./\.\./test/tes
  * Standard:  
    C89
  * Dependancies:  
-   [box](../../src/box.h)
+   [box](../box.h)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -73,7 +73,7 @@ The type of the required `<tr>to_string`\. Responsible for turning the read\-onl
 
 <code>typedef int(*<strong>&lt;pT&gt;compare_fn</strong>)(const &lt;pT&gt;type *restrict a, const &lt;pT&gt;type *restrict b);</code>
 
-[src/compare\.h](src/compare.h): The type of the required `<tr>compare`\. Three\-way comparison on a totally order set; returns an integer value less than, equal to, greater than zero, if `a < b`, `a == b`, `a > b`, respectively\.
+[\.\./\.\./src/compare\.h](../../src/compare.h): The type of the required `<tr>compare`\. Three\-way comparison on a totally order set; returns an integer value less than, equal to, greater than zero, if `a < b`, `a == b`, `a > b`, respectively\.
 
 
 
@@ -81,7 +81,7 @@ The type of the required `<tr>to_string`\. Responsible for turning the read\-onl
 
 <code>typedef int(*<strong>&lt;pT&gt;bipredicate_fn</strong>)(&lt;pT&gt;type *restrict, &lt;pT&gt;type *restrict);</code>
 
-[src/compare\.h](src/compare.h): The type of the required `<tr>is_equal`\. Returns a symmetric boolean given two read\-only elements\.
+[\.\./\.\./src/compare\.h](../../src/compare.h): The type of the required `<tr>is_equal`\. Returns a symmetric boolean given two read\-only elements\.
 
 
 
@@ -89,7 +89,7 @@ The type of the required `<tr>to_string`\. Responsible for turning the read\-onl
 
 <code>typedef int(*<strong>&lt;pT&gt;biaction_fn</strong>)(&lt;pT&gt;type *restrict, &lt;pT&gt;type *restrict);</code>
 
-[src/compare\.h](src/compare.h): Returns a boolean given two modifiable arguments\.
+[\.\./\.\./src/compare\.h](../../src/compare.h): Returns a boolean given two modifiable arguments\.
 
 
 
@@ -101,7 +101,7 @@ The type of the required `<tr>to_string`\. Responsible for turning the read\-onl
 
 Manages the array field `data` which has `size` elements\. The space is indexed up to `capacity`, which is at least `size`\.
 
-![States.](states.png)
+![States.](../../doc/array/states.png)
 
 
 
@@ -438,7 +438,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static int <strong>&lt;TR&gt;compare</strong>(const &lt;pT&gt;box *restrict const <em>a</em>, const &lt;pT&gt;box *restrict const <em>b</em>)</code>
 
-[src/compare\.h](src/compare.h), `COMPARE`: Lexicographically compares `a` to `b`\. Both can be null, with null values before everything\.
+[\.\./\.\./src/compare\.h](../../src/compare.h), `COMPARE`: Lexicographically compares `a` to `b`\. Both can be null, with null values before everything\.
 
  * Return:  
    `a < b`: negative; `a == b`: zero; `a > b`: positive\.
@@ -452,7 +452,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static size_t <strong>&lt;TR&gt;lower_bound</strong>(const &lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;type *const <em>element</em>)</code>
 
-[src/compare\.h](src/compare.h), `COMPARE`, `BOX_ACCESS`: `box` should be partitioned true/false with less\-then `element`\.
+[\.\./\.\./src/compare\.h](../../src/compare.h), `COMPARE`, `BOX_ACCESS`: `box` should be partitioned true/false with less\-then `element`\.
 
  * Return:  
    The first index of `a` that is not less than `cursor`\.
@@ -466,7 +466,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static size_t <strong>&lt;TR&gt;upper_bound</strong>(const &lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;type *const <em>element</em>)</code>
 
-[src/compare\.h](src/compare.h), `COMPARE`, `BOX_ACCESS`: `box` should be partitioned false/true with greater\-than or equal\-to `element`\.
+[\.\./\.\./src/compare\.h](../../src/compare.h), `COMPARE`, `BOX_ACCESS`: `box` should be partitioned false/true with greater\-than or equal\-to `element`\.
 
  * Return:  
    The first index of `box` that is greater than `element`\.
@@ -480,7 +480,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static int <strong>&lt;TR&gt;insert_after</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;type *const <em>element</em>)</code>
 
-[src/compare\.h](src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Copies `element` at the upper bound of a sorted `box`\.
+[\.\./\.\./src/compare\.h](../../src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Copies `element` at the upper bound of a sorted `box`\.
 
  * Return:  
    Success\.
@@ -495,7 +495,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;TR&gt;sort</strong>(&lt;pT&gt;box *const <em>box</em>)</code>
 
-[src/compare\.h](src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`, \(which has a high\-context\-switching cost, but is easy\.\)
+[\.\./\.\./src/compare\.h](../../src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`, \(which has a high\-context\-switching cost, but is easy\.\)
 
  * Order:  
    &#927;\(|`box`| log |`box`|\)
@@ -507,7 +507,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;TR&gt;reverse</strong>(&lt;pT&gt;box *const <em>box</em>)</code>
 
-[src/compare\.h](src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` in reverse by `qsort`\.
+[\.\./\.\./src/compare\.h](../../src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` in reverse by `qsort`\.
 
  * Order:  
    &#927;\(|`box`| log |`box`|\)
@@ -519,7 +519,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static int <strong>&lt;TR&gt;is_equal</strong>(const &lt;pT&gt;box *restrict const <em>a</em>, const &lt;pT&gt;box *restrict const <em>b</em>)</code>
 
-[src/compare\.h](src/compare.h)
+[\.\./\.\./src/compare\.h](../../src/compare.h)
 
  * Return:  
    If `a` piecewise equals `b`, which both can be null\.
@@ -533,7 +533,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;TR&gt;unique_merge</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;biaction_fn <em>merge</em>)</code>
 
-[src/compare\.h](src/compare.h), `BOX_CONTIGUOUS`: Removes consecutive duplicate elements in `box` lazily\.
+[\.\./\.\./src/compare\.h](../../src/compare.h), `BOX_CONTIGUOUS`: Removes consecutive duplicate elements in `box` lazily\.
 
  * Parameter: _merge_  
    Controls surjection\. Called with duplicate elements, if false `(x, y)->(x)`, if true `(x,y)->(y)`\. More complex functions, `(x, y)->(x+y)` can be simulated by mixing the two in the value returned\. Can be null: behaves like false, always deleting the second element\.
@@ -547,7 +547,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;TR&gt;unique</strong>(&lt;pT&gt;box *const <em>box</em>)</code>
 
-[src/compare\.h](src/compare.h), `BOX_CONTIGUOUS`: Removes consecutive duplicate elements in `box`\.
+[\.\./\.\./src/compare\.h](../../src/compare.h), `BOX_CONTIGUOUS`: Removes consecutive duplicate elements in `box`\.
 
  * Order:  
    &#927;\(|`box`|\)

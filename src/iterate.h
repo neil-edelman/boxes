@@ -6,7 +6,7 @@
  Interface defined by box. Singleton.
 
  @std C89 */
-/** * <src/iterate.h>: defining `HAVE_ITERATE_H` supplies functions. */
+/** * <../../src/iterate.h>: defining `HAVE_ITERATE_H` supplies functions. */
 
 #define BOX_ALL /* Sanity check. */
 #include "box.h"
@@ -14,12 +14,12 @@
 #include <stddef.h>
 #include <limits.h>
 
-/** <src/iterate.h>: Operates by side-effects. */
+/** <../../src/iterate.h>: Operates by side-effects. */
 typedef void (*pT_(action_fn))(pT_(type) *);
-/** <src/iterate.h>: Returns a boolean given read-only. */
+/** <../../src/iterate.h>: Returns a boolean given read-only. */
 typedef int (*pT_(predicate_fn))(const pT_(type) *);
 
-/** <src/iterate.h>: Iterates through `box` and calls `predicate` until it
+/** <../../src/iterate.h>: Iterates through `box` and calls `predicate` until it
  returns true. @return The first `predicate` that returned true, or, if the
  statement is false on all, null.
  @order \O(`box.size`) \times \O(`predicate`) @allow */
@@ -36,7 +36,7 @@ static pT_(type) *TR_(any)(const pT_(box) *const box,
 	return 0;
 }
 
-/** <src/iterate.h>: Iterates through `box` and calls `action` on all the
+/** <../../src/iterate.h>: Iterates through `box` and calls `action` on all the
  elements. Differs calling `action` until the iterator is one-ahead, so can
  delete elements as long as it doesn't affect the next, (specifically, a
  linked-list.) @order \O(|`box`|) \times \O(`action`) @allow */
@@ -47,7 +47,7 @@ static void TR_(each)(pT_(box) *const box, const pTR_(action_fn) action) {
 		action(T_(look)(&it));
 }
 
-/** <src/iterate.h>: Iterates through `box` and calls `action` on all the
+/** <../../src/iterate.h>: Iterates through `box` and calls `action` on all the
  elements for which `predicate` returns true.
  @order \O(`box.size`) \times (\O(`predicate`) + \O(`action`)) @allow */
 static void TR_(if_each)(pT_(box) *const box,
@@ -64,7 +64,7 @@ static void TR_(if_each)(pT_(box) *const box,
 
 #ifdef BOX_CONTIGUOUS /* <!-- contiguous */
 
-/** <src/iterate.h>, `pT_CONTIGUOUS`: For all elements of `src`, calls `copy`,
+/** <../../src/iterate.h>, `pT_CONTIGUOUS`: For all elements of `src`, calls `copy`,
  and if true, lazily copies the elements to `dst`. `dst` and `src` can not be
  the same but `src` can be null, (in which case, it does nothing.)
  @order \O(|`src`|) \times \O(`copy`) @throws[realloc] @allow */
@@ -96,7 +96,7 @@ static int TR_(copy_if)(pT_(box) *restrict const dst,
 	return 1;
 }
 
-/** <src/iterate.h>: For all elements of `box`, calls `keep`,
+/** <../../src/iterate.h>: For all elements of `box`, calls `keep`,
  and if false, if contiguous, lazy deletes that item, if not, eagerly. Calls
  `destruct` if not-null before deleting.
  @order \O(|`box`|) (\times O(`keep`) + O(`destruct`)) @allow */
@@ -135,7 +135,7 @@ static void TR_(keep_if)(pT_(box) *const box,
 	T_(tell_size)(box, (size_t)(erase - T_(at)(box, 0)));
 }
 
-/** <src/iterate.h>, `pT_CONTIGUOUS`: Removes at either end of `box` the
+/** <../../src/iterate.h>, `pT_CONTIGUOUS`: Removes at either end of `box` the
  things that `predicate`, if it exists, returns true.
  @order \O(`box.size`) \times \O(`predicate`) @allow */
 static void TR_(trim)(pT_(box) *const box,

@@ -5,7 +5,7 @@
 
  @subtitle Contiguous dynamic array
 
- ![Example of array.](array.png)
+ ![Example of array.](../doc/array/array.png)
 
  <tag:<t>array> is a dynamic array that stores contiguous <typedef:<pT>type>.
  Resizing may be necessary when increasing the size of the array; this incurs
@@ -30,7 +30,7 @@
  @param[ARRAY_DECLARE_ONLY]
  For headers in different compilation units.
 
- @depend [box](../../src/box.h)
+ @depend [box](box.h)
  @std C89 */
 
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
@@ -80,7 +80,7 @@ typedef ARRAY_TYPE pT_(type);
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`.
 
- ![States.](states.png) */
+ ![States.](../doc/array/states.png) */
 struct t_(array) { size_t size, capacity; pT_(type) *data; };
 typedef struct t_(array) pT_(box);
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
