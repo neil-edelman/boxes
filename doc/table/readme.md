@@ -1,6 +1,6 @@
 # table\.h #
 
-Header [\.\./src/table\.h](../src/table.h); examples [\.\./test/test\_table\.c](../test/test_table.c); article [\.\./doc/table/table\.pdf](../doc/table/table.pdf)\.
+Header [\.\./\.\./src/table\.h](../../src/table.h); examples [\.\./\.\./test/test\_table\.c](../../test/test_table.c); article [\.\./table/table\.pdf](../table/table.pdf)\.
 
 ## Hash table ##
 
@@ -17,12 +17,12 @@ Header [\.\./src/table\.h](../src/table.h); examples [\.\./test/test\_table\.c](
 
 [&lt;t&gt;table](#user-content-tag-2283b713) implements a set or map of [&lt;pT&gt;entry](#user-content-typedef-9be2614d) as an inline\-chined hash\-table\. It must be supplied [&lt;pT&gt;hash_fn](#user-content-typedef-896a1418) `<t>hash` and, [&lt;pT&gt;is_equal_fn](#user-content-typedef-f238d00d) `<t>is_equal` or [&lt;pT&gt;unhash_fn](#user-content-typedef-25e8a1a1) `<t>unhash`\. It is contiguous and not stable, and may rearrange elements\.
 
-\* [src/iterate\.h](src/iterate.h): defining `HAVE_ITERATE_H` supplies functions\.
+\* [\.\./\.\./src/iterate\.h](../../src/iterate.h): defining `HAVE_ITERATE_H` supplies functions\.
 
  * Parameter: TABLE\_NAME, TABLE\_KEY  
    `<t>` that satisfies `C` naming conventions when mangled and a valid [&lt;pT&gt;key](#user-content-typedef-95e6d0aa) associated therewith; required\.
  * Parameter: TABLE\_UNHASH  
-   By default it assumes that `<N>is_equal` is supplied; with this, instead requires `<t>unhash` satisfying [&lt;pT&gt;unhash_fn](#user-content-typedef-25e8a1a1)\.
+   By default it assumes that `<t>is_equal` is supplied; with this, instead requires `<t>unhash` satisfying [&lt;pT&gt;unhash_fn](#user-content-typedef-25e8a1a1)\.
  * Parameter: TABLE\_VALUE  
    An optional type that is the payload of the key, thus making this a map or associative array\.
  * Parameter: TABLE\_UINT  
@@ -30,7 +30,7 @@ Header [\.\./src/table\.h](../src/table.h); examples [\.\./test/test\_table\.c](
  * Parameter: TABLE\_DEFAULT  
    Default trait; a [&lt;pT&gt;value](#user-content-typedef-3a465e90) used in [&lt;T&gt;table&lt;R&gt;get](#user-content-fn-529ef21b)\.
  * Parameter: TABLE\_TO\_STRING  
-   To string trait contained in [src/to\_string\.h](src/to_string.h)\. See [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)\.
+   To string trait contained in [\.\./\.\./src/to\_string\.h](../../src/to_string.h)\. See [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)\.
  * Parameter: TABLE\_EXPECT\_TRAIT, TABLE\_TRAIT  
    Named traits are obtained by including `table.h` multiple times with `TABLE_EXPECT_TRAIT` and then subsequently including the name in `TABLE_TRAIT`\.
  * Parameter: TABLE\_DECLARE\_ONLY  
@@ -111,7 +111,7 @@ Returns true if the `replace` replaces the `original`\. \(fixme: Shouldn't it be
 
 <code>typedef void(*<strong>&lt;pT&gt;action_fn</strong>)(&lt;pT&gt;type *);</code>
 
-[src/iterate\.h](src/iterate.h): Operates by side\-effects\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): Operates by side\-effects\.
 
 
 
@@ -119,7 +119,7 @@ Returns true if the `replace` replaces the `original`\. \(fixme: Shouldn't it be
 
 <code>typedef int(*<strong>&lt;pT&gt;predicate_fn</strong>)(const &lt;pT&gt;type *);</code>
 
-[src/iterate\.h](src/iterate.h): Returns a boolean given read\-only\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): Returns a boolean given read\-only\.
 
 
 
@@ -428,7 +428,7 @@ Removes `key` from `table` \(which could be null\.\)
 
 <code>static &lt;pT&gt;type *<strong>&lt;TR&gt;any</strong>(const &lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>)</code>
 
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `predicate` until it returns true\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): Iterates through `box` and calls `predicate` until it returns true\.
 
  * Return:  
    The first `predicate` that returned true, or, if the statement is false on all, null\.
@@ -442,7 +442,7 @@ Removes `key` from `table` \(which could be null\.\)
 
 <code>static void <strong>&lt;TR&gt;each</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;action_fn <em>action</em>)</code>
 
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements\. Differs calling `action` until the iterator is one\-ahead, so can delete elements as long as it doesn't affect the next, \(specifically, a linked\-list\.\)
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): Iterates through `box` and calls `action` on all the elements\. Differs calling `action` until the iterator is one\-ahead, so can delete elements as long as it doesn't affect the next, \(specifically, a linked\-list\.\)
 
  * Order:  
    &#927;\(|`box`|\) &#215; &#927;\(`action`\)
@@ -454,7 +454,7 @@ Removes `key` from `table` \(which could be null\.\)
 
 <code>static void <strong>&lt;TR&gt;if_each</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>, const &lt;pTR&gt;action_fn <em>action</em>)</code>
 
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\.
 
  * Order:  
    &#927;\(`box.size`\) &#215; \(&#927;\(`predicate`\) \+ &#927;\(`action`\)\)
@@ -466,7 +466,7 @@ Removes `key` from `table` \(which could be null\.\)
 
 <code>static int <strong>&lt;TR&gt;copy_if</strong>(&lt;pT&gt;box *restrict const <em>dst</em>, const &lt;pTR&gt;box *restrict const <em>src</em>, const &lt;pTR&gt;predicate_fn <em>copy</em>)</code>
 
-[src/iterate\.h](src/iterate.h), `pT_CONTIGUOUS`: For all elements of `src`, calls `copy`, and if true, lazily copies the elements to `dst`\. `dst` and `src` can not be the same but `src` can be null, \(in which case, it does nothing\.\)
+[\.\./\.\./src/iterate\.h](../../src/iterate.h), `pT_CONTIGUOUS`: For all elements of `src`, calls `copy`, and if true, lazily copies the elements to `dst`\. `dst` and `src` can not be the same but `src` can be null, \(in which case, it does nothing\.\)
 
  * Exceptional return: realloc  
  * Order:  
@@ -479,7 +479,7 @@ Removes `key` from `table` \(which could be null\.\)
 
 <code>static void <strong>&lt;TR&gt;keep_if</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>keep</em>, const &lt;pTR&gt;action_fn <em>destruct</em>)</code>
 
-[src/iterate\.h](src/iterate.h): For all elements of `box`, calls `keep`, and if false, if contiguous, lazy deletes that item, if not, eagerly\. Calls `destruct` if not\-null before deleting\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): For all elements of `box`, calls `keep`, and if false, if contiguous, lazy deletes that item, if not, eagerly\. Calls `destruct` if not\-null before deleting\.
 
  * Order:  
    &#927;\(|`box`|\) \(&#215; O\(`keep`\) \+ O\(`destruct`\)\)
@@ -491,7 +491,7 @@ Removes `key` from `table` \(which could be null\.\)
 
 <code>static void <strong>&lt;TR&gt;trim</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>)</code>
 
-[src/iterate\.h](src/iterate.h), `pT_CONTIGUOUS`: Removes at either end of `box` the things that `predicate`, if it exists, returns true\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h), `pT_CONTIGUOUS`: Removes at either end of `box` the things that `predicate`, if it exists, returns true\.
 
  * Order:  
    &#927;\(`box.size`\) &#215; &#927;\(`predicate`\)
@@ -503,7 +503,7 @@ Removes `key` from `table` \(which could be null\.\)
 
 <code>static const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
+[\.\./\.\./src/to\_string\.h](../../src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
 
  * Return:  
    Address of the static buffer\.

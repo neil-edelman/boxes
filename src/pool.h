@@ -1,9 +1,9 @@
 /** @license 2021 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Header <../src/pool.h> depends on <../src/heap.h> and
- <../src/array.h>; examples <../test/test_pool.c>; article
- <../doc/pool/pool.pdf>.
+ @abstract Header <../../src/pool.h> depends on <../../src/heap.h> and
+ <../../src/array.h>; examples <../../test/test_pool.c>; article
+ <../pool/pool.pdf>.
 
  @subtitle Stable pool
 
@@ -26,9 +26,9 @@
  @param[POOL_DECLARE_ONLY]
  For headers in different compilation units.
 
- @depend [array](../src/array.h)
- @depend [heap](../src/heap.h)
- @depend [box](../src/box.h)
+ @depend [array](../../src/array.h)
+ @depend [heap](../../src/heap.h)
+ @depend [box](../../src/box.h)
  @std C89. However, when compiling for segmented memory models, C99 with
  `uintptr_t` is recommended because of it's implementation-defined instead of
  undefined-behaviour when comparing pointers from different objects in the

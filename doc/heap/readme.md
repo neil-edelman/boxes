@@ -32,7 +32,7 @@ A function satisfying [&lt;pT&gt;less_fn](#user-content-typedef-ca992ecb) called
  * Standard:  
    C89
  * Dependancies:  
-   [array](../array.h), [box](../box.h)
+   [array](../../src/array.h), [box](../../src/box.h)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##

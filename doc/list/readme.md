@@ -1,6 +1,6 @@
 # list\.h #
 
-Header [\.\./src/list\.h](../src/list.h); examples [\.\./test/test\_list\.c](../test/test_list.c)\.
+Header [\.\./\.\./src/list\.h](../../src/list.h); examples [\.\./\.\./test/test\_list\.c](../../test/test_list.c)\.
 
 ## Doubly\-linked component ##
 
@@ -17,14 +17,14 @@ Header [\.\./src/list\.h](../src/list.h); examples [\.\./test/test\_list\.c](../
 
 In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Thareja+2014%2C+Structures), [&lt;t&gt;list](#user-content-tag-9fee1d65) is a circular header, or sentinel, to a doubly\-linked list of [&lt;t&gt;listlink](#user-content-tag-1252dd09)\. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list\. The links will be generally in a larger container type\.
 
-\* [src/iterate\.h](src/iterate.h): defining `HAVE_ITERATE_H` supplies functions\.
+\* [\.\./\.\./src/iterate\.h](../../src/iterate.h): defining `HAVE_ITERATE_H` supplies functions\.
 
  * Parameter: LIST\_NAME  
    `<t>` that satisfies `C` naming conventions when mangled; required\.
  * Parameter: LIST\_COMPARE, LIST\_IS\_EQUAL  
-   Compare trait contained in [src/compare\.h](src/compare.h)\. See [&lt;pT&gt;compare_fn](#user-content-typedef-223b1937) or [&lt;pT&gt;bipredicate_fn](#user-content-typedef-4ab43b88), \(but not both\.\)
+   Compare trait contained in [\.\./\.\./src/compare\.h](../../src/compare.h)\. See [&lt;pT&gt;compare_fn](#user-content-typedef-223b1937) or [&lt;pT&gt;bipredicate_fn](#user-content-typedef-4ab43b88), \(but not both\.\)
  * Parameter: LIST\_TO\_STRING  
-   To string trait contained in [src/to\_string\.h](src/to_string.h)\. See [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)\.
+   To string trait contained in [\.\./\.\./src/to\_string\.h](../../src/to_string.h)\. See [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)\.
  * Parameter: LIST\_EXPECT\_TRAIT, LIST\_TRAIT  
    Named traits are obtained by including `array.h` multiple times with `LIST_EXPECT_TRAIT` and then subsequently including the name in `LIST_TRAIT`\.
  * Standard:  
@@ -39,7 +39,7 @@ In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Th
 
 <code>typedef void(*<strong>&lt;pT&gt;action_fn</strong>)(&lt;pT&gt;type *);</code>
 
-[src/iterate\.h](src/iterate.h): Operates by side\-effects\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): Operates by side\-effects\.
 
 
 
@@ -47,7 +47,7 @@ In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Th
 
 <code>typedef int(*<strong>&lt;pT&gt;predicate_fn</strong>)(const &lt;pT&gt;type *);</code>
 
-[src/iterate\.h](src/iterate.h): Returns a boolean given read\-only\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): Returns a boolean given read\-only\.
 
 
 
@@ -63,7 +63,7 @@ The type of the required `<tr>to_string`\. Responsible for turning the read\-onl
 
 <code>typedef int(*<strong>&lt;pT&gt;compare_fn</strong>)(const &lt;pT&gt;type *restrict a, const &lt;pT&gt;type *restrict b);</code>
 
-[src/compare\.h](src/compare.h): The type of the required `<tr>compare`\. Three\-way comparison on a totally order set; returns an integer value less than, equal to, greater than zero, if `a < b`, `a == b`, `a > b`, respectively\.
+[\.\./\.\./src/compare\.h](../../src/compare.h): The type of the required `<tr>compare`\. Three\-way comparison on a totally order set; returns an integer value less than, equal to, greater than zero, if `a < b`, `a == b`, `a > b`, respectively\.
 
 
 
@@ -71,7 +71,7 @@ The type of the required `<tr>to_string`\. Responsible for turning the read\-onl
 
 <code>typedef int(*<strong>&lt;pT&gt;bipredicate_fn</strong>)(&lt;pT&gt;type *restrict, &lt;pT&gt;type *restrict);</code>
 
-[src/compare\.h](src/compare.h): The type of the required `<tr>is_equal`\. Returns a symmetric boolean given two read\-only elements\.
+[\.\./\.\./src/compare\.h](../../src/compare.h): The type of the required `<tr>is_equal`\. Returns a symmetric boolean given two read\-only elements\.
 
 
 
@@ -79,7 +79,7 @@ The type of the required `<tr>to_string`\. Responsible for turning the read\-onl
 
 <code>typedef int(*<strong>&lt;pT&gt;biaction_fn</strong>)(&lt;pT&gt;type *restrict, &lt;pT&gt;type *restrict);</code>
 
-[src/compare\.h](src/compare.h): Returns a boolean given two modifiable arguments\.
+[\.\./\.\./src/compare\.h](../../src/compare.h): Returns a boolean given two modifiable arguments\.
 
 
 
@@ -325,7 +325,7 @@ Corrects `list` ends to compensate for memory relocation of the list head itself
 
 <code>static &lt;pT&gt;type *<strong>&lt;TR&gt;any</strong>(const &lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>)</code>
 
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `predicate` until it returns true\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): Iterates through `box` and calls `predicate` until it returns true\.
 
  * Return:  
    The first `predicate` that returned true, or, if the statement is false on all, null\.
@@ -339,7 +339,7 @@ Corrects `list` ends to compensate for memory relocation of the list head itself
 
 <code>static void <strong>&lt;TR&gt;each</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;action_fn <em>action</em>)</code>
 
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements\. Differs calling `action` until the iterator is one\-ahead, so can delete elements as long as it doesn't affect the next, \(specifically, a linked\-list\.\)
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): Iterates through `box` and calls `action` on all the elements\. Differs calling `action` until the iterator is one\-ahead, so can delete elements as long as it doesn't affect the next, \(specifically, a linked\-list\.\)
 
  * Order:  
    &#927;\(|`box`|\) &#215; &#927;\(`action`\)
@@ -351,7 +351,7 @@ Corrects `list` ends to compensate for memory relocation of the list head itself
 
 <code>static void <strong>&lt;TR&gt;if_each</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>, const &lt;pTR&gt;action_fn <em>action</em>)</code>
 
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\.
 
  * Order:  
    &#927;\(`box.size`\) &#215; \(&#927;\(`predicate`\) \+ &#927;\(`action`\)\)
@@ -363,7 +363,7 @@ Corrects `list` ends to compensate for memory relocation of the list head itself
 
 <code>static int <strong>&lt;TR&gt;copy_if</strong>(&lt;pT&gt;box *restrict const <em>dst</em>, const &lt;pTR&gt;box *restrict const <em>src</em>, const &lt;pTR&gt;predicate_fn <em>copy</em>)</code>
 
-[src/iterate\.h](src/iterate.h), `pT_CONTIGUOUS`: For all elements of `src`, calls `copy`, and if true, lazily copies the elements to `dst`\. `dst` and `src` can not be the same but `src` can be null, \(in which case, it does nothing\.\)
+[\.\./\.\./src/iterate\.h](../../src/iterate.h), `pT_CONTIGUOUS`: For all elements of `src`, calls `copy`, and if true, lazily copies the elements to `dst`\. `dst` and `src` can not be the same but `src` can be null, \(in which case, it does nothing\.\)
 
  * Exceptional return: realloc  
  * Order:  
@@ -376,7 +376,7 @@ Corrects `list` ends to compensate for memory relocation of the list head itself
 
 <code>static void <strong>&lt;TR&gt;keep_if</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>keep</em>, const &lt;pTR&gt;action_fn <em>destruct</em>)</code>
 
-[src/iterate\.h](src/iterate.h): For all elements of `box`, calls `keep`, and if false, if contiguous, lazy deletes that item, if not, eagerly\. Calls `destruct` if not\-null before deleting\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): For all elements of `box`, calls `keep`, and if false, if contiguous, lazy deletes that item, if not, eagerly\. Calls `destruct` if not\-null before deleting\.
 
  * Order:  
    &#927;\(|`box`|\) \(&#215; O\(`keep`\) \+ O\(`destruct`\)\)
@@ -388,7 +388,7 @@ Corrects `list` ends to compensate for memory relocation of the list head itself
 
 <code>static void <strong>&lt;TR&gt;trim</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>)</code>
 
-[src/iterate\.h](src/iterate.h), `pT_CONTIGUOUS`: Removes at either end of `box` the things that `predicate`, if it exists, returns true\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h), `pT_CONTIGUOUS`: Removes at either end of `box` the things that `predicate`, if it exists, returns true\.
 
  * Order:  
    &#927;\(`box.size`\) &#215; &#927;\(`predicate`\)
@@ -414,7 +414,7 @@ HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if `predicate` i
 
 <code>static const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
+[\.\./\.\./src/to\_string\.h](../../src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
 
  * Return:  
    Address of the static buffer\.
@@ -428,7 +428,7 @@ HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if `predicate` i
 
 <code>static int <strong>&lt;TR&gt;compare</strong>(const &lt;pT&gt;box *restrict const <em>a</em>, const &lt;pT&gt;box *restrict const <em>b</em>)</code>
 
-[src/compare\.h](src/compare.h), `COMPARE`: Lexicographically compares `a` to `b`\. Both can be null, with null values before everything\.
+[\.\./\.\./src/compare\.h](../../src/compare.h), `COMPARE`: Lexicographically compares `a` to `b`\. Both can be null, with null values before everything\.
 
  * Return:  
    `a < b`: negative; `a == b`: zero; `a > b`: positive\.
@@ -442,7 +442,7 @@ HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if `predicate` i
 
 <code>static size_t <strong>&lt;TR&gt;lower_bound</strong>(const &lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;type *const <em>element</em>)</code>
 
-[src/compare\.h](src/compare.h), `COMPARE`, `BOX_ACCESS`: `box` should be partitioned true/false with less\-then `element`\.
+[\.\./\.\./src/compare\.h](../../src/compare.h), `COMPARE`, `BOX_ACCESS`: `box` should be partitioned true/false with less\-then `element`\.
 
  * Return:  
    The first index of `a` that is not less than `cursor`\.
@@ -456,7 +456,7 @@ HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if `predicate` i
 
 <code>static size_t <strong>&lt;TR&gt;upper_bound</strong>(const &lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;type *const <em>element</em>)</code>
 
-[src/compare\.h](src/compare.h), `COMPARE`, `BOX_ACCESS`: `box` should be partitioned false/true with greater\-than or equal\-to `element`\.
+[\.\./\.\./src/compare\.h](../../src/compare.h), `COMPARE`, `BOX_ACCESS`: `box` should be partitioned false/true with greater\-than or equal\-to `element`\.
 
  * Return:  
    The first index of `box` that is greater than `element`\.
@@ -470,7 +470,7 @@ HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if `predicate` i
 
 <code>static int <strong>&lt;TR&gt;insert_after</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;type *const <em>element</em>)</code>
 
-[src/compare\.h](src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Copies `element` at the upper bound of a sorted `box`\.
+[\.\./\.\./src/compare\.h](../../src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Copies `element` at the upper bound of a sorted `box`\.
 
  * Return:  
    Success\.
@@ -485,7 +485,7 @@ HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if `predicate` i
 
 <code>static void <strong>&lt;TR&gt;sort</strong>(&lt;pT&gt;box *const <em>box</em>)</code>
 
-[src/compare\.h](src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`, \(which has a high\-context\-switching cost, but is easy\.\)
+[\.\./\.\./src/compare\.h](../../src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`, \(which has a high\-context\-switching cost, but is easy\.\)
 
  * Order:  
    &#927;\(|`box`| log |`box`|\)
@@ -497,7 +497,7 @@ HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if `predicate` i
 
 <code>static void <strong>&lt;TR&gt;reverse</strong>(&lt;pT&gt;box *const <em>box</em>)</code>
 
-[src/compare\.h](src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` in reverse by `qsort`\.
+[\.\./\.\./src/compare\.h](../../src/compare.h), `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` in reverse by `qsort`\.
 
  * Order:  
    &#927;\(|`box`| log |`box`|\)
@@ -509,7 +509,7 @@ HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if `predicate` i
 
 <code>static int <strong>&lt;TR&gt;is_equal</strong>(const &lt;pT&gt;box *restrict const <em>a</em>, const &lt;pT&gt;box *restrict const <em>b</em>)</code>
 
-[src/compare\.h](src/compare.h)
+[\.\./\.\./src/compare\.h](../../src/compare.h)
 
  * Return:  
    If `a` piecewise equals `b`, which both can be null\.
@@ -523,7 +523,7 @@ HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if `predicate` i
 
 <code>static void <strong>&lt;TR&gt;unique_merge</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;biaction_fn <em>merge</em>)</code>
 
-[src/compare\.h](src/compare.h), `BOX_CONTIGUOUS`: Removes consecutive duplicate elements in `box` lazily\.
+[\.\./\.\./src/compare\.h](../../src/compare.h), `BOX_CONTIGUOUS`: Removes consecutive duplicate elements in `box` lazily\.
 
  * Parameter: _merge_  
    Controls surjection\. Called with duplicate elements, if false `(x, y)->(x)`, if true `(x,y)->(y)`\. More complex functions, `(x, y)->(x+y)` can be simulated by mixing the two in the value returned\. Can be null: behaves like false, always deleting the second element\.
@@ -537,7 +537,7 @@ HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if `predicate` i
 
 <code>static void <strong>&lt;TR&gt;unique</strong>(&lt;pT&gt;box *const <em>box</em>)</code>
 
-[src/compare\.h](src/compare.h), `BOX_CONTIGUOUS`: Removes consecutive duplicate elements in `box`\.
+[\.\./\.\./src/compare\.h](../../src/compare.h), `BOX_CONTIGUOUS`: Removes consecutive duplicate elements in `box`\.
 
  * Order:  
    &#927;\(|`box`|\)

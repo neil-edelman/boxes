@@ -31,8 +31,8 @@
  @param[HEAP_DECLARE_ONLY]
  For headers in different compilation units.
 
- @depend [array](array.h)
- @depend [box](box.h)
+ @depend [array](../../src/array.h)
+ @depend [box](../../src/box.h)
  @std C89 */
 
 #ifndef HEAP_NAME

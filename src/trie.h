@@ -1,8 +1,8 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Header <../src/trie.h> requires <../src/bmp.h>; examples
- <../test/test_trie.c>; article <../doc/trie/trie.pdf>.
+ @abstract Header <../../src/trie.h> requires <../../src/bmp.h>; examples
+ <../../test/test_trie.c>; article <../trie/trie.pdf>.
 
  @subtitle Prefix tree
 
@@ -38,8 +38,8 @@
 
  @param[TRIE_TO_STRING]
  To string trait contained in <src/to_string.h>. The unnamed trait is
- automatically supplied by the string, but others require
-`<name><trait>to_string` be declared as <typedef:<pTR>to_string_fn>.
+ automatically supplied by the string, but others see
+ <typedef:<pT>to_string_fn>.
 
  @param[TRIE_EXPECT_TRAIT, TRIE_TRAIT]
  Named traits are obtained by including `trie.h` multiple times with
@@ -48,8 +48,8 @@
  @param[TRIE_DECLARE_ONLY]
  For headers in different compilation units.
 
- @depend [box](../src/box.h)
- @depend [bmp](../src/bmp.h)
+ @depend [box](../../src/box.h)
+ @depend [bmp](../../src/bmp.h)
  @std C89 (Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ.) */
 
 #ifndef TRIE_NAME
@@ -866,7 +866,7 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #		undef TRIE_TO_STRING
 #		ifndef TRIE_TRAIT
 /** Thunk(`cur`, `a`), transforming a cursor to the key string. */
-static void pTR_(to_string)(const struct T_(cursor) *const cur,
+static void pT_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12]) {
 	/* fixme: This is the same code used again and again in all traits. */
 	const char *from = pT_(ref_to_string)(&cur->start);
@@ -884,7 +884,7 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
  turning the read-only argument into a 12-max-`char` output string. `<pT>value`
  is omitted when it's a set. Only available to named traits, the
  `TRIE_TO_STRING` of the anonymous trait is implicitly the string itself. */
-typedef void (*pTR_(to_string_fn))(const pT_(key), const pT_(entry) *,
+typedef void (*pT_(to_string_fn))(const pT_(key), const pT_(entry) *,
 	char (*)[12]);
 #			error Haven't make test yet. Don't see how it would be so useful.
 #		endif

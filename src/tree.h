@@ -1,8 +1,8 @@
 /** @license 2022 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Header <../src/tree.h>; examples <../test/test_tree.c>;
- article <../doc/tree/tree.pdf>.
+ @abstract Header <../../src/tree.h>; examples <../../test/test_tree.c>;
+ article <../tree/tree.pdf>.
 
  @subtitle Ordered tree
 
@@ -37,8 +37,8 @@
  <fn:<T>tree<R>get>.
 
  @param[TREE_TO_STRING]
- To string trait contained in <src/to_string.h>. Require
- `<name>[<trait>]to_string` be declared as <typedef:<pT>to_string_fn>.
+ To string trait contained in <../../src/to_string.h>. See
+ <typedef:<pT>to_string_fn>.
 
  @param[TREE_EXPECT_TRAIT, TREE_TRAIT]
  Named traits are obtained by including `tree.h` multiple times with
@@ -49,7 +49,7 @@
  For headers in different compilation units.
 
  @fixme merge, difference, trie
- @depend [box](../src/box.h)
+ @depend [box](../../src/box.h)
  @std C89 */
 
 #if !defined(TREE_NAME)

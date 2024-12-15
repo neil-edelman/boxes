@@ -1,8 +1,8 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Header <../src/table.h>; examples <../test/test_table.c>;
- article <../doc/table/table.pdf>.
+ @abstract Header <../../src/table.h>; examples <../../test/test_table.c>;
+ article <../table/table.pdf>.
 
  @subtitle Hash table
 
@@ -18,7 +18,7 @@
  <typedef:<pT>key> associated therewith; required.
 
  @param[TABLE_UNHASH]
- By default it assumes that `<N>is_equal` is supplied; with this, instead
+ By default it assumes that `<t>is_equal` is supplied; with this, instead
  requires `<t>unhash` satisfying <typedef:<pT>unhash_fn>.
 
  @param[TABLE_VALUE]
@@ -34,7 +34,8 @@
  Default trait; a <typedef:<pT>value> used in <fn:<T>table<R>get>.
 
  @param[TABLE_TO_STRING]
- To string trait contained in <src/to_string.h>. See <typedef:<pT>to_string_fn>.
+ To string trait contained in <../../src/to_string.h>. See
+ <typedef:<pT>to_string_fn>.
 
  @param[TABLE_EXPECT_TRAIT, TABLE_TRAIT]
  Named traits are obtained by including `table.h` multiple times with
@@ -44,7 +45,7 @@
  @param[TABLE_DECLARE_ONLY]
  For headers in different compilation units.
 
- @depend [box](../src/box.h)
+ @depend [box](../../src/box.h)
  @std C89 */
 
 #if !defined(TABLE_NAME) || !defined(TABLE_KEY)

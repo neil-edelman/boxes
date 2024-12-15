@@ -1,7 +1,7 @@
 /** @license 2017 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Header <../src/list.h>; examples <../test/test_list.c>.
+ @abstract Header <../../src/list.h>; examples <../../test/test_list.c>.
 
  @subtitle Doubly-linked component
 
@@ -17,17 +17,18 @@
  `<t>` that satisfies `C` naming conventions when mangled; required.
 
  @param[LIST_COMPARE, LIST_IS_EQUAL]
- Compare trait contained in <src/compare.h>. See <typedef:<pT>compare_fn> or
- <typedef:<pT>bipredicate_fn>, (but not both.)
+ Compare trait contained in <../../src/compare.h>. See <typedef:<pT>compare_fn>
+ or <typedef:<pT>bipredicate_fn>, (but not both.)
 
  @param[LIST_TO_STRING]
- To string trait contained in <src/to_string.h>. See <typedef:<pT>to_string_fn>.
+ To string trait contained in <../../src/to_string.h>. See
+ <typedef:<pT>to_string_fn>.
 
  @param[LIST_EXPECT_TRAIT, LIST_TRAIT]
  Named traits are obtained by including `array.h` multiple times with
  `LIST_EXPECT_TRAIT` and then subsequently including the name in `LIST_TRAIT`.
 
- @depend [box](../src/box.h)
+ @depend [box](../../src/box.h)
  @std C89 */
 
 #ifndef LIST_NAME

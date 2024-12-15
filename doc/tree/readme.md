@@ -1,6 +1,6 @@
 # tree\.h #
 
-Header [\.\./src/tree\.h](../src/tree.h); examples [\.\./test/test\_tree\.c](../test/test_tree.c); article [\.\./doc/tree/tree\.pdf](../doc/tree/tree.pdf)\.
+Header [\.\./\.\./src/tree\.h](../../src/tree.h); examples [\.\./\.\./test/test\_tree\.c](../../test/test_tree.c); article [\.\./tree/tree\.pdf](../tree/tree.pdf)\.
 
 ## Ordered tree ##
 
@@ -32,7 +32,7 @@ Adding, deleting, or changes in the topology of the tree invalidate the iterator
  * Parameter: TREE\_DEFAULT  
    Default trait which must be set to a [&lt;pT&gt;value](#user-content-typedef-3a465e90), used in [&lt;T&gt;tree&lt;R&gt;get](#user-content-fn-d5fb169d)\.
  * Parameter: TREE\_TO\_STRING  
-   To string trait contained in [src/to\_string\.h](src/to_string.h)\. Require `<name>[<trait>]to_string` be declared as [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)\.
+   To string trait contained in [\.\./\.\./src/to\_string\.h](../../src/to_string.h)\. See [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)\.
  * Parameter: TREE\_EXPECT\_TRAIT, TREE\_TRAIT  
    Named traits are obtained by including `tree.h` multiple times with `TREE_EXPECT_TRAIT` and then subsequently including the name that satisfies `C` naming conventions when mangled in `TREE_TRAIT`\.
  * Parameter: TREE\_DECLARE\_ONLY  
@@ -431,7 +431,7 @@ Tries to remove `key` from `tree`\.
 
 <code>static const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
+[\.\./\.\./src/to\_string\.h](../../src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
 
  * Return:  
    Address of the static buffer\.
