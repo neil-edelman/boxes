@@ -19,22 +19,22 @@
 
 #ifndef COMPARE_H
 #	define COMPARE_H
-/** <src/compare.h>: The type of the required `<tr>compare`. Three-way
+/** <../../src/compare.h>: The type of the required `<tr>compare`. Three-way
  comparison on a totally order set; returns an integer value less than, equal
  to, greater than zero, if `a < b`, `a == b`, `a > b`, respectively. */
 typedef int (*pT_(compare_fn))(const pT_(type) *restrict a,
 	const pT_(type) *restrict b);
-/** <src/compare.h>: The type of the required `<tr>is_equal`. Returns a
+/** <../../src/compare.h>: The type of the required `<tr>is_equal`. Returns a
  symmetric boolean given two read-only elements. */
 typedef int (*pT_(bipredicate_fn))(pT_(type) *restrict, pT_(type) *restrict);
-/** <src/compare.h>: Returns a boolean given two modifiable arguments. */
+/** <../../src/compare.h>: Returns a boolean given two modifiable arguments. */
 typedef int (*pT_(biaction_fn))(pT_(type) *restrict,
 	pT_(type) *restrict);
 #endif
 
 #ifdef COMPARE /* <!-- compare: <typedef:<pT>compare_fn>. */
 
-/** <src/compare.h>, `COMPARE`: Lexicographically compares `a` to `b`. Both can
+/** <../../src/compare.h>, `COMPARE`: Lexicographically compares `a` to `b`. Both can
  be null, with null values before everything.
  @return `a < b`: negative; `a == b`: zero; `a > b`: positive.
  @order \O(`|a|` & `|b|`) @allow */
@@ -59,7 +59,7 @@ static int TR_(compare)(const pT_(box) *restrict const a,
 
 #	ifdef BOX_ACCESS /* <!-- access: size, at. */
 
-/** <src/compare.h>, `COMPARE`, `BOX_ACCESS`: `box` should be partitioned
+/** <../../src/compare.h>, `COMPARE`, `BOX_ACCESS`: `box` should be partitioned
  true/false with less-then `element`. @return The first index of `a` that is
  not less than `cursor`. @order \O(log `a.size`) @allow */
 static size_t TR_(lower_bound)(const pT_(box) *const box,
@@ -72,7 +72,7 @@ static size_t TR_(lower_bound)(const pT_(box) *const box,
 	return low;
 }
 
-/** <src/compare.h>, `COMPARE`, `BOX_ACCESS`: `box` should be partitioned
+/** <../../src/compare.h>, `COMPARE`, `BOX_ACCESS`: `box` should be partitioned
  false/true with greater-than or equal-to `element`.
  @return The first index of `box` that is greater than `element`.
  @order \O(log |`box`|) @allow */
@@ -89,7 +89,7 @@ static size_t TR_(upper_bound)(const pT_(box) *const box,
 
 #		ifdef BOX_CONTIGUOUS /* <!-- contiguous: element is pointer to array. */
 
-/** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Copies `element` at the upper
+/** <../../src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Copies `element` at the upper
  bound of a sorted `box`.
  @return Success. @order \O(`a.size`) @throws[realloc, ERANGE] @allow */
 static int TR_(insert_after)(pT_(box) *const box,
@@ -108,7 +108,7 @@ static int TR_(insert_after)(pT_(box) *const box,
 static int pTR_(vcompar)(const void *restrict const a,
 	const void *restrict const b) { return tr_(compare)(a, b); }
 
-/** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`,
+/** <../../src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`,
  (which has a high-context-switching cost, but is easy.)
  @order \O(|`box`| \log |`box`|) @allow */
 static void TR_(sort)(pT_(box) *const box) {
@@ -124,7 +124,7 @@ static void TR_(sort)(pT_(box) *const box) {
 static int pTR_(vrevers)(const void *restrict const a,
 	const void *restrict const b) { return tr_(compare)(b, a); }
 
-/** <src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` in reverse by
+/** <../../src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` in reverse by
  `qsort`. @order \O(|`box`| \log |`box`|) @allow */
 static void TR_(reverse)(pT_(box) *const box) {
 	const size_t size = T_(size)(box);
@@ -151,7 +151,7 @@ static int tr_(is_equal)(const pT_(type) *const restrict a,
 
 #endif /* compare --> */
 
-/** <src/compare.h> @return If `a` piecewise equals `b`,
+/** <../../src/compare.h> @return If `a` piecewise equals `b`,
  which both can be null. @order \O(|`a`| & |`b`|) @allow */
 static int TR_(is_equal)(const pT_(box) *restrict const a,
 	const pT_(box) *restrict const b) {
@@ -173,7 +173,7 @@ static int TR_(is_equal)(const pT_(box) *restrict const a,
 #ifdef BOX_CONTIGUOUS /* <!-- contiguous: (array, pointer), size, at,
  tell_size. */
 
-/** <src/compare.h>, `BOX_CONTIGUOUS`: Removes consecutive duplicate elements
+/** <../../src/compare.h>, `BOX_CONTIGUOUS`: Removes consecutive duplicate elements
  in `box` lazily.
  @param[merge] Controls surjection. Called with duplicate elements, if false
  `(x, y)->(x)`, if true `(x,y)->(y)`. More complex functions, `(x, y)->(x+y)`
@@ -215,7 +215,7 @@ static void TR_(unique_merge)(pT_(box) *const box,
 	T_(tell_size)(box, target);
 }
 
-/** <src/compare.h>, `BOX_CONTIGUOUS`: Removes consecutive duplicate elements
+/** <../../src/compare.h>, `BOX_CONTIGUOUS`: Removes consecutive duplicate elements
  in `box`. @order \O(|`box`|) @allow */
 static void TR_(unique)(pT_(box) *const box) { TR_(unique_merge)(box, 0); }
 
