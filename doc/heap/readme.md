@@ -1,6 +1,6 @@
 # heap\.h #
 
-Header [\.\./src/heap\.h](../src/heap.h) depends on [\.\./src/array\.h](../src/array.h); examples [\.\./test/test\_heap\.c](../test/test_heap.c)\.
+Header [\.\./\.\./src/heap\.h](../../src/heap.h) depends on [\.\./\.\./src/array\.h](../../src/array.h); examples [\.\./\.\./test/test\_heap\.c](../../test/test_heap.c)\.
 
 ## Priority\-queue ##
 
@@ -24,7 +24,7 @@ A function satisfying [&lt;pT&gt;less_fn](#user-content-typedef-ca992ecb) called
  * Parameter: HEAP\_NAME, HEAP\_TYPE  
    `<t>` that satisfies `C` naming conventions when mangled\. `HEAP_NAME` is required; `HEAP_TYPE` defaults to `unsigned int`\.
  * Parameter: HEAP\_TO\_STRING  
-   To string trait contained in [src/to\_string\.h](src/to_string.h)\. See [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)\.
+   To string trait contained in [\.\./\.\./src/to\_string\.h](../../src/to_string.h)\. See [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)\.
  * Parameter: HEAP\_EXPECT\_TRAIT, HEAP\_TRAIT  
    Named traits are obtained by including `heap.h` multiple times with `HEAP_EXPECT_TRAIT` and then subsequently including the name in `HEAP_TRAIT`\.
  * Parameter: HEAP\_DECLARE\_ONLY  
@@ -32,7 +32,7 @@ A function satisfying [&lt;pT&gt;less_fn](#user-content-typedef-ca992ecb) called
  * Standard:  
    C89
  * Dependancies:  
-   [array](../../src/array.h), [box](../../src/box.h)
+   [array](../array.h), [box](../box.h)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -248,7 +248,7 @@ Shallow\-copies and heapifies `master` into `heap`\.
 
 <code>static const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
+[\.\./\.\./src/to\_string\.h](../../src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
 
  * Return:  
    Address of the static buffer\.

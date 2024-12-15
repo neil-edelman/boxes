@@ -32,7 +32,7 @@ Header [\.\./\.\./src/array\.h](../../src/array.h); examples [\.\./\.\./test/tes
  * Standard:  
    C89
  * Dependancies:  
-   [box](../../src/box.h)
+   [box](../box.h)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##

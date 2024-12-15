@@ -1,6 +1,6 @@
 # bmp\.h #
 
-Header [\.\./src/bmp\.h](../src/bmp.h); examples [\.\./test/test\_bmp\.c](../test/test_bmp.c)\.
+Header [\.\./\.\./src/bmp\.h](../../src/bmp.h); examples [\.\./\.\./test/test\_bmp\.c](../../test/test_bmp.c)\.
 
 ## Fixed bit\-field ##
 
@@ -20,7 +20,7 @@ Header [\.\./src/bmp\.h](../src/bmp.h); examples [\.\./test/test\_bmp\.c](../tes
  * Standard:  
    C89/90
  * Dependancies:  
-   [box](../../src/box.h)
+   [box](../box.h)
 
 
 

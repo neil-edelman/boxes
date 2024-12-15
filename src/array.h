@@ -30,7 +30,7 @@
  @param[ARRAY_DECLARE_ONLY]
  For headers in different compilation units.
 
- @depend [box](../src/box.h)
+ @depend [box](box.h)
  @std C89 */
 
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)

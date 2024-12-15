@@ -1,8 +1,8 @@
 /** @license 2020 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Header <../src/heap.h> depends on <../src/array.h>; examples
- <../test/test_heap.c>.
+ @abstract Header <../../src/heap.h> depends on <../../src/array.h>; examples
+ <../../test/test_heap.c>.
 
  @subtitle Priority-queue
 
@@ -21,7 +21,8 @@
  required; `HEAP_TYPE` defaults to `unsigned int`.
 
  @param[HEAP_TO_STRING]
- To string trait contained in <src/to_string.h>. See <typedef:<pT>to_string_fn>.
+ To string trait contained in <../../src/to_string.h>. See
+ <typedef:<pT>to_string_fn>.
 
  @param[HEAP_EXPECT_TRAIT, HEAP_TRAIT]
  Named traits are obtained by including `heap.h` multiple times with
@@ -30,8 +31,8 @@
  @param[HEAP_DECLARE_ONLY]
  For headers in different compilation units.
 
- @depend [array](../src/array.h)
- @depend [box](../src/box.h)
+ @depend [array](array.h)
+ @depend [box](box.h)
  @std C89 */
 
 #ifndef HEAP_NAME
