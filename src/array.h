@@ -1,11 +1,11 @@
 /** @license 2016 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Header <../src/array.h>; examples <../test/test_array.c>.
+ @abstract Header <../../src/array.h>; examples <../../test/test_array.c>.
 
  @subtitle Contiguous dynamic array
 
- ![Example of array.](../doc/array/array.png)
+ ![Example of array.](array.png)
 
  <tag:<t>array> is a dynamic array that stores contiguous <typedef:<pT>type>.
  Resizing may be necessary when increasing the size of the array; this incurs
@@ -16,11 +16,12 @@
  <typedef:<pT>type>, associated therewith; required.
 
  @param[ARRAY_COMPARE, ARRAY_IS_EQUAL]
- Compare trait contained in <src/compare.h>. See <typedef:<pT>compare_fn> or
- <typedef:<pT>bipredicate_fn>, (but not both.)
+ Compare trait contained in <../../src/compare.h>. See <typedef:<pT>compare_fn>
+ or <typedef:<pT>bipredicate_fn>, (but not both.)
 
  @param[ARRAY_TO_STRING]
- To string trait contained in <src/to_string.h>. See <typedef:<pT>to_string_fn>.
+ To string trait contained in <../../src/to_string.h>. See
+ <typedef:<pT>to_string_fn>.
 
  @param[ARRAY_EXPECT_TRAIT, ARRAY_TRAIT]
  Named traits are obtained by including `array.h` multiple times with
@@ -29,7 +30,7 @@
  @param[ARRAY_DECLARE_ONLY]
  For headers in different compilation units.
 
- @depend [box](../src/box.h)
+ @depend [box](../../src/box.h)
  @std C89 */
 
 #if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
@@ -79,7 +80,7 @@ typedef ARRAY_TYPE pT_(type);
 /** Manages the array field `data` which has `size` elements. The space is
  indexed up to `capacity`, which is at least `size`.
 
- ![States.](../doc/array/states.png) */
+ ![States.](states.png) */
 struct t_(array) { size_t size, capacity; pT_(type) *data; };
 typedef struct t_(array) pT_(box);
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
