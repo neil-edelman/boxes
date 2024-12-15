@@ -1,7 +1,7 @@
 /** @license 2017 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Stand-alone header <../src/list.h>; examples <../test/test_list.c>.
+ @abstract Header <../src/list.h>; examples <../test/test_list.c>.
 
  @subtitle Doubly-linked component
 
@@ -27,6 +27,7 @@
  Named traits are obtained by including `array.h` multiple times with
  `LIST_EXPECT_TRAIT` and then subsequently including the name in `LIST_TRAIT`.
 
+ @depend [box](../src/box.h)
  @std C89 */
 
 #ifndef LIST_NAME

@@ -12,6 +12,7 @@
  `<t>` that satisfies `C` naming conventions when mangled and a number of bits
  associated therewith, which must be positive; required.
 
+ @depend [box](../src/box.h)
  @std C89/90 */
 
 #if !defined(BMP_NAME) || !defined(BMP_BITS)

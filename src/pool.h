@@ -9,8 +9,8 @@
 
  ![Example of Pool](../doc/pool/pool.png)
 
- <tag:<P>pool> is a memory pool that stores only one
- size—<typedef:<PP>type>—using
+ <tag:<t>pool> is a memory pool that stores only one
+ size—<typedef:<pT>type>—using
  [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation). As
  <Bonwick, 1994, Slab>, it helps reduce internal fragmentation from repeated
  allocation and destruction by caching contiguous blocks. Pointers to valid
@@ -20,15 +20,15 @@
  settle in one contiguous region.
 
  @param[POOL_NAME, POOL_TYPE]
- `<P>` that satisfies `C` naming conventions when mangled and a valid tag type,
- <typedef:<PP>type>, associated therewith; required. `<PP>` is private, whose
- names are prefixed in a manner to avoid collisions.
+ `<t>` that satisfies `C` naming conventions when mangled and a valid tag type,
+ <typedef:<pT>type>, associated therewith; required.
 
  @param[POOL_DECLARE_ONLY]
  For headers in different compilation units.
 
- @depend [array](https://github.com/neil-edelman/array)
- @depend [heap](https://github.com/neil-edelman/heap)
+ @depend [array](../src/array.h)
+ @depend [heap](../src/heap.h)
+ @depend [box](../src/box.h)
  @std C89. However, when compiling for segmented memory models, C99 with
  `uintptr_t` is recommended because of it's implementation-defined instead of
  undefined-behaviour when comparing pointers from different objects in the
@@ -99,7 +99,7 @@ struct pT_(slot) { size_t size; pT_(type) *slab; };
 #define BOX_MAJOR pool
 
 /** A zeroed pool is a valid state. To instantiate to an idle state, see
- <fn:<P>pool>, `{0}` (`C99`,) or being `static`.
+ <fn:<t>pool>, `{0}` (`C99`,) or being `static`.
 
  ![States.](../doc/pool/states.png) */
 struct t_(pool) {
@@ -237,14 +237,18 @@ static int pT_(remove)(struct t_(pool) *const pool,
 	return 1;
 }
 
+/** @return A cursor at slot0 of `p` or to nothing. */
 static struct T_(cursor) T_(begin)(const struct t_(pool) *const p)
 	{ struct T_(cursor) cur; cur.slot0 = p && p->slots.data
 	? p->slots.data + 0 : 0, cur.i = 0; return cur; }
+/** @return Is `cur` valid? */
 static int T_(exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->slot0 && cur->slot0->slab
 	&& cur->i < cur->slot0->size; }
+/** @return A pointer to a valid `cur`. */
 static pT_(type) *T_(look)(struct T_(cursor) *const cur)
 	{ return cur->slot0->slab + cur->i; }
+/** Next valid `cur`. */
 static void T_(next)(struct T_(cursor) *const cur)
 	{ if(cur->i == (size_t)~0) cur->slot0 = 0; else cur->i++; }
 
@@ -271,7 +275,7 @@ static int T_(buffer)(struct t_(pool) *const pool, const size_t n) {
 	return assert(pool), pT_(buffer)(pool, n);
 }
 
-/** This pointer is constant until it gets <fn:<P>pool_remove>.
+/** This pointer is constant until it gets <fn:<T>remove>.
  @return A pointer to a new uninitialized element from `pool`.
  @throws[ERANGE, malloc] @order amortised O(1) @allow */
 static pT_(type) *T_(new)(struct t_(pool) *const pool) {
@@ -287,7 +291,7 @@ static pT_(type) *T_(new)(struct t_(pool) *const pool) {
 		free = private_poolfree_heap_priority_array_pop(&pool->free0.as_array);
 		return assert(free), pool->slots.data[0].slab + *free;
 	}
-	/* The free-heap is empty; guaranteed by <fn:<PP>buffer>. */
+	/* The free-heap is empty; guaranteed by <fn:<pT>buffer>. */
 	slot0 = pool->slots.data + 0;
 	assert(slot0 && slot0->size < pool->capacity0);
 	return slot0->slab + slot0->size++;
@@ -326,7 +330,7 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 /** Type of `POOL_TO_STRING` needed function `<tr>to_string`. Responsible for
  turning the read-only argument into a 12-max-`char` output string. */
 typedef void (*pTR_(to_string_fn))(const pT_(type) *, char (*)[12]);
-/** Thunk. One must implement `<tr>to_string`. */
+/** Thunk(`cur`, `a`). One must implement `<tr>to_string`. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12])
 	{ tr_(to_string)(&cur->slot0->slab[cur->i], a); }

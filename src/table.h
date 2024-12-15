@@ -1,22 +1,20 @@
 /** @license 2019 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Stand-alone header <../src/table.h>; examples <../test/test_table.c>;
+ @abstract Header <../src/table.h>; examples <../test/test_table.c>;
  article <../doc/table/table.pdf>.
 
  @subtitle Hash table
 
  ![Example of <string>table.](../doc/table/table.png)
 
- <tag:<t>table> implements a set or map of <typedef:<pT>entry> as a hash table.
- It must be supplied <typedef:<pT>hash_fn> `<t>hash` and,
- <typedef:<pT>is_equal_fn> `<t>is_equal` or <typedef:<pT>unhash_fn>
- `<t>unhash`.
-
- It is contiguous and not stable, and may rearrange elements on just looking.
+ <tag:<t>table> implements a set or map of <typedef:<pT>entry> as an
+ inline-chined hash-table. It must be supplied <typedef:<pT>hash_fn> `<t>hash`
+ and, <typedef:<pT>is_equal_fn> `<t>is_equal` or <typedef:<pT>unhash_fn>
+ `<t>unhash`. It is contiguous and not stable, and may rearrange elements.
 
  @param[TABLE_NAME, TABLE_KEY]
- `<T>` that satisfies `C` naming conventions when mangled and a valid
+ `<t>` that satisfies `C` naming conventions when mangled and a valid
  <typedef:<pT>key> associated therewith; required.
 
  @param[TABLE_UNHASH]
@@ -28,16 +26,15 @@
  associative array.
 
  @param[TABLE_UINT]
- This is <typedef:<PN>uint>, the unsigned type of hash of the key given by
- <typedef:<PN>hash_fn>; defaults to `size_t`. Usually this can be set to the
- more sensible value `uint32_t` in C99's `stdint.h`.
+ This is <typedef:<pT>uint>, the unsigned type of hash of the key given by
+ <typedef:<pT>hash_fn>; defaults to `size_t`. Usually this can be set to the
+ more sensible value `uint32_t` (or smaller) in C99's `stdint.h`.
 
  @param[TABLE_DEFAULT]
- Default trait; a <typedef:<PN>value> used in <fn:<N>table<D>get>.
+ Default trait; a <typedef:<pT>value> used in <fn:<T>table<R>get>.
 
  @param[TABLE_TO_STRING]
- To string trait `<STR>` contained in <src/to_string.h>. Require
- `<name>[<trait>]to_string` be declared as <typedef:<PSTR>to_string_fn>.
+ To string trait contained in <src/to_string.h>. See <typedef:<pT>to_string_fn>.
 
  @param[TABLE_EXPECT_TRAIT, TABLE_TRAIT]
  Named traits are obtained by including `table.h` multiple times with
@@ -47,6 +44,7 @@
  @param[TABLE_DECLARE_ONLY]
  For headers in different compilation units.
 
+ @depend [box](../src/box.h)
  @std C89 */
 
 #if !defined(TABLE_NAME) || !defined(TABLE_KEY)
@@ -120,8 +118,7 @@ typedef TABLE_KEY pT_(key);
 /*I don't think I need this? I said that last time.
  typedef const TABLE_KEY pT_(key_c);*/ /* Works 90%? */
 
-#	if 0 /* <!-- documentation */
-/** A map from <typedef:<pT>key_c> onto <typedef:<pT>uint>, called `<t>hash`,
+/** A map from <typedef:<pT>key> onto <typedef:<pT>uint>, called `<t>hash`,
  that, ideally, should be easy to compute while minimizing duplicate addresses.
  Must be consistent for each value while in the table. If <typedef:<pT>key> is
  a pointer, one is permitted to have null in the domain. */
@@ -133,13 +130,12 @@ typedef pT_(uint) (*pT_(hash_fn))(const pT_(key));
  in the hash table, rather they are generated using this inverse-mapping. */
 typedef pT_(key) (*pT_(unhash_fn))(pT_(uint));
 #		else
-/** Equivalence relation between <typedef:<PN>key> that satisfies
+/** Equivalence relation between <typedef:<pT>key> that satisfies
  `<t>is_equal_fn(a, b) -> <t>hash(a) == <t>hash(b)`, called `<t>is_equal`.
  If `TABLE_UNHASH` is set, there is no need for this function because the
  comparison is done directly in hash space. */
-typedef int (*pT_(is_equal_fn))(pT_(key_c) a, pT_(key_c) b);
+typedef int (*pT_(is_equal_fn))(const pT_(key) a, const pT_(key) b);
 #		endif
-#	endif /* documentation --> */
 
 #	ifdef TABLE_VALUE
 /** Defining `TABLE_VALUE` produces an associative map, otherwise it is the
@@ -359,7 +355,7 @@ static struct pT_(bucket) *pT_(query)(struct t_(table) *const table,
 /** Ensures that `table` has enough buckets to fill `n` more than the size. May
  invalidate and re-arrange the order.
  @return Success; otherwise, `errno` will be set. @throws[realloc]
- @throws[ERANGE] Tried allocating more then can fit in half <typedef:<PN>uint>
+ @throws[ERANGE] Tried allocating more then can fit in half <typedef:<pT>uint>
  or `realloc` doesn't follow [POSIX
  ](https://pubs.opengroup.org/onlinepubs/009695399/functions/realloc.html). */
 static int pT_(buffer)(struct t_(table) *const table, const pT_(uint) n) {
@@ -524,14 +520,14 @@ static int T_(exists)(/*const*/ struct T_(cursor) *const cur) {
 	cur->table = 0;
 	return 0;
 }
-/** @return Element at valid non-null `it`. */
+/** @return Pointer to a bucket at valid non-null `cur`. */
 static struct pT_(bucket) *T_(look)(const struct T_(cursor) *const cur)
 	{ return cur->table->buckets + cur->i; }
-/** @return If `it` has an element, returns it's key. @allow */
+/** @return If `cur` has an element, returns it's key. @allow */
 static pT_(key) T_(key)(const struct T_(cursor) *const cur)
 	{ return pT_(bucket_key)(cur->table->buckets + cur->i); }
 #		ifdef TABLE_VALUE
-/** @return If `it` has an element, returns it's value, if `TABLE_VALUE`.
+/** @return If `cur` has an element, returns it's value, if `TABLE_VALUE`.
  @allow */
 static pT_(value) *T_(value)(const struct T_(cursor) *const cur)
 	{ return &cur->table->buckets[cur->i].value; }
@@ -655,8 +651,8 @@ static pT_(value) T_(get_or)(struct t_(table) *const table,
 
 #		ifndef TABLE_VALUE /* <!-- set */
 
-/** Only if `TABLE_VALUE` is not set; see <fn:<N>table_assign> for a map. Puts
- `key` in set `table` only if absent.
+/** Only if `TABLE_VALUE` is not set; see <fn:<T>assign> for a map. Puts `key`
+ in set `table` only if absent.
  @return One of: `TABLE_ERROR`, tried putting the entry in the table but
  failed, the table is not modified; `TABLE_PRESENT`, does nothing if there is
  another entry with the same key; `TABLE_ABSENT`, put an entry in the table.
@@ -686,8 +682,8 @@ static enum table_result pT_(assign)(struct t_(table) *const table,
 	return result;
 }
 
-/** Only if `TABLE_VALUE` is set; see <fn:<N>table_try> for a set. Puts `key`
- in the map `table` and store the associated value in `content`.
+/** Only if `TABLE_VALUE` is set; see <fn:<T>try> for a set. Puts `key` in the
+ map `table` and store the associated value in `content`.
  @return `TABLE_ERROR` does not set `content`; `TABLE_ABSENT`, the `content`
  will be a pointer to uninitialized memory; `TABLE_PRESENT`, gets the current
  `content`, (does not alter the keys, if they are distinguishable.)
@@ -698,9 +694,9 @@ static enum table_result T_(assign)(struct t_(table) *const table,
 
 #		endif /* value --> */
 
-/** Callback in <fn:<N>table_update>.
+/** Callback in <fn:<T>update>.
  @return `original` and `replace` ignored, true.
- @implements <typedef:<PN>policy_fn> */
+ @implements <typedef:<pT>policy_fn> */
 static int pT_(always_replace)(const pT_(key) original,
 	const pT_(key) replace) { return (void)original, (void)replace, 1; }
 
@@ -791,16 +787,18 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #	if defined(TABLE_TO_STRING)
 #		undef TABLE_TO_STRING
-#		ifdef TABLE_VALUE
-/** Type of `TABLE_TO_STRING` needed function `<tr>to_string`. Responsible for
- turning the read-only argument into a 12-max-`char` output string. `<pT>value`
- is omitted when it's a set. */
-typedef void (*pTR_(to_string_fn))(const pT_(key), const pT_(value) *,
+#		ifndef ARRAY_TRAIT
+#			ifdef TABLE_VALUE
+/** The type of the required `<tr>to_string`. Responsible for turning the
+ read-only argument into a 12-max-`char` output string. `<pT>value` is omitted
+ when it's a set. */
+typedef void (*pT_(to_string_fn))(const pT_(key), const pT_(value) *,
 	char (*)[12]);
-#		else
-typedef void (*pTR_(to_string_fn))(const pT_(key), char (*)[12]);
+#			else
+typedef void (*pT_(to_string_fn))(const pT_(key), char (*)[12]);
+#			endif
 #		endif
-/** Thunk. One must implement `<tr>to_string`. */
+/** Thunk(`cur`, `a`). One must implement `<tr>to_string`. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12]) {
 	const struct pT_(bucket) *const b = cur->table->buckets + cur->i;

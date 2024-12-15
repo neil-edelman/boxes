@@ -7,7 +7,6 @@ Header [\.\./src/trie\.h](../src/trie.h) requires [\.\./src/bmp\.h](../src/bmp.h
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;pT&gt;key](#user-content-typedef-95e6d0aa), [&lt;pT&gt;entry](#user-content-typedef-9be2614d), [&lt;pT&gt;remit](#user-content-typedef-26fd9b58), [&lt;pT&gt;string_fn](#user-content-typedef-9cf8629b), [&lt;pT&gt;key_fn](#user-content-typedef-d71854df), [&lt;pTR&gt;to_string_fn](#user-content-typedef-d00960b3)
  * [Struct, Union, and Enum Definitions](#user-content-tag): [trie_result](#user-content-tag-eb9850a3), [&lt;t&gt;trie](#user-content-tag-21f3c845)
- * [General Declarations](#user-content-data): [trie](#user-content-data-7d944861)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -38,8 +37,10 @@ While the worse\-case run\-time of querying or modifying is bounded by &#927;\(|
    For headers in different compilation units\.
  * Standard:  
    C89 \(Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ\.\)
+ * Dependancies:  
+   [box](../src/box.h), [bmp](../src/bmp.h)
  * Caveat:  
-   ([&lt;T&gt;from_array](#user-content-fn-bd6b720b), [trie](#user-content-data-7d944861))
+   ([&lt;T&gt;from_array](#user-content-fn-bd6b720b))
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -114,22 +115,6 @@ To initialize it to an idle state, see [&lt;t&gt;trie](#user-content-fn-21f3c845
 
 
 
-## <a id = "user-content-data" name = "user-content-data">General Declarations</a> ##
-
-### <a id = "user-content-data-7d944861" name = "user-content-data-7d944861">trie</a> ###
-
-<code>static void &lt;t&gt;trie_(struct &lt;t&gt;trie *const <strong>trie</strong>){ if(!trie ||!trie -&gt;root)return; if(trie -&gt;root -&gt;bsize !=USHRT_MAX)&lt;pT&gt;clear_r(trie -&gt;root); free(trie -&gt;root); *trie = &lt;t&gt;trie(); } static void &lt;T&gt;clear(struct &lt;t&gt;trie *const trie){ if(!trie ||!trie -&gt;root)return; if(trie -&gt;root -&gt;bsize !=USHRT_MAX)&lt;pT&gt;clear_r(trie -&gt;root); trie -&gt;root -&gt;bsize = USHRT_MAX; } static &lt;pT&gt;remit &lt;T&gt;match(const struct &lt;t&gt;trie *const trie, const char *const string){ struct &lt;pT&gt;ref ref; return trie &amp;&amp;string &amp;&amp;&lt;pT&gt;match(trie, string, &amp;ref)?&lt;pT&gt;ref_to_remit(&amp;ref):0; } static &lt;pT&gt;remit &lt;T&gt;get(const struct &lt;t&gt;trie *const trie, const char *const string){ struct &lt;pT&gt;ref ref; return trie &amp;&amp;string &amp;&amp;&lt;pT&gt;get(trie, string, &amp;ref)?&lt;pT&gt;ref_to_remit(&amp;ref):0; } static enum trie_result &lt;T&gt;match(const struct &lt;t&gt;trie *const trie, const char *const string, &lt;pT&gt;remit *const remit){ struct &lt;pT&gt;ref ref; if(trie &amp;&amp;string &amp;&amp;&lt;pT&gt;match(trie, string, &amp;ref)){ if(remit)*remit = &lt;pT&gt;ref_to_remit(&amp;ref); return TRIE_PRESENT; } return TRIE_ABSENT; } static enum trie_result &lt;T&gt;get(const struct &lt;t&gt;trie *const trie, const char *const string, &lt;pT&gt;remit *const remit){ struct &lt;pT&gt;ref ref; if(trie &amp;&amp;string &amp;&amp;&lt;pT&gt;get(trie, string, &amp;ref)){ if(remit)*remit = &lt;pT&gt;ref_to_remit(&amp;ref); return TRIE_PRESENT; } return TRIE_ABSENT; } static enum trie_result &lt;T&gt;try(struct &lt;t&gt;trie *const trie, const &lt;pT&gt;key key){ assert(trie &amp;&amp;&lt;t&gt;string(key)); return &lt;pT&gt;add(trie, key, 0); } static enum trie_result &lt;T&gt;try(struct &lt;t&gt;trie *const trie, const &lt;pT&gt;key key, &lt;pT&gt;entry **const entry){ enum trie_result result; struct &lt;pT&gt;ref r; assert(trie &amp;&amp;&lt;t&gt;string(key)); if(result = &lt;pT&gt;add(trie, key, &amp;r))*entry = &amp;r .tree -&gt;leaf[r .lf].as_entry; return result; } static int &lt;T&gt;remove(struct &lt;t&gt;trie *const trie, const char *const string){ return trie &amp;&amp;string &amp;&amp;&lt;pT&gt;remove(trie, string); } static size_t &lt;pT&gt;size_r(const struct &lt;pT&gt;iterator *const it){ return it -&gt;end .lf -it -&gt;cur .lf; } static size_t &lt;T&gt;trie_size(const struct &lt;T&gt;trie_iterator *const it){ return assert(it), &lt;pT&gt;size_r(&amp;it -&gt;_); } static void &lt;pT&gt;unused_base_coda(void);</code>
-
-Returns any initialized `trie` \(can be null\) to idle\. Clears every entry in a valid `trie` \(can be null\), but it continues to be active if it is not idle\. Looks at only the index of `trie` for potential `string` \(can both be null\) matches\. Does not access the string itself, thus will ignore the bits that are not in the index\. If may not have a null, the `remit` is stuck as a pointer on the end and a `trie_result` is returned\. If may not have a null, the `remit` is stuck as a pointer on the end and a `trie_result` is returned\. `string` match for `trie` \-> `remit`\. `string` exact match for `trie` \-> `remit`\. Adds `key` to `trie` \(which must both exist\) if it doesn't exist\. Adds `key` to `trie` if it doesn't exist already\.
-
-If `TRIE_ENTRY` was specified and the return is `TRIE_ABSENT`, the trie is in an invalid state until filling in the key with an equivalent `key`\. \(Because [&lt;pT&gt;key](#user-content-typedef-95e6d0aa) is not invertible in this case, it is agnostic of the method of setting the key\.\) Tries to remove `string` from `trie`\. Counts the of the items in `it`\.
-
-
-
- * Caveat:  
-   Doesn't work at all\.
-
-
 ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##
 
 <table>
@@ -145,6 +130,18 @@ If `TRIE_ENTRY` was specified and the return is `TRIE_ABSENT`, the trie is in an
 <tr><td align = right>static struct &lt;t&gt;trie</td><td><a href = "#user-content-fn-21f3c845">&lt;t&gt;trie</a></td><td></td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-bd6b720b">&lt;T&gt;from_array</a></td><td>trie, array, array_size</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-8cc400ee">&lt;t&gt;trie_</a></td><td>trie</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-7f4a964e">&lt;T&gt;clear</a></td><td>trie</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;remit</td><td><a href = "#user-content-fn-8c6438a2">&lt;T&gt;match</a></td><td>trie, string</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;remit</td><td><a href = "#user-content-fn-2b98edfb">&lt;T&gt;get</a></td><td>trie, string</td></tr>
+
+<tr><td align = right>static enum trie_result</td><td><a href = "#user-content-fn-edcfce52">&lt;T&gt;try</a></td><td>trie, key, entry</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-56806709">&lt;T&gt;remove</a></td><td>trie, string</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-260f8348">&lt;TR&gt;to_string</a></td><td>box</td></tr>
 
@@ -221,6 +218,97 @@ Initializes `trie` from an `array` of pointers\-to\-`<T>` of `array_size`\.
 
 
 
+### <a id = "user-content-fn-8cc400ee" name = "user-content-fn-8cc400ee">&lt;t&gt;trie_</a> ###
+
+<code>static void <strong>&lt;t&gt;trie_</strong>(struct &lt;t&gt;trie *const <em>trie</em>)</code>
+
+Returns any initialized `trie` \(can be null\) to idle\.
+
+ * Order:  
+   &#927;\(|`trie`|\)
+
+
+
+
+### <a id = "user-content-fn-7f4a964e" name = "user-content-fn-7f4a964e">&lt;T&gt;clear</a> ###
+
+<code>static void <strong>&lt;T&gt;clear</strong>(struct &lt;t&gt;trie *const <em>trie</em>)</code>
+
+Clears every entry in a valid `trie` \(can be null\), but it continues to be active if it is not idle\.
+
+ * Order:  
+   &#927;\(|`trie`|\)
+
+
+
+
+### <a id = "user-content-fn-8c6438a2" name = "user-content-fn-8c6438a2">&lt;T&gt;match</a> ###
+
+<code>static &lt;pT&gt;remit <strong>&lt;T&gt;match</strong>(const struct &lt;t&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code>
+
+Looks at only the index of `trie` for potential `string` \(can both be null\) matches\. Does not access the string itself, thus will ignore the bits that are not in the index\. If may not have a null, the `remit` is stuck as a pointer on the end and a `trie_result` is returned\.
+
+ * Return:  
+   A candidate match for `string` or null\.
+ * Order:  
+   &#927;\(|`string`|\)
+
+
+
+
+### <a id = "user-content-fn-2b98edfb" name = "user-content-fn-2b98edfb">&lt;T&gt;get</a> ###
+
+<code>static &lt;pT&gt;remit <strong>&lt;T&gt;get</strong>(const struct &lt;t&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code>
+
+If may not have a null, the `remit` is stuck as a pointer on the end and a `trie_result` is returned\.
+
+ * Return:  
+   Exact `string` match for `trie` or null, \(both can be null\.\)
+ * Order:  
+   &#927;\(log |`trie`|\) iid
+
+
+
+
+### <a id = "user-content-fn-edcfce52" name = "user-content-fn-edcfce52">&lt;T&gt;try</a> ###
+
+<code>static enum trie_result <strong>&lt;T&gt;try</strong>(struct &lt;t&gt;trie *const <em>trie</em>, const &lt;pT&gt;key <em>key</em>, &lt;pT&gt;entry **const <em>entry</em>)</code>
+
+Adds `key` to `trie` if it doesn't exist already\.
+
+If `TRIE_ENTRY` was specified and the return is `TRIE_ABSENT`, the trie is in an invalid state until filling in the key with an equivalent `key`\. \(Because [&lt;pT&gt;key](#user-content-typedef-95e6d0aa) is not invertible in this case, it is agnostic of the method of setting the key\.\)
+
+
+
+ * Parameter: _entry_  
+   Output pointer\. Only if `TRIE_ENTRY` is set will this parameter exist\.
+ * Return:  
+   One of, `TRIE_ERROR`, `errno` is set and `entry` is not; `TRIE_ABSENT`, `key` is added to `trie`; `TRIE_PRESENT`, the value associated with `key`\.
+ * Exceptional return: EILSEQ  
+   The string has a distinguishing run of bytes with a neighbouring string that is too long\. On most platforms, this is about 32 bytes the same\.
+ * Exceptional return: malloc  
+ * Order:  
+   &#927;\(log |`trie`|\)
+
+
+
+
+### <a id = "user-content-fn-56806709" name = "user-content-fn-56806709">&lt;T&gt;remove</a> ###
+
+<code>static int <strong>&lt;T&gt;remove</strong>(struct &lt;t&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code>
+
+Tries to remove `string` from `trie`\.
+
+ * Return:  
+   Success\. If either parameter is null or the `string` is not in `trie`, returns false without setting `errno`\.
+ * Exceptional return: EILSEQ  
+   The deletion of `string` would cause an overflow with the rest of the strings\.
+ * Order:  
+   &#927;\(log |`trie`|\)
+
+
+
+
 ### <a id = "user-content-fn-260f8348" name = "user-content-fn-260f8348">&lt;TR&gt;to_string</a> ###
 
 <code>static const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>)</code>
@@ -231,8 +319,6 @@ Initializes `trie` from an `array` of pointers\-to\-`<T>` of `array_size`\.
    Address of the static buffer\.
  * Order:  
    &#920;\(1\)
-
-
 
 
 

@@ -5,8 +5,8 @@ Header [\.\./src/pool\.h](../src/pool.h) depends on [\.\./src/heap\.h](../src/he
 ## Stable pool ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;PP&gt;type](#user-content-typedef-7560d92f)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;P&gt;pool](#user-content-tag-8aba39cb)
+ * [Typedef Aliases](#user-content-typedef): [&lt;pT&gt;type](#user-content-typedef-9b5be28b), [&lt;pTR&gt;to_string_fn](#user-content-typedef-d00960b3)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;t&gt;pool](#user-content-tag-9a0f378f)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -15,37 +15,45 @@ Header [\.\./src/pool\.h](../src/pool.h) depends on [\.\./src/heap\.h](../src/he
 
 ![Example of Pool](../doc/pool/pool.png)
 
-[&lt;P&gt;pool](#user-content-tag-8aba39cb) is a memory pool that stores only one type, [&lt;PP&gt;type](#user-content-typedef-7560d92f), using [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation)\. As [Bonwick, 1994, Slab](https://scholar.google.ca/scholar?q=Bonwick%2C+1994%2C+Slab), it helps reduce internal fragmentation from repeated allocation and destruction by caching contiguous blocks\. A free\-heap in the active\-slab allows random\-access insertions and deletions\. Pointers to valid items in the pool are stable\. If removal is ongoing and uniformly sampled while reaching a steady\-state size, it will eventually settle in one contiguous region\.
+[&lt;t&gt;pool](#user-content-tag-9a0f378f) is a memory pool that stores only one size—[&lt;pT&gt;type](#user-content-typedef-9b5be28b)—using [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation)\. As [Bonwick, 1994, Slab](https://scholar.google.ca/scholar?q=Bonwick%2C+1994%2C+Slab), it helps reduce internal fragmentation from repeated allocation and destruction by caching contiguous blocks\. Pointers to valid items in the pool are stable\. Instead of freeing memory, a free\-heap in the active\-slab allows lazily reusing the same space\. If removal is ongoing and uniformly sampled while reaching a steady\-state size, it will eventually settle in one contiguous region\.
 
 
 
  * Parameter: POOL\_NAME, POOL\_TYPE  
-   `<P>` that satisfies `C` naming conventions when mangled and a valid tag type, [&lt;PP&gt;type](#user-content-typedef-7560d92f), associated therewith; required\. `<PP>` is private, whose names are prefixed in a manner to avoid collisions\.
- * Parameter: POOL\_HEAD, POOL\_BODY  
-   These go together to allow exporting non\-static data between compilation units by separating the header head from the code body\. `POOL_HEAD` needs identical `POOL_NAME` and `POOL_TYPE`\.
+   `<t>` that satisfies `C` naming conventions when mangled and a valid tag type, [&lt;pT&gt;type](#user-content-typedef-9b5be28b), associated therewith; required\.
+ * Parameter: POOL\_DECLARE\_ONLY  
+   For headers in different compilation units\.
  * Standard:  
    C89\. However, when compiling for segmented memory models, C99 with `uintptr_t` is recommended because of it's implementation\-defined instead of undefined\-behaviour when comparing pointers from different objects in the heap of memory addresses\. Still, this is not guaranteed to produce meaningful results on all systems\.
  * Dependancies:  
-   [array](https://github.com/neil-edelman/array), [heap](https://github.com/neil-edelman/heap)
+   [array](../src/array.h), [heap](../src/heap.h), [box](../src/box.h)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
 
-### <a id = "user-content-typedef-7560d92f" name = "user-content-typedef-7560d92f">&lt;PP&gt;type</a> ###
+### <a id = "user-content-typedef-9b5be28b" name = "user-content-typedef-9b5be28b">&lt;pT&gt;type</a> ###
 
-<code>typedef POOL_TYPE <strong>&lt;PP&gt;type</strong>;</code>
+<code>typedef POOL_TYPE <strong>&lt;pT&gt;type</strong>;</code>
 
 A valid tag type set by `POOL_TYPE`\.
 
 
 
+### <a id = "user-content-typedef-d00960b3" name = "user-content-typedef-d00960b3">&lt;pTR&gt;to_string_fn</a> ###
+
+<code>typedef void(*<strong>&lt;pTR&gt;to_string_fn</strong>)(const &lt;pT&gt;type *, char(*)[12]);</code>
+
+Type of `POOL_TO_STRING` needed function `<tr>to_string`\. Responsible for turning the read\-only argument into a 12\-max\-`char` output string\.
+
+
+
 ## <a id = "user-content-tag" name = "user-content-tag">Struct, Union, and Enum Definitions</a> ##
 
-### <a id = "user-content-tag-8aba39cb" name = "user-content-tag-8aba39cb">&lt;P&gt;pool</a> ###
+### <a id = "user-content-tag-9a0f378f" name = "user-content-tag-9a0f378f">&lt;t&gt;pool</a> ###
 
-<code>struct <strong>&lt;P&gt;pool</strong> { struct &lt;PP&gt;slot_array slots; struct poolfree_heap free0; size_t capacity0; };</code>
+<code>struct <strong>&lt;t&gt;pool</strong> { struct &lt;pT&gt;slot_array slots; struct poolfree_heap free0; size_t capacity0; };</code>
 
-A zeroed pool is a valid state\. To instantiate to an idle state, see [&lt;P&gt;pool](#user-content-fn-8aba39cb), `{0}` \(`C99`,\) or being `static`\.
+A zeroed pool is a valid state\. To instantiate to an idle state, see [&lt;t&gt;pool](#user-content-fn-9a0f378f), `{0}` \(`C99`,\) or being `static`\.
 
 ![States.](../doc/pool/states.png)
 
@@ -57,17 +65,17 @@ A zeroed pool is a valid state\. To instantiate to an idle state, see [&lt;P&gt;
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static struct &lt;P&gt;pool</td><td><a href = "#user-content-fn-8aba39cb">&lt;P&gt;pool</a></td><td></td></tr>
+<tr><td align = right>static struct &lt;t&gt;pool</td><td><a href = "#user-content-fn-9a0f378f">&lt;t&gt;pool</a></td><td></td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-f728a3fc">&lt;P&gt;pool_</a></td><td>pool</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-55f4dc70">&lt;t&gt;pool_</a></td><td>pool</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-3579e316">&lt;P&gt;pool_buffer</a></td><td>pool, n</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-c6b6f48f">&lt;T&gt;buffer</a></td><td>pool, n</td></tr>
 
-<tr><td align = right>static &lt;PP&gt;type *</td><td><a href = "#user-content-fn-e71c341a">&lt;P&gt;pool_new</a></td><td>pool</td></tr>
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-222fef85">&lt;T&gt;new</a></td><td>pool</td></tr>
 
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-95972ccc">&lt;P&gt;pool_remove</a></td><td>pool, data</td></tr>
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-56806709">&lt;T&gt;remove</a></td><td>pool, data</td></tr>
 
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-96f5dc51">&lt;P&gt;pool_clear</a></td><td>pool</td></tr>
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-7f4a964e">&lt;T&gt;clear</a></td><td>pool</td></tr>
 
 </table>
 
@@ -75,9 +83,9 @@ A zeroed pool is a valid state\. To instantiate to an idle state, see [&lt;P&gt;
 
 ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
 
-### <a id = "user-content-fn-8aba39cb" name = "user-content-fn-8aba39cb">&lt;P&gt;pool</a> ###
+### <a id = "user-content-fn-9a0f378f" name = "user-content-fn-9a0f378f">&lt;t&gt;pool</a> ###
 
-<code>static struct &lt;P&gt;pool <strong>&lt;P&gt;pool</strong>(void)</code>
+<code>static struct &lt;t&gt;pool <strong>&lt;t&gt;pool</strong>(void)</code>
 
  * Return:  
    An idle pool\.
@@ -87,9 +95,9 @@ A zeroed pool is a valid state\. To instantiate to an idle state, see [&lt;P&gt;
 
 
 
-### <a id = "user-content-fn-f728a3fc" name = "user-content-fn-f728a3fc">&lt;P&gt;pool_</a> ###
+### <a id = "user-content-fn-55f4dc70" name = "user-content-fn-55f4dc70">&lt;t&gt;pool_</a> ###
 
-<code>static void <strong>&lt;P&gt;pool_</strong>(struct &lt;P&gt;pool *const <em>pool</em>)</code>
+<code>static void <strong>&lt;t&gt;pool_</strong>(struct &lt;t&gt;pool *const <em>pool</em>)</code>
 
 Destroys `pool` and returns it to idle\.
 
@@ -99,9 +107,9 @@ Destroys `pool` and returns it to idle\.
 
 
 
-### <a id = "user-content-fn-3579e316" name = "user-content-fn-3579e316">&lt;P&gt;pool_buffer</a> ###
+### <a id = "user-content-fn-c6b6f48f" name = "user-content-fn-c6b6f48f">&lt;T&gt;buffer</a> ###
 
-<code>static int <strong>&lt;P&gt;pool_buffer</strong>(struct &lt;P&gt;pool *const <em>pool</em>, const size_t <em>n</em>)</code>
+<code>static int <strong>&lt;T&gt;buffer</strong>(struct &lt;t&gt;pool *const <em>pool</em>, const size_t <em>n</em>)</code>
 
 Ensure capacity of at least `n` further items in `pool`\. Pre\-sizing is better for contiguous blocks, but takes up that memory\.
 
@@ -112,11 +120,11 @@ Ensure capacity of at least `n` further items in `pool`\. Pre\-sizing is better 
 
 
 
-### <a id = "user-content-fn-e71c341a" name = "user-content-fn-e71c341a">&lt;P&gt;pool_new</a> ###
+### <a id = "user-content-fn-222fef85" name = "user-content-fn-222fef85">&lt;T&gt;new</a> ###
 
-<code>static &lt;PP&gt;type *<strong>&lt;P&gt;pool_new</strong>(struct &lt;P&gt;pool *const <em>pool</em>)</code>
+<code>static &lt;pT&gt;type *<strong>&lt;T&gt;new</strong>(struct &lt;t&gt;pool *const <em>pool</em>)</code>
 
-This pointer is constant until it gets [&lt;P&gt;pool_remove](#user-content-fn-95972ccc)\.
+This pointer is constant until it gets [&lt;T&gt;remove](#user-content-fn-56806709)\.
 
  * Return:  
    A pointer to a new uninitialized element from `pool`\.
@@ -127,9 +135,9 @@ This pointer is constant until it gets [&lt;P&gt;pool_remove](#user-content-fn-9
 
 
 
-### <a id = "user-content-fn-95972ccc" name = "user-content-fn-95972ccc">&lt;P&gt;pool_remove</a> ###
+### <a id = "user-content-fn-56806709" name = "user-content-fn-56806709">&lt;T&gt;remove</a> ###
 
-<code>static int <strong>&lt;P&gt;pool_remove</strong>(struct &lt;P&gt;pool *const <em>pool</em>, &lt;PP&gt;type *const <em>data</em>)</code>
+<code>static int <strong>&lt;T&gt;remove</strong>(struct &lt;t&gt;pool *const <em>pool</em>, &lt;pT&gt;type *const <em>data</em>)</code>
 
 Deletes `data` from `pool`\. \(Do not remove data that is not in `pool`\.\)
 
@@ -143,9 +151,9 @@ Deletes `data` from `pool`\. \(Do not remove data that is not in `pool`\.\)
 
 
 
-### <a id = "user-content-fn-96f5dc51" name = "user-content-fn-96f5dc51">&lt;P&gt;pool_clear</a> ###
+### <a id = "user-content-fn-7f4a964e" name = "user-content-fn-7f4a964e">&lt;T&gt;clear</a> ###
 
-<code>static void <strong>&lt;P&gt;pool_clear</strong>(struct &lt;P&gt;pool *const <em>pool</em>)</code>
+<code>static void <strong>&lt;T&gt;clear</strong>(struct &lt;t&gt;pool *const <em>pool</em>)</code>
 
 Removes all from `pool`, but keeps it's active state, only freeing the smaller blocks\.
 

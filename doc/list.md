@@ -1,6 +1,6 @@
 # list\.h #
 
-Stand\-alone header [\.\./src/list\.h](../src/list.h); examples [\.\./test/test\_list\.c](../test/test_list.c)\.
+Header [\.\./src/list\.h](../src/list.h); examples [\.\./test/test\_list\.c](../test/test_list.c)\.
 
 ## Doubly\-linked component ##
 
@@ -29,6 +29,8 @@ In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Th
    Named traits are obtained by including `array.h` multiple times with `LIST_EXPECT_TRAIT` and then subsequently including the name in `LIST_TRAIT`\.
  * Standard:  
    C89
+ * Dependancies:  
+   [box](../src/box.h)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##

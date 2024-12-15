@@ -16,13 +16,14 @@ abbreviate.
 
 ## Fixme
 
-Fix documentation generator.
 `graph.h` HAS_GRAPH_H?
 Maybe deque will be useful? a linked list of nodes of increasing size, starts at 64, starts at
 1/3 the way in.
 Maybe error reporting goes in `box.h`?
 Rethink `compare.h` and `iterate.h`.
 Get `cdoc` to recognize `.svg`.
+1-based height on tree and trie.
+trunk (root), contiguous bough, branch, leaf, same in tree and trie.
 
 # Symbols
 

@@ -1,7 +1,7 @@
 /** @license 2022 Neil Edelman, distributed under the terms of the
  [MIT License](https://opensource.org/licenses/MIT).
 
- @abstract Stand-alone header <../src/tree.h>; examples <../test/test_tree.c>;
+ @abstract Header <../src/tree.h>; examples <../test/test_tree.c>;
  article <../doc/tree/tree.pdf>.
 
  @subtitle Ordered tree
@@ -49,7 +49,7 @@
  For headers in different compilation units.
 
  @fixme merge, difference, trie
-
+ @depend [box](../src/box.h)
  @std C89 */
 
 #if !defined(TREE_NAME)
@@ -123,7 +123,7 @@ struct tree_node_count { size_t branches, leaves; };
 #	define BOX_MINOR TREE_NAME
 #	define BOX_MAJOR tree
 
-/** Ordered type used by <typedef:<pT>compare_fn>; defaults to `unsigned`. */
+/** Ordered type used by <typedef:<pT>less_fn>; defaults to `unsigned`. */
 typedef TREE_KEY pT_(key);
 
 #	ifdef TREE_VALUE
@@ -163,8 +163,7 @@ struct pT_(branch) { struct pT_(node) base, *child[TREE_ORDER]; };
 
 /* Node plus height is a [sub]-tree. */
 struct pT_(tree) { struct pT_(node) *node; unsigned height; };
-/** To initialize it to an idle state, see <fn:<B>tree>, `{0}` (`C99`), or
- being `static`.
+/** See <fn:<t>tree>.
 
  ![States.](../doc/tree/states.png) */
 struct t_(tree);
@@ -247,11 +246,12 @@ static int T_(exists)(struct T_(cursor) *const cur) {
 static struct pT_(ref) *T_(look)(struct T_(cursor) *const cur) {
 	return &cur->ref;
 }
-/** @return Extract the key from `it` when it points at a valid index. @allow */
+/** @return Extract the key from `cur` when it points at a valid element.
+ @allow */
 static pT_(key) T_(key)(const struct T_(cursor) *const cur)
 	{ return cur->ref.node->key[cur->ref.idx]; }
 #		ifdef TREE_VALUE /* <!-- map */
-/** @return Extract the value from `it` when it points at a valid index, if
+/** @return Extract the value from `cur` when it points at a valid element, if
  `TREE_VALUE`. @allow */
 static pT_(value) *T_(value)(const struct T_(cursor) *const cur)
 	{ return cur->ref.node->value + cur->ref.idx; }
@@ -292,7 +292,7 @@ static void T_(next)(struct T_(cursor) *const cur) {
 	} /* Jumped nodes. */
 	cur->ref = next;
 }
-/** @return Whether `it` is pointing to a valid element. */
+/** @return Whether `cur` is pointing to a valid element. */
 static int T_(previous)(struct T_(cursor) *const cur) {
 	struct pT_(ref) prd;
 	assert(cur && cur->root);
@@ -466,9 +466,9 @@ static struct pT_(ref) pT_(lookup_remove)(struct pT_(tree) tree,
 	return lo;
 }
 
-/** @return Cursor in `tree` such that <fn:<B>tree_key> is the greatest key
- that is less-than-or-equal-to `x`, or if `x` is less than all in `tree`,
- <fn:<B>tree_iterator>. @order \Theta(\log |`tree`|) @allow */
+/** @return Cursor in `tree` such that <fn:<T>key> is the greatest key that is
+ less-than-or-equal-to `x`, or if `x` is less than all in `tree`,
+ <fn:<T>begin>. @order \Theta(\log |`tree`|) @fixme Update. @allow */
 static struct T_(cursor) T_(less)(struct t_(tree) *const tree,
 	const pT_(key) x) {
 	struct T_(cursor) cur;
@@ -478,9 +478,9 @@ static struct T_(cursor) T_(less)(struct t_(tree) *const tree,
 	if(!(cur.ref = pT_(less)(tree->root, x)).node) cur.root = 0;
 	return cur;
 }
-/** @return Cursor in `tree` such that <fn:<B>tree_more> is the smallest key
- that is greater-than-or-equal-to `x`, or, <fn:<B>tree_iterator> if `x` is
- greater than all in `tree`. @order \Theta(\log |`tree`|) @allow */
+/** @return Cursor in `tree` such that <fn:<T>more> is the smallest key that is
+ greater-than-or-equal-to `x`, or, (…) if `x` is greater than all in
+ `tree`. @order \Theta(\log |`tree`|) @fixme Update. @allow */
 static struct T_(cursor) T_(more)(struct t_(tree) *const tree,
 	const pT_(key) x) {
 	struct T_(cursor) cur;
@@ -615,10 +615,10 @@ static pT_(key) T_(more_or)(const struct t_(tree) *const tree,
  non-full node, in spirit with the tree analogy. */
 
 #		ifdef TREE_VALUE /* <!-- map */
-/** Only if `TREE_VALUE` is set; the set version is <fn:<B>tree_try>. Packs
- `key` on the right side of `tree` without doing the usual restructuring. All
- other topology modification functions should be avoided until followed by
- <fn:<B>tree_bulk_finish>.
+/** Only if `TREE_VALUE` is set; the set version is <fn:<T>try>. Packs `key` on
+ the right side of `tree` without doing the usual restructuring. All other
+ topology modification functions should be avoided until followed by
+ <fn:<T>bulk_finish>.
  @param[value] A pointer to the key's value which is set by the function on
  returning true. Can be null.
  @return One of <tag:tree_result>: `TREE_ERROR` and `errno` will be set,
@@ -631,8 +631,8 @@ static enum tree_result T_(bulk_assign)(struct t_(tree) *const tree,
 #		elif defined TREE_VALUE /* map --><!-- null: For braces matching. */
 }
 #		else /* null --><!-- set */
-/** Only if `TREE_VALUE` is not set; see <fn:<B>tree_assign>, which is
- the map version. Packs `key` on the right side of `tree`. @allow */
+/** Only if `TREE_VALUE` is not set; see <fn:<T>assign>, which is the map
+ version. Packs `key` on the right side of `tree`. @allow */
 static enum tree_result T_(bulk_try)(struct t_(tree) *const tree, pT_(key) key)
 {
 #		endif
@@ -730,8 +730,8 @@ catch: /* Didn't work. Reset. */
 }
 
 /** Distributes `tree` (can be null) on the right side so that, after a series
- of <fn:<B>tree_bulk_try> or <fn:<B>tree_bulk_assign>, it will be consistent
- with the minimum number of keys in a node.
+ of <fn:<T>bulk_try> or <fn:<T>bulk_assign>, it will be consistent with the
+ minimum number of keys in a node.
  @return The re-distribution was a success and all nodes are within rules.
  (Only when intermixing bulk and regular operations, can the function return
  false.) @order \O(\log |`tree`|) @allow */
@@ -1005,7 +1005,7 @@ grow: /* Leaf is full. */ {
 
 #		ifdef TREE_VALUE /* <!-- map */
 /** Adds or gets `key` in `tree`. If `key` is already in `tree`, uses the
- old value, _vs_ <fn:<B>tree_update>. (This is only significant in trees with
+ old value, _vs_ <fn:<T>update>. (This is only significant in trees with
  distinguishable keys.)
  @param[valuep] Only present if `TREE_VALUE` (map) was specified. If this
  parameter is non-null and a return value other then `TREE_ERROR`, this
@@ -1020,8 +1020,8 @@ static enum tree_result T_(assign)(struct t_(tree) *const tree,
 	{ return assert(tree), pT_(update)(&tree->root, key, 0, valuep); }
 #		else /* map --><!-- set */
 /** Only if `TREE_VALUE` is not defined. Adds `key` to `tree` only if it is a
- new value, otherwise returns `TREE_PRESENT`. See <fn:<B>tree_assign>, which is
- the map version. @allow */
+ new value, otherwise returns `TREE_PRESENT`. See <fn:<T>assign>, which is the
+ map version. @allow */
 static enum tree_result T_(try)(struct t_(tree) *const tree,
 	const pT_(key) key)
 	{ return assert(tree), pT_(update)(&tree->root, key, 0); }
@@ -1032,7 +1032,7 @@ static enum tree_result T_(try)(struct t_(tree) *const tree,
  @param[eject] If this parameter is non-null and a return value of
  `TREE_PRESENT`, the old key is stored in `eject`, replaced by `key`. A null
  value indicates that on conflict, the new key yields to the old key, as
- <fn:<B>tree_try>. This is only significant in trees with distinguishable keys.
+ <fn:<T>try>. This is only significant in trees with distinguishable keys.
  @param[value] Only present if `TREE_VALUE` (map) was specified. If this
  parameter is non-null and a return value other then `TREE_ERROR`, this
  receives the address of the value associated with the key.
@@ -1353,7 +1353,7 @@ struct pT_(scaffold) {
 	struct pT_(node) **data;
 	struct { struct pT_(node) **head, **fresh, **iterator; } branch, leaf;
 };
-/** Counts the nodes `no` in `tree` for <fn:<PB>nodes>. */
+/** Counts the nodes `no` in `tree` for <fn:<pT>nodes>. */
 static int pT_(nodes_r)(struct pT_(tree) tree,
 	struct tree_node_count *const no) {
 	assert(tree.node && tree.height);
@@ -1387,7 +1387,7 @@ static int pT_(nodes)(const struct t_(tree) *const tree,
 	}
 	return 1;
 }
-/** `ref` with `sc` work under <fn:<PB>cannibalize>. */
+/** `ref` with `sc` work under <fn:<pT>cannibalize>. */
 static void pT_(cannibalize_r)(struct pT_(ref) ref,
 	struct pT_(scaffold) *const sc) {
 	struct pT_(branch) *branch = pT_(as_branch)(ref.node);
@@ -1429,7 +1429,7 @@ static void pT_(cannibalize)(const struct t_(tree) *const tree,
 		*sc->leaf.iterator = ref.node;
 	}
 }
-/** Do the work of `src` cloned with `sc`. Called from <fn:<PB>clone>. */
+/** Do the work of `src` cloned with `sc`. Called from <fn:<pT>clone>. */
 static struct pT_(node) *pT_(clone_r)(struct pT_(tree) src,
 	struct pT_(scaffold) *const sc) {
 	struct pT_(node) *node;
@@ -1566,12 +1566,18 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #	if defined(TREE_TO_STRING)
 #		undef TREE_TO_STRING
-/** Type of `TABLE_TO_STRING` needed function `<tr>to_string`. Responsible for
- turning the read-only argument into a 12-max-`char` output string. `<pT>value`
- is omitted when it's a set. */
-typedef void (*pTR_(to_string_fn))(const pT_(key), const pT_(value) *,
+#		ifndef TREE_TRAIT
+#			ifdef TREE_VALUE
+/** The type of the required `<tr>to_string`. Responsible for turning the
+ read-only argument into a 12-max-`char` output string. `<pT>value` is omitted
+ when it's a set. */
+typedef void (*pT_(to_string_fn))(const pT_(key), const pT_(value) *,
 	char (*)[12]);
-/** Thunk. One must implement `<tr>to_string`. */
+#			else
+typedef void (*pT_(to_string_fn))(const pT_(key), char (*)[12]);
+#			endif
+#		endif
+/** Thunk(`cur`, `a`). One must implement `<tr>to_string`. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12]) {
 #		ifdef TREE_VALUE
@@ -1592,7 +1598,7 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	endif
 
 #	ifdef TREE_DEFAULT /* <!-- default trait */
-/** This is functionally identical to <fn:<B>tree_get_or>, but a with a trait
+/** This is functionally identical to <fn:<T>get_or>, but a with a trait
  specifying a constant default value.
  @return The value associated with `key` in `tree`, (which can be null.) If
  no such value exists, the `TREE_DEFAULT` is returned.

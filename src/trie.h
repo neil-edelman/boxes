@@ -48,6 +48,8 @@
  @param[TRIE_DECLARE_ONLY]
  For headers in different compilation units.
 
+ @depend [box](../src/box.h)
+ @depend [bmp](../src/bmp.h)
  @std C89 (Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ.) */
 
 #ifndef TRIE_NAME

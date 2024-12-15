@@ -19,6 +19,8 @@ Header [\.\./src/bmp\.h](../src/bmp.h); examples [\.\./test/test\_bmp\.c](../tes
    `<t>` that satisfies `C` naming conventions when mangled and a number of bits associated therewith, which must be positive; required\.
  * Standard:  
    C89/90
+ * Dependancies:  
+   [box](../src/box.h)
 
 
 

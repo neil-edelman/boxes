@@ -31,6 +31,8 @@ Header [\.\./src/array\.h](../src/array.h); examples [\.\./test/test\_array\.c](
    For headers in different compilation units\.
  * Standard:  
    C89
+ * Dependancies:  
+   [box](../src/box.h)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
