@@ -30,7 +30,8 @@ else
 endif
 
 projects := $(patsubst test/test_%.c, bin/%, $(wildcard test/test_*.c))
-docs := $(patsubst test/test_%.c, doc/%/readme.md, $(wildcard test/test_*.c)) $(patsubst test/test_%.c, doc/%/index.html, $(wildcard test/test_*.c))
+docs := $(patsubst test/test_%.c, doc/%/readme.md, $(wildcard test/test_*.c))
+#no…$(patsubst test/test_%.c, doc/%/index.html, $(wildcard test/test_*.c))
 
 default: $(projects) $(docs) #comment this out if you don't have cdoc
 	# . . . success making tests in bin/
