@@ -63,9 +63,10 @@ static unsigned to_string_buffer_i;
 #define TO_STRING_RIGHT ')'
 #endif
 
-/** <src/to_string.h>: print the contents of `box` in a static string buffer of
- 256 bytes, with limitations of only printing 4 things in a single sequence
- point. @return Address of the static buffer. @order \Theta(1) @allow */
+/** <../../src/to_string.h>: print the contents of `box` in a static string
+ buffer of 256 bytes, with limitations of only printing 4 things in a single
+ sequence point. @return Address of the static buffer.
+ @order \Theta(1) @allow */
 static const char *TR_(to_string)(const pT_(box) *const box) {
 	union { const pT_(box) *readonly; pT_(box) *promise; } slybox;
 	const char comma = ',', space = ' ', ellipsis[] = "…",

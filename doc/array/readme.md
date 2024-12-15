@@ -17,7 +17,7 @@ Header [\.\./\.\./src/array\.h](../../src/array.h); examples [\.\./\.\./test/tes
 
 [&lt;t&gt;array](#user-content-tag-9c4cf562) is a dynamic array that stores contiguous [&lt;pT&gt;type](#user-content-typedef-9b5be28b)\. Resizing may be necessary when increasing the size of the array; this incurs amortised cost\. As such, the contents are not stable\.
 
-\* [src/iterate\.h](src/iterate.h): defining `HAVE_ITERATE_H` supplies functions\.
+\* [\.\./\.\./src/iterate\.h](../../src/iterate.h): defining `HAVE_ITERATE_H` supplies functions\.
 
  * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
    `<t>` that satisfies `C` naming conventions when mangled and a valid tag\-type, [&lt;pT&gt;type](#user-content-typedef-9b5be28b), associated therewith; required\.
@@ -49,7 +49,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 <code>typedef void(*<strong>&lt;pT&gt;action_fn</strong>)(&lt;pT&gt;type *);</code>
 
-[src/iterate\.h](src/iterate.h): Operates by side\-effects\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): Operates by side\-effects\.
 
 
 
@@ -57,7 +57,7 @@ A valid tag type set by `ARRAY_TYPE`\.
 
 <code>typedef int(*<strong>&lt;pT&gt;predicate_fn</strong>)(const &lt;pT&gt;type *);</code>
 
-[src/iterate\.h](src/iterate.h): Returns a boolean given read\-only\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): Returns a boolean given read\-only\.
 
 
 
@@ -349,7 +349,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static &lt;pT&gt;type *<strong>&lt;TR&gt;any</strong>(const &lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>)</code>
 
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `predicate` until it returns true\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): Iterates through `box` and calls `predicate` until it returns true\.
 
  * Return:  
    The first `predicate` that returned true, or, if the statement is false on all, null\.
@@ -363,7 +363,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;TR&gt;each</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;action_fn <em>action</em>)</code>
 
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements\. Differs calling `action` until the iterator is one\-ahead, so can delete elements as long as it doesn't affect the next, \(specifically, a linked\-list\.\)
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): Iterates through `box` and calls `action` on all the elements\. Differs calling `action` until the iterator is one\-ahead, so can delete elements as long as it doesn't affect the next, \(specifically, a linked\-list\.\)
 
  * Order:  
    &#927;\(|`box`|\) &#215; &#927;\(`action`\)
@@ -375,7 +375,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;TR&gt;if_each</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>, const &lt;pTR&gt;action_fn <em>action</em>)</code>
 
-[src/iterate\.h](src/iterate.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): Iterates through `box` and calls `action` on all the elements for which `predicate` returns true\.
 
  * Order:  
    &#927;\(`box.size`\) &#215; \(&#927;\(`predicate`\) \+ &#927;\(`action`\)\)
@@ -387,7 +387,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static int <strong>&lt;TR&gt;copy_if</strong>(&lt;pT&gt;box *restrict const <em>dst</em>, const &lt;pTR&gt;box *restrict const <em>src</em>, const &lt;pTR&gt;predicate_fn <em>copy</em>)</code>
 
-[src/iterate\.h](src/iterate.h), `pT_CONTIGUOUS`: For all elements of `src`, calls `copy`, and if true, lazily copies the elements to `dst`\. `dst` and `src` can not be the same but `src` can be null, \(in which case, it does nothing\.\)
+[\.\./\.\./src/iterate\.h](../../src/iterate.h), `pT_CONTIGUOUS`: For all elements of `src`, calls `copy`, and if true, lazily copies the elements to `dst`\. `dst` and `src` can not be the same but `src` can be null, \(in which case, it does nothing\.\)
 
  * Exceptional return: realloc  
  * Order:  
@@ -400,7 +400,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;TR&gt;keep_if</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>keep</em>, const &lt;pTR&gt;action_fn <em>destruct</em>)</code>
 
-[src/iterate\.h](src/iterate.h): For all elements of `box`, calls `keep`, and if false, if contiguous, lazy deletes that item, if not, eagerly\. Calls `destruct` if not\-null before deleting\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h): For all elements of `box`, calls `keep`, and if false, if contiguous, lazy deletes that item, if not, eagerly\. Calls `destruct` if not\-null before deleting\.
 
  * Order:  
    &#927;\(|`box`|\) \(&#215; O\(`keep`\) \+ O\(`destruct`\)\)
@@ -412,7 +412,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;TR&gt;trim</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>)</code>
 
-[src/iterate\.h](src/iterate.h), `pT_CONTIGUOUS`: Removes at either end of `box` the things that `predicate`, if it exists, returns true\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h), `pT_CONTIGUOUS`: Removes at either end of `box` the things that `predicate`, if it exists, returns true\.
 
  * Order:  
    &#927;\(`box.size`\) &#215; &#927;\(`predicate`\)
@@ -424,7 +424,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>)</code>
 
-[src/to\_string\.h](src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
+[\.\./\.\./src/to\_string\.h](../../src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
 
  * Return:  
    Address of the static buffer\.

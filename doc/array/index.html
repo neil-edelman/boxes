@@ -50,11 +50,11 @@
 
 <h2><a id = "preamble:" name = "preamble:">Description</a></h2>
 
-<p><img alt = "Example of array." src = "array.png"></p>
+<p><img alt = "Example of array." src = "../../doc/array/array.png" width = 425 height = 280></p>
 
 <p><a href = "#tag:&lt;t&gt;array">&lt;t&gt;array</a> is a dynamic array that stores contiguous <a href = "#typedef:&lt;pT&gt;type">&lt;pT&gt;type</a>. Resizing may be necessary when increasing the size of the array; this incurs amortised cost. As such, the contents are not stable.</p>
 
-* <a href = "src/iterate.h">src/iterate.h</a>: defining <code>HAVE_ITERATE_H</code> supplies functions.</div>
+* <a href = "../../src/iterate.h">../../src/iterate.h</a>: defining <code>HAVE_ITERATE_H</code> supplies functions.</div>
 
 <dl>
 	<dt>Parameter: ARRAY_NAME, ARRAY_TYPE</dt>
@@ -70,7 +70,7 @@
 	<dt>Standard:</dt>
 	<dd>C89</dd>
 	<dt>Dependancies:</dt>
-	<dd><a href = "../../src/box.h">box</a></dd>
+	<dd><a href = "../box.h">box</a></dd>
 </dl>
 
 <h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
@@ -91,7 +91,7 @@
 
 <p><code>typedef void(*<strong>&lt;pT&gt;action_fn</strong>)(&lt;pT&gt;type *);</code></p>
 
-<p><a href = "src/iterate.h">src/iterate.h</a>: Operates by side-effects.</p>
+<p><a href = "../../src/iterate.h">../../src/iterate.h</a>: Operates by side-effects.</p>
 
 </div>
 
@@ -101,7 +101,7 @@
 
 <p><code>typedef int(*<strong>&lt;pT&gt;predicate_fn</strong>)(const &lt;pT&gt;type *);</code></p>
 
-<p><a href = "src/iterate.h">src/iterate.h</a>: Returns a boolean given read-only.</p>
+<p><a href = "../../src/iterate.h">../../src/iterate.h</a>: Returns a boolean given read-only.</p>
 
 </div>
 
@@ -121,7 +121,7 @@
 
 <p><code>typedef int(*<strong>&lt;pT&gt;compare_fn</strong>)(const &lt;pT&gt;type *restrict a, const &lt;pT&gt;type *restrict b);</code></p>
 
-<p><a href = "src/compare.h">src/compare.h</a>: The type of the required <code>&lt;tr&gt;compare</code>. Three-way comparison on a totally order set; returns an integer value less than, equal to, greater than zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
+<p><a href = "../../src/compare.h">../../src/compare.h</a>: The type of the required <code>&lt;tr&gt;compare</code>. Three-way comparison on a totally order set; returns an integer value less than, equal to, greater than zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
 
 </div>
 
@@ -131,7 +131,7 @@
 
 <p><code>typedef int(*<strong>&lt;pT&gt;bipredicate_fn</strong>)(&lt;pT&gt;type *restrict, &lt;pT&gt;type *restrict);</code></p>
 
-<p><a href = "src/compare.h">src/compare.h</a>: The type of the required <code>&lt;tr&gt;is_equal</code>. Returns a symmetric boolean given two read-only elements.</p>
+<p><a href = "../../src/compare.h">../../src/compare.h</a>: The type of the required <code>&lt;tr&gt;is_equal</code>. Returns a symmetric boolean given two read-only elements.</p>
 
 </div>
 
@@ -141,7 +141,7 @@
 
 <p><code>typedef int(*<strong>&lt;pT&gt;biaction_fn</strong>)(&lt;pT&gt;type *restrict, &lt;pT&gt;type *restrict);</code></p>
 
-<p><a href = "src/compare.h">src/compare.h</a>: Returns a boolean given two modifiable arguments.</p>
+<p><a href = "../../src/compare.h">../../src/compare.h</a>: Returns a boolean given two modifiable arguments.</p>
 
 </div>
 
@@ -155,7 +155,7 @@
 
 <p>Manages the array field <code>data</code> which has <code>size</code> elements. The space is indexed up to <code>capacity</code>, which is at least <code>size</code>.</p>
 
-<p><img alt = "States." src = "states.png"></p>
+<p><img alt = "States." src = "../../doc/array/states.png" width = 744 height = 137></p>
 
 </div>
 
@@ -447,7 +447,7 @@
 
 <p><code>static &lt;pT&gt;type *<strong>&lt;TR&gt;any</strong>(const &lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>)</code></p>
 
-<p><a href = "src/iterate.h">src/iterate.h</a>: Iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
+<p><a href = "../../src/iterate.h">../../src/iterate.h</a>: Iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -464,7 +464,7 @@
 
 <p><code>static void <strong>&lt;TR&gt;each</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;action_fn <em>action</em>)</code></p>
 
-<p><a href = "src/iterate.h">src/iterate.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements. Differs calling <code>action</code> until the iterator is one-ahead, so can delete elements as long as it doesn't affect the next, (specifically, a linked-list.)</p>
+<p><a href = "../../src/iterate.h">../../src/iterate.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements. Differs calling <code>action</code> until the iterator is one-ahead, so can delete elements as long as it doesn't affect the next, (specifically, a linked-list.)</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -479,7 +479,7 @@
 
 <p><code>static void <strong>&lt;TR&gt;if_each</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>, const &lt;pTR&gt;action_fn <em>action</em>)</code></p>
 
-<p><a href = "src/iterate.h">src/iterate.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements for which <code>predicate</code> returns true.</p>
+<p><a href = "../../src/iterate.h">../../src/iterate.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements for which <code>predicate</code> returns true.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -494,7 +494,7 @@
 
 <p><code>static int <strong>&lt;TR&gt;copy_if</strong>(&lt;pT&gt;box *restrict const <em>dst</em>, const &lt;pTR&gt;box *restrict const <em>src</em>, const &lt;pTR&gt;predicate_fn <em>copy</em>)</code></p>
 
-<p><a href = "src/iterate.h">src/iterate.h</a>, <code>pT_CONTIGUOUS</code>: For all elements of <code>src</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>dst</code>. <code>dst</code> and <code>src</code> can not be the same but <code>src</code> can be null, (in which case, it does nothing.)</p>
+<p><a href = "../../src/iterate.h">../../src/iterate.h</a>, <code>pT_CONTIGUOUS</code>: For all elements of <code>src</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>dst</code>. <code>dst</code> and <code>src</code> can not be the same but <code>src</code> can be null, (in which case, it does nothing.)</p>
 
 <dl>
 	<dt>Exceptional return: realloc</dt>
@@ -510,7 +510,7 @@
 
 <p><code>static void <strong>&lt;TR&gt;keep_if</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>keep</em>, const &lt;pTR&gt;action_fn <em>destruct</em>)</code></p>
 
-<p><a href = "src/iterate.h">src/iterate.h</a>: For all elements of <code>box</code>, calls <code>keep</code>, and if false, if contiguous, lazy deletes that item, if not, eagerly. Calls <code>destruct</code> if not-null before deleting.</p>
+<p><a href = "../../src/iterate.h">../../src/iterate.h</a>: For all elements of <code>box</code>, calls <code>keep</code>, and if false, if contiguous, lazy deletes that item, if not, eagerly. Calls <code>destruct</code> if not-null before deleting.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -525,7 +525,7 @@
 
 <p><code>static void <strong>&lt;TR&gt;trim</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>)</code></p>
 
-<p><a href = "src/iterate.h">src/iterate.h</a>, <code>pT_CONTIGUOUS</code>: Removes at either end of <code>box</code> the things that <code>predicate</code>, if it exists, returns true.</p>
+<p><a href = "../../src/iterate.h">../../src/iterate.h</a>, <code>pT_CONTIGUOUS</code>: Removes at either end of <code>box</code> the things that <code>predicate</code>, if it exists, returns true.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -540,7 +540,7 @@
 
 <p><code>static const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point.</p>
+<p><a href = "../../src/to_string.h">../../src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -557,7 +557,7 @@
 
 <p><code>static int <strong>&lt;TR&gt;compare</strong>(const &lt;pT&gt;box *restrict const <em>a</em>, const &lt;pT&gt;box *restrict const <em>b</em>)</code></p>
 
-<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>: Lexicographically compares <code>a</code> to <code>b</code>. Both can be null, with null values before everything.</p>
+<p><a href = "../../src/compare.h">../../src/compare.h</a>, <code>COMPARE</code>: Lexicographically compares <code>a</code> to <code>b</code>. Both can be null, with null values before everything.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -574,7 +574,7 @@
 
 <p><code>static size_t <strong>&lt;TR&gt;lower_bound</strong>(const &lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;type *const <em>element</em>)</code></p>
 
-<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_ACCESS</code>: <code>box</code> should be partitioned true/false with less-then <code>element</code>.</p>
+<p><a href = "../../src/compare.h">../../src/compare.h</a>, <code>COMPARE</code>, <code>BOX_ACCESS</code>: <code>box</code> should be partitioned true/false with less-then <code>element</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -591,7 +591,7 @@
 
 <p><code>static size_t <strong>&lt;TR&gt;upper_bound</strong>(const &lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;type *const <em>element</em>)</code></p>
 
-<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_ACCESS</code>: <code>box</code> should be partitioned false/true with greater-than or equal-to <code>element</code>.</p>
+<p><a href = "../../src/compare.h">../../src/compare.h</a>, <code>COMPARE</code>, <code>BOX_ACCESS</code>: <code>box</code> should be partitioned false/true with greater-than or equal-to <code>element</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -608,7 +608,7 @@
 
 <p><code>static int <strong>&lt;TR&gt;insert_after</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;type *const <em>element</em>)</code></p>
 
-<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_CONTIGUOUS</code>: Copies <code>element</code> at the upper bound of a sorted <code>box</code>.</p>
+<p><a href = "../../src/compare.h">../../src/compare.h</a>, <code>COMPARE</code>, <code>BOX_CONTIGUOUS</code>: Copies <code>element</code> at the upper bound of a sorted <code>box</code>.</p>
 
 <dl>
 	<dt>Return:</dt>
@@ -626,7 +626,7 @@
 
 <p><code>static void <strong>&lt;TR&gt;sort</strong>(&lt;pT&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_CONTIGUOUS</code>: Sorts <code>box</code> by <code>qsort</code>, (which has a high-context-switching cost, but is easy.)</p>
+<p><a href = "../../src/compare.h">../../src/compare.h</a>, <code>COMPARE</code>, <code>BOX_CONTIGUOUS</code>: Sorts <code>box</code> by <code>qsort</code>, (which has a high-context-switching cost, but is easy.)</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -641,7 +641,7 @@
 
 <p><code>static void <strong>&lt;TR&gt;reverse</strong>(&lt;pT&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_CONTIGUOUS</code>: Sorts <code>box</code> in reverse by <code>qsort</code>.</p>
+<p><a href = "../../src/compare.h">../../src/compare.h</a>, <code>COMPARE</code>, <code>BOX_CONTIGUOUS</code>: Sorts <code>box</code> in reverse by <code>qsort</code>.</p>
 
 <dl>
 	<dt>Order:</dt>
@@ -656,7 +656,7 @@
 
 <p><code>static int <strong>&lt;TR&gt;is_equal</strong>(const &lt;pT&gt;box *restrict const <em>a</em>, const &lt;pT&gt;box *restrict const <em>b</em>)</code></p>
 
-<p><a href = "src/compare.h">src/compare.h</a></p>
+<p><a href = "../../src/compare.h">../../src/compare.h</a></p>
 
 <dl>
 	<dt>Return:</dt>
@@ -673,7 +673,7 @@
 
 <p><code>static void <strong>&lt;TR&gt;unique_merge</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;biaction_fn <em>merge</em>)</code></p>
 
-<p><a href = "src/compare.h">src/compare.h</a>, <code>BOX_CONTIGUOUS</code>: Removes consecutive duplicate elements in <code>box</code> lazily.</p>
+<p><a href = "../../src/compare.h">../../src/compare.h</a>, <code>BOX_CONTIGUOUS</code>: Removes consecutive duplicate elements in <code>box</code> lazily.</p>
 
 <dl>
 	<dt>Parameter: <em>merge</em></dt>
@@ -690,7 +690,7 @@
 
 <p><code>static void <strong>&lt;TR&gt;unique</strong>(&lt;pT&gt;box *const <em>box</em>)</code></p>
 
-<p><a href = "src/compare.h">src/compare.h</a>, <code>BOX_CONTIGUOUS</code>: Removes consecutive duplicate elements in <code>box</code>.</p>
+<p><a href = "../../src/compare.h">../../src/compare.h</a>, <code>BOX_CONTIGUOUS</code>: Removes consecutive duplicate elements in <code>box</code>.</p>
 
 <dl>
 	<dt>Order:</dt>
