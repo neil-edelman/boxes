@@ -13,7 +13,7 @@ Header [\.\./src/array\.h](../src/array.h); examples [\.\./test/test\_array\.c](
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of array.](../doc/array/array.png)
+![Example of array.](../../doc/array/array.png)
 
 [&lt;t&gt;array](#user-content-tag-9c4cf562) is a dynamic array that stores contiguous [&lt;pT&gt;type](#user-content-typedef-9b5be28b)\. Resizing may be necessary when increasing the size of the array; this incurs amortised cost\. As such, the contents are not stable\.
 
@@ -32,7 +32,7 @@ Header [\.\./src/array\.h](../src/array.h); examples [\.\./test/test\_array\.c](
  * Standard:  
    C89
  * Dependancies:  
-   [box](../src/box.h)
+   [box](../../src/box.h)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -101,7 +101,7 @@ The type of the required `<tr>to_string`\. Responsible for turning the read\-onl
 
 Manages the array field `data` which has `size` elements\. The space is indexed up to `capacity`, which is at least `size`\.
 
-![States.](../doc/array/states.png)
+![States.](../../doc/array/states.png)
 
 
 

@@ -1,0 +1,682 @@
+<!doctype html public "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<meta http-equiv = "Content-Type" content = "text/html;charset=UTF-8">
+<!-- Steal these colour values from JavaDocs. -->
+<style type = "text/css">
+	a:link,  a:visited { color: #4a6782; }
+	a:hover, a:focus   { color: #bb7a2a; }
+	a:active           { color: #4A6782; }
+	tr:nth-child(even) { background: #dee3e9; }
+	div {
+		margin:  4px 0;
+		padding: 0 4px 4px 4px;
+	}
+	table      { width: 100%; }
+	td         { padding: 4px; }
+	h3, h1 {
+		color: #2c4557;
+		background-color: #dee3e9;
+		padding:          4px;
+	}
+	h3 {
+		margin:           0 -4px;
+		padding:          4px;
+	}
+</style>
+<title>table.h</title>
+</head>
+
+<body>
+
+<h1>table.h</h1>
+
+<p>Header <a href = "../src/table.h">../src/table.h</a>; examples <a href = "../test/test_table.c">../test/test_table.c</a>; article <a href = "../doc/table/table.pdf">../doc/table/table.pdf</a>.</p>
+
+<h2>Hash table</h2>
+
+<ul>
+	<li><a href = "#preamble:">Description</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<pT>uint">&lt;pT&gt;uint</a>, <a href = "#typedef:<pT>key">&lt;pT&gt;key</a>, <a href = "#typedef:<pT>hash_fn">&lt;pT&gt;hash_fn</a>, <a href = "#typedef:<pT>unhash_fn">&lt;pT&gt;unhash_fn</a>, <a href = "#typedef:<pT>is_equal_fn">&lt;pT&gt;is_equal_fn</a>, <a href = "#typedef:<pT>value">&lt;pT&gt;value</a>, <a href = "#typedef:<pT>entry">&lt;pT&gt;entry</a>, <a href = "#typedef:<pT>policy_fn">&lt;pT&gt;policy_fn</a>, <a href = "#typedef:<pT>action_fn">&lt;pT&gt;action_fn</a>, <a href = "#typedef:<pT>predicate_fn">&lt;pT&gt;predicate_fn</a>, <a href = "#typedef:<pT>to_string_fn">&lt;pT&gt;to_string_fn</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:table_result">table_result</a>, <a href = "#tag:<T>entry">&lt;T&gt;entry</a>, <a href = "#tag:<t>table">&lt;t&gt;table</a>, <a href = "#tag:<T>cursor">&lt;T&gt;cursor</a></li>
+	<li><a href = "#summary:">Function Summary</a></li>
+	<li><a href = "#fn:">Function Definitions</a></li>
+	<li><a href = "#license:">License</a></li>
+</ul>
+
+<div>
+
+<h2><a id = "preamble:" name = "preamble:">Description</a></h2>
+
+<p><img alt = "Example of &lt;string&gt;table." src = "../../doc/table/table.png" width = 349 height = 407></p>
+
+<p><a href = "#tag:&lt;t&gt;table">&lt;t&gt;table</a> implements a set or map of <a href = "#typedef:&lt;pT&gt;entry">&lt;pT&gt;entry</a> as an inline-chined hash-table. It must be supplied <a href = "#typedef:&lt;pT&gt;hash_fn">&lt;pT&gt;hash_fn</a> <code>&lt;t&gt;hash</code> and, <a href = "#typedef:&lt;pT&gt;is_equal_fn">&lt;pT&gt;is_equal_fn</a> <code>&lt;t&gt;is_equal</code> or <a href = "#typedef:&lt;pT&gt;unhash_fn">&lt;pT&gt;unhash_fn</a> <code>&lt;t&gt;unhash</code>. It is contiguous and not stable, and may rearrange elements.</p>
+
+* <a href = "src/iterate.h">src/iterate.h</a>: defining <code>HAVE_ITERATE_H</code> supplies functions.</div>
+
+<dl>
+	<dt>Parameter: TABLE_NAME, TABLE_KEY</dt>
+	<dd><code>&lt;t&gt;</code> that satisfies <code>C</code> naming conventions when mangled and a valid <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a> associated therewith; required.</dd>
+	<dt>Parameter: TABLE_UNHASH</dt>
+	<dd>By default it assumes that <code>&lt;N&gt;is_equal</code> is supplied; with this, instead requires <code>&lt;t&gt;unhash</code> satisfying <a href = "#typedef:&lt;pT&gt;unhash_fn">&lt;pT&gt;unhash_fn</a>.</dd>
+	<dt>Parameter: TABLE_VALUE</dt>
+	<dd>An optional type that is the payload of the key, thus making this a map or associative array.</dd>
+	<dt>Parameter: TABLE_UINT</dt>
+	<dd>This is <a href = "#typedef:&lt;pT&gt;uint">&lt;pT&gt;uint</a>, the unsigned type of hash of the key given by <a href = "#typedef:&lt;pT&gt;hash_fn">&lt;pT&gt;hash_fn</a>; defaults to <code>size_t</code>. Usually this can be set to the more sensible value <code>uint32_t</code> (or smaller) in C99's <code>stdint.h</code>.</dd>
+	<dt>Parameter: TABLE_DEFAULT</dt>
+	<dd>Default trait; a <a href = "#typedef:&lt;pT&gt;value">&lt;pT&gt;value</a> used in <a href = "#fn:&lt;T&gt;table&lt;R&gt;get">&lt;T&gt;table&lt;R&gt;get</a>.</dd>
+	<dt>Parameter: TABLE_TO_STRING</dt>
+	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>. See <a href = "#typedef:&lt;pT&gt;to_string_fn">&lt;pT&gt;to_string_fn</a>.</dd>
+	<dt>Parameter: TABLE_EXPECT_TRAIT, TABLE_TRAIT</dt>
+	<dd>Named traits are obtained by including <code>table.h</code> multiple times with <code>TABLE_EXPECT_TRAIT</code> and then subsequently including the name in <code>TABLE_TRAIT</code>.</dd>
+	<dt>Parameter: TABLE_DECLARE_ONLY</dt>
+	<dd>For headers in different compilation units.</dd>
+	<dt>Standard:</dt>
+	<dd>C89</dd>
+	<dt>Dependancies:</dt>
+	<dd><a href = "../../src/box.h">box</a></dd>
+</dl>
+
+<h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
+
+<div>
+
+<h3><a id = "typedef:<pT>uint" name = "typedef:<pT>uint">&lt;pT&gt;uint</a></h3>
+
+<p><code>typedef TABLE_UINT <strong>&lt;pT&gt;uint</strong>;</code></p>
+
+<p><a href = "#typedef:&lt;pT&gt;hash_fn">&lt;pT&gt;hash_fn</a> returns this hash type by <code>TABLE_UINT</code>, which must be be an unsigned integer. Places a simplifying limit on the maximum number of elements of half the cardinality.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>key" name = "typedef:<pT>key">&lt;pT&gt;key</a></h3>
+
+<p><code>typedef TABLE_KEY <strong>&lt;pT&gt;key</strong>;</code></p>
+
+<p>Valid tag type defined by <code>TABLE_KEY</code> used for keys. If <code>TABLE_UNHASH</code> is not defined, a copy of this value will be stored in the internal buckets.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>hash_fn" name = "typedef:<pT>hash_fn">&lt;pT&gt;hash_fn</a></h3>
+
+<p><code>typedef &lt;pT&gt;uint(*<strong>&lt;pT&gt;hash_fn</strong>)(const &lt;pT&gt;key);</code></p>
+
+<p>A map from <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a> onto <a href = "#typedef:&lt;pT&gt;uint">&lt;pT&gt;uint</a>, called <code>&lt;t&gt;hash</code>, that, ideally, should be easy to compute while minimizing duplicate addresses. Must be consistent for each value while in the table. If <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a> is a pointer, one is permitted to have null in the domain.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>unhash_fn" name = "typedef:<pT>unhash_fn">&lt;pT&gt;unhash_fn</a></h3>
+
+<p><code>typedef &lt;pT&gt;key(*<strong>&lt;pT&gt;unhash_fn</strong>)(&lt;pT&gt;uint);</code></p>
+
+<p>Defining <code>TABLE_UNHASH</code> says <a href = "#typedef:&lt;pT&gt;hash_fn">&lt;pT&gt;hash_fn</a> forms a bijection between the range in <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a> and the image in <a href = "#typedef:&lt;pT&gt;uint">&lt;pT&gt;uint</a>, and the inverse is called <code>&lt;t&gt;unhash</code>. In this case, keys are not stored in the hash table, rather they are generated using this inverse-mapping.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>is_equal_fn" name = "typedef:<pT>is_equal_fn">&lt;pT&gt;is_equal_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;pT&gt;is_equal_fn</strong>)(const &lt;pT&gt;key a, const &lt;pT&gt;key b);</code></p>
+
+<p>Equivalence relation between <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a> that satisfies <code>&lt;t&gt;is_equal_fn(a, b) -&gt; &lt;t&gt;hash(a) == &lt;t&gt;hash(b)</code>, called <code>&lt;t&gt;is_equal</code>. If <code>TABLE_UNHASH</code> is set, there is no need for this function because the comparison is done directly in hash space.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>value" name = "typedef:<pT>value">&lt;pT&gt;value</a></h3>
+
+<p><code>typedef TABLE_VALUE <strong>&lt;pT&gt;value</strong>;</code></p>
+
+<p>Defining <code>TABLE_VALUE</code> produces an associative map, otherwise it is the same as <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>entry" name = "typedef:<pT>entry">&lt;pT&gt;entry</a></h3>
+
+<p><code>typedef struct &lt;T&gt;entry <strong>&lt;pT&gt;entry</strong>;</code></p>
+
+<p>If <code>TABLE_VALUE</code>, this is <a href = "#tag:&lt;T&gt;entry">&lt;T&gt;entry</a>; otherwise, it's the same as <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>policy_fn" name = "typedef:<pT>policy_fn">&lt;pT&gt;policy_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;pT&gt;policy_fn</strong>)(&lt;pT&gt;key original, &lt;pT&gt;key replace);</code></p>
+
+<p>Returns true if the <code>replace</code> replaces the <code>original</code>. (fixme: Shouldn't it be entry?)</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>action_fn" name = "typedef:<pT>action_fn">&lt;pT&gt;action_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;pT&gt;action_fn</strong>)(&lt;pT&gt;type *);</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>: Operates by side-effects.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>predicate_fn" name = "typedef:<pT>predicate_fn">&lt;pT&gt;predicate_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;pT&gt;predicate_fn</strong>)(const &lt;pT&gt;type *);</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>: Returns a boolean given read-only.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>to_string_fn" name = "typedef:<pT>to_string_fn">&lt;pT&gt;to_string_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;pT&gt;to_string_fn</strong>)(const &lt;pT&gt;key, const &lt;pT&gt;value *, char(*)[12]);</code></p>
+
+<p>The type of the required <code>&lt;tr&gt;to_string</code>. Responsible for turning the read-only argument into a 12-max-<code>char</code> output string. <code>&lt;pT&gt;value</code> is omitted when it's a set.</p>
+
+</div>
+
+<h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
+
+<div>
+
+<h3><a id = "tag:table_result" name = "tag:table_result">table_result</a></h3>
+
+<p><code>enum <strong>table_result</strong> { TABLE_RESULT };</code></p>
+
+<p>A result of modifying the table, of which <code>TABLE_ERROR</code> is false.</p>
+
+<p><img alt = "A diagram of the result states." src = "../../doc/table/result.png" width = 567 height = 288></p>
+
+</div>
+
+<div>
+
+<h3><a id = "tag:<T>entry" name = "tag:<T>entry">&lt;T&gt;entry</a></h3>
+
+<p><code>struct <strong>&lt;T&gt;entry</strong> { &lt;pT&gt;key key; &lt;pT&gt;value value; };</code></p>
+
+<p>Defining <code>TABLE_VALUE</code> creates this map from <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a> to <a href = "#typedef:&lt;pT&gt;value">&lt;pT&gt;value</a>, as an interface with table.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "tag:<t>table" name = "tag:<t>table">&lt;t&gt;table</a></h3>
+
+<p><code>struct <strong>&lt;t&gt;table</strong> { struct &lt;pT&gt;bucket *buckets; &lt;pT&gt;uint log_capacity, size, top; };</code></p>
+
+<p>To initialize, see <a href = "#fn:&lt;t&gt;table">&lt;t&gt;table</a>, <code>TABLE_IDLE</code>, <code>{0}</code> (<code>C99</code>,) or being <code>static</code>. The fields should be treated as read-only; any modification is liable to cause the table to go into an invalid state.</p>
+
+<p><img alt = "States." src = "../../doc/table/states.png" width = 776 height = 152></p>
+
+</div>
+
+<div>
+
+<h3><a id = "tag:<T>cursor" name = "tag:<T>cursor">&lt;T&gt;cursor</a></h3>
+
+<p><code>struct <strong>&lt;T&gt;cursor</strong> { struct &lt;t&gt;table *table; &lt;pT&gt;uint i; };</code></p>
+
+<p><img alt = "States" src = "../../doc/table/it.png" width = 943 height = 117></p>
+
+<p>Adding, deleting, successfully looking up entries, or any modification of the table's topology invalidates the iterator. Iteration usually not in any particular order, but deterministic up to topology changes. The asymptotic runtime of iterating though the whole table is proportional to the capacity.</p>
+
+</div>
+
+<div>
+
+<h2><a id = "summary:" name = "summary:">Function Summary</a></h2>
+
+<table>
+
+<tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
+
+<tr><td align = right>static &lt;pT&gt;key</td><td><a href = "#fn:<T>key">&lt;T&gt;key</a></td><td>cur</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;value *</td><td><a href = "#fn:<T>value">&lt;T&gt;value</a></td><td>cur</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>cursor_remove">&lt;T&gt;cursor_remove</a></td><td>cur</td></tr>
+
+<tr><td align = right>static struct &lt;t&gt;table</td><td><a href = "#fn:<t>table">&lt;t&gt;table</a></td><td></td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<t>table_">&lt;t&gt;table_</a></td><td>table</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>buffer">&lt;T&gt;buffer</a></td><td>table, n</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>clear">&lt;T&gt;clear</a></td><td>table</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>contains">&lt;T&gt;contains</a></td><td>table, key</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>query">&lt;T&gt;query</a></td><td>table, key, result, value</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;value</td><td><a href = "#fn:<T>get_or">&lt;T&gt;get_or</a></td><td>table, key, default_value</td></tr>
+
+<tr><td align = right>static enum table_result</td><td><a href = "#fn:<T>try">&lt;T&gt;try</a></td><td>table, key</td></tr>
+
+<tr><td align = right>static enum table_result</td><td><a href = "#fn:<T>assign">&lt;T&gt;assign</a></td><td>table, key, content</td></tr>
+
+<tr><td align = right>static enum table_result</td><td><a href = "#fn:<T>update">&lt;T&gt;update</a></td><td>table, key, eject</td></tr>
+
+<tr><td align = right>static enum table_result</td><td><a href = "#fn:<T>policy">&lt;T&gt;policy</a></td><td>table, key, eject, policy</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>remove">&lt;T&gt;remove</a></td><td>table, key</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#fn:<TR>any">&lt;TR&gt;any</a></td><td>box, predicate</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>each">&lt;TR&gt;each</a></td><td>box, action</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>if_each">&lt;TR&gt;if_each</a></td><td>box, predicate, action</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<TR>copy_if">&lt;TR&gt;copy_if</a></td><td>dst, src, copy</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>keep_if">&lt;TR&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>trim">&lt;TR&gt;trim</a></td><td>box, predicate</td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#fn:<TR>to_string">&lt;TR&gt;to_string</a></td><td>box</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;value</td><td><a href = "#fn:<T>table<R>get">&lt;T&gt;table&lt;R&gt;get</a></td><td>table, key</td></tr>
+
+</table>
+
+</div>
+
+<div>
+
+<h2><a id = "fn:" name = "fn:">Function Definitions</a></h2>
+
+<div>
+
+<h3><a id = "fn:<T>key" name = "fn:<T>key">&lt;T&gt;key</a></h3>
+
+<p><code>static &lt;pT&gt;key <strong>&lt;T&gt;key</strong>(const struct &lt;T&gt;cursor *const <em>cur</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>If <code>cur</code> has an element, returns it's key.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>value" name = "fn:<T>value">&lt;T&gt;value</a></h3>
+
+<p><code>static &lt;pT&gt;value *<strong>&lt;T&gt;value</strong>(const struct &lt;T&gt;cursor *const <em>cur</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>If <code>cur</code> has an element, returns it's value, if <code>TABLE_VALUE</code>.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>cursor_remove" name = "fn:<T>cursor_remove">&lt;T&gt;cursor_remove</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;cursor_remove</strong>(struct &lt;T&gt;cursor *const <em>cur</em>)</code></p>
+
+<p>Removes the entry at <code>cur</code>. Whereas <a href = "#fn:&lt;T&gt;remove">&lt;T&gt;remove</a> invalidates the cursor, this corrects <code>cur</code> so <a href = "#fn:&lt;T&gt;next">&lt;T&gt;next</a> is the next entry. To use the cursor after this, one must move to the next.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success, or there was no entry at the iterator's position, (anymore.)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<t>table" name = "fn:<t>table">&lt;t&gt;table</a></h3>
+
+<p><code>static struct &lt;t&gt;table <strong>&lt;t&gt;table</strong>(void)</code></p>
+
+<p>Zeroed data (not all-bits-zero) is initialized.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>An idle array.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<t>table_" name = "fn:<t>table_">&lt;t&gt;table_</a></h3>
+
+<p><code>static void <strong>&lt;t&gt;table_</strong>(struct &lt;t&gt;table *const <em>table</em>)</code></p>
+
+<p>If <code>table</code> is not null, destroys and returns it to idle.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>buffer" name = "fn:<T>buffer">&lt;T&gt;buffer</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;buffer</strong>(struct &lt;t&gt;table *const <em>table</em>, const &lt;pT&gt;uint <em>n</em>)</code></p>
+
+<p>Reserve at least <code>n</code> more empty buckets in <code>table</code>. This may cause the capacity to increase and invalidates any pointers to data in the table.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: ERANGE</dt>
+	<dd>The request was unsatisfiable.</dd>
+	<dt>Exceptional return: realloc</dt>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>clear" name = "fn:<T>clear">&lt;T&gt;clear</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;clear</strong>(struct &lt;t&gt;table *const <em>table</em>)</code></p>
+
+<p>Clears and removes all buckets from <code>table</code>. The capacity and memory of the <code>table</code> is preserved, but all previous values are un-associated. (The load factor will be less until it reaches it's previous size.)</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#920;(<code>table.capacity</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>contains" name = "fn:<T>contains">&lt;T&gt;contains</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;contains</strong>(struct &lt;t&gt;table *const <em>table</em>, const &lt;pT&gt;key <em>key</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Whether <code>key</code> is in <code>table</code> (which can be null.)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>query" name = "fn:<T>query">&lt;T&gt;query</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;query</strong>(struct &lt;t&gt;table *const <em>table</em>, const &lt;pT&gt;key <em>key</em>, &lt;pT&gt;key *<em>result</em>, &lt;pT&gt;value *<em>value</em>)</code></p>
+
+<p>If can be no default key, use this to separate a null—returns false—from a result. Otherwise, a more convenient function is <a href = "#fn:&lt;T&gt;get_or">&lt;T&gt;get_or</a>.</p>
+
+<dl>
+	<dt>Parameter: <em>result</em></dt>
+	<dd>If null, behaves like <a href = "#fn:&lt;T&gt;contains">&lt;T&gt;contains</a>, otherwise, a <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a> which gets filled on true.</dd>
+	<dt>Parameter: <em>value</em></dt>
+	<dd>Only on a map with <code>TABLE_VALUE</code>. If not-null, stores the value.</dd>
+	<dt>Return:</dt>
+	<dd>Whether <code>key</code> is in <code>table</code> (which can be null.)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>get_or" name = "fn:<T>get_or">&lt;T&gt;get_or</a></h3>
+
+<p><code>static &lt;pT&gt;value <strong>&lt;T&gt;get_or</strong>(struct &lt;t&gt;table *const <em>table</em>, const &lt;pT&gt;key <em>key</em>, &lt;pT&gt;value <em>default_value</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The value associated with <code>key</code> in <code>table</code>, (which can be null.) If no such value exists, <code>default_value</code> is returned.</dd>
+	<dt>Order:</dt>
+	<dd>Average &#927;(1); worst &#927;(n).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>try" name = "fn:<T>try">&lt;T&gt;try</a></h3>
+
+<p><code>static enum table_result <strong>&lt;T&gt;try</strong>(struct &lt;t&gt;table *const <em>table</em>, &lt;pT&gt;key <em>key</em>)</code></p>
+
+<p>Only if <code>TABLE_VALUE</code> is not set; see <a href = "#fn:&lt;T&gt;assign">&lt;T&gt;assign</a> for a map. Puts <code>key</code> in set <code>table</code> only if absent.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>One of: <code>TABLE_ERROR</code>, tried putting the entry in the table but failed, the table is not modified; <code>TABLE_PRESENT</code>, does nothing if there is another entry with the same key; <code>TABLE_ABSENT</code>, put an entry in the table.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dd>On <code>TABLE_ERROR</code>.</dd>
+	<dt>Order:</dt>
+	<dd>Average amortised &#927;(1); worst &#927;(n).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>assign" name = "fn:<T>assign">&lt;T&gt;assign</a></h3>
+
+<p><code>static enum table_result <strong>&lt;T&gt;assign</strong>(struct &lt;t&gt;table *const <em>table</em>, &lt;pT&gt;key <em>key</em>, &lt;pT&gt;value **const <em>content</em>)</code></p>
+
+<p>Only if <code>TABLE_VALUE</code> is set; see <a href = "#fn:&lt;T&gt;try">&lt;T&gt;try</a> for a set. Puts <code>key</code> in the map <code>table</code> and store the associated value in <code>content</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd><code>TABLE_ERROR</code> does not set <code>content</code>; <code>TABLE_ABSENT</code>, the <code>content</code> will be a pointer to uninitialized memory; <code>TABLE_PRESENT</code>, gets the current <code>content</code>, (does not alter the keys, if they are distinguishable.)</dd>
+	<dt>Exceptional return: malloc, ERANGE</dt>
+	<dd>On <code>TABLE_ERROR</code>.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>update" name = "fn:<T>update">&lt;T&gt;update</a></h3>
+
+<p><code>static enum table_result <strong>&lt;T&gt;update</strong>(struct &lt;t&gt;table *const <em>table</em>, &lt;pT&gt;key <em>key</em>, &lt;pT&gt;key *<em>eject</em>)</code></p>
+
+<p>Puts <code>key</code> in <code>table</code>, replacing an equal-valued key. (If keys are indistinguishable, this function is not very useful, see <a href = "#fn:&lt;T&gt;try">&lt;T&gt;try</a> or <a href = "#fn:&lt;T&gt;assign">&lt;T&gt;assign</a>.)</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>One of: <code>TABLE_ERROR</code>, the table is not modified; <code>TABLE_ABSENT</code>, the <code>key</code> is new; <code>TABLE_PRESENT</code>, the <code>key</code> displaces another, and if non-null, <code>eject</code> will be filled with the previous entry.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dd>On <code>TABLE_ERROR</code>.</dd>
+	<dt>Order:</dt>
+	<dd>Average amortised &#927;(1); worst &#927;(n).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>policy" name = "fn:<T>policy">&lt;T&gt;policy</a></h3>
+
+<p><code>static enum table_result <strong>&lt;T&gt;policy</strong>(struct &lt;t&gt;table *const <em>table</em>, &lt;pT&gt;key <em>key</em>, &lt;pT&gt;key *<em>eject</em>, const &lt;pT&gt;policy_fn <em>policy</em>)</code></p>
+
+<p>Puts <code>key</code> in <code>table</code> only if absent or if calling <code>policy</code> returns true.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>One of: <code>TABLE_ERROR</code>, the table is not modified; <code>TABLE_ABSENT</code>, the <code>key</code> is new; <code>TABLE_PRESENT</code>, <code>key</code> collides, if <code>policy</code> returns true, <code>eject</code>, if non-null, will be filled;</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dd>On <code>TABLE_ERROR</code>.</dd>
+	<dt>Order:</dt>
+	<dd>Average amortised &#927;(1); worst &#927;(n).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>remove" name = "fn:<T>remove">&lt;T&gt;remove</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;remove</strong>(struct &lt;t&gt;table *const <em>table</em>, const &lt;pT&gt;key <em>key</em>)</code></p>
+
+<p>Removes <code>key</code> from <code>table</code> (which could be null.)</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Whether that <code>key</code> was in <code>table</code>.</dd>
+	<dt>Order:</dt>
+	<dd>Average &#927;(1), (hash distributes elements uniformly); worst &#927;(n).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>any" name = "fn:<TR>any">&lt;TR&gt;any</a></h3>
+
+<p><code>static &lt;pT&gt;type *<strong>&lt;TR&gt;any</strong>(const &lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>: Iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The first <code>predicate</code> that returned true, or, if the statement is false on all, null.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>box.size</code>) &#215; &#927;(<code>predicate</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>each" name = "fn:<TR>each">&lt;TR&gt;each</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;each</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;action_fn <em>action</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements. Differs calling <code>action</code> until the iterator is one-ahead, so can delete elements as long as it doesn't affect the next, (specifically, a linked-list.)</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>box</code>|) &#215; &#927;(<code>action</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>if_each" name = "fn:<TR>if_each">&lt;TR&gt;if_each</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;if_each</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>, const &lt;pTR&gt;action_fn <em>action</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements for which <code>predicate</code> returns true.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>box.size</code>) &#215; (&#927;(<code>predicate</code>) + &#927;(<code>action</code>))</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>copy_if" name = "fn:<TR>copy_if">&lt;TR&gt;copy_if</a></h3>
+
+<p><code>static int <strong>&lt;TR&gt;copy_if</strong>(&lt;pT&gt;box *restrict const <em>dst</em>, const &lt;pTR&gt;box *restrict const <em>src</em>, const &lt;pTR&gt;predicate_fn <em>copy</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>, <code>pT_CONTIGUOUS</code>: For all elements of <code>src</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>dst</code>. <code>dst</code> and <code>src</code> can not be the same but <code>src</code> can be null, (in which case, it does nothing.)</p>
+
+<dl>
+	<dt>Exceptional return: realloc</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>src</code>|) &#215; &#927;(<code>copy</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>keep_if" name = "fn:<TR>keep_if">&lt;TR&gt;keep_if</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;keep_if</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>keep</em>, const &lt;pTR&gt;action_fn <em>destruct</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>: For all elements of <code>box</code>, calls <code>keep</code>, and if false, if contiguous, lazy deletes that item, if not, eagerly. Calls <code>destruct</code> if not-null before deleting.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>box</code>|) (&#215; O(<code>keep</code>) + O(<code>destruct</code>))</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>trim" name = "fn:<TR>trim">&lt;TR&gt;trim</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;trim</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>, <code>pT_CONTIGUOUS</code>: Removes at either end of <code>box</code> the things that <code>predicate</code>, if it exists, returns true.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>box.size</code>) &#215; &#927;(<code>predicate</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>to_string" name = "fn:<TR>to_string">&lt;TR&gt;to_string</a></h3>
+
+<p><code>static const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>)</code></p>
+
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Address of the static buffer.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>table<R>get" name = "fn:<T>table<R>get">&lt;T&gt;table&lt;R&gt;get</a></h3>
+
+<p><code>static &lt;pT&gt;value <strong>&lt;T&gt;table&lt;R&gt;get</strong>(struct &lt;t&gt;table *const <em>table</em>, const &lt;pT&gt;key <em>key</em>)</code></p>
+
+<p>This is functionally identical to <a href = "#fn:&lt;T&gt;get_or">&lt;T&gt;get_or</a>, but a with a trait specifying a constant default value. This is the most convenient access method, but it needs to have a <code>TABLE_DEFAULT</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The value associated with <code>key</code> in <code>table</code>, (which can be null.) If no such value exists, the <code>TABLE_DEFAULT</code> for this trait is returned.</dd>
+	<dt>Order:</dt>
+	<dd>Average &#927;(1); worst &#927;(n).</dd>
+</dl>
+
+</div>
+
+</div>
+
+<div>
+
+<h2><a id = "license:" name = "license:">License</a></h2>
+
+<p>2019 Neil Edelman, distributed under the terms of the <a href = "https://opensource.org/licenses/MIT">MIT License</a>.</p>
+
+</div>
+
+</body>
+
+</html>

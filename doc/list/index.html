@@ -1,0 +1,817 @@
+<!doctype html public "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<meta http-equiv = "Content-Type" content = "text/html;charset=UTF-8">
+<!-- Steal these colour values from JavaDocs. -->
+<style type = "text/css">
+	a:link,  a:visited { color: #4a6782; }
+	a:hover, a:focus   { color: #bb7a2a; }
+	a:active           { color: #4A6782; }
+	tr:nth-child(even) { background: #dee3e9; }
+	div {
+		margin:  4px 0;
+		padding: 0 4px 4px 4px;
+	}
+	table      { width: 100%; }
+	td         { padding: 4px; }
+	h3, h1 {
+		color: #2c4557;
+		background-color: #dee3e9;
+		padding:          4px;
+	}
+	h3 {
+		margin:           0 -4px;
+		padding:          4px;
+	}
+</style>
+<title>list.h</title>
+</head>
+
+<body>
+
+<h1>list.h</h1>
+
+<p>Header <a href = "../src/list.h">../src/list.h</a>; examples <a href = "../test/test_list.c">../test/test_list.c</a>.</p>
+
+<h2>Doubly-linked component</h2>
+
+<ul>
+	<li><a href = "#preamble:">Description</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<pT>action_fn">&lt;pT&gt;action_fn</a>, <a href = "#typedef:<pT>predicate_fn">&lt;pT&gt;predicate_fn</a>, <a href = "#typedef:<pT>to_string_fn">&lt;pT&gt;to_string_fn</a>, <a href = "#typedef:<pT>compare_fn">&lt;pT&gt;compare_fn</a>, <a href = "#typedef:<pT>bipredicate_fn">&lt;pT&gt;bipredicate_fn</a>, <a href = "#typedef:<pT>biaction_fn">&lt;pT&gt;biaction_fn</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:<t>listlink">&lt;t&gt;listlink</a>, <a href = "#tag:<t>list">&lt;t&gt;list</a></li>
+	<li><a href = "#summary:">Function Summary</a></li>
+	<li><a href = "#fn:">Function Definitions</a></li>
+	<li><a href = "#license:">License</a></li>
+</ul>
+
+<div>
+
+<h2><a id = "preamble:" name = "preamble:">Description</a></h2>
+
+<p><img alt = "Example of a stochastic skip-list." src = "../../doc/list/list.png" width = 785 height = 556></p>
+
+<p>In parlance of <a href = "https://scholar.google.ca/scholar?q=Thareja+2014%2C+Structures">Thareja 2014, Structures</a>, <a href = "#tag:&lt;t&gt;list">&lt;t&gt;list</a> is a circular header, or sentinel, to a doubly-linked list of <a href = "#tag:&lt;t&gt;listlink">&lt;t&gt;listlink</a>. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list. The links will be generally in a larger container type.</p>
+
+* <a href = "src/iterate.h">src/iterate.h</a>: defining <code>HAVE_ITERATE_H</code> supplies functions.</div>
+
+<dl>
+	<dt>Parameter: LIST_NAME</dt>
+	<dd><code>&lt;t&gt;</code> that satisfies <code>C</code> naming conventions when mangled; required.</dd>
+	<dt>Parameter: LIST_COMPARE, LIST_IS_EQUAL</dt>
+	<dd>Compare trait contained in <a href = "src/compare.h">src/compare.h</a>. See <a href = "#typedef:&lt;pT&gt;compare_fn">&lt;pT&gt;compare_fn</a> or <a href = "#typedef:&lt;pT&gt;bipredicate_fn">&lt;pT&gt;bipredicate_fn</a>, (but not both.)</dd>
+	<dt>Parameter: LIST_TO_STRING</dt>
+	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>. See <a href = "#typedef:&lt;pT&gt;to_string_fn">&lt;pT&gt;to_string_fn</a>.</dd>
+	<dt>Parameter: LIST_EXPECT_TRAIT, LIST_TRAIT</dt>
+	<dd>Named traits are obtained by including <code>array.h</code> multiple times with <code>LIST_EXPECT_TRAIT</code> and then subsequently including the name in <code>LIST_TRAIT</code>.</dd>
+	<dt>Standard:</dt>
+	<dd>C89</dd>
+	<dt>Dependancies:</dt>
+	<dd><a href = "../../src/box.h">box</a></dd>
+</dl>
+
+<h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
+
+<div>
+
+<h3><a id = "typedef:<pT>action_fn" name = "typedef:<pT>action_fn">&lt;pT&gt;action_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;pT&gt;action_fn</strong>)(&lt;pT&gt;type *);</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>: Operates by side-effects.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>predicate_fn" name = "typedef:<pT>predicate_fn">&lt;pT&gt;predicate_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;pT&gt;predicate_fn</strong>)(const &lt;pT&gt;type *);</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>: Returns a boolean given read-only.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>to_string_fn" name = "typedef:<pT>to_string_fn">&lt;pT&gt;to_string_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;pT&gt;to_string_fn</strong>)(const struct &lt;t&gt;listlink *, char(*)[12]);</code></p>
+
+<p>The type of the required <code>&lt;tr&gt;to_string</code>. Responsible for turning the read-only argument into a 12-max-<code>char</code> output string.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>compare_fn" name = "typedef:<pT>compare_fn">&lt;pT&gt;compare_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;pT&gt;compare_fn</strong>)(const &lt;pT&gt;type *restrict a, const &lt;pT&gt;type *restrict b);</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>: The type of the required <code>&lt;tr&gt;compare</code>. Three-way comparison on a totally order set; returns an integer value less than, equal to, greater than zero, if <code>a &lt; b</code>, <code>a == b</code>, <code>a &gt; b</code>, respectively.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>bipredicate_fn" name = "typedef:<pT>bipredicate_fn">&lt;pT&gt;bipredicate_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;pT&gt;bipredicate_fn</strong>)(&lt;pT&gt;type *restrict, &lt;pT&gt;type *restrict);</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>: The type of the required <code>&lt;tr&gt;is_equal</code>. Returns a symmetric boolean given two read-only elements.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>biaction_fn" name = "typedef:<pT>biaction_fn">&lt;pT&gt;biaction_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;pT&gt;biaction_fn</strong>)(&lt;pT&gt;type *restrict, &lt;pT&gt;type *restrict);</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>: Returns a boolean given two modifiable arguments.</p>
+
+</div>
+
+<h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
+
+<div>
+
+<h3><a id = "tag:<t>listlink" name = "tag:<t>listlink">&lt;t&gt;listlink</a></h3>
+
+<p><code>struct <strong>&lt;t&gt;listlink</strong> { struct &lt;t&gt;listlink *next, *prev; };</code></p>
+
+<p>Storage of this structure is the responsibility of the caller, who must provide a stable pointer while in a list. Generally, one encloses this in a host <code>struct</code> or <code>union</code>.</p>
+
+<p><img alt = "States." src = "../../doc/list/node-states.png" width = 345 height = 148></p>
+
+</div>
+
+<div>
+
+<h3><a id = "tag:<t>list" name = "tag:<t>list">&lt;t&gt;list</a></h3>
+
+<p><code>struct <strong>&lt;t&gt;list</strong>;</code></p>
+
+<p>Serves as head and tail sentinel for a linked-list of <a href = "#tag:&lt;t&gt;listlink">&lt;t&gt;listlink</a>.</p>
+
+<p><img alt = "States." src = "../../doc/list/states.png" width = 643 height = 199></p>
+
+</div>
+
+<div>
+
+<h2><a id = "summary:" name = "summary:">Function Summary</a></h2>
+
+<table>
+
+<tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>clear">&lt;T&gt;clear</a></td><td>list</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>add_before">&lt;T&gt;add_before</a></td><td>anchor, add</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>add_after">&lt;T&gt;add_after</a></td><td>anchor, add</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>push">&lt;T&gt;push</a></td><td>list, add</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>unshift">&lt;T&gt;unshift</a></td><td>list, add</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>remove">&lt;T&gt;remove</a></td><td>node</td></tr>
+
+<tr><td align = right>static struct &lt;t&gt;listlink *</td><td><a href = "#fn:<T>shift">&lt;T&gt;shift</a></td><td>list</td></tr>
+
+<tr><td align = right>static struct &lt;t&gt;listlink *</td><td><a href = "#fn:<T>pop">&lt;T&gt;pop</a></td><td>list</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>to">&lt;T&gt;to</a></td><td>from, to</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>to_before">&lt;T&gt;to_before</a></td><td>from, anchor</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>self_correct">&lt;T&gt;self_correct</a></td><td>list</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#fn:<TR>any">&lt;TR&gt;any</a></td><td>box, predicate</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>each">&lt;TR&gt;each</a></td><td>box, action</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>if_each">&lt;TR&gt;if_each</a></td><td>box, predicate, action</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<TR>copy_if">&lt;TR&gt;copy_if</a></td><td>dst, src, copy</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>keep_if">&lt;TR&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>trim">&lt;TR&gt;trim</a></td><td>box, predicate</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>to_if">&lt;T&gt;to_if</a></td><td>from, to, predicate</td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#fn:<TR>to_string">&lt;TR&gt;to_string</a></td><td>box</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<TR>compare">&lt;TR&gt;compare</a></td><td>a, b</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#fn:<TR>lower_bound">&lt;TR&gt;lower_bound</a></td><td>box, element</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#fn:<TR>upper_bound">&lt;TR&gt;upper_bound</a></td><td>box, element</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<TR>insert_after">&lt;TR&gt;insert_after</a></td><td>box, element</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>sort">&lt;TR&gt;sort</a></td><td>box</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>reverse">&lt;TR&gt;reverse</a></td><td>box</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<TR>is_equal">&lt;TR&gt;is_equal</a></td><td>a, b</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>unique_merge">&lt;TR&gt;unique_merge</a></td><td>box, merge</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>unique">&lt;TR&gt;unique</a></td><td>box</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>merge">&lt;TR&gt;merge</a></td><td>to, from</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>sort">&lt;TR&gt;sort</a></td><td>list</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>subtraction_to">&lt;TR&gt;subtraction_to</a></td><td>a, b, result</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>union_to">&lt;TR&gt;union_to</a></td><td>a, b, result</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>intersection_to">&lt;TR&gt;intersection_to</a></td><td>a, b, result</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>xor_to">&lt;TR&gt;xor_to</a></td><td>a, b, result</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<TR>duplicates_to">&lt;TR&gt;duplicates_to</a></td><td>from, to</td></tr>
+
+</table>
+
+</div>
+
+<div>
+
+<h2><a id = "fn:" name = "fn:">Function Definitions</a></h2>
+
+<div>
+
+<h3><a id = "fn:<T>clear" name = "fn:<T>clear">&lt;T&gt;clear</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;clear</strong>(struct &lt;t&gt;list *const <em>list</em>)</code></p>
+
+<p>Clears and initializes <code>list</code>.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>add_before" name = "fn:<T>add_before">&lt;T&gt;add_before</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;add_before</strong>(struct &lt;t&gt;listlink *restrict const <em>anchor</em>, struct &lt;t&gt;listlink *restrict const <em>add</em>)</code></p>
+
+<p><code>add</code> before <code>anchor</code>.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>add_after" name = "fn:<T>add_after">&lt;T&gt;add_after</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;add_after</strong>(struct &lt;t&gt;listlink *const <em>anchor</em>, struct &lt;t&gt;listlink *const <em>add</em>)</code></p>
+
+<p><code>add</code> after <code>anchor</code>.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>push" name = "fn:<T>push">&lt;T&gt;push</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;push</strong>(struct &lt;t&gt;list *const <em>list</em>, struct &lt;t&gt;listlink *const <em>add</em>)</code></p>
+
+<p>Adds <code>add</code> to the end of <code>list</code>.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>unshift" name = "fn:<T>unshift">&lt;T&gt;unshift</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;unshift</strong>(struct &lt;t&gt;list *const <em>list</em>, struct &lt;t&gt;listlink *const <em>add</em>)</code></p>
+
+<p>Adds <code>add</code> to the beginning of <code>list</code>.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>remove" name = "fn:<T>remove">&lt;T&gt;remove</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;remove</strong>(struct &lt;t&gt;listlink *const <em>node</em>)</code></p>
+
+<p>Remove <code>node</code>.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>shift" name = "fn:<T>shift">&lt;T&gt;shift</a></h3>
+
+<p><code>static struct &lt;t&gt;listlink *<strong>&lt;T&gt;shift</strong>(struct &lt;t&gt;list *const <em>list</em>)</code></p>
+
+<p>Removes the first element of <code>list</code> and returns it, if any.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>pop" name = "fn:<T>pop">&lt;T&gt;pop</a></h3>
+
+<p><code>static struct &lt;t&gt;listlink *<strong>&lt;T&gt;pop</strong>(struct &lt;t&gt;list *const <em>list</em>)</code></p>
+
+<p>Removes the last element of <code>list</code> and returns it, if any.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>to" name = "fn:<T>to">&lt;T&gt;to</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;to</strong>(struct &lt;t&gt;list *restrict const <em>from</em>, struct &lt;t&gt;list *restrict const <em>to</em>)</code></p>
+
+<p>Moves the elements <code>from</code> onto <code>to</code> at the end.</p>
+
+<dl>
+	<dt>Parameter: <em>to</em></dt>
+	<dd>If null, then it removes elements from <code>from</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>to_before" name = "fn:<T>to_before">&lt;T&gt;to_before</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;to_before</strong>(struct &lt;t&gt;list *restrict const <em>from</em>, struct &lt;t&gt;listlink *restrict const <em>anchor</em>)</code></p>
+
+<p>Moves the elements <code>from</code> immediately before <code>anchor</code>, which can not be in the same list.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>self_correct" name = "fn:<T>self_correct">&lt;T&gt;self_correct</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;self_correct</strong>(struct &lt;t&gt;list *const <em>list</em>)</code></p>
+
+<p>Corrects <code>list</code> ends to compensate for memory relocation of the list head itself. (Can only have one copy of the list, this will invalidate all other copies.)</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>any" name = "fn:<TR>any">&lt;TR&gt;any</a></h3>
+
+<p><code>static &lt;pT&gt;type *<strong>&lt;TR&gt;any</strong>(const &lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>: Iterates through <code>box</code> and calls <code>predicate</code> until it returns true.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The first <code>predicate</code> that returned true, or, if the statement is false on all, null.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>box.size</code>) &#215; &#927;(<code>predicate</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>each" name = "fn:<TR>each">&lt;TR&gt;each</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;each</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;action_fn <em>action</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements. Differs calling <code>action</code> until the iterator is one-ahead, so can delete elements as long as it doesn't affect the next, (specifically, a linked-list.)</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>box</code>|) &#215; &#927;(<code>action</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>if_each" name = "fn:<TR>if_each">&lt;TR&gt;if_each</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;if_each</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>, const &lt;pTR&gt;action_fn <em>action</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>: Iterates through <code>box</code> and calls <code>action</code> on all the elements for which <code>predicate</code> returns true.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>box.size</code>) &#215; (&#927;(<code>predicate</code>) + &#927;(<code>action</code>))</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>copy_if" name = "fn:<TR>copy_if">&lt;TR&gt;copy_if</a></h3>
+
+<p><code>static int <strong>&lt;TR&gt;copy_if</strong>(&lt;pT&gt;box *restrict const <em>dst</em>, const &lt;pTR&gt;box *restrict const <em>src</em>, const &lt;pTR&gt;predicate_fn <em>copy</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>, <code>pT_CONTIGUOUS</code>: For all elements of <code>src</code>, calls <code>copy</code>, and if true, lazily copies the elements to <code>dst</code>. <code>dst</code> and <code>src</code> can not be the same but <code>src</code> can be null, (in which case, it does nothing.)</p>
+
+<dl>
+	<dt>Exceptional return: realloc</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>src</code>|) &#215; &#927;(<code>copy</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>keep_if" name = "fn:<TR>keep_if">&lt;TR&gt;keep_if</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;keep_if</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>keep</em>, const &lt;pTR&gt;action_fn <em>destruct</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>: For all elements of <code>box</code>, calls <code>keep</code>, and if false, if contiguous, lazy deletes that item, if not, eagerly. Calls <code>destruct</code> if not-null before deleting.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>box</code>|) (&#215; O(<code>keep</code>) + O(<code>destruct</code>))</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>trim" name = "fn:<TR>trim">&lt;TR&gt;trim</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;trim</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>)</code></p>
+
+<p><a href = "src/iterate.h">src/iterate.h</a>, <code>pT_CONTIGUOUS</code>: Removes at either end of <code>box</code> the things that <code>predicate</code>, if it exists, returns true.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>box.size</code>) &#215; &#927;(<code>predicate</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>to_if" name = "fn:<T>to_if">&lt;T&gt;to_if</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;to_if</strong>(struct &lt;t&gt;list *restrict const <em>from</em>, struct &lt;t&gt;list *restrict const <em>to</em>, const &lt;pT&gt;predicate_fn <em>predicate</em>)</code></p>
+
+<p>HAVE<em>ITERATE</em>H: Moves all elements <code>from</code> onto the tail of <code>to</code> if <code>predicate</code> is true.</p>
+
+<dl>
+	<dt>Parameter: <em>to</em></dt>
+	<dd>If null, then it removes elements.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(|<code>from</code>|) &#215; &#927;(<code>predicate</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>to_string" name = "fn:<TR>to_string">&lt;TR&gt;to_string</a></h3>
+
+<p><code>static const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>)</code></p>
+
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Address of the static buffer.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>compare" name = "fn:<TR>compare">&lt;TR&gt;compare</a></h3>
+
+<p><code>static int <strong>&lt;TR&gt;compare</strong>(const &lt;pT&gt;box *restrict const <em>a</em>, const &lt;pT&gt;box *restrict const <em>b</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>: Lexicographically compares <code>a</code> to <code>b</code>. Both can be null, with null values before everything.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd><code>a &lt; b</code>: negative; <code>a == b</code>: zero; <code>a &gt; b</code>: positive.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>|a|</code> &amp; <code>|b|</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>lower_bound" name = "fn:<TR>lower_bound">&lt;TR&gt;lower_bound</a></h3>
+
+<p><code>static size_t <strong>&lt;TR&gt;lower_bound</strong>(const &lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;type *const <em>element</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_ACCESS</code>: <code>box</code> should be partitioned true/false with less-then <code>element</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The first index of <code>a</code> that is not less than <code>cursor</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log <code>a.size</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>upper_bound" name = "fn:<TR>upper_bound">&lt;TR&gt;upper_bound</a></h3>
+
+<p><code>static size_t <strong>&lt;TR&gt;upper_bound</strong>(const &lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;type *const <em>element</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_ACCESS</code>: <code>box</code> should be partitioned false/true with greater-than or equal-to <code>element</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The first index of <code>box</code> that is greater than <code>element</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>box</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>insert_after" name = "fn:<TR>insert_after">&lt;TR&gt;insert_after</a></h3>
+
+<p><code>static int <strong>&lt;TR&gt;insert_after</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;type *const <em>element</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_CONTIGUOUS</code>: Copies <code>element</code> at the upper bound of a sorted <code>box</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: realloc, ERANGE</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>a.size</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>sort" name = "fn:<TR>sort">&lt;TR&gt;sort</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;sort</strong>(&lt;pT&gt;box *const <em>box</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_CONTIGUOUS</code>: Sorts <code>box</code> by <code>qsort</code>, (which has a high-context-switching cost, but is easy.)</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>box</code>| log |<code>box</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>reverse" name = "fn:<TR>reverse">&lt;TR&gt;reverse</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;reverse</strong>(&lt;pT&gt;box *const <em>box</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>COMPARE</code>, <code>BOX_CONTIGUOUS</code>: Sorts <code>box</code> in reverse by <code>qsort</code>.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>box</code>| log |<code>box</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>is_equal" name = "fn:<TR>is_equal">&lt;TR&gt;is_equal</a></h3>
+
+<p><code>static int <strong>&lt;TR&gt;is_equal</strong>(const &lt;pT&gt;box *restrict const <em>a</em>, const &lt;pT&gt;box *restrict const <em>b</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>If <code>a</code> piecewise equals <code>b</code>, which both can be null.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>a</code>| &amp; |<code>b</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>unique_merge" name = "fn:<TR>unique_merge">&lt;TR&gt;unique_merge</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;unique_merge</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pT&gt;biaction_fn <em>merge</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>BOX_CONTIGUOUS</code>: Removes consecutive duplicate elements in <code>box</code> lazily.</p>
+
+<dl>
+	<dt>Parameter: <em>merge</em></dt>
+	<dd>Controls surjection. Called with duplicate elements, if false <code>(x, y)-&gt;(x)</code>, if true <code>(x,y)-&gt;(y)</code>. More complex functions, <code>(x, y)-&gt;(x+y)</code> can be simulated by mixing the two in the value returned. Can be null: behaves like false, always deleting the second element.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>box</code>|) &#215; &#927;(<code>merge</code>)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>unique" name = "fn:<TR>unique">&lt;TR&gt;unique</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;unique</strong>(&lt;pT&gt;box *const <em>box</em>)</code></p>
+
+<p><a href = "src/compare.h">src/compare.h</a>, <code>BOX_CONTIGUOUS</code>: Removes consecutive duplicate elements in <code>box</code>.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>box</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>merge" name = "fn:<TR>merge">&lt;TR&gt;merge</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;merge</strong>(struct &lt;t&gt;list *restrict const <em>to</em>, struct &lt;t&gt;list *restrict const <em>from</em>)</code></p>
+
+<p>Merges <code>from</code> into <code>to</code>, preferring elements from <code>to</code> go in the front.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>from</code>| + |<code>to</code>|).</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>sort" name = "fn:<TR>sort">&lt;TR&gt;sort</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;sort</strong>(struct &lt;t&gt;list *const <em>list</em>)</code></p>
+
+<p><code>LIST_COMPARE</code>: Natural merge sort <code>list</code>, a stable, adaptive sort, according to <code>compare</code>. This list-only version is slower then <code>qsort</code>.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#937;(|<code>list</code>|), &#927;(|<code>list</code>| log |<code>list</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>subtraction_to" name = "fn:<TR>subtraction_to">&lt;TR&gt;subtraction_to</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;subtraction_to</strong>(struct &lt;t&gt;list *restrict const <em>a</em>, struct &lt;t&gt;list *restrict const <em>b</em>, struct &lt;t&gt;list *restrict const <em>result</em>)</code></p>
+
+<p>Subtracts <code>a</code> from <code>b</code>, as sequential sorted individual elements, and moves it to <code>result</code>. All elements are removed from <code>a</code>. All parameters must be unique or can be null.</p>
+
+<p>For example, if <code>a</code> contains <code>(A, B, D)</code> and <code>b</code> contains <code>(B, C)</code> then <code>(a:A, a:D)</code> would be moved to <code>result</code>.</p>
+
+</div>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>a</code>| + |<code>b</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>union_to" name = "fn:<TR>union_to">&lt;TR&gt;union_to</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;union_to</strong>(struct &lt;t&gt;list *restrict const <em>a</em>, struct &lt;t&gt;list *restrict const <em>b</em>, struct &lt;t&gt;list *restrict const <em>result</em>)</code></p>
+
+<p>Moves the union of <code>a</code> and <code>b</code> as sequential sorted individual elements to <code>result</code>. Equal elements are moved from <code>a</code>. All parameters must be unique or can be null.</p>
+
+<p>For example, if <code>a</code> contains <code>(A, B, D)</code> and <code>b</code> contains <code>(B, C)</code> then <code>(a:A, a:B, b:C, a:D)</code> would be moved to <code>result</code>.</p>
+
+</div>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>a</code>| + |<code>b</code>|)</dd>
+</dl>
+
+<div>
+
+<h3><a id = "fn:<TR>intersection_to" name = "fn:<TR>intersection_to">&lt;TR&gt;intersection_to</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;intersection_to</strong>(struct &lt;t&gt;list *restrict const <em>a</em>, struct &lt;t&gt;list *restrict const <em>b</em>, struct &lt;t&gt;list *restrict const <em>result</em>)</code></p>
+
+<p>Moves the intersection of <code>a</code> and <code>b</code> as sequential sorted individual elements to <code>result</code>. Equal elements are moved from <code>a</code>. All parameters must be unique or can be null.</p>
+
+<p>For example, if <code>a</code> contains <code>(A, B, D)</code> and <code>b</code> contains <code>(B, C)</code> then <code>(a:B)</code> would be moved to <code>result</code>.</p>
+
+</div>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>a</code>| + |<code>b</code>|)</dd>
+</dl>
+
+<div>
+
+<h3><a id = "fn:<TR>xor_to" name = "fn:<TR>xor_to">&lt;TR&gt;xor_to</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;xor_to</strong>(struct &lt;t&gt;list *restrict const <em>a</em>, struct &lt;t&gt;list *restrict const <em>b</em>, struct &lt;t&gt;list *restrict const <em>result</em>)</code></p>
+
+<p>Moves <code>a</code> exclusive-or <code>b</code> as sequential sorted individual elements to <code>result</code>. Equal elements are moved from <code>a</code>. All parameters must be unique or can be null.</p>
+
+<p>For example, if <code>a</code> contains <code>(A, B, D)</code> and <code>b</code> contains <code>(B, C)</code> then <code>(a:A, b:C, a:D)</code> would be moved to <code>result</code>.</p>
+
+</div>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>O(|<code>a</code>| + |<code>b</code>|)</dd>
+</dl>
+
+<div>
+
+<h3><a id = "fn:<TR>duplicates_to" name = "fn:<TR>duplicates_to">&lt;TR&gt;duplicates_to</a></h3>
+
+<p><code>static void <strong>&lt;TR&gt;duplicates_to</strong>(struct &lt;t&gt;list *restrict const <em>from</em>, struct &lt;t&gt;list *restrict const <em>to</em>)</code></p>
+
+<p>Moves all local-duplicates of <code>from</code> to the end of <code>to</code>.</p>
+
+<p>For example, if <code>from</code> is <code>(A, B, B, A)</code>, it would concatenate the second <code>(B)</code> to <code>to</code> and leave <code>(A, B, A)</code> in <code>from</code>. If one <a href = "#fn:&lt;TR&gt;sort">&lt;TR&gt;sort</a> <code>from</code> first, <code>(A, A, B, B)</code>, the global duplicates will be transferred, <code>(A, B)</code>.</p>
+
+</div>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>from</code>|)</dd>
+</dl>
+
+<div>
+
+<h2><a id = "license:" name = "license:">License</a></h2>
+
+<p>2017 Neil Edelman, distributed under the terms of the <a href = "https://opensource.org/licenses/MIT">MIT License</a>.</p>
+
+</div>
+
+</body>
+
+</html>

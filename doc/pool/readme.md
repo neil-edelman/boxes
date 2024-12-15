@@ -13,7 +13,7 @@ Header [\.\./src/pool\.h](../src/pool.h) depends on [\.\./src/heap\.h](../src/he
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of Pool](../doc/pool/pool.png)
+![Example of Pool](../../doc/pool/pool.png)
 
 [&lt;t&gt;pool](#user-content-tag-9a0f378f) is a memory pool that stores only one size—[&lt;pT&gt;type](#user-content-typedef-9b5be28b)—using [slab allocation](https://en.wikipedia.org/wiki/Slab_allocation)\. As [Bonwick, 1994, Slab](https://scholar.google.ca/scholar?q=Bonwick%2C+1994%2C+Slab), it helps reduce internal fragmentation from repeated allocation and destruction by caching contiguous blocks\. Pointers to valid items in the pool are stable\. Instead of freeing memory, a free\-heap in the active\-slab allows lazily reusing the same space\. If removal is ongoing and uniformly sampled while reaching a steady\-state size, it will eventually settle in one contiguous region\.
 
@@ -26,7 +26,7 @@ Header [\.\./src/pool\.h](../src/pool.h) depends on [\.\./src/heap\.h](../src/he
  * Standard:  
    C89\. However, when compiling for segmented memory models, C99 with `uintptr_t` is recommended because of it's implementation\-defined instead of undefined\-behaviour when comparing pointers from different objects in the heap of memory addresses\. Still, this is not guaranteed to produce meaningful results on all systems\.
  * Dependancies:  
-   [array](../src/array.h), [heap](../src/heap.h), [box](../src/box.h)
+   [array](../../src/array.h), [heap](../../src/heap.h), [box](../../src/box.h)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -55,7 +55,7 @@ Type of `POOL_TO_STRING` needed function `<tr>to_string`\. Responsible for turni
 
 A zeroed pool is a valid state\. To instantiate to an idle state, see [&lt;t&gt;pool](#user-content-fn-9a0f378f), `{0}` \(`C99`,\) or being `static`\.
 
-![States.](../doc/pool/states.png)
+![States.](../../doc/pool/states.png)
 
 
 

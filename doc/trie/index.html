@@ -1,0 +1,430 @@
+<!doctype html public "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<meta http-equiv = "Content-Type" content = "text/html;charset=UTF-8">
+<!-- Steal these colour values from JavaDocs. -->
+<style type = "text/css">
+	a:link,  a:visited { color: #4a6782; }
+	a:hover, a:focus   { color: #bb7a2a; }
+	a:active           { color: #4A6782; }
+	tr:nth-child(even) { background: #dee3e9; }
+	div {
+		margin:  4px 0;
+		padding: 0 4px 4px 4px;
+	}
+	table      { width: 100%; }
+	td         { padding: 4px; }
+	h3, h1 {
+		color: #2c4557;
+		background-color: #dee3e9;
+		padding:          4px;
+	}
+	h3 {
+		margin:           0 -4px;
+		padding:          4px;
+	}
+</style>
+<title>trie.h</title>
+</head>
+
+<body>
+
+<h1>trie.h</h1>
+
+<p>Header <a href = "../src/trie.h">../src/trie.h</a> requires <a href = "../src/bmp.h">../src/bmp.h</a>; examples <a href = "../test/test_trie.c">../test/test_trie.c</a>; article <a href = "../doc/trie/trie.pdf">../doc/trie/trie.pdf</a>.</p>
+
+<h2>Prefix tree</h2>
+
+<ul>
+	<li><a href = "#preamble:">Description</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<pT>key">&lt;pT&gt;key</a>, <a href = "#typedef:<pT>entry">&lt;pT&gt;entry</a>, <a href = "#typedef:<pT>remit">&lt;pT&gt;remit</a>, <a href = "#typedef:<pT>string_fn">&lt;pT&gt;string_fn</a>, <a href = "#typedef:<pT>key_fn">&lt;pT&gt;key_fn</a>, <a href = "#typedef:<pTR>to_string_fn">&lt;pTR&gt;to_string_fn</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:trie_result">trie_result</a>, <a href = "#tag:<t>trie">&lt;t&gt;trie</a></li>
+	<li><a href = "#summary:">Function Summary</a></li>
+	<li><a href = "#fn:">Function Definitions</a></li>
+	<li><a href = "#license:">License</a></li>
+</ul>
+
+<div>
+
+<h2><a id = "preamble:" name = "preamble:">Description</a></h2>
+
+<p><img alt = "Example of trie." src = "../../doc/trie/trie.png" width = 999 height = 642></p>
+
+<p>A <a href = "#tag:&lt;t&gt;trie">&lt;t&gt;trie</a> is a prefix-tree, digital-tree, or trie: an ordered set or map of byte null-terminated immutable key strings allowing efficient prefix queries. The implementation is as <a href = "https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA">Morrison, 1968 PATRICiA</a>: a compact <a href = "https://en.wikipedia.org/wiki/Radix_tree">binary radix trie</a> that acts as an index, only storing the where the key bits are different. The keys are grouped in fixed-size nodes in a relaxed version of a B-tree, as <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large">Bayer, McCreight, 1972 Large</a>, where the height is no longer fixed.</p>
+
+<p>While the worse-case run-time of querying or modifying is bounded by &#927;(|<code>string</code>|), <a href = "https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed">Tong, Goebel, Lin, 2015, Smoothed</a> show that, in an iid model, a better fit is &#927;(log |<code>trie</code>|), which is seen and reported here. It is not stable.</p>
+
+<p><img alt = "Bit view of the trie." src = "../../doc/trie/trie-bits.png" width = 1136 height = 416></p>
+
+</div>
+
+<dl>
+	<dt>Parameter: TRIE_NAME</dt>
+	<dd>Required <code>&lt;t&gt;</code> that satisfies <code>C</code> naming conventions when mangled.</dd>
+	<dt>Parameter: TRIE_KEY</dt>
+	<dd>Optional <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a>, the default of which is <code>const char *</code>. Requires implementation of <a href = "#typedef:&lt;pT&gt;string_fn">&lt;pT&gt;string_fn</a> <code>&lt;t&gt;string</code> to convert <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a> to a <code>const char *</code>.</dd>
+	<dt>Parameter: TRIE_ENTRY</dt>
+	<dd>Optional <a href = "#typedef:&lt;pT&gt;entry">&lt;pT&gt;entry</a> that contains the key, the default of which is the entry is the key. Requires <a href = "#typedef:&lt;pT&gt;key_fn">&lt;pT&gt;key_fn</a> <code>&lt;t&gt;key</code>, that picks out <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a> from <a href = "#typedef:&lt;pT&gt;entry">&lt;pT&gt;entry</a>.</dd>
+	<dt>Parameter: TRIE_TO_STRING</dt>
+	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>. The unnamed trait is automatically supplied by the string, but others require <code>&lt;name&gt;&lt;trait&gt;to_string</code> be declared as <a href = "#typedef:&lt;pTR&gt;to_string_fn">&lt;pTR&gt;to_string_fn</a>.</dd>
+	<dt>Parameter: TRIE_EXPECT_TRAIT, TRIE_TRAIT</dt>
+	<dd>Named traits are obtained by including <code>trie.h</code> multiple times with <code>TRIE_EXPECT_TRAIT</code> and then subsequently including the name in <code>TRIE_TRAIT</code>.</dd>
+	<dt>Parameter: TRIE_DECLARE_ONLY</dt>
+	<dd>For headers in different compilation units.</dd>
+	<dt>Standard:</dt>
+	<dd>C89 (Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ.)</dd>
+	<dt>Dependancies:</dt>
+	<dd><a href = "../../src/box.h">box</a>, <a href = "../../src/bmp.h">bmp</a></dd>
+	<dt>Caveat:</dt>
+	<dd>(<a href = "#fn:&lt;T&gt;from_array">&amp;lt;T&amp;gt;from_array</a>)</dd>
+</dl>
+
+<h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
+
+<div>
+
+<h3><a id = "typedef:<pT>key" name = "typedef:<pT>key">&lt;pT&gt;key</a></h3>
+
+<p><code>typedef TRIE_KEY <strong>&lt;pT&gt;key</strong>;</code></p>
+
+<p>The default is <code>const char *</code>. If one sets <code>TRIE_KEY</code> to a different type, then one must also declare <code>&lt;t&gt;string</code> as a <a href = "#typedef:&lt;pT&gt;string_fn">&lt;pT&gt;string_fn</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>entry" name = "typedef:<pT>entry">&lt;pT&gt;entry</a></h3>
+
+<p><code>typedef TRIE_ENTRY <strong>&lt;pT&gt;entry</strong>;</code></p>
+
+<p>If <code>TRIE_ENTRY</code> is set, one must provide <code>&lt;t&gt;key</code> as a <a href = "#typedef:&lt;pT&gt;key_fn">&lt;pT&gt;key_fn</a>; otherwise a set and <a href = "#typedef:&lt;pT&gt;entry">&lt;pT&gt;entry</a> and <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a> are the same.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>remit" name = "typedef:<pT>remit">&lt;pT&gt;remit</a></h3>
+
+<p><code>typedef &lt;pT&gt;entry *<strong>&lt;pT&gt;remit</strong>;</code></p>
+
+<p>Remit is either an extra indirection on <a href = "#typedef:&lt;pT&gt;entry">&lt;pT&gt;entry</a> on <code>TRIE_ENTRY</code> or not.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>string_fn" name = "typedef:<pT>string_fn">&lt;pT&gt;string_fn</a></h3>
+
+<p><code>typedef const char *(*<strong>&lt;pT&gt;string_fn</strong>)(&lt;pT&gt;key);</code></p>
+
+<p>Transforms a <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a> into a <code>const char *</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>key_fn" name = "typedef:<pT>key_fn">&lt;pT&gt;key_fn</a></h3>
+
+<p><code>typedef &lt;pT&gt;key(*<strong>&lt;pT&gt;key_fn</strong>)(const &lt;pT&gt;entry *);</code></p>
+
+<p>Extracts <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a> from <a href = "#typedef:&lt;pT&gt;entry">&lt;pT&gt;entry</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pTR>to_string_fn" name = "typedef:<pTR>to_string_fn">&lt;pTR&gt;to_string_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;pTR&gt;to_string_fn</strong>)(const &lt;pT&gt;key, const &lt;pT&gt;entry *, char(*)[12]);</code></p>
+
+<p>Type of <code>TRIE_TO_STRING</code> needed function <code>&lt;tr&gt;to_string</code>. Responsible for turning the read-only argument into a 12-max-<code>char</code> output string. <code>&lt;pT&gt;value</code> is omitted when it's a set. Only available to named traits, the <code>TRIE_TO_STRING</code> of the anonymous trait is implicitly the string itself.</p>
+
+</div>
+
+<h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
+
+<div>
+
+<h3><a id = "tag:trie_result" name = "tag:trie_result">trie_result</a></h3>
+
+<p><code>enum <strong>trie_result</strong> { TRIE_RESULT };</code></p>
+
+<p>A result of modifying the table, of which <code>TRIE_ERROR</code> is false.</p>
+
+<p><img alt = "A diagram of the result states." src = "../../doc/trie/result.png" width = 537 height = 288></p>
+
+</div>
+
+<div>
+
+<h3><a id = "tag:<t>trie" name = "tag:<t>trie">&lt;t&gt;trie</a></h3>
+
+<p><code>struct <strong>&lt;t&gt;trie</strong>;</code></p>
+
+<p>To initialize it to an idle state, see <a href = "#fn:&lt;t&gt;trie">&lt;t&gt;trie</a>, <code>{0}</code>, or being <code>static</code>.</p>
+
+<p><img alt = "States." src = "../../doc/trie/states.png" width = 839 height = 137></p>
+
+</div>
+
+<div>
+
+<h2><a id = "summary:" name = "summary:">Function Summary</a></h2>
+
+<table>
+
+<tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>next">&lt;T&gt;next</a></td><td>cur</td></tr>
+
+<tr><td align = right>static struct &lt;T&gt;cursor</td><td><a href = "#fn:<T>prefix">&lt;T&gt;prefix</a></td><td>trie, prefix</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;remit</td><td><a href = "#fn:<T>entry">&lt;T&gt;entry</a></td><td>cur</td></tr>
+
+<tr><td align = right>static struct &lt;t&gt;trie</td><td><a href = "#fn:<t>trie">&lt;t&gt;trie</a></td><td></td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>from_array">&lt;T&gt;from_array</a></td><td>trie, array, array_size</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<t>trie_">&lt;t&gt;trie_</a></td><td>trie</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>clear">&lt;T&gt;clear</a></td><td>trie</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;remit</td><td><a href = "#fn:<T>match">&lt;T&gt;match</a></td><td>trie, string</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;remit</td><td><a href = "#fn:<T>get">&lt;T&gt;get</a></td><td>trie, string</td></tr>
+
+<tr><td align = right>static enum trie_result</td><td><a href = "#fn:<T>try">&lt;T&gt;try</a></td><td>trie, key, entry</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>remove">&lt;T&gt;remove</a></td><td>trie, string</td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#fn:<TR>to_string">&lt;TR&gt;to_string</a></td><td>box</td></tr>
+
+</table>
+
+</div>
+
+<div>
+
+<h2><a id = "fn:" name = "fn:">Function Definitions</a></h2>
+
+<div>
+
+<h3><a id = "fn:<T>next" name = "fn:<T>next">&lt;T&gt;next</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;next</strong>(struct &lt;T&gt;cursor *const <em>cur</em>)</code></p>
+
+<p>Advancing <code>cur</code> to the next element.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>trie</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>prefix" name = "fn:<T>prefix">&lt;T&gt;prefix</a></h3>
+
+<p><code>static struct &lt;T&gt;cursor <strong>&lt;T&gt;prefix</strong>(struct &lt;t&gt;trie *const <em>trie</em>, const char *const <em>prefix</em>)</code></p>
+
+<dl>
+	<dt>Parameter: <em>prefix</em></dt>
+	<dd>To fill with the entire <code>trie</code>, use the empty string.</dd>
+	<dt>Return:</dt>
+	<dd>A set to strings that start with <code>prefix</code> in <code>trie</code>. It is valid until a topological change to <code>trie</code>. Calling <a href = "#fn:&lt;T&gt;next">&lt;T&gt;next</a> will iterate them in order.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>trie</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>entry" name = "fn:<T>entry">&lt;T&gt;entry</a></h3>
+
+<p><code>static &lt;pT&gt;remit <strong>&lt;T&gt;entry</strong>(const struct &lt;T&gt;cursor *const <em>cur</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The entry at a valid, non-null <code>cur</code>.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<t>trie" name = "fn:<t>trie">&lt;t&gt;trie</a></h3>
+
+<p><code>static struct &lt;t&gt;trie <strong>&lt;t&gt;trie</strong>(void)</code></p>
+
+<p>Zeroed data (not all-bits-zero) is initialized.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>An idle tree.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>from_array" name = "fn:<T>from_array">&lt;T&gt;from_array</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;from_array</strong>(struct &lt;T&gt;trie *const <em>trie</em>, &lt;pT&gt;type *const *const <em>array</em>, const size_t <em>array_size</em>)</code></p>
+
+<p>Initializes <code>trie</code> from an <code>array</code> of pointers-to-<code>&lt;T&gt;</code> of <code>array_size</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success.</dd>
+	<dt>Exceptional return: realloc</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(<code>array_size</code>)</dd>
+	<dt>Caveat:</dt>
+	<dd>Write this function, somehow.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<t>trie_" name = "fn:<t>trie_">&lt;t&gt;trie_</a></h3>
+
+<p><code>static void <strong>&lt;t&gt;trie_</strong>(struct &lt;t&gt;trie *const <em>trie</em>)</code></p>
+
+<p>Returns any initialized <code>trie</code> (can be null) to idle.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>trie</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>clear" name = "fn:<T>clear">&lt;T&gt;clear</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;clear</strong>(struct &lt;t&gt;trie *const <em>trie</em>)</code></p>
+
+<p>Clears every entry in a valid <code>trie</code> (can be null), but it continues to be active if it is not idle.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>trie</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>match" name = "fn:<T>match">&lt;T&gt;match</a></h3>
+
+<p><code>static &lt;pT&gt;remit <strong>&lt;T&gt;match</strong>(const struct &lt;t&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code></p>
+
+<p>Looks at only the index of <code>trie</code> for potential <code>string</code> (can both be null) matches. Does not access the string itself, thus will ignore the bits that are not in the index. If may not have a null, the <code>remit</code> is stuck as a pointer on the end and a <code>trie_result</code> is returned.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>A candidate match for <code>string</code> or null.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>string</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>get" name = "fn:<T>get">&lt;T&gt;get</a></h3>
+
+<p><code>static &lt;pT&gt;remit <strong>&lt;T&gt;get</strong>(const struct &lt;t&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code></p>
+
+<p>If may not have a null, the <code>remit</code> is stuck as a pointer on the end and a <code>trie_result</code> is returned.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Exact <code>string</code> match for <code>trie</code> or null, (both can be null.)</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>trie</code>|) iid</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>try" name = "fn:<T>try">&lt;T&gt;try</a></h3>
+
+<p><code>static enum trie_result <strong>&lt;T&gt;try</strong>(struct &lt;t&gt;trie *const <em>trie</em>, const &lt;pT&gt;key <em>key</em>, &lt;pT&gt;entry **const <em>entry</em>)</code></p>
+
+<p>Adds <code>key</code> to <code>trie</code> if it doesn't exist already.</p>
+
+<p>If <code>TRIE_ENTRY</code> was specified and the return is <code>TRIE_ABSENT</code>, the trie is in an invalid state until filling in the key with an equivalent <code>key</code>. (Because <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a> is not invertible in this case, it is agnostic of the method of setting the key.)</p>
+
+</div>
+
+<dl>
+	<dt>Parameter: <em>entry</em></dt>
+	<dd>Output pointer. Only if <code>TRIE_ENTRY</code> is set will this parameter exist.</dd>
+	<dt>Return:</dt>
+	<dd>One of, <code>TRIE_ERROR</code>, <code>errno</code> is set and <code>entry</code> is not; <code>TRIE_ABSENT</code>, <code>key</code> is added to <code>trie</code>; <code>TRIE_PRESENT</code>, the value associated with <code>key</code>.</dd>
+	<dt>Exceptional return: EILSEQ</dt>
+	<dd>The string has a distinguishing run of bytes with a neighbouring string that is too long. On most platforms, this is about 32 bytes the same.</dd>
+	<dt>Exceptional return: malloc</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>trie</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>remove" name = "fn:<T>remove">&lt;T&gt;remove</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;remove</strong>(struct &lt;t&gt;trie *const <em>trie</em>, const char *const <em>string</em>)</code></p>
+
+<p>Tries to remove <code>string</code> from <code>trie</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success. If either parameter is null or the <code>string</code> is not in <code>trie</code>, returns false without setting <code>errno</code>.</dd>
+	<dt>Exceptional return: EILSEQ</dt>
+	<dd>The deletion of <code>string</code> would cause an overflow with the rest of the strings.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>trie</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>to_string" name = "fn:<TR>to_string">&lt;TR&gt;to_string</a></h3>
+
+<p><code>static const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>)</code></p>
+
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Address of the static buffer.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h2><a id = "license:" name = "license:">License</a></h2>
+
+<p>2020 Neil Edelman, distributed under the terms of the <a href = "https://opensource.org/licenses/MIT">MIT License</a>.</p>
+
+</div>
+
+</body>
+
+</html>

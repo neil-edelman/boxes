@@ -20,7 +20,7 @@ Header [\.\./src/bmp\.h](../src/bmp.h); examples [\.\./test/test\_bmp\.c](../tes
  * Standard:  
    C89/90
  * Dependancies:  
-   [box](../src/box.h)
+   [box](../../src/box.h)
 
 
 

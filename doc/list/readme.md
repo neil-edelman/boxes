@@ -13,7 +13,7 @@ Header [\.\./src/list\.h](../src/list.h); examples [\.\./test/test\_list\.c](../
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of a stochastic skip-list.](../doc/list/list.png)
+![Example of a stochastic skip-list.](../../doc/list/list.png)
 
 In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Thareja+2014%2C+Structures), [&lt;t&gt;list](#user-content-tag-9fee1d65) is a circular header, or sentinel, to a doubly\-linked list of [&lt;t&gt;listlink](#user-content-tag-1252dd09)\. This is a closed structure, such that with with a pointer to any element, it is possible to extract the entire list\. The links will be generally in a larger container type\.
 
@@ -30,7 +30,7 @@ In parlance of [Thareja 2014, Structures](https://scholar.google.ca/scholar?q=Th
  * Standard:  
    C89
  * Dependancies:  
-   [box](../src/box.h)
+   [box](../../src/box.h)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -91,7 +91,7 @@ The type of the required `<tr>to_string`\. Responsible for turning the read\-onl
 
 Storage of this structure is the responsibility of the caller, who must provide a stable pointer while in a list\. Generally, one encloses this in a host `struct` or `union`\.
 
-![States.](../doc/list/node-states.png)
+![States.](../../doc/list/node-states.png)
 
 
 
@@ -101,7 +101,7 @@ Storage of this structure is the responsibility of the caller, who must provide 
 
 Serves as head and tail sentinel for a linked\-list of [&lt;t&gt;listlink](#user-content-tag-1252dd09)\.
 
-![States.](../doc/list/states.png)
+![States.](../../doc/list/states.png)
 
 
 

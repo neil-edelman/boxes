@@ -1,0 +1,588 @@
+<!doctype html public "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+
+<html>
+
+<head>
+<meta http-equiv = "Content-Type" content = "text/html;charset=UTF-8">
+<!-- Steal these colour values from JavaDocs. -->
+<style type = "text/css">
+	a:link,  a:visited { color: #4a6782; }
+	a:hover, a:focus   { color: #bb7a2a; }
+	a:active           { color: #4A6782; }
+	tr:nth-child(even) { background: #dee3e9; }
+	div {
+		margin:  4px 0;
+		padding: 0 4px 4px 4px;
+	}
+	table      { width: 100%; }
+	td         { padding: 4px; }
+	h3, h1 {
+		color: #2c4557;
+		background-color: #dee3e9;
+		padding:          4px;
+	}
+	h3 {
+		margin:           0 -4px;
+		padding:          4px;
+	}
+</style>
+<title>tree.h</title>
+</head>
+
+<body>
+
+<h1>tree.h</h1>
+
+<p>Header <a href = "../src/tree.h">../src/tree.h</a>; examples <a href = "../test/test_tree.c">../test/test_tree.c</a>; article <a href = "../doc/tree/tree.pdf">../doc/tree/tree.pdf</a>.</p>
+
+<h2>Ordered tree</h2>
+
+<ul>
+	<li><a href = "#preamble:">Description</a></li>
+	<li><a href = "#typedef:">Typedef Aliases</a>: <a href = "#typedef:<pT>key">&lt;pT&gt;key</a>, <a href = "#typedef:<pT>value">&lt;pT&gt;value</a>, <a href = "#typedef:<pT>less_fn">&lt;pT&gt;less_fn</a>, <a href = "#typedef:<pT>to_string_fn">&lt;pT&gt;to_string_fn</a></li>
+	<li><a href = "#tag:">Struct, Union, and Enum Definitions</a>: <a href = "#tag:tree_result">tree_result</a>, <a href = "#tag:<t>tree">&lt;t&gt;tree</a></li>
+	<li><a href = "#summary:">Function Summary</a></li>
+	<li><a href = "#fn:">Function Definitions</a></li>
+	<li><a href = "#license:">License</a></li>
+</ul>
+
+<div>
+
+<h2><a id = "preamble:" name = "preamble:">Description</a></h2>
+
+<p><img alt = "Example of an order-3 tree." src = "../../doc/tree/tree.png" width = 900 height = 301></p>
+
+<p>A <a href = "#tag:&lt;t&gt;tree">&lt;t&gt;tree</a> is an ordered set or map contained in a tree; the order is suppled by <a href = "#fn:&lt;t&gt;less">&lt;t&gt;less</a>. For memory locality, this is implemented B-tree, described in <a href = "https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972%2C+Large">Bayer, McCreight, 1972, Large</a>.</p>
+
+<p>All operations are fail-fast and will not compromise the integrity of any existing tree. As a B-tree, this is not stable.</p>
+
+Adding, deleting, or changes in the topology of the tree invalidate the iterator. To modify the tree while iterating, take the <a href = "#fn:&lt;T&gt;key">&lt;T&gt;key</a> and restart the iterator with <a href = "#fn:&lt;T&gt;less">&lt;T&gt;less</a> or <a href = "#fn:&lt;T&gt;more">&lt;T&gt;more</a> as appropriate.</div>
+
+<dl>
+	<dt>Parameter: TREE_NAME, TREE_KEY</dt>
+	<dd><code>&lt;t&gt;</code> that satisfies <code>C</code> naming conventions when mangled, required, and <code>TREE_KEY</code>, a type, <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a>, whose default is <code>unsigned int</code>.</dd>
+	<dt>Parameter: TREE_VALUE</dt>
+	<dd>Optional payload to go with the type, <a href = "#typedef:&lt;pT&gt;value">&lt;pT&gt;value</a>, thus making it a map instead of a set.</dd>
+	<dt>Parameter: TREE_LESS</dt>
+	<dd>By default, defines <a href = "#fn:&lt;t&gt;less">&lt;t&gt;less</a> <code>(a, b) -&gt; a &lt; b</code>.</dd>
+	<dt>Parameter: TREE_ORDER</dt>
+	<dd>Sets the branching factor, or order as <a href = "https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3">Knuth, 1998 Art 3</a>, to the range <code>[3, UINT_MAX+1]</code>. Default 65 is tuned to an integer to pointer map, and should be okay for most variations. 4 is isomorphic to left-leaning red-black tree, <a href = "https://scholar.google.ca/scholar?q=Sedgewick%2C+2008%2C+LLRB">Sedgewick, 2008, LLRB</a>. The above illustration is 5.</dd>
+	<dt>Parameter: TREE_DEFAULT</dt>
+	<dd>Default trait which must be set to a <a href = "#typedef:&lt;pT&gt;value">&lt;pT&gt;value</a>, used in <a href = "#fn:&lt;T&gt;tree&lt;R&gt;get">&lt;T&gt;tree&lt;R&gt;get</a>.</dd>
+	<dt>Parameter: TREE_TO_STRING</dt>
+	<dd>To string trait contained in <a href = "src/to_string.h">src/to_string.h</a>. Require <code>&lt;name&gt;[&lt;trait&gt;]to_string</code> be declared as <a href = "#typedef:&lt;pT&gt;to_string_fn">&lt;pT&gt;to_string_fn</a>.</dd>
+	<dt>Parameter: TREE_EXPECT_TRAIT, TREE_TRAIT</dt>
+	<dd>Named traits are obtained by including <code>tree.h</code> multiple times with <code>TREE_EXPECT_TRAIT</code> and then subsequently including the name that satisfies <code>C</code> naming conventions when mangled in <code>TREE_TRAIT</code>.</dd>
+	<dt>Parameter: TREE_DECLARE_ONLY</dt>
+	<dd>For headers in different compilation units.</dd>
+	<dt>Standard:</dt>
+	<dd>C89</dd>
+	<dt>Dependancies:</dt>
+	<dd><a href = "../../src/box.h">box</a></dd>
+	<dt>Caveat:</dt>
+	<dd>merge, difference, trie (<a href = "#fn:&lt;T&gt;less">&amp;lt;T&amp;gt;less</a>, <a href = "#fn:&lt;T&gt;more">&amp;lt;T&amp;gt;more</a>)</dd>
+</dl>
+
+<h2><a id = "typedef:" name = "typedef:">Typedef Aliases</a></h2>
+
+<div>
+
+<h3><a id = "typedef:<pT>key" name = "typedef:<pT>key">&lt;pT&gt;key</a></h3>
+
+<p><code>typedef TREE_KEY <strong>&lt;pT&gt;key</strong>;</code></p>
+
+<p>Ordered type used by <a href = "#typedef:&lt;pT&gt;less_fn">&lt;pT&gt;less_fn</a>; defaults to <code>unsigned</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>value" name = "typedef:<pT>value">&lt;pT&gt;value</a></h3>
+
+<p><code>typedef TREE_VALUE <strong>&lt;pT&gt;value</strong>;</code></p>
+
+<p>On <code>TREE_VALUE</code>, this creates a map, otherwise a set of <a href = "#typedef:&lt;pT&gt;key">&lt;pT&gt;key</a>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>less_fn" name = "typedef:<pT>less_fn">&lt;pT&gt;less_fn</a></h3>
+
+<p><code>typedef int(*<strong>&lt;pT&gt;less_fn</strong>)(const &lt;pT&gt;key a, const &lt;pT&gt;key b);</code></p>
+
+<p>Inducing a strict weak order by returning a positive result if <code>a</code> is out-of-order with respect to <code>b</code>. It only needs to divide entries into two instead of three categories. Compatible, but less strict then the comparators from <code>bsearch</code> and <code>qsort</code>. For example, <code>return a &gt; b</code> or <code>return strcmp(a, b)</code> would give an ascending tree.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "typedef:<pT>to_string_fn" name = "typedef:<pT>to_string_fn">&lt;pT&gt;to_string_fn</a></h3>
+
+<p><code>typedef void(*<strong>&lt;pT&gt;to_string_fn</strong>)(const &lt;pT&gt;key, const &lt;pT&gt;value *, char(*)[12]);</code></p>
+
+<p>The type of the required <code>&lt;tr&gt;to_string</code>. Responsible for turning the read-only argument into a 12-max-<code>char</code> output string. <code>&lt;pT&gt;value</code> is omitted when it's a set.</p>
+
+</div>
+
+<h2><a id = "tag:" name = "tag:">Struct, Union, and Enum Definitions</a></h2>
+
+<div>
+
+<h3><a id = "tag:tree_result" name = "tag:tree_result">tree_result</a></h3>
+
+<p><code>enum <strong>tree_result</strong> { TREE_RESULT };</code></p>
+
+<p>A result of modifying the tree, of which <code>TREE_ERROR</code> is false.</p>
+
+<p><img alt = "A diagram of the result states." src = "../../doc/tree/result.png" width = 608 height = 288></p>
+
+</div>
+
+<div>
+
+<h3><a id = "tag:<t>tree" name = "tag:<t>tree">&lt;t&gt;tree</a></h3>
+
+<p><code>struct <strong>&lt;t&gt;tree</strong>;</code></p>
+
+<p>See <a href = "#fn:&lt;t&gt;tree">&lt;t&gt;tree</a>.</p>
+
+<p><img alt = "States." src = "../../doc/tree/states.png" width = 1165 height = 223></p>
+
+</div>
+
+<div>
+
+<h2><a id = "summary:" name = "summary:">Function Summary</a></h2>
+
+<table>
+
+<tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
+
+<tr><td align = right>static &lt;pT&gt;key</td><td><a href = "#fn:<T>key">&lt;T&gt;key</a></td><td>cur</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;value *</td><td><a href = "#fn:<T>value">&lt;T&gt;value</a></td><td>cur</td></tr>
+
+<tr><td align = right>static struct &lt;T&gt;cursor</td><td><a href = "#fn:<T>less">&lt;T&gt;less</a></td><td>tree, x</td></tr>
+
+<tr><td align = right>static struct &lt;T&gt;cursor</td><td><a href = "#fn:<T>more">&lt;T&gt;more</a></td><td>tree, x</td></tr>
+
+<tr><td align = right>static struct &lt;t&gt;tree</td><td><a href = "#fn:<t>tree">&lt;t&gt;tree</a></td><td></td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<t>tree_">&lt;t&gt;tree_</a></td><td>tree</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#fn:<T>clear">&lt;T&gt;clear</a></td><td>tree</td></tr>
+
+<tr><td align = right>static size_t</td><td><a href = "#fn:<T>count">&lt;T&gt;count</a></td><td>tree</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>contains">&lt;T&gt;contains</a></td><td>tree, x</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;value</td><td><a href = "#fn:<T>get_or">&lt;T&gt;get_or</a></td><td>tree, key, default_value</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;key</td><td><a href = "#fn:<T>less_or">&lt;T&gt;less_or</a></td><td>tree, x, default_key</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;key</td><td><a href = "#fn:<T>more_or">&lt;T&gt;more_or</a></td><td>tree, x, default_key</td></tr>
+
+<tr><td align = right>static enum tree_result</td><td><a href = "#fn:<T>bulk_assign">&lt;T&gt;bulk_assign</a></td><td>tree, key, value</td></tr>
+
+<tr><td align = right>static enum tree_result</td><td><a href = "#fn:<T>bulk_try">&lt;T&gt;bulk_try</a></td><td>tree, key</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>bulk_finish">&lt;T&gt;bulk_finish</a></td><td>tree</td></tr>
+
+<tr><td align = right>static enum tree_result</td><td><a href = "#fn:<T>assign">&lt;T&gt;assign</a></td><td>tree, key, valuep</td></tr>
+
+<tr><td align = right>static enum tree_result</td><td><a href = "#fn:<T>try">&lt;T&gt;try</a></td><td>tree, key</td></tr>
+
+<tr><td align = right>static enum tree_result</td><td><a href = "#fn:<T>update">&lt;T&gt;update</a></td><td>tree, key, eject, value</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>remove">&lt;T&gt;remove</a></td><td>tree, key</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#fn:<T>clone">&lt;T&gt;clone</a></td><td>tree, source</td></tr>
+
+<tr><td align = right>static const char *</td><td><a href = "#fn:<TR>to_string">&lt;TR&gt;to_string</a></td><td>box</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;value</td><td><a href = "#fn:<T>tree<R>get">&lt;T&gt;tree&lt;R&gt;get</a></td><td>tree, key</td></tr>
+
+</table>
+
+</div>
+
+<div>
+
+<h2><a id = "fn:" name = "fn:">Function Definitions</a></h2>
+
+<div>
+
+<h3><a id = "fn:<T>key" name = "fn:<T>key">&lt;T&gt;key</a></h3>
+
+<p><code>static &lt;pT&gt;key <strong>&lt;T&gt;key</strong>(const struct &lt;T&gt;cursor *const <em>cur</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Extract the key from <code>cur</code> when it points at a valid element.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>value" name = "fn:<T>value">&lt;T&gt;value</a></h3>
+
+<p><code>static &lt;pT&gt;value *<strong>&lt;T&gt;value</strong>(const struct &lt;T&gt;cursor *const <em>cur</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Extract the value from <code>cur</code> when it points at a valid element, if <code>TREE_VALUE</code>.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>less" name = "fn:<T>less">&lt;T&gt;less</a></h3>
+
+<p><code>static struct &lt;T&gt;cursor <strong>&lt;T&gt;less</strong>(struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>x</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Cursor in <code>tree</code> such that <a href = "#fn:&lt;T&gt;key">&lt;T&gt;key</a> is the greatest key that is less-than-or-equal-to <code>x</code>, or if <code>x</code> is less than all in <code>tree</code>, <a href = "#fn:&lt;T&gt;begin">&lt;T&gt;begin</a>.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(log |<code>tree</code>|)</dd>
+	<dt>Caveat:</dt>
+	<dd>Update.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>more" name = "fn:<T>more">&lt;T&gt;more</a></h3>
+
+<p><code>static struct &lt;T&gt;cursor <strong>&lt;T&gt;more</strong>(struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>x</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Cursor in <code>tree</code> such that <a href = "#fn:&lt;T&gt;more">&lt;T&gt;more</a> is the smallest key that is greater-than-or-equal-to <code>x</code>, or, (…) if <code>x</code> is greater than all in <code>tree</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(log |<code>tree</code>|)</dd>
+	<dt>Caveat:</dt>
+	<dd>Update.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<t>tree" name = "fn:<t>tree">&lt;t&gt;tree</a></h3>
+
+<p><code>static struct &lt;t&gt;tree <strong>&lt;t&gt;tree</strong>(void)</code></p>
+
+<p>Zeroed data (not all-bits-zero) is initialized.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>An idle tree.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<t>tree_" name = "fn:<t>tree_">&lt;t&gt;tree_</a></h3>
+
+<p><code>static void <strong>&lt;t&gt;tree_</strong>(struct &lt;t&gt;tree *const <em>tree</em>)</code></p>
+
+<p>Returns an initialized <code>tree</code> to idle, <code>tree</code> can be null.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>clear" name = "fn:<T>clear">&lt;T&gt;clear</a></h3>
+
+<p><code>static void <strong>&lt;T&gt;clear</strong>(struct &lt;t&gt;tree *const <em>tree</em>)</code></p>
+
+<p>Clears <code>tree</code>, which can be null, idle, empty, or full. If it is empty or full, it remains active, (all except one node are freed.)</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>count" name = "fn:<T>count">&lt;T&gt;count</a></h3>
+
+<p><code>static size_t <strong>&lt;T&gt;count</strong>(const struct &lt;t&gt;tree *const <em>tree</em>)</code></p>
+
+<p>Counts all the keys on <code>tree</code>, which can be null.</p>
+
+<dl>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>contains" name = "fn:<T>contains">&lt;T&gt;contains</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;contains</strong>(const struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>x</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Is <code>x</code> in <code>tree</code> (which can be null)?</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>get_or" name = "fn:<T>get_or">&lt;T&gt;get_or</a></h3>
+
+<p><code>static &lt;pT&gt;value <strong>&lt;T&gt;get_or</strong>(const struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>key</em>, const &lt;pT&gt;value <em>default_value</em>)</code></p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Get the value of <code>key</code> in <code>tree</code>, or if no key, <code>default_value</code>. The map type is <code>TREE_VALUE</code> and the set type is <code>TREE_KEY</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>less_or" name = "fn:<T>less_or">&lt;T&gt;less_or</a></h3>
+
+<p><code>static &lt;pT&gt;key <strong>&lt;T&gt;less_or</strong>(const struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>x</em>, const &lt;pT&gt;key <em>default_key</em>)</code></p>
+
+<p>For example, <code>tree = { 10 }</code>, <code>x = 5 -&gt; default_value</code>, <code>x = 10 -&gt; 10</code>, <code>x = 11 -&gt; 10</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Key in <code>tree</code> less-then-or-equal to <code>x</code> or <code>default_key</code> if <code>x</code> is smaller than all in <code>tree</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>more_or" name = "fn:<T>more_or">&lt;T&gt;more_or</a></h3>
+
+<p><code>static &lt;pT&gt;key <strong>&lt;T&gt;more_or</strong>(const struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>x</em>, const &lt;pT&gt;key <em>default_key</em>)</code></p>
+
+<p>For example, <code>tree = { 10 }</code>, <code>x = 5 -&gt; 10</code>, <code>x = 10 -&gt; 10</code>, <code>x = 11 -&gt; default_value</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Key in <code>tree</code> greater-than-or-equal to <code>x</code> or <code>default_key</code> if <code>x</code> is greater than all in <code>tree</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>bulk_assign" name = "fn:<T>bulk_assign">&lt;T&gt;bulk_assign</a></h3>
+
+<p><code>static enum tree_result <strong>&lt;T&gt;bulk_assign</strong>(struct &lt;t&gt;tree *const <em>tree</em>, &lt;pT&gt;key <em>key</em>, &lt;pT&gt;value **const <em>value</em>)</code></p>
+
+<p>Only if <code>TREE_VALUE</code> is set; the set version is <a href = "#fn:&lt;T&gt;try">&lt;T&gt;try</a>. Packs <code>key</code> on the right side of <code>tree</code> without doing the usual restructuring. All other topology modification functions should be avoided until followed by <a href = "#fn:&lt;T&gt;bulk_finish">&lt;T&gt;bulk_finish</a>.</p>
+
+<dl>
+	<dt>Parameter: <em>value</em></dt>
+	<dd>A pointer to the key's value which is set by the function on returning true. Can be null.</dd>
+	<dt>Return:</dt>
+	<dd>One of <a href = "#tag:tree_result">tree_result</a>: <code>TREE_ERROR</code> and <code>errno</code> will be set, <code>TREE_PRESENT</code> if the key is already (the highest) in the tree, and <code>TREE_ABSENT</code>, added, the <code>value</code> (if applicable) is uninitialized.</dd>
+	<dt>Exceptional return: EDOM</dt>
+	<dd><code>x</code> is smaller than the largest key in <code>tree</code>.</dd>
+	<dt>Exceptional return: malloc</dt>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>bulk_try" name = "fn:<T>bulk_try">&lt;T&gt;bulk_try</a></h3>
+
+<p><code>static enum tree_result <strong>&lt;T&gt;bulk_try</strong>(struct &lt;t&gt;tree *const <em>tree</em>, &lt;pT&gt;key <em>key</em>)</code></p>
+
+<p>Only if <code>TREE_VALUE</code> is not set; see <a href = "#fn:&lt;T&gt;assign">&lt;T&gt;assign</a>, which is the map version. Packs <code>key</code> on the right side of <code>tree</code>.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>bulk_finish" name = "fn:<T>bulk_finish">&lt;T&gt;bulk_finish</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;bulk_finish</strong>(struct &lt;t&gt;tree *const <em>tree</em>)</code></p>
+
+<p>Distributes <code>tree</code> (can be null) on the right side so that, after a series of <a href = "#fn:&lt;T&gt;bulk_try">&lt;T&gt;bulk_try</a> or <a href = "#fn:&lt;T&gt;bulk_assign">&lt;T&gt;bulk_assign</a>, it will be consistent with the minimum number of keys in a node.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The re-distribution was a success and all nodes are within rules. (Only when intermixing bulk and regular operations, can the function return false.)</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>assign" name = "fn:<T>assign">&lt;T&gt;assign</a></h3>
+
+<p><code>static enum tree_result <strong>&lt;T&gt;assign</strong>(struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>key</em>, &lt;pT&gt;value **const <em>valuep</em>)</code></p>
+
+<p>Adds or gets <code>key</code> in <code>tree</code>. If <code>key</code> is already in <code>tree</code>, uses the old value, <em>vs</em> <a href = "#fn:&lt;T&gt;update">&lt;T&gt;update</a>. (This is only significant in trees with distinguishable keys.)</p>
+
+<dl>
+	<dt>Parameter: <em>valuep</em></dt>
+	<dd>Only present if <code>TREE_VALUE</code> (map) was specified. If this parameter is non-null and a return value other then <code>TREE_ERROR</code>, this receives the address of the value associated with the <code>key</code>. This pointer is only guaranteed to be valid only while the <code>tree</code> doesn't undergo structural changes, (such as potentially calling it again.)</dd>
+	<dt>Return:</dt>
+	<dd>Either <code>TREE_ERROR</code> (false) and doesn't touch <code>tree</code>, <code>TREE_ABSENT</code> and adds a new key with <code>key</code>, or <code>TREE_PRESENT</code> there was already an existing key.</dd>
+	<dt>Exceptional return: malloc</dt>
+	<dt>Order:</dt>
+	<dd>&#920;(log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>try" name = "fn:<T>try">&lt;T&gt;try</a></h3>
+
+<p><code>static enum tree_result <strong>&lt;T&gt;try</strong>(struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>key</em>)</code></p>
+
+<p>Only if <code>TREE_VALUE</code> is not defined. Adds <code>key</code> to <code>tree</code> only if it is a new value, otherwise returns <code>TREE_PRESENT</code>. See <a href = "#fn:&lt;T&gt;assign">&lt;T&gt;assign</a>, which is the map version.</p>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>update" name = "fn:<T>update">&lt;T&gt;update</a></h3>
+
+<p><code>static enum tree_result <strong>&lt;T&gt;update</strong>(struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>key</em>, &lt;pT&gt;key *const <em>eject</em>, &lt;pT&gt;value **const <em>value</em>)</code></p>
+
+<p>Adds or updates <code>key</code> in <code>tree</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>eject</em></dt>
+	<dd>If this parameter is non-null and a return value of <code>TREE_PRESENT</code>, the old key is stored in <code>eject</code>, replaced by <code>key</code>. A null value indicates that on conflict, the new key yields to the old key, as <a href = "#fn:&lt;T&gt;try">&lt;T&gt;try</a>. This is only significant in trees with distinguishable keys.</dd>
+	<dt>Parameter: <em>value</em></dt>
+	<dd>Only present if <code>TREE_VALUE</code> (map) was specified. If this parameter is non-null and a return value other then <code>TREE_ERROR</code>, this receives the address of the value associated with the key.</dd>
+	<dt>Return:</dt>
+	<dd>Either <code>TREE_ERROR</code> (false,) <code>errno</code> is set and doesn't touch <code>tree</code>; <code>TREE_ABSENT</code>, adds a new key; or <code>TREE_PRESENT</code>, there was already an existing key.</dd>
+	<dt>Exceptional return: malloc</dt>
+	<dt>Order:</dt>
+	<dd>&#920;(log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>remove" name = "fn:<T>remove">&lt;T&gt;remove</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;remove</strong>(struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>key</em>)</code></p>
+
+<p>Tries to remove <code>key</code> from <code>tree</code>.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Success, otherwise it was not in <code>tree</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(log |<code>tree</code>|)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>clone" name = "fn:<T>clone">&lt;T&gt;clone</a></h3>
+
+<p><code>static int <strong>&lt;T&gt;clone</strong>(struct &lt;t&gt;tree *const restrict <em>tree</em>, const struct &lt;t&gt;tree *const restrict <em>source</em>)</code></p>
+
+<p><code>source</code> is copied to, and overwrites, <code>tree</code>.</p>
+
+<dl>
+	<dt>Parameter: <em>source</em></dt>
+	<dd>In the case where it's null or idle, if <code>tree</code> is empty, then it continues to be.</dd>
+	<dt>Return:</dt>
+	<dd>Success, otherwise <code>tree</code> is not modified.</dd>
+	<dt>Exceptional return: malloc</dt>
+	<dt>Exceptional return: EDOM</dt>
+	<dd><code>tree</code> is null.</dd>
+	<dt>Exceptional return: ERANGE</dt>
+	<dd>The size of <code>source</code> nodes doesn't fit into <code>size_t</code>.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(|<code>source</code>| + |<code>tree</code>|) time and temporary space.</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<TR>to_string" name = "fn:<TR>to_string">&lt;TR&gt;to_string</a></h3>
+
+<p><code>static const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>)</code></p>
+
+<p><a href = "src/to_string.h">src/to_string.h</a>: print the contents of <code>box</code> in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>Address of the static buffer.</dd>
+	<dt>Order:</dt>
+	<dd>&#920;(1)</dd>
+</dl>
+
+</div>
+
+<div>
+
+<h3><a id = "fn:<T>tree<R>get" name = "fn:<T>tree<R>get">&lt;T&gt;tree&lt;R&gt;get</a></h3>
+
+<p><code>static &lt;pT&gt;value <strong>&lt;T&gt;tree&lt;R&gt;get</strong>(const struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>key</em>)</code></p>
+
+<p>This is functionally identical to <a href = "#fn:&lt;T&gt;get_or">&lt;T&gt;get_or</a>, but a with a trait specifying a constant default value.</p>
+
+<dl>
+	<dt>Return:</dt>
+	<dd>The value associated with <code>key</code> in <code>tree</code>, (which can be null.) If no such value exists, the <code>TREE_DEFAULT</code> is returned.</dd>
+	<dt>Order:</dt>
+	<dd>&#927;(log |<code>tree</code>|).</dd>
+</dl>
+
+</div>
+
+</div>
+
+<div>
+
+<h2><a id = "license:" name = "license:">License</a></h2>
+
+<p>2022 Neil Edelman, distributed under the terms of the <a href = "https://opensource.org/licenses/MIT">MIT License</a>.</p>
+
+</div>
+
+</body>
+
+</html>

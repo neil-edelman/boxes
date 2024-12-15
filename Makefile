@@ -30,7 +30,7 @@ else
 endif
 
 projects := $(patsubst test/test_%.c, bin/%, $(wildcard test/test_*.c))
-docs := $(patsubst test/test_%.c, doc/%.md, $(wildcard test/test_*.c))
+docs := $(patsubst test/test_%.c, doc/%/readme.md, $(wildcard test/test_*.c)) $(patsubst test/test_%.c, doc/%/index.html, $(wildcard test/test_*.c))
 
 default: $(projects) $(docs) #comment this out if you don't have cdoc
 	# . . . success making tests in bin/
@@ -56,8 +56,11 @@ build/%.c: test/%.re.c
 	@mkdir -p build
 	re2c -W --tags -o $@ $<
 
-doc/%.md: src/%.h
+doc/%/readme.md: src/%.h
 	# https://github.com/neil-edelman/cdoc
+	-cdoc -o $@ $<
+
+doc/%/index.html: src/%.h
 	-cdoc -o $@ $<
 
 # additional dependencies

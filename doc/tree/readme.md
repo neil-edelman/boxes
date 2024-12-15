@@ -13,7 +13,7 @@ Header [\.\./src/tree\.h](../src/tree.h); examples [\.\./test/test\_tree\.c](../
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of an order-3 tree.](../doc/tree/tree.png)
+![Example of an order-3 tree.](../../doc/tree/tree.png)
 
 A [&lt;t&gt;tree](#user-content-tag-31fcdbd1) is an ordered set or map contained in a tree; the order is suppled by [&lt;t&gt;less](#user-content-fn-534b464c)\. For memory locality, this is implemented B\-tree, described in [Bayer, McCreight, 1972, Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972%2C+Large)\.
 
@@ -40,7 +40,7 @@ Adding, deleting, or changes in the topology of the tree invalidate the iterator
  * Standard:  
    C89
  * Dependancies:  
-   [box](../src/box.h)
+   [box](../../src/box.h)
  * Caveat:  
    merge, difference, trie ([&lt;T&gt;less](#user-content-fn-8d54d9ac), [&lt;T&gt;more](#user-content-fn-5c40636c))
 
@@ -87,7 +87,7 @@ The type of the required `<tr>to_string`\. Responsible for turning the read\-onl
 
 A result of modifying the tree, of which `TREE_ERROR` is false\.
 
-![A diagram of the result states.](../doc/tree/result.png)
+![A diagram of the result states.](../../doc/tree/result.png)
 
 
 
@@ -97,7 +97,7 @@ A result of modifying the tree, of which `TREE_ERROR` is false\.
 
 See [&lt;t&gt;tree](#user-content-fn-31fcdbd1)\.
 
-![States.](../doc/tree/states.png)
+![States.](../../doc/tree/states.png)
 
 
 

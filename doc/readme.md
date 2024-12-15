@@ -24,6 +24,7 @@ Rethink `compare.h` and `iterate.h`.
 Get `cdoc` to recognize `.svg`.
 1-based height on tree and trie.
 trunk (root), contiguous bough, branch, leaf, same in tree and trie.
+change the font, eww.
 
 # Symbols
 

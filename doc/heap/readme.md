@@ -13,7 +13,7 @@ Header [\.\./src/heap\.h](../src/heap.h) depends on [\.\./src/array\.h](../src/a
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of heap.](../doc/heap/heap.png)
+![Example of heap.](../../doc/heap/heap.png)
 
 A [&lt;t&gt;heap](#user-content-tag-65a3115b) is a binary heap, proposed by [Williams, 1964, Heapsort, p\. 347](https://scholar.google.ca/scholar?q=Williams%2C+1964%2C+Heapsort%2C+p.+347) using terminology of [Knuth, 1973, Sorting](https://scholar.google.ca/scholar?q=Knuth%2C+1973%2C+Sorting)\. It is an array implementation of a priority queue\. It is not stable\.
 
@@ -32,7 +32,7 @@ A function satisfying [&lt;pT&gt;less_fn](#user-content-typedef-ca992ecb) called
  * Standard:  
    C89
  * Dependancies:  
-   [array](../src/array.h), [box](../src/box.h)
+   [array](../../src/array.h), [box](../../src/box.h)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -69,7 +69,7 @@ The type of the required `<tr>to_string`\. Responsible for turning the read\-onl
 
 Stores the heap as an array—implicit binary tree in an array called `a`\. See [&lt;t&gt;heap](#user-content-fn-65a3115b)\.
 
-![States.](../doc/heap/states.png)
+![States.](../../doc/heap/states.png)
 
 
 

@@ -13,7 +13,7 @@ Header [\.\./src/table\.h](../src/table.h); examples [\.\./test/test\_table\.c](
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of &lt;string&gt;table.](../doc/table/table.png)
+![Example of &lt;string&gt;table.](../../doc/table/table.png)
 
 [&lt;t&gt;table](#user-content-tag-2283b713) implements a set or map of [&lt;pT&gt;entry](#user-content-typedef-9be2614d) as an inline\-chined hash\-table\. It must be supplied [&lt;pT&gt;hash_fn](#user-content-typedef-896a1418) `<t>hash` and, [&lt;pT&gt;is_equal_fn](#user-content-typedef-f238d00d) `<t>is_equal` or [&lt;pT&gt;unhash_fn](#user-content-typedef-25e8a1a1) `<t>unhash`\. It is contiguous and not stable, and may rearrange elements\.
 
@@ -38,7 +38,7 @@ Header [\.\./src/table\.h](../src/table.h); examples [\.\./test/test\_table\.c](
  * Standard:  
    C89
  * Dependancies:  
-   [box](../src/box.h)
+   [box](../../src/box.h)
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -139,7 +139,7 @@ The type of the required `<tr>to_string`\. Responsible for turning the read\-onl
 
 A result of modifying the table, of which `TABLE_ERROR` is false\.
 
-![A diagram of the result states.](../doc/table/result.png)
+![A diagram of the result states.](../../doc/table/result.png)
 
 
 
@@ -157,7 +157,7 @@ Defining `TABLE_VALUE` creates this map from [&lt;pT&gt;key](#user-content-typed
 
 To initialize, see [&lt;t&gt;table](#user-content-fn-2283b713), `TABLE_IDLE`, `{0}` \(`C99`,\) or being `static`\. The fields should be treated as read\-only; any modification is liable to cause the table to go into an invalid state\.
 
-![States.](../doc/table/states.png)
+![States.](../../doc/table/states.png)
 
 
 
@@ -165,7 +165,7 @@ To initialize, see [&lt;t&gt;table](#user-content-fn-2283b713), `TABLE_IDLE`, `{
 
 <code>struct <strong>&lt;T&gt;cursor</strong> { struct &lt;t&gt;table *table; &lt;pT&gt;uint i; };</code>
 
-![States](../doc/table/it.png)
+![States](../../doc/table/it.png)
 
 Adding, deleting, successfully looking up entries, or any modification of the table's topology invalidates the iterator\. Iteration usually not in any particular order, but deterministic up to topology changes\. The asymptotic runtime of iterating though the whole table is proportional to the capacity\.
 
