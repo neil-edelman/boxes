@@ -1,6 +1,6 @@
 # array\.h #
 
-Header [\.\./src/array\.h](../src/array.h); examples [\.\./test/test\_array\.c](../test/test_array.c)\.
+Header [\.\./\.\./src/array\.h](../../src/array.h); examples [\.\./\.\./test/test\_array\.c](../../test/test_array.c)\.
 
 ## Contiguous dynamic array ##
 
@@ -13,7 +13,7 @@ Header [\.\./src/array\.h](../src/array.h); examples [\.\./test/test\_array\.c](
 
 ## <a id = "user-content-preamble" name = "user-content-preamble">Description</a> ##
 
-![Example of array.](../../doc/array/array.png)
+![Example of array.](array.png)
 
 [&lt;t&gt;array](#user-content-tag-9c4cf562) is a dynamic array that stores contiguous [&lt;pT&gt;type](#user-content-typedef-9b5be28b)\. Resizing may be necessary when increasing the size of the array; this incurs amortised cost\. As such, the contents are not stable\.
 
@@ -22,9 +22,9 @@ Header [\.\./src/array\.h](../src/array.h); examples [\.\./test/test\_array\.c](
  * Parameter: ARRAY\_NAME, ARRAY\_TYPE  
    `<t>` that satisfies `C` naming conventions when mangled and a valid tag\-type, [&lt;pT&gt;type](#user-content-typedef-9b5be28b), associated therewith; required\.
  * Parameter: ARRAY\_COMPARE, ARRAY\_IS\_EQUAL  
-   Compare trait contained in [src/compare\.h](src/compare.h)\. See [&lt;pT&gt;compare_fn](#user-content-typedef-223b1937) or [&lt;pT&gt;bipredicate_fn](#user-content-typedef-4ab43b88), \(but not both\.\)
+   Compare trait contained in [\.\./\.\./src/compare\.h](../../src/compare.h)\. See [&lt;pT&gt;compare_fn](#user-content-typedef-223b1937) or [&lt;pT&gt;bipredicate_fn](#user-content-typedef-4ab43b88), \(but not both\.\)
  * Parameter: ARRAY\_TO\_STRING  
-   To string trait contained in [src/to\_string\.h](src/to_string.h)\. See [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)\.
+   To string trait contained in [\.\./\.\./src/to\_string\.h](../../src/to_string.h)\. See [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)\.
  * Parameter: ARRAY\_EXPECT\_TRAIT, ARRAY\_TRAIT  
    Named traits are obtained by including `array.h` multiple times with `ARRAY_EXPECT_TRAIT` and then subsequently including the name in `ARRAY_TRAIT`\.
  * Parameter: ARRAY\_DECLARE\_ONLY  
@@ -101,7 +101,7 @@ The type of the required `<tr>to_string`\. Responsible for turning the read\-onl
 
 Manages the array field `data` which has `size` elements\. The space is indexed up to `capacity`, which is at least `size`\.
 
-![States.](../../doc/array/states.png)
+![States.](states.png)
 
 
 
