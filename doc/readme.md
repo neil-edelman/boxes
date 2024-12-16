@@ -1,19 +1,5 @@
 Documentation for the individual boxes is contained in subfolders.
 
-## Issues
-
-On a segmented memory model, `pool` probably won't work reliably,
-especially when one compiles with `C90`.
-
-(Especially) `trie` hasn't been tested when `CHAR_BIT ≠ 8`, as it
-could be in `C90`.
-
-`C90` requires identifiers to be a minimum of 31 significant initial
-characters in an internal identifier or a macro name. If one's
-compiler does the very minimum, it probably won't be enough to
-differentiate all the private symbols. One may have to edit the
-code to abbreviate.
-
 ## Fixme
 
 * `cdoc` gives errors about not finding stuff, even though it works. Establish firm rules on the current directory. I don't know what I was thinking.

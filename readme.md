@@ -1,7 +1,16 @@
 Mostly independent `C89` data structure headers that use compile-time
 polymorphism to generate lightweight and statically type-safe
-containers. Documented is in `doc/`; parameters in each project are
-pre-processor macros.
+containers.
+
+## Downloading ##
+
+Pick and choose from `src` and use them.
+
+!(Dependencies)[dependencies.svg]
+
+Or just download the directory to get the dependencies straight.
+Documentation is in `doc/` and examples are in `test/`. Parameters
+in each project are pre-processor macros.
 
 ## Design papers ##
 
@@ -28,6 +37,20 @@ The testing framework in `test/` is much less multi-platform then
 the headers in `src/`, requiring `C13` anonymous unions, assuming
 a `union` is in the usual order. The `Makefile` provided assumes
 the `gcc` suite and uses `clang`.
+
+## Issues
+
+On a segmented memory model, `pool` probably won't work reliably,
+especially when one compiles with `C90`.
+
+(Especially) `trie` hasn't been tested when `CHAR_BIT ≠ 8`, as it
+could be in `C90`.
+
+`C90` requires identifiers to be a minimum of 31 significant initial
+characters in an internal identifier or a macro name. If one's
+compiler does the very minimum, it probably won't be enough to
+differentiate all the private symbols. One may have to edit the
+code to abbreviate.
 
 ## License ##
 

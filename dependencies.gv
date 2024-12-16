@@ -1,0 +1,25 @@
+digraph {
+	graph [truecolor=true, bgcolor=transparent, fontname=modern];
+	node [shape=none, fontname=modern];
+	array -> box;
+	array -> iterate [style=dotted];
+	array -> to_string [style=dotted];
+	array -> compare [style=dotted];
+	bmp -> box;
+	heap -> array;
+	#heap -> to_string [style=dotted];
+	list -> box;
+	list -> iterate [style=dotted];
+	list -> to_string [style=dotted];
+	list -> compare [style=dotted];
+	pool -> heap;
+	#pool -> to_string [style=dotted];
+	table -> box;
+	table -> iterate [style=dotted];
+	table -> to_string [style=dotted];
+	tree -> box;
+	tree -> to_string [style=dotted];
+	trie -> bmp;
+	trie -> to_string [style=dotted];
+	node [colour="Red"];
+}
