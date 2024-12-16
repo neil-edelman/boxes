@@ -1,4 +1,10 @@
-/* Multiplex shared code. Pre-processor commands can't be a part of a macro. */
+/* Multiplex shared code. Pre-processor commands can't be a part of a macro.
+
+ This used to be in every file. Each file was an independent project. Which was
+ appealing for inclusion of one box. The rational for this file is it's
+ repeated code and difficult in development of boxes to keep updated. Changing
+ it back for convenience is also valid. */
+
 #if defined(BOX_NONE) + defined(BOX_ALL) \
 	+ defined(BOX_START) + defined(BOX_END) \
 	+ defined(BOX_NAME_MISSING) + defined(BOX_NAME_PRESENT) != 1
