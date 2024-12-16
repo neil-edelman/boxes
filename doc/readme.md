@@ -16,14 +16,16 @@ code to abbreviate.
 
 ## Fixme
 
-* `graph.h` HAS_GRAPH_H?
+* `cdoc` gives errors about not finding stuff, even though it works. Establish firm rules on the current directory. I don't know what I was thinking.
+* `graph.h` HAS_GRAPH_H? Turns out, graphs are great for all sorts of things, not just testing.
 * Maybe deque will be useful? a linked list of nodes of increasing size, starts at 64, starts at 1/3 the way in.
-* Maybe error reporting goes in `box.h`?
-* Rethink `compare.h` and `iterate.h`.
+* Maybe more error reporting goes in `box.h`? I'm hesitant because people have their own way to do it, but a static array of chars for `to_string` is already there.
+* Rethink `compare.h` and `iterate.h`. These are the first things I did, and it's problematic.
 * Get `cdoc` to recognize `.svg`.
+* The private-public forwarding all the functions is super-awkward, way too much work, and not sustainable. I do want one to be able to choose the bare minimum for optimization.
 * 1-based height on tree and trie.
-* Trunk (root), contiguous bough, branch, leaf, same in tree and trie.
-* Change the font, eww.
+* Have trunk (root), contiguous bough, branch, leaf, same in tree and trie.
+* Change the font, eww. Can I even do that?
 
 # Interfaces
 
