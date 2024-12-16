@@ -40,8 +40,6 @@ the headers in `src/`, requiring `C13` anonymous unions, assuming
 a `union` is in the usual order. The `Makefile` provided assumes
 the `gcc` suite and uses `clang`.
 
-## Issues
-
 On a segmented memory model, `pool` probably won't work reliably,
 especially when one compiles with `C90`.
 
