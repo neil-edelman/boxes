@@ -10,9 +10,10 @@ Pick and choose from `src` and use them. Here is the dependencies.
 
 Or just download the entire `src` directory and put it where it's
 convenient to reference from one's code. It is a static generator—it
-won't include unnecessary code.  Documentation is in `doc/` and
-examples are in `test/`. Parameters in each project are pre-processor
-macros.
+won't include code unless one asks, and one's compiler should be
+pretty good at discarding inlining and discarding unused functionality.
+Documentation is in `doc/` and examples are in `test/`. Parameters
+in each project are pre-processor macros.
 
 ## Design papers ##
 
