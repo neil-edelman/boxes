@@ -1,7 +1,7 @@
 Mostly independent `C89` data structure headers that use compile-time
 polymorphism to generate lightweight and statically type-safe
-containers.  The documented parameters in each project are pre-processor
-macros. All the public functions are documented in `doc/<box>.md`.
+containers. The documented parameters in each project are pre-processor
+macros. Documented is in `doc/`.
 
 ## Design papers ##
 
@@ -26,9 +26,8 @@ complex containers documented here.
 
 The testing framework in `test/` is much less multi-platform then
 the headers in `src/`, requiring `C13` anonymous unions, assuming
-a `union` is in the usual order, uses non-standard `pragma` (in
-`test_trie.h`.) The `Makefile` provided assumes the `gcc` suite and
-uses `clang`.
+a `union` is in the usual order. The `Makefile` provided assumes
+the `gcc` suite and uses `clang`.
 
 ## License ##
 
