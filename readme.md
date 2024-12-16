@@ -52,6 +52,10 @@ compiler does the very minimum, it probably won't be enough to
 differentiate all the private symbols. One may have to edit the
 code to abbreviate.
 
+Utf-8 everywhere. There are few places where this makes a difference,
+but one may have to edit some files if working with ASCII-only
+compilers. (Specifically, "…" in `to_string`.)
+
 ## License ##
 
 2016 Neil Edelman, distributed under the terms of the [MIT
