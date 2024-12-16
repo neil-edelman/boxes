@@ -6,7 +6,7 @@ containers.
 
 Pick and choose from `src` and use them.
 
-!(Dependencies)[dependencies.svg]
+![Dependencies](dependencies.svg)
 
 Or just download the directory to get the dependencies straight.
 Documentation is in `doc/` and examples are in `test/`. Parameters
