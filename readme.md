@@ -1,10 +1,9 @@
-Mostly independent `C89` data structure headers that use compile-time
-polymorphism to generate lightweight and statically type-safe
-containers.
+`C89` data structure headers that use compile-time polymorphism to
+generate lightweight and statically type-safe containers.
 
 ## Downloading ##
 
-Pick and choose from `src` and use them. Here is the dependencies.
+Pick and choose from `src` and use them. Here are the dependencies.
 
 ![Dependencies](dependencies.svg)
 
@@ -12,8 +11,8 @@ Or just download the entire `src` directory and put it where it's
 convenient to reference from one's code. It is a static generator—it
 won't include code unless one asks, and one's compiler should be
 pretty good at discarding inlining and discarding unused functionality.
-Documentation is in `doc/` and examples are in `test/`. Parameters
-in each project are pre-processor macros.
+Parameters in each project are pre-processor macros. Documentation
+is in `doc/` and examples are in `test/`.
 
 ## Design papers ##
 
