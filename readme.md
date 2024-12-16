@@ -1,7 +1,7 @@
 Mostly independent `C89` data structure headers that use compile-time
 polymorphism to generate lightweight and statically type-safe
-containers. The documented parameters in each project are pre-processor
-macros. Documented is in `doc/`.
+containers. Documented is in `doc/`; parameters in each project are
+pre-processor macros.
 
 ## Design papers ##
 
