@@ -128,7 +128,9 @@ typedef pT_(uint) (*pT_(hash_fn))(const pT_(key));
 /** Defining `TABLE_UNHASH` says <typedef:<pT>hash_fn> forms a bijection
  between the range in <typedef:<pT>key> and the image in <typedef:<pT>uint>,
  and the inverse is called `<t>unhash`. In this case, keys are not stored
- in the hash table, rather they are generated using this inverse-mapping. */
+ in the hash table, rather they are generated using this inverse-mapping. (This
+ provides a smaller and simpler hashing method where the information in the key
+ being hashed is equal to the hash itself—such as numbers.) */
 typedef pT_(key) (*pT_(unhash_fn))(pT_(uint));
 #		else
 /** Equivalence relation between <typedef:<pT>key> that satisfies

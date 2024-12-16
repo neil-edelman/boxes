@@ -387,7 +387,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static int <strong>&lt;TR&gt;copy_if</strong>(&lt;pT&gt;box *restrict const <em>dst</em>, const &lt;pTR&gt;box *restrict const <em>src</em>, const &lt;pTR&gt;predicate_fn <em>copy</em>)</code>
 
-[\.\./\.\./src/iterate\.h](../../src/iterate.h), `pT_CONTIGUOUS`: For all elements of `src`, calls `copy`, and if true, lazily copies the elements to `dst`\. `dst` and `src` can not be the same but `src` can be null, \(in which case, it does nothing\.\)
+[\.\./\.\./src/iterate\.h](../../src/iterate.h), `BOX_CONTIGUOUS`: For all elements of `src`, calls `copy`, and if true, lazily copies the elements to `dst`\. `dst` and `src` can not be the same but `src` can be null, \(in which case, it does nothing\.\)
 
  * Exceptional return: realloc  
  * Order:  
@@ -400,7 +400,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;TR&gt;keep_if</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>keep</em>, const &lt;pTR&gt;action_fn <em>destruct</em>)</code>
 
-[\.\./\.\./src/iterate\.h](../../src/iterate.h): For all elements of `box`, calls `keep`, and if false, if contiguous, lazy deletes that item, if not, eagerly\. Calls `destruct` if not\-null before deleting\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h) `BOX_CONTIGUOUS`: For all elements of `box`, calls `keep`, and if false, if contiguous, lazy deletes that item, if not, eagerly\. Calls `destruct` if not\-null before deleting\.
 
  * Order:  
    &#927;\(|`box`|\) \(&#215; O\(`keep`\) \+ O\(`destruct`\)\)
@@ -412,7 +412,7 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 <code>static void <strong>&lt;TR&gt;trim</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>)</code>
 
-[\.\./\.\./src/iterate\.h](../../src/iterate.h), `pT_CONTIGUOUS`: Removes at either end of `box` the things that `predicate`, if it exists, returns true\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h), `BOX_CONTIGUOUS`: Removes at either end of `box` the things that `predicate`, if it exists, returns true\.
 
  * Order:  
    &#927;\(`box.size`\) &#215; &#927;\(`predicate`\)

@@ -71,7 +71,7 @@ A map from [&lt;pT&gt;key](#user-content-typedef-95e6d0aa) onto [&lt;pT&gt;uint]
 
 <code>typedef &lt;pT&gt;key(*<strong>&lt;pT&gt;unhash_fn</strong>)(&lt;pT&gt;uint);</code>
 
-Defining `TABLE_UNHASH` says [&lt;pT&gt;hash_fn](#user-content-typedef-896a1418) forms a bijection between the range in [&lt;pT&gt;key](#user-content-typedef-95e6d0aa) and the image in [&lt;pT&gt;uint](#user-content-typedef-38271b2b), and the inverse is called `<t>unhash`\. In this case, keys are not stored in the hash table, rather they are generated using this inverse\-mapping\.
+Defining `TABLE_UNHASH` says [&lt;pT&gt;hash_fn](#user-content-typedef-896a1418) forms a bijection between the range in [&lt;pT&gt;key](#user-content-typedef-95e6d0aa) and the image in [&lt;pT&gt;uint](#user-content-typedef-38271b2b), and the inverse is called `<t>unhash`\. In this case, keys are not stored in the hash table, rather they are generated using this inverse\-mapping\. \(This provides a smaller and simpler hashing method where the information in the key being hashed is equal to the hash itself—such as numbers\.\)
 
 
 
@@ -466,7 +466,7 @@ Removes `key` from `table` \(which could be null\.\)
 
 <code>static int <strong>&lt;TR&gt;copy_if</strong>(&lt;pT&gt;box *restrict const <em>dst</em>, const &lt;pTR&gt;box *restrict const <em>src</em>, const &lt;pTR&gt;predicate_fn <em>copy</em>)</code>
 
-[\.\./\.\./src/iterate\.h](../../src/iterate.h), `pT_CONTIGUOUS`: For all elements of `src`, calls `copy`, and if true, lazily copies the elements to `dst`\. `dst` and `src` can not be the same but `src` can be null, \(in which case, it does nothing\.\)
+[\.\./\.\./src/iterate\.h](../../src/iterate.h), `BOX_CONTIGUOUS`: For all elements of `src`, calls `copy`, and if true, lazily copies the elements to `dst`\. `dst` and `src` can not be the same but `src` can be null, \(in which case, it does nothing\.\)
 
  * Exceptional return: realloc  
  * Order:  
@@ -479,7 +479,7 @@ Removes `key` from `table` \(which could be null\.\)
 
 <code>static void <strong>&lt;TR&gt;keep_if</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>keep</em>, const &lt;pTR&gt;action_fn <em>destruct</em>)</code>
 
-[\.\./\.\./src/iterate\.h](../../src/iterate.h): For all elements of `box`, calls `keep`, and if false, if contiguous, lazy deletes that item, if not, eagerly\. Calls `destruct` if not\-null before deleting\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h) `BOX_CONTIGUOUS`: For all elements of `box`, calls `keep`, and if false, if contiguous, lazy deletes that item, if not, eagerly\. Calls `destruct` if not\-null before deleting\.
 
  * Order:  
    &#927;\(|`box`|\) \(&#215; O\(`keep`\) \+ O\(`destruct`\)\)
@@ -491,7 +491,7 @@ Removes `key` from `table` \(which could be null\.\)
 
 <code>static void <strong>&lt;TR&gt;trim</strong>(&lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>)</code>
 
-[\.\./\.\./src/iterate\.h](../../src/iterate.h), `pT_CONTIGUOUS`: Removes at either end of `box` the things that `predicate`, if it exists, returns true\.
+[\.\./\.\./src/iterate\.h](../../src/iterate.h), `BOX_CONTIGUOUS`: Removes at either end of `box` the things that `predicate`, if it exists, returns true\.
 
  * Order:  
    &#927;\(`box.size`\) &#215; &#927;\(`predicate`\)
