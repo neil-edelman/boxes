@@ -2,15 +2,17 @@ Documentation for the individual boxes is contained in subfolders.
 
 ## Issues
 
-On a segmented memory model, `pool` probably won't work reliably, especially when one
-compiles with `C90`.
+On a segmented memory model, `pool` probably won't work reliably,
+especially when one compiles with `C90`.
 
-`trie` hasn't been tested when `CHAR_BIT ≠ 8`, as it could be in `C90`.
+(Especially) `trie` hasn't been tested when `CHAR_BIT ≠ 8`, as it
+could be in `C90`.
 
-`C90` requires identifiers to be a minimum of 31 significant initial characters in an internal
-identifier or a macro name. If one's compiler does the very minimum, it probably won't be
-enough to differentiate all the private symbols. One may have to edit the code to
-abbreviate.
+`C90` requires identifiers to be a minimum of 31 significant initial
+characters in an internal identifier or a macro name. If one's
+compiler does the very minimum, it probably won't be enough to
+differentiate all the private symbols. One may have to edit the
+code to abbreviate.
 
 ## Fixme
 
@@ -26,7 +28,7 @@ abbreviate.
 # Interfaces
 
 Ideas:
-> iterator cursor look range subset span [view] (means similar in sql): unbounded laden full [entire], laden occupied [exists], distance size count, get acquire look first begin [front], last end back, shift pop_front (sounds like modifying data) advance (doesn't fit with front) (I kind of like \_front) ditch_ dump_ can_ oust_ expel_ [drop_front] cut_ drain_ eject_ shed_, pop pop_back reverse retract regress recede withdraw retire recede… random?, delete, insert
+> iterator cursor look range subset span view (means similar in sql): unbounded laden full entire, laden occupied [exists], distance size count, get acquire look first [begin] front, last end back, shift pop_front (sounds like modifying data) advance (doesn't fit with front) (I kind of like \_front) ditch_ dump_ can_ oust_ expel_ drop_front cut_ drain_ eject_ shed_, pop pop_back reverse retract regress recede withdraw retire recede… random?, delete, insert
 
 ## to_string
 
