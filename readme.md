@@ -8,7 +8,8 @@ Pick and choose from `src` and use them.
 
 ![Dependencies](dependencies.svg)
 
-Or just download the directory to get the dependencies straight.
+Or just download the entire `src` directory to get the dependencies
+straight. It won't include code if one doesn't tell it to.
 Documentation is in `doc/` and examples are in `test/`. Parameters
 in each project are pre-processor macros.
 
