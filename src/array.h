@@ -292,7 +292,7 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif /* Produce code. */
 #endif /* Base code. */
 
-#ifndef ARRAY_DECARE_ONLY /* Produce code. */
+#ifndef ARRAY_DECLARE_ONLY /* Produce code. */
 
 #	if defined(ARRAY_TO_STRING)
 #		undef ARRAY_TO_STRING

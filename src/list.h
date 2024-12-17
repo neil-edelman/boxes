@@ -302,7 +302,7 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif /* Produce code. */
 #endif /* base code --> */
 
-#ifndef LIST_DECARE_ONLY /* Produce code. */
+#ifndef LIST_DECLARE_ONLY /* Produce code. */
 
 #	if defined(LIST_TO_STRING)
 #		undef LIST_TO_STRING

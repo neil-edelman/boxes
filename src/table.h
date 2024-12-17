@@ -786,7 +786,7 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif /* body --> */
 #endif /* base code --> */
 
-#ifndef TABLE_DECARE_ONLY /* Produce code. */
+#ifndef TABLE_DECLARE_ONLY /* Produce code. */
 
 #	if defined(TABLE_TO_STRING)
 #		undef TABLE_TO_STRING
