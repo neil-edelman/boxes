@@ -98,8 +98,7 @@ struct pT_(slot) { size_t size; pT_(type) *slab; };
 #define BOX_MINOR POOL_NAME
 #define BOX_MAJOR pool
 
-/** A zeroed pool is a valid state. To instantiate to an idle state, see
- <fn:<t>pool>, `{0}` (`C99`,) or being `static`.
+/** A zeroed pool is a valid state. See <fn:<t>pool>.
 
  ![States.](../doc/pool/states.png) */
 struct t_(pool) {
@@ -252,7 +251,7 @@ static pT_(type) *T_(look)(struct T_(cursor) *const cur)
 static void T_(next)(struct T_(cursor) *const cur)
 	{ if(cur->i == (size_t)~0) cur->slot0 = 0; else cur->i++; }
 
-/** @return An idle pool. @order \Theta(1) @allow */
+/** @return An idle pool is zeroed. @order \Theta(1) @allow */
 static struct t_(pool) t_(pool)(void) { struct t_(pool) p;
 	p.slots = pT_(slot_array)(), p.free0 = poolfree_heap(), p.capacity0 = 0;
 	return p; }
