@@ -268,7 +268,7 @@ typedef struct t_(listlink) pT_(type);
 
 #		ifdef HAVE_ITERATE_H /* <!-- iterate */
 #			include "iterate.h" /** \include */
-/** HAVE_ITERATE_H: Moves all elements `from` onto the tail of `to` if
+/** __has_include("iterate.h"): Moves all elements `from` onto the tail of `to` if
  `predicate` is true.
  @param[to] If null, then it removes elements.
  @order \Theta(|`from`|) \times \O(`predicate`) @allow */

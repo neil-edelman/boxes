@@ -49,6 +49,12 @@
 
 #ifdef BOX_START
 #	undef BOX_START
+/* This is C++17. One may need to define this manually. */
+#	if defined(__has_include) && !defined(HAS_ITERATE_H)
+#		if __has_include("iterate.h")
+#			define HAVE_ITERATE_H
+#		endif
+#	endif
 #	ifdef BOX_ENTRY1
 #		ifdef BOX_ENTRY2
 #			error Three levels of recursion is not supported (yet?)

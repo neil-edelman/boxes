@@ -27,8 +27,6 @@ static void str4_filler(struct str4 *const s)
 #define ARRAY_TO_STRING
 #include "../src/array.h"
 
-#define HAVE_ITERATE_H /* More tests. */
-
 /* Enum array. */
 #define PARAM(A) A
 #define STRINGISE(A) #A

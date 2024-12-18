@@ -3,10 +3,10 @@
 
  @subtitle Iterate trait
 
- Interface defined by box. Singleton.
+ Interface defined by box. Singleton. C++17 "__has_include" is used to include
+ this; one may have to edit the source to include it on older compilers.
 
  @std C89 */
-/** * <../../src/iterate.h>: defining `HAVE_ITERATE_H` supplies functions. */
 
 #define BOX_ALL /* Sanity check. */
 #include "box.h"

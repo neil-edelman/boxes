@@ -34,9 +34,6 @@ static struct permute_listlink *permute_from_pool(void *const vpool) {
 	return assert(p), p;
 }
 
-
-#define HAVE_ITERATE_H
-
 /* An integer linked-list that can be ordered. This uses nested structures,
  which is mostly what one wants. */
 struct no_listlink;
@@ -493,6 +490,7 @@ finally:
 }
 
 
+#define HAS_ITERATE_H
 /* Animals, see <../web/animals.gv>. Id is the list that holds all the animals
  together. */
 struct id_listlink;
