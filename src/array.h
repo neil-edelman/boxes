@@ -53,6 +53,12 @@
 #ifdef ARRAY_TRAIT
 #	define BOX_TRAIT ARRAY_TRAIT /* Ifdef in <box.h>. */
 #endif
+#ifdef ARRAY_NON_STATIC
+#	define BOX_NON_STATIC
+#endif
+#ifdef ARRAY_DECLARE_ONLY
+#	define BOX_DECLARE_ONLY
+#endif
 #define BOX_START
 #include "box.h"
 
@@ -86,14 +92,32 @@ typedef struct t_(array) pT_(box);
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 struct T_(cursor) { struct t_(array) *a; size_t i; };
 
-/* fixme: a wrapper is a terrible way to make functions accessible; something
- like BOX_EXPORT_CONS… #ifdef BOX_EXPORT_SIZE, #define static, size_t t_(array)… */
-
-#	ifndef ARRAY_DECLARE_ONLY /* Produce code: not for headers. */
-
 #	ifdef ARRAY_NON_STATIC
 #		define static
+struct T_(cursor) T_(begin)(struct t_(array) *);
+int T_(exists)(const struct T_(cursor) *);
+pT_(type) *T_(look)(struct T_(cursor) *);
+void T_(next)(struct T_(cursor) *);
+size_t T_(size)(const struct t_(array) *);
+pT_(type) *T_(at)(const struct t_(array) *, size_t);
+void T_(tell_size)(struct t_(array) *, size_t);
+struct t_(array) t_(array)(void);
+void t_(array_)(struct t_(array) *const);
+int T_(reserve)(struct t_(array) *const, size_t);
+pT_(type) *T_(buffer)(struct t_(array) *, size_t);
+pT_(type) *T_(append)(struct t_(array) *, size_t);
+pT_(type) *T_(insert)(struct t_(array) *, size_t, size_t);
+pT_(type) *T_(new)(struct t_(array) *);
+int T_(shrink)(struct t_(array) *);
+void T_(remove)(struct t_(array) *, pT_(type) *);
+void T_(lazy_remove)(struct t_(array) *const a, pT_(type) *);
+void T_(clear)(struct t_(array) *);
+pT_(type) *T_(peek)(const struct t_(array) *);
+pT_(type) *T_(pop)(struct t_(array) *const a);
+int T_(splice)(struct t_(array) *restrict, const struct t_(array) *restrict,
+	size_t, size_t);
 #	endif
+#	ifndef ARRAY_DELARE_ONLY /* Produce code. */
 
 /** @return A cursor at the beginning of a valid `a`. */
 static struct T_(cursor) T_(begin)(struct t_(array) *const a)
@@ -278,10 +302,6 @@ static int T_(splice)(struct t_(array) *restrict const a,
 	return 1;
 }
 
-#	ifdef HAVE_ITERATE_H
-#		include "iterate.h" /** \include */
-#	endif
-
 #	ifdef static
 #		undef static
 #	endif
@@ -295,52 +315,32 @@ static void pT_(unused_base)(void) {
 	pT_(unused_base_coda)();
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
-
-#	else /* Produce header. */
-struct T_(cursor) T_(begin)(struct t_(array) *);
-int T_(exists)(const struct T_(cursor) *);
-pT_(type) *T_(look)(struct T_(cursor) *);
-void T_(next)(struct T_(cursor) *);
-size_t T_(size)(const struct t_(array) *);
-pT_(type) *T_(at)(const struct t_(array) *, size_t);
-void T_(tell_size)(struct t_(array) *, size_t);
-struct t_(array) t_(array)(void);
-void t_(array_)(struct t_(array) *const);
-int T_(reserve)(struct t_(array) *const, size_t);
-pT_(type) *T_(buffer)(struct t_(array) *, size_t);
-pT_(type) *T_(append)(struct t_(array) *, size_t);
-pT_(type) *T_(insert)(struct t_(array) *, size_t, size_t);
-pT_(type) *T_(new)(struct t_(array) *);
-int T_(shrink)(struct t_(array) *);
-void T_(remove)(struct t_(array) *, pT_(type) *);
-void T_(lazy_remove)(struct t_(array) *const a, pT_(type) *);
-void T_(clear)(struct t_(array) *);
-pT_(type) *T_(peek)(const struct t_(array) *);
-pT_(type) *T_(pop)(struct t_(array) *const a);
-int T_(splice)(struct t_(array) *restrict, const struct t_(array) *restrict,
-	size_t, size_t);
-#		error
-#	endif /* Produce header. */
+#	endif /* Produce code. */
+#	ifdef HAVE_ITERATE_H
+#		include "iterate.h" /** \include */
+#	endif
 #endif /* Base code. */
 
-#ifndef ARRAY_DECLARE_ONLY /* Produce code. */
-
-#	ifdef ARRAY_TO_STRING
-#		undef ARRAY_TO_STRING
-#		ifndef ARRAY_TRAIT
+#ifdef ARRAY_TO_STRING
+#	undef ARRAY_TO_STRING
+#	ifndef ARRAY_TRAIT
 /** The type of the required `<tr>to_string`. Responsible for turning the
  read-only argument into a 12-max-`char` output string. */
 typedef void (*pT_(to_string_fn))(const pT_(type) *, char (*)[12]);
-#		endif
+#	endif
 /** Thunk(`cur`, `a`). One must implement `<tr>to_string`. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12])
 	{ tr_(to_string)((const void *)&cur->a->data[cur->i], a); }
-#		include "to_string.h" /** \include */
-#		ifndef ARRAY_TRAIT
-#			define ARRAY_HAS_TO_STRING /* Warning about tests. */
-#		endif
+#	include "to_string.h" /** \include */
+#	ifndef ARRAY_TRAIT
+#		define ARRAY_HAS_TO_STRING /* Warning about tests. */
 #	endif
+#endif
+
+#ifndef ARRAY_DECLARE_ONLY /* Produce code. */
+
+/* fixme: Same for test, compare, etc. */
 
 #	if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT)
 #		include "../test/test_array.h"
@@ -394,9 +394,11 @@ const char *TR_(to_string)(const pT_(box) *const box);
 #		undef ARRAY_TEST
 #	endif
 #	ifdef ARRAY_DECLARE_ONLY
+#		undef BOX_DECLARE_ONLY
 #		undef ARRAY_DECLARE_ONLY
 #	endif
 #	ifdef ARRAY_NON_STATIC
+#		undef BOX_NON_STATIC
 #		undef ARRAY_NON_STATIC
 #	endif
 #	ifdef COMPARE_H

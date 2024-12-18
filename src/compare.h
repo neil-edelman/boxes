@@ -31,6 +31,26 @@ typedef int (*pT_(bipredicate_fn))(pT_(type) *restrict, pT_(type) *restrict);
 typedef int (*pT_(biaction_fn))(pT_(type) *restrict,
 	pT_(type) *restrict);
 #endif
+#ifdef BOX_NON_STATIC
+#	define static
+#	ifdef COMPARE
+int TR_(compare)(const pT_(box) *restrict, const pT_(box) *restrict);
+#		ifdef BOX_ACCESS
+size_t TR_(lower_bound)(const pT_(box) *, const pT_(type) *);
+size_t TR_(upper_bound)(const pT_(box) *, const pT_(type) *);
+#			ifdef BOX_CONTIGUOUS
+int TR_(insert_after)(pT_(box) *, const pT_(type) *);
+void TR_(sort)(pT_(box) *);
+void TR_(reverse)(pT_(box) *);
+#			endif
+#		endif
+#	endif
+int TR_(is_equal)(const pT_(box) *restrict, const pT_(box) *restrict);
+#	ifdef BOX_CONTIGUOUS
+void TR_(unique_merge)(pT_(box) *, const pT_(biaction_fn));
+void TR_(unique)(pT_(box) *);
+#	endif
+#endif
 
 #ifdef COMPARE /* <!-- compare: <typedef:<pT>compare_fn>. */
 
@@ -104,9 +124,18 @@ static int TR_(insert_after)(pT_(box) *const box,
 	return 1;
 }
 
+#		ifdef static
+#			undef static
+#		endif
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
 static int pTR_(vcompar)(const void *restrict const a,
 	const void *restrict const b) { return tr_(compare)(a, b); }
+/** Wrapper with void `a` and `b`. @implements qsort bsearch */
+static int pTR_(vrevers)(const void *restrict const a,
+	const void *restrict const b) { return tr_(compare)(b, a); }
+#		ifdef BOX_NON_STATIC
+#			define static
+#		endif
 
 /** <../../src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`,
  (which has a high-context-switching cost, but is easy.)
@@ -119,10 +148,6 @@ static void TR_(sort)(pT_(box) *const box) {
 	/*if(!BOX_(is_element)(first)) return;*/ /* That was weird. */
 	qsort(first, size, sizeof *first, &pTR_(vcompar));
 }
-
-/** Wrapper with void `a` and `b`. @implements qsort bsearch */
-static int pTR_(vrevers)(const void *restrict const a,
-	const void *restrict const b) { return tr_(compare)(b, a); }
 
 /** <../../src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` in reverse by
  `qsort`. @order \O(|`box`| \log |`box`|) @allow */
@@ -139,6 +164,9 @@ static void TR_(reverse)(pT_(box) *const box) {
 
 #	endif /* access --> */
 
+#	ifdef static
+#		undef static
+#	endif
 /** !compare(`a`, `b`) == equals(`a`, `b`).
  (This makes `COMPARE` encompass `COMPARE_IS_EQUAL`.) However, it can not
  collide with another function!
@@ -148,6 +176,9 @@ static int tr_(is_equal)(const pT_(type) *const restrict a,
 	/* "Discards qualifiers in nested pointer types" sometimes. Cast. */
 	return !tr_(compare)((const void *)a, (const void *)b);
 }
+#	ifdef BOX_NON_STATIC
+#		define static
+#	endif
 
 #endif /* compare --> */
 
@@ -164,7 +195,7 @@ static int TR_(is_equal)(const pT_(box) *restrict const a,
 		T_(next)(&i), T_(next)(&j)) {
 		if(!T_(exists)(&i)) return !T_(exists)(&j);
 		else if(!T_(exists)(&j)) return 0 /* fixme: a > b? */;
-		if(!t_(is_equal)(T_(look)(&i), T_(look)(&j)))
+		if(!tr_(is_equal)(T_(look)(&i), T_(look)(&j)))
 			return 0;
 	}
 	return 1;
@@ -221,16 +252,19 @@ static void TR_(unique)(pT_(box) *const box) { TR_(unique_merge)(box, 0); }
 
 #endif /* contiguous --> */
 
+#	ifdef static
+#		undef static
+#	endif
 static void pTR_(unused_compare_coda)(void);
 static void pTR_(unused_compare)(void) {
 #ifdef COMPARE /* <!-- compare */
 	TR_(compare)(0, 0);
-#ifdef BOX_ACCESS
+#	ifdef BOX_ACCESS
 	TR_(lower_bound)(0, 0); TR_(upper_bound)(0, 0);
-#ifdef BOX_CONTIGUOUS
+#		ifdef BOX_CONTIGUOUS
 	TR_(insert_after)(0, 0); TR_(sort)(0); TR_(reverse)(0);
-#endif
-#endif
+#		endif
+#	endif
 	tr_(is_equal)(0, 0);
 #endif /* compare --> */
 	TR_(is_equal)(0, 0);
@@ -242,8 +276,8 @@ static void pTR_(unused_compare)(void) {
 static void pTR_(unused_compare_coda)(void) { pTR_(unused_compare)(); }
 
 #ifdef COMPARE
-#undef COMPARE
+#	undef COMPARE
 #endif
 #ifdef COMPARE_IS_EQUAL
-#undef COMPARE_IS_EQUAL
+#	undef COMPARE_IS_EQUAL
 #endif

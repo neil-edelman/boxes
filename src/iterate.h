@@ -19,6 +19,20 @@ typedef void (*pT_(action_fn))(pT_(type) *);
 /** <../../src/iterate.h>: Returns a boolean given read-only. */
 typedef int (*pT_(predicate_fn))(const pT_(type) *);
 
+#ifdef BOX_NON_STATIC
+#	define static
+pT_(type) *TR_(any)(const pT_(box) *, pTR_(predicate_fn));
+void TR_(each)(pT_(box) *, pTR_(action_fn));
+void TR_(if_each)(pT_(box) *, pTR_(predicate_fn), pTR_(action_fn));
+#	ifdef BOX_CONTIGUOUS
+int TR_(copy_if)(pT_(box) *restrict,
+	const pTR_(box) *restrict, pTR_(predicate_fn));
+static void TR_(keep_if)(pT_(box) *, pTR_(predicate_fn), pTR_(action_fn));
+static void TR_(trim)(pT_(box) *, pTR_(predicate_fn));
+#	endif
+#endif
+#ifndef BOX_DECLARE_ONLY
+
 /** <../../src/iterate.h>: Iterates through `box` and calls `predicate` until it
  returns true. @return The first `predicate` that returned true, or, if the
  statement is false on all, null.
@@ -62,7 +76,7 @@ static void TR_(if_each)(pT_(box) *const box,
 	}
 }
 
-#ifdef BOX_CONTIGUOUS /* <!-- contiguous */
+#	ifdef BOX_CONTIGUOUS /* <!-- contiguous */
 
 /** <../../src/iterate.h>, `BOX_CONTIGUOUS`: For all elements of `src`, calls
  `copy`, and if true, lazily copies the elements to `dst`. `dst` and `src` can
@@ -156,13 +170,19 @@ static void TR_(trim)(pT_(box) *const box,
 	T_(tell_size)(box, right - left);
 }
 
-#endif /* contiguous --> */
+#	endif /* contiguous --> */
+
+#	ifdef static
+#		undef static
+#	endif
 
 static void pTR_(unused_iterate_coda)(void);
 static void pTR_(unused_function)(void) {
 	TR_(any)(0, 0); TR_(each)(0, 0); TR_(if_each)(0, 0, 0);
-#ifdef BOX_CONTIGUOUS
+#	ifdef BOX_CONTIGUOUS
 	TR_(copy_if)(0, 0, 0); TR_(trim)(0, 0); TR_(keep_if)(0, 0, 0);
-#endif
+#	endif
 	pTR_(unused_iterate_coda)(); }
 static void pTR_(unused_iterate_coda)(void) { pTR_(unused_function)(); }
+
+#endif

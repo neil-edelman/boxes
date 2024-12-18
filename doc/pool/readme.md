@@ -53,7 +53,7 @@ Type of `POOL_TO_STRING` needed function `<tr>to_string`\. Responsible for turni
 
 <code>struct <strong>&lt;t&gt;pool</strong> { struct &lt;pT&gt;slot_array slots; struct poolfree_heap free0; size_t capacity0; };</code>
 
-A zeroed pool is a valid state\. To instantiate to an idle state, see [&lt;t&gt;pool](#user-content-fn-9a0f378f), `{0}` \(`C99`,\) or being `static`\.
+A zeroed pool is a valid state\. See [&lt;t&gt;pool](#user-content-fn-9a0f378f)\.
 
 ![States.](../../doc/pool/states.png)
 
@@ -88,7 +88,7 @@ A zeroed pool is a valid state\. To instantiate to an idle state, see [&lt;t&gt;
 <code>static struct &lt;t&gt;pool <strong>&lt;t&gt;pool</strong>(void)</code>
 
  * Return:  
-   An idle pool\.
+   An idle pool is zeroed\.
  * Order:  
    &#920;\(1\)
 

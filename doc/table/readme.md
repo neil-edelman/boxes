@@ -17,7 +17,7 @@ Header [\.\./\.\./src/table\.h](../../src/table.h); examples [\.\./\.\./test/tes
 
 [&lt;t&gt;table](#user-content-tag-2283b713) implements a set or map of [&lt;pT&gt;entry](#user-content-typedef-9be2614d) as an inline\-chined hash\-table\. It must be supplied [&lt;pT&gt;hash_fn](#user-content-typedef-896a1418) `<t>hash` and, [&lt;pT&gt;is_equal_fn](#user-content-typedef-f238d00d) `<t>is_equal` or [&lt;pT&gt;unhash_fn](#user-content-typedef-25e8a1a1) `<t>unhash`\. It is contiguous and not stable, and may rearrange elements\.
 
-\* [\.\./\.\./src/iterate\.h](../../src/iterate.h): defining `HAVE_ITERATE_H` supplies functions\.
+
 
  * Parameter: TABLE\_NAME, TABLE\_KEY  
    `<t>` that satisfies `C` naming conventions when mangled and a valid [&lt;pT&gt;key](#user-content-typedef-95e6d0aa) associated therewith; required\.
