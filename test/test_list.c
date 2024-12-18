@@ -956,6 +956,11 @@ static void animals_act(void) {
 	for(id = id_list_head(&animals.list); id; id = id_list_link_next(id))
 		count++;
 	printf("There are %lu animals.\n", (unsigned long)count);
+	/* If the following line gives one trouble, then one's compiler doesn't
+	 support C++17. Shucks, it's such a nice and needed feature.
+	 One will have to "#define HAVE_ITERATE_H" manually before the definition
+	 of `id_list`—of course, one actually have to have "iterate.h". Or you
+	 could just comment it out. */
 	id_list_each(&animals.list, &id_act);
 }
 /** Clears all the `animals`. */
