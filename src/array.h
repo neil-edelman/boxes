@@ -27,7 +27,7 @@
  Named traits are obtained by including `array.h` multiple times with
  `ARRAY_EXPECT_TRAIT` and then subsequently including the name in `ARRAY_TRAIT`.
 
- @param[ARRAY_DECLARE_ONLY]
+ @param[ARRAY_DECLARE_ONLY, ARRAY_NON_STATIC]
  For headers in different compilation units.
 
  @depend [box](../../src/box.h)
@@ -91,6 +91,10 @@ struct T_(cursor) { struct t_(array) *a; size_t i; };
 
 #	ifndef ARRAY_DECLARE_ONLY /* Produce code: not for headers. */
 
+#	ifdef ARRAY_NON_STATIC
+#		define static
+#	endif
+
 /** @return A cursor at the beginning of a valid `a`. */
 static struct T_(cursor) T_(begin)(struct t_(array) *const a)
 	{ struct T_(cursor) cur; assert(a), cur.a = a, cur.i = 0; return cur; }
@@ -107,9 +111,9 @@ static void T_(next)(struct T_(cursor) *const cur)
 /* fixme: This is satisfying `compare.h` contracts; probably should re-think
  those. */
 /** Size of `a`. @implements `size`. */
-static size_t T_(size)(const struct t_(array) *a) { return a->size; }
+static size_t T_(size)(const struct t_(array) *const a) { return a->size; }
 /** @return Element `idx` of `a`. @implements `at` */
-static pT_(type) *T_(at)(const struct t_(array) *a, const size_t idx)
+static pT_(type) *T_(at)(const struct t_(array) *const a, const size_t idx)
 	{ return a->data + idx; }
 /** Writes `size` to `a`. @implements `tell_size` */
 static void T_(tell_size)(struct t_(array) *a, const size_t size)
@@ -274,10 +278,13 @@ static int T_(splice)(struct t_(array) *restrict const a,
 	return 1;
 }
 
-#		ifdef HAVE_ITERATE_H
-#			include "iterate.h" /** \include */
-#		endif
+#	ifdef HAVE_ITERATE_H
+#		include "iterate.h" /** \include */
+#	endif
 
+#	ifdef static
+#		undef static
+#	endif
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(next)(0);
@@ -289,12 +296,36 @@ static void pT_(unused_base)(void) {
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
-#	endif /* Produce code. */
+#	else /* Produce header. */
+struct T_(cursor) T_(begin)(struct t_(array) *);
+int T_(exists)(const struct T_(cursor) *);
+pT_(type) *T_(look)(struct T_(cursor) *);
+void T_(next)(struct T_(cursor) *);
+size_t T_(size)(const struct t_(array) *);
+pT_(type) *T_(at)(const struct t_(array) *, size_t);
+void T_(tell_size)(struct t_(array) *, size_t);
+struct t_(array) t_(array)(void);
+void t_(array_)(struct t_(array) *const);
+int T_(reserve)(struct t_(array) *const, size_t);
+pT_(type) *T_(buffer)(struct t_(array) *, size_t);
+pT_(type) *T_(append)(struct t_(array) *, size_t);
+pT_(type) *T_(insert)(struct t_(array) *, size_t, size_t);
+pT_(type) *T_(new)(struct t_(array) *);
+int T_(shrink)(struct t_(array) *);
+void T_(remove)(struct t_(array) *, pT_(type) *);
+void T_(lazy_remove)(struct t_(array) *const a, pT_(type) *);
+void T_(clear)(struct t_(array) *);
+pT_(type) *T_(peek)(const struct t_(array) *);
+pT_(type) *T_(pop)(struct t_(array) *const a);
+int T_(splice)(struct t_(array) *restrict, const struct t_(array) *restrict,
+	size_t, size_t);
+#		error
+#	endif /* Produce header. */
 #endif /* Base code. */
 
 #ifndef ARRAY_DECLARE_ONLY /* Produce code. */
 
-#	if defined(ARRAY_TO_STRING)
+#	ifdef ARRAY_TO_STRING
 #		undef ARRAY_TO_STRING
 #		ifndef ARRAY_TRAIT
 /** The type of the required `<tr>to_string`. Responsible for turning the
@@ -332,7 +363,14 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #		endif
 #	endif
 
-#endif /* Produce code. */
+#else /* Produce prototypes. */
+#	ifdef ARRAY_TO_STRING
+#		undef ARRAY_TO_STRING
+/* fixme: The ARRAY_NON_STATIC -> BOX_NON_STATIC then each of the interfaces
+ would be responsible for their own. */
+const char *TR_(to_string)(const pT_(box) *const box);
+#	endif
+#endif /* Produce prototypes. */
 #ifdef ARRAY_TRAIT
 #	undef ARRAY_TRAIT
 #	undef BOX_TRAIT
@@ -357,6 +395,9 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	endif
 #	ifdef ARRAY_DECLARE_ONLY
 #		undef ARRAY_DECLARE_ONLY
+#	endif
+#	ifdef ARRAY_NON_STATIC
+#		undef ARRAY_NON_STATIC
 #	endif
 #	ifdef COMPARE_H
 #		undef COMPARE_H
