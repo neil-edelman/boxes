@@ -111,44 +111,6 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
-<tr><td align = right>static struct &lt;t&gt;array</td><td><a href = "#user-content-fn-9c4cf562">&lt;t&gt;array</a></td><td></td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-4a260f07">&lt;t&gt;array_</a></td><td>a</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-8319dfb7">&lt;T&gt;reserve</a></td><td>a, min</td></tr>
-
-<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-c6b6f48f">&lt;T&gt;buffer</a></td><td>a, n</td></tr>
-
-<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-faa8ce4d">&lt;T&gt;append</a></td><td>a, n</td></tr>
-
-<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-e80ff7d4">&lt;T&gt;insert</a></td><td>a, n, at</td></tr>
-
-<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-222fef85">&lt;T&gt;new</a></td><td>a</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-56806709">&lt;T&gt;remove</a></td><td>a, element</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-5b1cd3ec">&lt;T&gt;lazy_remove</a></td><td>a, datum</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-7f4a964e">&lt;T&gt;clear</a></td><td>a</td></tr>
-
-<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-1900dfa2">&lt;T&gt;peek</a></td><td>a</td></tr>
-
-<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-3e8e8234">&lt;T&gt;pop</a></td><td>a</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-dbd2279">&lt;T&gt;splice</a></td><td>a, b, i0, i1</td></tr>
-
-<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-443f2b31">&lt;TR&gt;any</a></td><td>box, predicate</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-51d87ca4">&lt;TR&gt;each</a></td><td>box, action</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-21ef106e">&lt;TR&gt;if_each</a></td><td>box, predicate, action</td></tr>
-
-<tr><td align = right>static int</td><td><a href = "#user-content-fn-f61ec8de">&lt;TR&gt;copy_if</a></td><td>dst, src, copy</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-8bb1c0a2">&lt;TR&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-a76df7bd">&lt;TR&gt;trim</a></td><td>box, predicate</td></tr>
-
 <tr><td align = right>struct &lt;T&gt;cursor</td><td><a href = "#user-content-fn-80df50b2">&lt;T&gt;begin</a></td><td>&lt;t&gt;array</td></tr>
 
 <tr><td align = right>int</td><td><a href = "#user-content-fn-dd6c86e1">&lt;T&gt;exists</a></td><td>&lt;T&gt;cursor</td></tr>
@@ -191,7 +153,73 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <tr><td align = right>int</td><td><a href = "#user-content-fn-dbd2279">&lt;T&gt;splice</a></td><td>restrict, restrict, size_t, size_t</td></tr>
 
+<tr><td align = right>static struct &lt;t&gt;array</td><td><a href = "#user-content-fn-9c4cf562">&lt;t&gt;array</a></td><td></td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-4a260f07">&lt;t&gt;array_</a></td><td>a</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-8319dfb7">&lt;T&gt;reserve</a></td><td>a, min</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-c6b6f48f">&lt;T&gt;buffer</a></td><td>a, n</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-faa8ce4d">&lt;T&gt;append</a></td><td>a, n</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-e80ff7d4">&lt;T&gt;insert</a></td><td>a, n, at</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-222fef85">&lt;T&gt;new</a></td><td>a</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-56806709">&lt;T&gt;remove</a></td><td>a, element</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-5b1cd3ec">&lt;T&gt;lazy_remove</a></td><td>a, datum</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-7f4a964e">&lt;T&gt;clear</a></td><td>a</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-1900dfa2">&lt;T&gt;peek</a></td><td>a</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-3e8e8234">&lt;T&gt;pop</a></td><td>a</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-dbd2279">&lt;T&gt;splice</a></td><td>a, b, i0, i1</td></tr>
+
+<tr><td align = right>&lt;pT&gt;type *</td><td><a href = "#user-content-fn-443f2b31">&lt;TR&gt;any</a></td><td>&lt;pT&gt;box, &lt;pTR&gt;predicate_fn</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-51d87ca4">&lt;TR&gt;each</a></td><td>&lt;pT&gt;box, &lt;pTR&gt;action_fn</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-21ef106e">&lt;TR&gt;if_each</a></td><td>&lt;pT&gt;box, &lt;pTR&gt;predicate_fn, &lt;pTR&gt;action_fn</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-f61ec8de">&lt;TR&gt;copy_if</a></td><td>restrict, restrict, &lt;pTR&gt;predicate_fn</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-443f2b31">&lt;TR&gt;any</a></td><td>box, predicate</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-51d87ca4">&lt;TR&gt;each</a></td><td>box, action</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-21ef106e">&lt;TR&gt;if_each</a></td><td>box, predicate, action</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-f61ec8de">&lt;TR&gt;copy_if</a></td><td>dst, src, copy</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-8bb1c0a2">&lt;TR&gt;keep_if</a></td><td>box, keep, destruct</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-a76df7bd">&lt;TR&gt;trim</a></td><td>box, predicate</td></tr>
+
+<tr><td align = right>const char *</td><td><a href = "#user-content-fn-260f8348">&lt;TR&gt;to_string</a></td><td>box</td></tr>
+
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-260f8348">&lt;TR&gt;to_string</a></td><td>box</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-aa7d8478">&lt;TR&gt;compare</a></td><td>restrict, restrict</td></tr>
+
+<tr><td align = right>size_t</td><td><a href = "#user-content-fn-b6d70ac1">&lt;TR&gt;lower_bound</a></td><td>&lt;pT&gt;box, &lt;pT&gt;type</td></tr>
+
+<tr><td align = right>size_t</td><td><a href = "#user-content-fn-bbcea84">&lt;TR&gt;upper_bound</a></td><td>&lt;pT&gt;box, &lt;pT&gt;type</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-3ff5a0f5">&lt;TR&gt;insert_after</a></td><td>&lt;pT&gt;box, &lt;pT&gt;type</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-17397135">&lt;TR&gt;sort</a></td><td>&lt;pT&gt;box</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-d9028091">&lt;TR&gt;reverse</a></td><td>&lt;pT&gt;box</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-72cedc06">&lt;TR&gt;is_equal</a></td><td>restrict, restrict</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-24266775">&lt;TR&gt;unique_merge</a></td><td>&lt;pT&gt;box, &lt;pT&gt;biaction_fn</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-2527597a">&lt;TR&gt;unique</a></td><td>&lt;pT&gt;box</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-aa7d8478">&lt;TR&gt;compare</a></td><td>a, b</td></tr>
 
@@ -218,6 +246,132 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 
 ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
+
+### <a id = "user-content-fn-80df50b2" name = "user-content-fn-80df50b2">&lt;T&gt;begin</a> ###
+
+<code>struct &lt;T&gt;cursor <strong>&lt;T&gt;begin</strong>(struct <em>&lt;t&gt;array</em> *);</code>
+
+
+
+### <a id = "user-content-fn-dd6c86e1" name = "user-content-fn-dd6c86e1">&lt;T&gt;exists</a> ###
+
+<code>int <strong>&lt;T&gt;exists</strong>(const struct <em>&lt;T&gt;cursor</em> *);</code>
+
+
+
+### <a id = "user-content-fn-653fd302" name = "user-content-fn-653fd302">&lt;T&gt;look</a> ###
+
+<code>&lt;pT&gt;type *<strong>&lt;T&gt;look</strong>(struct <em>&lt;T&gt;cursor</em> *);</code>
+
+
+
+### <a id = "user-content-fn-d0790d04" name = "user-content-fn-d0790d04">&lt;T&gt;next</a> ###
+
+<code>void <strong>&lt;T&gt;next</strong>(struct <em>&lt;T&gt;cursor</em> *);</code>
+
+
+
+### <a id = "user-content-fn-93717268" name = "user-content-fn-93717268">&lt;T&gt;size</a> ###
+
+<code>size_t <strong>&lt;T&gt;size</strong>(const struct <em>&lt;t&gt;array</em> *);</code>
+
+
+
+### <a id = "user-content-fn-ebb396f4" name = "user-content-fn-ebb396f4">&lt;T&gt;at</a> ###
+
+<code>&lt;pT&gt;type *<strong>&lt;T&gt;at</strong>(const struct <em>&lt;t&gt;array</em> *, <em>size_t</em>);</code>
+
+
+
+### <a id = "user-content-fn-a77822ba" name = "user-content-fn-a77822ba">&lt;T&gt;tell_size</a> ###
+
+<code>void <strong>&lt;T&gt;tell_size</strong>(struct <em>&lt;t&gt;array</em> *, <em>size_t</em>);</code>
+
+
+
+### <a id = "user-content-fn-9c4cf562" name = "user-content-fn-9c4cf562">&lt;t&gt;array</a> ###
+
+<code>struct &lt;t&gt;array <strong>&lt;t&gt;array</strong>(void);</code>
+
+
+
+### <a id = "user-content-fn-4a260f07" name = "user-content-fn-4a260f07">&lt;t&gt;array_</a> ###
+
+<code>void <strong>&lt;t&gt;array_</strong>(struct &lt;t&gt;array *<em>const</em>);</code>
+
+
+
+### <a id = "user-content-fn-8319dfb7" name = "user-content-fn-8319dfb7">&lt;T&gt;reserve</a> ###
+
+<code>int <strong>&lt;T&gt;reserve</strong>(struct &lt;t&gt;array *<em>const</em>, <em>size_t</em>);</code>
+
+
+
+### <a id = "user-content-fn-c6b6f48f" name = "user-content-fn-c6b6f48f">&lt;T&gt;buffer</a> ###
+
+<code>&lt;pT&gt;type *<strong>&lt;T&gt;buffer</strong>(struct <em>&lt;t&gt;array</em> *, <em>size_t</em>);</code>
+
+
+
+### <a id = "user-content-fn-faa8ce4d" name = "user-content-fn-faa8ce4d">&lt;T&gt;append</a> ###
+
+<code>&lt;pT&gt;type *<strong>&lt;T&gt;append</strong>(struct <em>&lt;t&gt;array</em> *, <em>size_t</em>);</code>
+
+
+
+### <a id = "user-content-fn-e80ff7d4" name = "user-content-fn-e80ff7d4">&lt;T&gt;insert</a> ###
+
+<code>&lt;pT&gt;type *<strong>&lt;T&gt;insert</strong>(struct <em>&lt;t&gt;array</em> *, <em>size_t</em>, <em>size_t</em>);</code>
+
+
+
+### <a id = "user-content-fn-222fef85" name = "user-content-fn-222fef85">&lt;T&gt;new</a> ###
+
+<code>&lt;pT&gt;type *<strong>&lt;T&gt;new</strong>(struct <em>&lt;t&gt;array</em> *);</code>
+
+
+
+### <a id = "user-content-fn-47b478c" name = "user-content-fn-47b478c">&lt;T&gt;shrink</a> ###
+
+<code>int <strong>&lt;T&gt;shrink</strong>(struct <em>&lt;t&gt;array</em> *);</code>
+
+
+
+### <a id = "user-content-fn-56806709" name = "user-content-fn-56806709">&lt;T&gt;remove</a> ###
+
+<code>void <strong>&lt;T&gt;remove</strong>(struct <em>&lt;t&gt;array</em> *, <em>&lt;pT&gt;type</em> *);</code>
+
+
+
+### <a id = "user-content-fn-5b1cd3ec" name = "user-content-fn-5b1cd3ec">&lt;T&gt;lazy_remove</a> ###
+
+<code>void <strong>&lt;T&gt;lazy_remove</strong>(struct &lt;t&gt;array *const <em>a</em>, <em>&lt;pT&gt;type</em> *);</code>
+
+
+
+### <a id = "user-content-fn-7f4a964e" name = "user-content-fn-7f4a964e">&lt;T&gt;clear</a> ###
+
+<code>void <strong>&lt;T&gt;clear</strong>(struct <em>&lt;t&gt;array</em> *);</code>
+
+
+
+### <a id = "user-content-fn-1900dfa2" name = "user-content-fn-1900dfa2">&lt;T&gt;peek</a> ###
+
+<code>&lt;pT&gt;type *<strong>&lt;T&gt;peek</strong>(const struct <em>&lt;t&gt;array</em> *);</code>
+
+
+
+### <a id = "user-content-fn-3e8e8234" name = "user-content-fn-3e8e8234">&lt;T&gt;pop</a> ###
+
+<code>&lt;pT&gt;type *<strong>&lt;T&gt;pop</strong>(struct &lt;t&gt;array *const <em>a</em>);</code>
+
+
+
+### <a id = "user-content-fn-dbd2279" name = "user-content-fn-dbd2279">&lt;T&gt;splice</a> ###
+
+<code>int <strong>&lt;T&gt;splice</strong>(struct &lt;t&gt;array *<em>restrict</em>, const struct &lt;t&gt;array *<em>restrict</em>, <em>size_t</em>, <em>size_t</em>);</code>
+
+
 
 ### <a id = "user-content-fn-9c4cf562" name = "user-content-fn-9c4cf562">&lt;t&gt;array</a> ###
 
@@ -391,6 +545,30 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 ### <a id = "user-content-fn-443f2b31" name = "user-content-fn-443f2b31">&lt;TR&gt;any</a> ###
 
+<code>&lt;pT&gt;type *<strong>&lt;TR&gt;any</strong>(const <em>&lt;pT&gt;box</em> *, <em>&lt;pTR&gt;predicate_fn</em>);</code>
+
+
+
+### <a id = "user-content-fn-51d87ca4" name = "user-content-fn-51d87ca4">&lt;TR&gt;each</a> ###
+
+<code>void <strong>&lt;TR&gt;each</strong>(<em>&lt;pT&gt;box</em> *, <em>&lt;pTR&gt;action_fn</em>);</code>
+
+
+
+### <a id = "user-content-fn-21ef106e" name = "user-content-fn-21ef106e">&lt;TR&gt;if_each</a> ###
+
+<code>void <strong>&lt;TR&gt;if_each</strong>(<em>&lt;pT&gt;box</em> *, <em>&lt;pTR&gt;predicate_fn</em>, <em>&lt;pTR&gt;action_fn</em>);</code>
+
+
+
+### <a id = "user-content-fn-f61ec8de" name = "user-content-fn-f61ec8de">&lt;TR&gt;copy_if</a> ###
+
+<code>int <strong>&lt;TR&gt;copy_if</strong>(&lt;pT&gt;box *<em>restrict</em>, const &lt;pTR&gt;box *<em>restrict</em>, <em>&lt;pTR&gt;predicate_fn</em>);</code>
+
+
+
+### <a id = "user-content-fn-443f2b31" name = "user-content-fn-443f2b31">&lt;TR&gt;any</a> ###
+
 <code>static &lt;pT&gt;type *<strong>&lt;TR&gt;any</strong>(const &lt;pT&gt;box *const <em>box</em>, const &lt;pTR&gt;predicate_fn <em>predicate</em>)</code>
 
 [\.\./\.\./src/iterate\.h](../../src/iterate.h): Iterates through `box` and calls `predicate` until it returns true\.
@@ -464,129 +642,9 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
 
 
 
-### <a id = "user-content-fn-80df50b2" name = "user-content-fn-80df50b2">&lt;T&gt;begin</a> ###
+### <a id = "user-content-fn-260f8348" name = "user-content-fn-260f8348">&lt;TR&gt;to_string</a> ###
 
-<code>struct &lt;T&gt;cursor <strong>&lt;T&gt;begin</strong>(struct <em>&lt;t&gt;array</em> *);</code>
-
-
-
-### <a id = "user-content-fn-dd6c86e1" name = "user-content-fn-dd6c86e1">&lt;T&gt;exists</a> ###
-
-<code>int <strong>&lt;T&gt;exists</strong>(const struct <em>&lt;T&gt;cursor</em> *);</code>
-
-
-
-### <a id = "user-content-fn-653fd302" name = "user-content-fn-653fd302">&lt;T&gt;look</a> ###
-
-<code>&lt;pT&gt;type *<strong>&lt;T&gt;look</strong>(struct <em>&lt;T&gt;cursor</em> *);</code>
-
-
-
-### <a id = "user-content-fn-d0790d04" name = "user-content-fn-d0790d04">&lt;T&gt;next</a> ###
-
-<code>void <strong>&lt;T&gt;next</strong>(struct <em>&lt;T&gt;cursor</em> *);</code>
-
-
-
-### <a id = "user-content-fn-93717268" name = "user-content-fn-93717268">&lt;T&gt;size</a> ###
-
-<code>size_t <strong>&lt;T&gt;size</strong>(const struct <em>&lt;t&gt;array</em> *);</code>
-
-
-
-### <a id = "user-content-fn-ebb396f4" name = "user-content-fn-ebb396f4">&lt;T&gt;at</a> ###
-
-<code>&lt;pT&gt;type *<strong>&lt;T&gt;at</strong>(const struct <em>&lt;t&gt;array</em> *, <em>size_t</em>);</code>
-
-
-
-### <a id = "user-content-fn-a77822ba" name = "user-content-fn-a77822ba">&lt;T&gt;tell_size</a> ###
-
-<code>void <strong>&lt;T&gt;tell_size</strong>(struct <em>&lt;t&gt;array</em> *, <em>size_t</em>);</code>
-
-
-
-### <a id = "user-content-fn-9c4cf562" name = "user-content-fn-9c4cf562">&lt;t&gt;array</a> ###
-
-<code>struct &lt;t&gt;array <strong>&lt;t&gt;array</strong>(void);</code>
-
-
-
-### <a id = "user-content-fn-4a260f07" name = "user-content-fn-4a260f07">&lt;t&gt;array_</a> ###
-
-<code>void <strong>&lt;t&gt;array_</strong>(struct &lt;t&gt;array *<em>const</em>);</code>
-
-
-
-### <a id = "user-content-fn-8319dfb7" name = "user-content-fn-8319dfb7">&lt;T&gt;reserve</a> ###
-
-<code>int <strong>&lt;T&gt;reserve</strong>(struct &lt;t&gt;array *<em>const</em>, <em>size_t</em>);</code>
-
-
-
-### <a id = "user-content-fn-c6b6f48f" name = "user-content-fn-c6b6f48f">&lt;T&gt;buffer</a> ###
-
-<code>&lt;pT&gt;type *<strong>&lt;T&gt;buffer</strong>(struct <em>&lt;t&gt;array</em> *, <em>size_t</em>);</code>
-
-
-
-### <a id = "user-content-fn-faa8ce4d" name = "user-content-fn-faa8ce4d">&lt;T&gt;append</a> ###
-
-<code>&lt;pT&gt;type *<strong>&lt;T&gt;append</strong>(struct <em>&lt;t&gt;array</em> *, <em>size_t</em>);</code>
-
-
-
-### <a id = "user-content-fn-e80ff7d4" name = "user-content-fn-e80ff7d4">&lt;T&gt;insert</a> ###
-
-<code>&lt;pT&gt;type *<strong>&lt;T&gt;insert</strong>(struct <em>&lt;t&gt;array</em> *, <em>size_t</em>, <em>size_t</em>);</code>
-
-
-
-### <a id = "user-content-fn-222fef85" name = "user-content-fn-222fef85">&lt;T&gt;new</a> ###
-
-<code>&lt;pT&gt;type *<strong>&lt;T&gt;new</strong>(struct <em>&lt;t&gt;array</em> *);</code>
-
-
-
-### <a id = "user-content-fn-47b478c" name = "user-content-fn-47b478c">&lt;T&gt;shrink</a> ###
-
-<code>int <strong>&lt;T&gt;shrink</strong>(struct <em>&lt;t&gt;array</em> *);</code>
-
-
-
-### <a id = "user-content-fn-56806709" name = "user-content-fn-56806709">&lt;T&gt;remove</a> ###
-
-<code>void <strong>&lt;T&gt;remove</strong>(struct <em>&lt;t&gt;array</em> *, <em>&lt;pT&gt;type</em> *);</code>
-
-
-
-### <a id = "user-content-fn-5b1cd3ec" name = "user-content-fn-5b1cd3ec">&lt;T&gt;lazy_remove</a> ###
-
-<code>void <strong>&lt;T&gt;lazy_remove</strong>(struct &lt;t&gt;array *const <em>a</em>, <em>&lt;pT&gt;type</em> *);</code>
-
-
-
-### <a id = "user-content-fn-7f4a964e" name = "user-content-fn-7f4a964e">&lt;T&gt;clear</a> ###
-
-<code>void <strong>&lt;T&gt;clear</strong>(struct <em>&lt;t&gt;array</em> *);</code>
-
-
-
-### <a id = "user-content-fn-1900dfa2" name = "user-content-fn-1900dfa2">&lt;T&gt;peek</a> ###
-
-<code>&lt;pT&gt;type *<strong>&lt;T&gt;peek</strong>(const struct <em>&lt;t&gt;array</em> *);</code>
-
-
-
-### <a id = "user-content-fn-3e8e8234" name = "user-content-fn-3e8e8234">&lt;T&gt;pop</a> ###
-
-<code>&lt;pT&gt;type *<strong>&lt;T&gt;pop</strong>(struct &lt;t&gt;array *const <em>a</em>);</code>
-
-
-
-### <a id = "user-content-fn-dbd2279" name = "user-content-fn-dbd2279">&lt;T&gt;splice</a> ###
-
-<code>int <strong>&lt;T&gt;splice</strong>(struct &lt;t&gt;array *<em>restrict</em>, const struct &lt;t&gt;array *<em>restrict</em>, <em>size_t</em>, <em>size_t</em>);</code>
+<code>const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>);</code>
 
 
 
@@ -601,6 +659,60 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
  * Order:  
    &#920;\(1\)
 
+
+
+
+### <a id = "user-content-fn-aa7d8478" name = "user-content-fn-aa7d8478">&lt;TR&gt;compare</a> ###
+
+<code>int <strong>&lt;TR&gt;compare</strong>(const &lt;pT&gt;box *<em>restrict</em>, const &lt;pT&gt;box *<em>restrict</em>);</code>
+
+
+
+### <a id = "user-content-fn-b6d70ac1" name = "user-content-fn-b6d70ac1">&lt;TR&gt;lower_bound</a> ###
+
+<code>size_t <strong>&lt;TR&gt;lower_bound</strong>(const <em>&lt;pT&gt;box</em> *, const <em>&lt;pT&gt;type</em> *);</code>
+
+
+
+### <a id = "user-content-fn-bbcea84" name = "user-content-fn-bbcea84">&lt;TR&gt;upper_bound</a> ###
+
+<code>size_t <strong>&lt;TR&gt;upper_bound</strong>(const <em>&lt;pT&gt;box</em> *, const <em>&lt;pT&gt;type</em> *);</code>
+
+
+
+### <a id = "user-content-fn-3ff5a0f5" name = "user-content-fn-3ff5a0f5">&lt;TR&gt;insert_after</a> ###
+
+<code>int <strong>&lt;TR&gt;insert_after</strong>(<em>&lt;pT&gt;box</em> *, const <em>&lt;pT&gt;type</em> *);</code>
+
+
+
+### <a id = "user-content-fn-17397135" name = "user-content-fn-17397135">&lt;TR&gt;sort</a> ###
+
+<code>void <strong>&lt;TR&gt;sort</strong>(<em>&lt;pT&gt;box</em> *);</code>
+
+
+
+### <a id = "user-content-fn-d9028091" name = "user-content-fn-d9028091">&lt;TR&gt;reverse</a> ###
+
+<code>void <strong>&lt;TR&gt;reverse</strong>(<em>&lt;pT&gt;box</em> *);</code>
+
+
+
+### <a id = "user-content-fn-72cedc06" name = "user-content-fn-72cedc06">&lt;TR&gt;is_equal</a> ###
+
+<code>int <strong>&lt;TR&gt;is_equal</strong>(const &lt;pT&gt;box *<em>restrict</em>, const &lt;pT&gt;box *<em>restrict</em>);</code>
+
+
+
+### <a id = "user-content-fn-24266775" name = "user-content-fn-24266775">&lt;TR&gt;unique_merge</a> ###
+
+<code>void <strong>&lt;TR&gt;unique_merge</strong>(<em>&lt;pT&gt;box</em> *, const <em>&lt;pT&gt;biaction_fn</em>);</code>
+
+
+
+### <a id = "user-content-fn-2527597a" name = "user-content-fn-2527597a">&lt;TR&gt;unique</a> ###
+
+<code>void <strong>&lt;TR&gt;unique</strong>(<em>&lt;pT&gt;box</em> *);</code>
 
 
 

@@ -175,7 +175,6 @@ static void TR_(trim)(pT_(box) *const box,
 #	ifdef static
 #		undef static
 #	endif
-
 static void pTR_(unused_iterate_coda)(void);
 static void pTR_(unused_function)(void) {
 	TR_(any)(0, 0); TR_(each)(0, 0); TR_(if_each)(0, 0, 0);
@@ -185,4 +184,7 @@ static void pTR_(unused_function)(void) {
 	pTR_(unused_iterate_coda)(); }
 static void pTR_(unused_iterate_coda)(void) { pTR_(unused_function)(); }
 
+#endif /* Produce code. */
+#ifdef static
+#	undef static
 #endif

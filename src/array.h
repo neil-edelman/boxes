@@ -302,9 +302,9 @@ static int T_(splice)(struct t_(array) *restrict const a,
 	return 1;
 }
 
-#	ifdef static
-#		undef static
-#	endif
+#		ifdef static
+#			undef static
+#		endif
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(next)(0);
@@ -316,10 +316,14 @@ static void pT_(unused_base)(void) {
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif /* Produce code. */
-#	ifdef HAVE_ITERATE_H
-#		include "iterate.h" /** \include */
+#	ifdef static
+#		undef static
 #	endif
 #endif /* Base code. */
+
+#ifdef HAVE_ITERATE_H
+#	include "iterate.h" /** \include */
+#endif
 
 #ifdef ARRAY_TO_STRING
 #	undef ARRAY_TO_STRING
@@ -346,6 +350,7 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #		include "../test/test_array.h"
 #	endif
 
+/* fixme: already fixed compare? */
 #	if (defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL))
 #		ifdef ARRAY_COMPARE
 #			define COMPARE ARRAY_COMPARE
@@ -368,7 +373,8 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #		undef ARRAY_TO_STRING
 /* fixme: The ARRAY_NON_STATIC -> BOX_NON_STATIC then each of the interfaces
  would be responsible for their own. */
-const char *TR_(to_string)(const pT_(box) *const box);
+/* We did this? */
+/*const char *TR_(to_string)(const pT_(box) *const box);*/
 #	endif
 #endif /* Produce prototypes. */
 #ifdef ARRAY_TRAIT
