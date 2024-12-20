@@ -90,7 +90,6 @@ static void T_(graph)(const struct t_(heap) *const heap, FILE *const fp) {
 	}
 	fprintf(fp, "\tnode [colour=red];\n"
 		"}\n");
-	fclose(fp);
 }
 
 #		else

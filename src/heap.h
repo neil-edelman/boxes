@@ -287,36 +287,39 @@ static void pT_(unused_base)(void) {
 	pT_(unused_base_coda)();
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
-
 #	endif /* Produce code. */
+#	ifdef static
+#		undef static
+#	endif
 #endif /* Base code. */
 
-#ifndef HEAP_DECARE_ONLY /* Produce code. */
-
-#	if defined(HEAP_TO_STRING)
-#		undef HEAP_TO_STRING
-#		ifndef HEAP_TRAIT
+#if defined(HEAP_TO_STRING)
+#	undef HEAP_TO_STRING
+#	ifndef HEAP_TRAIT
 /** The type of the required `<tr>to_string`. Responsible for turning the
  read-only argument into a 12-max-`char` output string. */
 typedef void (*pT_(to_string_fn))(const pT_(priority) *, char (*)[12]);
-#		endif
+#	endif
 /** Thunk(`cur`, `a`). One must implement `<tr>to_string`. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12])
 	{ tr_(to_string)((const void *)&cur->_.a->data[cur->_.i], a); }
-#		define TO_STRING_LEFT '['
-#		define TO_STRING_RIGHT ']'
-#		include "to_string.h" /** \include */
-#		ifndef HEAP_TRAIT
-#			define HEAP_HAS_TO_STRING /* Warning about tests. */
-#		endif
+#	define TO_STRING_LEFT '['
+#	define TO_STRING_RIGHT ']'
+#	include "to_string.h" /** \include */
+#	ifndef HEAP_TRAIT
+#		define HEAP_HAS_TO_STRING /* Warning about tests. */
 #	endif
+#endif
 
-#	if defined(HEAP_TEST) && !defined(HEAP_TRAIT)
-#		include "../test/test_heap.h"
-#	endif
+#if defined HAS_GRAPH_H && defined HEAP_HAS_TO_STRING && !defined HEAP_TRAIT
+#	include "graph.h" /** \include */
+#endif
 
-#endif /* Produce code. */
+#if defined HEAP_TEST && !defined HEAP_TRAIT
+#	include "../test/test_heap.h"
+#endif
+
 #ifdef HEAP_TRAIT
 #	undef HEAP_TRAIT
 #	undef BOX_TRAIT
@@ -338,6 +341,10 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	endif
 #	ifdef HEAP_TEST
 #		undef HEAP_TEST
+#	endif
+#	ifdef HEAP_NON_STATIC
+#		undef BOX_NON_STATIC
+#		undef HEAP_NON_STATIC
 #	endif
 #	ifdef HEAP_DECLARE_ONLY
 #		undef HEAP_DECLARE_ONLY

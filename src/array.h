@@ -347,8 +347,6 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	include "graph.h" /** \include */
 #endif
 
-/* fixme: Same for test, compare, etc. */
-
 #if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT)
 #	include "../test/test_array.h"
 #endif

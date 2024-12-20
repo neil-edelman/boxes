@@ -1,9 +1,19 @@
-#if defined(QUOTE) || defined(QUOTE_)
-#error QUOTE_? cannot be defined.
+#ifdef HEAP_NON_STATIC
+#	define static
+void T_(test)(void);
 #endif
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
+#ifndef HEAP_DECLARE_ONLY
 
+#	if defined(QUOTE) || defined(QUOTE_)
+#		error QUOTE_? cannot be defined.
+#	endif
+#	define QUOTE_(name) #name
+#	define QUOTE(name) QUOTE_(name)
+#	ifdef static
+#		undef static
+#	endif
+
+/* What? */
 typedef pT_(priority) (*pT_(test_fn))(void);
 
 /** Makes sure the `heap` is in a valid state. */
@@ -15,7 +25,7 @@ static void pT_(valid)(const struct t_(heap) *const heap) {
 	for(i = 1; i < heap->as_array.size; i++) {
 		size_t iparent = (i - 1) >> 1;
 		if(t_(less)(n0[iparent], n0[i]) <= 0) continue;
-		pT_(graph)(heap, "graph/heap/" QUOTE(HEAP_NAME) "-invalid.gv");
+		T_(graph_fn)(heap, "graph/heap/" QUOTE(HEAP_NAME) "-invalid.gv");
 		assert(0);
 		break;
 	}
@@ -64,7 +74,7 @@ static void pT_(test_basic)(void) {
 		if(!i || !(i & (i - 1))) {
 			sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-%lu.gv",
 				(unsigned long)cum_size);
-			pT_(graph)(&heap, fn);
+			T_(graph_fn)(&heap, fn);
 		}
 		pT_(valid)(&heap);
 		t_(filler)(&add);
@@ -73,7 +83,7 @@ static void pT_(test_basic)(void) {
 	}
 	sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-%lu-done-1.gv",
 		(unsigned long)cum_size);
-	pT_(graph)(&heap, fn);
+	T_(graph_fn)(&heap, fn);
 	assert(heap.as_array.size == cum_size);
 	printf("Heap: %s.\n", T_(to_string)(&heap));
 	printf("Heap buffered add, before size = %lu.\n",
@@ -85,13 +95,13 @@ static void pT_(test_basic)(void) {
 	printf("Now size = %lu.\n", (unsigned long)heap.as_array.size);
 	assert(heap.as_array.size == cum_size);
 	sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-%lu-buffer.gv", cum_size);
-	pT_(graph)(&heap, fn);
+	T_(graph_fn)(&heap, fn);
 	pT_(valid)(&heap);
 	for(i = 0; i < test_size_3; i++) {
 		if(!i || !(i & (i - 1))) {
 			sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-%lu.gv",
 				(unsigned long)cum_size);
-			pT_(graph)(&heap, fn);
+			T_(graph_fn)(&heap, fn);
 		}
 		pT_(valid)(&heap);
 		t_(filler)(&add);
@@ -100,7 +110,7 @@ static void pT_(test_basic)(void) {
 	}
 	sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-%lu-heap.gv",
 		(unsigned long)cum_size);
-	pT_(graph)(&heap, fn);
+	T_(graph_fn)(&heap, fn);
 	printf("Setting up merge at %lu.\n", (unsigned long)cum_size);
 	for(i = 0; i < test_size_1; i++) {
 		t_(filler)(&add);
@@ -109,12 +119,12 @@ static void pT_(test_basic)(void) {
 	}
 	sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-%lu-merge.gv",
 		(unsigned long)cum_size);
-	pT_(graph)(&merge, fn);
+	T_(graph_fn)(&merge, fn);
 	pT_(valid)(&merge);
 	success = T_(affix)(&heap, &merge), cum_size += merge.as_array.size;
 	sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-%lu-combined.gv",
 		(unsigned long)cum_size);
-	pT_(graph)(&heap, fn);
+	T_(graph_fn)(&heap, fn);
 	assert(success && heap.as_array.size == cum_size);
 	pT_(valid)(&heap);
 	printf("Final heap: %s.\n", T_(to_string)(&heap));
@@ -128,7 +138,7 @@ static void pT_(test_basic)(void) {
 			printf("%lu: retreving %s.\n", (unsigned long)i, z);
 			sprintf(fn, "graph/heap/" QUOTE(HEAP_NAME) "-remove-%lu.gv",
 				(unsigned long)i);
-			pT_(graph)(&heap, fn);
+			T_(graph_fn)(&heap, fn);
 		}
 		assert(heap.as_array.size == i - 1 && T_(size)(&heap) == i - 1);
 		pT_(valid)(&heap);
@@ -142,6 +152,9 @@ static void pT_(test_basic)(void) {
 	assert(!T_(peek)(&heap));
 }
 
+#	ifdef HEAP_NON_STATIC
+#		define static
+#	endif
 /** Will be tested on stdout. Requires `HEAP_TEST`, `BOX_TO_STRING`, and not
  `NDEBUG` while defining `assert`.
  @param[param] The `void *` parameter in `HEAP_TEST`. Can be null. @allow */
@@ -149,9 +162,11 @@ static void T_(test)(void) {
 	printf("<" QUOTE(HEAP_NAME) ">heap"
 		" of priority type <" QUOTE(HEAP_TYPE) ">"
 		" was created using: HEAP_TO_STRING; HEAP_TEST; testing:\n");
+	errno = 0;
 	pT_(test_basic)();
 	fprintf(stderr, "Done tests of <" QUOTE(HEAP_NAME) ">heap.\n\n");
 }
 
-#undef QUOTE
-#undef QUOTE_
+#	undef QUOTE
+#	undef QUOTE_
+#endif
