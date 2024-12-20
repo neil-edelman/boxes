@@ -321,7 +321,7 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif
 #endif /* Base code. */
 
-#ifdef HAVE_ITERATE_H
+#if defined HAS_ITERATE_H && !defined ARRAY_TRAIT
 #	include "iterate.h" /** \include */
 #endif
 
@@ -342,13 +342,20 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	endif
 #endif
 
-#ifndef ARRAY_DECLARE_ONLY /* Produce code. */
+#if defined HAS_GRAPH_H && defined ARRAY_HAS_TO_STRING && !defined ARRAY_TRAIT
+#	include "graph.h" /** \include */
+#endif
 
 /* fixme: Same for test, compare, etc. */
 
-#	if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT)
-#		include "../test/test_array.h"
+#if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT)
+#	if !defined HAS_GRAPH_H || !defined ARRAY_HAS_TO_STRING
+#		error These conditions must be met.
 #	endif
+#	include "../test/test_array.h"
+#endif
+
+#ifndef ARRAY_DECLARE_ONLY /* Produce code. */
 
 /* fixme: already fixed compare? */
 #	if (defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL))

@@ -138,7 +138,7 @@ static void pT_(assert_count)(const struct t_(list) *const list,
 	}
 }
 
-#ifdef HAVE_ITERATE_H /* <!-- */
+#ifdef HAS_ITERATE_H /* <!-- */
 /** Returns `0,1,0,1,...` whatever `link`. */
 static int pT_(parity)(const struct t_(listlink) *const link) {
 	static int p;
@@ -200,7 +200,7 @@ static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
 	link = T_(head)(&l1), assert(link == link_first);
 	link = T_(tail)(&l1), assert(link == link_last);
 	printf("After removing and adding: l1 = %s.\n", T_(to_string)(&l1));
-#ifdef HAVE_ITERATE_H /* <!-- iterator */
+#ifdef HAS_ITERATE_H /* <!-- iterator */
 	assert(l2.u.as_head.head.next);
 	/* Test movement. */
 	pT_(assert_count)(&l1, test_size);

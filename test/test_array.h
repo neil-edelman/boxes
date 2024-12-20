@@ -1,8 +1,17 @@
-#if defined(QUOTE) || defined(QUOTE_)
-#error QUOTE_? cannot be defined.
+#ifdef ARRAY_NON_STATIC
+#	define static
+void T_(test)(void);
 #endif
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
+#ifndef ARRAY_DECLARE_ONLY
+
+#	if defined(QUOTE) || defined(QUOTE_)
+#		error QUOTE_? cannot be defined.
+#	endif
+#	define QUOTE_(name) #name
+#	define QUOTE(name) QUOTE_(name)
+#	ifdef static
+#		undef static
+#	endif
 
 /** @return Is `a` in a valid state? */
 static void pT_(valid_state)(const struct t_(array) *const a) {
@@ -11,59 +20,6 @@ static void pT_(valid_state)(const struct t_(array) *const a) {
 	if(!a) return;
 	if(!a->data) { assert(!a->size); return; }
 	assert(a->size <= a->capacity && a->capacity <= max_size);
-}
-
-/* fixme: this will be elsewhere… it is also very good at debugging programmes. */
-/** Draw a graph of `a` to `fn` in Graphviz format. */
-static void pT_(graph)(const struct t_(array) *const a, const char *const fn) {
-	FILE *fp;
-	size_t i;
-	char z[12];
-	/* This is a messy hack; require that `errno` is not set, if we can't open
-	 the file for writing, take it. Drawing graphs is usually not the point. */
-	assert(a && fn && !errno);
-	if(!(fp = fopen(fn, "w"))) { perror(fn); errno = 0; return; }
-	fprintf(fp, "digraph {\n"
-		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
-		" fontname=modern];\n"
-		"\tnode [shape=none, fontname=modern];\n"
-		"\tarray [label=<\n"
-		"<table border=\"0\" cellspacing=\"0\">\n"
-		"\t<tr><td colspan=\"3\" align=\"left\">"
-		"<font color=\"Gray75\">&lt;" QUOTE(ARRAY_NAME)
-		"&gt;array: " QUOTE(ARRAY_TYPE) "</font></td></tr>\n"
-		"\t<hr/>\n"
-		"\t<tr>\n"
-		"\t\t<td border=\"0\" align=\"right\">size</td>\n"
-		"\t\t<td border=\"0\">%lu</td>\n"
-		"\t\t<td border=\"0\" align=\"right\">%lu</td>\n"
-		"\t</tr>\n"
-		"\t<hr/>\n"
-		"\t<tr><td></td></tr>\n"
-		"</table>>];\n", (unsigned long)a->size, (unsigned long)a->capacity);
-	if(!a->data) goto no_data;
-	fprintf(fp, "\tarray -> data;\n"
-		"\tdata [label=<\n"
-		"<table border=\"0\" cellspacing=\"0\">\n"
-		"\t<tr><td colspan=\"2\" align=\"left\">"
-		"<font color=\"Gray75\">%s</font></td></tr>\n"
-		"\t<hr/>\n", orcify(a->data));
-	for(i = 0; i < a->size; i++) {
-		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
-		t_(to_string)((void *)(a->data + i), &z);
-		fprintf(fp, "\t<tr>\n"
-			"\t\t<td align=\"right\"%s>"
-			"<font face=\"Times-Italic\">%lu</font></td>\n"
-			"\t\t<td align=\"left\"%s>%s</td>\n"
-			"\t</tr>\n", bgc, (unsigned long)i, bgc, z);
-	}
-	fprintf(fp, "\t<hr/>\n"
-		"\t<tr><td></td></tr>\n"
-		"</table>>];\n");
-no_data:
-	fprintf(fp, "\tnode [colour=\"Red\"];\n"
-		"}\n");
-	fclose(fp);
 }
 
 static void pT_(test_basic)(void) {
@@ -111,7 +67,7 @@ static void pT_(test_basic)(void) {
 		assert(item);
 		memcpy(item, items + i, sizeof *item);
 	}
-#if 0 /* Why would anyone use this? */
+#	if 0 /* Why would anyone use this? */
 	printf("Testing iteration, a = %s.\n", T_(to_string)(&a));
 	for(it = T_(array_begin)(&a), i = 0; item = T_(array_next)(&it); i++)
 		assert(!memcmp(item, items + i, sizeof *item));
@@ -148,7 +104,7 @@ static void pT_(test_basic)(void) {
 	it = T_(array_begin)(&a);
 	item = T_(array_previous)(&it), assert(!item);
 	item = T_(array_next)(&it), assert(!memcmp(item, items + 0, sizeof *item));
-#endif
+#	endif
 
 	printf("Testing lazy remove.\n");
 	T_(lazy_remove)(&a, a.data);
@@ -255,7 +211,7 @@ static void pT_(test_random)(void) {
 			printf("%s.\n", T_(to_string)(&a));
 			sprintf(fn, "graph/array/" QUOTE(ARRAY_NAME) "-array-%lu.gv",
 				(unsigned long)i);
-			pT_(graph)(&a, fn);
+			T_(graph_fn)(&a, fn);
 		}
 	}
 	t_(array_)(&a);
@@ -348,7 +304,7 @@ static void pT_(test_replace)(void) {
 	t_(array_)(&a);
 }
 
-#ifdef HAVE_ITERATE_H /* <!-- iterate */
+#	ifdef HAS_ITERATE_H /* <!-- iterate */
 /** @implements <PA>Predicate
  @return A set sequence of ones and zeros, independant of `data`. */
 static int pT_(keep_deterministic)(const pT_(type) *const data) {
@@ -378,10 +334,10 @@ static int pT_(zero_filled)(const pT_(type) *const t) {
 	while(c < end) if(*c++) return 0;
 	return 1;
 }
-#endif /* iterate --> */
+#	endif /* iterate --> */
 
 static void pT_(test_keep)(void) {
-#ifdef HAVE_ITERATE_H
+#	ifdef HAS_ITERATE_H
 	pT_(type) ts[17], *t, *t1, *e;
 	const size_t ts_size = sizeof ts / sizeof *ts;
 	struct t_(array) a = t_(array)(), b = t_(array)();
@@ -413,11 +369,11 @@ static void pT_(test_keep)(void) {
 		&& !memcmp(ts + 13, b.data + 1, sizeof *t * 1));
 	t_(array_)(&a);
 	t_(array_)(&b);
-#endif
+#	endif
 }
 
 static void pT_(test_each)(void) {
-#ifdef HAVE_ITERATE_H
+#	ifdef HAS_ITERATE_H
 	struct t_(array) empty = t_(array)(), one = t_(array)();
 	pT_(type) *t;
 	t = T_(new)(&one);
@@ -439,11 +395,11 @@ static void pT_(test_each)(void) {
 	t = T_(any)(&one, &pT_(true));
 	assert(t == one.data);
 	t_(array_)(&one);
-#endif
+#	endif
 }
 
 static void pT_(test_trim)(void) {
-#ifdef HAVE_ITERATE_H
+#	ifdef HAS_ITERATE_H
 	struct t_(array) a = t_(array)();
 	pT_(type) *item;
 	int is_zero;
@@ -467,7 +423,7 @@ static void pT_(test_trim)(void) {
 	T_(trim)(&a, &pT_(zero_filled));
 	assert(a.size == !is_zero);
 	t_(array_)(&a);
-#endif
+#	endif
 }
 
 static void pT_(test_insert)(void) {
@@ -494,6 +450,9 @@ static void pT_(test_insert)(void) {
 	t_(array_)(&a);
 }
 
+#	ifdef ARRAY_NON_STATIC
+#		define static
+#	endif
 /** Will be tested on stdout. @allow */
 static void T_(test)(void) {
 	printf("<" QUOTE(ARRAY_NAME) ">array of type <" QUOTE(ARRAY_TYPE)
@@ -508,5 +467,6 @@ static void T_(test)(void) {
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array.\n\n");
 }
 
-#undef QUOTE
-#undef QUOTE_
+#	undef QUOTE
+#	undef QUOTE_
+#endif

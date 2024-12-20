@@ -6,34 +6,6 @@
 
 typedef pT_(priority) (*pT_(test_fn))(void);
 
-/** Draw a graph of `heap` to `fn` in Graphviz format. */
-static void pT_(graph)(const struct t_(heap) *const heap,
-	const char *const fn) {
-	FILE *fp;
-	char a[12];
-	size_t i;
-	assert(heap && fn);
-	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
-	fprintf(fp, "digraph {\n"
-		"\tgraph [truecolor=true, bgcolor=transparent, fontname=modern];\n"
-		"\tnode [shape=box, style=filled, fillcolor=\"Gray95\","
-		" fontname=modern];\n"
-		/* Google search / Wikipedia says we should draw them with the top down.
-		"\trankdir = BT;\n" */
-		"\tedge [arrowhead = none];\n");
-	for(i = 0; i < heap->as_array.size; i++) {
-		const pT_(priority) *const p = heap->as_array.data + i;
-		t_(to_string)(p, &a);
-		fprintf(fp, "\t\tn%lu [label=\"%s\"];\n", (unsigned long)i, a);
-		if(!i) continue;
-		fprintf(fp, "\t\tn%lu -> n%lu;\n",
-			(unsigned long)((i - 1) / 2), (unsigned long)i);
-	}
-	fprintf(fp, "\tnode [colour=red];\n");
-	fprintf(fp, "}\n");
-	fclose(fp);
-}
-
 /** Makes sure the `heap` is in a valid state. */
 static void pT_(valid)(const struct t_(heap) *const heap) {
 	size_t i;

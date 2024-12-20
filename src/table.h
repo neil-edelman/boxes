@@ -761,7 +761,7 @@ static int T_(remove)(struct t_(table) *const table, const pT_(key) key) {
 	return 1;
 }
 
-#		ifdef HAVE_ITERATE_H /* <!-- iterate */
+#		ifdef HAS_ITERATE_H /* <!-- iterate */
 typedef struct pT_(bucket) pT_(type);
 #			include "iterate.h" /** \include */
 #		endif /* iterate --> */

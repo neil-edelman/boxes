@@ -266,7 +266,7 @@ static void T_(self_correct)(struct t_(list) *const list) {
  item. */
 typedef struct t_(listlink) pT_(type);
 
-#		ifdef HAVE_ITERATE_H /* <!-- iterate */
+#		ifdef HAS_ITERATE_H /* <!-- iterate */
 #			include "iterate.h" /** \include */
 /** __has_include("iterate.h"): Moves all elements `from` onto the tail of `to` if
  `predicate` is true.
@@ -292,7 +292,7 @@ static void pT_(unused_base)(void) {
 	T_(unshift)(0, 0); T_(push)(0, 0); T_(remove)(0);
 	T_(shift)(0); T_(pop)(0); T_(to)(0, 0);
 	T_(to_before)(0, 0); T_(self_correct)(0);
-#		ifdef HAVE_ITERATE_H
+#		ifdef HAS_ITERATE_H
 	T_(to_if)(0, 0, 0);
 #		endif
 	pT_(unused_base_coda)();
