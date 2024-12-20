@@ -43,8 +43,9 @@
 #	error Only one can be defined at a time.
 #endif
 #if defined(ARRAY_TEST) && (!defined(ARRAY_TRAIT) && !defined(ARRAY_TO_STRING) \
-	|| defined(ARRAY_TRAIT) && !defined(ARRAY_HAS_TO_STRING))
-#	error Test requires to string.
+	|| defined(ARRAY_TRAIT) && !defined(ARRAY_HAS_TO_STRING) \
+	|| !defined HAS_GRAPH_H)
+#	error Test requires to string and graph.
 #endif
 #if defined(BOX_TRAIT) && !defined(ARRAY_TRAIT)
 #	error Unexpected.
@@ -349,41 +350,26 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 /* fixme: Same for test, compare, etc. */
 
 #if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT)
-#	if !defined HAS_GRAPH_H || !defined ARRAY_HAS_TO_STRING
-#		error These conditions must be met.
-#	endif
 #	include "../test/test_array.h"
 #endif
 
-#ifndef ARRAY_DECLARE_ONLY /* Produce code. */
-
-/* fixme: already fixed compare? */
-#	if (defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL))
-#		ifdef ARRAY_COMPARE
-#			define COMPARE ARRAY_COMPARE
-#		else
-#			define COMPARE_IS_EQUAL ARRAY_IS_EQUAL
-#		endif
-#		include "compare.h" /** \include */
-#		ifdef ARRAY_TEST
-#			include "../test/test_array_compare.h"
-#		endif
-#		ifdef ARRAY_COMPARE
-#			undef ARRAY_COMPARE
-#		else
-#			undef ARRAY_IS_EQUAL
-#		endif
+#if (defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL))
+#	ifdef ARRAY_COMPARE
+#		define COMPARE ARRAY_COMPARE
+#	else
+#		define COMPARE_IS_EQUAL ARRAY_IS_EQUAL
 #	endif
-
-#else /* Produce prototypes. */
-#	ifdef ARRAY_TO_STRING
-#		undef ARRAY_TO_STRING
-/* fixme: The ARRAY_NON_STATIC -> BOX_NON_STATIC then each of the interfaces
- would be responsible for their own. */
-/* We did this? */
-/*const char *TR_(to_string)(const pT_(box) *const box);*/
+#	include "compare.h" /** \include */
+#	ifdef ARRAY_TEST
+#		include "../test/test_array_compare.h"
 #	endif
-#endif /* Produce prototypes. */
+#	ifdef ARRAY_COMPARE
+#		undef ARRAY_COMPARE
+#	else
+#		undef ARRAY_IS_EQUAL
+#	endif
+#endif
+
 #ifdef ARRAY_TRAIT
 #	undef ARRAY_TRAIT
 #	undef BOX_TRAIT
@@ -415,7 +401,7 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #		undef ARRAY_NON_STATIC
 #	endif
 #	ifdef COMPARE_H
-#		undef COMPARE_H
+#		undef COMPARE_H /* More comparisons for later boxes. */
 #	endif
 #endif
 #define BOX_END

@@ -51,8 +51,9 @@ void TR_(unique_merge)(pT_(box) *, const pT_(biaction_fn));
 void TR_(unique)(pT_(box) *);
 #	endif
 #endif
+#ifndef BOX_DECLARE_ONLY
 
-#ifdef COMPARE /* <!-- compare: <typedef:<pT>compare_fn>. */
+#	ifdef COMPARE /* <!-- compare: <typedef:<pT>compare_fn>. */
 
 /** <../../src/compare.h>, `COMPARE`: Lexicographically compares `a` to `b`. Both can
  be null, with null values before everything.
@@ -77,7 +78,7 @@ static int TR_(compare)(const pT_(box) *restrict const a,
 	}
 }
 
-#	ifdef BOX_ACCESS /* <!-- access: size, at. */
+#		ifdef BOX_ACCESS /* <!-- access: size, at. */
 
 /** <../../src/compare.h>, `COMPARE`, `BOX_ACCESS`: `box` should be partitioned
  true/false with less-then `element`. @return The first index of `a` that is
@@ -107,7 +108,7 @@ static size_t TR_(upper_bound)(const pT_(box) *const box,
 	return low;
 }
 
-#		ifdef BOX_CONTIGUOUS /* <!-- contiguous: element is pointer to array. */
+#			ifdef BOX_CONTIGUOUS /* <!-- contiguous: array. */
 
 /** <../../src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Copies `element` at the upper
  bound of a sorted `box`.
@@ -124,18 +125,18 @@ static int TR_(insert_after)(pT_(box) *const box,
 	return 1;
 }
 
-#		ifdef static
-#			undef static
-#		endif
+#				ifdef static
+#					undef static
+#				endif
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
 static int pTR_(vcompar)(const void *restrict const a,
 	const void *restrict const b) { return tr_(compare)(a, b); }
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
 static int pTR_(vrevers)(const void *restrict const a,
 	const void *restrict const b) { return tr_(compare)(b, a); }
-#		ifdef BOX_NON_STATIC
-#			define static
-#		endif
+#				ifdef BOX_NON_STATIC
+#					define static
+#				endif
 
 /** <../../src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`,
  (which has a high-context-switching cost, but is easy.)
@@ -160,13 +161,13 @@ static void TR_(reverse)(pT_(box) *const box) {
 	qsort(first, size, sizeof *first, &pTR_(vrevers));
 }
 
-#		endif /* contiguous --> */
+#			endif /* contiguous --> */
 
-#	endif /* access --> */
+#		endif /* access --> */
 
-#	ifdef static
-#		undef static
-#	endif
+#		ifdef static
+#			undef static
+#		endif
 /** !compare(`a`, `b`) == equals(`a`, `b`).
  (This makes `COMPARE` encompass `COMPARE_IS_EQUAL`.) However, it can not
  collide with another function!
@@ -176,11 +177,11 @@ static int tr_(is_equal)(const pT_(type) *const restrict a,
 	/* "Discards qualifiers in nested pointer types" sometimes. Cast. */
 	return !tr_(compare)((const void *)a, (const void *)b);
 }
-#	ifdef BOX_NON_STATIC
-#		define static
-#	endif
+#		ifdef BOX_NON_STATIC
+#			define static
+#		endif
 
-#endif /* compare --> */
+#	endif /* compare --> */
 
 /** <../../src/compare.h> @return If `a` piecewise equals `b`,
  which both can be null. @order \O(|`a`| & |`b`|) @allow */
@@ -201,7 +202,7 @@ static int TR_(is_equal)(const pT_(box) *restrict const a,
 	return 1;
 }
 
-#ifdef BOX_CONTIGUOUS /* <!-- contiguous: (array, pointer), size, at,
+#	ifdef BOX_CONTIGUOUS /* <!-- contiguous: (array, pointer), size, at,
  tell_size. */
 
 /** <../../src/compare.h>, `BOX_CONTIGUOUS`: Removes consecutive duplicate elements
@@ -250,34 +251,39 @@ static void TR_(unique_merge)(pT_(box) *const box,
  in `box`. @order \O(|`box`|) @allow */
 static void TR_(unique)(pT_(box) *const box) { TR_(unique_merge)(box, 0); }
 
-#endif /* contiguous --> */
+#	endif /* contiguous --> */
 
 #	ifdef static
 #		undef static
 #	endif
 static void pTR_(unused_compare_coda)(void);
 static void pTR_(unused_compare)(void) {
-#ifdef COMPARE /* <!-- compare */
+#	ifdef COMPARE /* <!-- compare */
 	TR_(compare)(0, 0);
-#	ifdef BOX_ACCESS
+#		ifdef BOX_ACCESS
 	TR_(lower_bound)(0, 0); TR_(upper_bound)(0, 0);
-#		ifdef BOX_CONTIGUOUS
+#			ifdef BOX_CONTIGUOUS
 	TR_(insert_after)(0, 0); TR_(sort)(0); TR_(reverse)(0);
+#			endif
 #		endif
-#	endif
 	tr_(is_equal)(0, 0);
-#endif /* compare --> */
+#	endif /* compare --> */
 	TR_(is_equal)(0, 0);
-#ifdef BOX_CONTIGUOUS
+#	ifdef BOX_CONTIGUOUS
 	TR_(unique_merge)(0, 0); TR_(unique)(0);
-#endif
+#	endif
 	pTR_(unused_compare_coda)();
 }
 static void pTR_(unused_compare_coda)(void) { pTR_(unused_compare)(); }
+
+#endif /* Produce code. */
 
 #ifdef COMPARE
 #	undef COMPARE
 #endif
 #ifdef COMPARE_IS_EQUAL
 #	undef COMPARE_IS_EQUAL
+#endif
+#ifdef static
+#	undef static
 #endif

@@ -1,11 +1,17 @@
-/* fixme: This isn't mutation tested; I would have to go into it to see what I
- did. */
-
-#if defined(QUOTE) || defined(QUOTE_)
-#error QUOTE_? cannot be defined.
+#ifdef ARRAY_NON_STATIC
+#	define static
+void TR_(compare_test)(void);
 #endif
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
+#ifndef ARRAY_DECLARE_ONLY
+
+#	if defined(QUOTE) || defined(QUOTE_)
+#		error QUOTE_? cannot be defined.
+#	endif
+#	define QUOTE_(name) #name
+#	define QUOTE(name) QUOTE_(name)
+#	ifdef static
+#		undef static
+#	endif
 
 /** Fills `fill` that is not equal to `neq` if possible. */
 static int pTR_(fill_unique)(pT_(type) *const fill,
@@ -19,8 +25,8 @@ static int pTR_(fill_unique)(pT_(type) *const fill,
 	assert(0); return 0;
 }
 
-#if 0 /* <!-- 0: I don't think we use this anymore? */
-#ifdef BOX_COMPARE /* <!-- comp */
+#	if 0 /* <!-- 0: I don't think we use this anymore? */
+#		ifdef BOX_COMPARE /* <!-- comp */
 static int PCMP_(unique_array)(PA_(type) *const fill, const size_t size) {
 	const size_t no_try = 5000;
 	size_t attempt, i = 0;
@@ -43,8 +49,8 @@ static int PCMP_(unique_array)(PA_(type) *const fill, const size_t size) {
 	return printf("unique_array: got duplicates in %lu tries.\n",
 		(unsigned long)attempt), 1;
 }
-#endif /* comp --> */
-#endif /* 0 */
+#		endif /* comp --> */
+#	endif /* 0 */
 
 /* fixme: This is not general. */
 static void pTR_(test_compactify)(void) {
@@ -66,7 +72,7 @@ static void pTR_(test_compactify)(void) {
 	TR_(unique)(&a);
 	printf("Compactified: %s.\n", T_(to_string)(&a));
 	assert(a.size == ts_size / 3);
-#ifdef BOX_COMPARE /* <!-- compare */
+#	ifdef BOX_COMPARE /* <!-- compare */
 	TR_(reverse)(&a);
 	printf("Reverse: %s.\n", T_(to_string)(&a));
 	/* "Discards qualifiers in nested pointer types" sometimes. Cast. */
@@ -77,7 +83,7 @@ static void pTR_(test_compactify)(void) {
 	/* "Discards qualifiers in nested pointer types" sometimes. Cast. */
 	for(t = a.data, t1 = a.data + a.size - 1; t < t1; t++)
 		assert(tr_(compare)((const void *)t, (const void *)(t + 1)) <= 0);
-#endif /* compare --> */
+#	endif /* compare --> */
 	t_(array_)(&a);
 }
 
@@ -96,7 +102,8 @@ static void pTR_(test_compare)(void) {
 	memcpy(a.data, ts, sizeof *t * ts_size);
 	printf("\ntest compare: %s.\n", T_(to_string)(&a));
 	assert(ts_size == a.size);
-#if 0 /* I don't use iterators. */
+#	if 0 /* I don't use iterators. */
+	/* fixme: Now I do! */
 	t = 0, i = 0;
 	it = A_(array_begin)(&a);
 	while(t = A_(array_next)(&it)) {
@@ -114,7 +121,7 @@ static void pTR_(test_compare)(void) {
 	}
 	printf("done.\n");
 	assert(!i);
-#endif
+#	endif
 	cmp = TR_(is_equal)(0, 0), assert(cmp);
 	printf("a: %s.\n"
 		"b: %s.\n", T_(to_string)(&a), T_(to_string)(&b));
@@ -129,13 +136,13 @@ static void pTR_(test_compare)(void) {
 	t_(array_)(&b);
 }
 
-#ifdef BOX_COMPARE /* <!-- comp */
+#	ifdef BOX_COMPARE /* <!-- comp */
 static int pTR_(cmp_void)(const void *const a, const void *const b)
 	{ return TR_(compare)(a, b); }
-#endif /* comp --> */
+#	endif /* comp --> */
 
 static void pTR_(test_sort)(void) {
-#ifdef BOX_COMPARE /* <!-- comp */
+#	ifdef BOX_COMPARE /* <!-- comp */
 	struct t_(array) as[64], *a;
 	const size_t as_size = sizeof as / sizeof *as;
 	const struct t_(array) *const as_end = as + as_size;
@@ -168,11 +175,11 @@ static void pTR_(test_sort)(void) {
 		assert(cmp <= 0);
 	}
 	for(a = as; a < as_end; a++) t_(array_)(a);
-#endif /* comp --> */
+#	endif /* comp --> */
 }
 
 static void pTR_(test_bounds)(void) {
-#ifdef COMPARE /* <!-- compare */
+#	ifdef COMPARE /* <!-- compare */
 	/* fixme */
 	struct A_(array) a = A_(array)();
 	const size_t size = 10;
@@ -221,18 +228,21 @@ static void pTR_(test_bounds)(void) {
 	printf(QUOTE(BOX_COMPARE) " upper_bound: %lu.\n", (unsigned long)high);
 	assert(high == a.size);
 	A_(array_)(&a);
-#endif /* compare --> */
+#	endif /* compare --> */
 }
 
+#	ifdef ARRAY_NON_STATIC
+#		define static
+#	endif
 /** `ARRAY_TEST`, `BOX_COMPARE` -> `ARRAY_TO_STRING`, !`NDEBUG`: will be
  tested on stdout. @allow */
 static void TR_(compare_test)(void) {
 	printf("<" QUOTE(ARRAY_NAME) ","
-#ifdef BOX_TRAIT
+#	ifdef BOX_TRAIT
 		QUOTE(ARRAY_TRAIT)
-#else
+#	else
 		"anonymous"
-#endif
+#	endif
 		">array testing compare:\n");
 	errno = 0;
 	pTR_(test_sort)();
@@ -243,5 +253,6 @@ static void TR_(compare_test)(void) {
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array compare.\n\n");
 }
 
-#undef QUOTE
-#undef QUOTE_
+#	undef QUOTE
+#	undef QUOTE_
+#endif
