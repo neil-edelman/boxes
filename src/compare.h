@@ -88,7 +88,7 @@ static size_t TR_(lower_bound)(const pT_(box) *const box,
 	size_t low = 0, high = T_(size)(box), mid;
 	while(low < high)
 		if(TR_(compare)((const void *)element, (const void *)
-			T_(at)(box, mid = low + (high - low) / 2)) <= 0) high = mid;
+			T_(data_at)(box, mid = low + (high - low) / 2)) <= 0) high = mid;
 		else low = mid + 1;
 	return low;
 }
@@ -102,7 +102,7 @@ static size_t TR_(upper_bound)(const pT_(box) *const box,
 	size_t low = 0, high = T_(size)(box), mid;
 	while(low < high)
 		if(TR_(compare)((const void *)element,
-			(const void *)T_(at)(box, mid = low + (high - low) / 2)) >= 0)
+			(const void *)T_(data_at)(box, mid = low + (high - low) / 2)) >= 0)
 			low = mid + 1;
 		else high = mid;
 	return low;
@@ -119,9 +119,9 @@ static int TR_(insert_after)(pT_(box) *const box,
 	assert(box && element);
 	bound = TR_(upper_bound)(box, element);
 	if(!T_(append)(box, 1)) return 0;
-	memmove(T_(at)(box, bound + 1), T_(at)(box, bound),
+	memmove(T_(data_at)(box, bound + 1), T_(data_at)(box, bound),
 		sizeof *element * (T_(size)(box) - bound - 1));
-	memcpy(T_(at)(box, bound), element, sizeof *element);
+	memcpy(T_(data_at)(box, bound), element, sizeof *element);
 	return 1;
 }
 
@@ -145,7 +145,7 @@ static void TR_(sort)(pT_(box) *const box) {
 	const size_t size = T_(size)(box);
 	pT_(type) *first;
 	if(!size) return;
-	first = T_(at)(box, 0);
+	first = T_(data_at)(box, 0);
 	/*if(!BOX_(is_element)(first)) return;*/ /* That was weird. */
 	qsort(first, size, sizeof *first, &pTR_(vcompar));
 }
@@ -156,7 +156,7 @@ static void TR_(reverse)(pT_(box) *const box) {
 	const size_t size = T_(size)(box);
 	pT_(type) *first;
 	if(!size) return;
-	first = T_(at)(box, 0);
+	first = T_(data_at)(box, 0);
 	/*if(!BOX_(is_element)(first)) return;*/ /* That was weird. */
 	qsort(first, size, sizeof *first, &pTR_(vrevers));
 }
@@ -222,8 +222,8 @@ static void TR_(unique_merge)(pT_(box) *const box,
 	for(target = from = cursor = 0; cursor < last; cursor += next) {
 		/* Bijective `[from, cursor)` is moved lazily. */
 		for(choice = 0, next = 1; cursor + next < last; next++) {
-			/*const*/ pT_(type) *a = T_(at)(box, cursor + choice),
-				*b = T_(at)(box, cursor + next);
+			/*const*/ pT_(type) *a = T_(data_at)(box, cursor + choice),
+				*b = T_(data_at)(box, cursor + next);
 			if(!t_(is_equal)(a, b)) break;
 			if(merge && merge(a, b)) choice = next;
 		}
@@ -232,16 +232,16 @@ static void TR_(unique_merge)(pT_(box) *const box,
 		is_first = !choice;
 		is_last  = (choice == next - 1);
 		move = cursor - from + (size_t)is_first;
-		dst = T_(at)(box, target), src = T_(at)(box, from);
+		dst = T_(data_at)(box, target), src = T_(data_at)(box, from);
 		memmove(dst, src, sizeof *src * move), target += move;
-		if(!is_first && !is_last) dst = T_(at)(box, target),
-			src = T_(at)(box, cursor + choice),
+		if(!is_first && !is_last) dst = T_(data_at)(box, target),
+			src = T_(data_at)(box, cursor + choice),
 			memcpy(dst, src, sizeof *src), target++;
 		from = cursor + next - (size_t)is_last;
 	}
 	/* Last differed move. */
 	move = last - from;
-	dst = T_(at)(box, target), src = T_(at)(box, from),
+	dst = T_(data_at)(box, target), src = T_(data_at)(box, from),
 		memmove(dst, src, sizeof *src * move),
 		target += move, assert(target <= last);
 	T_(tell_size)(box, target);
