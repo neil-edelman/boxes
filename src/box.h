@@ -21,6 +21,9 @@
 		|| defined(BOX_RESTRICT) || defined(BOX_ENTRY1) || defined(BOX_ENTRY2)
 #		error Unexpected preprocessor symbols.
 #	endif
+#	ifdef static
+#		error I don't think static should be hidden.
+#	endif
 #endif
 
 #ifdef BOX_ALL

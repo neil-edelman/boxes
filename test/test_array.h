@@ -470,3 +470,6 @@ static void T_(test)(void) {
 #	undef QUOTE
 #	undef QUOTE_
 #endif
+#ifdef static
+#	undef static
+#endif
