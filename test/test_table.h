@@ -4,11 +4,16 @@
  a valid pointer to a temporary space for copying. */
 typedef int (*const pT_(fill_fn))(void *, pT_(entry) *fill);
 
-#if defined(QUOTE) || defined(QUOTE_)
-#	error QUOTE_? cannot be defined.
-#endif
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
+
+#	if defined QUOTE || defined QUOTE_
+#		error Cannot be defined.
+#	endif
+#	define QUOTE_(name) #name
+#	define QUOTE(name) QUOTE_(name)
+#	ifdef static /* Private functions. */
+#		undef static
+#	endif
+
 
 #include <stdio.h>  /* fprintf FILE */
 #include <math.h>   /* sqrt NAN? */

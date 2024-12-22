@@ -46,7 +46,7 @@
 	|| !defined HAS_GRAPH_H)
 #	error Test requires to string and graph.
 #endif
-#if defined(BOX_TRAIT) && !defined(HEAP_TRAIT)
+#if defined BOX_TRAIT && !defined HEAP_TRAIT
 #	error Unexpected flow.
 #endif
 
@@ -95,13 +95,22 @@ struct t_(heap) { struct pT_(priority_array) as_array; };
 typedef struct t_(heap) pT_(box);
 struct T_(cursor) { struct pT_(priority_array_cursor) _; };
 
-#	ifdef HEAP_NON_STATIC
+#	ifdef HEAP_NON_STATIC /* Public functions. */
 #		define static
 struct T_(cursor) T_(begin)(const struct t_(heap) *);
 int T_(exists)(struct T_(cursor) *);
 pT_(priority) *T_(entry)(struct T_(cursor) *);
 void T_(next)(struct T_(cursor) *);
-...
+struct t_(heap) t_(heap)(void);
+void t_(heap_)(struct t_(heap) *);
+void T_(clear)(struct t_(heap) *);
+size_t T_(size)(const struct t_(heap) *);
+int T_(add)(struct t_(heap) *, pT_(priority));
+pT_(priority) *T_(peek)(const struct t_(heap) *);
+pT_(priority) T_(pop)(struct t_(heap) *);
+pT_(priority) *T_(buffer)(struct t_(heap) *, size_t);
+void T_(append)(struct t_(heap) *, size_t);
+int T_(affix)(struct t_(heap) *restrict, const struct t_(heap) *restrict);
 #	endif
 #	ifndef HEAP_DECLARE_ONLY /* <!-- body */
 
@@ -211,9 +220,9 @@ static pT_(priority) pT_(remove)(struct t_(heap) *const heap) {
 	}
 	return result;
 }
-#	ifdef HEAP_NON_STATIC /* Public functions. */
-#		define static
-#	endif
+#		ifdef HEAP_NON_STATIC /* Public functions. */
+#			define static
+#		endif
 
 /** Zeroed data (not all-bits-zero) is initialised, as well.
  @return An idle heap. @order \Theta(1) @allow */
@@ -238,7 +247,7 @@ static size_t T_(size)(const struct t_(heap) *const heap)
 
 /** Copies `n` into `heap`.
  @return Success. @throws[ERANGE, realloc] @order \O(log `heap.size`) @allow */
-static int T_(add)(struct t_(heap) *const heap, pT_(priority) n)
+static int T_(add)(struct t_(heap) *const heap, const pT_(priority) n)
 	{ return assert(heap), pT_(priority_array_new)(&heap->as_array)
 		&& (pT_(sift_up)(heap, n), 1); }
 
@@ -315,17 +324,19 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif
 #endif /* Base code. */
 
-#if defined(HEAP_TO_STRING)
+#if defined HEAP_TO_STRING
 #	undef HEAP_TO_STRING
-#	ifndef HEAP_TRAIT
+#	ifndef HEAP_DECLARE_ONLY
+#		ifndef HEAP_TRAIT
 /** The type of the required `<tr>to_string`. Responsible for turning the
  read-only argument into a 12-max-`char` output string. */
 typedef void (*pT_(to_string_fn))(const pT_(priority) *, char (*)[12]);
-#	endif
+#		endif
 /** Thunk(`cur`, `a`). One must implement `<tr>to_string`. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12])
 	{ tr_(to_string)((const void *)&cur->_.a->data[cur->_.i], a); }
+#	endif
 #	define TO_STRING_LEFT '['
 #	define TO_STRING_RIGHT ']'
 #	include "to_string.h" /** \include */

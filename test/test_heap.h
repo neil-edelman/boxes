@@ -4,17 +4,14 @@ void T_(test)(void);
 #endif
 #ifndef HEAP_DECLARE_ONLY
 
-#	if defined(QUOTE) || defined(QUOTE_)
-#		error QUOTE_? cannot be defined.
+#	if defined QUOTE || defined QUOTE_
+#		error Cannot be defined.
 #	endif
 #	define QUOTE_(name) #name
 #	define QUOTE(name) QUOTE_(name)
-#	ifdef static
+#	ifdef static /* Private functions. */
 #		undef static
 #	endif
-
-/* What? */
-typedef pT_(priority) (*pT_(test_fn))(void);
 
 /** Makes sure the `heap` is in a valid state. */
 static void pT_(valid)(const struct t_(heap) *const heap) {
@@ -34,12 +31,12 @@ static void pT_(valid)(const struct t_(heap) *const heap) {
 static void pT_(test_basic)(void) {
 	struct t_(heap) heap = t_(heap)(), merge = t_(heap)();
 	pT_(priority) add, *node, x;
-#ifndef TEST_HEAP_ZERO
+#	ifndef TEST_HEAP_ZERO
 	pT_(priority) last_priority = 0;
-#else
+#	else
 	pT_(priority) last_priority = TEST_HEAP_ZERO;
-#	undef TEST_HEAP_ZERO
-#endif
+#		undef TEST_HEAP_ZERO
+#	endif
 	const size_t test_size_1 = 11, test_size_2 = 31, test_size_3 = 4000/*0*/;
 	size_t i, cum_size = 0;
 	char fn[128];
@@ -169,4 +166,7 @@ static void T_(test)(void) {
 
 #	undef QUOTE
 #	undef QUOTE_
+#endif
+#ifdef static /* Private functions. */
+#	undef static
 #endif

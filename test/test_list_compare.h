@@ -1,14 +1,19 @@
-#if defined(QUOTE) || defined(QUOTE_)
-#error QUOTE_? cannot be defined.
+#if defined QUOTE || defined QUOTE_
+#	error Cannot be defined.
 #endif
 #define QUOTE_(name) #name
 #define QUOTE(name) QUOTE_(name)
+#ifdef static /* Private functions. */
+#	undef static
+#endif
+
+/* Really? */
 
 #include <stdlib.h>	/* EXIT rand */
 #include <stdio.h>  /* printf */
 
 #ifdef LIST_IS_EQUAL
-#error Not implemented in testing.
+#	error Full coverage is incomplete.
 #endif
 
 static int pTR_(compar)(const void *const a, const void *const b)

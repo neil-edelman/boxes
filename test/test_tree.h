@@ -2,11 +2,15 @@
 #include <string.h>
 #include "orcish.h"
 
-#if defined(QUOTE) || defined(QUOTE_)
-#	error QUOTE_? cannot be defined.
-#endif
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
+...
+#	if defined QUOTE || defined QUOTE_
+#		error Cannot be defined.
+#	endif
+#	define QUOTE_(name) #name
+#	define QUOTE(name) QUOTE_(name)
+#	ifdef static /* Private functions. */
+#		undef static
+#	endif
 
 /** This makes the key-value in the same place; will have to copy. */
 struct pT_(tree_test) {

@@ -2,11 +2,15 @@
 #include <string.h>
 #include "orcish.h"
 
-#if defined(QUOTE) || defined(QUOTE_)
-#	error QUOTE_? cannot be defined.
-#endif
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
+...
+#	if defined QUOTE || defined QUOTE_
+#		error Cannot be defined.
+#	endif
+#	define QUOTE_(name) #name
+#	define QUOTE(name) QUOTE_(name)
+#	ifdef static /* Private functions. */
+#		undef static
+#	endif
 
 static const char *T_(to_string)(const struct t_(trie) *);
 

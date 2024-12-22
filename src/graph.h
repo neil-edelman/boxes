@@ -1,7 +1,7 @@
 #if defined BOX_ENTRY1 && !defined BOX_ENTRY2 /* Only make graphs for top. */
 
-#	if defined(QUOTE) || defined(QUOTE_)
-#		error QUOTE_? cannot be defined.
+#	if defined QUOTE || defined QUOTE_
+#		error Cannot be defined.
 #	endif
 #	define QUOTE_(name) #name
 #	define QUOTE(name) QUOTE_(name)

@@ -4,8 +4,8 @@ void T_(tests)(void);
 #endif
 #ifndef BMP_DECLARE_ONLY
 
-#	if defined(QUOTE) || defined(QUOTE_)
-#		error QUOTE_? cannot be defined.
+#	if defined QUOTE || defined QUOTE_
+#		error Cannot be defined.
 #	endif
 #	define QUOTE_(name) #name
 #	define QUOTE(name) QUOTE_(name)

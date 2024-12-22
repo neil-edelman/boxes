@@ -37,9 +37,11 @@
 #ifndef LIST_NAME
 #	error Name undefined.
 #endif
-#if !defined(BOX_ENTRY1) && (defined(LIST_TRAIT) ^ defined(BOX_MAJOR))
+#if !defined BOX_ENTRY1 && (defined LIST_TRAIT ^ defined BOX_MAJOR)
+...
 #	error LIST_TRAIT name must come after LIST_EXPECT_TRAIT.
 #endif
+...
 #if defined(LIST_COMPARE) && defined(LIST_IS_EQUAL)
 #	error Only one can be defined at a time.
 #endif

@@ -1,8 +1,13 @@
-#if defined(QUOTE) || defined(QUOTE_)
-#error QUOTE_? cannot be defined.
-#endif
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
+
+...
+#	if defined QUOTE || defined QUOTE_
+#		error Cannot be defined.
+#	endif
+#	define QUOTE_(name) #name
+#	define QUOTE(name) QUOTE_(name)
+#	ifdef static /* Private functions. */
+#		undef static
+#	endif
 
 #include <stdlib.h>	/* EXIT rand */
 #include <stdio.h>  /* printf */
