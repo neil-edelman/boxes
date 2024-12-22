@@ -33,22 +33,22 @@
  @depend [box](../../src/box.h)
  @std C89 */
 
-#if !defined(ARRAY_NAME) || !defined(ARRAY_TYPE)
+#if !defined ARRAY_NAME || !defined ARRAY_TYPE
 #	error Name or tag type undefined.
 #endif
-#if !defined(BOX_ENTRY1) && (defined(ARRAY_TRAIT) ^ defined(BOX_MAJOR))
+#if !defined BOX_ENTRY1 && (defined ARRAY_TRAIT ^ defined BOX_MAJOR)
 #	error Trait name must come after expect trait.
 #endif
-#if defined(ARRAY_COMPARE) && defined(ARRAY_IS_EQUAL)
+#if defined ARRAY_COMPARE && defined ARRAY_IS_EQUAL
 #	error Only one can be defined at a time.
 #endif
-#if defined(ARRAY_TEST) && (!defined(ARRAY_TRAIT) && !defined(ARRAY_TO_STRING) \
-	|| defined(ARRAY_TRAIT) && !defined(ARRAY_HAS_TO_STRING) \
+#if defined ARRAY_TEST && (!defined ARRAY_TRAIT && !defined ARRAY_TO_STRING \
+	|| defined ARRAY_TRAIT && !defined ARRAY_HAS_TO_STRING \
 	|| !defined HAS_GRAPH_H)
 #	error Test requires to string and graph.
 #endif
-#if defined(BOX_TRAIT) && !defined(ARRAY_TRAIT)
-#	error Unexpected.
+#if defined BOX_TRAIT && !defined ARRAY_TRAIT
+#	error Unexpected flow.
 #endif
 
 #ifdef ARRAY_TRAIT

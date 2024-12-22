@@ -11,6 +11,6 @@
 #define ARRAY_TYPE int
 #define ARRAY_TEST
 #define ARRAY_COMPARE
-#define ARRAY_NON_STATIC
 #define ARRAY_TO_STRING
+#define ARRAY_NON_STATIC
 #include "../src/array.h"

@@ -5,5 +5,6 @@
 #endif
 #define BMP_NAME header
 #define BMP_BITS 42
-#define TABLE_TEST
+#define BMP_TEST
+#define BMP_NON_STATIC
 #include "../src/bmp.h"

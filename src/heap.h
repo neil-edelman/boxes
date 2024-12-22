@@ -38,15 +38,16 @@
 #ifndef HEAP_NAME
 #	error Name undefined.
 #endif
-#if !defined(BOX_ENTRY1) && (defined(HEAP_TRAIT) ^ defined(BOX_MAJOR))
-#	error HEAP_TRAIT name must come after HEAP_EXPECT_TRAIT.
+#if !defined BOX_ENTRY1 && (defined HEAP_TRAIT ^ defined BOX_MAJOR)
+#	error Trait name must come after expect trait.
 #endif
-#if defined(HEAP_TEST) && (!defined(HEAP_TRAIT) && !defined(HEAP_TO_STRING) \
-	|| defined(HEAP_TRAIT) && !defined(HEAP_HAS_TO_STRING))
-#	error Test requires to string.
+#if defined HEAP_TEST && (defined HEAP_TRAIT && !defined HEAP_TO_STRING \
+	|| defined HEAP_TRAIT && !defined HEAP_HAS_TO_STRING \
+	|| !defined HAS_GRAPH_H)
+#	error Test requires to string and graph.
 #endif
 #if defined(BOX_TRAIT) && !defined(HEAP_TRAIT)
-#	error Unexpected.
+#	error Unexpected flow.
 #endif
 
 #ifdef HEAP_TRAIT
@@ -80,7 +81,7 @@ typedef HEAP_TYPE pT_(priority);
 #	define pTheap_(n) BOX_CAT(private, BOX_CAT(HEAP_NAME, BOX_CAT(heap, n)))
 #	define ARRAY_NAME pTheap_(priority)
 #	define ARRAY_TYPE pTheap_(priority)
-/* This relies on <array.h> which must be in the same directory. */
+/* Must be in the same directory. */
 #	include "array.h"
 #	undef pTheap_
 #	define BOX_MINOR HEAP_NAME
@@ -96,7 +97,11 @@ struct T_(cursor) { struct pT_(priority_array_cursor) _; };
 
 #	ifdef HEAP_NON_STATIC
 #		define static
-////////
+struct T_(cursor) T_(begin)(const struct t_(heap) *);
+int T_(exists)(struct T_(cursor) *);
+pT_(priority) *T_(entry)(struct T_(cursor) *);
+void T_(next)(struct T_(cursor) *);
+...
 #	endif
 #	ifndef HEAP_DECLARE_ONLY /* <!-- body */
 

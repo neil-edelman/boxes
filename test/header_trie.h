@@ -3,7 +3,7 @@
 #else
 #	define TRIE_DECLARE_ONLY
 #endif
-#define TRIE_NAME static
+#define TRIE_NAME header
 #define TRIE_KEY enum colour
 #define TRIE_TO_STRING
 #define TRIE_TEST

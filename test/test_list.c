@@ -490,7 +490,7 @@ finally:
 }
 
 
-#define HAS_ITERATE_H
+/* #define HAS_ITERATE_H—Automatic, now. On some systems. */
 /* Animals, see <../web/animals.gv>. Id is the list that holds all the animals
  together. */
 struct id_listlink;

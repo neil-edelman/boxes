@@ -67,17 +67,13 @@ static int index_less(const size_t a, const size_t b) { return a < b; }
 #include "../src/heap.h"
 
 
-static int static_less(const int a, const int b) { return a > b; }
-static void static_to_string(const int *const i, char (*const z)[12])
+static int header_less(const int a, const int b) { return a > b; }
+static void header_to_string(const int *const i, char (*const z)[12])
 	{ sprintf(*z, "%d", *i); }
-static void static_filler(int *const p)
+static void header_filler(int *const p)
 	{ *p = (int)rand() / (RAND_MAX / 99 + 1) + 1; }
 #define DEFINE
 #include "header_heap.h"
-struct header_heap header_heap(void)
-	{ struct header_heap _; _._ = static_heap(); return _; }
-void header_heap_(struct header_heap *const _) { static_heap_(&_->_); }
-void header_heap_test(void) { static_heap_test(); }
 
 
 int main(void) {

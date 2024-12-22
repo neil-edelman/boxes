@@ -1,6 +1,6 @@
 #ifdef BMP_NON_STATIC
 #	define static
-void T_(test)(void);
+void T_(tests)(void);
 #endif
 #ifndef BMP_DECLARE_ONLY
 

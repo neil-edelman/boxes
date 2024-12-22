@@ -3,7 +3,7 @@
 #else
 #	define TABLE_DECLARE_ONLY
 #endif
-#define TABLE_NAME static
+#define TABLE_NAME header
 #define TABLE_KEY enum zodiac
 #define TABLE_UNHASH
 #define TABLE_UINT unsigned char

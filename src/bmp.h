@@ -15,7 +15,7 @@
  @depend [box](../../src/box.h)
  @std C89/90 */
 
-#if !defined(BMP_NAME) || !defined(BMP_BITS)
+#if !defined BMP_NAME || !defined BMP_BITS
 #	error Name or unsigned number bits undefined.
 #endif
 #if BMP_BITS < 1
@@ -57,14 +57,14 @@ struct t_(bmp) { bmpchunk chunk[BMP_CHUNKS]; };
 
 #ifdef BMP_NON_STATIC /* Public functions. */
 #	define static
-void T_(clear_all)(struct t_(bmp) *)
+void T_(clear_all)(struct t_(bmp) *);
 void T_(copy)(struct t_(bmp) *, const unsigned, const unsigned,
 	struct t_(bmp) *);
 void T_(invert_all)(struct t_(bmp) *);
 static unsigned T_(test)(const struct t_(bmp) *, unsigned);
-void T_(set)(struct t_(bmp) *, unsigned)
-void T_(clear)(struct t_(bmp) *, unsigned)
-void T_(toggle)(struct t_(bmp) *, unsigned)
+void T_(set)(struct t_(bmp) *, unsigned);
+void T_(clear)(struct t_(bmp) *, unsigned);
+void T_(toggle)(struct t_(bmp) *, unsigned);
 void T_(insert)(struct t_(bmp) *, unsigned, unsigned);
 void T_(remove)(struct t_(bmp) *, unsigned, unsigned);
 #endif
