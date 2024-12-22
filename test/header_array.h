@@ -2,12 +2,11 @@
  definition. All others just have declarations by `ARRAY_DECLARE_ONLY`. It's
  more convenient to have implicit declarations unless otherwise stated. We make
  up a preprocessor variable that flips them. */
-#ifdef HEADER_ARRAY_DEFINE
-#	undef HEADER_ARRAY_DEFINE
+#ifdef DEFINE
+#	undef DEFINE
 #else
 #	define ARRAY_DECLARE_ONLY
 #endif
-
 #define ARRAY_NAME header
 #define ARRAY_TYPE int
 #define ARRAY_TEST

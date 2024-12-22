@@ -26,6 +26,9 @@
 #define BMP_TEST
 #include "../src/bmp.h"
 
+#define DEFINE
+#include "header_bmp.h"
+
 /** Entry point. @return Either EXIT_SUCCESS or EXIT_FAILURE. */
 int main(void) {
 	b_bmp_tests();

@@ -37,7 +37,7 @@
 #	error Name or tag type undefined.
 #endif
 #if !defined(BOX_ENTRY1) && (defined(ARRAY_TRAIT) ^ defined(BOX_MAJOR))
-#	error ARRAY_TRAIT name must come after ARRAY_EXPECT_TRAIT.
+#	error Trait name must come after expect trait.
 #endif
 #if defined(ARRAY_COMPARE) && defined(ARRAY_IS_EQUAL)
 #	error Only one can be defined at a time.
@@ -366,11 +366,11 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	include "graph.h" /** \include */
 #endif
 
-#if defined(ARRAY_TEST) && !defined(ARRAY_TRAIT)
+#if defined ARRAY_TEST && !defined ARRAY_TRAIT
 #	include "../test/test_array.h"
 #endif
 
-#if (defined(ARRAY_COMPARE) || defined(ARRAY_IS_EQUAL))
+#if defined ARRAY_COMPARE || defined ARRAY_IS_EQUAL
 #	ifdef ARRAY_COMPARE
 #		define COMPARE ARRAY_COMPARE
 #	else

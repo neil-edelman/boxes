@@ -1,8 +1,17 @@
-#if defined(QUOTE) || defined(QUOTE_)
-#error QUOTE_? cannot be defined.
+#ifdef BMP_NON_STATIC
+#	define static
+void T_(test)(void);
 #endif
-#define QUOTE_(name) #name
-#define QUOTE(name) QUOTE_(name)
+#ifndef BMP_DECLARE_ONLY
+
+#	if defined(QUOTE) || defined(QUOTE_)
+#		error QUOTE_? cannot be defined.
+#	endif
+#	define QUOTE_(name) #name
+#	define QUOTE(name) QUOTE_(name)
+#	ifdef static /* Private functions. */
+#		undef static
+#	endif
 
 #include <stdio.h>
 
@@ -203,6 +212,9 @@ static void pT_(test)(void) {
 	}
 }
 
+#	ifdef BMP_NON_STATIC /* Public function. */
+#		define static
+#	endif
 /** Will be tested on stdout. Requires `BMP_TEST`, and not `NDEBUG` while
  defining `assert`. @allow */
 static void T_(tests)(void) {
@@ -217,6 +229,9 @@ static void T_(tests)(void) {
 	fprintf(stderr, "Done tests of <" QUOTE(BMP_NAME) ">bmp.\n\n");
 }
 
-/* Un-define all macros. */
-#undef QUOTE
-#undef QUOTE_
+#	undef QUOTE
+#	undef QUOTE_
+#endif
+#ifdef static /* Private functions. */
+#	undef static
+#endif

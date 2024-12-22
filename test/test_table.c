@@ -805,7 +805,7 @@ static void static_to_string(const enum zodiac z, char (*const a)[12])
 	{ zodiac_to_string(z, a); }
 static void static_filler(void *const zero, enum zodiac *const z)
 	{ zodiac_filler(zero, z); }
-#define HEADER_TABLE_DEFINE
+#define DEFINE
 #include "header_table.h"
 struct header_table header_table(void)
 	{ struct header_table _; _._ = static_table(); return _; }

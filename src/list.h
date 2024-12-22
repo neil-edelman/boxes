@@ -28,6 +28,9 @@
  Named traits are obtained by including `array.h` multiple times with
  `LIST_EXPECT_TRAIT` and then subsequently including the name in `LIST_TRAIT`.
 
+ @param[LIST_DECLARE_ONLY, LIST_NON_STATIC]
+ For headers in different compilation units.
+
  @depend [box](../../src/box.h)
  @std C89 */
 

@@ -9,7 +9,7 @@ void T_(test)(void);
 #	endif
 #	define QUOTE_(name) #name
 #	define QUOTE(name) QUOTE_(name)
-#	ifdef static
+#	ifdef static /* Private functions. */
 #		undef static
 #	endif
 
@@ -450,7 +450,7 @@ static void pT_(test_insert)(void) {
 	t_(array_)(&a);
 }
 
-#	ifdef ARRAY_NON_STATIC
+#	ifdef ARRAY_NON_STATIC /* Public function. */
 #		define static
 #	endif
 /** Will be tested on stdout. @allow */
@@ -470,6 +470,6 @@ static void T_(test)(void) {
 #	undef QUOTE
 #	undef QUOTE_
 #endif
-#ifdef static
+#ifdef static /* Private functions. */
 #	undef static
 #endif

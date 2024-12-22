@@ -765,7 +765,7 @@ static void typical_to_string(const unsigned k,
 static void static_to_string(const char x, char (*const z)[12])
 	{ char_to_string(x, z); }
 static void static_filler(char *x) { char_filler(x); }
-#define HEADER_TREE_DEFINE
+#define DEFINE
 #include "header_tree.h"
 struct header_tree header_tree(void)
 	{ struct header_tree _; _._ = static_tree(); return _; }

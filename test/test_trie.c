@@ -321,7 +321,7 @@ static void star_filler(struct star *const star) {
 static const char *static_string(const enum colour c)
 	{ return colour_string(c); }
 static void static_filler(enum colour *const c) { colour_filler(c); }
-#define HEADER_TRIE_DEFINE
+#define DEFINE
 #include "header_trie.h"
 struct header_trie header_trie(void)
 	{ struct header_trie _; _._ = static_trie(); return _; }

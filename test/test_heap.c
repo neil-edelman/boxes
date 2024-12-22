@@ -72,7 +72,7 @@ static void static_to_string(const int *const i, char (*const z)[12])
 	{ sprintf(*z, "%d", *i); }
 static void static_filler(int *const p)
 	{ *p = (int)rand() / (RAND_MAX / 99 + 1) + 1; }
-#define HEADER_HEAP_DEFINE
+#define DEFINE
 #include "header_heap.h"
 struct header_heap header_heap(void)
 	{ struct header_heap _; _._ = static_heap(); return _; }

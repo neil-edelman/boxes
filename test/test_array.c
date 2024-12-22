@@ -117,7 +117,7 @@ static void header_to_string(const int *i, char (*const a)[12])
 static void header_filler(int *const i) { int_filler(i); }
 static int header_compare(const int *const a, const int *const b)
 	{ return int_compare(a, b); }
-#define HEADER_ARRAY_DEFINE /* Invert meaning for this compilation unit. */
+#define DEFINE /* Invert meaning for this compilation unit. */
 #include "header_array.h"
 
 

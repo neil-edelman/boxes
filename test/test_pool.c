@@ -73,7 +73,7 @@ static void keyval_to_string(const struct keyval *const kv,
 static void static_to_string(const enum colour *c, char (*const a)[12])
 	{ colour_to_string(c, a); }
 static void static_filler(enum colour *const c) { colour_filler(c); }
-#define HEADER_POOL_DEFINE
+#define DEFINE
 #include "header_pool.h"
 struct header_pool header_pool(void)
 	{ struct header_pool _; _._ = static_pool(); return _; }

@@ -16,7 +16,7 @@
  @std C89/90 */
 
 #if !defined(BMP_NAME) || !defined(BMP_BITS)
-#	error Name BMP_NAME or unsigned number BMP_BITS undefined.
+#	error Name or unsigned number bits undefined.
 #endif
 #if BMP_BITS < 1
 #	error BMP_BITS too small.
@@ -24,10 +24,6 @@
 
 #define BOX_START
 #include "box.h"
-
-#include <string.h>
-#include <limits.h>
-#include <assert.h>
 
 #ifndef BMP_H
 #	define BMP_H
@@ -48,12 +44,31 @@ typedef unsigned bmpchunk;
 #define BMP_CLEAR(a, x) ((a)[BMP_SLOT(x)] &= ~(BMP_MASK(x)))
 #define BMP_TOGGLE(a, x) ((a)[BMP_SLOT(x)] ^= BMP_MASK(x))
 
+#include <string.h>
+#include <limits.h>
+#include <assert.h>
+
 #define BOX_MINOR BMP_NAME
 #define BOX_MAJOR bmp
 
 /** An array of `BMP_BITS` bits, (taking up the next multiple of
  `sizeof(bmpchunk)` \times `CHARBIT`.) */
 struct t_(bmp) { bmpchunk chunk[BMP_CHUNKS]; };
+
+#ifdef BMP_NON_STATIC /* Public functions. */
+#	define static
+void T_(clear_all)(struct t_(bmp) *)
+void T_(copy)(struct t_(bmp) *, const unsigned, const unsigned,
+	struct t_(bmp) *);
+void T_(invert_all)(struct t_(bmp) *);
+static unsigned T_(test)(const struct t_(bmp) *, unsigned);
+void T_(set)(struct t_(bmp) *, unsigned)
+void T_(clear)(struct t_(bmp) *, unsigned)
+void T_(toggle)(struct t_(bmp) *, unsigned)
+void T_(insert)(struct t_(bmp) *, unsigned, unsigned);
+void T_(remove)(struct t_(bmp) *, unsigned, unsigned);
+#endif
+#ifndef BMP_DELARE_ONLY /* Produce code. */
 
 /** Sets `a` to all false. @allow */
 static void T_(clear_all)(struct t_(bmp) *const a)
@@ -160,17 +175,25 @@ static void T_(remove)(struct t_(bmp) *const a,
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
-#ifdef BMP_TEST
-#	include "../test/test_bmp.h" /* (not needed) \include */
-#endif
-
+#	ifdef static /* Private functions. */
+#		undef static
+#	endif
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
-	T_(clear_all)(0); T_(copy)(0, 0, 0, 0); T_(invert_all)(0);
-	T_(set)(0, 0); T_(clear)(0, 0); T_(toggle)(0, 0);
+	T_(clear_all)(0); T_(test)(0, 0); T_(copy)(0, 0, 0, 0); T_(invert_all)(0);
+	T_(set)(0, 0); T_(clear)(0, 0); T_(toggle)(0, 0); T_(insert)(0, 0, 0);
+	T_(remove)(0, 0, 0);
 	pT_(unused_base_coda)();
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
+#	endif
+#ifdef static /* Private functions. */
+#	undef static
+#endif
+
+#ifdef BMP_TEST
+#	include "../test/test_bmp.h" /* (not needed) \include */
+#endif
 
 #undef BMP_MAX
 #undef BMP_CHUNK
@@ -190,6 +213,12 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #undef BMP_BITS
 #ifdef BMP_TEST
 #	undef BMP_TEST
+#endif
+#ifdef BMP_DECLARE_ONLY /* bmp has no interfaces. */
+#	undef BMP_DECLARE_ONLY
+#endif
+#ifdef BMP_NON_STATIC
+#	undef BMP_NON_STATIC
 #endif
 
 #define BOX_END
