@@ -280,7 +280,7 @@ static struct T_(cursor) T_(begin)(const struct t_(trie) *const trie)
 static int T_(exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->root; }
 /** @return Extracts the reference from a valid, non-null `cur`. */
-static struct pT_(ref) T_(look)(const struct T_(cursor) *const cur)
+static struct pT_(ref) T_(entry)(const struct T_(cursor) *const cur)
 	{ return cur->start; }
 /*static const char *T_(key)(const struct T_(cursor) *const cur)
 	{ return pT_(ref_to_string)(&cur->start); }*/
@@ -839,7 +839,7 @@ static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
 
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
-	T_(begin)(0); T_(exists)(0); T_(look)(0); /*T_(key)(0);*/ T_(next)(0);
+	T_(begin)(0); T_(exists)(0); T_(entry)(0); /*T_(key)(0);*/ T_(next)(0);
 	t_(trie)(); t_(trie_)(0); T_(clear)(0);
 	T_(next)(0);
 #		if defined(TREE_ENTRY) || !defined(TRIE_KEY)

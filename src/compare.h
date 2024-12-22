@@ -73,8 +73,8 @@ static int TR_(compare)(const pT_(box) *restrict const a,
 		else if(!T_(exists)(&j)) return 1;
 		/* Must have this function declared.
 		 "Discards qualifiers in nested pointer types" sometimes. Cast. */
-		if(diff = tr_(compare)((const void *)T_(look)(&i),
-			(const void *)T_(look)(&j))) return diff;
+		if(diff = tr_(compare)((const void *)T_(entry)(&i),
+			(const void *)T_(entry)(&j))) return diff;
 	}
 }
 
@@ -196,7 +196,7 @@ static int TR_(is_equal)(const pT_(box) *restrict const a,
 		T_(next)(&i), T_(next)(&j)) {
 		if(!T_(exists)(&i)) return !T_(exists)(&j);
 		else if(!T_(exists)(&j)) return 0 /* fixme: a > b? */;
-		if(!tr_(is_equal)(T_(look)(&i), T_(look)(&j)))
+		if(!tr_(is_equal)(T_(entry)(&i), T_(entry)(&j)))
 			return 0;
 	}
 	return 1;

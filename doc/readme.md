@@ -4,10 +4,10 @@ Documentation for the individual boxes is contained in subfolders.
 
 * `array.h` has been transformed by `ARRAY_NON_STATIC`. Do the others.
 * `to_string.h` is awkward… do the thing that is in the file.
-* I never thought about prototypes for `cdoc`, ohno.
+* Put prototypes-support into `cdoc`. Include ignoring __*.
 * `cdoc` gives errors about not finding stuff, even though it works. Establish firm rules on the current directory. I don't know what I was thinking. Give a clear direction of where it will search.
 * Get `cdoc` to recognize `.svg`.
-* `cdoc` should be named `boxdoc`? So that people don't confuse this with an actual parser.
+* `cdoc` should be named `boxdoc`? So that people don't confuse this with an actual parser. `cboxdoc`?
 * `graph.h` HAS_GRAPH_H? Turns out, graphs are great for all sorts of things, not just testing. Actually, automate it with C++17.
 * Maybe deque will be useful? a linked list of nodes of increasing size, starts at 64, starts at 1/3 the way in. `DEQUE_HEAP_ONLY`. This would be great for `cdoc`—cringe on `index_array`.
 * Maybe more error reporting goes in `box.h`? I'm hesitant because people have their own way to do it, but a static array of chars for `to_string` is already there.

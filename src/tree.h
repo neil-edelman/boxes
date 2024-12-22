@@ -243,7 +243,7 @@ static int T_(exists)(struct T_(cursor) *const cur) {
 	return 1;
 }
 /** @return Dereference the element pointed to by `cur` that exists. */
-static struct pT_(ref) *T_(look)(struct T_(cursor) *const cur) {
+static struct pT_(ref) *T_(entry)(struct T_(cursor) *const cur) {
 	return &cur->ref;
 }
 /** @return Extract the key from `cur` when it points at a valid element.
@@ -1543,7 +1543,7 @@ finally:
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	pT_(key) k; pT_(value) v; memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
-	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(key)(0);
+	T_(begin)(0); T_(exists)(0); T_(entry)(0); T_(key)(0);
 	T_(next)(0); T_(previous)(0); T_(less)(0, k); T_(more)(0, k);
 	t_(tree)(); t_(tree_)(0); T_(clear)(0); T_(count)(0);
 	T_(contains)(0, k); T_(get_or)(0, k, v);

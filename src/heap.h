@@ -43,7 +43,7 @@
 #endif
 #if defined(HEAP_TEST) && (!defined(HEAP_TRAIT) && !defined(HEAP_TO_STRING) \
 	|| defined(HEAP_TRAIT) && !defined(HEAP_HAS_TO_STRING))
-#error Test requires to string.
+#	error Test requires to string.
 #endif
 #if defined(BOX_TRAIT) && !defined(HEAP_TRAIT)
 #	error Unexpected.
@@ -51,6 +51,12 @@
 
 #ifdef HEAP_TRAIT
 #	define BOX_TRAIT HEAP_TRAIT /* Ifdef in <box.h>. */
+#endif
+#ifdef HEAP_NON_STATIC
+#	define BOX_NON_STATIC
+#endif
+#ifdef HEAP_DECLARE_ONLY
+#	define BOX_DECLARE_ONLY
 #endif
 #define BOX_START
 #include "box.h"
@@ -88,6 +94,10 @@ struct t_(heap) { struct pT_(priority_array) as_array; };
 typedef struct t_(heap) pT_(box);
 struct T_(cursor) { struct pT_(priority_array_cursor) _; };
 
+#	ifdef HEAP_NON_STATIC
+#		define static
+////////
+#	endif
 #	ifndef HEAP_DECLARE_ONLY /* <!-- body */
 
 /** Inducing a strict weak order by returning a positive result if `a` is
@@ -98,22 +108,25 @@ struct T_(cursor) { struct pT_(priority_array_cursor) _; };
 typedef int (*pT_(less_fn))(const pT_(priority) a, const pT_(priority) b);
 
 /** @return An iterator at the beginning of `h`. */
-static struct T_(cursor) T_(begin)(struct t_(heap) *const h)
-	{ struct T_(cursor) it; it._ = pT_(priority_array_begin)(&h->as_array);
-	return it; }
-/** @return Non-zero if `cur` points to a valid entry. */
+static struct T_(cursor) T_(begin)(const struct t_(heap) *const h) {
+	struct T_(cursor) cur;
+	return cur._ = pT_(priority_array_begin)(&h->as_array), cur;
+}
+/** @return Whether `cur` points to a valid entry. */
 static int T_(exists)(struct T_(cursor) *const cur)
 	{ return pT_(priority_array_exists)(&cur->_); }
-/** @return The <typedef:<pT>priority> pointer that at which a valid `cur`
- points. */
-static pT_(priority) *T_(look)(struct T_(cursor) *const cur)
-	{ return pT_(priority_array_look)(&cur->_); }
+/** @return Pointer to a valid entry at `cur`. */
+static pT_(priority) *T_(entry)(struct T_(cursor) *const cur)
+	{ return pT_(priority_array_entry)(&cur->_); }
 /** Move to the next of a valid `cur`. */
 static void T_(next)(struct T_(cursor) *const cur)
 	{ pT_(priority_array_next)(&cur->_); }
 
+#		ifdef static /* Private functions. */
+#			undef static
+#		endif
 /** Find the spot in `heap` where `n` goes and put it there.
- @param[heap] At least one entry; the last entry will be replaced by `node`.
+ @param[heap] At least one entry; the last entry will be replaced by `n`.
  @order \O(log `size`) */
 static void pT_(sift_up)(struct t_(heap) *const heap, pT_(priority) n) {
 	pT_(priority) *const n0 = heap->as_array.data;
@@ -121,7 +134,7 @@ static void pT_(sift_up)(struct t_(heap) *const heap, pT_(priority) n) {
 	if(i) {
 		do { /* Note: don't change the `<=`; it's a queue. */
 			i_up = (i - 1) >> 1;
-			/* Make sure that `<HEAP_NAME>_less` is defined. */
+			/* Make sure that `<t>less` is defined. */
 			if(t_(less)(n0[i_up], n) <= 0) break;
 			n0[i] = n0[i_up];
 		} while((i = i_up));
@@ -193,14 +206,17 @@ static pT_(priority) pT_(remove)(struct t_(heap) *const heap) {
 	}
 	return result;
 }
+#	ifdef HEAP_NON_STATIC /* Public functions. */
+#		define static
+#	endif
 
-/** Zeroed data (not all-bits-zero) is initialised.
+/** Zeroed data (not all-bits-zero) is initialised, as well.
  @return An idle heap. @order \Theta(1) @allow */
 static struct t_(heap) t_(heap)(void)
 	{ struct t_(heap) heap; heap.as_array = pT_(priority_array)(); return heap; }
 
-/** Returns `heap` to the idle state where it takes no dynamic memory.
- @order \Theta(1) @allow */
+/** If `heap` is not null, returns the idle zeroed state where it takes no
+ dynamic memory. @order \Theta(1) @allow */
 static void t_(heap_)(struct t_(heap) *const heap)
 	{ if(heap) pT_(priority_array_)(&heap->as_array); }
 
@@ -210,17 +226,18 @@ static void t_(heap_)(struct t_(heap) *const heap)
 static void T_(clear)(struct t_(heap) *const heap)
 	{ assert(heap), pT_(priority_array_clear)(&heap->as_array); }
 
-/** @return If the `heap` is not null, returns it's size. @allow */
+/** @return If the `heap` is not null, returns it's size.
+ @order \Theta(1) @allow */
 static size_t T_(size)(const struct t_(heap) *const heap)
 	{ return heap ? heap->as_array.size : 0; }
 
-/** Copies `node` into `heap`.
+/** Copies `n` into `heap`.
  @return Success. @throws[ERANGE, realloc] @order \O(log `heap.size`) @allow */
-static int T_(add)(struct t_(heap) *const heap, pT_(priority) node)
+static int T_(add)(struct t_(heap) *const heap, pT_(priority) n)
 	{ return assert(heap), pT_(priority_array_new)(&heap->as_array)
-		&& (pT_(sift_up)(heap, node), 1); }
+		&& (pT_(sift_up)(heap, n), 1); }
 
-/** @return The value of the lowest element in `heap` or null when the heap is
+/** @return Pointer to the lowest element in `heap` or null when the heap is
  empty. @order \O(1) @allow */
 static pT_(priority) *T_(peek)(const struct t_(heap) *const heap)
 	{ return assert(heap), heap->as_array.size ? heap->as_array.data : 0; }
@@ -228,11 +245,8 @@ static pT_(priority) *T_(peek)(const struct t_(heap) *const heap)
 /** Only defined when <fn:<T>size> returns true. Removes the lowest element.
  @return The value of the lowest element in `heap`.
  @order \O(\log `size`) @allow */
-static pT_(priority) T_(pop)(struct t_(heap) *const heap) {
-	pT_(priority) n;
-	return assert(heap && heap->as_array.size),
-		(n = pT_(remove)(heap), n);
-}
+static pT_(priority) T_(pop)(struct t_(heap) *const heap)
+	{ return assert(heap && heap->as_array.size), pT_(remove)(heap); }
 
 /** The capacity of `heap` will be increased to at least `n` elements beyond
  the size. Invalidates pointers in `heap`. All the elements
@@ -245,8 +259,8 @@ static pT_(priority) T_(pop)(struct t_(heap) *const heap) {
 static pT_(priority) *T_(buffer)(struct t_(heap) *const heap,
 	const size_t n) { return pT_(priority_array_buffer)(&heap->as_array, n); }
 
-/** Adds and heapifies `n` elements to `heap`. Uses <Floyd, 1964, Treesort> to
- sift-down all the internal nodes of heap. The heap elements must exist, see
+/** Adds and heapifies `n` more entries in `heap`. Uses <Floyd, 1964, Treesort>
+ to sift-down all the internal nodes of heap. The heap elements must exist, see
  <fn:<T>buffer>.
  @param[n] If zero, returns true without heapifying.
  @return Success. @order \O(`heap.size` + `n`) <Doberkat, 1984, Floyd> @allow */
@@ -268,8 +282,8 @@ static int T_(affix)(struct t_(heap) *restrict const heap,
 	assert(heap);
 	if(!master || !master->as_array.size) return 1;
 	assert(master->as_array.data);
-	if(!(n = pT_(priority_array_buffer)(&heap->as_array, master->as_array.size)))
-		return 0;
+	if(!(n = pT_(priority_array_buffer)(&heap->as_array,
+		master->as_array.size))) return 0;
 	memcpy(n, master->as_array.data, sizeof *n * master->as_array.size);
 	n = pT_(priority_array_append)(&heap->as_array, master->as_array.size),
 		assert(n);
@@ -277,10 +291,13 @@ static int T_(affix)(struct t_(heap) *restrict const heap,
 	return 1;
 }
 
+#		ifdef static /* Private functions. */
+#			undef static
+#		endif
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	pT_(priority) unused; memset(&unused, 0, sizeof unused);
-	T_(begin)(0); T_(exists)(0); T_(look)(0); T_(next)(0);
+	T_(begin)(0); T_(exists)(0); T_(entry)(0); T_(next)(0);
 	t_(heap)(); t_(heap_)(0); T_(clear)(0); T_(size)(0);
 	T_(add)(0, unused); T_(peek)(0); T_(pop)(0);
 	T_(buffer)(0, 0); T_(append)(0, 0); T_(affix)(0, 0);
@@ -288,7 +305,7 @@ static void pT_(unused_base)(void) {
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif /* Produce code. */
-#	ifdef static
+#	ifdef static /* Private functions. */
 #		undef static
 #	endif
 #endif /* Base code. */
@@ -320,11 +337,6 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	include "../test/test_heap.h"
 #endif
 
-#ifdef HEAP_TRAIT
-#	undef HEAP_TRAIT
-#	undef BOX_TRAIT
-#endif
-
 
 #ifdef HEAP_EXPECT_TRAIT
 #	undef HEAP_EXPECT_TRAIT
@@ -342,13 +354,18 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	ifdef HEAP_TEST
 #		undef HEAP_TEST
 #	endif
+#	ifdef HEAP_DECLARE_ONLY
+#		undef BOX_DECLARE_ONLY
+#		undef HEAP_DECLARE_ONLY
+#	endif
 #	ifdef HEAP_NON_STATIC
 #		undef BOX_NON_STATIC
 #		undef HEAP_NON_STATIC
 #	endif
-#	ifdef HEAP_DECLARE_ONLY
-#		undef HEAP_DECLARE_ONLY
-#	endif
+#endif
+#ifdef HEAP_TRAIT
+#	undef HEAP_TRAIT
+#	undef BOX_TRAIT
 #endif
 #define BOX_END
 #include "box.h"
