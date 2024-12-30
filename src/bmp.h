@@ -68,7 +68,7 @@ void T_(toggle)(struct t_(bmp) *, unsigned);
 void T_(insert)(struct t_(bmp) *, unsigned, unsigned);
 void T_(remove)(struct t_(bmp) *, unsigned, unsigned);
 #endif
-#ifndef BMP_DELARE_ONLY /* Produce code. */
+#ifndef BMP_DECLARE_ONLY /* Produce code. */
 
 /** Sets `a` to all false. @allow */
 static void T_(clear_all)(struct t_(bmp) *const a)
