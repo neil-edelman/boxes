@@ -186,6 +186,12 @@ struct T_(cursor) { /* fixme: This is very wasteful? at least re-arrange? */
 };
 
 #	ifndef TRIE_DECLARE_ONLY /* <!-- body */
+/*
+struct T_(cursor) T_(begin)(const struct t_(array) *);
+int T_(exists)(const struct T_(cursor) *);
+pT_(type) *T_(entry)(struct T_(cursor) *);
+void T_(next)(struct T_(cursor) *);
+*/
 
 #		ifndef TRIE_KEY
 /** @return The string of `key` is itself, by default. We supply this function

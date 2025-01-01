@@ -98,7 +98,7 @@ struct T_(cursor) { struct pT_(priority_array_cursor) _; };
 #	ifdef HEAP_NON_STATIC /* Public functions. */
 #		define static
 struct T_(cursor) T_(begin)(const struct t_(heap) *);
-int T_(exists)(struct T_(cursor) *);
+int T_(exists)(const struct T_(cursor) *);
 pT_(priority) *T_(entry)(struct T_(cursor) *);
 void T_(next)(struct T_(cursor) *);
 struct t_(heap) t_(heap)(void);
@@ -127,7 +127,7 @@ static struct T_(cursor) T_(begin)(const struct t_(heap) *const h) {
 	return cur._ = pT_(priority_array_begin)(&h->as_array), cur;
 }
 /** @return Whether `cur` points to a valid entry. */
-static int T_(exists)(struct T_(cursor) *const cur)
+static int T_(exists)(const struct T_(cursor) *const cur)
 	{ return pT_(priority_array_exists)(&cur->_); }
 /** @return Pointer to a valid entry at `cur`. */
 static pT_(priority) *T_(entry)(struct T_(cursor) *const cur)

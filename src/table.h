@@ -199,6 +199,12 @@ typedef struct t_(table) pT_(box);
 struct T_(cursor) { struct t_(table) *table; pT_(uint) i; };
 
 #	ifndef TABLE_DECLARE_ONLY /* <!-- body */
+/*
+struct T_(cursor) T_(begin)(const struct t_(array) *);
+int T_(exists)(const struct T_(cursor) *);
+pT_(type) *T_(entry)(struct T_(cursor) *);
+void T_(next)(struct T_(cursor) *);
+*/
 
 /** Gets the key of an occupied `bucket`. */
 static pT_(key) pT_(bucket_key)(const struct pT_(bucket) *const bucket) {

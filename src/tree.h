@@ -185,6 +185,12 @@ struct T_(cursor) { struct pT_(tree) *root; struct pT_(ref) ref; };
  the iterator with <fn:<T>less> or <fn:<T>more> as appropriate. */
 
 #	ifndef TREE_DECLARE_ONLY /* <!-- body */
+/*
+struct T_(cursor) T_(begin)(const struct t_(array) *);
+int T_(exists)(const struct T_(cursor) *);
+pT_(type) *T_(entry)(struct T_(cursor) *);
+void T_(next)(struct T_(cursor) *);
+*/
 
 /** Inducing a strict weak order by returning a positive result if `a` is
  out-of-order with respect to `b`. It only needs to divide entries into

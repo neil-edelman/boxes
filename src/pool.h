@@ -115,6 +115,13 @@ struct T_(cursor) { struct pT_(slot) *slot0; size_t i; };
 
 #ifndef POOL_DECLARE_ONLY
 
+/*
+struct T_(cursor) T_(begin)(const struct t_(array) *);
+int T_(exists)(const struct T_(cursor) *);
+pT_(type) *T_(entry)(struct T_(cursor) *);
+void T_(next)(struct T_(cursor) *);
+*/
+
 /** @return Index of slot that is higher than `x` in `slots`, but treating zero
  as special. @order \O(\log `slots`) */
 static size_t pT_(upper)(const struct pT_(slot_array) *const slots,
