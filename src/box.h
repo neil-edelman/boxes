@@ -54,10 +54,11 @@
 #	undef BOX_START
 #	ifndef __has_include
 /* One may need to define this manually. In this case, we can not do this for
- you because we don't know which files you've picked. */
+ you because we don't know which files you've picked. Either uncomment or put
+ them in desired translation units. */
 /*#		define HAS_ITERATE_H*/
 /*#		define HAS_GRAPH_H*/
-#	else /* It's automatic with (compilers that support?) C++17. */
+#	else /* It may be automatic with compilers that support C++17. */
 #		if !defined HAS_ITERATE_H && __has_include("iterate.h")
 #			define HAS_ITERATE_H
 #		endif
