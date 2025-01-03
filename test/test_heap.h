@@ -1,5 +1,4 @@
 #ifdef HEAP_NON_STATIC
-#	define static
 void T_(test)(void);
 #endif
 #ifndef HEAP_DECLARE_ONLY
@@ -9,9 +8,6 @@ void T_(test)(void);
 #	endif
 #	define QUOTE_(name) #name
 #	define QUOTE(name) QUOTE_(name)
-#	ifdef static /* Private functions. */
-#		undef static
-#	endif
 
 /** Makes sure the `heap` is in a valid state. */
 static void pT_(valid)(const struct t_(heap) *const heap) {
@@ -149,9 +145,9 @@ static void pT_(test_basic)(void) {
 	assert(!T_(peek)(&heap));
 }
 
-#	ifdef HEAP_NON_STATIC
-#		define static
-#	endif
+#	define BOX_PUBLIC_OVERRIDE
+#	include "../src/box.h"
+
 /** Will be tested on stdout. Requires `HEAP_TEST`, `BOX_TO_STRING`, and not
  `NDEBUG` while defining `assert`.
  @param[param] The `void *` parameter in `HEAP_TEST`. Can be null. @allow */
@@ -164,9 +160,9 @@ static void T_(test)(void) {
 	fprintf(stderr, "Done tests of <" QUOTE(HEAP_NAME) ">heap.\n\n");
 }
 
+#	define BOX_PRIVATE_AGAIN
+#	include "../src/box.h"
+
 #	undef QUOTE
 #	undef QUOTE_
-#endif
-#ifdef static /* Private functions. */
-#	undef static
 #endif

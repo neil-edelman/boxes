@@ -67,10 +67,12 @@ static unsigned to_string_buffer_i;
 #endif
 
 #ifdef BOX_NON_STATIC
-#	define static
 const char *TR_(to_string)(const pT_(box) *const box);
 #endif
 #ifndef BOX_DECLARE_ONLY
+
+#	define BOX_PUBLIC_OVERRIDE
+#	include "box.h"
 
 /** <../../src/to_string.h>: print the contents of `box` in a static string
  buffer of 256 bytes, with limitations of only printing 4 things in a single
@@ -117,17 +119,14 @@ terminate:
 	return buffer;
 }
 
-#	ifdef static
-#		undef static
-#	endif
+#	define BOX_PRIVATE_AGAIN
+#	include "box.h"
+
 static void pTR_(unused_to_string_coda)(void);
 static void pTR_(unused_to_string)(void)
 	{ TR_(to_string)(0); pTR_(unused_to_string_coda)(); }
 static void pTR_(unused_to_string_coda)(void) { pTR_(unused_to_string)(); }
 
-#endif
-#ifdef static
-#	undef static
 #endif
 
 

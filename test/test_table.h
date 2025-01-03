@@ -323,6 +323,9 @@ static void pT_(test_basic)(void *const parent) {
 	assert(!table.buckets && !table.log_capacity && !table.size);
 }
 
+#	define BOX_PUBLIC_OVERRIDE
+#	include "../src/box.h"
+
 /** The list will be tested on `stdout`. Requires `TABLE_TEST` to be a
  <typedef:<PN>action_fn> and `TABLE_TO_STRING`.
  @param[parent_new] Specifies the dynamic up-level creator of the parent
@@ -344,6 +347,9 @@ static void T_(test)(void *const parent) {
 	pT_(test_basic)(parent);
 	fprintf(stderr, "Done tests of <" QUOTE(TABLE_NAME) ">hash.\n\n");
 }
+
+#	define BOX_PRIVATE_AGAIN
+#	include "../src/box.h"
 
 #undef QUOTE
 #undef QUOTE_

@@ -351,6 +351,9 @@ finally:
 	}
 #endif
 
+#	define BOX_PUBLIC_OVERRIDE
+#	include "../src/box.h"
+
 /** Will be tested on stdout. Requires `TRIE_TEST`, and not `NDEBUG` while
  defining `assert`. @allow */
 static void T_(test)(void) {
@@ -366,6 +369,9 @@ static void T_(test)(void) {
 	pT_(test_random)();
 	fprintf(stderr, "Done tests of <" QUOTE(TRIE_NAME) ">trie.\n\n");
 }
+
+#	define BOX_PRIVATE_AGAIN
+#	include "../src/box.h"
 
 #undef QUOTE
 #undef QUOTE_

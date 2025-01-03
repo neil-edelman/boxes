@@ -1,5 +1,4 @@
 #ifdef ARRAY_NON_STATIC
-#	define static
 void T_(test)(void);
 #endif
 #ifndef ARRAY_DECLARE_ONLY
@@ -9,9 +8,6 @@ void T_(test)(void);
 #	endif
 #	define QUOTE_(name) #name
 #	define QUOTE(name) QUOTE_(name)
-#	ifdef static /* Private functions. */
-#		undef static
-#	endif
 
 /** @return Is `a` in a valid state? */
 static void pT_(valid_state)(const struct t_(array) *const a) {
@@ -450,9 +446,9 @@ static void pT_(test_insert)(void) {
 	t_(array_)(&a);
 }
 
-#	ifdef ARRAY_NON_STATIC /* Public function. */
-#		define static
-#	endif
+#	define BOX_PUBLIC_OVERRIDE
+#	include "../src/box.h"
+
 /** Will be tested on stdout. @allow */
 static void T_(test)(void) {
 	printf("<" QUOTE(ARRAY_NAME) ">array of type <" QUOTE(ARRAY_TYPE)
@@ -467,9 +463,9 @@ static void T_(test)(void) {
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array.\n\n");
 }
 
+#	define BOX_PRIVATE_AGAIN
+#	include "../src/box.h"
+
 #	undef QUOTE
 #	undef QUOTE_
-#endif
-#ifdef static /* Private functions. */
-#	undef static
 #endif

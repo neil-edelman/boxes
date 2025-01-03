@@ -96,7 +96,6 @@ typedef struct t_(heap) pT_(box);
 struct T_(cursor) { struct pT_(priority_array_cursor) _; };
 
 #	ifdef HEAP_NON_STATIC /* Public functions. */
-#		define static
 struct T_(cursor) T_(begin)(const struct t_(heap) *);
 int T_(exists)(const struct T_(cursor) *);
 pT_(priority) *T_(entry)(struct T_(cursor) *);
@@ -121,6 +120,9 @@ int T_(affix)(struct t_(heap) *restrict, const struct t_(heap) *restrict);
  `return strcmp(a, b)` would give a minimum-hash. */
 typedef int (*pT_(less_fn))(const pT_(priority) a, const pT_(priority) b);
 
+#		define BOX_PUBLIC_OVERRIDE
+#		include "box.h"
+
 /** @return An iterator at the beginning of `h`. */
 static struct T_(cursor) T_(begin)(const struct t_(heap) *const h) {
 	struct T_(cursor) cur;
@@ -136,9 +138,8 @@ static pT_(priority) *T_(entry)(struct T_(cursor) *const cur)
 static void T_(next)(struct T_(cursor) *const cur)
 	{ pT_(priority_array_next)(&cur->_); }
 
-#		ifdef static /* Private functions. */
-#			undef static
-#		endif
+#		define BOX_PRIVATE_AGAIN
+#		include "box.h"
 /** Find the spot in `heap` where `n` goes and put it there.
  @param[heap] At least one entry; the last entry will be replaced by `n`.
  @order \O(log `size`) */
@@ -220,9 +221,8 @@ static pT_(priority) pT_(remove)(struct t_(heap) *const heap) {
 	}
 	return result;
 }
-#		ifdef HEAP_NON_STATIC /* Public functions. */
-#			define static
-#		endif
+#		define BOX_PUBLIC_OVERRIDE
+#		include "box.h"
 
 /** Zeroed data (not all-bits-zero) is initialised, as well.
  @return An idle heap. @order \Theta(1) @allow */
@@ -305,9 +305,8 @@ static int T_(affix)(struct t_(heap) *restrict const heap,
 	return 1;
 }
 
-#		ifdef static /* Private functions. */
-#			undef static
-#		endif
+#		define BOX_PRIVATE_AGAIN
+#		include "box.h"
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	pT_(priority) unused; memset(&unused, 0, sizeof unused);
@@ -319,9 +318,6 @@ static void pT_(unused_base)(void) {
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif /* Produce code. */
-#	ifdef static /* Private functions. */
-#		undef static
-#	endif
 #endif /* Base code. */
 
 #if defined HEAP_TO_STRING

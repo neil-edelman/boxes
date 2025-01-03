@@ -109,7 +109,6 @@ typedef struct t_(list) pT_(box);
 struct T_(cursor) { struct t_(listlink) *link; };
 
 #	ifdef LIST_NON_STATIC /* Public functions. */
-#		define static
 struct t_(listlink) *T_(head)(const struct t_(list) *);
 struct t_(listlink) *T_(tail)(const struct t_(list) *);
 struct t_(listlink) *T_(link_previous)(const struct t_(listlink) *);
@@ -133,6 +132,9 @@ void T_(to_before)(struct t_(list) *restrict, struct t_(listlink) *restrict);
 void T_(self_correct)(struct t_(list) *);
 #	endif
 #	ifndef LIST_DECLARE_ONLY /* Produce code: not for headers. */
+
+#		define BOX_PUBLIC_OVERRIDE
+#		include "box.h"
 
 /** @return The head of `list` or null. */
 static struct t_(listlink) *T_(head)(const struct t_(list) *const list) {
@@ -170,9 +172,9 @@ static struct t_(listlink) *T_(entry)(struct T_(cursor) *const cur)
 static void T_(next)(struct T_(cursor) *const cur)
 	{ cur->link = cur->link->next; }
 
-#		ifdef static /* Private functions. */
-#			undef static
-#		endif
+#		define BOX_PRIVATE_AGAIN
+#		include "box.h"
+
 /** Cats all `from` (can be null) in front of `after`; `from` will be empty
  after. Careful that `after` is not in `from` because that will just erase the
  list. @order \Theta(1) */
@@ -220,9 +222,8 @@ static void pT_(rm)(struct t_(listlink) *const node) {
 	node->prev = node->next = 0;
 }
 
-#		ifdef LIST_NON_STATIC /* Public functions. */
-#			define static
-#		endif
+#		define BOX_PUBLIC_OVERRIDE
+#		include "box.h"
 
 /** Clears and initializes `list`. @order \Theta(1) @allow */
 static void T_(clear)(struct t_(list) *const list)
@@ -309,9 +310,8 @@ static void T_(self_correct)(struct t_(list) *const list) {
 	}
 }
 
-#		ifdef static /* Private functions. */
-#			undef static
-#		endif
+#		define BOX_PRIVATE_AGAIN
+#		include "box.h"
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	T_(begin)(0); T_(exists)(0); T_(entry)(0); T_(next)(0);
@@ -324,16 +324,12 @@ static void pT_(unused_base)(void) {
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif /* Produce code. */
-#	ifdef static /* Private functions. */
-#		undef static
-#	endif
 #endif /* Base code. */
 
 #if defined HAS_ITERATE_H && !defined LINK_TRAIT
 #	include "iterate.h" /** \include */
-#	ifdef LIST_NON_STATIC /* Public functions. */
-#		define static
-#	endif
+#	define BOX_PUBLIC_OVERRIDE
+#	include "box.h"
 /** __has_include("iterate.h"): Moves all elements `from` onto the tail of
  `to` if `predicate` is true.
  @param[to] If null, then it removes elements.
@@ -348,14 +344,15 @@ static void T_(to_if)(struct t_(list) *restrict const from,
 		if(to) pT_(add_before)(&to->u.as_tail.tail, link);
 	}
 }
-#	ifdef static /* Private functions. */
-#		undef static
-#	endif
+#	define BOX_PRIVATE_AGAIN
+#	include "box.h"
 static void pT_(unused_iterate_extra_coda)(void);
 static void pT_(unused_iterate_extra)(void) {
 	T_(to_if)(0, 0, 0);
 	pT_(unused_iterate_extra_coda)();
 }
+static void pT_(unused_iterate_extra_coda)(void)
+	{ pT_(unused_iterate_extra)(); }
 #endif
 
 #ifdef LIST_TO_STRING
@@ -481,9 +478,8 @@ static void pTR_(boolean)(struct t_(list) *restrict const alist,
 		}
 	}
 }
-#		ifdef LIST_NON_STATIC /* Public functions. */
-#			define static
-#		endif
+#		define BOX_PUBLIC_OVERRIDE
+#		include "box.h"
 /** Merges `from` into `to`, preferring elements from `to` go in the front.
  @order \O(|`from`| + |`to`|). @allow */
 static void TR_(merge)(struct t_(list) *restrict const to,
@@ -630,9 +626,9 @@ static void TR_(xor_to)(struct t_(list) *restrict const a,
 
 #	endif /* More ordered. */
 
-#	ifdef LIST_NON_STATIC /* Public functions. */
-#		define static
-#	endif
+#	define BOX_PUBLIC_OVERRIDE
+#	include "box.h"
+
 /** Moves all local-duplicates of `from` to the end of `to`.
 
  For example, if `from` is `(A, B, B, A)`, it would concatenate the second
@@ -654,9 +650,8 @@ static void TR_(duplicates_to)(struct t_(list) *restrict const from,
 		}
 	}
 }
-#	ifdef static /* Private functions. */
-#		undef static
-#	endif
+#	define BOX_PRIVATE_AGAIN
+#	include "box.h"
 static void pTR_(unused_extra_compare_coda)(void);
 static void pTR_(unused_extra_compare)(void) {
 #	ifdef LIST_COMPARE

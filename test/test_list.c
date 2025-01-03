@@ -1023,8 +1023,10 @@ int main(void) {
 	struct letter_pool ls = letter_pool();
 	struct panda_pool pandas = panda_pool();
 	struct skip_pool skips = skip_pool();
-	permute_list_test(&permute_from_pool, &permutes),
+	errno = 0;
+	permute_list_test(&permute_from_pool, &permutes),assert(!errno),
 		permutelink_pool_(&permutes);
+	assert(!errno);
 	no_list_test(&no_from_pool, &nos), no_pool_clear(&nos);
 	no_list_compare_test(&no_from_pool, &nos), no_pool_(&nos);
 	letter_list_test(&letter_from_pool, &ls), letter_pool_clear(&ls);

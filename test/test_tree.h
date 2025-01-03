@@ -359,6 +359,9 @@ static void pT_(test)(void) {
 	assert(!errno);
 }
 
+#	define BOX_PUBLIC_OVERRIDE
+#	include "../src/box.h"
+
 /** Will be tested on stdout. Requires `TREE_TEST`, and not `NDEBUG` while
  defining `assert`. @allow */
 static void T_(test)(void) {
@@ -372,6 +375,9 @@ static void T_(test)(void) {
 	fprintf(stderr, "Done tests of <" QUOTE(TREE_NAME) ">tree.\n\n");
 	(void)pT_(graph_horiz); /* Not used in general. */
 }
+
+#	define BOX_PRIVATE_AGAIN
+#	include "../src/box.h"
 
 #undef QUOTE
 #undef QUOTE_

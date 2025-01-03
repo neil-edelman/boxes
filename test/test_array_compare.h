@@ -1,5 +1,4 @@
 #ifdef ARRAY_NON_STATIC
-#	define static
 void TR_(compare_test)(void);
 #endif
 #ifndef ARRAY_DECLARE_ONLY
@@ -9,9 +8,6 @@ void TR_(compare_test)(void);
 #	endif
 #	define QUOTE_(name) #name
 #	define QUOTE(name) QUOTE_(name)
-#	ifdef static
-#		undef static
-#	endif
 
 /** Fills `fill` that is not equal to `neq` if possible. */
 static int pTR_(fill_unique)(pT_(type) *const fill,
@@ -231,9 +227,9 @@ static void pTR_(test_bounds)(void) {
 #	endif /* compare --> */
 }
 
-#	ifdef ARRAY_NON_STATIC
-#		define static
-#	endif
+#	define BOX_PUBLIC_OVERRIDE
+#	include "../src/box.h"
+
 /** `ARRAY_TEST`, `BOX_COMPARE` -> `ARRAY_TO_STRING`, !`NDEBUG`: will be
  tested on stdout. @allow */
 static void TR_(compare_test)(void) {
@@ -253,9 +249,9 @@ static void TR_(compare_test)(void) {
 	fprintf(stderr, "Done tests of <" QUOTE(ARRAY_NAME) ">array compare.\n\n");
 }
 
+#	define BOX_PRIVATE_AGAIN
+#	include "../src/box.h"
+
 #	undef QUOTE
 #	undef QUOTE_
-#endif
-#ifdef static
-#	undef static
 #endif

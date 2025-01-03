@@ -7,7 +7,8 @@
 
 #if defined BOX_NONE + defined BOX_ALL \
 	+ defined BOX_START + defined BOX_END \
-	+ defined BOX_NAME_MISSING + defined BOX_NAME_PRESENT != 1
+	+ defined BOX_NAME_MISSING + defined BOX_NAME_PRESENT \
+	+ defined BOX_PUBLIC_OVERRIDE + defined BOX_PRIVATE_AGAIN != 1
 #	error Request one.
 #endif
 
@@ -47,6 +48,20 @@
 #	undef BOX_NAME_PRESENT
 #	if !defined BOX_MINOR || !defined BOX_MAJOR
 #		error Missing box name.
+#	endif
+#endif
+
+#ifdef BOX_PUBLIC_OVERRIDE
+#	undef BOX_PUBLIC_OVERRIDE
+#	ifdef BOX_NON_STATIC
+#		define static
+#	endif
+#endif
+
+#ifdef BOX_PRIVATE_AGAIN
+#	undef BOX_PRIVATE_AGAIN
+#	ifdef static
+#		undef static
 #	endif
 #endif
 

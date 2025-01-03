@@ -206,6 +206,9 @@ static void pT_(test_random)(void) {
 	t_(pool_)(&pool);
 }
 
+#	define BOX_PUBLIC_OVERRIDE
+#	include "../src/box.h"
+
 /** The list will be tested on stdout; requires `POOL_TEST` and not `NDEBUG`.
  @allow */
 static void T_(test)(void) {
@@ -216,5 +219,8 @@ static void T_(test)(void) {
 	fprintf(stderr, "Done tests of <" QUOTE(POOL_NAME) ">pool.\n\n");
 }
 
-#undef QUOTE
-#undef QUOTE_
+#	define BOX_PRIVATE_AGAIN
+#	include "../src/box.h"
+
+#	undef QUOTE
+#	undef QUOTE_

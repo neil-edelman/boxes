@@ -20,7 +20,6 @@ typedef void (*pT_(action_fn))(pT_(type) *);
 typedef int (*pT_(predicate_fn))(const pT_(type) *);
 
 #ifdef BOX_NON_STATIC
-#	define static
 pT_(type) *TR_(any)(const pT_(box) *, pTR_(predicate_fn));
 void TR_(each)(pT_(box) *, pTR_(action_fn));
 void TR_(if_each)(pT_(box) *, pTR_(predicate_fn), pTR_(action_fn));
@@ -32,6 +31,9 @@ static void TR_(trim)(pT_(box) *, pTR_(predicate_fn));
 #	endif
 #endif
 #ifndef BOX_DECLARE_ONLY
+
+#	define BOX_PUBLIC_OVERRIDE
+#	include "box.h"
 
 /** <../../src/iterate.h>: Iterates through `box` and calls `predicate` until it
  returns true. @return The first `predicate` that returned true, or, if the
@@ -172,9 +174,8 @@ static void TR_(trim)(pT_(box) *const box,
 
 #	endif /* contiguous --> */
 
-#	ifdef static
-#		undef static
-#	endif
+#	define BOX_PRIVATE_AGAIN
+#	include "box.h"
 static void pTR_(unused_iterate_coda)(void);
 static void pTR_(unused_function)(void) {
 	TR_(any)(0, 0); TR_(each)(0, 0); TR_(if_each)(0, 0, 0);
@@ -185,6 +186,3 @@ static void pTR_(unused_function)(void) {
 static void pTR_(unused_iterate_coda)(void) { pTR_(unused_function)(); }
 
 #endif /* Produce code. */
-#ifdef static
-#	undef static
-#endif

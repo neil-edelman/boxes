@@ -32,7 +32,6 @@ typedef int (*pT_(biaction_fn))(pT_(type) *restrict,
 	pT_(type) *restrict);
 #endif
 #ifdef BOX_NON_STATIC
-#	define static
 #	ifdef COMPARE
 int TR_(compare)(const pT_(box) *restrict, const pT_(box) *restrict);
 #		ifdef BOX_ACCESS
@@ -52,6 +51,9 @@ void TR_(unique)(pT_(box) *);
 #	endif
 #endif
 #ifndef BOX_DECLARE_ONLY
+
+#	define BOX_PUBLIC_OVERRIDE
+#	include "box.h"
 
 #	ifdef COMPARE /* <!-- compare: <typedef:<pT>compare_fn>. */
 
@@ -125,18 +127,16 @@ static int TR_(insert_after)(pT_(box) *const box,
 	return 1;
 }
 
-#				ifdef static
-#					undef static
-#				endif
+#				define BOX_PRIVATE_AGAIN
+#				include "../src/box.h"
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
 static int pTR_(vcompar)(const void *restrict const a,
 	const void *restrict const b) { return tr_(compare)(a, b); }
 /** Wrapper with void `a` and `b`. @implements qsort bsearch */
 static int pTR_(vrevers)(const void *restrict const a,
 	const void *restrict const b) { return tr_(compare)(b, a); }
-#				ifdef BOX_NON_STATIC
-#					define static
-#				endif
+#				define BOX_PUBLIC_OVERRIDE
+#				include "box.h"
 
 /** <../../src/compare.h>, `COMPARE`, `BOX_CONTIGUOUS`: Sorts `box` by `qsort`,
  (which has a high-context-switching cost, but is easy.)
@@ -165,9 +165,8 @@ static void TR_(reverse)(pT_(box) *const box) {
 
 #		endif /* access --> */
 
-#		ifdef static
-#			undef static
-#		endif
+#		define BOX_PRIVATE_AGAIN
+#		include "../src/box.h"
 /** !compare(`a`, `b`) == equals(`a`, `b`).
  (This makes `COMPARE` encompass `COMPARE_IS_EQUAL`.) However, it can not
  collide with another function!
@@ -177,9 +176,8 @@ static int tr_(is_equal)(const pT_(type) *const restrict a,
 	/* "Discards qualifiers in nested pointer types" sometimes. Cast. */
 	return !tr_(compare)((const void *)a, (const void *)b);
 }
-#		ifdef BOX_NON_STATIC
-#			define static
-#		endif
+#		define BOX_PUBLIC_OVERRIDE
+#		include "box.h"
 
 #	endif /* compare --> */
 
@@ -253,9 +251,9 @@ static void TR_(unique)(pT_(box) *const box) { TR_(unique_merge)(box, 0); }
 
 #	endif /* contiguous --> */
 
-#	ifdef static
-#		undef static
-#	endif
+#	define BOX_PRIVATE_AGAIN
+#	include "box.h"
+
 static void pTR_(unused_compare_coda)(void);
 static void pTR_(unused_compare)(void) {
 #	ifdef COMPARE /* <!-- compare */
@@ -283,7 +281,4 @@ static void pTR_(unused_compare_coda)(void) { pTR_(unused_compare)(); }
 #endif
 #ifdef COMPARE_IS_EQUAL
 #	undef COMPARE_IS_EQUAL
-#endif
-#ifdef static
-#	undef static
 #endif

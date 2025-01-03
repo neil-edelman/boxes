@@ -1,19 +1,16 @@
+#ifdef LIST_NON_STATIC
+void T_(test)(void);
+#endif
+#ifndef LIST_DECLARE_ONLY
 
-...
 #	if defined QUOTE || defined QUOTE_
 #		error Cannot be defined.
 #	endif
 #	define QUOTE_(name) #name
 #	define QUOTE(name) QUOTE_(name)
-#	ifdef static /* Private functions. */
-#		undef static
-#	endif
 
-#include <stdlib.h>	/* EXIT rand */
-#include <stdio.h>  /* printf */
-
-static const char *pT_(colour);
-static size_t pT_(offset); /* The list's offset to the parent. */
+#	include <stdlib.h>	/* EXIT rand */
+#	include <stdio.h>  /* printf */
 
 /** Perform "Floyd's" tortoise-hare algorithm for cycle detection for the list
  on which `link` is a part and expect `count`. `list` must have at least one
@@ -57,7 +54,7 @@ static void pT_(assert_count)(const struct t_(list) *const list,
 	}
 }
 
-#ifdef HAS_ITERATE_H /* <!-- */
+#	ifdef HAS_ITERATE_H /* <!-- */
 /** Returns `0,1,0,1,...` whatever `link`. */
 static int pT_(parity)(const struct t_(listlink) *const link) {
 	static int p;
@@ -69,7 +66,7 @@ static int pT_(true)(const struct t_(listlink) *const link) {
 	(void)(link);
 	return 1;
 }
-#endif /* --> */
+#	endif /* --> */
 
 /** Passed `parent_new` and `parent`, tests basic functionality. */
 static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
@@ -79,6 +76,7 @@ static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
 	const size_t test_size = 10;
 	size_t i;
 	assert(parent_new && parent);
+	assert(!errno);
 	T_(clear)(&l1), T_(clear)(&l2);
 	printf("Basic tests of <" QUOTE(LIST_NAME) ">list:\n");
 	pT_(assert_count)(&l1, 0);
@@ -88,6 +86,7 @@ static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
 	/* Test returns on null and empty. */
 	link = T_(shift)(&l1), assert(!link);
 	link = T_(pop)(&l1), assert(!link);
+	assert(!errno);
 	/* Add */
 	printf("Adding %lu elements to l1.\n", (unsigned long)test_size);
 	for(i = 0; i < test_size; i++) {
@@ -100,8 +99,10 @@ static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
 		T_(push)(&l1, link);
 		if(i == 0) link_first = link;
 		link_last = link;
+		assert(!errno);
 	}
-	pT_(graph)(&l1, "graph/list/" QUOTE(LIST_NAME) "-small.gv");
+	T_(graph_fn)(&l1, "graph/list/" QUOTE(LIST_NAME) "-small.gv");
+	assert(!errno);
 	pT_(assert_count)(&l1, test_size);
 	printf("l1 = %s.\n", T_(to_string)(&l1));
 	/* Test positions when contents. */
@@ -109,6 +110,7 @@ static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
 	link = T_(tail)(&l1), assert(link == link_last);
 	link = T_(link_previous)(link), assert(link);
 	link = T_(link_next)(link), assert(link == link_last);
+	assert(!errno);
 	/* Test remove contents. */
 	link = T_(shift)(&l1), assert(link == link_first);
 	link = T_(pop)(&l1), assert(link = link_last);
@@ -119,7 +121,8 @@ static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
 	link = T_(head)(&l1), assert(link == link_first);
 	link = T_(tail)(&l1), assert(link == link_last);
 	printf("After removing and adding: l1 = %s.\n", T_(to_string)(&l1));
-#ifdef HAS_ITERATE_H /* <!-- iterator */
+	assert(!errno);
+#	ifdef HAS_ITERATE_H /* <!-- iterator */
 	assert(l2.u.as_head.head.next);
 	/* Test movement. */
 	pT_(assert_count)(&l1, test_size);
@@ -163,24 +166,30 @@ static void pT_(test_basic)(struct t_(listlink) *(*const parent_new)(void *),
 	t_(filler)(link);
 	T_(add_before)(T_(tail)(&l2), link);
 	pT_(assert_count)(&l2, test_size + 2);
-#endif /* iterator --> */
+#	endif /* iterator --> */
 	T_(clear)(&l2);
 	pT_(assert_count)(&l2, 0);
+	assert(!errno);
 }
 
+#	define BOX_PUBLIC_OVERRIDE
+#	include "../src/box.h"
 /** The linked-list will be tested on stdout. `LIST_TEST` has to be set.
  @param[parent_new, parent] Responsible for creating new objects and returning
  the list. @allow */
 static void T_(test)(struct t_(listlink) *(*const parent_new)(void *),
 	void *const parent) {
 	printf("<" QUOTE(LIST_NAME) ">list was created using: "
-#ifdef LIST_COMPARE
+#	ifdef LIST_COMPARE
 		"LIST_COMPARE; "
-#endif
+#	endif
 		"testing:\n");
 	pT_(test_basic)(parent_new, parent);
 	printf("Done tests of " QUOTE(LIST_NAME) ".\n\n");
 }
+#	define BOX_PRIVATE_AGAIN
+#	include "../src/box.h"
 
-#undef QUOTE
-#undef QUOTE_
+#	undef QUOTE
+#	undef QUOTE_
+#endif

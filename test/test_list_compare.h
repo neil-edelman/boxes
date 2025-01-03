@@ -208,6 +208,9 @@ static void pT_(test_binary)(struct t_(listlink) *(*const parent_new)(void *),
 	pT_(exact)(&result, a, c, d, 0);
 }
 
+#	define BOX_PUBLIC_OVERRIDE
+#	include "../src/box.h"
+
 /** The linked-list will be tested on stdout. `LIST_TEST` has to be set.
  @param[parent_new, parent] Responsible for creating new objects and returning
  the list. @allow */
@@ -230,6 +233,9 @@ static void TR_(compare_test)(struct t_(listlink)
 	pT_(test_binary)(parent_new, parent);
 	printf("Done tests of " QUOTE(LIST_NAME) ".\n\n");
 }
+
+#	define BOX_PRIVATE_AGAIN
+#	include "../src/box.h"
 
 #undef QUOTE
 #undef QUOTE_

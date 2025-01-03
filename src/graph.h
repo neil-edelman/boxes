@@ -1,24 +1,27 @@
 #if defined BOX_ENTRY1 && !defined BOX_ENTRY2 /* Only make graphs for top. */
 
-#	if defined QUOTE || defined QUOTE_
-#		error Cannot be defined.
-#	endif
-#	define QUOTE_(name) #name
-#	define QUOTE(name) QUOTE_(name)
-
 #	define BOX_ALL /* Sanity check. */
 #	include "box.h"
 
 #	include <stdio.h>
+#	include <errno.h>
 
 #	ifdef BOX_NON_STATIC
-#		define static
 void T_(graph)(const pT_(box) *, FILE *);
-void T_(graph_fn)(const pT_(box) *, const char *);
+int T_(graph_fn)(const pT_(box) *, const char *);
 #	endif
 #	ifndef BOX_DECLARE_ONLY
 
+#		if defined QUOTE || defined QUOTE_
+#			error Cannot be defined.
+#		endif
+#		define QUOTE_(name) #name
+#		define QUOTE(name) QUOTE_(name)
+
 #		ifdef ARRAY_NAME
+
+#			define BOX_PUBLIC_OVERRIDE
+#			include "box.h"
 
 /** Draw a graph of `array` to `fn` in Graphviz format. */
 static void T_(graph)(const struct t_(array) *const array, FILE *const fp) {
@@ -66,8 +69,10 @@ no_data:
 		"}\n");
 }
 
-
 #		elif defined HEAP_NAME
+
+#			define BOX_PUBLIC_OVERRIDE
+#			include "box.h"
 
 /** Draw a graph of `heap` to `fn` in Graphviz format. */
 static void T_(graph)(const struct t_(heap) *const heap, FILE *const fp) {
@@ -95,6 +100,9 @@ static void T_(graph)(const struct t_(heap) *const heap, FILE *const fp) {
 
 #		elif defined LIST_NAME
 
+static const char *pT_(colour);
+static size_t pT_(offset); /* The list's offset to the parent. */
+
 /** Names `l`. `dir` is either 0, it names the node, or positive/negative to
  name edges. */
 static char *pT_(name)(const struct t_(listlink) *const l) {
@@ -119,7 +127,7 @@ static char *pT_(name)(const struct t_(listlink) *const l) {
  @param[offset] For printing multiple lists, offset to the parent type.
  @param[is_nodes] Print nodes; if one is printing the same list, different
  order, then this would be off. */
-static void pT_(subgraph)(struct t_(list) *const list, FILE *const fp,
+static void pT_(subgraph)(const struct t_(list) *const list, FILE *const fp,
 	const char *const colour, const size_t offset, const int is_nodes) {
 	struct t_(listlink) *link;
 	char a[12];
@@ -165,8 +173,11 @@ static void pT_(subgraph)(struct t_(list) *const list, FILE *const fp,
 	}
 }
 
+#			define BOX_PUBLIC_OVERRIDE
+#			include "box.h"
+
 /** Graph `list` in `fn`. */
-static void pT_(graph)(struct t_(list) *const list, FILE *const fp) {
+static void T_(graph)(const struct t_(list) *const list, FILE *const fp) {
 	assert(list && fp);
 	fprintf(fp, "digraph {\n"
 		"\tgraph [truecolor=true, bgcolor=transparent, fontname=modern];\n"
@@ -175,13 +186,16 @@ static void pT_(graph)(struct t_(list) *const list, FILE *const fp) {
 	pT_(subgraph)(list, fp, "royalblue", 0, 1);
 	fprintf(fp, "\tnode [colour=\"Red\"];\n"
 		"}\n");
-	fclose(fp);
+	assert(!errno);
 }
 
 #		elif defined POOL_NAME
 
+#			define BOX_PUBLIC_OVERRIDE
+#			include "box.h"
+
 /** Graphs `pool` output to `fn`. */
-static void pT_(graph)(const struct t_(pool) *const pool,
+static void T_(graph)(const struct t_(pool) *const pool,
 	FILE *const fp) {
 	char str[12];
 	size_t i, j;
@@ -325,10 +339,13 @@ no_slots:
 
 #		elif defined TABLE_NAME
 
+#			define BOX_PUBLIC_OVERRIDE
+#			include "box.h"
+
 /** Draw a diagram of `hash` written to `fn` in
  [Graphviz](https://www.graphviz.org/) format.
  @order \O(|`hash.bins`| + |`hash.items`|) */
-static void pT_(graph)(const struct t_(table) *const table, FILE *const fp) {
+static void T_(graph)(const struct t_(table) *const table, FILE *const fp) {
 	FILE *fp;
 	size_t i, i_end;
 	struct table_stats st = pT_(collect)(table);
@@ -498,6 +515,9 @@ static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
 	}
 }
 
+#			define BOX_PUBLIC_OVERRIDE
+#			include "box.h"
+
 /** Draw a graph of `tree` to `fn` in Graphviz format. */
 static void pT_(graph)(const struct t_(tree) *const tree, FILE *const fp) {
 	assert(tree && fp);
@@ -514,6 +534,8 @@ static void pT_(graph)(const struct t_(tree) *const tree, FILE *const fp) {
 		"}\n");
 	fclose(fp);
 }
+
+#			if 0
 
 /** Aligns the `port` in the right way between nodes. */
 static char *pT_(usual_port)(unsigned port) {
@@ -590,6 +612,8 @@ static void pT_(graph_horiz)(const struct t_(tree) *const tree,
 		"}\n");
 	fclose(fp);
 }
+
+#			endif
 
 #		elif defined TRIE_NAME
 
@@ -870,8 +894,11 @@ static void pT_(graph_choose)(const struct t_(trie) *const trie,
 	fclose(fp);
 }
 
+#			define BOX_PUBLIC_OVERRIDE
+#			include "box.h"
+
 /** Graphs logical `trie` output to `fn` using `no` as the filename index. */
-static void pT_(graph)(const struct t_(trie) *const trie,
+static void T_(graph)(const struct t_(trie) *const trie,
 	const char *const fn, const size_t no) {
 	const char logic[] = "-tree", mem[] = "-mem", bits[] = "-bits";
 	char copy[128], *dot;
@@ -902,15 +929,26 @@ static void pT_(graph)(const struct t_(trie) *const trie,
 #		else
 #			error Not something we know how to make a graph out of?
 #		endif
+#		undef QUOTE
+#		undef QUOTE_
 
-static void T_(graph_fn)(const pT_(box) *const box, const char *const fn) {
+static int T_(graph_fn)(const pT_(box) *const box, const char *const fn) {
 	FILE *fp;
-	assert(box && fn && !errno);
-	if(!(fp = fopen(fn, "w"))) { perror(fn); errno = 0; return; }
+	assert(box && fn);
+	assert(!errno); /* Catches bugs, but probably shouldn't be here. */
+	if(!(fp = fopen(fn, "w")))
+		{ if(!errno) errno = ERANGE; return 0; }
 	T_(graph)(box, fp);
 	fclose(fp);
+	return 1;
 }
-#	endif
-#	undef QUOTE
-#	undef QUOTE_
-#endif
+
+#		define BOX_PRIVATE_AGAIN
+#		include "box.h"
+static void pT_(unused_graph_coda)(void);
+static void pT_(unused_graph)(void)
+	{ T_(graph)(0, 0); T_(graph_fn)(0, 0); pT_(unused_graph_coda)(); }
+static void pT_(unused_graph_coda)(void) { pT_(unused_graph)(); }
+
+#	endif /* Not declare-only. */
+#endif /* Top. */

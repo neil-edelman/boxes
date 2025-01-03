@@ -25,6 +25,12 @@
 #define BOX_START
 #include "box.h"
 
+#ifdef BMP_NON_STATIC
+#	define BOX_NON_STATIC
+#endif
+#ifdef BMP_DECLARE_ONLY
+#	define BOX_DECLARE_ONLY
+#endif
 #ifndef BMP_H
 #	define BMP_H
 /** The underlying array type. */
@@ -56,7 +62,6 @@ typedef unsigned bmpchunk;
 struct t_(bmp) { bmpchunk chunk[BMP_CHUNKS]; };
 
 #ifdef BMP_NON_STATIC /* Public functions. */
-#	define static
 void T_(clear_all)(struct t_(bmp) *);
 void T_(copy)(struct t_(bmp) *, const unsigned, const unsigned,
 	struct t_(bmp) *);
@@ -69,6 +74,9 @@ void T_(insert)(struct t_(bmp) *, unsigned, unsigned);
 void T_(remove)(struct t_(bmp) *, unsigned, unsigned);
 #endif
 #ifndef BMP_DECLARE_ONLY /* Produce code. */
+
+#	define BOX_PUBLIC_OVERRIDE
+#	include "box.h"
 
 /** Sets `a` to all false. @allow */
 static void T_(clear_all)(struct t_(bmp) *const a)
@@ -175,9 +183,9 @@ static void T_(remove)(struct t_(bmp) *const a,
 		&= ~((1u << sizeof a->chunk * CHAR_BIT - BMP_BITS) - 1);
 }
 
-#	ifdef static /* Private functions. */
-#		undef static
-#	endif
+#	define BOX_PRIVATE_AGAIN
+#	include "box.h"
+
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	T_(clear_all)(0); T_(test)(0, 0); T_(copy)(0, 0, 0, 0); T_(invert_all)(0);
@@ -186,9 +194,6 @@ static void pT_(unused_base)(void) {
 	pT_(unused_base_coda)();
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
-#	endif
-#ifdef static /* Private functions. */
-#	undef static
 #endif
 
 #ifdef BMP_TEST
@@ -214,11 +219,13 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #ifdef BMP_TEST
 #	undef BMP_TEST
 #endif
-#ifdef BMP_DECLARE_ONLY /* bmp has no interfaces. */
+#ifdef BMP_DECLARE_ONLY
 #	undef BMP_DECLARE_ONLY
+#	undef BOX_DECLARE_ONLY
 #endif
 #ifdef BMP_NON_STATIC
 #	undef BMP_NON_STATIC
+#	undef BOX_DECLARE_ONLY
 #endif
 
 #define BOX_END

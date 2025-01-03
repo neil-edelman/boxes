@@ -94,7 +94,6 @@ typedef struct t_(array) pT_(box);
 struct T_(cursor) { struct t_(array) *a; size_t i; };
 
 #	ifdef ARRAY_NON_STATIC /* Public functions. */
-#		define static
 struct T_(cursor) T_(begin)(const struct t_(array) *);
 struct T_(cursor) T_(at)(const struct t_(array) *, size_t);
 int T_(exists)(const struct T_(cursor) *);
@@ -120,6 +119,9 @@ int T_(splice)(struct t_(array) *restrict, const struct t_(array) *restrict,
 	size_t, size_t);
 #	endif
 #	ifndef ARRAY_DECLARE_ONLY /* Produce code. */
+
+#		define BOX_PUBLIC_OVERRIDE
+#		include "box.h"
 
 /** @return A cursor at the beginning of a valid `a`. */
 static struct T_(cursor) T_(begin)(const struct t_(array) *const a) {
@@ -320,9 +322,9 @@ static int T_(splice)(struct t_(array) *restrict const a,
 	return 1;
 }
 
-#		ifdef static /* Private functions. */
-#			undef static
-#		endif
+#		define BOX_PRIVATE_AGAIN
+#		include "box.h"
+
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	T_(begin)(0); T_(at)(0, 0); T_(exists)(0); T_(entry)(0); T_(next)(0);
@@ -334,9 +336,6 @@ static void pT_(unused_base)(void) {
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif /* Produce code. */
-#	ifdef static /* Private functions. */
-#		undef static
-#	endif
 #endif /* Base code. */
 
 #if defined HAS_ITERATE_H && !defined ARRAY_TRAIT

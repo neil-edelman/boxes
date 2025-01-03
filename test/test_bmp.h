@@ -1,5 +1,4 @@
 #ifdef BMP_NON_STATIC
-#	define static
 void T_(tests)(void);
 #endif
 #ifndef BMP_DECLARE_ONLY
@@ -212,9 +211,9 @@ static void pT_(test)(void) {
 	}
 }
 
-#	ifdef BMP_NON_STATIC /* Public function. */
-#		define static
-#	endif
+#	define BOX_PUBLIC_OVERRIDE
+#	include "../src/box.h"
+
 /** Will be tested on stdout. Requires `BMP_TEST`, and not `NDEBUG` while
  defining `assert`. @allow */
 static void T_(tests)(void) {
@@ -229,9 +228,9 @@ static void T_(tests)(void) {
 	fprintf(stderr, "Done tests of <" QUOTE(BMP_NAME) ">bmp.\n\n");
 }
 
+#	define BOX_PRIVATE_AGAIN
+#	include "../src/box.h"
+
 #	undef QUOTE
 #	undef QUOTE_
-#endif
-#ifdef static /* Private functions. */
-#	undef static
 #endif
