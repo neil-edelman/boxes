@@ -377,7 +377,7 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	include "graph.h" /** \include */
 #endif
 
-#if defined LIST_TEST && !defined LIST_TRAIT
+#if defined LIST_TEST && !defined LIST_TRAIT && defined HAS_GRAPH_H
 #	include "../test/test_list.h"
 #endif
 

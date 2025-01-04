@@ -251,7 +251,7 @@ static void test_it(void) {
 		|| !zodiac_table_try(&z, Gemini) || !zodiac_table_try(&z, Aries)
 		|| !zodiac_table_try(&z, Virgo) || !zodiac_table_try(&z, Libra)
 		|| !zodiac_table_try(&z, Taurus)) goto catch;
-	private_zodiac_table_graph(&z, "graph/table/it-z0.gv");
+	zodiac_table_graph_fn(&z, "graph/table/it-z0.gv");
 	printf("Remove all zodiac one at a time.\n");
 	for(zit = zodiac_table_begin(&z), n = 0; zodiac_table_exists(&zit);
 		zodiac_table_next(&zit)) {
@@ -259,14 +259,14 @@ static void test_it(void) {
 		printf("On %s.\n", zodiac[zodiac_table_key(&zit)]);
 		if(!zodiac_table_cursor_remove(&zit)) printf("(that's weird?)\n");
 		sprintf(fn, "graph/table/it-z%d.gv", ++n);
-		private_zodiac_table_graph(&z, fn);
+		zodiac_table_graph_fn(&z, fn);
 	}
 	assert(!z.size);
 	zodiac_table_(&z);
 
 	printf("Testing iteration with elements [0, %d).\n", no_till2);
 	for(n = 0; n < no_till2; n++) if(!int_table_try(&t, n)) goto catch;
-	private_int_table_graph(&t, "graph/table/it0.gv");
+	int_table_graph_fn(&t, "graph/table/it0.gv");
 	assert(t.size == no_till2);
 	/* Even ones get deleted. */
 	printf("Remove: ");
@@ -274,7 +274,7 @@ static void test_it(void) {
 		if(!(int_table_key(&it) & 1)
 		&& !int_table_cursor_remove(&it)) printf("(that's weird?)");
 	printf("done.\n");
-	private_int_table_graph(&t, "graph/table/it1.gv");
+	int_table_graph_fn(&t, "graph/table/it1.gv");
 	assert(t.size == no_till);
 	for(it = int_table_begin(&t); int_table_exists(&it); int_table_next(&it))
 		assert(int_table_key(&it) & 1);
@@ -421,7 +421,7 @@ static void stars(void) {
 		*content = distance;
 	}
 	printf("%s.\n", star_table_to_string(&stars));
-	private_star_table_graph(&stars, "doc/table-precursor/star-raw.gv");
+	star_table_graph_fn(&stars, "doc/table-precursor/star-raw.gv");
 	goto finally;
 catch:
 	assert(0);
@@ -797,25 +797,22 @@ finally:
 
 
 /* Just use another one to test inclusion in a header. */
-static unsigned char static_hash(const enum zodiac z)
+static unsigned char header_hash(const enum zodiac z)
 	{ return zodiac_hash(z); }
-static enum zodiac static_unhash(const unsigned char z)
+static enum zodiac header_unhash(const unsigned char z)
 	{ return zodiac_unhash(z); }
-static void static_to_string(const enum zodiac z, char (*const a)[12])
+static void header_to_string(const enum zodiac z, char (*const a)[12])
 	{ zodiac_to_string(z, a); }
-static void static_filler(void *const zero, enum zodiac *const z)
+static void header_filler(void *const zero, enum zodiac *const z)
 	{ zodiac_filler(zero, z); }
 #define DEFINE
 #include "header_table.h"
-struct header_table header_table(void)
-	{ struct header_table _; _._ = static_table(); return _; }
-void header_table_(struct header_table *const _) { static_table_(&_->_); }
-void header_table_test(void) { static_table_test(0); }
 
 
 int main(void) {
 	struct str16_pool strings = str16_pool();
 	struct vec4_pool vec4s = vec4_pool();
+	errno = 0;
 	zodiac_table_test(0); /* Don't require any space. */
 	string_table_test(&strings), str16_pool_(&strings);
 	uint_table_test(0);
@@ -829,6 +826,6 @@ int main(void) {
 	linked_dict();
 	year_of();
 	nato();
-	header_table_test();
+	header_table_test(0);
 	return EXIT_SUCCESS;
 }

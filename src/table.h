@@ -48,22 +48,28 @@
  @depend [box](../../src/box.h)
  @std C89 */
 
-#if !defined(TABLE_NAME) || !defined(TABLE_KEY)
-#	error Name TABLE_NAME or tag type TABLE_KEY undefined.
+#if !defined TABLE_NAME || !defined TABLE_KEY
+#	error Name or tag type undefined.
 #endif
-#if !defined(BOX_ENTRY1) && (defined(TABLE_TRAIT) ^ defined(BOX_MAJOR))
-#	error TABLE_TRAIT name must come after TABLE_EXPECT_TRAIT.
+#if !defined BOX_ENTRY1 && (defined TABLE_TRAIT ^ defined BOX_MAJOR)
+#	error trait name must come after expect trait.
 #endif
-#if defined(TABLE_TEST) && (!defined(TABLE_TRAIT) && !defined(TABLE_TO_STRING) \
-	|| defined(TABLE_TRAIT) && !defined(TABLE_HAS_TO_STRING))
+#if defined TABLE_TEST && (!defined TABLE_TRAIT && !defined TABLE_TO_STRING \
+	|| defined TABLE_TRAIT && !defined TABLE_HAS_TO_STRING)
 #error Test requires to string.
 #endif
-#if defined(BOX_TRAIT) && !defined(ARRAY_TRAIT)
-#	error Unexpected.
+#if defined BOX_TRAIT && !defined ARRAY_TRAIT
+#	error Unexpected flow.
 #endif
 
 #ifdef TABLE_TRAIT
 #	define BOX_TRAIT TABLE_TRAIT /* Ifdef in <box.h>. */
+#endif
+#ifdef TABLE_NON_STATIC
+#	define BOX_NON_STATIC
+#endif
+#ifdef TABLE_DECLARE_ONLY
+#	define BOX_DECLARE_ONLY
 #endif
 #define BOX_START
 #include "box.h"
@@ -94,7 +100,6 @@ static const char *const table_result_str[] = { TABLE_RESULT };
 #	undef TABLE_RESULT
 #endif
 
-
 #ifndef TABLE_TRAIT /* <!-- base code */
 #	include <stdlib.h>
 #	include <string.h>
@@ -124,7 +129,7 @@ typedef TABLE_KEY pT_(key);
  Must be consistent for each value while in the table. If <typedef:<pT>key> is
  a pointer, one is permitted to have null in the domain. */
 typedef pT_(uint) (*pT_(hash_fn))(const pT_(key));
-#		ifdef TABLE_UNHASH
+#	ifdef TABLE_UNHASH
 /** Defining `TABLE_UNHASH` says <typedef:<pT>hash_fn> forms a bijection
  between the range in <typedef:<pT>key> and the image in <typedef:<pT>uint>,
  and the inverse is called `<t>unhash`. In this case, keys are not stored
@@ -132,13 +137,13 @@ typedef pT_(uint) (*pT_(hash_fn))(const pT_(key));
  provides a smaller and simpler hashing method where the information in the key
  being hashed is equal to the hash itself—such as numbers.) */
 typedef pT_(key) (*pT_(unhash_fn))(pT_(uint));
-#		else
+#	else
 /** Equivalence relation between <typedef:<pT>key> that satisfies
  `<t>is_equal_fn(a, b) -> <t>hash(a) == <t>hash(b)`, called `<t>is_equal`.
  If `TABLE_UNHASH` is set, there is no need for this function because the
  comparison is done directly in hash space. */
 typedef int (*pT_(is_equal_fn))(const pT_(key) a, const pT_(key) b);
-#		endif
+#	endif
 
 #	ifdef TABLE_VALUE
 /** Defining `TABLE_VALUE` produces an associative map, otherwise it is the
@@ -198,13 +203,14 @@ typedef struct t_(table) pT_(box);
  is proportional to the capacity. */
 struct T_(cursor) { struct t_(table) *table; pT_(uint) i; };
 
-#	ifndef TABLE_DECLARE_ONLY /* <!-- body */
-/*
-struct T_(cursor) T_(begin)(const struct t_(array) *);
-int T_(exists)(const struct T_(cursor) *);
+#	ifdef BOX_NON_STATIC /* Public functions. */
+struct T_(cursor) T_(begin)(const struct t_(table) *);
+int T_(exists)(struct T_(cursor) *);
 pT_(type) *T_(entry)(struct T_(cursor) *);
 void T_(next)(struct T_(cursor) *);
-*/
+...
+#	endif
+#	ifndef BOX_DECLARE_ONLY /* <!-- body */
 
 /** Gets the key of an occupied `bucket`. */
 static pT_(key) pT_(bucket_key)(const struct pT_(bucket) *const bucket) {
@@ -510,9 +516,16 @@ static enum table_result pT_(put_key)(struct t_(table) *const table,
 	return result;
 }
 
+#		define BOX_PUBLIC_OVERRIDE
+#		include "box.h"
+
 /** @return At the first element of `table`. */
-static struct T_(cursor) T_(begin)(struct t_(table) *const table)
-	{ struct T_(cursor) it; it.table = table, it.i = 0; return it; }
+static struct T_(cursor) T_(begin)(const struct t_(table) *const table) {
+	union { const struct t_(table) *readonly; struct t_(table) *promise; } sly;
+	struct T_(cursor) cur;
+	cur.table = (sly.readonly = table, sly.promise), cur.i = 0;
+	return cur;
+}
 /** @return Whether the `cur` points to an element. */
 static int T_(exists)(/*const*/ struct T_(cursor) *const cur) {
 	const struct t_(table) *t;
@@ -767,10 +780,8 @@ static int T_(remove)(struct t_(table) *const table, const pT_(key) key) {
 	return 1;
 }
 
-#		ifdef HAS_ITERATE_H /* <!-- iterate */
-typedef struct pT_(bucket) pT_(type);
-#			include "iterate.h" /** \include */
-#		endif /* iterate --> */
+#		define BOX_PRIVATE_AGAIN
+#		include "box.h"
 
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
@@ -789,14 +800,17 @@ static void pT_(unused_base)(void) {
 	pT_(unused_base_coda)();
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
-
 #	endif /* body --> */
 #endif /* base code --> */
 
-#ifndef TABLE_DECLARE_ONLY /* Produce code. */
+#if defined HAS_ITERATE_H && !defined TABLE_TRAIT
+typedef struct pT_(bucket) pT_(type);
+#	include "iterate.h" /** \include */
+#endif
 
-#	if defined(TABLE_TO_STRING)
-#		undef TABLE_TO_STRING
+#if defined(TABLE_TO_STRING)
+#	undef TABLE_TO_STRING
+#	ifndef TABLE_DECLARE_ONLY
 #		ifndef ARRAY_TRAIT
 #			ifdef TABLE_VALUE
 /** The type of the required `<tr>to_string`. Responsible for turning the
@@ -818,20 +832,25 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	tr_(to_string)(pT_(bucket_key)(b), a);
 #		endif
 }
-#		define TO_STRING_LEFT '{'
-#		define TO_STRING_RIGHT '}'
-#		include "to_string.h" /** \include */
-#		ifndef TABLE_TRAIT
-#			define TABLE_HAS_TO_STRING /* Warning about tests. */
-#		endif
 #	endif
-
-#	if defined(TABLE_TEST) && !defined(TABLE_TRAIT)
-#		include "../test/test_table.h"
+#	define TO_STRING_LEFT '{'
+#	define TO_STRING_RIGHT '}'
+#	include "to_string.h" /** \include */
+#	ifndef TABLE_TRAIT
+#		define TABLE_HAS_TO_STRING /* Warning about tests. */
 #	endif
+#endif
 
-#	ifdef TABLE_DEFAULT /* <!-- default trait */
-/*#		include "../test/test_table_default.h", just test manually. */
+#if defined HAS_GRAPH_H && defined TABLE_HAS_TO_STRING && !defined TABLE_TRAIT
+#	include "graph.h" /** \include */
+#endif
+
+#if defined TABLE_TEST && !defined TABLE_TRAIT && defined HAS_GRAPH_H
+#	include "../test/test_table.h"
+#endif
+
+#ifdef TABLE_DEFAULT /* <!-- default trait */
+/*#	include "../test/test_table_default.h", just test manually. */
 /** This is functionally identical to <fn:<T>get_or>, but a with a trait
  specifying a constant default value. This is the most convenient access
  method, but it needs to have a `TABLE_DEFAULT`.
@@ -852,14 +871,8 @@ static void pTR_(unused_default_coda)(void);
 static void pTR_(unused_default)(void) { pT_(key) k; memset(&k, 0, sizeof k);
 	T_R_(table, get)(0, k); pTR_(unused_default_coda)(); }
 static void pTR_(unused_default_coda)(void) { pTR_(unused_default)(); }
-#		undef TABLE_DEFAULT
-#	endif /* default trait --> */
-
-#endif /* Produce code. */
-#ifdef TABLE_TRAIT
-#	undef TABLE_TRAIT
-#	undef BOX_TRAIT
-#endif
+#	undef TABLE_DEFAULT
+#endif /* default trait --> */
 
 
 #ifdef TABLE_EXPECT_TRAIT
@@ -886,8 +899,17 @@ static void pTR_(unused_default_coda)(void) { pTR_(unused_default)(); }
 #		undef TABLE_TEST
 #	endif
 #	ifdef TABLE_DECLARE_ONLY
+#		undef BOX_DECLARE_ONLY
 #		undef TABLE_DECLARE_ONLY
 #	endif
+#	ifdef TABLE_NON_STATIC
+#		undef BOX_NON_STATIC
+#		undef TABLE_NON_STATIC
+#	endif
+#endif
+#ifdef TABLE_TRAIT
+#	undef TABLE_TRAIT
+#	undef BOX_TRAIT
 #endif
 #define BOX_END
 #include "box.h"

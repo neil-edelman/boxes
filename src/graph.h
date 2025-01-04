@@ -337,14 +337,66 @@ no_slots:
 
 #		elif defined TABLE_NAME
 
+#			include <math.h> /* sqrt NAN? */
+#			ifndef NAN /* <https://stackoverflow.com/questions/5714131/nan-literal-in-c> */
+#				define NAN (0. / 0.)
+#			endif
+
+static size_t pT_(count_bucket)(const struct t_(table) *const table,
+	pT_(uint) idx) {
+	struct pT_(bucket) *bucket;
+	pT_(uint) next;
+	size_t no = 0;
+	assert(table && idx < pT_(capacity)(table));
+	bucket = table->buckets + idx;
+	if((next = bucket->next) == TABLE_NULL
+		|| idx != pT_(chain_head)(table, bucket->hash)) return 0;
+	for( ; no++, next != TABLE_END;
+		next = bucket->next, assert(next != TABLE_NULL)) {
+		idx = next;
+		assert(idx < pT_(capacity)(table)
+			/* We want to count intermediates.
+			 && pT_(in_stack_range)(hash, idx) */);
+		bucket = table->buckets + idx;
+	}
+	return no;
+}
+
+#			ifndef TEST_TABLE_H
+#				define TEST_TABLE_H
+/** <Welford1962Note>: population variance: `ssdm/n`,
+ sample variance: `ssdm/(n-1)`. */
+struct table_stats { size_t n, max; double mean, ssdm; };
+#			endif
+
+/** Update one sample point of `value`. */
+static void pT_(update)(struct table_stats *const st, const size_t value) {
+	double d, v = (double)value;
+	if(st->max < value) st->max = value;
+	d = v - st->mean;
+	st->mean += d / (double)++st->n;
+	st->ssdm += d * (v - st->mean);
+}
+/** Collect stats on `hash`. */
+static struct table_stats pT_(collect)(const struct t_(table) *const table) {
+	struct table_stats st = { 0, 0, 0.0, 0.0 };
+	pT_(uint) i, i_end;
+	if(!table || !table->buckets) return st;
+	for(i = 0, i_end = pT_(capacity)(table); i < i_end; i++) {
+		size_t no;
+		/* I'm sure there's a cheaper way to do it. */
+		for(no = pT_(count_bucket)(table, i); no; no--) pT_(update)(&st, no);
+	}
+	return st;
+}
+
 #			define BOX_PUBLIC_OVERRIDE
 #			include "box.h"
 
-/** Draw a diagram of `hash` written to `fn` in
+/** Draw a diagram of `table` written to `fp` in
  [Graphviz](https://www.graphviz.org/) format.
  @order \O(|`hash.bins`| + |`hash.items`|) */
 static void T_(graph)(const struct t_(table) *const table, FILE *const fp) {
-	FILE *fp;
 	size_t i, i_end;
 	struct table_stats st = pT_(collect)(table);
 	assert(table && fp);
@@ -469,7 +521,6 @@ static void T_(graph)(const struct t_(table) *const table, FILE *const fp) {
 end:
 	fprintf(fp, "\tnode [color=red];\n"
 		"}\n");
-	fclose(fp);
 }
 
 #		elif defined TREE_NAME
@@ -530,7 +581,6 @@ static void pT_(graph)(const struct t_(tree) *const tree, FILE *const fp) {
 	else pT_(subgraph)(&tree->root, fp);
 	fprintf(fp, "\tnode [color=\"Red\"];\n"
 		"}\n");
-	fclose(fp);
 }
 
 #			if 0
@@ -906,7 +956,7 @@ static void T_(graph)(const struct t_(trie) *const trie,
 		assert(0);
 		return;
 	}
-	printf(" *** graph: \"%s\" %lu.\n", fn, (unsigned long)no);
+	/*printf(" *** graph: \"%s\" %lu.\n", fn, (unsigned long)no);*/
 	/* Insert number. */
 	i = (size_t)(dot - fn), memcpy(copy, fn, i_copy = i);
 	copy[i_copy++] = '-';

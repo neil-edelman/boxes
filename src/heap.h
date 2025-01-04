@@ -346,7 +346,7 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	include "graph.h" /** \include */
 #endif
 
-#if defined HEAP_TEST && !defined HEAP_TRAIT
+#if defined HEAP_TEST && !defined HEAP_TRAIT && defined HAS_GRAPH_H
 #	include "../test/test_heap.h"
 #endif
 

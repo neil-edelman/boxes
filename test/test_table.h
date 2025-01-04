@@ -1,9 +1,7 @@
-/** A call with the container unknown. This is so that the function is free to
- return a key which is part of a larger aggregate structure. `fill` is
- initialized except if <typedef:<PN>entry> contains a value, the value will be
- a valid pointer to a temporary space for copying. */
-typedef int (*const pT_(fill_fn))(void *, pT_(entry) *fill);
-
+#ifdef TABLE_NON_STATIC
+void T_(test)(void);
+#endif
+#ifndef TABLE_DECLARE_ONLY
 
 #	if defined QUOTE || defined QUOTE_
 #		error Cannot be defined.
@@ -14,60 +12,14 @@ typedef int (*const pT_(fill_fn))(void *, pT_(entry) *fill);
 #		undef static
 #	endif
 
+#	include <stdio.h>  /* fprintf FILE */
+#	include <string.h> /* memset */
 
-#include <stdio.h>  /* fprintf FILE */
-#include <math.h>   /* sqrt NAN? */
-#ifndef NAN /* <https://stackoverflow.com/questions/5714131/nan-literal-in-c> */
-#	define NAN (0. / 0.)
-#endif
-#include <string.h> /* memset */
-
-static size_t pT_(count_bucket)(const struct t_(table) *const table,
-	pT_(uint) idx) {
-	struct pT_(bucket) *bucket;
-	pT_(uint) next;
-	size_t no = 0;
-	assert(table && idx < pT_(capacity)(table));
-	bucket = table->buckets + idx;
-	if((next = bucket->next) == TABLE_NULL
-		|| idx != pT_(chain_head)(table, bucket->hash)) return 0;
-	for( ; no++, next != TABLE_END;
-		next = bucket->next, assert(next != TABLE_NULL)) {
-		idx = next;
-		assert(idx < pT_(capacity)(table)
-			/* We want to count intermediates.
-			 && pT_(in_stack_range)(hash, idx) */);
-		bucket = table->buckets + idx;
-	}
-	return no;
-}
-
-#ifndef TEST_TABLE_H
-#	define TEST_TABLE_H
-/** <Welford1962Note>: population variance: `ssdm/n`,
- sample variance: `ssdm/(n-1)`. */
-struct table_stats { size_t n, max; double mean, ssdm; };
-#endif
-/** Update one sample point of `value`. */
-static void pT_(update)(struct table_stats *const st, const size_t value) {
-	double d, v = (double)value;
-	if(st->max < value) st->max = value;
-	d = v - st->mean;
-	st->mean += d / (double)++st->n;
-	st->ssdm += d * (v - st->mean);
-}
-/** Collect stats on `hash`. */
-static struct table_stats pT_(collect)(const struct t_(table) *const table) {
-	struct table_stats st = { 0, 0, 0.0, 0.0 };
-	pT_(uint) i, i_end;
-	if(!table || !table->buckets) return st;
-	for(i = 0, i_end = pT_(capacity)(table); i < i_end; i++) {
-		size_t no;
-		/* I'm sure there's a cheaper way to do it. */
-		for(no = pT_(count_bucket)(table, i); no; no--) pT_(update)(&st, no);
-	}
-	return st;
-}
+/** A call with the container unknown. This is so that the function is free to
+ return a key which is part of a larger aggregate structure. `fill` is
+ initialized except if <typedef:<PN>entry> contains a value, the value will be
+ a valid pointer to a temporary space for copying. */
+typedef int (*const pT_(fill_fn))(void *, pT_(entry) *fill);
 
 /** Draw a histogram of `hash` written to `fn` in
  [Gnuplot](http://www.gnuplot.info/) format.
@@ -119,20 +71,20 @@ static void pT_(histogram)(const struct t_(table) *const table,
 /** @return Equality of entries `a` and `b`. */
 static int pT_(eq_key)(/*pT_(key_c) a, pT_(key_c) b*/
 	const pT_(key) a, const pT_(key) b) {
-#ifdef TABLE_UNHASH /* Compare in <typedef:<PN>uint> space. */
+#	ifdef TABLE_UNHASH /* Compare in <typedef:<PN>uint> space. */
 	return t_(hash)(a) == t_(hash)(b);
-#else
+#	else
 	return t_(is_equal)(a, b);
-#endif
+#	endif
 }
 
 /** @return Key from `e`. */
 static pT_(key) pT_(entry_key)(pT_(entry) e) {
-#ifdef TABLE_VALUE
+#	ifdef TABLE_VALUE
 	return e.key;
-#else
+#	else
 	return e;
-#endif
+#	endif
 }
 
 /** Assertion function for seeing if `hash` is in a valid state.
@@ -174,31 +126,33 @@ static void pT_(test_basic)(void *const parent) {
 	struct T_(cursor) it;
 	int success;
 	assert(trial_size > 1);
+	assert(!errno);
 	/* Pre-computation. O(element_size*(element_size-1)/2); this places a limit
 	 on how much a reasonable test is. */
 	for(i = 0; i < trial_size; i++) {
 		struct sample *s = trials.sample + i;
 		size_t j;
-/*#ifdef TABLE_VALUE
+/*#	ifdef TABLE_VALUE
 		s->entry.value = &s.temp_value;
-#endif*/
+#	endif*/
 		t_(filler)(parent, &s->entry);
-#ifdef TABLE_VALUE
+#	ifdef TABLE_VALUE
 		t_(to_string)(pT_(entry_key)(s->entry), s->entry.value, &z);
-#else
+#	else
 		t_(to_string)(pT_(entry_key)(s->entry), &z);
-#endif
+#	endif
 		/* Is supposed to be in set. */
 		s->is_in = 0;
 		for(j = 0; j < i && !pT_(eq_key)(pT_(entry_key)(s->entry),
 			pT_(entry_key)(trials.sample[j].entry)); j++);
 		if(j == i) s->is_in = 1;
 	}
+	assert(!errno);
 	/* Test idle. */
 	pT_(legit)(&table);
 	assert(!table.buckets && !table.log_capacity && !table.size);
 	pT_(legit)(&table);
-	pT_(graph)(&table, "graph/table/" QUOTE(TABLE_NAME) "-0.gv");
+	T_(graph_fn)(&table, "graph/table/" QUOTE(TABLE_NAME) "-0.gv");
 	success = T_(buffer)(&table, 1);
 	assert(success && table.buckets && table.log_capacity == 3 && !table.size);
 	success = T_(buffer)(&table, 1);
@@ -216,6 +170,7 @@ static void pT_(test_basic)(void *const parent) {
 	}
 	t_(table_)(&table);
 	assert(!table.buckets && table.log_capacity == 0 && !table.size);
+	assert(!errno);
 	/* Test placing items. */
 	for(i = 0; i < trial_size; i++) {
 		struct { pT_(uint) before, after; } size;
@@ -233,24 +188,24 @@ static void pT_(test_basic)(void *const parent) {
 		} else {
 			assert(result == TABLE_PRESENT && size.before == size.after);
 		}
-#ifdef TABLE_VALUE
+#	ifdef TABLE_VALUE
 		success = T_(query)(&table, pT_(entry_key)(s->entry), &key, 0);
-#else
+#	else
 		success = T_(query)(&table, pT_(entry_key)(s->entry), &key);
-#endif
+#	endif
 		assert(success && pT_(eq_key)(pT_(entry_key)(s->entry), key));
 		if(table.size < max_graph && !(i & (i - 1)) || i + 1 == trial_size) {
 			char fn[64];
-#ifdef TABLE_VALUE
+#	ifdef TABLE_VALUE
 			t_(to_string)(pT_(entry_key)(s->entry), s->entry.value, &z);
-#else
+#	else
 			t_(to_string)(pT_(entry_key)(s->entry), &z);
-#endif
+#	endif
 			/*fix printf("%lu. Store \"%s\" result %s, table %s.\n", (unsigned long)i,
 				z, table_result_str[result], T_(table_to_string)(&table));*/
 			sprintf(fn, "graph/table/" QUOTE(TABLE_NAME) "-%lu.gv",
 				(unsigned long)i+1);
-			pT_(graph)(&table, fn);
+			T_(graph_fn)(&table, fn);
 		}
 		pT_(legit)(&table);
 	}
@@ -271,18 +226,18 @@ static void pT_(test_basic)(void *const parent) {
 		int /*cmp,*/ is;
 		is = T_(contains)(&table, key);
 		assert(is);
-#ifdef TABLE_VALUE
+#	ifdef TABLE_VALUE
 		is = T_(query)(&table, key, &result, &value);
-#else
+#	else
 		is = T_(query)(&table, key, &result);
-#endif
+#	endif
 		assert(is && pT_(eq_key)(pT_(entry_key)(s->entry), result));
 		value = T_(get_or)(&table, key, def);
-#ifdef TABLE_VALUE
+#	ifdef TABLE_VALUE
 		sample_value = &s->entry.value;
-#else
+#	else
 		sample_value = &s->entry;
-#endif
+#	endif
 		/* Any unused bytes will possibly be different. Can't do this. */
 		/*cmp = memcmp(&value, array_value, sizeof value);
 		printf("sizeof %lu\n", sizeof value);
@@ -303,11 +258,11 @@ static void pT_(test_basic)(void *const parent) {
 		/*sprintf(fn, "graph/table/" QUOTE(TABLE_NAME) "-end-%u.gv", ++count);
 		pT_(graph)(&table, fn);*/
 	}
-	pT_(graph)(&table, "graph/table/" QUOTE(TABLE_NAME) "-end.gv");
+	T_(graph_fn)(&table, "graph/table/" QUOTE(TABLE_NAME) "-end.gv");
 	assert(count1 == count2);
 	/* Clear. */
 	T_(clear)(&table);
-	pT_(graph)(&table, "graph/table/" QUOTE(TABLE_NAME) "-clear.gv");
+	T_(graph_fn)(&table, "graph/table/" QUOTE(TABLE_NAME) "-clear.gv");
 	pT_(legit)(&table);
 	for(b = 0, b_end = b + pT_(capacity)(&table); b < b_end; b++)
 		assert(table.buckets[b].next == TABLE_NULL);
@@ -337,12 +292,12 @@ static void T_(test)(void *const parent) {
 	printf("<" QUOTE(TABLE_NAME) ">table of key <" QUOTE(TABLE_KEY)
 		"> was created using: "
 		"TABLE_UINT <" QUOTE(TABLE_UINT) ">; "
-#ifdef TABLE_UNHASH
+#	ifdef TABLE_UNHASH
 		"TABLE_UNHASH; "
-#endif
-#ifdef TABLE_VALUE
+#	endif
+#	ifdef TABLE_VALUE
 		"TABLE_VALUE <" QUOTE(TABLE_VALUE) ">; "
-#endif
+#	endif
 		"testing%s:\n", parent ? "(pointer)" : "");
 	pT_(test_basic)(parent);
 	fprintf(stderr, "Done tests of <" QUOTE(TABLE_NAME) ">hash.\n\n");
@@ -351,5 +306,6 @@ static void T_(test)(void *const parent) {
 #	define BOX_PRIVATE_AGAIN
 #	include "../src/box.h"
 
-#undef QUOTE
-#undef QUOTE_
+#	undef QUOTE
+#	undef QUOTE_
+#endif

@@ -123,6 +123,12 @@ struct T_(cursor) T_(begin)(const struct t_(pool) *);
 int T_(exists)(const struct T_(cursor) *);
 pT_(type) *T_(entry)(struct T_(cursor) *);
 void T_(next)(struct T_(cursor) *);
+struct t_(pool) t_(pool)(void);
+void t_(pool_)(struct t_(pool) *);
+int T_(buffer)(struct t_(pool) *, size_t);
+pT_(type) *T_(new)(struct t_(pool) *);
+int T_(remove)(struct t_(pool) *, pT_(type) *);
+void T_(clear)(struct t_(pool) *);
 #endif
 #ifndef BOX_DECLARE_ONLY
 
@@ -356,13 +362,14 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	define TO_STRING_LEFT '['
 #	define TO_STRING_RIGHT ']'
 #	include "to_string.h"
+#	define POOL_HAS_TO_STRING /* Warning about tests. */
 #endif
 
-#if defined HAS_GRAPH_H
+#if defined HAS_GRAPH_H && defined POOL_HAS_TO_STRING
 #	include "graph.h" /** \include */
 #endif
 
-#ifdef POOL_TEST
+#if defined POOL_TEST && defined POOL_HAS_TO_STRING && defined HAS_GRAPH_H
 #	undef POOL_TEST
 #	include "../test/test_pool.h"
 #endif
@@ -373,6 +380,9 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #undef POOL_NAME
 #undef POOL_TYPE
 #undef POOL_SLAB_MIN_CAPACITY
+#ifdef POOL_HAS_TO_STRING
+#	undef POOL_HAS_TO_STRING
+#endif
 #ifdef POOL_DECLARE_ONLY
 #	undef POOL_DECLARE_ONLY
 #endif
