@@ -61,7 +61,7 @@ typedef unsigned bmpchunk;
  `sizeof(bmpchunk)` \times `CHARBIT`.) */
 struct t_(bmp) { bmpchunk chunk[BMP_CHUNKS]; };
 
-#ifdef BMP_NON_STATIC /* Public functions. */
+#ifdef BOX_NON_STATIC /* Public functions. */
 void T_(clear_all)(struct t_(bmp) *);
 void T_(copy)(struct t_(bmp) *, const unsigned, const unsigned,
 	struct t_(bmp) *);
@@ -73,7 +73,7 @@ void T_(toggle)(struct t_(bmp) *, unsigned);
 void T_(insert)(struct t_(bmp) *, unsigned, unsigned);
 void T_(remove)(struct t_(bmp) *, unsigned, unsigned);
 #endif
-#ifndef BMP_DECLARE_ONLY /* Produce code. */
+#ifndef BOX_DECLARE_ONLY /* Produce code. */
 
 #	define BOX_PUBLIC_OVERRIDE
 #	include "box.h"

@@ -95,7 +95,7 @@ struct t_(heap) { struct pT_(priority_array) as_array; };
 typedef struct t_(heap) pT_(box);
 struct T_(cursor) { struct pT_(priority_array_cursor) _; };
 
-#	ifdef HEAP_NON_STATIC /* Public functions. */
+#	ifdef BOX_NON_STATIC /* Public functions. */
 struct T_(cursor) T_(begin)(const struct t_(heap) *);
 int T_(exists)(const struct T_(cursor) *);
 pT_(priority) *T_(entry)(struct T_(cursor) *);
@@ -111,7 +111,7 @@ pT_(priority) *T_(buffer)(struct t_(heap) *, size_t);
 void T_(append)(struct t_(heap) *, size_t);
 int T_(affix)(struct t_(heap) *restrict, const struct t_(heap) *restrict);
 #	endif
-#	ifndef HEAP_DECLARE_ONLY /* <!-- body */
+#	ifndef BOX_DECLARE_ONLY /* <!-- body */
 
 /** Inducing a strict weak order by returning a positive result if `a` is
  out-of-order with respect to `b`. It only needs to divide entries into
@@ -307,6 +307,7 @@ static int T_(affix)(struct t_(heap) *restrict const heap,
 
 #		define BOX_PRIVATE_AGAIN
 #		include "box.h"
+
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	pT_(priority) unused; memset(&unused, 0, sizeof unused);

@@ -70,15 +70,11 @@ static void keyval_to_string(const struct keyval *const kv,
 
 
 /* Separate head/body. */
-static void static_to_string(const enum colour *c, char (*const a)[12])
+static void header_to_string(const enum colour *c, char (*const a)[12])
 	{ colour_to_string(c, a); }
-static void static_filler(enum colour *const c) { colour_filler(c); }
+static void header_filler(enum colour *const c) { colour_filler(c); }
 #define DEFINE
 #include "header_pool.h"
-struct header_pool header_pool(void)
-	{ struct header_pool _; _._ = static_pool(); return _; }
-void header_pool_(struct header_pool *const _) { static_pool_(&_->_); }
-void header_pool_test(void) { static_pool_test(); }
 
 
 /** For paper. */
@@ -101,7 +97,7 @@ static void special(void) {
 		is[r] = 0;
 	}
 finally:
-	private_colour_pool_graph(&pool, "graph/pool/paper.gv");
+	colour_pool_graph_fn(&pool, "graph/pool/paper.gv");
 	colour_pool_(&pool);
 }
 

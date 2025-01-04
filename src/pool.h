@@ -38,10 +38,10 @@
 /* `POOL_TO_STRING` is undocumented because this container is only iterable in
  the first slab, so this is not very useful except for debugging. */
 
-#if !defined(POOL_NAME) || !defined(POOL_TYPE)
+#if !defined POOL_NAME || !defined POOL_TYPE
 #	error Name or tag type undefined.
 #endif
-#if defined(POOL_TEST) && !defined(POOL_TO_STRING)
+#if defined POOL_TEST && !defined POOL_TO_STRING
 #error Test requires to string.
 #endif
 
@@ -49,7 +49,6 @@
 #	define POOL_H
 /** @return An order on `a`, `b` which specifies a max-heap. */
 static int poolfree_less(const size_t a, const size_t b) { return a < b; }
-
 #	define HEAP_NAME poolfree
 #	define HEAP_TYPE size_t
 #	include "heap.h"
@@ -62,6 +61,12 @@ static int poolfree_less(const size_t a, const size_t b) { return a < b; }
 #	define POOL_CAST (const uintptr_t)(const void *)
 #endif /* >= C99 --> */
 
+#ifdef POOL_NON_STATIC
+#	define BOX_NON_STATIC
+#endif
+#ifdef POOL_DECLARE_ONLY
+#	define BOX_DECLARE_ONLY
+#endif
 #define BOX_START
 #include "box.h"
 
@@ -113,14 +118,13 @@ typedef struct t_(pool) pT_(box);
  enough information to do otherwise. */
 struct T_(cursor) { struct pT_(slot) *slot0; size_t i; };
 
-#ifndef POOL_DECLARE_ONLY
-
-/*
-struct T_(cursor) T_(begin)(const struct t_(array) *);
+#ifdef BOX_NON_STATIC
+struct T_(cursor) T_(begin)(const struct t_(pool) *);
 int T_(exists)(const struct T_(cursor) *);
 pT_(type) *T_(entry)(struct T_(cursor) *);
 void T_(next)(struct T_(cursor) *);
-*/
+#endif
+#ifndef BOX_DECLARE_ONLY
 
 /** @return Index of slot that is higher than `x` in `slots`, but treating zero
  as special. @order \O(\log `slots`) */
@@ -243,6 +247,9 @@ static int pT_(remove)(struct t_(pool) *const pool,
 	return 1;
 }
 
+#	define BOX_PUBLIC_OVERRIDE
+#	include "box.h"
+
 /** @return A cursor at slot0 of `p` or to nothing. */
 static struct T_(cursor) T_(begin)(const struct t_(pool) *const p)
 	{ struct T_(cursor) cur; cur.slot0 = p && p->slots.data
@@ -323,6 +330,9 @@ static void T_(clear)(struct t_(pool) *const pool) {
 	poolfree_heap_clear(&pool->free0);
 }
 
+#	define BOX_PRIVATE_AGAIN
+#	include "box.h"
+
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	T_(begin)(0); T_(exists)(0); T_(entry)(0); T_(next)(0);
@@ -330,27 +340,33 @@ static void pT_(unused_base)(void) {
 	T_(remove)(0, 0); T_(clear)(0); pT_(unused_base_coda)();
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
+#endif /* Produce code. */
 
-#	ifdef POOL_TO_STRING /* <!-- string */
-#		undef POOL_TO_STRING
-/** Type of `POOL_TO_STRING` needed function `<tr>to_string`. Responsible for
- turning the read-only argument into a 12-max-`char` output string. */
-typedef void (*pTR_(to_string_fn))(const pT_(type) *, char (*)[12]);
+#ifdef POOL_TO_STRING
+#	undef POOL_TO_STRING
+#	ifndef POOL_DECLARE_ONLY
+/** Type of the required `<tr>to_string`. Responsible for turning the
+ read-only argument into a 12-max-`char` output string. */
+typedef void (*pT_(to_string_fn))(const pT_(type) *, char (*)[12]);
 /** Thunk(`cur`, `a`). One must implement `<tr>to_string`. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12])
 	{ tr_(to_string)(&cur->slot0->slab[cur->i], a); }
-#		define TO_STRING_LEFT '['
-#		define TO_STRING_RIGHT ']'
-#		include "to_string.h"
 #	endif
+#	define TO_STRING_LEFT '['
+#	define TO_STRING_RIGHT ']'
+#	include "to_string.h"
+#endif
 
-#	ifdef POOL_TEST /* <!-- test */
-#		undef POOL_TEST
-#		include "../test/test_pool.h"
-#	endif /* test --> */
+#if defined HAS_GRAPH_H
+#	include "graph.h" /** \include */
+#endif
 
-#endif /* Produce code. */
+#ifdef POOL_TEST
+#	undef POOL_TEST
+#	include "../test/test_pool.h"
+#endif
+
 
 #undef BOX_MINOR
 #undef BOX_MAJOR

@@ -202,8 +202,7 @@ static void T_(graph)(const struct t_(pool) *const pool,
 	struct pT_(slot) *slot;
 	pT_(type) *slab;
 
-	assert(pool && fn);
-	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
+	assert(pool && fp);
 	fprintf(fp, "digraph {\n"
 		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
 		" fontname=modern];\n"
@@ -334,7 +333,6 @@ no_slab_data:
 no_slots:
 	fprintf(fp, "\tnode [fillcolour=red];\n"
 		"}\n");
-	fclose(fp);
 }
 
 #		elif defined TABLE_NAME

@@ -108,7 +108,7 @@ typedef struct t_(list) pT_(box);
  @implements `iterator` */
 struct T_(cursor) { struct t_(listlink) *link; };
 
-#	ifdef LIST_NON_STATIC /* Public functions. */
+#	ifdef BOX_NON_STATIC /* Public functions. */
 struct t_(listlink) *T_(head)(const struct t_(list) *);
 struct t_(listlink) *T_(tail)(const struct t_(list) *);
 struct t_(listlink) *T_(link_previous)(const struct t_(listlink) *);
@@ -131,7 +131,7 @@ void T_(to)(struct t_(list) *restrict, struct t_(list) *restrict);
 void T_(to_before)(struct t_(list) *restrict, struct t_(listlink) *restrict);
 void T_(self_correct)(struct t_(list) *);
 #	endif
-#	ifndef LIST_DECLARE_ONLY /* Produce code: not for headers. */
+#	ifndef BOX_DECLARE_ONLY /* Produce code: not for headers. */
 
 #		define BOX_PUBLIC_OVERRIDE
 #		include "box.h"

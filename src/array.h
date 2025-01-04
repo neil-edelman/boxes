@@ -43,8 +43,7 @@
 #	error Only one can be defined at a time.
 #endif
 #if defined ARRAY_TEST && (!defined ARRAY_TRAIT && !defined ARRAY_TO_STRING \
-	|| defined ARRAY_TRAIT && !defined ARRAY_HAS_TO_STRING \
-	|| !defined HAS_GRAPH_H)
+	|| defined ARRAY_TRAIT && !defined ARRAY_HAS_TO_STRING)
 #	error Test requires to string and graph.
 #endif
 #if defined BOX_TRAIT && !defined ARRAY_TRAIT
@@ -93,7 +92,7 @@ typedef struct t_(array) pT_(box);
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
 struct T_(cursor) { struct t_(array) *a; size_t i; };
 
-#	ifdef ARRAY_NON_STATIC /* Public functions. */
+#	ifdef BOX_NON_STATIC /* Public functions. */
 struct T_(cursor) T_(begin)(const struct t_(array) *);
 struct T_(cursor) T_(at)(const struct t_(array) *, size_t);
 int T_(exists)(const struct T_(cursor) *);
@@ -118,7 +117,7 @@ pT_(type) *T_(pop)(struct t_(array) *const a);
 int T_(splice)(struct t_(array) *restrict, const struct t_(array) *restrict,
 	size_t, size_t);
 #	endif
-#	ifndef ARRAY_DECLARE_ONLY /* Produce code. */
+#	ifndef BOX_DECLARE_ONLY /* Produce code. */
 
 #		define BOX_PUBLIC_OVERRIDE
 #		include "box.h"
