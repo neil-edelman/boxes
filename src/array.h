@@ -68,17 +68,17 @@
 #	include <errno.h>
 #	include <assert.h>
 
-#	define BOX_MINOR ARRAY_NAME
-#	define BOX_MAJOR array
-#	define BOX_ACCESS /* fixme: Have all the functions individually. */
-#	define BOX_CONTIGUOUS
-
 #	ifndef ARRAY_MIN_CAPACITY
 #		define ARRAY_MIN_CAPACITY 3 /* > 1 */
 #	endif
 #	if ARRAY_MIN_CAPACITY <= 1
 #		error ARRAY_MIN_CAPACITY > 1
 #	endif
+
+#	define BOX_MINOR ARRAY_NAME
+#	define BOX_MAJOR array
+#	define BOX_ACCESS /* fixme: Have all the functions individually. */
+#	define BOX_CONTIGUOUS
 
 /** A valid tag type set by `ARRAY_TYPE`. */
 typedef ARRAY_TYPE pT_(type);

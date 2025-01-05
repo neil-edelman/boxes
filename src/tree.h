@@ -8,12 +8,12 @@
 
  ![Example of an order-3 tree.](../doc/tree/tree.png)
 
- A <tag:<t>tree> is an ordered set or map contained in a tree; the order is
- suppled by <fn:<t>less>. For memory locality, this is implemented B-tree,
- described in <Bayer, McCreight, 1972, Large>.
+ A <tag:<t>tree> is an ordered set or map contained in an unstable tree; the
+ order is suppled by <fn:<t>less>. For memory locality, this is implemented
+ B-tree, described in <Bayer, McCreight, 1972, Large>.
 
  All operations are fail-fast and will not compromise the integrity of any
- existing tree. As a B-tree, this is not stable.
+ existing tree.
 
  @param[TREE_NAME, TREE_KEY]
  `<t>` that satisfies `C` naming conventions when mangled, required, and
@@ -45,29 +45,35 @@
  `TREE_EXPECT_TRAIT` and then subsequently including the name that satisfies
  `C` naming conventions when mangled in `TREE_TRAIT`.
 
- @param[TREE_DECLARE_ONLY]
+ @param[TREE_DECLARE_ONLY, TREE_NON_STATIC]
  For headers in different compilation units.
 
  @fixme merge, difference, trie
  @depend [box](../../src/box.h)
  @std C89 */
 
-#if !defined(TREE_NAME)
+#if !defined TREE_NAME
 #	error Name undefined.
 #endif
-#if !defined(BOX_ENTRY1) && (defined(TREE_TRAIT) ^ defined(BOX_MAJOR))
-#	error TREE_TRAIT name must come after TREE_EXPECT_TRAIT.
+#if !defined BOX_ENTRY1 && (defined TREE_TRAIT ^ defined BOX_MAJOR)
+#	error Trait name must come after expect trait.
 #endif
-#if defined(TREE_TEST) && (!defined(TREE_TRAIT) && !defined(TREE_TO_STRING) \
-	|| defined(TREE_TRAIT) && !defined(TREE_HAS_TO_STRING))
+#if defined TREE_TEST && (!defined TREE_TRAIT && !defined TREE_TO_STRING \
+	|| defined TREE_TRAIT && !defined TREE_HAS_TO_STRING)
 #error Test requires to string.
 #endif
-#if defined(BOX_TRAIT) && !defined(TREE_TRAIT)
-#	error Unexpected.
+#if defined BOX_TRAIT && !defined TREE_TRAIT
+#	error Unexpected flow.
 #endif
 
 #ifdef TREE_TRAIT
 #	define BOX_TRAIT TREE_TRAIT /* Ifdef in <box.h>. */
+#endif
+#ifdef TREE_NON_STATIC
+#	define BOX_NON_STATIC
+#endif
+#ifdef TREE_DECLARE_ONLY
+#	define BOX_DECLARE_ONLY
 #endif
 #define BOX_START
 #include "box.h"
@@ -132,26 +138,33 @@ typedef TREE_KEY pT_(key);
 typedef TREE_VALUE pT_(value);
 #	endif
 
+/* https://bugwoodcloud.org/resource/files/15277.pdf
+ Coder, Kim D. 2018. Tree anatomy: Defining trees & forms.
+ Warnell School of Forestry & Natural Resources,
+ University of Georgia, Outreach Publication
+ WSFNR-19-35. Pp. 20. */
+
 /* These rules are lazier than the original so as to not exhibit worst-case
  behaviour in small trees, as <Johnson, Shasha, 1993, Free-at-Empty>, (lookup
  is potentially slower after deleting.) In the terminology of
  <Knuth, 1998 Art 3>,
- * Every branch has at most `TREE_ORDER == TREE_MAX + 1` children, which is at
-   minimum three.
- * Every non-root and non-bulk-loaded node has at least `TREE_MIN` keys,
-   (`⎣TREE_MAX/3⎦`.)
- * Every branch has at least one child, `k`, and contains `k - 1` keys, (this
-   is a consequence of the fact that they are implicitly storing a complete
-   binary sub-tree.)
- * All leaves are at the maximum depth and height zero; they do'n't carry links
-   to other nodes, (hence, leaf.) In this code, a branch node is a
-   specialization of a (leaf) node with children. One can tell if it's a branch
-   by keeping track of the height.
+ * Every branch [bough] has at most `TREE_ORDER == TREE_MAX + 1` children,
+   which is at minimum three.
+ * Every non-root [non-trunk] and non-bulk-loaded node [bough] has at least
+   `TREE_MIN` keys, (`⎣TREE_MAX/3⎦`.)
+ * Every branch [bough] has at least one child, `k`, and contains `k - 1` keys,
+   (this is a consequence of the fact that they are implicitly storing a
+   complete binary sub-tree [sub-bough].)
+ * All leaves [limbs] are at the maximum depth and height zero [one]; they
+   do'n't carry links to other nodes [boughs], (hence, leaf [limb].) In this
+   code, a branch node [bough] is a
+   specialization of a (leaf) node [limb] with children. One can tell if it's
+   a branch [bough] by keeping track of the height.
  * There are two empty B-trees to facilitate allocation hysteresis between
-   0 -- 1: idle `{ 0, 0 }`, and `{ garbage leaf, UINT_MAX }`, one could test,
-   `!root || height == UINT_MAX`.
+   0–1: idle `{ 0, 0 }`, and `{ garbage leaf, UINT_MAX }` [fixme], one could
+   test, `!root || height == UINT_MAX`.
  * Bulk-loading always is on the right side. */
-struct pT_(node) {
+struct pT_(node)/* limb crown? */ {
 	unsigned size;
 	pT_(key) key[TREE_MAX]; /* Cache-friendly lookup. */
 #	ifdef TREE_VALUE
@@ -159,20 +172,26 @@ struct pT_(node) {
 #	endif
 };
 /* B-tree branch is a <tag:<pT>node> and links to `size + 1` nodes. */
-struct pT_(branch) { struct pT_(node) base, *child[TREE_ORDER]; };
+struct pT_(branch)/* bough */ { struct pT_(node) /* limb */base, *child[TREE_ORDER]; };
+
+/* fixme: Notch (add) and nick (delete) are good names for the highest
+ non-full node, in spirit with the tree analogy. Replace `<pT>node` with a
+ uniform terminology between `tree` and `tree`. This should be made of
+ fixed-size `<pT>bought`, with a `tree` as—for tree—an implicit structure
+ realized by binary search. The root bought is the `trunk`. */
 
 /* Node plus height is a [sub]-tree. */
-struct pT_(tree) { struct pT_(node) *node; unsigned height; };
+struct pT_(tree)/* wood? stem? */ { struct pT_(node) *node; unsigned height; };
 /** See <fn:<t>tree>.
 
  ![States.](../doc/tree/states.png) */
 struct t_(tree);
-struct t_(tree) { struct pT_(tree) root; };
+struct t_(tree) { struct pT_(tree) root; /* trunk stem */ };
 /* fixme: height 1-based, fix pointer. */
 typedef struct t_(tree) pT_(box);
 
 /* Address of a specific key by node. Height might not be used, but there's too
- many structs in this file anyway. */
+ many structs in this file anyway. (That's <tag:<pT>tree>…merge this) */
 struct pT_(ref) {
 	struct pT_(node) *node; /* If null, others ignored. */
 	unsigned height, idx; /* `idx < node.size` means valid. */
@@ -184,13 +203,14 @@ struct T_(cursor) { struct pT_(tree) *root; struct pT_(ref) ref; };
  iterator. To modify the tree while iterating, take the <fn:<T>key> and restart
  the iterator with <fn:<T>less> or <fn:<T>more> as appropriate. */
 
-#	ifndef TREE_DECLARE_ONLY /* <!-- body */
-/*
-struct T_(cursor) T_(begin)(const struct t_(array) *);
-int T_(exists)(const struct T_(cursor) *);
+#	ifdef BOX_NON_STATIC /* Public functions. */
+struct T_(cursor) T_(begin)(const struct t_(tree) *);
+int T_(exists)(struct T_(cursor) *);
 pT_(type) *T_(entry)(struct T_(cursor) *);
 void T_(next)(struct T_(cursor) *);
-*/
+...
+#	endif
+#	ifndef BOX_DECLARE_ONLY /* <!-- body */
 
 /** Inducing a strict weak order by returning a positive result if `a` is
  out-of-order with respect to `b`. It only needs to divide entries into
@@ -202,6 +222,8 @@ typedef int (*pT_(less_fn))(const pT_(key) a, const pT_(key) b);
 #			undef TREE_LESS
 /** The default `TREE_LESS` on `a` and `b` is integer comparison that
  results in ascending order, `a > b`. Use `TREE_LESS` to supply one's own.
+ @fixme No default less: `heap` does not do it, and it makes it simpler to work
+ with. Less parameters.
  @implements <typedef:<pT>less_fn> */
 static int t_(less)(const pT_(key) a, const pT_(key) b)
 	{ return a > b; }
@@ -226,127 +248,6 @@ static pT_(value) *pT_(ref_to_valuep)(const struct pT_(ref) ref)
 	{ return ref.node ? ref.node->key + ref.idx : 0; }
 #		endif /* !value --> */
 
-/** Iterator for `tree` in empty state. */
-static struct T_(cursor) T_(begin)(struct t_(tree) *const tree) {
-	struct T_(cursor) cur;
-	assert(tree);
-	cur.root = &tree->root;
-	cur.ref.node = 0, cur.ref.height = 0, cur.ref.idx = 0;
-	return cur;
-}
-/** @return Whether the `cur` points to an element. */
-static int T_(exists)(struct T_(cursor) *const cur) {
-	if(!cur || !cur->root || !cur->root->node || cur->root->height == UINT_MAX)
-		return 0;
-	/* Iterator empty; tree non-empty; point at first. */
-	if(!cur->ref.node) {
-		cur->ref.height = cur->root->height;
-		for(cur->ref.node = cur->root->node; cur->ref.height;
-			cur->ref.node = pT_(as_branch_c)(cur->ref.node)->child[0],
-			cur->ref.height--);
-		cur->ref.idx = 0;
-	}
-	return 1;
-}
-/** @return Dereference the element pointed to by `cur` that exists. */
-static struct pT_(ref) *T_(entry)(struct T_(cursor) *const cur) {
-	return &cur->ref;
-}
-/** @return Extract the key from `cur` when it points at a valid element.
- @allow */
-static pT_(key) T_(key)(const struct T_(cursor) *const cur)
-	{ return cur->ref.node->key[cur->ref.idx]; }
-#		ifdef TREE_VALUE /* <!-- map */
-/** @return Extract the value from `cur` when it points at a valid element, if
- `TREE_VALUE`. @allow */
-static pT_(value) *T_(value)(const struct T_(cursor) *const cur)
-	{ return cur->ref.node->value + cur->ref.idx; }
-#		endif /* map --> */
-/** Move next on `cur` that exists. */
-static void T_(next)(struct T_(cursor) *const cur) {
-	struct pT_(ref) next;
-	assert(cur && cur->root && cur->root->node
-		&& cur->root->height != UINT_MAX && cur->ref.node);
-	/* fixme: This is not ideal! I think. */
-	/* Next is a copy of the next element. Clip. */
-	next = cur->ref, next.idx++;
-	if(next.height && next.idx > next.node->size) next.idx = next.node->size;
-	while(next.height) next.node = pT_(as_branch)(next.node)->child[next.idx],
-		next.idx = 0, next.height--; /* Fall from branch. */
-	cur->ref = next; /* Possibly one beyond bounds. */
-	if(next.idx >= next.node->size) { /* Maybe re-descend reveals more keys. */
-		struct pT_(tree) tree = *cur->root;
-		unsigned a0;
-		/* Target; this will not work with duplicate keys. */
-		const pT_(key) x = next.node->key[next.node->size - 1];
-		assert(next.node->size);
-		for(next.node = 0; tree.height;
-			tree.node = pT_(as_branch)(tree.node)->child[a0], tree.height--) {
-			unsigned a1 = tree.node->size;
-			a0 = 0;
-			while(a0 < a1) {
-				const unsigned m = (a0 + a1) / 2;
-				/* <t>less must be declared. */
-				if(t_(less)(x, tree.node->key[m]) > 0) a0 = m + 1;
-				else a1 = m;
-			}
-			if(a0 < tree.node->size) next.node = tree.node,
-				next.height = tree.height, next.idx = a0;
-		}
-		if(!next.node) /* Off right. */
-			{ cur->ref.node = 0, cur->root = 0; return; }
-	} /* Jumped nodes. */
-	cur->ref = next;
-}
-/** @return Whether `cur` is pointing to a valid element. */
-static int T_(previous)(struct T_(cursor) *const cur) {
-	struct pT_(ref) prd;
-	assert(cur && cur->root);
-
-	/* Tree empty. */
-	if(!cur->root || !cur->root->node || cur->root->height == UINT_MAX) return 0;
-
-	/* Iterator empty; tree non-empty; point at last. */
-	if(!cur->ref.node) {
-		cur->ref.height = cur->root->height;
-		for(cur->ref.node = cur->root->node; cur->ref.height; cur->ref.node
-			= pT_(as_branch)(cur->ref.node)->child[cur->ref.node->size],
-			cur->ref.height--);
-		/* Did you forget <fn:<N>tree_bulk_load_finish>? */
-		if(!cur->ref.node->size) return cur->ref.node = 0, 0;
-		cur->ref.idx = cur->ref.node->size - 1;
-		return 1;
-	}
-
-	/* Predecessor? Clip. */
-	prd = cur->ref;
-	if(prd.height && prd.idx > prd.node->size) prd.idx = prd.node->size;
-	while(prd.height) prd.height--,
-		prd.node = pT_(as_branch)(prd.node)->child[prd.idx],
-		prd.idx = prd.node->size;
-	if(prd.idx) {
-		prd.idx--;
-	} else { /* Maybe re-descend reveals more keys. */
-		struct pT_(tree) tree = *cur->root;
-		unsigned a0;
-		const pT_(key) x = prd.node->key[0]; /* Target. */
-		for(prd.node = 0; tree.height;
-			tree.node = pT_(as_branch)(tree.node)->child[a0], tree.height--) {
-			unsigned a1 = tree.node->size;
-			a0 = 0;
-			while(a0 < a1) {
-				const unsigned m = (a0 + a1) / 2;
-				if(t_(less)(x, tree.node->key[m]) > 0) a0 = m + 1;
-				else a1 = m;
-			}
-			if(a0) prd.node = tree.node, prd.height = tree.height,
-				prd.idx = a0 - 1;
-		}
-		if(!prd.node) return cur->ref.node = 0, 0; /* Off left. */
-	} /* Jumped nodes. */
-	cur->ref = prd;
-	return 1;
-}
 /** Finds `idx` of 'greatest lower-bound' (C++ parlance) minorant of `x` in
  `lo` only in one node at a time. */
 static void pT_(node_lb)(struct pT_(ref) *const lo, const pT_(key) x) {
@@ -472,39 +373,6 @@ static struct pT_(ref) pT_(lookup_remove)(struct pT_(tree) tree,
 	return lo;
 }
 
-/** @return Cursor in `tree` such that <fn:<T>key> is the greatest key that is
- less-than-or-equal-to `x`, or if `x` is less than all in `tree`,
- <fn:<T>begin>. @order \Theta(\log |`tree`|) @fixme Update. @allow */
-static struct T_(cursor) T_(less)(struct t_(tree) *const tree,
-	const pT_(key) x) {
-	struct T_(cursor) cur;
-	assert(tree);
-	if(!(cur.root = &tree->root)) return cur;
-	/* This ensures that it doesn't start again. */
-	if(!(cur.ref = pT_(less)(tree->root, x)).node) cur.root = 0;
-	return cur;
-}
-/** @return Cursor in `tree` such that <fn:<T>more> is the smallest key that is
- greater-than-or-equal-to `x`, or, (…) if `x` is greater than all in
- `tree`. @order \Theta(\log |`tree`|) @fixme Update. @allow */
-static struct T_(cursor) T_(more)(struct t_(tree) *const tree,
-	const pT_(key) x) {
-	struct T_(cursor) cur;
-	assert(tree);
-	if(!(cur.root = &tree->root)) return cur;
-	/* This ensures that it doesn't start again. */
-	if(!(cur.ref = pT_(more)(tree->root, x)).node) cur.root = 0;
-	return cur;
-}
-
-/** Zeroed data (not all-bits-zero) is initialized. @return An idle tree.
- @order \Theta(1) @allow */
-static struct t_(tree) t_(tree)(void) {
-	struct t_(tree) tree;
-	tree.root.node = 0; tree.root.height = 0;
-	return tree;
-}
-
 /** Private: frees non-empty `tree` and it's children recursively, but doesn't
  put it to idle or clear pointers.
  @param[keep] Keep one leaf if non-null. Set to null before. */
@@ -535,6 +403,304 @@ static void pT_(clear)(struct t_(tree) *tree) {
 	tree->root.node = one;
 	tree->root.height = UINT_MAX;
 }
+
+/** Private: counts a sub-tree, `tree`. */
+static size_t pT_(count_r)(const struct pT_(tree) tree) {
+	size_t c = tree.node->size;
+	if(tree.height) {
+		const struct pT_(branch) *const branch = pT_(as_branch)(tree.node);
+		struct pT_(tree) sub;
+		size_t i;
+		sub.height = tree.height - 1;
+		for(i = 0; i <= tree.node->size; i++) {
+			sub.node = branch->child[i];
+			c += pT_(count_r)(sub);
+		}
+	}
+	return c;
+}
+
+/* All these are used in clone; it's convenient to use `\O(\log size)` stack
+ space. [existing branches][new branches][existing leaves][new leaves] no */
+struct pT_(scaffold) {
+	struct tree_node_count victim, source;
+	size_t no;
+	struct pT_(node) **data;
+	struct { struct pT_(node) **head, **fresh, **iterator; } branch, leaf;
+};
+/** Counts the nodes `no` in `tree` for <fn:<pT>nodes>. */
+static int pT_(nodes_r)(struct pT_(tree) tree,
+	struct tree_node_count *const no) {
+	assert(tree.node && tree.height);
+	if(!++no->branches) return 0;
+	if(tree.height == 1) {
+		/* Overflow; aren't guaranteed against this. */
+		if(no->leaves + tree.node->size + 1 < no->leaves) return 0;
+		no->leaves += tree.node->size + 1;
+	} else {
+		unsigned i;
+		for(i = 0; i <= tree.node->size; i++) {
+			struct pT_(tree) child;
+			child.node = pT_(as_branch)(tree.node)->child[i];
+			child.height = tree.height - 1;
+			if(!pT_(nodes_r)(child, no)) return 0;
+		}
+	}
+	return 1;
+}
+/** Counts the nodes `no` in `tree`. */
+static int pT_(nodes)(const struct t_(tree) *const tree,
+	struct tree_node_count *const no) {
+	assert(tree && no);
+	no->branches = no->leaves = 0;
+	if(!tree->root.node) { /* Idle. */
+	} else if(tree->root.height == UINT_MAX || !tree->root.height) {
+		no->leaves = 1;
+	} else { /* Complex. */
+		struct pT_(tree) sub = tree->root;
+		if(!pT_(nodes_r)(sub, no)) return 0;
+	}
+	return 1;
+}
+/** `ref` with `sc` work under <fn:<pT>cannibalize>. */
+static void pT_(cannibalize_r)(struct pT_(ref) ref,
+	struct pT_(scaffold) *const sc) {
+	struct pT_(branch) *branch = pT_(as_branch)(ref.node);
+	const int keep_branch = sc->branch.iterator < sc->branch.fresh;
+	assert(ref.node && ref.height && sc);
+	if(keep_branch) *sc->branch.iterator = ref.node, sc->branch.iterator++;
+	if(ref.height == 1) { /* Children are leaves. */
+		unsigned n;
+		for(n = 0; n <= ref.node->size; n++) {
+			const int keep_leaf = sc->leaf.iterator < sc->leaf.fresh;
+			struct pT_(node) *child = branch->child[n];
+			if(keep_leaf) *sc->leaf.iterator = child, sc->leaf.iterator++;
+			else free(child);
+		}
+	} else while(ref.idx <= ref.node->size) {
+		struct pT_(ref) child;
+		child.node = pT_(as_branch)(ref.node)->child[ref.idx];
+		child.height = ref.height - 1;
+		child.idx = 0;
+		pT_(cannibalize_r)(child, sc);
+		ref.idx++;
+	}
+	if(!keep_branch) free(branch);
+}
+/** Disassemble `tree` and put in into `sc`. */
+static void pT_(cannibalize)(const struct t_(tree) *const tree,
+	struct pT_(scaffold) *const sc) {
+	struct pT_(ref) ref;
+	assert(tree && tree->root.height != UINT_MAX && sc);
+	/* Nothing to cannibalize. */
+	if(!sc->victim.branches && !sc->victim.leaves) return;
+	assert(tree->root.node);
+	ref.node = tree->root.node, ref.height = tree->root.height, ref.idx = 0;
+	sc->branch.iterator = sc->branch.head;
+	sc->leaf.iterator = sc->leaf.head;
+	if(ref.height) {
+		pT_(cannibalize_r)(ref, sc);
+	} else { /* Just one leaf. */
+		*sc->leaf.iterator = ref.node;
+	}
+}
+/** Do the work of `src` cloned with `sc`. Called from <fn:<pT>clone>. */
+static struct pT_(node) *pT_(clone_r)(struct pT_(tree) src,
+	struct pT_(scaffold) *const sc) {
+	struct pT_(node) *node;
+	if(src.height) {
+		struct pT_(branch) *const srcb = pT_(as_branch)(src.node),
+			*const branch = pT_(as_branch)(node = *sc->branch.iterator++);
+		unsigned i;
+		struct pT_(tree) child;
+		*node = *src.node; /* Copy node. */
+		child.height = src.height - 1;
+		for(i = 0; i <= src.node->size; i++) { /* Different links. */
+			child.node = srcb->child[i];
+			branch->child[i] = pT_(clone_r)(child, sc);
+		}
+	} else { /* Leaves. */
+		node = *sc->leaf.iterator++;
+		*node = *src.node;
+	}
+	return node;
+}
+/** `src` is copied with the cloning scaffold `sc`. */
+static struct pT_(tree) pT_(clone)(const struct pT_(tree) *const src,
+	struct pT_(scaffold) *const sc) {
+	struct pT_(tree) sub;
+	assert(src && src->node && sc);
+	/* Go back to the beginning of the scaffold and pick off one by one. */
+	sc->branch.iterator = sc->branch.head;
+	sc->leaf.iterator = sc->leaf.head;
+	sub.node = pT_(clone_r)(*src, sc);
+	sub.height = src->height;
+	/* Used up all of them. No concurrent modifications, please. */
+	assert(sc->branch.iterator == sc->leaf.head
+		&& sc->leaf.iterator == sc->data + sc->no);
+	return sub;
+}
+
+#		define BOX_PUBLIC_OVERRIDE
+#		include "box.h"
+
+/** Iterator for `tree` in empty state. */
+static struct T_(cursor) T_(begin)(const struct t_(tree) *const tree) {
+	union { const struct t_(tree) *readonly; struct t_(tree) *promise; } sly;
+	struct T_(cursor) cur;
+	assert(tree);
+	cur.root = &(sly.readonly = tree, sly.promise)->root;
+	cur.ref.node = 0, cur.ref.height = 0, cur.ref.idx = 0;
+	return cur;
+}
+/** @return Whether the `cur` points to an element. */
+static int T_(exists)(struct T_(cursor) *const cur) {
+	if(!cur || !cur->root || !cur->root->node || cur->root->height == UINT_MAX)
+		return 0;
+	/* Iterator empty; tree non-empty; point at first. */
+	if(!cur->ref.node) {
+		cur->ref.height = cur->root->height;
+		for(cur->ref.node = cur->root->node; cur->ref.height;
+			cur->ref.node = pT_(as_branch_c)(cur->ref.node)->child[0],
+			cur->ref.height--);
+		cur->ref.idx = 0;
+	}
+	return 1;
+}
+/** @return Dereference the element pointed to by `cur` that exists. */
+static struct pT_(ref) *T_(entry)(struct T_(cursor) *const cur) {
+	return &cur->ref;
+}
+/** @return Extract the key from `cur` when it points at a valid element.
+ @allow */
+static pT_(key) T_(key)(const struct T_(cursor) *const cur)
+	{ return cur->ref.node->key[cur->ref.idx]; }
+#		ifdef TREE_VALUE
+/** @return Extract the value from `cur` when it points at a valid element, if
+ `TREE_VALUE`. @allow */
+static pT_(value) *T_(value)(const struct T_(cursor) *const cur)
+	{ return cur->ref.node->value + cur->ref.idx; }
+#		endif
+/** Move next on `cur` that exists. */
+static void T_(next)(struct T_(cursor) *const cur) {
+	struct pT_(ref) next;
+	assert(cur && cur->root && cur->root->node
+		&& cur->root->height != UINT_MAX && cur->ref.node);
+	/* fixme: This is not ideal! I think. */
+	/* Next is a copy of the next element. Clip. */
+	next = cur->ref, next.idx++;
+	if(next.height && next.idx > next.node->size) next.idx = next.node->size;
+	while(next.height) next.node = pT_(as_branch)(next.node)->child[next.idx],
+		next.idx = 0, next.height--; /* Fall from branch. */
+	cur->ref = next; /* Possibly one beyond bounds. */
+	if(next.idx >= next.node->size) { /* Maybe re-descend reveals more keys. */
+		struct pT_(tree) tree = *cur->root;
+		unsigned a0;
+		/* Target; this will not work with duplicate keys. */
+		const pT_(key) x = next.node->key[next.node->size - 1];
+		assert(next.node->size);
+		for(next.node = 0; tree.height;
+			tree.node = pT_(as_branch)(tree.node)->child[a0], tree.height--) {
+			unsigned a1 = tree.node->size;
+			a0 = 0;
+			while(a0 < a1) {
+				const unsigned m = (a0 + a1) / 2;
+				/* <t>less must be declared. */
+				if(t_(less)(x, tree.node->key[m]) > 0) a0 = m + 1;
+				else a1 = m;
+			}
+			if(a0 < tree.node->size) next.node = tree.node,
+				next.height = tree.height, next.idx = a0;
+		}
+		if(!next.node) /* Off right. */
+			{ cur->ref.node = 0, cur->root = 0; return; }
+	} /* Jumped nodes. */
+	cur->ref = next;
+}
+/** @return Whether `cur` is pointing to a valid element. */
+static int T_(previous)(struct T_(cursor) *const cur) {
+	struct pT_(ref) prd;
+	assert(cur && cur->root);
+
+	/* Tree empty. */
+	if(!cur->root || !cur->root->node || cur->root->height == UINT_MAX) return 0;
+
+	/* Iterator empty; tree non-empty; point at last. */
+	if(!cur->ref.node) {
+		cur->ref.height = cur->root->height;
+		for(cur->ref.node = cur->root->node; cur->ref.height; cur->ref.node
+			= pT_(as_branch)(cur->ref.node)->child[cur->ref.node->size],
+			cur->ref.height--);
+		/* Did you forget <fn:<N>tree_bulk_load_finish>? */
+		if(!cur->ref.node->size) return cur->ref.node = 0, 0;
+		cur->ref.idx = cur->ref.node->size - 1;
+		return 1;
+	}
+
+	/* Predecessor? Clip. */
+	prd = cur->ref;
+	if(prd.height && prd.idx > prd.node->size) prd.idx = prd.node->size;
+	while(prd.height) prd.height--,
+		prd.node = pT_(as_branch)(prd.node)->child[prd.idx],
+		prd.idx = prd.node->size;
+	if(prd.idx) {
+		prd.idx--;
+	} else { /* Maybe re-descend reveals more keys. */
+		struct pT_(tree) tree = *cur->root;
+		unsigned a0;
+		const pT_(key) x = prd.node->key[0]; /* Target. */
+		for(prd.node = 0; tree.height;
+			tree.node = pT_(as_branch)(tree.node)->child[a0], tree.height--) {
+			unsigned a1 = tree.node->size;
+			a0 = 0;
+			while(a0 < a1) {
+				const unsigned m = (a0 + a1) / 2;
+				if(t_(less)(x, tree.node->key[m]) > 0) a0 = m + 1;
+				else a1 = m;
+			}
+			if(a0) prd.node = tree.node, prd.height = tree.height,
+				prd.idx = a0 - 1;
+		}
+		if(!prd.node) return cur->ref.node = 0, 0; /* Off left. */
+	} /* Jumped nodes. */
+	cur->ref = prd;
+	return 1;
+}
+
+/** @return Cursor in `tree` such that <fn:<T>key> is the greatest key that is
+ less-than-or-equal-to `x`, or if `x` is less than all in `tree`,
+ <fn:<T>begin>. @order \Theta(\log |`tree`|) @fixme Update. @allow */
+static struct T_(cursor) T_(less)(struct t_(tree) *const tree,
+	const pT_(key) x) {
+	struct T_(cursor) cur;
+	assert(tree);
+	if(!(cur.root = &tree->root)) return cur;
+	/* This ensures that it doesn't start again. */
+	if(!(cur.ref = pT_(less)(tree->root, x)).node) cur.root = 0;
+	return cur;
+}
+
+/** @return Cursor in `tree` such that <fn:<T>more> is the smallest key that is
+ greater-than-or-equal-to `x`, or, (…) if `x` is greater than all in
+ `tree`. @order \Theta(\log |`tree`|) @fixme Update. @allow */
+static struct T_(cursor) T_(more)(struct t_(tree) *const tree,
+	const pT_(key) x) {
+	struct T_(cursor) cur;
+	assert(tree);
+	if(!(cur.root = &tree->root)) return cur;
+	/* This ensures that it doesn't start again. */
+	if(!(cur.ref = pT_(more)(tree->root, x)).node) cur.root = 0;
+	return cur;
+}
+
+/** Zeroed data (not all-bits-zero) is initialized. @return An idle tree.
+ @order \Theta(1) @allow */
+static struct t_(tree) t_(tree)(void) {
+	struct t_(tree) tree;
+	tree.root.node = 0; tree.root.height = 0;
+	return tree;
+}
+
 /** Returns an initialized `tree` to idle, `tree` can be null.
  @order \O(|`tree`|) @allow */
 static void t_(tree_)(struct t_(tree) *const tree) {
@@ -554,21 +720,6 @@ static void t_(tree_)(struct t_(tree) *const tree) {
  @order \O(|`tree`|) @allow */
 static void T_(clear)(struct t_(tree) *const tree) { pT_(clear)(tree); }
 
-/** Private: counts a sub-tree, `tree`. */
-static size_t pT_(count_r)(const struct pT_(tree) tree) {
-	size_t c = tree.node->size;
-	if(tree.height) {
-		const struct pT_(branch) *const branch = pT_(as_branch)(tree.node);
-		struct pT_(tree) sub;
-		size_t i;
-		sub.height = tree.height - 1;
-		for(i = 0; i <= tree.node->size; i++) {
-			sub.node = branch->child[i];
-			c += pT_(count_r)(sub);
-		}
-	}
-	return c;
-}
 /** Counts all the keys on `tree`, which can be null.
  @order \O(|`tree`|) @allow */
 static size_t T_(count)(const struct t_(tree) *const tree)
@@ -616,9 +767,6 @@ static pT_(key) T_(more_or)(const struct t_(tree) *const tree,
 	return tree && (ref = pT_(more)(tree->root, x)).node
 		? ref.node->key[ref.idx] : default_key;
 }
-
-/* fixme: Notch (add) and nick (delete) are good names for the highest
- non-full node, in spirit with the tree analogy. */
 
 #		ifdef TREE_VALUE /* <!-- map */
 /** Only if `TREE_VALUE` is set; the set version is <fn:<T>try>. Packs `key` on
@@ -1351,126 +1499,6 @@ static int T_(remove)(struct t_(tree) *const tree, const pT_(key) key)
 	{ return !!tree && !!tree->root.node
 	&& tree->root.height != UINT_MAX && pT_(remove)(&tree->root, key); }
 
-/* All these are used in clone; it's convenient to use `\O(\log size)` stack
- space. [existing branches][new branches][existing leaves][new leaves] no */
-struct pT_(scaffold) {
-	struct tree_node_count victim, source;
-	size_t no;
-	struct pT_(node) **data;
-	struct { struct pT_(node) **head, **fresh, **iterator; } branch, leaf;
-};
-/** Counts the nodes `no` in `tree` for <fn:<pT>nodes>. */
-static int pT_(nodes_r)(struct pT_(tree) tree,
-	struct tree_node_count *const no) {
-	assert(tree.node && tree.height);
-	if(!++no->branches) return 0;
-	if(tree.height == 1) {
-		/* Overflow; aren't guaranteed against this. */
-		if(no->leaves + tree.node->size + 1 < no->leaves) return 0;
-		no->leaves += tree.node->size + 1;
-	} else {
-		unsigned i;
-		for(i = 0; i <= tree.node->size; i++) {
-			struct pT_(tree) child;
-			child.node = pT_(as_branch)(tree.node)->child[i];
-			child.height = tree.height - 1;
-			if(!pT_(nodes_r)(child, no)) return 0;
-		}
-	}
-	return 1;
-}
-/** Counts the nodes `no` in `tree`. */
-static int pT_(nodes)(const struct t_(tree) *const tree,
-	struct tree_node_count *const no) {
-	assert(tree && no);
-	no->branches = no->leaves = 0;
-	if(!tree->root.node) { /* Idle. */
-	} else if(tree->root.height == UINT_MAX || !tree->root.height) {
-		no->leaves = 1;
-	} else { /* Complex. */
-		struct pT_(tree) sub = tree->root;
-		if(!pT_(nodes_r)(sub, no)) return 0;
-	}
-	return 1;
-}
-/** `ref` with `sc` work under <fn:<pT>cannibalize>. */
-static void pT_(cannibalize_r)(struct pT_(ref) ref,
-	struct pT_(scaffold) *const sc) {
-	struct pT_(branch) *branch = pT_(as_branch)(ref.node);
-	const int keep_branch = sc->branch.iterator < sc->branch.fresh;
-	assert(ref.node && ref.height && sc);
-	if(keep_branch) *sc->branch.iterator = ref.node, sc->branch.iterator++;
-	if(ref.height == 1) { /* Children are leaves. */
-		unsigned n;
-		for(n = 0; n <= ref.node->size; n++) {
-			const int keep_leaf = sc->leaf.iterator < sc->leaf.fresh;
-			struct pT_(node) *child = branch->child[n];
-			if(keep_leaf) *sc->leaf.iterator = child, sc->leaf.iterator++;
-			else free(child);
-		}
-	} else while(ref.idx <= ref.node->size) {
-		struct pT_(ref) child;
-		child.node = pT_(as_branch)(ref.node)->child[ref.idx];
-		child.height = ref.height - 1;
-		child.idx = 0;
-		pT_(cannibalize_r)(child, sc);
-		ref.idx++;
-	}
-	if(!keep_branch) free(branch);
-}
-/** Disassemble `tree` and put in into `sc`. */
-static void pT_(cannibalize)(const struct t_(tree) *const tree,
-	struct pT_(scaffold) *const sc) {
-	struct pT_(ref) ref;
-	assert(tree && tree->root.height != UINT_MAX && sc);
-	/* Nothing to cannibalize. */
-	if(!sc->victim.branches && !sc->victim.leaves) return;
-	assert(tree->root.node);
-	ref.node = tree->root.node, ref.height = tree->root.height, ref.idx = 0;
-	sc->branch.iterator = sc->branch.head;
-	sc->leaf.iterator = sc->leaf.head;
-	if(ref.height) {
-		pT_(cannibalize_r)(ref, sc);
-	} else { /* Just one leaf. */
-		*sc->leaf.iterator = ref.node;
-	}
-}
-/** Do the work of `src` cloned with `sc`. Called from <fn:<pT>clone>. */
-static struct pT_(node) *pT_(clone_r)(struct pT_(tree) src,
-	struct pT_(scaffold) *const sc) {
-	struct pT_(node) *node;
-	if(src.height) {
-		struct pT_(branch) *const srcb = pT_(as_branch)(src.node),
-			*const branch = pT_(as_branch)(node = *sc->branch.iterator++);
-		unsigned i;
-		struct pT_(tree) child;
-		*node = *src.node; /* Copy node. */
-		child.height = src.height - 1;
-		for(i = 0; i <= src.node->size; i++) { /* Different links. */
-			child.node = srcb->child[i];
-			branch->child[i] = pT_(clone_r)(child, sc);
-		}
-	} else { /* Leaves. */
-		node = *sc->leaf.iterator++;
-		*node = *src.node;
-	}
-	return node;
-}
-/** `src` is copied with the cloning scaffold `sc`. */
-static struct pT_(tree) pT_(clone)(const struct pT_(tree) *const src,
-	struct pT_(scaffold) *const sc) {
-	struct pT_(tree) sub;
-	assert(src && src->node && sc);
-	/* Go back to the beginning of the scaffold and pick off one by one. */
-	sc->branch.iterator = sc->branch.head;
-	sc->leaf.iterator = sc->leaf.head;
-	sub.node = pT_(clone_r)(*src, sc);
-	sub.height = src->height;
-	/* Used up all of them. No concurrent modifications, please. */
-	assert(sc->branch.iterator == sc->leaf.head
-		&& sc->leaf.iterator == sc->data + sc->no);
-	return sub;
-}
 /** `source` is copied to, and overwrites, `tree`.
  @param[source] In the case where it's null or idle, if `tree` is empty, then
  it continues to be.
@@ -1546,6 +1574,9 @@ finally:
 	return success;
 }
 
+#		define BOX_PRIVATE_AGAIN
+#		include "box.h"
+
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	pT_(key) k; pT_(value) v; memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
@@ -1564,14 +1595,12 @@ static void pT_(unused_base)(void) {
 	pT_(unused_base_coda)();
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
-
 #	endif /* body --> */
 #endif /* base code --> */
 
-#ifndef TREE_DECLARE_ONLY /* Produce code. */
-
-#	if defined(TREE_TO_STRING)
-#		undef TREE_TO_STRING
+#ifdef TREE_TO_STRING
+#	undef TREE_TO_STRING
+#	ifndef TREE_DECLARE_ONLY
 #		ifndef TREE_TRAIT
 #			ifdef TREE_VALUE
 /** The type of the required `<tr>to_string`. Responsible for turning the
@@ -1593,17 +1622,22 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	tr_(to_string)(cur->ref.node->key[cur->ref.idx], a);
 #		endif
 }
-#		include "to_string.h" /** \include */
-#		ifndef TREE_TRAIT
-#			define TREE_HAS_TO_STRING /* Warning about tests. */
-#		endif
 #	endif
-
-#	if defined(TREE_TEST) && !defined(TREE_TRAIT)
-#		include "../test/test_tree.h"
+#	include "to_string.h" /** \include */
+#	ifndef TREE_TRAIT
+#		define TREE_HAS_TO_STRING /* Warning about tests. */
 #	endif
+#endif
 
-#	ifdef TREE_DEFAULT /* <!-- default trait */
+#if defined HAS_GRAPH_H && defined TREE_HAS_TO_STRING && !defined TREE_TRAIT
+#	include "graph.h" /** \include */
+#endif
+
+#if defined TREE_TEST && !defined TREE_TRAIT && defined HAS_GRAPH_H
+#	include "../test/test_tree.h"
+#endif
+
+#ifdef TREE_DEFAULT
 /** This is functionally identical to <fn:<T>get_or>, but a with a trait
  specifying a constant default value.
  @return The value associated with `key` in `tree`, (which can be null.) If
@@ -1623,13 +1657,7 @@ static void pTR_(unused_default)(void) {
 	T_R_(tree, get)(0, k); pTR_(unused_default_coda)();
 }
 static void pTR_(unused_default_coda)(void) { pTR_(unused_default)(); }
-#		undef TREE_DEFAULT
-#	endif /* default trait --> */
-
-#endif /* Produce code. */
-#ifdef TREE_TRAIT
-#	undef TREE_TRAIT
-#	undef BOX_TRAIT
+#	undef TREE_DEFAULT
 #endif
 
 
@@ -1656,6 +1684,10 @@ static void pTR_(unused_default_coda)(void) { pTR_(unused_default)(); }
 #	ifdef TREE_DECLARE_ONLY
 #		undef TREE_DECLARE_ONLY
 #	endif
+#endif
+#ifdef TREE_TRAIT
+#	undef TREE_TRAIT
+#	undef BOX_TRAIT
 #endif
 #define BOX_END
 #include "box.h"

@@ -525,6 +525,8 @@ end:
 
 #		elif defined TREE_NAME
 
+#			include "../test/orcish.h"
+
 /** Recursively draws `outer` in `fp` with the actual `height`. */
 static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
 	const struct pT_(branch) *branch;
@@ -563,27 +565,6 @@ static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
 		pT_(subgraph)(&child, fp);
 	}
 }
-
-#			define BOX_PUBLIC_OVERRIDE
-#			include "box.h"
-
-/** Draw a graph of `tree` to `fn` in Graphviz format. */
-static void pT_(graph)(const struct t_(tree) *const tree, FILE *const fp) {
-	assert(tree && fp);
-	fprintf(fp, "digraph {\n"
-		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
-		" fontname=modern, splines=false];\n"
-		"\tnode [shape=none, fontname=modern];\n");
-	if(!tree->root.node)
-		fprintf(fp, "\tidle [shape=plaintext];\n");
-	else if(tree->root.height == UINT_MAX)
-		fprintf(fp, "\tempty [shape=plaintext];\n");
-	else pT_(subgraph)(&tree->root, fp);
-	fprintf(fp, "\tnode [color=\"Red\"];\n"
-		"}\n");
-}
-
-#			if 0
 
 /** Aligns the `port` in the right way between nodes. */
 static char *pT_(usual_port)(unsigned port) {
@@ -637,15 +618,34 @@ static void pT_(subgraph_usual)(const struct pT_(tree) *const sub, FILE *fp) {
 	}
 }
 
+#			define BOX_PUBLIC_OVERRIDE
+#			include "box.h"
+
+/** Draw a graph of `tree` to `fn` in Graphviz format. */
+static void T_(graph)(const struct t_(tree) *const tree, FILE *const fp) {
+	assert(tree && fp);
+	fprintf(fp, "digraph {\n"
+		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
+		" fontname=modern, splines=false];\n"
+		"\tnode [shape=none, fontname=modern];\n");
+	if(!tree->root.node)
+		fprintf(fp, "\tidle [shape=plaintext];\n");
+	else if(tree->root.height == UINT_MAX)
+		fprintf(fp, "\tempty [shape=plaintext];\n");
+	else pT_(subgraph)(&tree->root, fp);
+	fprintf(fp, "\tnode [color=\"Red\"];\n"
+		"}\n");
+}
+
 /** Draw a graph of `tree` to `fn` in Graphviz format, the usual way, but too
  large for many labels. The vertical graph is so much more compact, but this is
  very idiomatic when one needs to be. This is not used. */
-static void pT_(graph_horiz)(const struct t_(tree) *const tree,
+static int T_(graph_horiz_fn)(const struct t_(tree) *const tree,
 	const char *const fn) {
 	FILE *fp;
 	assert(tree && fn);
-	printf("***(horizontal) %s.\n\n", fn);
-	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
+	/*printf("***(horizontal) %s.\n\n", fn);*/
+	if(!(fp = fopen(fn, "w"))) { if(!errno) errno = ERANGE; return 0; }
 	fprintf(fp, "digraph {\n"
 		"\tgraph [truecolor=true, bgcolor=transparent,"
 		" fontname=modern, splines=false];\n"
@@ -659,9 +659,13 @@ static void pT_(graph_horiz)(const struct t_(tree) *const tree,
 	fprintf(fp, "\tnode [color=\"Red\"];\n"
 		"}\n");
 	fclose(fp);
+	return 1;
 }
 
-#			endif
+static void pT_(unused_tree_coda)(void);
+static void pT_(unused_tree)(void)
+	{ T_(graph_horiz_fn)(0, 0); pT_(unused_tree_coda)(); }
+static void pT_(unused_tree_coda)(void) { pT_(unused_tree)(); }
 
 #		elif defined TRIE_NAME
 

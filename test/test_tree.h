@@ -1,8 +1,12 @@
-#include <stdio.h>
-#include <string.h>
-#include "orcish.h"
+#ifdef TREE_NON_STATIC
+void T_(test)(void);
+#endif
+#ifndef TREE_DECLARE_ONLY
 
-...
+#	include <stdio.h>
+#	include <string.h>
+#	include "orcish.h"
+
 #	if defined QUOTE || defined QUOTE_
 #		error Cannot be defined.
 #	endif
@@ -16,16 +20,16 @@
 struct pT_(tree_test) {
 	int in;
 	pT_(key) key;
-#ifdef TREE_VALUE
+#	ifdef TREE_VALUE
 	pT_(value) value;
-#endif
+#	endif
 };
 
-#ifdef TREE_VALUE
+#	ifdef TREE_VALUE
 typedef void (*pT_(action_fn))(pT_(key) *, pT_(value) *);
-#else
+#	else
 typedef void (*pT_(action_fn))(pT_(key) *);
-#endif
+#	endif
 
 /** Makes sure the `tree` is in a valid state. */
 static void pT_(valid)(const struct t_(tree) *const tree) {
@@ -59,9 +63,9 @@ static void pT_(test)(void) {
 	struct T_(cursor) cur;
 	struct pT_(tree_test) test[800];
 	const size_t test_size = sizeof test / sizeof *test;
-#ifdef TREE_VALUE
+#	ifdef TREE_VALUE
 	pT_(value) *v;
-#endif
+#	endif
 	pT_(key) k, k_prev;
 	size_t i, n_unique = 0, n_unique2;
 	char fn[64];
@@ -74,28 +78,28 @@ static void pT_(test)(void) {
 		struct pT_(tree_test) *const t = test + i;
 		t->in = 0;
 		/* This function must exist. */
-#ifdef TREE_VALUE
+#	ifdef TREE_VALUE
 		t_(filler)(&t->key, &t->value);
-#else
+#	else
 		t_(filler)(&t->key);
-#endif
+#	endif
 	}
 	pT_(sort)(test, test_size);
 	for(i = 0; i < test_size; i++) {
 		struct pT_(tree_test) *const t = test + i;
 		char z[12];
-#ifdef TREE_VALUE
+#	ifdef TREE_VALUE
 		t_(to_string)(t->key, &t->value, &z);
-#else
+#	else
 		t_(to_string)(t->key, &z);
-#endif
+#	endif
 		/*printf("%s\n", z);*/
 	}
 
 	/* Idle. */
 	pT_(valid)(0);
 	pT_(valid)(&tree);
-	pT_(graph)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-idle.gv");
+	T_(graph_fn)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-idle.gv");
 	t_(tree_)(&tree), pT_(valid)(&tree);
 	/* Not valid anymore.
 	it = T_(tree_less)(0, test[0].key), assert(!it._.root); */
@@ -111,11 +115,11 @@ static void pT_(test)(void) {
 		pT_(to_string)(e, &z);
 		printf("%lu -- bulk adding <%s>.\n", (unsigned long)i, z);*/
 		switch(
-#ifdef TREE_VALUE
+#	ifdef TREE_VALUE
 		T_(bulk_assign)(&tree, t->key, &v)
-#else
+#	else
 		T_(bulk_try)(&tree, t->key)
-#endif
+#	endif
 		) {
 		case TREE_ERROR: perror("What?"); assert(0); break;
 		case TREE_PRESENT:
@@ -123,40 +127,36 @@ static void pT_(test)(void) {
 			break;
 		case TREE_ABSENT:
 			n_unique++;
-#ifdef TREE_VALUE
+#	ifdef TREE_VALUE
 			*v = t->value;
-#endif
+#	endif
 			t->in = 1;
 			break;
 		}
 
-
-
-#if 0 /* fixme: is this even a thing anymore? `get_or`? */
-#ifdef TREE_VALUE
+#	if 0 /* fixme: is this even a thing anymore? `get_or`? */
+#	ifdef TREE_VALUE
 		/* Not a very good test. */
 		value = T_(tree_get)(&tree, pT_(test_to_key)(t));
 		assert(value);
-#else
+#	else
 		{
 			pT_(key) *pk = T_(tree_get)(&tree, pT_(test_to_key)(t));
 			assert(pk && !pT_(compare)(*pk, *t));
 		}
-#endif
-#endif
-
-
+#	endif
+#	endif
 
 		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/tree/" QUOTE(TREE_NAME) "-bulk-%lu.gv", i + 1);
-			pT_(graph)(&tree, fn);
+			T_(graph_fn)(&tree, fn);
 		}
 	}
 	printf("Finalize.\n");
 	T_(bulk_finish)(&tree);
 	printf("Finalize again. This should be idempotent.\n");
 	T_(bulk_finish)(&tree);
-	pT_(graph)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-bulk-finish.gv");
+	T_(graph_fn)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-bulk-finish.gv");
 	printf("Tree: %s.\n", T_(to_string)(&tree));
 
 	/* Iteration; checksum. */
@@ -164,12 +164,12 @@ static void pT_(test)(void) {
 	for(cur = T_(begin)(&tree), i = 0; T_(exists)(&cur); T_(next)(&cur)) {
 		/*char z[12];*/
 		k = T_(key)(&cur);
-/*#ifdef TREE_VALUE
+/*#	ifdef TREE_VALUE
 		v = T_(tree_value)(&it);
 		T_(to_string)(k, v, &z);
-#else
+#	else
 		T_(to_string)(k, &z);
-#endif
+#	endif
 		printf("<%s>\n", z);*/
 		if(i) { const int cmp = t_(less)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
@@ -178,26 +178,26 @@ static void pT_(test)(void) {
 	assert(i == n_unique);
 	/*printf("\n");*/
 
-#if 0 /*fixme*/
+#	if 0 /*fixme*/
 	/* Going the other way. */
 	for(cur = T_(end)(&tree), i = 0; T_(exists)(&cur); T_(previous)(&cur)) {
 		/*char z[12];*/
 		k = T_(key)(&cur);
-/*#ifdef TREE_VALUE
+/*#	ifdef TREE_VALUE
 		v = T_(tree_value)(&it);
 		T_(to_string)(k, v, &z);
-#else
+#	else
 		T_(to_string)(k, &z);
-#endif
+#	endif
 		printf("<%s>\n", z);*/
 		if(i) { const int cmp = t_(less)(k_prev, k); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
 	}
 	assert(i == n_unique);
-#endif
+#	endif
 
-#if 0 /*fixme*/
+#	if 0 /*fixme*/
 	/* Deleting while iterating. */
 	cur = T_(begin)(&tree);
 	succ = T_(previous)(&cur);
@@ -205,11 +205,11 @@ static void pT_(test)(void) {
 	do {
 		/*char z[12];*/
 		pT_(key) key = T_(key)(&cur);
-/*#ifdef TREE_VALUE
+/*#	ifdef TREE_VALUE
 		T_(to_string)(key, T_(tree_value)(&it), &z);
-#else
+#	else
 		T_(to_string)(key, &z);
-#endif
+#	endif
 		printf("removing <%s>\n", z);*/
 		succ = T_(remove)(&tree, key);
 		assert(succ);
@@ -219,7 +219,7 @@ static void pT_(test)(void) {
 	} while(T_(tree_has_element)(&cur));
 	printf("Individual delete tree: %s.\n", T_(tree_to_string)(&tree));
 	assert(tree.root.height == UINT_MAX);
-#endif
+#	endif
 
 	/* Clear. */
 	T_(clear)(0);
@@ -233,43 +233,43 @@ static void pT_(test)(void) {
 		struct pT_(tree_test) *const t = test + i;
 		t->in = 0;
 		/* This function must exist. */
-#ifdef TREE_VALUE
+#	ifdef TREE_VALUE
 		t_(filler)(&t->key, &t->value);
-#else
+#	else
 		t_(filler)(&t->key);
-#endif
+#	endif
 	}
 
 	/* Add. */
 	for(i = 0; i < test_size; i++) {
 		/*char z[12];*/
 		struct pT_(tree_test) *const t = test + i;
-/*#ifdef TREE_VALUE
+/*#	ifdef TREE_VALUE
 		T_(to_string)(t->key, &t->value, &z);
-#else
+#	else
 		T_(to_string)(t->key, &z);
-#endif
+#	endif
 		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);*/
 		switch(
-#ifdef TREE_VALUE
+#	ifdef TREE_VALUE
 		T_(assign)(&tree, t->key, &v)
-#else
+#	else
 		T_(try)(&tree, t->key)
-#endif
+#	endif
 		) {
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
 		case TREE_PRESENT: /*printf("<%s> already in tree\n", z);*/ break;
 		case TREE_ABSENT:
 			n_unique++;
-#ifdef TREE_VALUE
+#	ifdef TREE_VALUE
 			*v = t->value;
-#endif
+#	endif
 			t->in = 1;
 			/*printf("<%s> added\n", z);*/ break;
 		}
 		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/tree/" QUOTE(TREE_NAME) "-add-%lu.gv", i + 1);
-			pT_(graph)(&tree, fn);
+			T_(graph_fn)(&tree, fn);
 		}
 	}
 	printf("Number of entries in the tree: %lu/%lu.\n",
@@ -279,12 +279,12 @@ static void pT_(test)(void) {
 	for(cur = T_(begin)(&tree), i = 0; T_(exists)(&cur); ) {
 		/*char z[12];*/
 		k = T_(key)(&cur);
-/*#ifdef TREE_VALUE
+/*#	ifdef TREE_VALUE
 		v = T_(tree_value)(&it);
 		t_(to_string)(k, v, &z);
-#else
+#	else
 		t_(to_string)(k, &z);
-#endif
+#	endif
 		printf("Targeting <%s> for removal.\n", z);*/
 		if(i) { const int cmp = t_(less)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
@@ -297,7 +297,7 @@ static void pT_(test)(void) {
 			orcify(cur.ref.node), cur.ref.height, cur.ref.idx);*/
 		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/tree/" QUOTE(TREE_NAME) "-rm-%lu.gv", i);
-			pT_(graph)(&tree, fn);
+			T_(graph_fn)(&tree, fn);
 		}
 	}
 	assert(i == n_unique);
@@ -308,29 +308,29 @@ static void pT_(test)(void) {
 		struct pT_(tree_test) *const t = test + i;
 		/*char z[12];*/
 		if(!t->in) continue;
-/*#ifdef TREE_VALUE
+/*#	ifdef TREE_VALUE
 		T_(to_string)(t->key, &t->value, &z);
-#else
+#	else
 		T_(to_string)(t->key, &z);
-#endif
+#	endif
 		printf("Adding %s.\n", z);*/
 		switch(
-#ifdef TREE_VALUE
+#	ifdef TREE_VALUE
 		T_(assign)(&tree, t->key, &v)
-#else
+#	else
 		T_(try)(&tree, t->key)
-#endif
+#	endif
 		) {
 		case TREE_ERROR:
 		case TREE_PRESENT: perror("unexpected"); assert(0); return;
 		case TREE_ABSENT: n_unique2++; break;
 		}
-#ifdef TREE_VALUE
+#	ifdef TREE_VALUE
 		*v = t->value;
-#endif
+#	endif
 	}
 	printf("Re-add tree: %lu\n", (unsigned long)n_unique2);
-	pT_(graph)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-re-add.gv");
+	T_(graph_fn)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-re-add.gv");
 	assert(n_unique == n_unique2);
 	i = T_(count)(&tree);
 	printf("tree count: %lu; add count: %lu\n",
@@ -373,11 +373,12 @@ static void T_(test)(void) {
 		" testing:\n");
 	pT_(test)();
 	fprintf(stderr, "Done tests of <" QUOTE(TREE_NAME) ">tree.\n\n");
-	(void)pT_(graph_horiz); /* Not used in general. */
+	/*(void)pT_(graph_horiz);*/ /* Not used in general. */
 }
 
 #	define BOX_PRIVATE_AGAIN
 #	include "../src/box.h"
 
-#undef QUOTE
-#undef QUOTE_
+#	undef QUOTE
+#	undef QUOTE_
+#endif
