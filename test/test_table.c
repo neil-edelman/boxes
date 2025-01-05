@@ -421,10 +421,11 @@ static void stars(void) {
 		*content = distance;
 	}
 	printf("%s.\n", star_table_to_string(&stars));
-	star_table_graph_fn(&stars, "doc/table-precursor/star-raw.gv");
+	star_table_graph_fn(&stars, "doc/table/table-precursor/star-raw.gv");
+	assert(!errno);
 	goto finally;
 catch:
-	assert(0);
+	fprintf(stderr, "That shoundn't be.\n"), perror("stars"), assert(0);
 finally:
 	star_table_(&stars);
 	printf("\n");
@@ -827,5 +828,6 @@ int main(void) {
 	year_of();
 	nato();
 	header_table_test(0);
+	assert(!errno);
 	return EXIT_SUCCESS;
 }

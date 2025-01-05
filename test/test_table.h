@@ -132,9 +132,6 @@ static void pT_(test_basic)(void *const parent) {
 	for(i = 0; i < trial_size; i++) {
 		struct sample *s = trials.sample + i;
 		size_t j;
-/*#	ifdef TABLE_VALUE
-		s->entry.value = &s.temp_value;
-#	endif*/
 		t_(filler)(parent, &s->entry);
 #	ifdef TABLE_VALUE
 		t_(to_string)(pT_(entry_key)(s->entry), s->entry.value, &z);
@@ -299,7 +296,9 @@ static void T_(test)(void *const parent) {
 		"TABLE_VALUE <" QUOTE(TABLE_VALUE) ">; "
 #	endif
 		"testing%s:\n", parent ? "(pointer)" : "");
+	assert(!errno);
 	pT_(test_basic)(parent);
+	assert(!errno);
 	fprintf(stderr, "Done tests of <" QUOTE(TABLE_NAME) ">hash.\n\n");
 }
 

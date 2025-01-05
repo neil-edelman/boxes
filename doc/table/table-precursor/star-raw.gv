@@ -14,7 +14,7 @@ digraph {
 		<td border="0" align="right" bgcolor="Gray95">1.36(0.7)</td>
 	</tr>
 	<tr>
-		<td border="0" align="right">max bucket</td>
+		<td border="0" align="right">max chain</td>
 		<td border="0" align="right">3</td>
 	</tr>
 	<hr/>
