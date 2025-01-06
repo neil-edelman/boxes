@@ -206,9 +206,32 @@ struct T_(cursor) { struct t_(table) *table; pT_(uint) i; };
 #	ifdef BOX_NON_STATIC /* Public functions. */
 struct T_(cursor) T_(begin)(const struct t_(table) *);
 int T_(exists)(struct T_(cursor) *);
-pT_(type) *T_(entry)(struct T_(cursor) *);
+struct pT_(bucket) *T_(entry)(struct T_(cursor) *);
+pT_(key) T_(key)(const struct T_(cursor) *);
+#		ifdef TABLE_VALUE
+pT_(value) *T_(value)(const struct T_(cursor) *);
+#		endif
 void T_(next)(struct T_(cursor) *);
-...
+int T_(cursor_remove)(struct T_(cursor) *)
+struct t_(table) t_(table)(void);
+void t_(table_)(struct t_(table) *);
+int T_(buffer)(struct t_(table) *, pT_(uint));
+void T_(clear)(struct t_(table) *);
+int T_(contains)(struct t_(table) *, pT_(key));
+#		ifdef TABLE_VALUE
+int T_(query)(struct t_(table) *, pT_(key), pT_(key) *, pT_(value) *);
+#		else
+int T_(query)(struct t_(table) *, pT_(key), pT_(key) *);
+#		endif
+pT_(value) T_(get_or)(struct t_(table) *, pT_(key), pT_(value));
+#		ifndef TABLE_VALUE
+enum table_result T_(try)(struct t_(table) *, pT_(key));
+#		else
+enum table_result T_(assign)(struct t_(table) *, pT_(key), pT_(value) **);
+#		endif
+enum table_result T_(update)(struct t_(table) *, pT_(key), pT_(key) *);
+enum table_result T_(policy)(struct t_(table) *, pT_(key), pT_(key) *, pT_(policy_fn));
+int T_(remove)(struct t_(table) *, pT_(key));
 #	endif
 #	ifndef BOX_DECLARE_ONLY /* <!-- body */
 
@@ -515,6 +538,31 @@ static enum table_result pT_(put_key)(struct t_(table) *const table,
 	pT_(replace_key)(bucket, key, hash);
 	return result;
 }
+#		ifdef TABLE_VALUE
+/** Only if `TABLE_VALUE` is set. Ensures that `key` is in the `table` and
+ update `content`. @throws[malloc] */
+static enum table_result pT_(assign)(struct t_(table) *const table,
+	pT_(key) key, pT_(value) **const content) {
+	struct pT_(bucket) *bucket;
+	const pT_(uint) hash = t_(hash)(key);
+	enum table_result result;
+	assert(table && content);
+	if(table->buckets && (bucket = pT_(query)(table, key, hash))) {
+		result = TABLE_PRESENT;
+	} else {
+		if(!(bucket = pT_(evict)(table, hash))) return TABLE_ERROR;
+		pT_(replace_key)(bucket, key, hash);
+		result = TABLE_ABSENT;
+	}
+	*content = &bucket->value;
+	return result;
+}
+#		endif
+/** Callback in <fn:<T>update>.
+ @return `original` and `replace` ignored, true.
+ @implements <typedef:<pT>policy_fn> */
+static int pT_(always_replace)(const pT_(key) original,
+	const pT_(key) replace) { return (void)original, (void)replace, 1; }
 
 #		define BOX_PUBLIC_OVERRIDE
 #		include "box.h"
@@ -685,25 +733,6 @@ static enum table_result T_(try)(struct t_(table) *const table,
 
 #		else /* set --><!-- map */
 
-/** Only if `TABLE_VALUE` is set. Ensures that `key` is in the `table` and
- update `content`. @throws[malloc] */
-static enum table_result pT_(assign)(struct t_(table) *const table,
-	pT_(key) key, pT_(value) **const content) {
-	struct pT_(bucket) *bucket;
-	const pT_(uint) hash = t_(hash)(key);
-	enum table_result result;
-	assert(table && content);
-	if(table->buckets && (bucket = pT_(query)(table, key, hash))) {
-		result = TABLE_PRESENT;
-	} else {
-		if(!(bucket = pT_(evict)(table, hash))) return TABLE_ERROR;
-		pT_(replace_key)(bucket, key, hash);
-		result = TABLE_ABSENT;
-	}
-	*content = &bucket->value;
-	return result;
-}
-
 /** Only if `TABLE_VALUE` is set; see <fn:<T>try> for a set. Puts `key` in the
  map `table` and store the associated value in `content`.
  @return `TABLE_ERROR` does not set `content`; `TABLE_ABSENT`, the `content`
@@ -715,12 +744,6 @@ static enum table_result T_(assign)(struct t_(table) *const table,
 	{ return pT_(assign)(table, key, content); }
 
 #		endif /* value --> */
-
-/** Callback in <fn:<T>update>.
- @return `original` and `replace` ignored, true.
- @implements <typedef:<pT>policy_fn> */
-static int pT_(always_replace)(const pT_(key) original,
-	const pT_(key) replace) { return (void)original, (void)replace, 1; }
 
 /** Puts `key` in `table`, replacing an equal-valued key. (If keys are
  indistinguishable, this function is not very useful, see <fn:<T>try> or
