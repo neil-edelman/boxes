@@ -35,6 +35,12 @@ complex containers documented here.
 
 ## Compatibility ##
 
+Uses `C++17` feature `__has_include` in `box.h` to decide to include
+optional features so that part of the header files work without the
+full thing. If one's compiler is does not support `C++17` (especially)
+and one needs these features, try uncommenting the appropriate
+lines.
+
 The testing framework in `test/` is much less multi-platform then
 the headers in `src/`, requiring `C13` anonymous unions, assuming
 a `union` is in the usual order. The `Makefile` provided assumes
