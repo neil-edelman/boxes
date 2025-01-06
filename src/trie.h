@@ -45,7 +45,7 @@
  Named traits are obtained by including `trie.h` multiple times with
  `TRIE_EXPECT_TRAIT` and then subsequently including the name in `TRIE_TRAIT`.
 
- @param[TRIE_DECLARE_ONLY]
+ @param[TRIE_DECLARE_ONLY, TRIE_NON_STATIC]
  For headers in different compilation units.
 
  @depend [box](../../src/box.h)
@@ -53,21 +53,27 @@
  @std C89 (Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ.) */
 
 #ifndef TRIE_NAME
-#	error Name TRIE_NAME undefined.
+#	error Name undefined.
 #endif
-#if defined(TRIE_TRAIT) ^ defined(BOX_TYPE)
-#	error TRIE_TRAIT name must come after TRIE_EXPECT_TRAIT.
+#if !defined BOX_ENTRY1 && (defined TRIE_TRAIT ^ defined BOX_MAJOR)
+#	error Trait name must come after expect trait.
 #endif
-#if defined(TRIE_TEST) && (!defined(TRIE_TRAIT) && !defined(TRIE_TO_STRING) \
-	|| defined(TRIE_TRAIT) && !defined(TRIE_HAS_TO_STRING))
+#if defined TRIE_TEST && (!defined TRIE_TRAIT && !defined TRIE_TO_STRING \
+	|| defined TRIE_TRAIT && !defined TRIE_HAS_TO_STRING)
 #	error Test requires to string.
 #endif
-#if defined TRIE_DECLARE_ONLY && (defined TRIE_BODY || defined TRIE_TRAIT)
-#	error Can not be simultaneously defined.
+#if defined BOX_TRAIT && !defined TRIE_TRAIT
+#	error Unexpected flow.
 #endif
 
 #ifdef TRIE_TRAIT
 #	define BOX_TRAIT TRIE_TRAIT /* Ifdef in <box.h>. */
+#endif
+#ifdef TRIE_NON_STATIC
+#	define BOX_NON_STATIC
+#endif
+#ifdef TRIE_DECLARE_ONLY
+#	define BOX_DECLARE_ONLY
 #endif
 #define BOX_START
 #include "box.h"
