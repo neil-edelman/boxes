@@ -6,7 +6,7 @@ Header [\.\./\.\./src/trie\.h](../../src/trie.h) requires [\.\./\.\./src/bmp\.h]
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;pT&gt;key](#user-content-typedef-95e6d0aa), [&lt;pT&gt;entry](#user-content-typedef-9be2614d), [&lt;pT&gt;remit](#user-content-typedef-26fd9b58), [&lt;pT&gt;string_fn](#user-content-typedef-9cf8629b), [&lt;pT&gt;key_fn](#user-content-typedef-d71854df), [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [trie_result](#user-content-tag-eb9850a3), [&lt;t&gt;trie](#user-content-tag-21f3c845)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [trie_result](#user-content-tag-eb9850a3), [&lt;t&gt;trie](#user-content-tag-21f3c845), [table_stats](#user-content-tag-89e31bf3)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -33,7 +33,7 @@ While the worse\-case run\-time of querying or modifying is bounded by &#927;\(|
    To string trait contained in [src/to\_string\.h](src/to_string.h)\. The unnamed trait is automatically supplied by the string, but others see [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)\.
  * Parameter: TRIE\_EXPECT\_TRAIT, TRIE\_TRAIT  
    Named traits are obtained by including `trie.h` multiple times with `TRIE_EXPECT_TRAIT` and then subsequently including the name in `TRIE_TRAIT`\.
- * Parameter: TRIE\_DECLARE\_ONLY  
+ * Parameter: TRIE\_DECLARE\_ONLY, TRIE\_NON\_STATIC  
    For headers in different compilation units\.
  * Standard:  
    C89 \(Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ\.\)
@@ -115,17 +115,55 @@ To initialize it to an idle state, see [&lt;t&gt;trie](#user-content-fn-21f3c845
 
 
 
+### <a id = "user-content-tag-89e31bf3" name = "user-content-tag-89e31bf3">table_stats</a> ###
+
+<code>struct <strong>table_stats</strong> { size_t n, max; double mean, ssdm; };</code>
+
+[Welford1962Note](https://scholar.google.ca/scholar?q=Welford1962Note): population variance: `ssdm/n`, sample variance: `ssdm/(n-1)`\.
+
+
+
 ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##
 
 <table>
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
+<tr><td align = right>struct &lt;T&gt;cursor</td><td><a href = "#user-content-fn-80df50b2">&lt;T&gt;begin</a></td><td>&lt;t&gt;trie</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-dd6c86e1">&lt;T&gt;exists</a></td><td>&lt;T&gt;cursor</td></tr>
+
+<tr><td align = right>&lt;pT&gt;remit</td><td><a href = "#user-content-fn-1d176e37">&lt;T&gt;entry</a></td><td>&lt;T&gt;cursor</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-d0790d04">&lt;T&gt;next</a></td><td>&lt;T&gt;cursor</td></tr>
+
+<tr><td align = right>struct &lt;T&gt;cursor</td><td><a href = "#user-content-fn-331bec0d">&lt;T&gt;prefix</a></td><td>&lt;t&gt;trie, char</td></tr>
+
+<tr><td align = right>struct &lt;t&gt;trie</td><td><a href = "#user-content-fn-21f3c845">&lt;t&gt;trie</a></td><td></td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-8cc400ee">&lt;t&gt;trie_</a></td><td>&lt;t&gt;trie</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-7f4a964e">&lt;T&gt;clear</a></td><td>&lt;t&gt;trie</td></tr>
+
+<tr><td align = right>&lt;pT&gt;remit</td><td><a href = "#user-content-fn-8c6438a2">&lt;T&gt;match</a></td><td>&lt;t&gt;trie, char</td></tr>
+
+<tr><td align = right>&lt;pT&gt;remit</td><td><a href = "#user-content-fn-2b98edfb">&lt;T&gt;get</a></td><td>trie, char</td></tr>
+
+<tr><td align = right>enum trie_result</td><td><a href = "#user-content-fn-8c6438a2">&lt;T&gt;match</a></td><td>&lt;t&gt;trie, char, &lt;pT&gt;remit</td></tr>
+
+<tr><td align = right>enum trie_result</td><td><a href = "#user-content-fn-2b98edfb">&lt;T&gt;get</a></td><td>&lt;t&gt;trie, char, &lt;pT&gt;remit</td></tr>
+
+<tr><td align = right>enum trie_result</td><td><a href = "#user-content-fn-edcfce52">&lt;T&gt;try</a></td><td>&lt;t&gt;trie, &lt;pT&gt;key</td></tr>
+
+<tr><td align = right>enum trie_result</td><td><a href = "#user-content-fn-edcfce52">&lt;T&gt;try</a></td><td>&lt;t&gt;trie, &lt;pT&gt;key, &lt;pT&gt;entry</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-56806709">&lt;T&gt;remove</a></td><td>&lt;t&gt;trie, char</td></tr>
+
+<tr><td align = right>static &lt;pT&gt;remit</td><td><a href = "#user-content-fn-1d176e37">&lt;T&gt;entry</a></td><td>cur</td></tr>
+
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-d0790d04">&lt;T&gt;next</a></td><td>cur</td></tr>
 
 <tr><td align = right>static struct &lt;T&gt;cursor</td><td><a href = "#user-content-fn-331bec0d">&lt;T&gt;prefix</a></td><td>trie, prefix</td></tr>
-
-<tr><td align = right>static &lt;pT&gt;remit</td><td><a href = "#user-content-fn-1d176e37">&lt;T&gt;entry</a></td><td>cur</td></tr>
 
 <tr><td align = right>static struct &lt;t&gt;trie</td><td><a href = "#user-content-fn-21f3c845">&lt;t&gt;trie</a></td><td></td></tr>
 
@@ -143,13 +181,119 @@ To initialize it to an idle state, see [&lt;t&gt;trie](#user-content-fn-21f3c845
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-56806709">&lt;T&gt;remove</a></td><td>trie, string</td></tr>
 
+<tr><td align = right>const char *</td><td><a href = "#user-content-fn-260f8348">&lt;TR&gt;to_string</a></td><td>box</td></tr>
+
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-260f8348">&lt;TR&gt;to_string</a></td><td>box</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-4e047ffb">&lt;T&gt;graph</a></td><td>&lt;pT&gt;box</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-6c32bc30">&lt;T&gt;graph_fn</a></td><td>&lt;pT&gt;box, char</td></tr>
 
 </table>
 
 
 
 ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
+
+### <a id = "user-content-fn-80df50b2" name = "user-content-fn-80df50b2">&lt;T&gt;begin</a> ###
+
+<code>struct &lt;T&gt;cursor <strong>&lt;T&gt;begin</strong>(const struct <em>&lt;t&gt;trie</em> *);</code>
+
+
+
+### <a id = "user-content-fn-dd6c86e1" name = "user-content-fn-dd6c86e1">&lt;T&gt;exists</a> ###
+
+<code>int <strong>&lt;T&gt;exists</strong>(const struct <em>&lt;T&gt;cursor</em> *);</code>
+
+
+
+### <a id = "user-content-fn-1d176e37" name = "user-content-fn-1d176e37">&lt;T&gt;entry</a> ###
+
+<code>&lt;pT&gt;remit <strong>&lt;T&gt;entry</strong>(const struct <em>&lt;T&gt;cursor</em> *);</code>
+
+
+
+### <a id = "user-content-fn-d0790d04" name = "user-content-fn-d0790d04">&lt;T&gt;next</a> ###
+
+<code>void <strong>&lt;T&gt;next</strong>(struct <em>&lt;T&gt;cursor</em> *);</code>
+
+
+
+### <a id = "user-content-fn-331bec0d" name = "user-content-fn-331bec0d">&lt;T&gt;prefix</a> ###
+
+<code>struct &lt;T&gt;cursor <strong>&lt;T&gt;prefix</strong>(struct <em>&lt;t&gt;trie</em> *, const <em>char</em> *);</code>
+
+
+
+### <a id = "user-content-fn-21f3c845" name = "user-content-fn-21f3c845">&lt;t&gt;trie</a> ###
+
+<code>struct &lt;t&gt;trie <strong>&lt;t&gt;trie</strong>(void);</code>
+
+
+
+### <a id = "user-content-fn-8cc400ee" name = "user-content-fn-8cc400ee">&lt;t&gt;trie_</a> ###
+
+<code>void <strong>&lt;t&gt;trie_</strong>(struct <em>&lt;t&gt;trie</em> *);</code>
+
+
+
+### <a id = "user-content-fn-7f4a964e" name = "user-content-fn-7f4a964e">&lt;T&gt;clear</a> ###
+
+<code>void <strong>&lt;T&gt;clear</strong>(struct <em>&lt;t&gt;trie</em> *);</code>
+
+
+
+### <a id = "user-content-fn-8c6438a2" name = "user-content-fn-8c6438a2">&lt;T&gt;match</a> ###
+
+<code>&lt;pT&gt;remit <strong>&lt;T&gt;match</strong>(const struct <em>&lt;t&gt;trie</em> *, const <em>char</em> *);</code>
+
+
+
+### <a id = "user-content-fn-2b98edfb" name = "user-content-fn-2b98edfb">&lt;T&gt;get</a> ###
+
+<code>&lt;pT&gt;remit <strong>&lt;T&gt;get</strong>(const struct &lt;t&gt;trie *const <em>trie</em>, const <em>char</em> *);</code>
+
+
+
+### <a id = "user-content-fn-8c6438a2" name = "user-content-fn-8c6438a2">&lt;T&gt;match</a> ###
+
+<code>enum trie_result <strong>&lt;T&gt;match</strong>(const struct <em>&lt;t&gt;trie</em> *, const <em>char</em> *, <em>&lt;pT&gt;remit</em> *);</code>
+
+
+
+### <a id = "user-content-fn-2b98edfb" name = "user-content-fn-2b98edfb">&lt;T&gt;get</a> ###
+
+<code>enum trie_result <strong>&lt;T&gt;get</strong>(const struct <em>&lt;t&gt;trie</em> *, const <em>char</em> *, <em>&lt;pT&gt;remit</em> *);</code>
+
+
+
+### <a id = "user-content-fn-edcfce52" name = "user-content-fn-edcfce52">&lt;T&gt;try</a> ###
+
+<code>enum trie_result <strong>&lt;T&gt;try</strong>(struct <em>&lt;t&gt;trie</em> *, <em>&lt;pT&gt;key</em>);</code>
+
+
+
+### <a id = "user-content-fn-edcfce52" name = "user-content-fn-edcfce52">&lt;T&gt;try</a> ###
+
+<code>enum trie_result <strong>&lt;T&gt;try</strong>(struct <em>&lt;t&gt;trie</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;entry</em> **);</code>
+
+
+
+### <a id = "user-content-fn-56806709" name = "user-content-fn-56806709">&lt;T&gt;remove</a> ###
+
+<code>int <strong>&lt;T&gt;remove</strong>(struct <em>&lt;t&gt;trie</em> *, const <em>char</em> *);</code>
+
+
+
+### <a id = "user-content-fn-1d176e37" name = "user-content-fn-1d176e37">&lt;T&gt;entry</a> ###
+
+<code>static &lt;pT&gt;remit <strong>&lt;T&gt;entry</strong>(const struct &lt;T&gt;cursor *const <em>cur</em>)</code>
+
+ * Return:  
+   The entry at a valid, non\-null `cur`\.
+
+
+
 
 ### <a id = "user-content-fn-d0790d04" name = "user-content-fn-d0790d04">&lt;T&gt;next</a> ###
 
@@ -173,16 +317,6 @@ Advancing `cur` to the next element\.
    A set to strings that start with `prefix` in `trie`\. It is valid until a topological change to `trie`\. Calling [&lt;T&gt;next](#user-content-fn-d0790d04) will iterate them in order\.
  * Order:  
    &#927;\(log |`trie`|\)
-
-
-
-
-### <a id = "user-content-fn-1d176e37" name = "user-content-fn-1d176e37">&lt;T&gt;entry</a> ###
-
-<code>static &lt;pT&gt;remit <strong>&lt;T&gt;entry</strong>(const struct &lt;T&gt;cursor *const <em>cur</em>)</code>
-
- * Return:  
-   The entry at a valid, non\-null `cur`\.
 
 
 
@@ -311,6 +445,12 @@ Tries to remove `string` from `trie`\.
 
 ### <a id = "user-content-fn-260f8348" name = "user-content-fn-260f8348">&lt;TR&gt;to_string</a> ###
 
+<code>const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>);</code>
+
+
+
+### <a id = "user-content-fn-260f8348" name = "user-content-fn-260f8348">&lt;TR&gt;to_string</a> ###
+
 <code>static const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>)</code>
 
 [\.\./\.\./src/to\_string\.h](../../src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
@@ -320,6 +460,18 @@ Tries to remove `string` from `trie`\.
  * Order:  
    &#920;\(1\)
 
+
+
+
+### <a id = "user-content-fn-4e047ffb" name = "user-content-fn-4e047ffb">&lt;T&gt;graph</a> ###
+
+<code>void <strong>&lt;T&gt;graph</strong>(const <em>&lt;pT&gt;box</em> *, FILE *);</code>
+
+
+
+### <a id = "user-content-fn-6c32bc30" name = "user-content-fn-6c32bc30">&lt;T&gt;graph_fn</a> ###
+
+<code>int <strong>&lt;T&gt;graph_fn</strong>(const <em>&lt;pT&gt;box</em> *, const <em>char</em> *);</code>
 
 
 

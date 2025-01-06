@@ -51,6 +51,22 @@ An array of `BMP_BITS` bits, \(taking up the next multiple of `sizeof(bmpchunk)`
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
 
+<tr><td align = right>void</td><td><a href = "#user-content-fn-7b089536">&lt;T&gt;clear_all</a></td><td>&lt;t&gt;bmp</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-1b35a7e0">&lt;T&gt;copy</a></td><td>&lt;t&gt;bmp, unsigned, unsigned, &lt;t&gt;bmp</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-40a9d9d">&lt;T&gt;invert_all</a></td><td>&lt;t&gt;bmp</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-997e5bef">&lt;T&gt;set</a></td><td>&lt;t&gt;bmp, unsigned</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-7f4a964e">&lt;T&gt;clear</a></td><td>&lt;t&gt;bmp, unsigned</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-378030f9">&lt;T&gt;toggle</a></td><td>&lt;t&gt;bmp, unsigned</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-e80ff7d4">&lt;T&gt;insert</a></td><td>&lt;t&gt;bmp, unsigned, unsigned</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-56806709">&lt;T&gt;remove</a></td><td>&lt;t&gt;bmp, unsigned, unsigned</td></tr>
+
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-7b089536">&lt;T&gt;clear_all</a></td><td>a</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-40a9d9d">&lt;T&gt;invert_all</a></td><td>a</td></tr>
@@ -72,6 +88,54 @@ An array of `BMP_BITS` bits, \(taking up the next multiple of `sizeof(bmpchunk)`
 
 
 ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
+
+### <a id = "user-content-fn-7b089536" name = "user-content-fn-7b089536">&lt;T&gt;clear_all</a> ###
+
+<code>void <strong>&lt;T&gt;clear_all</strong>(struct <em>&lt;t&gt;bmp</em> *);</code>
+
+
+
+### <a id = "user-content-fn-1b35a7e0" name = "user-content-fn-1b35a7e0">&lt;T&gt;copy</a> ###
+
+<code>void <strong>&lt;T&gt;copy</strong>(struct <em>&lt;t&gt;bmp</em> *, const <em>unsigned</em>, const <em>unsigned</em>, struct <em>&lt;t&gt;bmp</em> *);</code>
+
+
+
+### <a id = "user-content-fn-40a9d9d" name = "user-content-fn-40a9d9d">&lt;T&gt;invert_all</a> ###
+
+<code>void <strong>&lt;T&gt;invert_all</strong>(struct <em>&lt;t&gt;bmp</em> *);</code>
+
+
+
+### <a id = "user-content-fn-997e5bef" name = "user-content-fn-997e5bef">&lt;T&gt;set</a> ###
+
+<code>void <strong>&lt;T&gt;set</strong>(struct <em>&lt;t&gt;bmp</em> *, <em>unsigned</em>);</code>
+
+
+
+### <a id = "user-content-fn-7f4a964e" name = "user-content-fn-7f4a964e">&lt;T&gt;clear</a> ###
+
+<code>void <strong>&lt;T&gt;clear</strong>(struct <em>&lt;t&gt;bmp</em> *, <em>unsigned</em>);</code>
+
+
+
+### <a id = "user-content-fn-378030f9" name = "user-content-fn-378030f9">&lt;T&gt;toggle</a> ###
+
+<code>void <strong>&lt;T&gt;toggle</strong>(struct <em>&lt;t&gt;bmp</em> *, <em>unsigned</em>);</code>
+
+
+
+### <a id = "user-content-fn-e80ff7d4" name = "user-content-fn-e80ff7d4">&lt;T&gt;insert</a> ###
+
+<code>void <strong>&lt;T&gt;insert</strong>(struct <em>&lt;t&gt;bmp</em> *, <em>unsigned</em>, <em>unsigned</em>);</code>
+
+
+
+### <a id = "user-content-fn-56806709" name = "user-content-fn-56806709">&lt;T&gt;remove</a> ###
+
+<code>void <strong>&lt;T&gt;remove</strong>(struct <em>&lt;t&gt;bmp</em> *, <em>unsigned</em>, <em>unsigned</em>);</code>
+
+
 
 ### <a id = "user-content-fn-7b089536" name = "user-content-fn-7b089536">&lt;T&gt;clear_all</a> ###
 

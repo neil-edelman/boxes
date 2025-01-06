@@ -6,7 +6,7 @@ Header [\.\./\.\./src/array\.h](../../src/array.h); examples [\.\./\.\./test/tes
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;pT&gt;type](#user-content-typedef-9b5be28b), [&lt;pT&gt;action_fn](#user-content-typedef-348726ce), [&lt;pT&gt;predicate_fn](#user-content-typedef-ad32e23d), [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b), [&lt;pT&gt;compare_fn](#user-content-typedef-223b1937), [&lt;pT&gt;bipredicate_fn](#user-content-typedef-4ab43b88), [&lt;pT&gt;biaction_fn](#user-content-typedef-5082f141)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;t&gt;array](#user-content-tag-9c4cf562)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;t&gt;array](#user-content-tag-9c4cf562), [table_stats](#user-content-tag-89e31bf3)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -105,6 +105,14 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 
 
+### <a id = "user-content-tag-89e31bf3" name = "user-content-tag-89e31bf3">table_stats</a> ###
+
+<code>struct <strong>table_stats</strong> { size_t n, max; double mean, ssdm; };</code>
+
+[Welford1962Note](https://scholar.google.ca/scholar?q=Welford1962Note): population variance: `ssdm/n`, sample variance: `ssdm/(n-1)`\.
+
+
+
 ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##
 
 <table>
@@ -113,15 +121,17 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <tr><td align = right>struct &lt;T&gt;cursor</td><td><a href = "#user-content-fn-80df50b2">&lt;T&gt;begin</a></td><td>&lt;t&gt;array</td></tr>
 
+<tr><td align = right>struct &lt;T&gt;cursor</td><td><a href = "#user-content-fn-ebb396f4">&lt;T&gt;at</a></td><td>&lt;t&gt;array, size_t</td></tr>
+
 <tr><td align = right>int</td><td><a href = "#user-content-fn-dd6c86e1">&lt;T&gt;exists</a></td><td>&lt;T&gt;cursor</td></tr>
 
-<tr><td align = right>&lt;pT&gt;type *</td><td><a href = "#user-content-fn-653fd302">&lt;T&gt;look</a></td><td>&lt;T&gt;cursor</td></tr>
+<tr><td align = right>&lt;pT&gt;type *</td><td><a href = "#user-content-fn-1d176e37">&lt;T&gt;entry</a></td><td>&lt;T&gt;cursor</td></tr>
 
 <tr><td align = right>void</td><td><a href = "#user-content-fn-d0790d04">&lt;T&gt;next</a></td><td>&lt;T&gt;cursor</td></tr>
 
 <tr><td align = right>size_t</td><td><a href = "#user-content-fn-93717268">&lt;T&gt;size</a></td><td>&lt;t&gt;array</td></tr>
 
-<tr><td align = right>&lt;pT&gt;type *</td><td><a href = "#user-content-fn-ebb396f4">&lt;T&gt;at</a></td><td>&lt;t&gt;array, size_t</td></tr>
+<tr><td align = right>&lt;pT&gt;type *</td><td><a href = "#user-content-fn-71ce7b17">&lt;T&gt;data_at</a></td><td>&lt;t&gt;array, size_t</td></tr>
 
 <tr><td align = right>void</td><td><a href = "#user-content-fn-a77822ba">&lt;T&gt;tell_size</a></td><td>&lt;t&gt;array, size_t</td></tr>
 
@@ -161,6 +171,8 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-c6b6f48f">&lt;T&gt;buffer</a></td><td>a, n</td></tr>
 
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-7f4a964e">&lt;T&gt;clear</a></td><td>a</td></tr>
+
 <tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-faa8ce4d">&lt;T&gt;append</a></td><td>a, n</td></tr>
 
 <tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-e80ff7d4">&lt;T&gt;insert</a></td><td>a, n, at</td></tr>
@@ -170,8 +182,6 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-56806709">&lt;T&gt;remove</a></td><td>a, element</td></tr>
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-5b1cd3ec">&lt;T&gt;lazy_remove</a></td><td>a, datum</td></tr>
-
-<tr><td align = right>static void</td><td><a href = "#user-content-fn-7f4a964e">&lt;T&gt;clear</a></td><td>a</td></tr>
 
 <tr><td align = right>static &lt;pT&gt;type *</td><td><a href = "#user-content-fn-1900dfa2">&lt;T&gt;peek</a></td><td>a</td></tr>
 
@@ -202,6 +212,10 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 <tr><td align = right>const char *</td><td><a href = "#user-content-fn-260f8348">&lt;TR&gt;to_string</a></td><td>box</td></tr>
 
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-260f8348">&lt;TR&gt;to_string</a></td><td>box</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-4e047ffb">&lt;T&gt;graph</a></td><td>&lt;pT&gt;box</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-6c32bc30">&lt;T&gt;graph_fn</a></td><td>&lt;pT&gt;box, char</td></tr>
 
 <tr><td align = right>int</td><td><a href = "#user-content-fn-aa7d8478">&lt;TR&gt;compare</a></td><td>restrict, restrict</td></tr>
 
@@ -239,8 +253,6 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-2527597a">&lt;TR&gt;unique</a></td><td>box</td></tr>
 
-<tr><td align = right>const char *</td><td><a href = "#user-content-fn-260f8348">&lt;TR&gt;to_string</a></td><td>box</td></tr>
-
 </table>
 
 
@@ -249,7 +261,13 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 ### <a id = "user-content-fn-80df50b2" name = "user-content-fn-80df50b2">&lt;T&gt;begin</a> ###
 
-<code>struct &lt;T&gt;cursor <strong>&lt;T&gt;begin</strong>(struct <em>&lt;t&gt;array</em> *);</code>
+<code>struct &lt;T&gt;cursor <strong>&lt;T&gt;begin</strong>(const struct <em>&lt;t&gt;array</em> *);</code>
+
+
+
+### <a id = "user-content-fn-ebb396f4" name = "user-content-fn-ebb396f4">&lt;T&gt;at</a> ###
+
+<code>struct &lt;T&gt;cursor <strong>&lt;T&gt;at</strong>(const struct <em>&lt;t&gt;array</em> *, <em>size_t</em>);</code>
 
 
 
@@ -259,9 +277,9 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 
 
-### <a id = "user-content-fn-653fd302" name = "user-content-fn-653fd302">&lt;T&gt;look</a> ###
+### <a id = "user-content-fn-1d176e37" name = "user-content-fn-1d176e37">&lt;T&gt;entry</a> ###
 
-<code>&lt;pT&gt;type *<strong>&lt;T&gt;look</strong>(struct <em>&lt;T&gt;cursor</em> *);</code>
+<code>&lt;pT&gt;type *<strong>&lt;T&gt;entry</strong>(struct <em>&lt;T&gt;cursor</em> *);</code>
 
 
 
@@ -277,9 +295,9 @@ Manages the array field `data` which has `size` elements\. The space is indexed 
 
 
 
-### <a id = "user-content-fn-ebb396f4" name = "user-content-fn-ebb396f4">&lt;T&gt;at</a> ###
+### <a id = "user-content-fn-71ce7b17" name = "user-content-fn-71ce7b17">&lt;T&gt;data_at</a> ###
 
-<code>&lt;pT&gt;type *<strong>&lt;T&gt;at</strong>(const struct <em>&lt;t&gt;array</em> *, <em>size_t</em>);</code>
+<code>&lt;pT&gt;type *<strong>&lt;T&gt;data_at</strong>(const struct <em>&lt;t&gt;array</em> *, <em>size_t</em>);</code>
 
 
 
@@ -391,7 +409,11 @@ Zeroed data \(not all\-bits\-zero\) is initialized, as well\.
 
 <code>static void <strong>&lt;t&gt;array_</strong>(struct &lt;t&gt;array *const <em>a</em>)</code>
 
-If `a` is not null, destroys and returns it to idle\.
+If `a` is not null, returns the idle zeroed state where it takes no dynamic memory\.
+
+ * Order:  
+   &#920;\(1\)
+
 
 
 
@@ -421,6 +443,18 @@ The capacity of `a` will be increased to at least `n` elements beyond the size\.
  * Return:  
    The start of the buffered space at the back of the array\. If `a` is idle and `buffer` is zero, a null pointer is returned, otherwise null indicates an error\.
  * Exceptional return: realloc  
+
+
+
+
+### <a id = "user-content-fn-7f4a964e" name = "user-content-fn-7f4a964e">&lt;T&gt;clear</a> ###
+
+<code>static void <strong>&lt;T&gt;clear</strong>(struct &lt;t&gt;array *const <em>a</em>)</code>
+
+Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was previously in an active non\-idle state, it continues to be\.
+
+ * Order:  
+   &#920;\(1\)
 
 
 
@@ -488,18 +522,6 @@ Removes `datum` from `a` and replaces it with the tail\. Do not attempt to remov
 
  * Order:  
    &#927;\(1\)\.
-
-
-
-
-### <a id = "user-content-fn-7f4a964e" name = "user-content-fn-7f4a964e">&lt;T&gt;clear</a> ###
-
-<code>static void <strong>&lt;T&gt;clear</strong>(struct &lt;t&gt;array *const <em>a</em>)</code>
-
-Sets `a` to be empty\. That is, the size of `a` will be zero, but if it was previously in an active non\-idle state, it continues to be\.
-
- * Order:  
-   &#920;\(1\)
 
 
 
@@ -659,6 +681,18 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
  * Order:  
    &#920;\(1\)
 
+
+
+
+### <a id = "user-content-fn-4e047ffb" name = "user-content-fn-4e047ffb">&lt;T&gt;graph</a> ###
+
+<code>void <strong>&lt;T&gt;graph</strong>(const <em>&lt;pT&gt;box</em> *, FILE *);</code>
+
+
+
+### <a id = "user-content-fn-6c32bc30" name = "user-content-fn-6c32bc30">&lt;T&gt;graph_fn</a> ###
+
+<code>int <strong>&lt;T&gt;graph_fn</strong>(const <em>&lt;pT&gt;box</em> *, const <em>char</em> *);</code>
 
 
 
@@ -834,12 +868,6 @@ Indices \[`i0`, `i1`\) of `a` will be replaced with a copy of `b`\.
  * Order:  
    &#927;\(|`box`|\)
 
-
-
-
-### <a id = "user-content-fn-260f8348" name = "user-content-fn-260f8348">&lt;TR&gt;to_string</a> ###
-
-<code>const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>);</code>
 
 
 

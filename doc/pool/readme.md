@@ -5,8 +5,8 @@ Header [\.\./\.\./src/pool\.h](../../src/pool.h) depends on [\.\./\.\./src/heap\
 ## Stable pool ##
 
  * [Description](#user-content-preamble)
- * [Typedef Aliases](#user-content-typedef): [&lt;pT&gt;type](#user-content-typedef-9b5be28b), [&lt;pTR&gt;to_string_fn](#user-content-typedef-d00960b3)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;t&gt;pool](#user-content-tag-9a0f378f)
+ * [Typedef Aliases](#user-content-typedef): [&lt;pT&gt;type](#user-content-typedef-9b5be28b), [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [&lt;t&gt;pool](#user-content-tag-9a0f378f), [table_stats](#user-content-tag-89e31bf3)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -39,11 +39,11 @@ A valid tag type set by `POOL_TYPE`\.
 
 
 
-### <a id = "user-content-typedef-d00960b3" name = "user-content-typedef-d00960b3">&lt;pTR&gt;to_string_fn</a> ###
+### <a id = "user-content-typedef-4442127b" name = "user-content-typedef-4442127b">&lt;pT&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;pTR&gt;to_string_fn</strong>)(const &lt;pT&gt;type *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;pT&gt;to_string_fn</strong>)(const &lt;pT&gt;type *, char(*)[12]);</code>
 
-Type of `POOL_TO_STRING` needed function `<tr>to_string`\. Responsible for turning the read\-only argument into a 12\-max\-`char` output string\.
+Type of the required `<tr>to_string`\. Responsible for turning the read\-only argument into a 12\-max\-`char` output string\.
 
 
 
@@ -59,11 +59,39 @@ A zeroed pool is a valid state\. See [&lt;t&gt;pool](#user-content-fn-9a0f378f)\
 
 
 
+### <a id = "user-content-tag-89e31bf3" name = "user-content-tag-89e31bf3">table_stats</a> ###
+
+<code>struct <strong>table_stats</strong> { size_t n, max; double mean, ssdm; };</code>
+
+[Welford1962Note](https://scholar.google.ca/scholar?q=Welford1962Note): population variance: `ssdm/n`, sample variance: `ssdm/(n-1)`\.
+
+
+
 ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##
 
 <table>
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
+
+<tr><td align = right>struct &lt;T&gt;cursor</td><td><a href = "#user-content-fn-80df50b2">&lt;T&gt;begin</a></td><td>&lt;t&gt;pool</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-dd6c86e1">&lt;T&gt;exists</a></td><td>&lt;T&gt;cursor</td></tr>
+
+<tr><td align = right>&lt;pT&gt;type *</td><td><a href = "#user-content-fn-1d176e37">&lt;T&gt;entry</a></td><td>&lt;T&gt;cursor</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-d0790d04">&lt;T&gt;next</a></td><td>&lt;T&gt;cursor</td></tr>
+
+<tr><td align = right>struct &lt;t&gt;pool</td><td><a href = "#user-content-fn-9a0f378f">&lt;t&gt;pool</a></td><td></td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-55f4dc70">&lt;t&gt;pool_</a></td><td>&lt;t&gt;pool</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-c6b6f48f">&lt;T&gt;buffer</a></td><td>&lt;t&gt;pool, size_t</td></tr>
+
+<tr><td align = right>&lt;pT&gt;type *</td><td><a href = "#user-content-fn-222fef85">&lt;T&gt;new</a></td><td>&lt;t&gt;pool</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-56806709">&lt;T&gt;remove</a></td><td>&lt;t&gt;pool, &lt;pT&gt;type</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-7f4a964e">&lt;T&gt;clear</a></td><td>&lt;t&gt;pool</td></tr>
 
 <tr><td align = right>static struct &lt;t&gt;pool</td><td><a href = "#user-content-fn-9a0f378f">&lt;t&gt;pool</a></td><td></td></tr>
 
@@ -77,11 +105,75 @@ A zeroed pool is a valid state\. See [&lt;t&gt;pool](#user-content-fn-9a0f378f)\
 
 <tr><td align = right>static void</td><td><a href = "#user-content-fn-7f4a964e">&lt;T&gt;clear</a></td><td>pool</td></tr>
 
+<tr><td align = right>void</td><td><a href = "#user-content-fn-4e047ffb">&lt;T&gt;graph</a></td><td>&lt;pT&gt;box</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-6c32bc30">&lt;T&gt;graph_fn</a></td><td>&lt;pT&gt;box, char</td></tr>
+
 </table>
 
 
 
 ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
+
+### <a id = "user-content-fn-80df50b2" name = "user-content-fn-80df50b2">&lt;T&gt;begin</a> ###
+
+<code>struct &lt;T&gt;cursor <strong>&lt;T&gt;begin</strong>(const struct <em>&lt;t&gt;pool</em> *);</code>
+
+
+
+### <a id = "user-content-fn-dd6c86e1" name = "user-content-fn-dd6c86e1">&lt;T&gt;exists</a> ###
+
+<code>int <strong>&lt;T&gt;exists</strong>(const struct <em>&lt;T&gt;cursor</em> *);</code>
+
+
+
+### <a id = "user-content-fn-1d176e37" name = "user-content-fn-1d176e37">&lt;T&gt;entry</a> ###
+
+<code>&lt;pT&gt;type *<strong>&lt;T&gt;entry</strong>(struct <em>&lt;T&gt;cursor</em> *);</code>
+
+
+
+### <a id = "user-content-fn-d0790d04" name = "user-content-fn-d0790d04">&lt;T&gt;next</a> ###
+
+<code>void <strong>&lt;T&gt;next</strong>(struct <em>&lt;T&gt;cursor</em> *);</code>
+
+
+
+### <a id = "user-content-fn-9a0f378f" name = "user-content-fn-9a0f378f">&lt;t&gt;pool</a> ###
+
+<code>struct &lt;t&gt;pool <strong>&lt;t&gt;pool</strong>(void);</code>
+
+
+
+### <a id = "user-content-fn-55f4dc70" name = "user-content-fn-55f4dc70">&lt;t&gt;pool_</a> ###
+
+<code>void <strong>&lt;t&gt;pool_</strong>(struct <em>&lt;t&gt;pool</em> *);</code>
+
+
+
+### <a id = "user-content-fn-c6b6f48f" name = "user-content-fn-c6b6f48f">&lt;T&gt;buffer</a> ###
+
+<code>int <strong>&lt;T&gt;buffer</strong>(struct <em>&lt;t&gt;pool</em> *, <em>size_t</em>);</code>
+
+
+
+### <a id = "user-content-fn-222fef85" name = "user-content-fn-222fef85">&lt;T&gt;new</a> ###
+
+<code>&lt;pT&gt;type *<strong>&lt;T&gt;new</strong>(struct <em>&lt;t&gt;pool</em> *);</code>
+
+
+
+### <a id = "user-content-fn-56806709" name = "user-content-fn-56806709">&lt;T&gt;remove</a> ###
+
+<code>int <strong>&lt;T&gt;remove</strong>(struct <em>&lt;t&gt;pool</em> *, <em>&lt;pT&gt;type</em> *);</code>
+
+
+
+### <a id = "user-content-fn-7f4a964e" name = "user-content-fn-7f4a964e">&lt;T&gt;clear</a> ###
+
+<code>void <strong>&lt;T&gt;clear</strong>(struct <em>&lt;t&gt;pool</em> *);</code>
+
+
 
 ### <a id = "user-content-fn-9a0f378f" name = "user-content-fn-9a0f378f">&lt;t&gt;pool</a> ###
 
@@ -160,6 +252,18 @@ Removes all from `pool`, but keeps it's active state, only freeing the smaller b
  * Order:  
    &#927;\(log `items`\)
 
+
+
+
+### <a id = "user-content-fn-4e047ffb" name = "user-content-fn-4e047ffb">&lt;T&gt;graph</a> ###
+
+<code>void <strong>&lt;T&gt;graph</strong>(const <em>&lt;pT&gt;box</em> *, FILE *);</code>
+
+
+
+### <a id = "user-content-fn-6c32bc30" name = "user-content-fn-6c32bc30">&lt;T&gt;graph_fn</a> ###
+
+<code>int <strong>&lt;T&gt;graph_fn</strong>(const <em>&lt;pT&gt;box</em> *, const <em>char</em> *);</code>
 
 
 

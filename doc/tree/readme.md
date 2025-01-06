@@ -6,7 +6,7 @@ Header [\.\./\.\./src/tree\.h](../../src/tree.h); examples [\.\./\.\./test/test\
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;pT&gt;key](#user-content-typedef-95e6d0aa), [&lt;pT&gt;value](#user-content-typedef-3a465e90), [&lt;pT&gt;less_fn](#user-content-typedef-ca992ecb), [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)
- * [Struct, Union, and Enum Definitions](#user-content-tag): [tree_result](#user-content-tag-9c3f99d7), [&lt;t&gt;tree](#user-content-tag-31fcdbd1)
+ * [Struct, Union, and Enum Definitions](#user-content-tag): [tree_result](#user-content-tag-9c3f99d7), [&lt;t&gt;tree](#user-content-tag-31fcdbd1), [table_stats](#user-content-tag-89e31bf3)
  * [Function Summary](#user-content-summary)
  * [Function Definitions](#user-content-fn)
  * [License](#user-content-license)
@@ -15,9 +15,9 @@ Header [\.\./\.\./src/tree\.h](../../src/tree.h); examples [\.\./\.\./test/test\
 
 ![Example of an order-3 tree.](../../doc/tree/tree.png)
 
-A [&lt;t&gt;tree](#user-content-tag-31fcdbd1) is an ordered set or map contained in a tree; the order is suppled by [&lt;t&gt;less](#user-content-fn-534b464c)\. For memory locality, this is implemented B\-tree, described in [Bayer, McCreight, 1972, Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972%2C+Large)\.
+A [&lt;t&gt;tree](#user-content-tag-31fcdbd1) is an ordered set or map contained in an unstable tree; the order is suppled by [&lt;t&gt;less](#user-content-fn-534b464c)\. For memory locality, this is implemented B\-tree, described in [Bayer, McCreight, 1972, Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972%2C+Large)\.
 
-All operations are fail\-fast and will not compromise the integrity of any existing tree\. As a B\-tree, this is not stable\.
+All operations are fail\-fast and will not compromise the integrity of any existing tree\.
 
 Adding, deleting, or changes in the topology of the tree invalidate the iterator\. To modify the tree while iterating, take the [&lt;T&gt;key](#user-content-fn-3154790) and restart the iterator with [&lt;T&gt;less](#user-content-fn-8d54d9ac) or [&lt;T&gt;more](#user-content-fn-5c40636c) as appropriate\.
 
@@ -35,7 +35,7 @@ Adding, deleting, or changes in the topology of the tree invalidate the iterator
    To string trait contained in [\.\./\.\./src/to\_string\.h](../../src/to_string.h)\. See [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)\.
  * Parameter: TREE\_EXPECT\_TRAIT, TREE\_TRAIT  
    Named traits are obtained by including `tree.h` multiple times with `TREE_EXPECT_TRAIT` and then subsequently including the name that satisfies `C` naming conventions when mangled in `TREE_TRAIT`\.
- * Parameter: TREE\_DECLARE\_ONLY  
+ * Parameter: TREE\_DECLARE\_ONLY, TREE\_NON\_STATIC  
    For headers in different compilation units\.
  * Standard:  
    C89
@@ -101,11 +101,73 @@ See [&lt;t&gt;tree](#user-content-fn-31fcdbd1)\.
 
 
 
+### <a id = "user-content-tag-89e31bf3" name = "user-content-tag-89e31bf3">table_stats</a> ###
+
+<code>struct <strong>table_stats</strong> { size_t n, max; double mean, ssdm; };</code>
+
+[Welford1962Note](https://scholar.google.ca/scholar?q=Welford1962Note): population variance: `ssdm/n`, sample variance: `ssdm/(n-1)`\.
+
+
+
 ## <a id = "user-content-summary" name = "user-content-summary">Function Summary</a> ##
 
 <table>
 
 <tr><th>Modifiers</th><th>Function Name</th><th>Argument List</th></tr>
+
+<tr><td align = right>struct &lt;T&gt;cursor</td><td><a href = "#user-content-fn-80df50b2">&lt;T&gt;begin</a></td><td>&lt;t&gt;tree</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-dd6c86e1">&lt;T&gt;exists</a></td><td>&lt;T&gt;cursor</td></tr>
+
+<tr><td align = right>&lt;pT&gt;ref *</td><td><a href = "#user-content-fn-1d176e37">&lt;T&gt;entry</a></td><td>&lt;T&gt;cursor</td></tr>
+
+<tr><td align = right>&lt;pT&gt;key</td><td><a href = "#user-content-fn-3154790">&lt;T&gt;key</a></td><td>&lt;T&gt;cursor</td></tr>
+
+<tr><td align = right>&lt;pT&gt;value *</td><td><a href = "#user-content-fn-70919a06">&lt;T&gt;value</a></td><td>&lt;T&gt;cursor</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-d0790d04">&lt;T&gt;next</a></td><td>&lt;T&gt;cursor</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-d6c331fc">&lt;T&gt;previous</a></td><td>&lt;T&gt;cursor</td></tr>
+
+<tr><td align = right>struct &lt;T&gt;cursor</td><td><a href = "#user-content-fn-8d54d9ac">&lt;T&gt;less</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key</td></tr>
+
+<tr><td align = right>struct &lt;T&gt;cursor</td><td><a href = "#user-content-fn-5c40636c">&lt;T&gt;more</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key</td></tr>
+
+<tr><td align = right>struct &lt;t&gt;tree</td><td><a href = "#user-content-fn-31fcdbd1">&lt;t&gt;tree</a></td><td></td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-3f0da08a">&lt;t&gt;tree_</a></td><td>&lt;t&gt;tree</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-7f4a964e">&lt;T&gt;clear</a></td><td>&lt;t&gt;tree</td></tr>
+
+<tr><td align = right>size_t</td><td><a href = "#user-content-fn-b1bf6340">&lt;T&gt;count</a></td><td>&lt;t&gt;tree</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-988bbaac">&lt;T&gt;contains</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key</td></tr>
+
+<tr><td align = right>&lt;pT&gt;value</td><td><a href = "#user-content-fn-e9879d51">&lt;T&gt;get_or</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;value</td></tr>
+
+<tr><td align = right>&lt;pT&gt;key</td><td><a href = "#user-content-fn-8379b620">&lt;T&gt;less_or</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;key</td></tr>
+
+<tr><td align = right>&lt;pT&gt;key</td><td><a href = "#user-content-fn-21b4ade0">&lt;T&gt;more_or</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;key</td></tr>
+
+<tr><td align = right>enum tree_result</td><td><a href = "#user-content-fn-a7e74be3">&lt;T&gt;bulk_assign</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;value</td></tr>
+
+<tr><td align = right>enum tree_result</td><td><a href = "#user-content-fn-d169d163">&lt;T&gt;bulk_try</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-81569ea5">&lt;T&gt;bulk_finish</a></td><td>&lt;t&gt;tree</td></tr>
+
+<tr><td align = right>enum tree_result</td><td><a href = "#user-content-fn-40416930">&lt;T&gt;assign</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;value</td></tr>
+
+<tr><td align = right>enum tree_result</td><td><a href = "#user-content-fn-5772e298">&lt;T&gt;update</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;key, &lt;pT&gt;value</td></tr>
+
+<tr><td align = right>enum tree_result</td><td><a href = "#user-content-fn-edcfce52">&lt;T&gt;try</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key</td></tr>
+
+<tr><td align = right>enum tree_result</td><td><a href = "#user-content-fn-5772e298">&lt;T&gt;update</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;key</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-9508049f">&lt;pT&gt;remove</a></td><td>&lt;pT&gt;tree, &lt;pT&gt;key</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-56806709">&lt;T&gt;remove</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-23a641ce">&lt;T&gt;clone</a></td><td>restrict, restrict</td></tr>
 
 <tr><td align = right>static &lt;pT&gt;key</td><td><a href = "#user-content-fn-3154790">&lt;T&gt;key</a></td><td>cur</td></tr>
 
@@ -147,7 +209,13 @@ See [&lt;t&gt;tree](#user-content-fn-31fcdbd1)\.
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-23a641ce">&lt;T&gt;clone</a></td><td>tree, source</td></tr>
 
+<tr><td align = right>const char *</td><td><a href = "#user-content-fn-260f8348">&lt;TR&gt;to_string</a></td><td>box</td></tr>
+
 <tr><td align = right>static const char *</td><td><a href = "#user-content-fn-260f8348">&lt;TR&gt;to_string</a></td><td>box</td></tr>
+
+<tr><td align = right>void</td><td><a href = "#user-content-fn-4e047ffb">&lt;T&gt;graph</a></td><td>&lt;pT&gt;box</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-6c32bc30">&lt;T&gt;graph_fn</a></td><td>&lt;pT&gt;box, char</td></tr>
 
 <tr><td align = right>static &lt;pT&gt;value</td><td><a href = "#user-content-fn-d5fb169d">&lt;T&gt;tree&lt;R&gt;get</a></td><td>tree, key</td></tr>
 
@@ -156,6 +224,168 @@ See [&lt;t&gt;tree](#user-content-fn-31fcdbd1)\.
 
 
 ## <a id = "user-content-fn" name = "user-content-fn">Function Definitions</a> ##
+
+### <a id = "user-content-fn-80df50b2" name = "user-content-fn-80df50b2">&lt;T&gt;begin</a> ###
+
+<code>struct &lt;T&gt;cursor <strong>&lt;T&gt;begin</strong>(const struct <em>&lt;t&gt;tree</em> *);</code>
+
+
+
+### <a id = "user-content-fn-dd6c86e1" name = "user-content-fn-dd6c86e1">&lt;T&gt;exists</a> ###
+
+<code>int <strong>&lt;T&gt;exists</strong>(struct <em>&lt;T&gt;cursor</em> *);</code>
+
+
+
+### <a id = "user-content-fn-1d176e37" name = "user-content-fn-1d176e37">&lt;T&gt;entry</a> ###
+
+<code>&lt;pT&gt;ref *<strong>&lt;T&gt;entry</strong>(struct <em>&lt;T&gt;cursor</em> *);</code>
+
+
+
+### <a id = "user-content-fn-3154790" name = "user-content-fn-3154790">&lt;T&gt;key</a> ###
+
+<code>&lt;pT&gt;key <strong>&lt;T&gt;key</strong>(const struct <em>&lt;T&gt;cursor</em> *);</code>
+
+
+
+### <a id = "user-content-fn-70919a06" name = "user-content-fn-70919a06">&lt;T&gt;value</a> ###
+
+<code>&lt;pT&gt;value *<strong>&lt;T&gt;value</strong>(const struct <em>&lt;T&gt;cursor</em> *);</code>
+
+
+
+### <a id = "user-content-fn-d0790d04" name = "user-content-fn-d0790d04">&lt;T&gt;next</a> ###
+
+<code>void <strong>&lt;T&gt;next</strong>(struct <em>&lt;T&gt;cursor</em> *);</code>
+
+
+
+### <a id = "user-content-fn-d6c331fc" name = "user-content-fn-d6c331fc">&lt;T&gt;previous</a> ###
+
+<code>void <strong>&lt;T&gt;previous</strong>(struct <em>&lt;T&gt;cursor</em> *);</code>
+
+
+
+### <a id = "user-content-fn-8d54d9ac" name = "user-content-fn-8d54d9ac">&lt;T&gt;less</a> ###
+
+<code>struct &lt;T&gt;cursor <strong>&lt;T&gt;less</strong>(struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>);</code>
+
+
+
+### <a id = "user-content-fn-5c40636c" name = "user-content-fn-5c40636c">&lt;T&gt;more</a> ###
+
+<code>struct &lt;T&gt;cursor <strong>&lt;T&gt;more</strong>(struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>);</code>
+
+
+
+### <a id = "user-content-fn-31fcdbd1" name = "user-content-fn-31fcdbd1">&lt;t&gt;tree</a> ###
+
+<code>struct &lt;t&gt;tree <strong>&lt;t&gt;tree</strong>(void);</code>
+
+
+
+### <a id = "user-content-fn-3f0da08a" name = "user-content-fn-3f0da08a">&lt;t&gt;tree_</a> ###
+
+<code>void <strong>&lt;t&gt;tree_</strong>(struct <em>&lt;t&gt;tree</em> *);</code>
+
+
+
+### <a id = "user-content-fn-7f4a964e" name = "user-content-fn-7f4a964e">&lt;T&gt;clear</a> ###
+
+<code>void <strong>&lt;T&gt;clear</strong>(struct <em>&lt;t&gt;tree</em> *);</code>
+
+
+
+### <a id = "user-content-fn-b1bf6340" name = "user-content-fn-b1bf6340">&lt;T&gt;count</a> ###
+
+<code>size_t <strong>&lt;T&gt;count</strong>(const struct <em>&lt;t&gt;tree</em> *);</code>
+
+
+
+### <a id = "user-content-fn-988bbaac" name = "user-content-fn-988bbaac">&lt;T&gt;contains</a> ###
+
+<code>int <strong>&lt;T&gt;contains</strong>(const struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>);</code>
+
+
+
+### <a id = "user-content-fn-e9879d51" name = "user-content-fn-e9879d51">&lt;T&gt;get_or</a> ###
+
+<code>&lt;pT&gt;value <strong>&lt;T&gt;get_or</strong>(const struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;value</em>);</code>
+
+
+
+### <a id = "user-content-fn-8379b620" name = "user-content-fn-8379b620">&lt;T&gt;less_or</a> ###
+
+<code>&lt;pT&gt;key <strong>&lt;T&gt;less_or</strong>(const struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;key</em>);</code>
+
+
+
+### <a id = "user-content-fn-21b4ade0" name = "user-content-fn-21b4ade0">&lt;T&gt;more_or</a> ###
+
+<code>&lt;pT&gt;key <strong>&lt;T&gt;more_or</strong>(const struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;key</em>);</code>
+
+
+
+### <a id = "user-content-fn-a7e74be3" name = "user-content-fn-a7e74be3">&lt;T&gt;bulk_assign</a> ###
+
+<code>enum tree_result <strong>&lt;T&gt;bulk_assign</strong>(struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;value</em> **);</code>
+
+
+
+### <a id = "user-content-fn-d169d163" name = "user-content-fn-d169d163">&lt;T&gt;bulk_try</a> ###
+
+<code>enum tree_result <strong>&lt;T&gt;bulk_try</strong>(struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>);</code>
+
+
+
+### <a id = "user-content-fn-81569ea5" name = "user-content-fn-81569ea5">&lt;T&gt;bulk_finish</a> ###
+
+<code>int <strong>&lt;T&gt;bulk_finish</strong>(struct <em>&lt;t&gt;tree</em> *);</code>
+
+
+
+### <a id = "user-content-fn-40416930" name = "user-content-fn-40416930">&lt;T&gt;assign</a> ###
+
+<code>enum tree_result <strong>&lt;T&gt;assign</strong>(struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;value</em> **);</code>
+
+
+
+### <a id = "user-content-fn-5772e298" name = "user-content-fn-5772e298">&lt;T&gt;update</a> ###
+
+<code>enum tree_result <strong>&lt;T&gt;update</strong>(struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;key</em> *, <em>&lt;pT&gt;value</em> **);</code>
+
+
+
+### <a id = "user-content-fn-edcfce52" name = "user-content-fn-edcfce52">&lt;T&gt;try</a> ###
+
+<code>enum tree_result <strong>&lt;T&gt;try</strong>(struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>);</code>
+
+
+
+### <a id = "user-content-fn-5772e298" name = "user-content-fn-5772e298">&lt;T&gt;update</a> ###
+
+<code>enum tree_result <strong>&lt;T&gt;update</strong>(struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;key</em> *);</code>
+
+
+
+### <a id = "user-content-fn-9508049f" name = "user-content-fn-9508049f">&lt;pT&gt;remove</a> ###
+
+<code>int <strong>&lt;pT&gt;remove</strong>(struct <em>&lt;pT&gt;tree</em> *, <em>&lt;pT&gt;key</em>);</code>
+
+
+
+### <a id = "user-content-fn-56806709" name = "user-content-fn-56806709">&lt;T&gt;remove</a> ###
+
+<code>int <strong>&lt;T&gt;remove</strong>(struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>);</code>
+
+
+
+### <a id = "user-content-fn-23a641ce" name = "user-content-fn-23a641ce">&lt;T&gt;clone</a> ###
+
+<code>int <strong>&lt;T&gt;clone</strong>(struct &lt;t&gt;tree *<em>restrict</em>, const struct &lt;t&gt;tree *<em>restrict</em>);</code>
+
+
 
 ### <a id = "user-content-fn-3154790" name = "user-content-fn-3154790">&lt;T&gt;key</a> ###
 
@@ -429,6 +659,12 @@ Tries to remove `key` from `tree`\.
 
 ### <a id = "user-content-fn-260f8348" name = "user-content-fn-260f8348">&lt;TR&gt;to_string</a> ###
 
+<code>const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>);</code>
+
+
+
+### <a id = "user-content-fn-260f8348" name = "user-content-fn-260f8348">&lt;TR&gt;to_string</a> ###
+
 <code>static const char *<strong>&lt;TR&gt;to_string</strong>(const &lt;pT&gt;box *const <em>box</em>)</code>
 
 [\.\./\.\./src/to\_string\.h](../../src/to_string.h): print the contents of `box` in a static string buffer of 256 bytes, with limitations of only printing 4 things in a single sequence point\.
@@ -438,6 +674,18 @@ Tries to remove `key` from `tree`\.
  * Order:  
    &#920;\(1\)
 
+
+
+
+### <a id = "user-content-fn-4e047ffb" name = "user-content-fn-4e047ffb">&lt;T&gt;graph</a> ###
+
+<code>void <strong>&lt;T&gt;graph</strong>(const <em>&lt;pT&gt;box</em> *, FILE *);</code>
+
+
+
+### <a id = "user-content-fn-6c32bc30" name = "user-content-fn-6c32bc30">&lt;T&gt;graph_fn</a> ###
+
+<code>int <strong>&lt;T&gt;graph_fn</strong>(const <em>&lt;pT&gt;box</em> *, const <em>char</em> *);</code>
 
 
 
