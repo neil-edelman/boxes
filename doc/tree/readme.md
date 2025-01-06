@@ -169,9 +169,17 @@ See [&lt;t&gt;tree](#user-content-fn-31fcdbd1)\.
 
 <tr><td align = right>int</td><td><a href = "#user-content-fn-23a641ce">&lt;T&gt;clone</a></td><td>restrict, restrict</td></tr>
 
+<tr><td align = right>static struct &lt;T&gt;cursor</td><td><a href = "#user-content-fn-80df50b2">&lt;T&gt;begin</a></td><td>tree</td></tr>
+
+<tr><td align = right>static int</td><td><a href = "#user-content-fn-dd6c86e1">&lt;T&gt;exists</a></td><td>cur</td></tr>
+
+<tr><td align = right>static struct &lt;pT&gt;ref *</td><td><a href = "#user-content-fn-1d176e37">&lt;T&gt;entry</a></td><td>cur</td></tr>
+
 <tr><td align = right>static &lt;pT&gt;key</td><td><a href = "#user-content-fn-3154790">&lt;T&gt;key</a></td><td>cur</td></tr>
 
 <tr><td align = right>static &lt;pT&gt;value *</td><td><a href = "#user-content-fn-70919a06">&lt;T&gt;value</a></td><td>cur</td></tr>
+
+<tr><td align = right>static void</td><td><a href = "#user-content-fn-d0790d04">&lt;T&gt;next</a></td><td>cur</td></tr>
 
 <tr><td align = right>static struct &lt;T&gt;cursor</td><td><a href = "#user-content-fn-8d54d9ac">&lt;T&gt;less</a></td><td>tree, x</td></tr>
 
@@ -387,6 +395,34 @@ See [&lt;t&gt;tree](#user-content-fn-31fcdbd1)\.
 
 
 
+### <a id = "user-content-fn-80df50b2" name = "user-content-fn-80df50b2">&lt;T&gt;begin</a> ###
+
+<code>static struct &lt;T&gt;cursor <strong>&lt;T&gt;begin</strong>(const struct &lt;t&gt;tree *const <em>tree</em>)</code>
+
+Iterator for `tree` in empty state\.
+
+
+
+### <a id = "user-content-fn-dd6c86e1" name = "user-content-fn-dd6c86e1">&lt;T&gt;exists</a> ###
+
+<code>static int <strong>&lt;T&gt;exists</strong>(struct &lt;T&gt;cursor *const <em>cur</em>)</code>
+
+ * Return:  
+   Whether the `cur` points to an element\.
+
+
+
+
+### <a id = "user-content-fn-1d176e37" name = "user-content-fn-1d176e37">&lt;T&gt;entry</a> ###
+
+<code>static struct &lt;pT&gt;ref *<strong>&lt;T&gt;entry</strong>(struct &lt;T&gt;cursor *const <em>cur</em>)</code>
+
+ * Return:  
+   Dereference the element pointed to by `cur` that exists\.
+
+
+
+
 ### <a id = "user-content-fn-3154790" name = "user-content-fn-3154790">&lt;T&gt;key</a> ###
 
 <code>static &lt;pT&gt;key <strong>&lt;T&gt;key</strong>(const struct &lt;T&gt;cursor *const <em>cur</em>)</code>
@@ -404,6 +440,14 @@ See [&lt;t&gt;tree](#user-content-fn-31fcdbd1)\.
  * Return:  
    Extract the value from `cur` when it points at a valid element, if `TREE_VALUE`\.
 
+
+
+
+### <a id = "user-content-fn-d0790d04" name = "user-content-fn-d0790d04">&lt;T&gt;next</a> ###
+
+<code>static void <strong>&lt;T&gt;next</strong>(struct &lt;T&gt;cursor *const <em>cur</em>)</code>
+
+Move next on `cur` that exists\.
 
 
 

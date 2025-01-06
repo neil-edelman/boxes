@@ -1065,7 +1065,7 @@ static struct pT_(tree) pT_(clone)(const struct pT_(tree) *const src,
 #		define BOX_PUBLIC_OVERRIDE
 #		include "box.h"
 
-/** Iterator for `tree` in empty state. */
+/** Iterator for `tree` in empty state. @allow */
 static struct T_(cursor) T_(begin)(const struct t_(tree) *const tree) {
 	union { const struct t_(tree) *readonly; struct t_(tree) *promise; } sly;
 	struct T_(cursor) cur;
@@ -1074,7 +1074,7 @@ static struct T_(cursor) T_(begin)(const struct t_(tree) *const tree) {
 	cur.ref.node = 0, cur.ref.height = 0, cur.ref.idx = 0;
 	return cur;
 }
-/** @return Whether the `cur` points to an element. */
+/** @return Whether the `cur` points to an element. @allow */
 static int T_(exists)(struct T_(cursor) *const cur) {
 	if(!cur || !cur->root || !cur->root->node || cur->root->height == UINT_MAX)
 		return 0;
@@ -1088,7 +1088,7 @@ static int T_(exists)(struct T_(cursor) *const cur) {
 	}
 	return 1;
 }
-/** @return Dereference the element pointed to by `cur` that exists. */
+/** @return Dereference the element pointed to by `cur` that exists.  @allow */
 static struct pT_(ref) *T_(entry)(struct T_(cursor) *const cur) {
 	return &cur->ref;
 }
@@ -1102,7 +1102,7 @@ static pT_(key) T_(key)(const struct T_(cursor) *const cur)
 static pT_(value) *T_(value)(const struct T_(cursor) *const cur)
 	{ return cur->ref.node->value + cur->ref.idx; }
 #		endif
-/** Move next on `cur` that exists. */
+/** Move next on `cur` that exists. @allow */
 static void T_(next)(struct T_(cursor) *const cur) {
 	struct pT_(ref) next;
 	assert(cur && cur->root && cur->root->node
