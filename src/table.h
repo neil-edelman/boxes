@@ -212,7 +212,7 @@ pT_(key) T_(key)(const struct T_(cursor) *);
 pT_(value) *T_(value)(const struct T_(cursor) *);
 #		endif
 void T_(next)(struct T_(cursor) *);
-int T_(cursor_remove)(struct T_(cursor) *)
+int T_(cursor_remove)(struct T_(cursor) *);
 struct t_(table) t_(table)(void);
 void t_(table_)(struct t_(table) *);
 int T_(buffer)(struct t_(table) *, pT_(uint));
