@@ -258,9 +258,12 @@ static void pT_(higher_entry)(struct pT_(ref) *ref) {
 }
 /** This is a convince function for <fn:<pT>match_prefix>.
  @return The leftmost entry string at `lf` of `tree`. */
-static const char *pT_(sample)(struct pT_(tree) *const tree,
+static const char *pT_(sample)(const struct pT_(tree) *const tree,
 	const unsigned lf) {
-	struct pT_(ref) ref; ref.tree = tree, ref.lf = lf;
+	union { const struct pT_(tree) *readonly; struct pT_(tree) *promise; }
+		slybox;
+	struct pT_(ref) ref;
+	slybox.readonly = tree, ref.tree = slybox.promise, ref.lf = lf;
 	pT_(lower_entry)(&ref);
 	return pT_(ref_to_string)(&ref);
 }

@@ -719,7 +719,7 @@ static unsigned pT_(left_leaf)(const struct pT_(tree) *const tr,
 
 /** Graphs `tr` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
-static void pT_(graph_tree_bits)(struct pT_(tree) *const tree,
+static void pT_(graph_tree_bits)(const struct pT_(tree) *const tree,
 	const size_t treebit, FILE *const fp) {
 	unsigned b, i;
 	assert(tree && fp);
@@ -790,7 +790,7 @@ static void pT_(graph_tree_bits)(struct pT_(tree) *const tree,
 
 /** Graphs `tr` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
-static void pT_(graph_tree_mem)(struct pT_(tree) *const tree,
+static void pT_(graph_tree_mem)(const struct pT_(tree) *const tree,
 	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
 	unsigned i;
@@ -861,7 +861,7 @@ static void pT_(graph_tree_mem)(struct pT_(tree) *const tree,
 
 /** Graphs `tr` on `fp`.`treebit` is the number of bits currently
  (recursive.) */
-static void pT_(graph_tree_logic)(struct pT_(tree) *const tr,
+static void pT_(graph_tree_logic)(const struct pT_(tree) *const tr,
 	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
 	unsigned left, right, b, i;
@@ -918,8 +918,10 @@ static void pT_(graph_tree_logic)(struct pT_(tree) *const tr,
 	fprintf(fp, "\t// leaves\n");
 
 	for(i = 0; i <= tr->bsize; i++) if(!trie_bmp_test(&tr->bmp, i)) {
+		union { const struct pT_(tree) *readonly; struct pT_(tree) *promise; }
+			slybox;
 		struct pT_(ref) ref;
-		ref.tree = tr, ref.lf = i;
+		slybox.readonly = tr, ref.tree = slybox.promise, ref.lf = i;
 		fprintf(fp,
 			"\ttree%pleaf%u [label = <%s<font color=\"Gray75\">⊔</font>>];\n",
 			(const void *)tr, i, pT_(ref_to_string)(&ref));
@@ -928,6 +930,8 @@ static void pT_(graph_tree_logic)(struct pT_(tree) *const tr,
 	for(i = 0; i <= tr->bsize; i++) if(trie_bmp_test(&tr->bmp, i))
 		pT_(graph_tree_logic)(tr->leaf[i].as_link, 0, fp);
 }
+
+typedef void (*pT_(tree_file_fn))(const struct pT_(tree) *, size_t, FILE *);
 
 /** Draw a graph of `trie` to `fn` in Graphviz format with `callback` as it's
  tree-drawing output. */
@@ -949,8 +953,11 @@ static void pT_(graph_choose)(const struct t_(trie) *const trie,
 #			define BOX_PUBLIC_OVERRIDE
 #			include "box.h"
 
-/** Graphs logical `trie` output to `fn` using `no` as the filename index. */
 static void T_(graph)(const struct t_(trie) *const trie,
+	FILE *const fp) { pT_(graph_tree_bits)(trie->root, 0, fp); }
+
+/** Graphs logical `trie` output to `fn` using `no` as the filename index. */
+static void T_(graph_all)(const struct t_(trie) *const trie,
 	const char *const fn, const size_t no) {
 	const char logic[] = "-tree", mem[] = "-mem", bits[] = "-bits";
 	char copy[128], *dot;

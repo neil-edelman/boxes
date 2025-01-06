@@ -1,8 +1,12 @@
-#include <stdio.h>
-#include <string.h>
-#include "orcish.h"
+#ifdef TRIE_NON_STATIC
+void T_(test)(void);
+#endif
+#ifndef TRIE_DECLARE_ONLY
 
-...
+#	include <stdio.h>
+#	include <string.h>
+#	include "orcish.h"
+
 #	if defined QUOTE || defined QUOTE_
 #		error Cannot be defined.
 #	endif
@@ -16,8 +20,6 @@ static const char *T_(to_string)(const struct t_(trie) *);
 
 /** Works by side-effects, _ie_ fills the type with data. */
 typedef void (*pT_(action_fn))(pT_(entry) *);
-
-typedef void (*pT_(tree_file_fn))(struct pT_(tree) *, size_t, FILE *);
 
 #if 0
 /** Prints `tree` to `stdout`; useful in debugging. */
@@ -93,7 +95,7 @@ static void pT_(test)(void) {
 	errno = 0;
 	pT_(valid)(0);
 	pT_(valid)(&trie);
-	pT_(graph)(&trie, "graph/trie/" QUOTE(TRIE_NAME) "-idle.gv", 0);
+	T_(graph_all)(&trie, "graph/trie/" QUOTE(TRIE_NAME) "-idle.gv", 0);
 	t_(trie_)(&trie), pT_(valid)(&trie);
 #if defined(TREE_ENTRY) || !defined(TRIE_KEY)
 	e = T_(match)(&trie, ""), assert(!e);
@@ -144,7 +146,7 @@ static void pT_(test)(void) {
 		}
 		if(show) {
 			printf("Now: %s.\n", T_(to_string)(&trie));
-			pT_(graph)(&trie, "graph/trie/" QUOTE(TRIE_NAME) "-insert.gv", i);
+			T_(graph_all)(&trie, "graph/trie/" QUOTE(TRIE_NAME) "-insert.gv", i);
 		}
 		assert(!errno);
 	}
@@ -300,7 +302,7 @@ static void pT_(test_random)(void) {
 		}
 		if(fp) fprintf(fp, "%lu\n", (unsigned long)size);
 		if(i % (5 * expectation / 10) == 5 * expectation / 20)
-			pT_(graph)(&trie, "graph/trie/" QUOTE(TRIE_NAME) "-step.gv", i);
+			T_(graph_all)(&trie, "graph/trie/" QUOTE(TRIE_NAME) "-step.gv", i);
 		for(j = 0; j < handles.size; j++) {
 			pT_(remit) r;
 			/*pT_(entry) *e = T_(get)(&trie,
@@ -317,7 +319,7 @@ static void pT_(test_random)(void) {
 #endif
 		}
 	}
-	pT_(graph)(&trie, "graph/trie/" QUOTE(TRIE_NAME) "-step.gv", i);
+	T_(graph_all)(&trie, "graph/trie/" QUOTE(TRIE_NAME) "-step.gv", i);
 	/*for(i = 0; i < handles.size; i++) printf("%s\n",
 		pT_(key_string)(pT_(entry_key)(handles.data[i])));*/
 	goto finally;
@@ -373,5 +375,6 @@ static void T_(test)(void) {
 #	define BOX_PRIVATE_AGAIN
 #	include "../src/box.h"
 
-#undef QUOTE
-#undef QUOTE_
+#	undef QUOTE
+#	undef QUOTE_
+#endif
