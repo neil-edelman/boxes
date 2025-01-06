@@ -528,7 +528,7 @@ end:
 
 #			include "../test/orcish.h"
 
-/** Recursively draws `outer` in `fp` with the actual `height`. */
+/** Recursively draws `sub` in `fp`. */
 static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
 	const struct pT_(branch) *branch;
 	unsigned i;
@@ -575,7 +575,7 @@ static char *pT_(usual_port)(unsigned port) {
 	return s;
 }
 
-/** Recursively draws `outer` in `fp` with the actual `height`. */
+/** Recursively draws `sub` in `fp`. */
 static void pT_(subgraph_usual)(const struct pT_(tree) *const sub, FILE *fp) {
 	const struct pT_(branch) *branch;
 	unsigned i;
@@ -622,7 +622,7 @@ static void pT_(subgraph_usual)(const struct pT_(tree) *const sub, FILE *fp) {
 #			define BOX_PUBLIC_OVERRIDE
 #			include "box.h"
 
-/** Draw a graph of `tree` to `fn` in Graphviz format. */
+/** Draw a graph of `tree` to `fp` in Graphviz format. */
 static void T_(graph)(const struct t_(tree) *const tree, FILE *const fp) {
 	assert(tree && fp);
 	fprintf(fp, "digraph {\n"
@@ -718,7 +718,7 @@ static unsigned pT_(left_leaf)(const struct pT_(tree) *const tr,
 	return i;
 }
 
-/** Graphs `tr` on `fp`. `treebit` is the number of bits currently
+/** Graphs `tree` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
 static void pT_(graph_tree_bits)(const struct pT_(tree) *const tree,
 	const size_t treebit, FILE *const fp) {
@@ -789,7 +789,7 @@ static void pT_(graph_tree_bits)(const struct pT_(tree) *const tree,
 	}
 }
 
-/** Graphs `tr` on `fp`. `treebit` is the number of bits currently
+/** Graphs `tree` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
 static void pT_(graph_tree_mem)(const struct pT_(tree) *const tree,
 	const size_t treebit, FILE *const fp) {
@@ -954,10 +954,12 @@ static void pT_(graph_choose)(const struct t_(trie) *const trie,
 #			define BOX_PUBLIC_OVERRIDE
 #			include "box.h"
 
+/** Draws `trie` on `fp` as a bit view. */
 static void T_(graph)(const struct t_(trie) *const trie,
 	FILE *const fp) { pT_(graph_tree_bits)(trie->root, 0, fp); }
 
-/** Graphs logical `trie` output to `fn` using `no` as the filename index. */
+/** Graphs logical, memory, and bit of `trie` output to `fn` using `no` as the
+ filename index. */
 static void T_(graph_all)(const struct t_(trie) *const trie,
 	const char *const fn, const size_t no) {
 	const char logic[] = "-tree", mem[] = "-mem", bits[] = "-bits";
@@ -992,6 +994,7 @@ static void T_(graph_all)(const struct t_(trie) *const trie,
 #		undef QUOTE
 #		undef QUOTE_
 
+/** Graphs `box` in GraphViz format to `fn`. */
 static int T_(graph_fn)(const pT_(box) *const box, const char *const fn) {
 	FILE *fp;
 	assert(box && fn);

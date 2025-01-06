@@ -330,8 +330,8 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	include "iterate.h" /** \include */
 #	define BOX_PUBLIC_OVERRIDE
 #	include "box.h"
-/** __has_include("iterate.h"): Moves all elements `from` onto the tail of
- `to` if `predicate` is true.
+/** HAS_ITERTATE_H. Moves all elements `from` onto the tail of `to` if
+ `predicate` is true.
  @param[to] If null, then it removes elements.
  @order \Theta(|`from`|) \times \O(`predicate`) @allow */
 static void T_(to_if)(struct t_(list) *restrict const from,
