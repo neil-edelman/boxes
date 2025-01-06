@@ -1088,21 +1088,20 @@ static int T_(exists)(struct T_(cursor) *const cur) {
 	}
 	return 1;
 }
-/** @return Dereference the element pointed to by `cur` that exists.  @allow */
+/** @return Dereference the element pointed to by `cur` that <fn:<T>exists>. */
 static struct pT_(ref) *T_(entry)(struct T_(cursor) *const cur) {
 	return &cur->ref;
 }
-/** @return Extract the key from `cur` when it points at a valid element.
- @allow */
+/** @return Extract the key from `cur` that <fn:<T>exists>. @allow */
 static pT_(key) T_(key)(const struct T_(cursor) *const cur)
 	{ return cur->ref.node->key[cur->ref.idx]; }
 #		ifdef TREE_VALUE
-/** @return Extract the value from `cur` when it points at a valid element, if
- `TREE_VALUE`. @allow */
+/** @return Extract the value from `cur` that <fn:<T>exists>, if `TREE_VALUE`.
+ @allow */
 static pT_(value) *T_(value)(const struct T_(cursor) *const cur)
 	{ return cur->ref.node->value + cur->ref.idx; }
 #		endif
-/** Move next on `cur` that exists. @allow */
+/** Move `cur` that <fn:<T>exists> to the next element. @allow */
 static void T_(next)(struct T_(cursor) *const cur) {
 	struct pT_(ref) next;
 	assert(cur && cur->root && cur->root->node
@@ -1138,7 +1137,7 @@ static void T_(next)(struct T_(cursor) *const cur) {
 	} /* Jumped nodes. */
 	cur->ref = next;
 }
-/** @return Whether `cur` is pointing to a valid element. */
+/** Move `cur` that <fn:<T>exists> to the previous element. @allow */
 static void T_(previous)(struct T_(cursor) *const cur) {
 	struct pT_(ref) prd;
 	assert(cur && cur->root);
