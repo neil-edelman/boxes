@@ -111,7 +111,7 @@ static int pointer_compare(const int *const*const a, const int *const*const b)
 #include "../src/array.h"
 
 
-/* Including "integer_array.h" will make other files see it. */
+/* Including this file will make other files see it. */
 static void header_to_string(const int *i, char (*const a)[12])
 	{ int_to_string(i, a); }
 static void header_filler(int *const i) { int_filler(i); }
