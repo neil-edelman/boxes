@@ -191,13 +191,31 @@ struct T_(cursor) { /* fixme: This is very wasteful? at least re-arrange? */
 	struct pT_(ref) start, end;
 };
 
-#	ifndef TRIE_DECLARE_ONLY /* <!-- body */
-/*
-struct T_(cursor) T_(begin)(const struct t_(array) *);
+#	ifdef BOX_NON_STATIC /* Public functions. */
+struct T_(cursor) T_(begin)(const struct t_(trie) *);
 int T_(exists)(const struct T_(cursor) *);
-pT_(type) *T_(entry)(struct T_(cursor) *);
+struct pT_(ref) *T_(entry)(const struct T_(cursor) *);
 void T_(next)(struct T_(cursor) *);
-*/
+struct T_(cursor) T_(prefix)(struct t_(trie) *, const char *);
+/*pT_(remit) T_(entry)(const struct T_(cursor) *);*/
+struct t_(trie) t_(trie)(void);
+void t_(trie_)(struct t_(trie) *);
+void T_(clear)(struct t_(trie) *);
+#		if defined(TREE_ENTRY) || !defined(TRIE_KEY) /* <!-- pointer */
+pT_(remit) T_(match)(const struct t_(trie) *, const char *);
+pT_(remit) T_(get)(const struct t_(trie) *const trie, const char *);
+#		else
+enum trie_result T_(match)(const struct t_(trie) *, const char *, pT_(remit) *);
+enum trie_result T_(get)(const struct t_(trie) *, const char *, pT_(remit) *);
+#		endif
+#		ifndef TRIE_ENTRY
+enum trie_result T_(try)(struct t_(trie) *, pT_(key));
+#		else
+enum trie_result T_(try)(struct t_(trie) *, pT_(key), pT_(entry) **);
+#		endif
+int T_(remove)(struct t_(trie) *, const char *);
+#	endif
+#	ifndef BOX_DECLARE_ONLY /* <!-- body */
 
 #		ifndef TRIE_KEY
 /** @return The string of `key` is itself, by default. We supply this function
@@ -285,80 +303,6 @@ finally:
 	}
 	return cur;
 }
-/** @return The first element of a non-null `trie`. */
-static struct T_(cursor) T_(begin)(const struct t_(trie) *const trie)
-	{ return pT_(match_prefix)(trie, ""); }
-/** @return Is `cur` valid. */
-static int T_(exists)(const struct T_(cursor) *const cur)
-	{ return cur && cur->root; }
-/** @return Extracts the reference from a valid, non-null `cur`. */
-static struct pT_(ref) T_(entry)(const struct T_(cursor) *const cur)
-	{ return cur->start; }
-/*static const char *T_(key)(const struct T_(cursor) *const cur)
-	{ return pT_(ref_to_string)(&cur->start); }*/
-#		ifdef TRIE_ENTRY
-/* fixme? */
-#		endif
-/** Advancing `cur` to the next element.
- @order \O(\log |`trie`|) @allow */
-static void T_(next)(struct T_(cursor) *const cur) {
-	assert(cur);
-	if(!cur->root || cur->root->bsize == USHRT_MAX)
-		{ cur->root = 0; return; } /* Empty. */
-	assert(cur->start.tree && cur->end.tree
-		&& cur->end.lf < cur->end.tree->bsize + 1);
-	/* Stop when getting to the end of the range. */
-	if(cur->start.tree == cur->end.tree && cur->start.lf >= cur->end.lf)
-		{ cur->root = 0; return; }
-	if(cur->start.lf + 1 <= cur->start.tree->bsize) {
-		cur->start.lf++; /* It's in the same tree. */
-	} else { /* Going to go off the end. */
-		const char *const sample = pT_(sample)(cur->start.tree, cur->start.lf);
-		const struct pT_(tree) *old = cur->start.tree;
-		struct pT_(tree) *next = cur->root;
-		size_t bit = 0;
-		cur->start.tree = 0;
-		while(next != old) {
-			unsigned br0 = 0, br1 = next->bsize, lf = 0;
-			while(br0 < br1) {
-				const struct trie_branch *const branch = next->branch + br0;
-				bit += branch->skip;
-				if(!TRIE_QUERY(sample, bit))
-					br1 = ++br0 + branch->left;
-				else
-					br0 += branch->left + 1, lf += branch->left + 1;
-				bit++;
-			}
-			if(lf < next->bsize) cur->start.tree = next, cur->start.lf = lf + 1;
-			assert(trie_bmp_test(&next->bmp, lf)); /* The old. */
-			next = next->leaf[lf].as_link;
-		}
-		/* End of iteration. Should not get here—all ranged iterators. */
-		if(!cur->start.tree)
-			{ cur->root = 0; return; }
-	}
-	pT_(lower_entry)(&cur->start);
-}
-/** @return A set to strings that start with `prefix` in `trie`.
- It is valid until a topological change to `trie`. Calling <fn:<T>next> will
- iterate them in order.
- @param[prefix] To fill with the entire `trie`, use the empty string.
- @order \O(\log |`trie`|) @allow */
-static struct T_(cursor) T_(prefix)(struct t_(trie) *const trie,
-	const char *const prefix) {
-	struct T_(cursor) cur;
-	assert(trie && prefix);
-	cur = pT_(match_prefix)(trie, prefix);
-	/* Make sure actually a prefix by choosing one of the words and testing. */
-	if(cur.root && !trie_is_prefix(prefix, pT_(ref_to_string)(&cur.start)))
-		cur.root = 0;
-	return cur;
-}
-
-/* fixme? remit? */
-/** @return The entry at a valid, non-null `cur`. @allow */
-static pT_(remit) T_(entry)(const struct T_(cursor) *const cur)
-	{ return pT_(ref_to_remit)(&cur->start); }
 
 /** Destroys `tree`'s children and sets invalid state.
  @order \O(|`tree`|) both time and space. */
@@ -710,6 +654,83 @@ erased_tree:
 	return 1;
 }
 
+#		define BOX_PUBLIC_OVERRIDE
+#		include "box.h"
+
+/** @return The first element of a non-null `trie`. */
+static struct T_(cursor) T_(begin)(const struct t_(trie) *const trie)
+	{ return pT_(match_prefix)(trie, ""); }
+/** @return Is `cur` valid. */
+static int T_(exists)(const struct T_(cursor) *const cur)
+	{ return cur && cur->root; }
+/** @return Extracts the reference from a valid, non-null `cur`. */
+static struct pT_(ref) T_(entry)(const struct T_(cursor) *const cur)
+	{ return cur->start; }
+/*static const char *T_(key)(const struct T_(cursor) *const cur)
+	{ return pT_(ref_to_string)(&cur->start); }*/
+#		ifdef TRIE_ENTRY
+/* fixme? */
+#		endif
+/** Advancing `cur` to the next element.
+ @order \O(\log |`trie`|) @allow */
+static void T_(next)(struct T_(cursor) *const cur) {
+	assert(cur);
+	if(!cur->root || cur->root->bsize == USHRT_MAX)
+		{ cur->root = 0; return; } /* Empty. */
+	assert(cur->start.tree && cur->end.tree
+		&& cur->end.lf < cur->end.tree->bsize + 1);
+	/* Stop when getting to the end of the range. */
+	if(cur->start.tree == cur->end.tree && cur->start.lf >= cur->end.lf)
+		{ cur->root = 0; return; }
+	if(cur->start.lf + 1 <= cur->start.tree->bsize) {
+		cur->start.lf++; /* It's in the same tree. */
+	} else { /* Going to go off the end. */
+		const char *const sample = pT_(sample)(cur->start.tree, cur->start.lf);
+		const struct pT_(tree) *old = cur->start.tree;
+		struct pT_(tree) *next = cur->root;
+		size_t bit = 0;
+		cur->start.tree = 0;
+		while(next != old) {
+			unsigned br0 = 0, br1 = next->bsize, lf = 0;
+			while(br0 < br1) {
+				const struct trie_branch *const branch = next->branch + br0;
+				bit += branch->skip;
+				if(!TRIE_QUERY(sample, bit))
+					br1 = ++br0 + branch->left;
+				else
+					br0 += branch->left + 1, lf += branch->left + 1;
+				bit++;
+			}
+			if(lf < next->bsize) cur->start.tree = next, cur->start.lf = lf + 1;
+			assert(trie_bmp_test(&next->bmp, lf)); /* The old. */
+			next = next->leaf[lf].as_link;
+		}
+		/* End of iteration. Should not get here—all ranged iterators. */
+		if(!cur->start.tree)
+			{ cur->root = 0; return; }
+	}
+	pT_(lower_entry)(&cur->start);
+}
+/** @return A set to strings that start with `prefix` in `trie`.
+ It is valid until a topological change to `trie`. Calling <fn:<T>next> will
+ iterate them in order.
+ @param[prefix] To fill with the entire `trie`, use the empty string.
+ @order \O(\log |`trie`|) @allow */
+static struct T_(cursor) T_(prefix)(struct t_(trie) *const trie,
+	const char *const prefix) {
+	struct T_(cursor) cur;
+	assert(trie && prefix);
+	cur = pT_(match_prefix)(trie, prefix);
+	/* Make sure actually a prefix by choosing one of the words and testing. */
+	if(cur.root && !trie_is_prefix(prefix, pT_(ref_to_string)(&cur.start)))
+		cur.root = 0;
+	return cur;
+}
+
+/* fixme? remit? */
+/** @return The entry at a valid, non-null `cur`. @allow */
+/*static pT_(remit) T_(entry)(const struct T_(cursor) *const cur)
+	{ return pT_(ref_to_remit)(&cur->start); } ??? */
 
 /** Zeroed data (not all-bits-zero) is initialized. @return An idle tree.
  @order \Theta(1) @allow */
@@ -849,6 +870,9 @@ static size_t T_(trie_size)(const struct T_(trie_iterator) *const it)
 	{ return assert(it), pT_(size_r)(&it->_); }
 #		endif
 
+#		define BOX_PRIVATE_AGAIN
+#		include "box.h"
+
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
 	T_(begin)(0); T_(exists)(0); T_(entry)(0); /*T_(key)(0);*/ T_(next)(0);
@@ -872,11 +896,11 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif /* body --> */
 #endif /* base code --> */
 
-#ifndef TRIE_DECLARE_ONLY /* Produce code. */
-
-#	ifdef TRIE_TO_STRING
-#		undef TRIE_TO_STRING
+#ifdef TRIE_TO_STRING
+#	undef TRIE_TO_STRING
+#	ifndef TRIE_DECLARE_ONLY
 #		ifndef TRIE_TRAIT
+/* #			ifdef TRIE_VALUE fixme */
 /** Thunk(`cur`, `a`), transforming a cursor to the key string. */
 static void pT_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12]) {
@@ -900,20 +924,20 @@ typedef void (*pT_(to_string_fn))(const pT_(key), const pT_(entry) *,
 	char (*)[12]);
 #			error Haven't make test yet. Don't see how it would be so useful.
 #		endif
-#		include "to_string.h" /** \include */
-#		ifndef TRIE_TRAIT
-#			define TRIE_HAS_TO_STRING /* Warning about tests. */
-#		endif
 #	endif
-
-#	if defined(TRIE_TEST) && !defined(TRIE_TRAIT)
-#		include "../test/test_trie.h"
+#	include "to_string.h" /** \include */
+#	ifndef TRIE_TRAIT
+#		define TRIE_HAS_TO_STRING /* Warning about tests. */
 #	endif
+#endif
 
-#endif /* Produce code. */
-#ifdef TRIE_TRAIT
-#	undef TRIE_TRAIT
-#	undef BOX_TRAIT
+#if defined HAS_GRAPH_H && defined TRIE_HAS_TO_STRING && !defined TRIE_TRAIT
+#	include "graph.h" /** \include */
+#endif
+
+#if defined TRIE_TEST && !defined TRIE_TRAIT \
+	&& defined TRIE_HAS_TO_STRING && defined HAS_GRAPH_H
+#	include "../test/test_trie.h"
 #endif
 
 
@@ -938,6 +962,10 @@ typedef void (*pT_(to_string_fn))(const pT_(key), const pT_(entry) *,
 #	ifdef TRIE_DECLARE_ONLY
 #		undef TRIE_DECLARE_ONLY
 #	endif
+#endif
+#ifdef TRIE_TRAIT
+#	undef TRIE_TRAIT
+#	undef BOX_TRAIT
 #endif
 #define BOX_END
 #include "box.h"

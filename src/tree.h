@@ -1660,11 +1660,14 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 #	include "graph.h" /** \include */
 #endif
 
-#if defined TREE_TEST && !defined TREE_TRAIT && defined HAS_GRAPH_H
+#if defined TREE_TEST && !defined TREE_TRAIT \
+	&& defined TREE_HAS_TO_STRING && defined HAS_GRAPH_H
 #	include "../test/test_tree.h"
 #endif
 
 #ifdef TREE_DEFAULT
+#	define BOX_PUBLIC_OVERRIDE
+#	include "box.h"
 /** This is functionally identical to <fn:<T>get_or>, but a with a trait
  specifying a constant default value.
  @return The value associated with `key` in `tree`, (which can be null.) If
@@ -1678,6 +1681,8 @@ static pT_(value) T_R_(tree, get)(const struct t_(tree) *const tree,
 		&& (ref = pT_(lookup_find)(tree->root, key)).node
 		? *pT_(ref_to_valuep)(ref) : pTR_(default_value);
 }
+#	define BOX_PRIVATE_AGAIN
+#	include "box.h"
 static void pTR_(unused_default_coda)(void);
 static void pTR_(unused_default)(void) {
 	pT_(key) k; memset(&k, 0, sizeof k);
