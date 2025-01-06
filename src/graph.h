@@ -23,7 +23,7 @@ int T_(graph_fn)(const pT_(box) *, const char *);
 #			define BOX_PUBLIC_OVERRIDE
 #			include "box.h"
 
-/** Draw a graph of `array` to `fn` in Graphviz format. */
+/** Draw a graph of `array` to `fp` in Graphviz format. */
 static void T_(graph)(const struct t_(array) *const array, FILE *const fp) {
 	size_t i;
 	char z[12];
@@ -74,7 +74,7 @@ no_data:
 #			define BOX_PUBLIC_OVERRIDE
 #			include "box.h"
 
-/** Draw a graph of `heap` to `fn` in Graphviz format. */
+/** Draw a graph of `heap` to `fp` in Graphviz format. */
 static void T_(graph)(const struct t_(heap) *const heap, FILE *const fp) {
 	char a[12];
 	size_t i;
@@ -176,7 +176,7 @@ static void pT_(subgraph)(const struct t_(list) *const list, FILE *const fp,
 #			define BOX_PUBLIC_OVERRIDE
 #			include "box.h"
 
-/** Graph `list` in `fn`. */
+/** Graph `list` in `fp`. */
 static void T_(graph)(const struct t_(list) *const list, FILE *const fp) {
 	assert(list && fp);
 	fprintf(fp, "digraph {\n"
@@ -194,7 +194,7 @@ static void T_(graph)(const struct t_(list) *const list, FILE *const fp) {
 #			define BOX_PUBLIC_OVERRIDE
 #			include "box.h"
 
-/** Graphs `pool` output to `fn`. */
+/** Graphs `pool` output to `fp`. */
 static void T_(graph)(const struct t_(pool) *const pool,
 	FILE *const fp) {
 	char str[12];
@@ -342,6 +342,7 @@ no_slots:
 #				define NAN (0. / 0.)
 #			endif
 
+/** Counts linked buckets in `table` index `idx`. */
 static size_t pT_(count_bucket)(const struct t_(table) *const table,
 	pT_(uint) idx) {
 	struct pT_(bucket) *bucket;
@@ -369,7 +370,7 @@ static size_t pT_(count_bucket)(const struct t_(table) *const table,
 struct table_stats { size_t n, max; double mean, ssdm; };
 #			endif
 
-/** Update one sample point of `value`. */
+/** Update one sample point `st` of `value`. */
 static void pT_(update)(struct table_stats *const st, const size_t value) {
 	double d, v = (double)value;
 	if(st->max < value) st->max = value;
@@ -377,7 +378,7 @@ static void pT_(update)(struct table_stats *const st, const size_t value) {
 	st->mean += d / (double)++st->n;
 	st->ssdm += d * (v - st->mean);
 }
-/** Collect stats on `hash`. */
+/** Collect stats on `table`. */
 static struct table_stats pT_(collect)(const struct t_(table) *const table) {
 	struct table_stats st = { 0, 0, 0.0, 0.0 };
 	pT_(uint) i, i_end;

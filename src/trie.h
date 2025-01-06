@@ -194,10 +194,10 @@ struct T_(cursor) { /* fixme: This is very wasteful? at least re-arrange? */
 #	ifdef BOX_NON_STATIC /* Public functions. */
 struct T_(cursor) T_(begin)(const struct t_(trie) *);
 int T_(exists)(const struct T_(cursor) *);
-struct pT_(ref) *T_(entry)(const struct T_(cursor) *);
+/*struct pT_(ref) *T_(entry)(const struct T_(cursor) *);*/
+pT_(remit) T_(entry)(const struct T_(cursor) *);
 void T_(next)(struct T_(cursor) *);
 struct T_(cursor) T_(prefix)(struct t_(trie) *, const char *);
-/*pT_(remit) T_(entry)(const struct T_(cursor) *);*/
 struct t_(trie) t_(trie)(void);
 void t_(trie_)(struct t_(trie) *);
 void T_(clear)(struct t_(trie) *);
@@ -667,12 +667,15 @@ static struct T_(cursor) T_(begin)(const struct t_(trie) *const trie)
 static int T_(exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->root; }
 /** @return Extracts the reference from a valid, non-null `cur`. */
-static struct pT_(ref) T_(entry)(const struct T_(cursor) *const cur)
-	{ return cur->start; }
-/*static const char *T_(key)(const struct T_(cursor) *const cur)
-	{ return pT_(ref_to_string)(&cur->start); }*/
+/*static struct pT_(ref) T_(entry)(const struct T_(cursor) *const cur)
+	{ return cur->start; }*/
+/** @return The entry at a valid, non-null `cur`. @allow */
+static pT_(remit) T_(entry)(const struct T_(cursor) *const cur)
+	{ return pT_(ref_to_remit)(&cur->start); }
 #		ifdef TRIE_ENTRY
 /* fixme? */
+/*static const char *T_(key)(const struct T_(cursor) *const cur)
+	{ return pT_(ref_to_string)(&cur->start); }*/
 #		endif
 /** Advancing `cur` to the next element.
  @order \O(\log |`trie`|) @allow */
@@ -729,11 +732,6 @@ static struct T_(cursor) T_(prefix)(struct t_(trie) *const trie,
 		cur.root = 0;
 	return cur;
 }
-
-/* fixme? remit? */
-/** @return The entry at a valid, non-null `cur`. @allow */
-/*static pT_(remit) T_(entry)(const struct T_(cursor) *const cur)
-	{ return pT_(ref_to_remit)(&cur->start); } ??? */
 
 /** Zeroed data (not all-bits-zero) is initialized. @return An idle tree.
  @order \Theta(1) @allow */
