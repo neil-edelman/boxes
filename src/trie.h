@@ -23,27 +23,6 @@
 
  ![Bit view of the trie.](../doc/trie/trie-bits.png)
 
- The difference between a `trie` and a `tree` is,
- 
- - In general, multiple trees are equivalent. A trie is a specific rotation
-   that aligns with the data; a tree has implied structure, whereas a trie has
-   explicit structure. This translates to a trie taking 2 bytes per entry more
-   then the equivalent tree.
- - This data is cached: `tree` lookup takes \log `n` accesses to keys, which it
-   must compare from the start; `trie` lookup takes `log n` accesses to this
-   2-bytes per entry cache and just one key access. Usually entries are bounded
-   by a short length, so this does not make such a difference.
- - Trie is limited to 256 bits of non-different consecutive entries.
- - A trie prefix match is equivalent to a sub-trie. A tree can also do a prefix
-   match, but in general it will not be a subtree. This means a slightly larger
-   iterator—still \O(1)—and finding a match takes slightly longer—still
-   \O(\log `n`).
- - A `trie` does not need to define `<t>less`.
- - A `tree` has guaranteed \O(\log `n`) behaviour—every node has a minimum
-   number of keys. There can be no such guarantee for a `trie`.
- - In practice—for most applications—the difference will be negligible. Use
-   the more convenient.
-
  @param[TRIE_NAME]
  Required `<t>` that satisfies `C` naming conventions when mangled.
 
@@ -72,6 +51,26 @@
  @depend [box](../../src/box.h)
  @depend [bmp](../../src/bmp.h)
  @std C89 (Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ.) */
+
+/* The difference between a `trie` and a `tree` is,
+- In general, multiple trees are equivalent. A trie is a specific rotation
+  that aligns with the data; a tree has implied structure, whereas a trie has
+  explicit structure. This translates to a trie taking 2 bytes per entry more
+  then the equivalent tree.
+- This data is cached: `tree` lookup takes \log `n` accesses to keys, which it
+  must compare from the start; `trie` lookup takes `log n` accesses to this
+  2-bytes per entry cache and just one key access. Usually entries are bounded
+  by a short length, so this does not make such a difference.
+- Trie is limited to 256 bits of non-different consecutive entries.
+- A trie prefix match is equivalent to a sub-trie. A tree can also do a prefix
+  match, but in general it will not be a subtree. This means a slightly larger
+  iterator—still \O(1)—and finding a match takes slightly longer—still
+  \O(\log `n`).
+- A `trie` does not need to define `<t>less`.
+- A `tree` has guaranteed \O(\log `n`) behaviour—every node has a minimum
+  number of keys. There can be no such guarantee for a `trie`.
+- In practice—for most applications—the difference will be negligible. Use
+  the more convenient. */
 
 #ifndef TRIE_NAME
 #	error Name undefined.
