@@ -24,6 +24,7 @@
  ![Bit view of the trie.](../doc/trie/trie-bits.png)
 
  The difference between a `trie` and a `tree` is,
+ 
  - In general, multiple trees are equivalent. A trie is a specific rotation
    that aligns with the data; a tree has implied structure, whereas a trie has
    explicit structure. This translates to a trie taking 2 bytes per entry more
