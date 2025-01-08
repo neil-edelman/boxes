@@ -23,6 +23,26 @@
 
  ![Bit view of the trie.](../doc/trie/trie-bits.png)
 
+ The difference between a `trie` and a `tree` is,
+ * In general, multiple trees are equivalent. A trie is a specific rotation
+   that aligns with the data; a tree has implied structure, whereas a trie has
+   explicit structure. This translates to a trie taking 2 bytes per entry more
+   then the equivalent tree.
+ * This data is cached: `tree` lookup takes `log n` accesses to keys, which it
+   must compare from the start; `trie` lookup takes `log n` accesses to this
+   2-bytes per entry cache and just one key access. Usually entries are bounded
+   by a short length, so this does not make such a difference.
+ * Trie is limited to 256 bits of non-different consecutive entries.
+ * A trie prefix match is equivalent to a sub-trie. A tree can also do a prefix
+   match, but in general it will not be a subtree. This means a slightly larger
+   iterator—still `\O(1)`—and finding a match takes slightly longer—still
+   `\O(\log n)`.
+ * A `trie` does not need to define `<t>less`.
+ * A `tree` has guaranteed `\O(\log n)` behaviour—every node has a minimum
+   number of keys. There can be no such guarantee for a `trie`.
+ * In practice—for most applications—the difference will be negligible. Use
+   the more convenient.
+
  @param[TRIE_NAME]
  Required `<t>` that satisfies `C` naming conventions when mangled.
 
@@ -666,7 +686,7 @@ static struct T_(cursor) T_(begin)(const struct t_(trie) *const trie)
 /** @return Is `cur` valid. */
 static int T_(exists)(const struct T_(cursor) *const cur)
 	{ return cur && cur->root; }
-/** @return Extracts the reference from a valid, non-null `cur`. */
+/* @return Extracts the reference from a valid, non-null `cur`. */
 /*static struct pT_(ref) T_(entry)(const struct T_(cursor) *const cur)
 	{ return cur->start; }*/
 /** @return The entry at a valid, non-null `cur`. @allow */
