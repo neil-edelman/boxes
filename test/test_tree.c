@@ -6,11 +6,14 @@
 
 
 /* Unsigned numbers: this is the minimum tree, but not useful to test. */
+static int foo_less(unsigned a, unsigned b) { return a > b; }
 #define TREE_NAME foo
+#define TREE_KEY unsigned
 #include "../src/tree.h"
 
 
 /* For testing bounds. */
+static int char_less(const char a, const char b) { return a > b; }
 static void char_to_string(const char x, char (*const z)[12])
 	{ (*z)[0] = x; (*z)[1] = '\0'; }
 static void char_filler(char *x)
@@ -60,6 +63,7 @@ static void char_bounds(void) {
 
 
 /* Unsigned numbers: testing framework. */
+static int int_less(const unsigned a, const unsigned b) { return a > b; }
 /** @implements <typedef:<pT>to_string_fn> */
 static void int_to_string(const unsigned x, char (*const z)[12])
 	{ /*assert(*x < 10000000000),*/ sprintf(*z, "%u", x); }
@@ -67,15 +71,18 @@ static void int_to_string(const unsigned x, char (*const z)[12])
 static void int_filler(unsigned *x)
 	{ *x = (unsigned)rand() / (RAND_MAX / 1000 + 1); }
 #define TREE_NAME int
+#define TREE_KEY unsigned
 #define TREE_TO_STRING
 #define TREE_TEST
 #include "../src/tree.h"
 
 
+static int order3_less(const unsigned a, const unsigned b) { return a > b; }
 static void order3_filler(unsigned *x) { int_filler(x); }
 static void order3_to_string(const unsigned x, char (*const z)[12])
 	{ int_to_string(x, z); }
 #define TREE_NAME order3
+#define TREE_KEY unsigned
 #define TREE_TEST
 #define TREE_ORDER 3
 #define TREE_TO_STRING
@@ -95,7 +102,7 @@ static void order3(void) {
 	unsigned v;
 	int ret;
 	const size_t order3_order
-		= sizeof rnd.root.node->key / sizeof *rnd.root.node->key + 1;
+		= sizeof rnd.trunk.node->key / sizeof *rnd.trunk.node->key + 1;
 	printf("manual: order3 order %lu\n", order3_order);
 	assert(order3_order == 3);
 
@@ -418,7 +425,7 @@ static void order3(void) {
 		order3_tree_graph_horiz_fn(&removal, "graph/tree/removal-b-9.gv");
 		for(n = 0; n < size; n++)
 			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		assert(removal.root.height == UINT_MAX && removal.root.node);
+		assert(removal.trunk.height == UINT_MAX && removal.trunk.node);
 		for(n = 0; n < size; n++) assert(!in[n]);
 		{
 			int success = order3_tree_remove(&removal, 0);
@@ -464,12 +471,14 @@ finally:
 
 
 /* Unsigned numbers: testing framework. */
+static int redblack_less(const unsigned a, const unsigned b) { return a > b; }
 static void redblack_to_string(const unsigned key, const unsigned *const value,
 	char (*const a)[12])
 	{ /*assert(*x < 10000000000),*/ sprintf(*a, "%u", key); (void)value; }
 static void redblack_filler(unsigned *const k, unsigned *const v) {
 	*k = *v = (unsigned)rand() / (RAND_MAX / 1000 + 1); }
 #define TREE_NAME redblack
+#define TREE_KEY unsigned
 #define TREE_VALUE unsigned
 #define TREE_ORDER 4
 #define TREE_TO_STRING
@@ -483,7 +492,7 @@ static void redblack(void) {
 	struct { unsigned x; int in; } rnd[10];
 	const unsigned rnd_size = sizeof rnd / sizeof *rnd;
 	const size_t redblack_order
-		= sizeof tree.root.node->key / sizeof *tree.root.node->key + 1;
+		= sizeof tree.trunk.node->key / sizeof *tree.trunk.node->key + 1;
 	printf("Redblack: order %lu.\n", redblack_order);
 	assert(redblack_order == 4);
 
@@ -515,7 +524,7 @@ static void redblack(void) {
 	calc_size = (unsigned)redblack_tree_count(&tree);
 	assert(calc_size == n);
 	while(n) {
-		assert(tree.root.height != UINT_MAX);
+		assert(tree.trunk.height != UINT_MAX);
 		i = (unsigned)rand() / (RAND_MAX / n + 1);
 		printf("Drew %u -> %u which is %sin.\n",
 			i, rnd[i].x, rnd[i].in ? "" : "not ");
@@ -541,7 +550,7 @@ static void redblack(void) {
 			assert(!rnd[i].in || rnd[i].x == v);
 		}
 	}
-	assert(tree.root.height == UINT_MAX);
+	assert(tree.trunk.height == UINT_MAX);
 	goto finally;
 catch:
 	perror("redblack");
@@ -551,7 +560,8 @@ finally:
 }
 
 
-/* Unsigned numbers and values. Prototype a value. */
+/* Unsigned numbers and values. */
+static int pair_less(const unsigned a, const unsigned b) { return a > b; }
 static void pair_filler(unsigned *const x, unsigned *const y) {
 	int_filler(x);
 	int_filler(y), *y += 10000;
@@ -561,6 +571,7 @@ static void pair_to_string(const unsigned k, const unsigned *const v,
 	char (*const a)[12])
 	{ assert(k < 1000 && v && *v < 100000); sprintf(*a, "%u→%u", k, *v); }
 #define TREE_NAME pair
+#define TREE_KEY unsigned
 #define TREE_VALUE unsigned
 #define TREE_TEST
 #define TREE_TO_STRING
@@ -601,6 +612,7 @@ static const char *star_names[] = { STARS };
 static double star_distances[] = { STARS };
 #undef X
 static size_t star_size = sizeof star_names / sizeof *star_names;
+static int star_less(const double a, const double b) { return a > b; }
 static void star_filler(double *k, const char **v) {
 	const unsigned i = (unsigned)rand() / (RAND_MAX / star_size + 1);
 	*k = star_distances[i], *v = star_names[i];
@@ -645,7 +657,6 @@ static void entry_to_string(const union date32 k, const int *const v,
 }
 #define TREE_NAME entry
 #define TREE_KEY union date32
-#define TREE_LESS
 #define TREE_VALUE int
 #define TREE_TEST
 #define TREE_TO_STRING
@@ -662,8 +673,8 @@ static int loop_less(const unsigned a, const unsigned b)
 static void loop_to_string(const unsigned x, char (*const z)[12])
 	{ int_to_string(x, z); }
 #define TREE_NAME loop
+#define TREE_KEY unsigned
 #define TREE_TEST
-#define TREE_LESS
 #define TREE_ORDER 5
 #define TREE_DEFAULT 0
 #define TREE_TO_STRING
@@ -749,12 +760,14 @@ static void loop(void) {
 
 
 struct typical_value { int a, b; };
+static int typical_less(const unsigned a, const unsigned b) { return a > b; }
 static void typical_filler(unsigned *const k, struct typical_value **v)
 	{ int_filler(k); *v = 0; }
 static void typical_to_string(const unsigned k,
-	/*const:[*/struct typical_value *const*const v, char (*const z)[12])
+	/*const :[*/ struct typical_value *const*const v, char (*const z)[12])
 	{ sprintf(*z, "%u", k); (void)v; }
 #define TREE_NAME typical
+#define TREE_KEY unsigned
 #define TREE_VALUE struct typical_value *
 #define TREE_TO_STRING
 #define TREE_TEST
@@ -762,6 +775,7 @@ static void typical_to_string(const unsigned k,
 
 
 /* Test inclusion in a header. */
+static int header_less(const char a, const char b) { return a > b; }
 static void header_to_string(const char x, char (*const z)[12])
 	{ char_to_string(x, z); }
 static void header_filler(char *x) { char_filler(x); }

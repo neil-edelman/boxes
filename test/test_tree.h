@@ -34,11 +34,9 @@ typedef void (*pT_(action_fn))(pT_(key) *);
 /** Makes sure the `tree` is in a valid state. */
 static void pT_(valid)(const struct t_(tree) *const tree) {
 	if(!tree) return; /* Null. */
-	if(!tree->root.node)
-		{ assert(!tree->root.height); return; } /* Idle. */
-	if(tree->root.height == UINT_MAX)
-		{ assert(tree->root.node); return; } /* Empty. */
-	assert(tree->root.node);
+	if(!tree->trunk.node)
+		{ assert(!tree->trunk.height); return; } /* Idle. */
+	if(!tree->trunk.height) { return; } /* Empty. */
 	/*...*/
 }
 
@@ -218,14 +216,13 @@ static void pT_(test)(void) {
 		it = T_(tree_less)(&tree, key);
 	} while(T_(tree_has_element)(&cur));
 	printf("Individual delete tree: %s.\n", T_(tree_to_string)(&tree));
-	assert(tree.root.height == UINT_MAX);
+	assert(!tree.root.height && tree.root.node);
 #	endif
 
 	/* Clear. */
 	T_(clear)(0);
-	T_(clear)(&empty), assert(!empty.root.node);
-	T_(clear)(&tree), assert(tree.root.node
-		&& tree.root.height == UINT_MAX);
+	T_(clear)(&empty), assert(!empty.trunk.node);
+	T_(clear)(&tree), assert(tree.trunk.node && !tree.trunk.height);
 	n_unique = 0;
 
 	/* Fill again, this time, don't sort. */
@@ -352,10 +349,10 @@ static void pT_(test)(void) {
 
 	printf("clear, destroy\n");
 	T_(clear)(&tree);
-	assert(tree.root.height == UINT_MAX && tree.root.node);
+	assert(!tree.trunk.height && tree.trunk.node);
 
 	/* Destroy. */
-	t_(tree_)(&tree), assert(!tree.root.node), pT_(valid)(&tree);
+	t_(tree_)(&tree), assert(!tree.trunk.node), pT_(valid)(&tree);
 	assert(!errno);
 }
 

@@ -536,7 +536,7 @@ end:
 static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
 	const struct pT_(branch) *branch;
 	unsigned i;
-	assert(sub->node && fp);
+	assert(sub->node && fp && sub->height);
 	fprintf(fp, "\ttrunk%p [label = <\n"
 		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td border=\"0\" port=\"0\">"
@@ -557,7 +557,7 @@ static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
 	fprintf(fp, "\t<hr/>\n"
 		"\t<tr><td></td></tr>\n"
 		"</table>>];\n");
-	if(!sub->height) return;
+	if(sub->height <= 1) return;
 	/* Draw the lines between trees. */
 	branch = pT_(as_branch_c)(sub->node);
 	for(i = 0; i <= branch->base.size; i++)
@@ -633,11 +633,11 @@ static void T_(graph)(const struct t_(tree) *const tree, FILE *const fp) {
 		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
 		" fontname=modern, splines=false];\n"
 		"\tnode [shape=none, fontname=modern];\n");
-	if(!tree->root.node)
+	if(!tree->trunk.node)
 		fprintf(fp, "\tidle [shape=plaintext];\n");
-	else if(tree->root.height == UINT_MAX)
+	else if(!tree->trunk.height)
 		fprintf(fp, "\tempty [shape=plaintext];\n");
-	else pT_(subgraph)(&tree->root, fp);
+	else pT_(subgraph)(&tree->trunk, fp);
 	fprintf(fp, "\tnode [color=\"Red\"];\n"
 		"}\n");
 }
@@ -656,11 +656,11 @@ static int T_(graph_horiz_fn)(const struct t_(tree) *const tree,
 		" fontname=modern, splines=false];\n"
 		"\tnode [shape=none, fontname=\"Bitstream Vera Sans\"];\n"
 		"\n");
-	if(!tree->root.node)
+	if(!tree->trunk.node)
 		fprintf(fp, "\tidle [shape=plaintext];\n");
-	else if(tree->root.height == UINT_MAX)
+	else if(!tree->trunk.height)
 		fprintf(fp, "\tempty [shape=plaintext];\n");
-	else pT_(subgraph_usual)(&tree->root, fp);
+	else pT_(subgraph_usual)(&tree->trunk, fp);
 	fprintf(fp, "\tnode [color=\"Red\"];\n"
 		"}\n");
 	fclose(fp);
