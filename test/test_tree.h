@@ -3,7 +3,7 @@ void T_(test)(void);
 #endif
 #ifndef TREE_DECLARE_ONLY
 
-#	include "../orcish/orcish.h" /* This is different from the others… */
+/*#	include "../src/orcish_forward.h" */
 #	include <stdio.h>
 #	include <string.h>
 

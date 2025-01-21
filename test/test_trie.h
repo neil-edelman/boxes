@@ -3,7 +3,6 @@ void T_(test)(void);
 #endif
 #ifndef TRIE_DECLARE_ONLY
 
-#	include "../orcish/orcish.h" /* This is different from the others… */
 #	include <stdio.h>
 #	include <string.h>
 
@@ -12,16 +11,9 @@ void T_(test)(void);
 #	endif
 #	define QUOTE_(name) #name
 #	define QUOTE(name) QUOTE_(name)
-#	ifdef static /* Private functions. */
-#		undef static
-#	endif
 
-static const char *T_(to_string)(const struct t_(trie) *);
-
-/** Works by side-effects, _ie_ fills the type with data. */
-typedef void (*pT_(action_fn))(pT_(entry) *);
-
-#if 0
+#	if 0
+#		include "../src/orcish_forward.h"
 /** Prints `tree` to `stdout`; useful in debugging. */
 static void pT_(print)(const struct pT_(tree) *const tree) {
 	const struct trie_branch *branch;
@@ -43,7 +35,7 @@ static void pT_(print)(const struct pT_(tree) *const tree) {
 			: pT_(key_string)(pT_(entry_key)(tree->leaf[i].as_entry)));
 	printf("\n");
 }
-#endif
+#	endif
 
 /** Make sure `tree` is in a valid state, (and all the children.) */
 static void pT_(valid_tree)(/*const*/ struct pT_(tree) *const tree) {
@@ -74,11 +66,11 @@ static void pT_(valid)(const struct t_(trie) *const trie) {
 }
 
 static pT_(key) pT_(entry_key)(const pT_(entry) *entry) {
-#ifdef TRIE_ENTRY
+#	ifdef TRIE_ENTRY
 	return t_(key)(entry);
-#else
+#	else
 	return *entry;
-#endif
+#	endif
 }
 
 static void pT_(test)(void) {
@@ -97,16 +89,16 @@ static void pT_(test)(void) {
 	pT_(valid)(&trie);
 	T_(graph_all)(&trie, "graph/trie/" QUOTE(TRIE_NAME) "-idle.gv", 0);
 	t_(trie_)(&trie), pT_(valid)(&trie);
-#if defined(TREE_ENTRY) || !defined(TRIE_KEY)
+#	if defined(TREE_ENTRY) || !defined(TRIE_KEY)
 	e = T_(match)(&trie, ""), assert(!e);
 	e = T_(get)(&trie, ""), assert(!e);
-#else
+#	else
 	{
 		enum trie_result r;
 		r = T_(match)(&trie, "", &e), assert(r == TRIE_ABSENT);
 		r = T_(get)(&trie, "", &e), assert(r == TRIE_ABSENT);
 	}
-#endif
+#	endif
 
 	/* Make random data. */
 	for(test = tests, test_end = test + tests_size; test < test_end; test++)
@@ -121,25 +113,25 @@ static void pT_(test)(void) {
 		test = tests + i;
 		k = pT_(entry_key)(&test->entry);
 		if(show) printf("%lu: adding %s.\n", (unsigned long)i,
-#ifdef TRIE_ENTRY
+#	ifdef TRIE_ENTRY
 			t_(string)(t_(key)(&test->entry))
-#else
+#	else
 			t_(string)(test->entry)
-#endif
+#	endif
 			);
 		switch(
-#ifndef TRIE_ENTRY /* <!-- key set */
+#	ifndef TRIE_ENTRY /* <!-- key set */
 		T_(try)(&trie, k)
-#else /* key set --><!-- map */
+#	else /* key set --><!-- map */
 		T_(try)(&trie, k, &e)
-#endif /* map --> */
+#	endif /* map --> */
 		) {
 		case TRIE_ERROR: perror("trie"); assert(0); return;
 		case TRIE_ABSENT: test->is_in = 1; unique++;
 			letter_counts[(unsigned char)*t_(string)(k)]++;
-#ifdef TRIE_ENTRY
+#	ifdef TRIE_ENTRY
 			*e = test->entry;
-#endif
+#	endif
 			break;
 		case TRIE_PRESENT: /*printf("Key %s is in trie already.\n",
 			pT_(key_string)(key)); spam */ break;
@@ -154,25 +146,25 @@ static void pT_(test)(void) {
 	/* Check keys -- there's some key that's there. */
 	for(i = 0; i < tests_size; i++) {
 		const char *estring, *const tstring
-#ifdef TRIE_ENTRY
+#	ifdef TRIE_ENTRY
 			= t_(string)(t_(key)(&tests[i].entry));
-#else
+#	else
 			= t_(string)(tests[i].entry);
-#endif
-#if defined(TREE_ENTRY) || !defined(TRIE_KEY)
+#	endif
+#	if defined(TREE_ENTRY) || !defined(TRIE_KEY)
 		e = T_(get)(&trie, tstring), assert(e);
-#else
+#	else
 		{
 			enum trie_result r;
 			r = T_(get)(&trie, tstring, &e);
 			assert(r == TRIE_PRESENT);
 		}
-#endif
-#ifdef TRIE_ENTRY
+#	endif
+#	ifdef TRIE_ENTRY
 		estring = t_(string)(t_(key)(e));
-#else
+#	else
 		estring = t_(string)(e);
-#endif
+#	endif
 		/*printf("<%s->%s>\n", estring, tstring);*/
 		assert(!strcmp(estring, tstring));
 	}
@@ -195,11 +187,11 @@ static void pT_(test)(void) {
 			count += count_letter;
 		} else { /* Sentinel; "" gets all the trie. */
 			assert(count_letter == unique);
-#if defined(TREE_ENTRY) || !defined(TRIE_KEY)
+#	if defined(TREE_ENTRY) || !defined(TRIE_KEY)
 			if(T_(get)(&trie, "")) count++; /* Is "" included? */
-#else
+#	else
 			if(T_(get)(&trie, "", 0) == TRIE_PRESENT) count++;
-#endif
+#	endif
 		}
 	}
 	printf("Counted by letter %lu elements, checksum %lu.\n",
@@ -215,24 +207,24 @@ static void pT_(test)(void) {
 }
 
 /* Temporary. Avoid recursion. This must match <box.h>. */
-#undef BOX_MINOR
-#undef BOX_MAJOR
-#define BOX_END
-#include "../src/box.h"
-#define pTtrie_(n) BOX_CAT(private, BOX_CAT(TRIE_NAME, BOX_CAT(trie, n)))
+#	undef BOX_MINOR
+#	undef BOX_MAJOR
+#	define BOX_END
+#	include "../src/box.h"
+#	define pTtrie_(n) BOX_CAT(private, BOX_CAT(TRIE_NAME, BOX_CAT(trie, n)))
 /* Pointer array for random sampling. */
-#define ARRAY_NAME pTtrie_(handle)
-#define ARRAY_TYPE pTtrie_(entry) *
-#include "../src/array.h"
+#	define ARRAY_NAME pTtrie_(handle)
+#	define ARRAY_TYPE pTtrie_(entry) *
+#	include "../src/array.h"
 /* Backing for the trie. */
-#define POOL_NAME pTtrie_(entry)
-#define POOL_TYPE pTtrie_(entry)
-#include "../src/pool.h"
-#undef pTtrie_
-#define BOX_START
-#include "../src/box.h"
-#define BOX_MINOR TRIE_NAME
-#define BOX_MAJOR trie
+#	define POOL_NAME pTtrie_(entry)
+#	define POOL_TYPE pTtrie_(entry)
+#	include "../src/pool.h"
+#	undef pTtrie_
+#	define BOX_START
+#	include "../src/box.h"
+#	define BOX_MINOR TRIE_NAME
+#	define BOX_MAJOR trie
 
 static void pT_(test_random)(void) {
 	struct pT_(entry_pool) entries = pT_(entry_pool)();
@@ -241,9 +233,9 @@ static void pT_(test_random)(void) {
 	const size_t expectation = 1000;
 	size_t i, size = 0;
 	FILE *const fp = fopen("graph/trie/" QUOTE(TRIE_NAME) "-random.data", "w");
-#if !defined(TREE_ENTRY) && defined(TRIE_KEY)
+#	if !defined(TREE_ENTRY) && defined(TRIE_KEY)
 	enum trie_result result;
-#endif
+#	endif
 	printf("Random test; expectation value of items %lu.\n",
 		(unsigned long)expectation);
 	if(!fp) goto catch;
@@ -252,9 +244,9 @@ static void pT_(test_random)(void) {
 		if((unsigned)rand() > size * (RAND_MAX / (2 * expectation))) {
 			/* Create item. */
 			pT_(entry) *epool, **handle
-#ifdef TRIE_ENTRY
+#	ifdef TRIE_ENTRY
 				, *e
-#endif
+#	endif
 				;
 			pT_(key) key;
 			if(!(epool = pT_(entry_pool_new)(&entries))) goto catch;
@@ -262,11 +254,11 @@ static void pT_(test_random)(void) {
 			key = pT_(entry_key)(epool);
 			/*printf("Creating %s: ", pT_(key_string)(key));*/
 			switch(
-#ifdef TRIE_ENTRY
+#	ifdef TRIE_ENTRY
 				T_(try)(&trie, key, &e)
-#else
+#	else
 				T_(try)(&trie, key)
-#endif
+#	endif
 			) {
 			case TRIE_ERROR:
 				/*printf("error.\n");*/
@@ -274,9 +266,9 @@ static void pT_(test_random)(void) {
 			case TRIE_ABSENT:
 				/*printf("unique.\n");*/
 				size++;
-#ifdef TRIE_ENTRY
+#	ifdef TRIE_ENTRY
 				*e = *epool;
-#endif
+#	endif
 				if(!(handle = pT_(handle_array_new)(&handles))) goto catch;
 				*handle = epool;
 				break;
@@ -288,11 +280,11 @@ static void pT_(test_random)(void) {
 		} else { /* Delete item. */
 			unsigned r = (unsigned)rand() / (RAND_MAX / handles.size + 1);
 			pT_(entry) *handle = handles.data[r];
-#ifdef TRIE_ENTRY
+#	ifdef TRIE_ENTRY
 			const char *const string = t_(string)(t_(key)(handle));
-#else
+#	else
 			const char *const string = t_(string)(*handle);
-#endif
+#	endif
 			int success;
 			/*printf("Deleting %s.\n", string);*/
 			success = T_(remove)(&trie, string), assert(success);
@@ -307,16 +299,16 @@ static void pT_(test_random)(void) {
 			pT_(remit) r;
 			/*pT_(entry) *e = T_(get)(&trie,
 				pT_(key_string)(pT_(entry_key)(handles.data[j]))); */
-#ifdef TRIE_ENTRY
+#	ifdef TRIE_ENTRY
 			r = T_(get)(&trie, t_(string)(t_(key)(handles.data[j])));
 			assert(r);
-#elif !defined(TRIE_KEY)
+#	elif !defined(TRIE_KEY)
 			r = T_(get)(&trie, t_(string)(*handles.data[j]));
 			assert(r);
-#else
+#	else
 			result = T_(get)(&trie, t_(string)(*handles.data[j]), &r);
 			assert(result == TRIE_PRESENT);
-#endif
+#	endif
 		}
 	}
 	T_(graph_all)(&trie, "graph/trie/" QUOTE(TRIE_NAME) "-step.gv", i);
@@ -333,7 +325,7 @@ finally:
 	pT_(handle_array_)(&handles);
 }
 
-#if 0
+#	if 0
 	/* This is old code that is a superior test; merge it, maybe? */
 	for( ; i; i--) {
 		int is;
@@ -351,7 +343,7 @@ finally:
 			assert(!(want_to_get ^ (get == str_array[j])));
 		}
 	}
-#endif
+#	endif
 
 #	define BOX_PUBLIC_OVERRIDE
 #	include "../src/box.h"
@@ -360,12 +352,12 @@ finally:
  defining `assert`. @allow */
 static void T_(test)(void) {
 	printf("<" QUOTE(TRIE_NAME) ">trie"
-#ifdef TRIE_KEY
+#	ifdef TRIE_KEY
 		" custom key <" QUOTE(TRIE_KEY) ">"
-#endif
-#ifdef TRIE_ENTRY
+#	endif
+#	ifdef TRIE_ENTRY
 		" entry <" QUOTE(TRIE_ENTRY) ">"
-#endif
+#	endif
 		" testing using <" QUOTE(TRIE_TEST) ">:\n");
 	pT_(test)();
 	pT_(test_random)();

@@ -1,7 +1,7 @@
 /** Test of array.h.
  @std C89/90 */
 
-#include "../orcish/orcish.h"
+#include "../src/orcish_forward.h"
 #include <stdlib.h> /* EXIT_ */
 #include <stdio.h>  /* printf */
 #include <string.h> /* strcmp */

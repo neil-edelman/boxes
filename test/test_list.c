@@ -1,4 +1,4 @@
-#include "../orcish/orcish.h"
+#include "../src/orcish_forward.h"
 #include <stdlib.h> /* EXIT rand */
 #include <stdio.h>  /* printf */
 #include <string.h> /* strcmp */

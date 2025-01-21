@@ -3,7 +3,7 @@
  && 0xC0 & key[i] == 0x40 ('@')
  && sample branch's key is not <\0\7F@`^~_>? */
 
-#include "../orcish/orcish.h"
+#include "../src/orcish_forward.h"
 #include <stdlib.h> /* EXIT malloc free rand */
 #include <stdio.h>  /* *printf */
 #include <assert.h> /* assert */
