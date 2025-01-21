@@ -12,11 +12,10 @@ convenient to reference from one's code. Parameters in each project
 are pre-processor macros. Documentation is in `doc/` and examples
 are in `test/`.
 
-The separate `orcish/` project is a debug and graph object that
-translates the graphgobbledygook pointer addresses into more
-semi-meaningful deterministic orc names. `src/orchish_forward.h`
-controls where it leads. This is not important unless one needs to
-test or draw graphs and one wants to change the file structure.
+The somewhat separate [`orcish`
+project](https://github.com/neil-edelman/orcish) is used to debug
+and graph code; it translates the graphgobbledygook pointer addresses
+into more semi-meaningful deterministic orc names.
 
 ## Design papers ##
 
