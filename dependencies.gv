@@ -21,5 +21,6 @@ digraph {
 	tree -> to_string [style=dotted];
 	trie -> bmp;
 	trie -> to_string [style=dotted];
+	to_string -> orcish [style=dotted];
 	node [colour="Red"];
 }

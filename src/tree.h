@@ -224,19 +224,15 @@ pT_(value) T_(get_or)(const struct t_(tree) *, pT_(key), pT_(value));
 pT_(key) T_(less_or)(const struct t_(tree) *, pT_(key), pT_(key));
 pT_(key) T_(more_or)(const struct t_(tree) *, pT_(key), pT_(key));
 #		ifdef TREE_VALUE
-enum tree_result T_(bulk_assign)(struct t_(tree) *, pT_(key), pT_(value) **);
-#		else
-enum tree_result T_(bulk_try)(struct t_(tree) *, pT_(key));
-#		endif
-int T_(bulk_finish)(struct t_(tree) *);
-#		ifdef TREE_VALUE
 enum tree_result T_(assign)(struct t_(tree) *, pT_(key), pT_(value) **);
 enum tree_result T_(update)(struct t_(tree) *, pT_(key), pT_(key) *, pT_(value) **);
+enum tree_result T_(bulk_assign)(struct t_(tree) *, pT_(key), pT_(value) **);
 #		else
 enum tree_result T_(try)(struct t_(tree) *, pT_(key));
 enum tree_result T_(update)(struct t_(tree) *, pT_(key), pT_(key) *);
+enum tree_result T_(bulk_try)(struct t_(tree) *, pT_(key));
 #		endif
-int pT_(remove)(struct pT_(tree) *, pT_(key));
+int T_(bulk_finish)(struct t_(tree) *);
 int T_(remove)(struct t_(tree) *, pT_(key));
 int T_(clone)(struct t_(tree) *restrict, const struct t_(tree) *restrict);
 #	endif
