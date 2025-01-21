@@ -77,7 +77,8 @@
 #		if !defined HAS_ITERATE_H && __has_include("iterate.h")
 #			define HAS_ITERATE_H
 #		endif
-#		if !defined HAS_GRAPH_H && __has_include("graph.h")
+#		if !defined HAS_GRAPH_H && __has_include("graph.h") \
+			&& __has_include("orcish.h")
 #			define HAS_GRAPH_H
 #		endif
 #	endif
