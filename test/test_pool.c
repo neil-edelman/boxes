@@ -1,6 +1,6 @@
 /** Unit test. */
 
-#include "../src/orcish_forward.h"
+#include "../src/orcish.h"
 #include <stdlib.h> /* EXIT_ malloc free rand */
 #include <stdio.h>  /* fprintf */
 #include <string.h>	/* strcmp */

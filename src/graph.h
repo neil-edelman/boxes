@@ -12,7 +12,11 @@ int T_(graph_fn)(const pT_(box) *, const char *);
 #	endif
 #	ifndef BOX_DECLARE_ONLY
 
-#		include "orcish_forward.h"
+/* Must link the file produced by compiling `orcish.c` to do tests or get
+ graphs. (It is particularly useful for debugging—it translates gobbledygook
+ pointer addresses into more semi-meaningful deterministic orc names. We have
+ node "Trogdor" and "Gab-ukghash", instead of some numbers.) */
+#		include "orcish.h"
 
 #		if defined QUOTE || defined QUOTE_
 #			error Cannot be defined.

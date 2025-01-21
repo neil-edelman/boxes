@@ -13,7 +13,7 @@ void T_(test)(void);
 #	define QUOTE(name) QUOTE_(name)
 
 #	if 0
-#		include "../src/orcish_forward.h"
+#		include "../src/orcish.h"
 /** Prints `tree` to `stdout`; useful in debugging. */
 static void pT_(print)(const struct pT_(tree) *const tree) {
 	const struct trie_branch *branch;

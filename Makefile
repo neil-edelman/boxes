@@ -57,10 +57,6 @@ build/%.c: test/%.re.c
 	@mkdir -p build
 	re2c -W --tags -o $@ $<
 
-build/orcish.o: orcish/orcish.c orcish/orcish.h
-	@mkdir -p build
-	$(CC) $(CF) -c -o $@ $<
-
 doc/%/readme.md: src/%.h
 	# https://github.com/neil-edelman/cdoc
 	-cdoc -o $@ $<
