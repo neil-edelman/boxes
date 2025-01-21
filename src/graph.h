@@ -12,6 +12,13 @@ int T_(graph_fn)(const pT_(box) *, const char *);
 #	endif
 #	ifndef BOX_DECLARE_ONLY
 
+/* Must link `orcish.c` to do tests. There is one function which is
+ particularly useful, `orcify`, which translates gobbledygook pointer addresses
+ into more semi-meaningful deterministic orc names. So instead of node
+ "0x0000356754220" and "0x00003567564220" we have node "Trogdor" and
+ "Gab-ukghash", or something. */
+#		include "../orcish/orcish.h"
+
 #		if defined QUOTE || defined QUOTE_
 #			error Cannot be defined.
 #		endif
@@ -525,8 +532,6 @@ end:
 }
 
 #		elif defined TREE_NAME
-
-#			include "../test/orcish.h"
 
 /** Recursively draws `sub` in `fp`. */
 static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {

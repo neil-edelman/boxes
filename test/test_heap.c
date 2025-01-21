@@ -5,9 +5,9 @@
 
  @std C89/90 */
 
+#include "../orcish/orcish.h"
 #include <stdlib.h> /* EXIT malloc free rand */
 #include <stdio.h>  /* *printf */
-#include "orcish.h"
 
 
 /* Minimal heap. This selects the default `unsigned int`. */

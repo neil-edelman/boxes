@@ -3,12 +3,12 @@
  && 0xC0 & key[i] == 0x40 ('@')
  && sample branch's key is not <\0\7F@`^~_>? */
 
+#include "../orcish/orcish.h"
 #include <stdlib.h> /* EXIT malloc free rand */
 #include <stdio.h>  /* *printf */
 #include <assert.h> /* assert */
 #include <errno.h>  /* errno */
 #include <time.h>   /* clock time */
-#include "orcish.h"
 
 
 /** For testing—have a pool of random names. */

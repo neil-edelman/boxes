@@ -3,9 +3,9 @@ void T_(test)(void);
 #endif
 #ifndef TRIE_DECLARE_ONLY
 
+#	include "../orcish/orcish.h" /* This is different from the others… */
 #	include <stdio.h>
 #	include <string.h>
-#	include "orcish.h"
 
 #	if defined QUOTE || defined QUOTE_
 #		error Cannot be defined.

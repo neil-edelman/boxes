@@ -1,12 +1,12 @@
 /** Unit test. */
 
+#include "../orcish/orcish.h"
 #include <stdlib.h> /* EXIT_ malloc free rand */
 #include <stdio.h>  /* fprintf */
 #include <string.h>	/* strcmp */
 #include <time.h>	/* clock */
 #include <limits.h>	/* INT_MAX */
 #include <assert.h> /* assert */
-#include "orcish.h"
 
 
 #define PARAM(A) A

@@ -1,8 +1,8 @@
+#include "../orcish/orcish.h"
 #include <stdlib.h> /* EXIT rand */
 #include <stdio.h>  /* printf */
 #include <string.h> /* strcmp */
 #include <time.h>	/* clock */
-#include "orcish.h"
 
 
 /* Minimal example; not suitable for testing. */

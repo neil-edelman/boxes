@@ -1,12 +1,12 @@
 /** Test of array.h.
  @std C89/90 */
 
+#include "../orcish/orcish.h"
 #include <stdlib.h> /* EXIT_ */
 #include <stdio.h>  /* printf */
 #include <string.h> /* strcmp */
 #include <time.h>   /* clock */
 #include <assert.h> /* assert */
-#include "orcish.h"
 
 
 /* Not used because it's not set up for testing. The minimal array. */
