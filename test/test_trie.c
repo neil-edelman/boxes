@@ -67,13 +67,13 @@ static void contrived_test(void) {
 	errno = 0;
 
 	/* Test limits of tries. */
-	r = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ");
+	r = str_trie_add(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ");
 	assert(r == TRIE_ABSENT);
-	r = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 256 */
+	r = str_trie_add(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 256 */
 	assert(r == TRIE_ERROR && errno == EILSEQ), errno = 0;
-	r = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa!"); /* 255 */
+	r = str_trie_add(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa!"); /* 255 */
 	assert(r == TRIE_ABSENT);
-	r = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 0 */
+	r = str_trie_add(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 0 */
 	assert(r == TRIE_ABSENT);
 	success = str_trie_remove(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa!");
 	assert(!success && errno == EILSEQ), errno = 0;
@@ -84,7 +84,7 @@ static void contrived_test(void) {
 	for(count_insert = 0, i = 0; i < sizeof words / sizeof *words; i++) {
 		const char *const word = words[i];
 		/* printf("word: %s\n", word); */
-		switch(str_trie_try(&t, word)) {
+		switch(str_trie_add(&t, word)) {
 		case TRIE_ERROR:
 			perror("trie"); assert(0); break;
 		case TRIE_ABSENT:
@@ -130,8 +130,8 @@ static void contrived_test(void) {
 	assert(count_retrieve == count_insert);
 	assert(count_sentinel == count_insert);
 	{
-		r = str_trie_try(&t, "a"), assert(r == TRIE_PRESENT);
-		r = str_trie_try(&t, "yo"), assert(r == TRIE_ABSENT);
+		r = str_trie_add(&t, "a"), assert(r == TRIE_PRESENT);
+		r = str_trie_add(&t, "yo"), assert(r == TRIE_ABSENT);
 		str_trie_graph_all(&t, "graph/trie/yo.gv", 0);
 		success = str_trie_remove(&t, "yo"), assert(success);
 		str_trie_graph_all(&t, "graph/trie/yo.gv", 1);
@@ -184,11 +184,11 @@ static void fixed_colour_test(void) {
 	struct colour_trie_cursor cur;
 	int ret;
 	enum colour colour;
-	if(!colour_trie_try(&trie, Black)
-		|| !colour_trie_try(&trie, Red)
-		|| !colour_trie_try(&trie, Yellow)
-		|| !colour_trie_try(&trie, Lime)
-		|| !colour_trie_try(&trie, Steel)) { assert(0); goto catch; }
+	if(!colour_trie_add(&trie, Black)
+		|| !colour_trie_add(&trie, Red)
+		|| !colour_trie_add(&trie, Yellow)
+		|| !colour_trie_add(&trie, Lime)
+		|| !colour_trie_add(&trie, Steel)) { assert(0); goto catch; }
 	colour_trie_graph_all(&trie, "graph/trie/colour-fixed.gv", 0);
 	colour_trie_remove(&trie, "Steel");
 	colour_trie_graph_all(&trie, "graph/trie/colour-fixed.gv", 1);
@@ -334,7 +334,7 @@ static void article_test(void) {
 	for(i = 0; i < sizeof list1 / sizeof *list1; i++) {
 		const struct star *const star = stars + list1[i];
 		struct star *entry;
-		if(!star_trie_try(&trie, star->name, &entry)) { assert(0); break; }
+		if(!star_trie_add(&trie, star->name, &entry)) { assert(0); break; }
 		entry->name = star->name;
 		entry->distance = star->distance;
 	}
@@ -343,7 +343,7 @@ static void article_test(void) {
 	for(i = 0; i < sizeof list2 / sizeof *list2; i++) {
 		const struct star *const star = stars + list2[i];
 		struct star *entry;
-		if(!star_trie_try(&trie, star->name, &entry)) { assert(0); break; }
+		if(!star_trie_add(&trie, star->name, &entry)) { assert(0); break; }
 		entry->name = star->name;
 		entry->distance = star->distance;
 		star_trie_graph_all(&trie, "graph/trie/article.gv", i + 1000);

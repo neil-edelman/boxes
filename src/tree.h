@@ -190,6 +190,13 @@ struct pT_(ref) {
 
 struct T_(cursor) { struct pT_(tree) *trunk; struct pT_(ref) ref; };
 
+struct pT_(entry) {
+	pT_(key) key;
+#	ifdef TREE_VALUE
+	pT_(value) *value;
+#	endif
+};
+
 /** Adding, deleting, or changes in the topology of the tree invalidate the
  iterator. To modify the tree while iterating, take the <fn:<T>key> and restart
  the iterator with <fn:<T>less> or <fn:<T>more> as appropriate. */
@@ -219,9 +226,9 @@ enum tree_result T_(assign)(struct t_(tree) *, pT_(key), pT_(value) **);
 enum tree_result T_(update)(struct t_(tree) *, pT_(key), pT_(key) *, pT_(value) **);
 enum tree_result T_(bulk_assign)(struct t_(tree) *, pT_(key), pT_(value) **);
 #		else
-enum tree_result T_(try)(struct t_(tree) *, pT_(key));
+enum tree_result T_(add)(struct t_(tree) *, pT_(key));
 enum tree_result T_(update)(struct t_(tree) *, pT_(key), pT_(key) *);
-enum tree_result T_(bulk_try)(struct t_(tree) *, pT_(key));
+enum tree_result T_(bulk_add)(struct t_(tree) *, pT_(key));
 #		endif
 int T_(bulk_finish)(struct t_(tree) *);
 int T_(remove)(struct t_(tree) *, pT_(key));
@@ -761,34 +768,34 @@ static int pT_(nodes)(const struct t_(tree) *const tree,
 /** Adds or updates `key` in `root`. If not-null, `eject` will be the replaced
  key, otherwise don't replace. If `value` is not-null, sticks the associated
  value. */
-static enum tree_result pT_(update)(struct pT_(tree) *const root,
+static enum tree_result pT_(update)(struct pT_(tree) *const trunk,
 	pT_(key) key, pT_(key) *const eject, pT_(value) **const value) {
 #		else /* map --><!-- set */
-static enum tree_result pT_(update)(struct pT_(tree) *const root,
+static enum tree_result pT_(update)(struct pT_(tree) *const trunk,
 	pT_(key) key, pT_(key) *const eject) {
 #		endif /* set --> */
 	struct pT_(node) *new_head = 0;
-	struct pT_(ref) add, hole, iterator;
-	assert(root);
-	if(!(add.node = root->node)) goto idle;
-	else if(!root->height) goto empty;
+	struct pT_(ref) add, hole, cur;
+	assert(trunk);
+	if(!(add.node = trunk->node)) goto idle;
+	else if(!trunk->height) goto empty;
 	goto descend;
-idle: /* No reserved memory. */
-	assert(!add.node && root->height /*?*/>1);
+idle: /* No reserved memory; reserve memory. */
+	assert(!add.node && !trunk->height);
 	if(!(add.node = malloc(sizeof *add.node))) goto catch;
-	root->node = add.node;
-	root->height = 0/*UINT_MAX*/;
+	trunk->node = add.node;
+	trunk->height = 0;
 	goto empty;
-empty: /* Reserved dynamic memory, but tree is empty. */
-	assert(add.node && !root->height);
-	add.height = root->height = /*0*/1;
+empty: /* Tree is empty with one bought. */
+	assert(add.node && !trunk->height);
+	add.height = trunk->height = 1;
 	add.node->size = 0;
 	add.idx = 0;
 	goto insert;
 descend: /* Record last node that has space. */
 	{
 		int is_equal = 0;
-		add = pT_(lookup_insert)(*root, key, &hole, &is_equal);
+		add = pT_(lookup_insert)(*trunk, key, &hole, &is_equal);
 		if(is_equal) {
 			if(eject) {
 				*eject = add.node->key[add.idx];
@@ -816,7 +823,7 @@ insert: /* Leaf has space to spare; usually end up here. */
 #		endif
 	return TREE_ABSENT;
 grow: /* Leaf is full. */ {
-	unsigned new_no = hole.node ? hole.height : root->height + 2; /*change?*/
+	unsigned new_no = hole.node ? hole.height : trunk->height + 2; /*change?*/
 	struct pT_(node) **new_next = &new_head, *new_leaf;
 	struct pT_(branch) *new_branch;
 	assert(new_no);
@@ -847,98 +854,98 @@ grow: /* Leaf is full. */ {
 		hole.node->size++;
 	} else { /* New nodes raise tree height. */
 		struct pT_(branch) *const new_root = pT_(as_branch)(new_head);
-		hole.node = new_head, hole.height = ++root->height, hole.idx = 0;
+		hole.node = new_head, hole.height = ++trunk->height, hole.idx = 0;
 		new_head = new_root->child[1] = new_root->child[0];
-		new_root->child[0] = root->node, root->node = hole.node;
+		new_root->child[0] = trunk->node, trunk->node = hole.node;
 		hole.node->size = 1;
 	}
-	iterator = hole; /* Go down; (as opposed to doing it on paper.) */
+	cur = hole; /* Go down; (as opposed to doing it on paper.) */
 	goto split;
 } split: { /* Split between the new and existing nodes. */
 	struct pT_(node) *sibling;
-	assert(iterator.node && iterator.node->size && iterator.height/**/>1);
+	assert(cur.node && cur.node->size && cur.height/**//*>1*/);
 	sibling = new_head;
 	/*pT_(graph_usual)(tree, "graph/work.gv");*/
 	/* Descend now while split hasn't happened -- easier. */
-	new_head = --iterator.height ? pT_(as_branch)(new_head)->child[0] : 0;
-	iterator.node = pT_(as_branch)(iterator.node)->child[iterator.idx];
-	pT_(node_lb)(&iterator, key);
-	assert(!sibling->size && iterator.node->size == TREE_MAX); /* Atomic. */
-	/* Expand `iterator`, which is full, to multiple nodes. */
-	if(iterator.idx < TREE_SPLIT) { /* Descend hole to `iterator`. */
-		memcpy(sibling->key, iterator.node->key + TREE_SPLIT,
+	new_head = --cur.height ? pT_(as_branch)(new_head)->child[0] : 0;
+	cur.node = pT_(as_branch)(cur.node)->child[cur.idx];
+	pT_(node_lb)(&cur, key);
+	assert(!sibling->size && cur.node->size == TREE_MAX); /* Atomic. */
+	/* Expand `cur`, which is full, to multiple nodes. */
+	if(cur.idx < TREE_SPLIT) { /* Descend hole to `cur`. */
+		memcpy(sibling->key, cur.node->key + TREE_SPLIT,
 			sizeof *sibling->key * (TREE_MAX - TREE_SPLIT));
 #		ifdef TREE_VALUE
-		memcpy(sibling->value, iterator.node->value + TREE_SPLIT,
+		memcpy(sibling->value, cur.node->value + TREE_SPLIT,
 			sizeof *sibling->value * (TREE_MAX - TREE_SPLIT));
 #		endif
-		hole.node->key[hole.idx] = iterator.node->key[TREE_SPLIT - 1];
+		hole.node->key[hole.idx] = cur.node->key[TREE_SPLIT - 1];
 #		ifdef TREE_VALUE
-		hole.node->value[hole.idx] = iterator.node->value[TREE_SPLIT - 1];
+		hole.node->value[hole.idx] = cur.node->value[TREE_SPLIT - 1];
 #		endif
-		memmove(iterator.node->key + iterator.idx + 1,
-			iterator.node->key + iterator.idx,
-			sizeof *iterator.node->key * (TREE_SPLIT - 1 - iterator.idx));
+		memmove(cur.node->key + cur.idx + 1,
+			cur.node->key + cur.idx,
+			sizeof *cur.node->key * (TREE_SPLIT - 1 - cur.idx));
 #		ifdef TREE_VALUE
-		memmove(iterator.node->value + iterator.idx + 1,
-			iterator.node->value + iterator.idx,
-			sizeof *iterator.node->value * (TREE_SPLIT - 1 - iterator.idx));
+		memmove(cur.node->value + cur.idx + 1,
+			cur.node->value + cur.idx,
+			sizeof *cur.node->value * (TREE_SPLIT - 1 - cur.idx));
 #		endif
-		if(iterator.height/**/>1) {
-			struct pT_(branch) *const cb = pT_(as_branch)(iterator.node),
+		if(cur.height/**/>1) {
+			struct pT_(branch) *const cb = pT_(as_branch)(cur.node),
 				*const sb = pT_(as_branch)(sibling);
 			struct pT_(node) *temp = sb->child[0];
 			memcpy(sb->child, cb->child + TREE_SPLIT,
 				sizeof *cb->child * (TREE_MAX - TREE_SPLIT + 1));
-			memmove(cb->child + iterator.idx + 2, cb->child + iterator.idx + 1,
-				sizeof *cb->child * (TREE_SPLIT - 1 - iterator.idx));
-			cb->child[iterator.idx + 1] = temp;
+			memmove(cb->child + cur.idx + 2, cb->child + cur.idx + 1,
+				sizeof *cb->child * (TREE_SPLIT - 1 - cur.idx));
+			cb->child[cur.idx + 1] = temp;
 		}
-		hole = iterator;
-	} else if(iterator.idx > TREE_SPLIT) { /* Descend hole to `sibling`. */
-		hole.node->key[hole.idx] = iterator.node->key[TREE_SPLIT];
+		hole = cur;
+	} else if(cur.idx > TREE_SPLIT) { /* Descend hole to `sibling`. */
+		hole.node->key[hole.idx] = cur.node->key[TREE_SPLIT];
 #		ifdef TREE_VALUE
-		hole.node->value[hole.idx] = iterator.node->value[TREE_SPLIT];
+		hole.node->value[hole.idx] = cur.node->value[TREE_SPLIT];
 #		endif
-		hole.node = sibling, hole.height = iterator.height,
-			hole.idx = iterator.idx - TREE_SPLIT - 1;
-		memcpy(sibling->key, iterator.node->key + TREE_SPLIT + 1,
+		hole.node = sibling, hole.height = cur.height,
+			hole.idx = cur.idx - TREE_SPLIT - 1;
+		memcpy(sibling->key, cur.node->key + TREE_SPLIT + 1,
 			sizeof *sibling->key * hole.idx);
-		memcpy(sibling->key + hole.idx + 1, iterator.node->key + iterator.idx,
-			sizeof *sibling->key * (TREE_MAX - iterator.idx));
+		memcpy(sibling->key + hole.idx + 1, cur.node->key + cur.idx,
+			sizeof *sibling->key * (TREE_MAX - cur.idx));
 #		ifdef TREE_VALUE
-		memcpy(sibling->value, iterator.node->value + TREE_SPLIT + 1,
+		memcpy(sibling->value, cur.node->value + TREE_SPLIT + 1,
 			sizeof *sibling->value * hole.idx);
-		memcpy(sibling->value + hole.idx + 1, iterator.node->value
-			+ iterator.idx, sizeof *sibling->value * (TREE_MAX - iterator.idx));
+		memcpy(sibling->value + hole.idx + 1, cur.node->value
+			+ cur.idx, sizeof *sibling->value * (TREE_MAX - cur.idx));
 #		endif
-		if(iterator.height/**/>1) {
-			struct pT_(branch) *const cb = pT_(as_branch)(iterator.node),
+		if(cur.height/**/>1) {
+			struct pT_(branch) *const cb = pT_(as_branch)(cur.node),
 				*const sb = pT_(as_branch)(sibling);
 			struct pT_(node) *temp = sb->child[0];
 			memcpy(sb->child, cb->child + TREE_SPLIT + 1,
 				sizeof *cb->child * (hole.idx + 1));
-			memcpy(sb->child + hole.idx + 2, cb->child + iterator.idx + 1,
-				sizeof *cb->child * (TREE_MAX - iterator.idx));
+			memcpy(sb->child + hole.idx + 2, cb->child + cur.idx + 1,
+				sizeof *cb->child * (TREE_MAX - cur.idx));
 			sb->child[hole.idx + 1] = temp;
 		}
 	} else { /* Equal split: leave the hole where it is. */
-		memcpy(sibling->key, iterator.node->key + TREE_SPLIT,
+		memcpy(sibling->key, cur.node->key + TREE_SPLIT,
 			sizeof *sibling->key * (TREE_MAX - TREE_SPLIT));
 #		ifdef TREE_VALUE
-		memcpy(sibling->value, iterator.node->value + TREE_SPLIT,
+		memcpy(sibling->value, cur.node->value + TREE_SPLIT,
 			sizeof *sibling->value * (TREE_MAX - TREE_SPLIT));
 #		endif
-		if(iterator.height/**/>1) {
-			struct pT_(branch) *const cb = pT_(as_branch)(iterator.node),
+		if(cur.height/**/>1) {
+			struct pT_(branch) *const cb = pT_(as_branch)(cur.node),
 				*const sb = pT_(as_branch)(sibling);
 			memcpy(sb->child + 1, cb->child + TREE_SPLIT + 1,
 				sizeof *cb->child * (TREE_MAX - TREE_SPLIT));
 		}
 	}
 	/* Divide `TREE_MAX + 1` into two trees. */
-	iterator.node->size = TREE_SPLIT, sibling->size = TREE_MAX - TREE_SPLIT;
-	if(iterator.height/**/>1) goto split; /* Loop max `\log_{TREE_MIN} size`. */
+	cur.node->size = TREE_SPLIT, sibling->size = TREE_MAX - TREE_SPLIT;
+	if(cur.height/**/>1) goto split; /* Loop max `\log_{TREE_MIN} size`. */
 	hole.node->key[hole.idx] = key;
 #		ifdef TREE_VALUE
 	if(value) *value = pT_(ref_to_valuep)(hole);
@@ -1278,7 +1285,7 @@ static enum tree_result T_(bulk_assign)(struct t_(tree) *const tree,
 #		else /* null --><!-- set */
 /** Only if `TREE_VALUE` is not set; see <fn:<T>assign>, which is the map
  version. Packs `key` on the right side of `tree`. @allow */
-static enum tree_result T_(bulk_try)(struct t_(tree) *const tree, pT_(key) key)
+static enum tree_result T_(bulk_add)(struct t_(tree) *const tree, pT_(key) key)
 {
 #		endif
 	struct pT_(node) *node = 0, *head = 0; /* The original and new. */
@@ -1376,7 +1383,7 @@ catch: /* Didn't work. Reset. */
 }
 
 /** Distributes `tree` (can be null) on the right side so that, after a series
- of <fn:<T>bulk_try> or <fn:<T>bulk_assign>, it will be consistent with the
+ of <fn:<T>bulk_add> or <fn:<T>bulk_assign>, it will be consistent with the
  minimum number of keys in a node.
  @return The re-distribution was a success and all nodes are within rules.
  (Only when intermixing bulk and regular operations, can the function return
@@ -1466,7 +1473,7 @@ static enum tree_result T_(assign)(struct t_(tree) *const tree,
 /** Only if `TREE_VALUE` is not defined. Adds `key` to `tree` only if it is a
  new value, otherwise returns `TREE_PRESENT`. See <fn:<T>assign>, which is the
  map version. @allow */
-static enum tree_result T_(try)(struct t_(tree) *const tree,
+static enum tree_result T_(add)(struct t_(tree) *const tree,
 	const pT_(key) key)
 	{ return assert(tree), pT_(update)(&tree->trunk, key, 0); }
 #		endif /* set --> */
@@ -1589,7 +1596,7 @@ static void pT_(unused_base)(void) {
 	T_(bulk_assign)(0, k, 0); T_(assign)(0, k, 0);
 	T_(update)(0, k, 0, 0); T_(value)(0);
 #		else
-	T_(bulk_try)(0, k); T_(try)(0, k); T_(update)(0, k, 0);
+	T_(bulk_add)(0, k); T_(add)(0, k); T_(update)(0, k, 0);
 #		endif
 	T_(bulk_finish)(0); T_(remove)(0, k); T_(clone)(0, 0);
 	pT_(unused_base_coda)();

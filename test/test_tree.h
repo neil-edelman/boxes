@@ -106,20 +106,20 @@ static void pT_(test)(void) {
 
 	/* Bulk, (simple.) */
 	for(i = 0; i < test_size; i++) {
-		/**/char z[12];/**/
+		/*char z[12];*/
 		struct pT_(tree_test) *const t = test + i;
-		/**/
+		/*
 #	ifdef TREE_VALUE
 		t_(to_string)(t->key, &t->value, &z);
 #	else
 		t_(to_string)(t->key, &z);
 #	endif
-		printf("%lu -- bulk adding <%s>.\n", (unsigned long)i, z);/**/
+		printf("%lu -- bulk adding <%s>.\n", (unsigned long)i, z);*/
 		switch(
 #	ifdef TREE_VALUE
 		T_(bulk_assign)(&tree, t->key, &v)
 #	else
-		T_(bulk_try)(&tree, t->key)
+		T_(bulk_add)(&tree, t->key)
 #	endif
 		) {
 		case TREE_ERROR: perror("What?"); assert(0); break;
@@ -132,7 +132,6 @@ static void pT_(test)(void) {
 			*v = t->value;
 #	endif
 			t->in = 1;
-			printf("Yes %c.\n", t->key);
 			break;
 		}
 
@@ -243,32 +242,32 @@ static void pT_(test)(void) {
 
 	/* Add. */
 	for(i = 0; i < test_size; i++) {
-		/*char z[12];*/
+		/**/char z[12];/**/
 		struct pT_(tree_test) *const t = test + i;
-/*#	ifdef TREE_VALUE
-		T_(to_string)(t->key, &t->value, &z);
+/**/#	ifdef TREE_VALUE
+		t_(to_string)(t->key, &t->value, &z);
 #	else
-		T_(to_string)(t->key, &z);
+		t_(to_string)(t->key, &z);
 #	endif
-		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);*/
+		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);/**/
 		switch(
 #	ifdef TREE_VALUE
 		T_(assign)(&tree, t->key, &v)
 #	else
-		T_(try)(&tree, t->key)
+		T_(add)(&tree, t->key)
 #	endif
 		) {
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
-		case TREE_PRESENT: /*printf("<%s> already in tree\n", z);*/ break;
+		case TREE_PRESENT: /**/printf("<%s> already in tree\n", z);/**/ break;
 		case TREE_ABSENT:
 			n_unique++;
 #	ifdef TREE_VALUE
 			*v = t->value;
 #	endif
 			t->in = 1;
-			/*printf("<%s> added\n", z);*/ break;
+			/**/printf("<%s> added\n", z);/**/ break;
 		}
-		if(!(i & (i + 1)) || i == test_size - 1) {
+		if(!(i & (i + 1)) || i == test_size - 1 || 1) {
 			sprintf(fn, "graph/tree/" QUOTE(TREE_NAME) "-add-%lu.gv", i + 1);
 			T_(graph_fn)(&tree, fn);
 		}
@@ -319,7 +318,7 @@ static void pT_(test)(void) {
 #	ifdef TREE_VALUE
 		T_(assign)(&tree, t->key, &v)
 #	else
-		T_(try)(&tree, t->key)
+		T_(add)(&tree, t->key)
 #	endif
 		) {
 		case TREE_ERROR:
