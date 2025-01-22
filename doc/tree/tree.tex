@@ -292,7 +292,7 @@ Initially, this will efficiently produce a more compact tree. For example, Figur
 	add [shape=circle, style=none];
 	error [label="ERROR", shape=none, style=none];
 	error2 [label="ERROR", shape=none, style=none];
-	unique [label="UNIQUE", shape=none, style=none];
+	absent [label="ABSENT", shape=none, style=none];
 	present [label="PRESENT", shape=none, style=none];
 	idle -> error;
 	add -> idle [label="root dne"];
@@ -306,8 +306,8 @@ Initially, this will efficiently produce a more compact tree. For example, Figur
 	grow -> split;
 	grow -> error2;
 	split -> split;
-	split -> fill -> unique;
-	insert -> unique;
+	split -> fill -> absent;
+	insert -> absent;
 	}
     \caption{The requirements for \code{add} are $\mathcal{O}(1)$ space and $\mathcal{O}(\log \text{size})$ time, with no parent pointers. State diagram of adding a key, traversing a maximum twice.}%
 	\label{add}%
@@ -1210,7 +1210,7 @@ An add must \code{grow} if it has the maximum keys in the leaf node. The height 
 
 \code{split} introduces \code{cursor}, along the path to the leaf, and \code{sibling}, the new node ancestry. The \code{cursor} is initially the \code{hole}; it descends a second time, balancing with \code{sibling}, thus splits it with the new node. \code{hole} can either go to the left, right, or exactly in between. \code{cursor} descends on the path, and \code{sibling} descends on the new nodes. In \code{fill}, the added key then goes in \code{hole}.
 
-In Figure~\ref{even}, the path from before \ref{even:work1} to \ref{even:insert} to insert 9 on Figure~\ref{add} is \code{descend}, \code{grow}, \code{split} four times (the maximum for this size), \code{fill}, and returns \code{UNIQUE}. The new nodes are (branches) \code{Urbolgun}, \code{Beoub}, \code{Naagh}, and (leaf) \code{Olog}. This is the most complicated path, when the height increases.
+In Figure~\ref{even}, the path from before \ref{even:work1} to \ref{even:insert} to insert 9 on Figure~\ref{add} is \code{descend}, \code{grow}, \code{split} four times (the maximum for this size), \code{fill}, and returns \code{ABSENT}. The new nodes are (branches) \code{Urbolgun}, \code{Beoub}, \code{Naagh}, and (leaf) \code{Olog}. This is the most complicated path, when the height increases.
 
 
 

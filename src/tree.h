@@ -341,12 +341,13 @@ static struct pT_(ref) pT_(lookup_find)(const struct pT_(tree) tree,
 	return lo;
 }
 /** Finds lower-bound of key `x` in non-empty `tree` while counting the
- non-filled `hole` and `is_equal`. */
-static struct pT_(ref) pT_(lookup_insert)(struct pT_(tree) tree,
+ non-filled `hole` and `is_equal`. Used in insert. */
+static struct pT_(ref) pT_(lookup_hole)(struct pT_(tree) tree,
 	const pT_(key) x, struct pT_(ref) *const hole, int *const is_equal) {
 	struct pT_(ref) lo;
 	hole->node = 0;
-	for(lo.node = tree.node, lo.height = tree.height; lo.height;
+	assert(tree.height >= 1);
+	for(lo.node = tree.node, lo.height = tree.height; ;
 		lo.node = pT_(as_branch_c)(lo.node)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.node->size; lo.idx = 0;
 		if(hi < TREE_MAX) *hole = lo;
@@ -355,6 +356,7 @@ static struct pT_(ref) pT_(lookup_insert)(struct pT_(tree) tree,
 		if(lo.node->size < TREE_MAX) hole->idx = lo.idx;
 		if(lo.idx < lo.node->size && t_(less)(lo.node->key[lo.idx], x) <= 0)
 			{ *is_equal = 1; break; }
+		if(lo.height <= 1) break; /*?*/
 	}
 	return lo;
 }
@@ -764,6 +766,10 @@ static int pT_(nodes)(const struct t_(tree) *const tree,
 	}
 	return 1;
 }
+
+#include "orcish.h"
+static void pT_(graph)(const struct pT_(tree) *, FILE *);
+
 #		ifdef TREE_VALUE /* <!-- map */
 /** Adds or updates `key` in `root`. If not-null, `eject` will be the replaced
  key, otherwise don't replace. If `value` is not-null, sticks the associated
@@ -774,9 +780,16 @@ static enum tree_result pT_(update)(struct pT_(tree) *const trunk,
 static enum tree_result pT_(update)(struct pT_(tree) *const trunk,
 	pT_(key) key, pT_(key) *const eject) {
 #		endif /* set --> */
+	/* <https://github.com/neil-edelman/boxes/blob/master/doc/tree/tree.pdf>.
+	 Figure 2. */
 	struct pT_(node) *new_head = 0;
 	struct pT_(ref) add, hole, cur;
 	assert(trunk);
+	{
+		FILE *fp = fopen("graph/tree/work1.gv", "w");
+		pT_(graph)(trunk, fp);
+		fclose(fp);
+	}
 	if(!(add.node = trunk->node)) goto idle;
 	else if(!trunk->height) goto empty;
 	goto descend;
@@ -795,7 +808,7 @@ empty: /* Tree is empty with one bought. */
 descend: /* Record last node that has space. */
 	{
 		int is_equal = 0;
-		add = pT_(lookup_insert)(*trunk, key, &hole, &is_equal);
+		add = pT_(lookup_hole)(*trunk, key, &hole, &is_equal);
 		if(is_equal) {
 			if(eject) {
 				*eject = add.node->key[add.idx];
@@ -807,6 +820,7 @@ descend: /* Record last node that has space. */
 			return TREE_PRESENT;
 		}
 	}
+	printf("hole %s; add %s\n", orcify(hole.node), orcify(add.node));
 	if(hole.node == add.node) goto insert; else goto grow;
 insert: /* Leaf has space to spare; usually end up here. */
 	assert(add.node && add.idx <= add.node->size && add.node->size < TREE_MAX);
@@ -823,23 +837,20 @@ insert: /* Leaf has space to spare; usually end up here. */
 #		endif
 	return TREE_ABSENT;
 grow: /* Leaf is full. */ {
-	unsigned new_no = hole.node ? hole.height : trunk->height + 2; /*change?*/
+	unsigned new_no = hole.node ? hole.height - 1: trunk->height + 1;
 	struct pT_(node) **new_next = &new_head, *new_leaf;
 	struct pT_(branch) *new_branch;
 	assert(new_no);
-	/* Allocate new nodes in succession. */
-	while(new_no != 1) { /* All branches except one. */
+	while(new_no != 1) { /* Branch-boughs and one leaf-bough. */
 		if(!(new_branch = malloc(sizeof *new_branch))) goto catch;
 		new_branch->base.size = 0;
 		new_branch->child[0] = 0;
 		*new_next = &new_branch->base, new_next = new_branch->child;
 		new_no--;
 	}
-	/* Last point of potential failure; (don't need to have entry in catch.) */
 	if(!(new_leaf = malloc(sizeof *new_leaf))) goto catch;
 	new_leaf->size = 0;
 	*new_next = new_leaf;
-	/* Attach new nodes to the tree. The hole is now an actual hole. */
 	if(hole.node) { /* New nodes are a sub-structure of the tree. */
 		struct pT_(branch) *holeb = pT_(as_branch)(hole.node);
 		memmove(hole.node->key + hole.idx + 1, hole.node->key + hole.idx,
@@ -863,14 +874,19 @@ grow: /* Leaf is full. */ {
 	goto split;
 } split: { /* Split between the new and existing nodes. */
 	struct pT_(node) *sibling;
-	assert(cur.node && cur.node->size && cur.height/**//*>1*/);
 	sibling = new_head;
-	/*pT_(graph_usual)(tree, "graph/work.gv");*/
-	/* Descend now while split hasn't happened -- easier. */
+	{
+		FILE *fp = fopen("graph/tree/work2.gv", "w");
+		pT_(graph)(trunk, fp);
+		fclose(fp);
+	}
+	assert(cur.node && cur.node->size && cur.height);
+	/* Easier to descend now while split hasn't happened. */
 	new_head = --cur.height ? pT_(as_branch)(new_head)->child[0] : 0;
 	cur.node = pT_(as_branch)(cur.node)->child[cur.idx];
 	pT_(node_lb)(&cur, key);
-	assert(!sibling->size && cur.node->size == TREE_MAX); /* Atomic. */
+	printf("sibling is %s, cur is %s.\n", orcify(sibling), orcify(cur.node));
+	assert(!sibling->size && cur.node->size == TREE_MAX);
 	/* Expand `cur`, which is full, to multiple nodes. */
 	if(cur.idx < TREE_SPLIT) { /* Descend hole to `cur`. */
 		memcpy(sibling->key, cur.node->key + TREE_SPLIT,

@@ -537,7 +537,7 @@ static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
 	const struct pT_(branch) *branch;
 	unsigned i;
 	assert(sub->node && fp && sub->height);
-	fprintf(fp, "\ttrunk%p [label = <\n"
+	fprintf(fp, "\tbough%p [label = <\n"
 		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td border=\"0\" port=\"0\">"
 		"<font color=\"Gray75\">%s</font></td></tr>\n",
@@ -561,7 +561,7 @@ static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
 	/* Draw the lines between trees. */
 	branch = pT_(as_branch_c)(sub->node);
 	for(i = 0; i <= branch->base.size; i++)
-		fprintf(fp, "\ttrunk%p:%u:se -> trunk%p;\n",
+		fprintf(fp, "\tbough%p:%u:se -> bough%p;\n",
 		(const void *)sub->node, i, (const void *)branch->child[i]);
 	/* Recurse. */
 	for(i = 0; i <= branch->base.size; i++) {
@@ -623,23 +623,28 @@ static void pT_(subgraph_usual)(const struct pT_(tree) *const sub, FILE *fp) {
 	}
 }
 
+static void pT_(graph)(const struct pT_(tree) *const trunk, FILE *const fp) {
+	assert(trunk);
+	fprintf(fp, "digraph {\n"
+		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
+		" fontname=modern, splines=false];\n"
+		"\tnode [shape=none, fontname=modern];\n");
+	if(!trunk->node)
+		fprintf(fp, "\tidle [shape=plaintext];\n");
+	else if(!trunk->height)
+		fprintf(fp, "\tempty [shape=plaintext];\n");
+	else pT_(subgraph)(trunk, fp);
+	fprintf(fp, "\tnode [color=\"Red\"];\n"
+		"}\n");
+}
+
 #			define BOX_PUBLIC_OVERRIDE
 #			include "box.h"
 
 /** Draw a graph of `tree` to `fp` in Graphviz format. */
 static void T_(graph)(const struct t_(tree) *const tree, FILE *const fp) {
 	assert(tree && fp);
-	fprintf(fp, "digraph {\n"
-		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
-		" fontname=modern, splines=false];\n"
-		"\tnode [shape=none, fontname=modern];\n");
-	if(!tree->trunk.node)
-		fprintf(fp, "\tidle [shape=plaintext];\n");
-	else if(!tree->trunk.height)
-		fprintf(fp, "\tempty [shape=plaintext];\n");
-	else pT_(subgraph)(&tree->trunk, fp);
-	fprintf(fp, "\tnode [color=\"Red\"];\n"
-		"}\n");
+	pT_(graph)(&tree->trunk, fp);
 }
 
 /** Draw a graph of `tree` to `fn` in Graphviz format, the usual way, but too
