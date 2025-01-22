@@ -534,22 +534,22 @@ end:
 
 /** Recursively draws `sub` in `fp`. */
 static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
-	const struct pT_(branch) *branch;
+	const struct pT_(stem) *branch;
 	unsigned i;
-	assert(sub->node && fp && sub->height);
+	assert(sub->bough && fp && sub->height);
 	fprintf(fp, "\tbough%p [label = <\n"
 		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td border=\"0\" port=\"0\">"
-		"<font color=\"Gray75\">%s</font></td></tr>\n",
-		(const void *)sub->node, orcify(sub->node));
-	if(sub->node->size) fprintf(fp, "\t<hr/>\n");
-	for(i = 0; i < sub->node->size; i++) {
+		"<font color=\"Gray75\">%s</font> (h %u)</td></tr>\n",
+		(const void *)sub->bough, orcify(sub->bough), sub->height);
+	if(sub->bough->size) fprintf(fp, "\t<hr/>\n");
+	for(i = 0; i < sub->bough->size; i++) {
 		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
 		char z[12];
 #			ifdef TREE_VALUE
-		t_(to_string)(sub->node->key[i], sub->node->value + i, &z);
+		t_(to_string)(sub->bough->key[i], sub->bough->value + i, &z);
 #			else
-		t_(to_string)(sub->node->key[i], &z);
+		t_(to_string)(sub->bough->key[i], &z);
 #			endif
 		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
 			" port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
@@ -559,14 +559,14 @@ static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
 		"</table>>];\n");
 	if(sub->height <= 1) return;
 	/* Draw the lines between trees. */
-	branch = pT_(as_branch_c)(sub->node);
+	branch = pT_(as_branch_c)(sub->bough);
 	for(i = 0; i <= branch->base.size; i++)
 		fprintf(fp, "\tbough%p:%u:se -> bough%p;\n",
-		(const void *)sub->node, i, (const void *)branch->child[i]);
+		(const void *)sub->bough, i, (const void *)branch->child[i]);
 	/* Recurse. */
 	for(i = 0; i <= branch->base.size; i++) {
 		struct pT_(tree) child;
-		child.node = branch->child[i], child.height = sub->height - 1;
+		child.bough = branch->child[i], child.height = sub->height - 1;
 		pT_(subgraph)(&child, fp);
 	}
 }
@@ -581,28 +581,28 @@ static char *pT_(usual_port)(unsigned port) {
 
 /** Recursively draws `sub` in `fp`. */
 static void pT_(subgraph_usual)(const struct pT_(tree) *const sub, FILE *fp) {
-	const struct pT_(branch) *branch;
+	const struct pT_(stem) *branch;
 	unsigned i;
-	assert(sub->node && fp);
+	assert(sub->bough && fp);
 	fprintf(fp, "\ttrunk%p [label = <\n"
 		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td border=\"0\" colspan=\"%u\">"
 		"<font color=\"Gray75\">%s</font></td></tr>\n"
 		"\t<hr/>\n"
-		"\t<tr>\n", (const void *)sub->node,
-		sub->node->size ? sub->node->size : 1, orcify(sub->node));
-	for(i = 0; i < sub->node->size; i++) {
+		"\t<tr>\n", (const void *)sub->bough,
+		sub->bough->size ? sub->bough->size : 1, orcify(sub->bough));
+	for(i = 0; i < sub->bough->size; i++) {
 		char z[12];
 #			ifdef TREE_VALUE
-		t_(to_string)(sub->node->key[i], sub->node->value + i, &z);
+		t_(to_string)(sub->bough->key[i], sub->bough->value + i, &z);
 #			else
-		t_(to_string)(sub->node->key[i], &z);
+		t_(to_string)(sub->bough->key[i], &z);
 #			endif
 		fprintf(fp, "\t<td border=\"0\" align=\"center\""
 			" port=\"%u\">%s</td>\n", i, z);
 	}
 	/* Dummy node when size is zero. */
-	if(!sub->node->size)
+	if(!sub->bough->size)
 		fprintf(fp, "\t<td border=\"0\" port=\"0\">&nbsp;</td>\n");
 	fprintf(fp, "\t</tr>\n");
 	if(sub->height) fprintf(fp, "\t<hr/>\n"
@@ -610,15 +610,15 @@ static void pT_(subgraph_usual)(const struct pT_(tree) *const sub, FILE *fp) {
 	fprintf(fp, "</table>>];\n");
 	if(!sub->height) return;
 	/* Draw the lines between trees. */
-	branch = pT_(as_branch_c)(sub->node);
+	branch = pT_(as_branch_c)(sub->bough);
 	for(i = 0; i <= branch->base.size; i++)
 		fprintf(fp, "\ttrunk%p:%s -> trunk%p;\n",
-		(const void *)sub->node, pT_(usual_port)(i),
+		(const void *)sub->bough, pT_(usual_port)(i),
 		(const void *)branch->child[i]);
 	/* Recurse. */
 	for(i = 0; i <= branch->base.size; i++) {
 		struct pT_(tree) child;
-		child.node = branch->child[i], child.height = sub->height - 1;
+		child.bough = branch->child[i], child.height = sub->height - 1;
 		pT_(subgraph_usual)(&child, fp);
 	}
 }
@@ -629,7 +629,7 @@ static void pT_(graph)(const struct pT_(tree) *const trunk, FILE *const fp) {
 		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
 		" fontname=modern, splines=false];\n"
 		"\tnode [shape=none, fontname=modern];\n");
-	if(!trunk->node)
+	if(!trunk->bough)
 		fprintf(fp, "\tidle [shape=plaintext];\n");
 	else if(!trunk->height)
 		fprintf(fp, "\tempty [shape=plaintext];\n");
@@ -661,7 +661,7 @@ static int T_(graph_horiz_fn)(const struct t_(tree) *const tree,
 		" fontname=modern, splines=false];\n"
 		"\tnode [shape=none, fontname=\"Bitstream Vera Sans\"];\n"
 		"\n");
-	if(!tree->trunk.node)
+	if(!tree->trunk.bough)
 		fprintf(fp, "\tidle [shape=plaintext];\n");
 	else if(!tree->trunk.height)
 		fprintf(fp, "\tempty [shape=plaintext];\n");

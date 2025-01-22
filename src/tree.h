@@ -132,38 +132,35 @@ typedef TREE_KEY pT_(key);
 typedef TREE_VALUE pT_(value);
 #	endif
 
-/* https://bugwoodcloud.org/resource/files/15277.pdf
- Coder, Kim D. 2018. Tree anatomy: Defining trees & forms.
- Warnell School of Forestry & Natural Resources,
- University of Georgia, Outreach Publication
- WSFNR-19-35. Pp. 20. */
+/* Leaf-bough.
 
-/* These rules are lazier than the original so as to not exhibit worst-case
- behaviour in small trees, as <Johnson, Shasha, 1993, Free-at-Empty>, (lookup
- is potentially slower after deleting.) In the terminology of
- <Knuth, 1998 Art 3>,
- * Every branch [bough] has at most `TREE_ORDER == TREE_MAX + 1` children,
-   which is at minimum three.
- * Every non-root [non-trunk] and non-bulk-loaded node [bough] has at least
-   `TREE_MIN` keys, (`⎣TREE_MAX/3⎦`.)
- * Every branch [bough] has at least one child, `k`, and contains `k - 1` keys,
-   (this is a consequence of the fact that they are implicitly storing a
-   complete binary sub-tree [sub-bough].)
- * All leaves [limbs] are at the maximum depth and height zero [one]; they
-   do'n't carry links to other nodes [boughs], (hence, leaf [limb].) In this
-   code, a branch node [bough] is a
-   specialization of a (leaf) node [limb] with children. One can tell if it's
-   a branch [bough] by keeping track of the height.
- * Bulk-loading always is on the right side. */
-struct pT_(node)/* limb crown? crown is better. */ {
+ These rules are lazier than the original—described in <Knuth, 1998 Art 3>—so
+ as to not exhibit worst-case behaviour in small trees, as
+ <Johnson, Shasha, 1993, Free-at-Empty>.
+
+ In an effort to unify the terminology of trees and tries—from
+ <https://bugwoodcloud.org/resource/files/15277.pdf>
+ <Coder, Kim D, 2018, Tree anatomy>—the nodes are boughs. There are 2 kinds of
+ boughs in memory, bough and stem, corresponding to leaf-boughs and
+ branch-boughs.
+
+ * Every branch-bough (stem) has at most `TREE_ORDER == TREE_MAX + 1` children.
+ * Every non-trunk and non-bulk-loaded bough has at least `TREE_MIN` keys,
+   (`⎣TREE_MAX/3⎦`.)
+ * Every branch-bough (stem) has at least two children, `k`, and contains
+   `k - 1` keys.
+ * All leaf-boughs are at the height one; they do'n't carry links to other
+   boughs. Branch-boughs, known as stems, have children.
+ * Bulk-loading always is ascending. */
+struct pT_(bough) {
 	unsigned size;
 	pT_(key) key[TREE_MAX]; /* Cache-friendly lookup. */
 #	ifdef TREE_VALUE
 	pT_(value) value[TREE_MAX];
 #	endif
 };
-/* B-tree branch is a <tag:<pT>node> and links to `size + 1` nodes. */
-struct pT_(branch)/* bough stem */ { struct pT_(node) /* limb */base, *child[TREE_ORDER]; };
+/* Branch-bough—a specialization of leaf-bough. */
+struct pT_(stem) { struct pT_(bough) base, *child[TREE_ORDER]; };
 
 /* fixme: Notch (add) and nick (delete) are good names for the highest
  non-full node, in spirit with the tree analogy. Replace `<pT>node` with a
@@ -171,8 +168,8 @@ struct pT_(branch)/* bough stem */ { struct pT_(node) /* limb */base, *child[TRE
  fixed-size `<pT>bought`, with a `tree` as—for tree—an implicit structure
  realized by binary search. The root bought is the `trunk`. */
 
-/* Node plus height is a [sub]-tree. */
-struct pT_(tree)/* wood? stem? */ { struct pT_(node) *node; unsigned height; };
+/* A pointer to a bough plus height is a [sub]-tree. */
+struct pT_(tree) { struct pT_(bough) *bough; unsigned height; };
 /** See <fn:<t>tree>.
 
  ![States.](../doc/tree/states.png) */
@@ -184,7 +181,7 @@ typedef struct t_(tree) pT_(box);
 /* Address of a specific key by node. Height might not be used, but there's too
  many structs in this file anyway. (That's <tag:<pT>tree>…merge this) */
 struct pT_(ref) {
-	struct pT_(node) *node; /* If null, others ignored. */
+	struct pT_(bough) *node; /* If null, others ignored. */
 	unsigned height, idx; /* `idx < node.size` means valid. */
 };
 
@@ -244,13 +241,13 @@ int T_(clone)(struct t_(tree) *restrict, const struct t_(tree) *restrict);
 typedef int (*pT_(less_fn))(const pT_(key) a, const pT_(key) b);
 
 /** @return Downcasts `as_leaf` to a branch. */
-static struct pT_(branch) *pT_(as_branch)(struct pT_(node) *const as_leaf)
-	{ return (struct pT_(branch) *)(void *)
-	((char *)as_leaf - offsetof(struct pT_(branch), base)); }
+static struct pT_(stem) *pT_(as_branch)(struct pT_(bough) *const as_leaf)
+	{ return (struct pT_(stem) *)(void *)
+	((char *)as_leaf - offsetof(struct pT_(stem), base)); }
 /** @return Downcasts `as_node` to a branch. FIXME! this should not be necessary. */
-static const struct pT_(branch) *pT_(as_branch_c)(const struct pT_(node) *
-	const as_node) { return (const struct pT_(branch) *)(const void *)
-	((const char *)as_node - offsetof(struct pT_(branch), base)); }
+static const struct pT_(stem) *pT_(as_branch_c)(const struct pT_(bough) *
+	const as_node) { return (const struct pT_(stem) *)(const void *)
+	((const char *)as_node - offsetof(struct pT_(stem), base)); }
 #		ifdef TREE_VALUE /* <!-- value */
 /** Gets the value of `ref`. */
 static pT_(value) *pT_(ref_to_valuep)(const struct pT_(ref) ref)
@@ -291,8 +288,8 @@ static struct pT_(ref) pT_(less)(const struct pT_(tree) tree,
 	const pT_(key) x) {
 	struct pT_(ref) hi, found;
 	found.node = 0;
-	if(!tree.node) return found;
-	for(hi.node = tree.node, hi.height = tree.height; hi.height;
+	if(!tree.bough) return found;
+	for(hi.node = tree.bough, hi.height = tree.height; hi.height;
 		hi.node = pT_(as_branch_c)(hi.node)->child[hi.idx], hi.height--) {
 		if(!(hi.idx = hi.node->size)) continue;
 		pT_(node_ub)(&hi, x);
@@ -310,8 +307,8 @@ static struct pT_(ref) pT_(more)(const struct pT_(tree) tree,
 	const pT_(key) x) {
 	struct pT_(ref) lo, found;
 	found.node = 0;
-	if(!tree.node) return found;
-	for(lo.node = tree.node, lo.height = tree.height; lo.height;
+	if(!tree.bough) return found;
+	for(lo.node = tree.bough, lo.height = tree.height; lo.height;
 		lo.node = pT_(as_branch_c)(lo.node)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.node->size; lo.idx = 0;
 		if(!hi) continue;
@@ -328,8 +325,8 @@ static struct pT_(ref) pT_(lookup_find)(const struct pT_(tree) tree,
 	const pT_(key) x) {
 	struct pT_(ref) lo;
 	lo.node = 0;
-	if(!tree.node) return lo;
-	for(lo.node = tree.node, lo.height = tree.height; lo.height;
+	if(!tree.bough) return lo;
+	for(lo.node = tree.bough, lo.height = tree.height; lo.height;
 		lo.node = pT_(as_branch_c)(lo.node)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.node->size; lo.idx = 0;
 		if(!hi) continue;
@@ -347,7 +344,7 @@ static struct pT_(ref) pT_(lookup_hole)(struct pT_(tree) tree,
 	struct pT_(ref) lo;
 	hole->node = 0;
 	assert(tree.height >= 1);
-	for(lo.node = tree.node, lo.height = tree.height; ;
+	for(lo.node = tree.bough, lo.height = tree.height; ;
 		lo.node = pT_(as_branch_c)(lo.node)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.node->size; lo.idx = 0;
 		if(hi < TREE_MAX) *hole = lo;
@@ -366,11 +363,11 @@ static struct pT_(ref) pT_(lookup_hole)(struct pT_(tree) tree,
  which must be set. (Patently terrible for running concurrently; hack, would be
  nice to go down tree maybe.) */
 static struct pT_(ref) pT_(lookup_remove)(struct pT_(tree) tree,
-	const pT_(key) x, struct pT_(node) **leaf_parent) {
-	struct pT_(node) *parent = 0;
+	const pT_(key) x, struct pT_(bough) **leaf_parent) {
+	struct pT_(bough) *parent = 0;
 	struct pT_(ref) lo;
 	lo.node = 0;
-	for(lo.node = tree.node, lo.height = tree.height; lo.height;
+	for(lo.node = tree.bough, lo.height = tree.height; lo.height;
 		lo.node = pT_(as_branch_c)(lo.node)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.node->size; lo.idx = 0;
 		/* Cannot delete bulk add. */
@@ -389,11 +386,11 @@ static struct pT_(ref) pT_(lookup_remove)(struct pT_(tree) tree,
 /** Removes `x` from `tree` which must have contents. */
 static int pT_(remove)(struct pT_(tree) *const tree, const pT_(key) x) {
 	struct pT_(ref) rm, parent /* Only if `key.size <= TREE_MIN`. */;
-	struct pT_(branch) *parentb;
-	struct { struct pT_(node) *less, *more; } sibling;
+	struct pT_(stem) *parentb;
+	struct { struct pT_(bough) *less, *more; } sibling;
 	pT_(key) provisional_x = x;
 	parent.node = 0;
-	assert(tree && tree->node && tree->height);
+	assert(tree && tree->bough && tree->height);
 	/* Traverse down the tree until `key`, leaving breadcrumbs for parents of
 	 minimum key nodes. */
 	if(!(rm = pT_(lookup_remove)(*tree, x, &parent.node)).node) return 0;
@@ -402,13 +399,13 @@ static int pT_(remove)(struct pT_(tree) *const tree, const pT_(key) x) {
 	assert(rm.idx < rm.node->size);
 	if(rm.height) goto branch; else goto upward;
 branch: {
-	struct { struct pT_(ref) leaf; struct pT_(node) *parent; unsigned top; }
+	struct { struct pT_(ref) leaf; struct pT_(bough) *parent; unsigned top; }
 		pred, succ, chosen;
 	assert(rm.height);
 	/* Predecessor leaf. */
 	pred.leaf = rm, pred.top = 0 /*UINT_MAX*/;
 	do {
-		struct pT_(node) *const up = pred.leaf.node;
+		struct pT_(bough) *const up = pred.leaf.node;
 		pred.leaf.node = pT_(as_branch_c)(pred.leaf.node)->child[pred.leaf.idx];
 		pred.leaf.idx = pred.leaf.node->size;
 		pred.leaf.height--;
@@ -425,7 +422,7 @@ no_pred:
 	succ.leaf = rm, succ.top = 0/*UINT_MAX*/;
 	succ.leaf.idx++;
 	do {
-		struct pT_(node) *const up = succ.leaf.node;
+		struct pT_(bough) *const up = succ.leaf.node;
 		succ.leaf.node = pT_(as_branch_c)(succ.leaf.node)->child[succ.leaf.idx];
 		succ.leaf.idx = 0;
 		succ.leaf.height--;
@@ -512,7 +509,7 @@ balance_less: {
 	parent.node->value[parent.idx - 1] = sibling.less->value[promote];
 #		endif
 	if(rm.height /*?*/ > 1) {
-		struct pT_(branch) *const lessb = pT_(as_branch)(sibling.less),
+		struct pT_(stem) *const lessb = pT_(as_branch)(sibling.less),
 			*const rmb = pT_(as_branch)(rm.node);
 		unsigned transferb = transfer + 1;
 		/* This is already moved; inefficient. */
@@ -556,7 +553,7 @@ balance_less: {
 		sizeof *sibling.more->value * (sibling.more->size - promote - 1));
 #		endif
 	if(rm.height /*?*/ > 1) {
-		struct pT_(branch) *const moreb = pT_(as_branch)(sibling.more),
+		struct pT_(stem) *const moreb = pT_(as_branch)(sibling.more),
 			*const rmb = pT_(as_branch)(rm.node);
 		unsigned transferb = promote + 1;
 		/* This is already moved; inefficient. */
@@ -592,7 +589,7 @@ balance_less: {
 		sizeof *rm.node->value * (rm.node->size - rm.idx - 1));
 #		endif
 	if(rm.height/**/ > 1) { /* The `parent` links will have one less. Copying twice. */
-		struct pT_(branch) *const lessb = pT_(as_branch)(sibling.less),
+		struct pT_(stem) *const lessb = pT_(as_branch)(sibling.less),
 			*const rmb = pT_(as_branch)(rm.node);
 		memcpy(lessb->child + sibling.less->size + 1, rmb->child,
 			sizeof *rmb->child * rm.node->size); /* _Sic_. */
@@ -626,7 +623,7 @@ merge_more:
 		sizeof *sibling.more->value * sibling.more->size);
 #		endif
 	if(rm.height/**/>1) { /* The `parent` links will have one less. */
-		struct pT_(branch) *const rmb = pT_(as_branch)(rm.node),
+		struct pT_(stem) *const rmb = pT_(as_branch)(rm.node),
 			*const moreb = pT_(as_branch)(sibling.more);
 		memcpy(rmb->child + rm.node->size, moreb->child,
 			sizeof *moreb->child * (sibling.more->size + 1));
@@ -655,7 +652,7 @@ ascend:
 space: /* Node is root or has more than `TREE_MIN`; branches taken care of. */
 	assert(rm.node);
 	assert(rm.idx < rm.node->size);
-	assert(rm.node->size > TREE_MIN || rm.node == tree->node);
+	assert(rm.node->size > TREE_MIN || rm.node == tree->bough);
 	memmove(rm.node->key + rm.idx, rm.node->key + rm.idx + 1,
 		sizeof *rm.node->key * (rm.node->size - rm.idx - 1));
 #		ifdef TREE_VALUE
@@ -663,9 +660,9 @@ space: /* Node is root or has more than `TREE_MIN`; branches taken care of. */
 		sizeof *rm.node->value * (rm.node->size - rm.idx - 1));
 #		endif
 	if(!--rm.node->size) {
-		assert(rm.node == tree->node);
+		assert(rm.node == tree->bough);
 		if(tree->height) {
-			tree->node = pT_(as_branch)(rm.node)->child[0];
+			tree->bough = pT_(as_branch)(rm.node)->child[0];
 			tree->height--;
 			free(pT_(as_branch)(rm.node));
 		} else { /* Just deleted the last one. */
@@ -680,44 +677,44 @@ end:
 /** Private: frees non-empty `tree` and it's children recursively, but doesn't
  put it to idle or clear pointers.
  @param[keep] Keep one leaf if non-null. Set to null before. */
-static void pT_(clear_r)(struct pT_(tree) tree, struct pT_(node) **const keep) {
-	assert(tree.node && tree.height);
+static void pT_(clear_r)(struct pT_(tree) tree, struct pT_(bough) **const keep) {
+	assert(tree.bough && tree.height);
 	if(tree.height /*?*/>= 1) {
-		if(keep && !*keep) *keep = tree.node;
-		else free(tree.node);
+		if(keep && !*keep) *keep = tree.bough;
+		else free(tree.bough);
 	} else {
 		struct pT_(tree) child;
 		unsigned i;
 		child.height = tree.height - 1;
-		for(i = 0; i <= tree.node->size; i++)
-			child.node = pT_(as_branch)(tree.node)->child[i],
+		for(i = 0; i <= tree.bough->size; i++)
+			child.bough = pT_(as_branch)(tree.bough)->child[i],
 			pT_(clear_r)(child, keep);
-		free(pT_(as_branch)(tree.node));
+		free(pT_(as_branch)(tree.bough));
 	}
 }
 /** Private: `tree` can be null. */
 static void pT_(clear)(struct t_(tree) *tree) {
-	struct pT_(node) *one = 0;
+	struct pT_(bough) *one = 0;
 	/* Already not there/idle/empty. */
-	if(!tree || !tree->trunk.node || !tree->trunk.height) return;
+	if(!tree || !tree->trunk.bough || !tree->trunk.height) return;
 	pT_(clear_r)(tree->trunk, &one), assert(one);
 	/* This is a special state where the tree has one leaf, but it is empty.
 	 This state exists because it gives hysteresis to 0 -- 1 transition because
 	 we have no advanced memory management. */
-	tree->trunk.node = one;
+	tree->trunk.bough = one;
 	tree->trunk.height = 0;
 }
 
 /** Private: counts a sub-tree, `tree`. */
 static size_t pT_(count_r)(const struct pT_(tree) tree) {
-	size_t c = tree.node->size;
+	size_t c = tree.bough->size;
 	if(tree.height > 1) {
-		const struct pT_(branch) *const branch = pT_(as_branch)(tree.node);
+		const struct pT_(stem) *const branch = pT_(as_branch)(tree.bough);
 		struct pT_(tree) sub;
 		size_t i;
 		sub.height = tree.height - 1;
-		for(i = 0; i <= tree.node->size; i++) {
-			sub.node = branch->child[i];
+		for(i = 0; i <= tree.bough->size; i++) {
+			sub.bough = branch->child[i];
 			c += pT_(count_r)(sub);
 		}
 	}
@@ -729,23 +726,23 @@ static size_t pT_(count_r)(const struct pT_(tree) tree) {
 struct pT_(scaffold) {
 	struct tree_node_count victim, source;
 	size_t no;
-	struct pT_(node) **data;
-	struct { struct pT_(node) **head, **fresh, **iterator; } branch, leaf;
+	struct pT_(bough) **data;
+	struct { struct pT_(bough) **head, **fresh, **iterator; } branch, leaf;
 };
 /** Counts the nodes `no` in `tree` for <fn:<pT>nodes>. */
 static int pT_(nodes_r)(struct pT_(tree) tree,
 	struct tree_node_count *const no) {
-	assert(tree.node && tree.height > 1);
+	assert(tree.bough && tree.height > 1);
 	if(!++no->branches) return 0;
 	if(tree.height == 2/*?1*/) {
 		/* Overflow; aren't guaranteed against this. */
-		if(no->leaves + tree.node->size + 1 < no->leaves) return 0;
-		no->leaves += tree.node->size + 1;
+		if(no->leaves + tree.bough->size + 1 < no->leaves) return 0;
+		no->leaves += tree.bough->size + 1;
 	} else {
 		unsigned i;
-		for(i = 0; i <= tree.node->size; i++) {
+		for(i = 0; i <= tree.bough->size; i++) {
 			struct pT_(tree) child;
-			child.node = pT_(as_branch)(tree.node)->child[i];
+			child.bough = pT_(as_branch)(tree.bough)->child[i];
 			child.height = tree.height - 1;
 			if(!pT_(nodes_r)(child, no)) return 0;
 		}
@@ -757,7 +754,7 @@ static int pT_(nodes)(const struct t_(tree) *const tree,
 	struct tree_node_count *const no) {
 	assert(tree && no);
 	no->branches = no->leaves = 0;
-	if(!tree->trunk.node) { /* Idle. */
+	if(!tree->trunk.bough) { /* Idle. */
 	} else if(!tree->trunk.height == 1) {
 		no->leaves = 1;
 	} else { /* Complex. */
@@ -782,7 +779,7 @@ static enum tree_result pT_(update)(struct pT_(tree) *const trunk,
 #		endif /* set --> */
 	/* <https://github.com/neil-edelman/boxes/blob/master/doc/tree/tree.pdf>.
 	 Figure 2. */
-	struct pT_(node) *new_head = 0;
+	struct pT_(bough) *new_head = 0;
 	struct pT_(ref) add, hole, cur;
 	assert(trunk);
 	{
@@ -790,13 +787,13 @@ static enum tree_result pT_(update)(struct pT_(tree) *const trunk,
 		pT_(graph)(trunk, fp);
 		fclose(fp);
 	}
-	if(!(add.node = trunk->node)) goto idle;
+	if(!(add.node = trunk->bough)) goto idle;
 	else if(!trunk->height) goto empty;
 	goto descend;
 idle: /* No reserved memory; reserve memory. */
 	assert(!add.node && !trunk->height);
 	if(!(add.node = malloc(sizeof *add.node))) goto catch;
-	trunk->node = add.node;
+	trunk->bough = add.node;
 	trunk->height = 0;
 	goto empty;
 empty: /* Tree is empty with one bought. */
@@ -838,8 +835,8 @@ insert: /* Leaf has space to spare; usually end up here. */
 	return TREE_ABSENT;
 grow: /* Leaf is full. */ {
 	unsigned new_no = hole.node ? hole.height - 1: trunk->height + 1;
-	struct pT_(node) **new_next = &new_head, *new_leaf;
-	struct pT_(branch) *new_branch;
+	struct pT_(bough) **new_next = &new_head, *new_leaf;
+	struct pT_(stem) *new_branch;
 	assert(new_no);
 	while(new_no != 1) { /* Branch-boughs and one leaf-bough. */
 		if(!(new_branch = malloc(sizeof *new_branch))) goto catch;
@@ -852,7 +849,7 @@ grow: /* Leaf is full. */ {
 	new_leaf->size = 0;
 	*new_next = new_leaf;
 	if(hole.node) { /* New nodes are a sub-structure of the tree. */
-		struct pT_(branch) *holeb = pT_(as_branch)(hole.node);
+		struct pT_(stem) *holeb = pT_(as_branch)(hole.node);
 		memmove(hole.node->key + hole.idx + 1, hole.node->key + hole.idx,
 			sizeof *hole.node->key * (hole.node->size - hole.idx));
 #		ifdef TREE_VALUE
@@ -864,16 +861,16 @@ grow: /* Leaf is full. */ {
 		holeb->child[hole.idx + 1] = new_head;
 		hole.node->size++;
 	} else { /* New nodes raise tree height. */
-		struct pT_(branch) *const new_root = pT_(as_branch)(new_head);
+		struct pT_(stem) *const new_root = pT_(as_branch)(new_head);
 		hole.node = new_head, hole.height = ++trunk->height, hole.idx = 0;
 		new_head = new_root->child[1] = new_root->child[0];
-		new_root->child[0] = trunk->node, trunk->node = hole.node;
+		new_root->child[0] = trunk->bough, trunk->bough = hole.node;
 		hole.node->size = 1;
 	}
 	cur = hole; /* Go down; (as opposed to doing it on paper.) */
 	goto split;
 } split: { /* Split between the new and existing nodes. */
-	struct pT_(node) *sibling;
+	struct pT_(bough) *sibling;
 	sibling = new_head;
 	{
 		FILE *fp = fopen("graph/tree/work2.gv", "w");
@@ -908,9 +905,9 @@ grow: /* Leaf is full. */ {
 			sizeof *cur.node->value * (TREE_SPLIT - 1 - cur.idx));
 #		endif
 		if(cur.height/**/>1) {
-			struct pT_(branch) *const cb = pT_(as_branch)(cur.node),
+			struct pT_(stem) *const cb = pT_(as_branch)(cur.node),
 				*const sb = pT_(as_branch)(sibling);
-			struct pT_(node) *temp = sb->child[0];
+			struct pT_(bough) *temp = sb->child[0];
 			memcpy(sb->child, cb->child + TREE_SPLIT,
 				sizeof *cb->child * (TREE_MAX - TREE_SPLIT + 1));
 			memmove(cb->child + cur.idx + 2, cb->child + cur.idx + 1,
@@ -936,9 +933,9 @@ grow: /* Leaf is full. */ {
 			+ cur.idx, sizeof *sibling->value * (TREE_MAX - cur.idx));
 #		endif
 		if(cur.height/**/>1) {
-			struct pT_(branch) *const cb = pT_(as_branch)(cur.node),
+			struct pT_(stem) *const cb = pT_(as_branch)(cur.node),
 				*const sb = pT_(as_branch)(sibling);
-			struct pT_(node) *temp = sb->child[0];
+			struct pT_(bough) *temp = sb->child[0];
 			memcpy(sb->child, cb->child + TREE_SPLIT + 1,
 				sizeof *cb->child * (hole.idx + 1));
 			memcpy(sb->child + hole.idx + 2, cb->child + cur.idx + 1,
@@ -953,7 +950,7 @@ grow: /* Leaf is full. */ {
 			sizeof *sibling->value * (TREE_MAX - TREE_SPLIT));
 #		endif
 		if(cur.height/**/>1) {
-			struct pT_(branch) *const cb = pT_(as_branch)(cur.node),
+			struct pT_(stem) *const cb = pT_(as_branch)(cur.node),
 				*const sb = pT_(as_branch)(sibling);
 			memcpy(sb->child + 1, cb->child + TREE_SPLIT + 1,
 				sizeof *cb->child * (TREE_MAX - TREE_SPLIT));
@@ -970,7 +967,7 @@ grow: /* Leaf is full. */ {
 	return TREE_ABSENT;
 } catch: /* Didn't work. Reset. */
 	while(new_head) {
-		struct pT_(branch) *const top = pT_(as_branch)(new_head);
+		struct pT_(stem) *const top = pT_(as_branch)(new_head);
 		new_head = top->child[0];
 		free(top);
 	}
@@ -984,7 +981,7 @@ grow: /* Leaf is full. */ {
 /** `ref` with `sc` work under <fn:<pT>cannibalize>. */
 static void pT_(cannibalize_r)(struct pT_(ref) ref,
 	struct pT_(scaffold) *const sc) {
-	struct pT_(branch) *branch = pT_(as_branch)(ref.node);
+	struct pT_(stem) *branch = pT_(as_branch)(ref.node);
 	const int keep_branch = sc->branch.iterator < sc->branch.fresh;
 	assert(ref.node && ref.height > 1 && sc);
 	if(keep_branch) *sc->branch.iterator = ref.node, sc->branch.iterator++;
@@ -992,7 +989,7 @@ static void pT_(cannibalize_r)(struct pT_(ref) ref,
 		unsigned n;
 		for(n = 0; n <= ref.node->size; n++) {
 			const int keep_leaf = sc->leaf.iterator < sc->leaf.fresh;
-			struct pT_(node) *child = branch->child[n];
+			struct pT_(bough) *child = branch->child[n];
 			if(keep_leaf) *sc->leaf.iterator = child, sc->leaf.iterator++;
 			else free(child);
 		}
@@ -1013,8 +1010,8 @@ static void pT_(cannibalize)(const struct t_(tree) *const tree,
 	assert(tree && tree->trunk.height /*!= UINT_MAX*/ && sc);
 	/* Nothing to cannibalize. */
 	if(!sc->victim.branches && !sc->victim.leaves) return;
-	assert(tree->trunk.node);
-	ref.node = tree->trunk.node, ref.height = tree->trunk.height, ref.idx = 0;
+	assert(tree->trunk.bough);
+	ref.node = tree->trunk.bough, ref.height = tree->trunk.height, ref.idx = 0;
 	sc->branch.iterator = sc->branch.head;
 	sc->leaf.iterator = sc->leaf.head;
 	if(ref.height /**/ > 1) {
@@ -1024,23 +1021,23 @@ static void pT_(cannibalize)(const struct t_(tree) *const tree,
 	}
 }
 /** Do the work of `src` cloned with `sc`. Called from <fn:<pT>clone>. */
-static struct pT_(node) *pT_(clone_r)(struct pT_(tree) src,
+static struct pT_(bough) *pT_(clone_r)(struct pT_(tree) src,
 	struct pT_(scaffold) *const sc) {
-	struct pT_(node) *node;
+	struct pT_(bough) *node;
 	if(src.height/**/>1) {
-		struct pT_(branch) *const srcb = pT_(as_branch)(src.node),
+		struct pT_(stem) *const srcb = pT_(as_branch)(src.bough),
 			*const branch = pT_(as_branch)(node = *sc->branch.iterator++);
 		unsigned i;
 		struct pT_(tree) child;
-		*node = *src.node; /* Copy node. */
+		*node = *src.bough; /* Copy node. */
 		child.height = src.height - 1;
-		for(i = 0; i <= src.node->size; i++) { /* Different links. */
-			child.node = srcb->child[i];
+		for(i = 0; i <= src.bough->size; i++) { /* Different links. */
+			child.bough = srcb->child[i];
 			branch->child[i] = pT_(clone_r)(child, sc);
 		}
 	} else { /* Leaves. */
 		node = *sc->leaf.iterator++;
-		*node = *src.node;
+		*node = *src.bough;
 	}
 	return node;
 }
@@ -1048,11 +1045,11 @@ static struct pT_(node) *pT_(clone_r)(struct pT_(tree) src,
 static struct pT_(tree) pT_(clone)(const struct pT_(tree) *const src,
 	struct pT_(scaffold) *const sc) {
 	struct pT_(tree) sub;
-	assert(src && src->node && sc);
+	assert(src && src->bough && sc);
 	/* Go back to the beginning of the scaffold and pick off one by one. */
 	sc->branch.iterator = sc->branch.head;
 	sc->leaf.iterator = sc->leaf.head;
-	sub.node = pT_(clone_r)(*src, sc);
+	sub.bough = pT_(clone_r)(*src, sc);
 	sub.height = src->height;
 	/* Used up all of them. No concurrent modifications, please. */
 	assert(sc->branch.iterator == sc->leaf.head
@@ -1076,11 +1073,11 @@ static struct T_(cursor) T_(begin)(const struct t_(tree) *const tree) {
 static int T_(exists)(struct T_(cursor) *const cur) {
 	assert(cur);
 	if(!cur->trunk || !cur->trunk->height) return 0;
-	assert(cur->trunk->node);
+	assert(cur->trunk->bough);
 	/* Iterator empty; tree non-empty; fall to first data. */
 	if(!cur->ref.node) {
 		cur->ref.height = cur->trunk->height;
-		for(cur->ref.node = cur->trunk->node; cur->ref.height > 1;
+		for(cur->ref.node = cur->trunk->bough; cur->ref.height > 1;
 			cur->ref.node = pT_(as_branch_c)(cur->ref.node)->child[0],
 			cur->ref.height--);
 		cur->ref.idx = 0;
@@ -1103,7 +1100,7 @@ static pT_(value) *T_(value)(const struct T_(cursor) *const cur)
 /** Move `cur` that <fn:<T>exists> to the next element. @allow */
 static void T_(next)(struct T_(cursor) *const cur) {
 	struct pT_(ref) next;
-	assert(cur && cur->trunk && cur->trunk->node
+	assert(cur && cur->trunk && cur->trunk->bough
 		&& cur->trunk->height && cur->ref.node && cur->ref.node->size);
 	/* Next is a copy of the next element. */
 	next = cur->ref, next.idx++, assert(next.idx <= next.node->size);
@@ -1116,17 +1113,17 @@ static void T_(next)(struct T_(cursor) *const cur) {
 		/* Target; this will not work with duplicate keys. */
 		const pT_(key) x = next.node->key[next.node->size - 1];
 		assert(next.node->size);
-		for(next.node = 0; descend.height > 1; descend.node
-			= pT_(as_branch)(descend.node)->child[a0], descend.height--) {
-			unsigned a1 = descend.node->size;
+		for(next.node = 0; descend.height > 1; descend.bough
+			= pT_(as_branch)(descend.bough)->child[a0], descend.height--) {
+			unsigned a1 = descend.bough->size;
 			a0 = 0;
 			while(a0 < a1) {
 				const unsigned m = (a0 + a1) / 2;
 				/* <t>less must be declared. */
-				if(t_(less)(x, descend.node->key[m]) > 0) a0 = m + 1;
+				if(t_(less)(x, descend.bough->key[m]) > 0) a0 = m + 1;
 				else a1 = m;
 			}
-			if(a0 < descend.node->size) next.node = descend.node,
+			if(a0 < descend.bough->size) next.node = descend.bough,
 				next.height = descend.height, next.idx = a0;
 		}
 		if(!next.node) /* Off right. */
@@ -1140,12 +1137,12 @@ static void T_(previous)(struct T_(cursor) *const cur) {
 	assert(cur && cur->trunk);
 
 	/* Tree empty. */
-	if(!cur->trunk || !cur->trunk->node || !cur->trunk->height) return;
+	if(!cur->trunk || !cur->trunk->bough || !cur->trunk->height) return;
 
 	/* Iterator empty; tree non-empty; point at last. */
 	if(!cur->ref.node) {
 		cur->ref.height = cur->trunk->height;
-		for(cur->ref.node = cur->trunk->node; cur->ref.height /**/>1; cur->ref.node
+		for(cur->ref.node = cur->trunk->bough; cur->ref.height /**/>1; cur->ref.node
 			= pT_(as_branch)(cur->ref.node)->child[cur->ref.node->size],
 			cur->ref.height--);
 		/* Did you forget <fn:<T>bulk_load_finish>? */
@@ -1166,15 +1163,15 @@ static void T_(previous)(struct T_(cursor) *const cur) {
 		unsigned a0;
 		const pT_(key) x = prd.node->key[0]; /* Target. */
 		for(prd.node = 0; tree.height /**/>1;
-			tree.node = pT_(as_branch)(tree.node)->child[a0], tree.height--) {
-			unsigned a1 = tree.node->size;
+			tree.bough = pT_(as_branch)(tree.bough)->child[a0], tree.height--) {
+			unsigned a1 = tree.bough->size;
 			a0 = 0;
 			while(a0 < a1) {
 				const unsigned m = (a0 + a1) / 2;
-				if(t_(less)(x, tree.node->key[m]) > 0) a0 = m + 1;
+				if(t_(less)(x, tree.bough->key[m]) > 0) a0 = m + 1;
 				else a1 = m;
 			}
-			if(a0) prd.node = tree.node, prd.height = tree.height,
+			if(a0) prd.node = tree.bough, prd.height = tree.height,
 				prd.idx = a0 - 1;
 		}
 		if(!prd.node) { cur->ref.node = 0; return; } /* Off left. */
@@ -1212,7 +1209,7 @@ static struct T_(cursor) T_(more)(struct t_(tree) *const tree,
  @order \Theta(1) @allow */
 static struct t_(tree) t_(tree)(void) {
 	struct t_(tree) tree;
-	tree.trunk.node = 0; tree.trunk.height = 0;
+	tree.trunk.bough = 0; tree.trunk.height = 0;
 	return tree;
 }
 
@@ -1220,10 +1217,10 @@ static struct t_(tree) t_(tree)(void) {
  @order \O(|`tree`|) @allow */
 static void t_(tree_)(struct t_(tree) *const tree) {
 	if(!tree) return; /* Null. */
-	if(!tree->trunk.node) { /* Idle. */
+	if(!tree->trunk.bough) { /* Idle. */
 		assert(!tree->trunk.height);
 	} else if(!tree->trunk.height) { /* Empty with space. */
-		free(tree->trunk.node);
+		free(tree->trunk.bough);
 	} else {
 		pT_(clear_r)(tree->trunk, 0);
 	}
@@ -1253,7 +1250,7 @@ static int T_(contains)(const struct t_(tree) *const tree, const pT_(key) x)
 static pT_(value) T_(get_or)(const struct t_(tree) *const tree,
 	const pT_(key) key, const pT_(value) default_value) {
 	struct pT_(ref) ref;
-	return tree && tree->trunk.node && tree->trunk.height
+	return tree && tree->trunk.bough && tree->trunk.height
 		&& (ref = pT_(lookup_find)(tree->trunk, key)).node
 		? *pT_(ref_to_valuep)(ref) : default_value;
 }
@@ -1304,30 +1301,30 @@ static enum tree_result T_(bulk_assign)(struct t_(tree) *const tree,
 static enum tree_result T_(bulk_add)(struct t_(tree) *const tree, pT_(key) key)
 {
 #		endif
-	struct pT_(node) *node = 0, *head = 0; /* The original and new. */
+	struct pT_(bough) *node = 0, *head = 0; /* The original and new. */
 	assert(tree);
-	if(!tree->trunk.node) { /* Idle tree. */
+	if(!tree->trunk.bough) { /* Idle tree. */
 		assert(!tree->trunk.height);
 		if(!(node = malloc(sizeof *node))) goto catch;
 		node->size = 0;
 		tree->trunk.height = 1;
-		tree->trunk.node = node;
+		tree->trunk.bough = node;
 	} else if(!tree->trunk.height) { /* Empty tree. */
-		node = tree->trunk.node;
+		node = tree->trunk.bough;
 		tree->trunk.height = 1;
 		node->size = 0;
 	} else {
 		struct pT_(tree) unfull = { 0, 0 };
 		unsigned new_nodes, n; /* Count new nodes. */
-		struct pT_(node) *tail = 0, *last = 0;
-		struct pT_(branch) *pretail = 0;
+		struct pT_(bough) *tail = 0, *last = 0;
+		struct pT_(stem) *pretail = 0;
 		struct pT_(tree) scout;
 		pT_(key) max;
 		/* Right side bottom: `last` node with any keys, `unfull` not full. */
-		for(scout = tree->trunk; ; scout.node = pT_(as_branch)(scout.node)
-			->child[scout.node->size], scout.height--) {
-			if(scout.node->size < TREE_MAX) unfull = scout;
-			if(scout.node->size) last = scout.node;
+		for(scout = tree->trunk; ; scout.bough = pT_(as_branch)(scout.bough)
+			->child[scout.bough->size], scout.height--) {
+			if(scout.bough->size < TREE_MAX) unfull = scout;
+			if(scout.bough->size) last = scout.bough;
 			if(scout.height <= 1) break;
 		}
 		assert(last), max = last->key[last->size - 1];
@@ -1344,14 +1341,14 @@ static enum tree_result T_(bulk_add)(struct t_(tree) *const tree, pT_(key) key)
 		}
 
 		/* One leaf, and the rest branches. */
-		new_nodes = n = unfull.node ? unfull.height : tree->trunk.height + 2;
+		new_nodes = n = unfull.bough ? unfull.height : tree->trunk.height + 2;
 		if(!n) {
-			node = unfull.node;
+			node = unfull.bough;
 		} else {
 			if(!(node = tail = malloc(sizeof *tail))) goto catch;
 			tail->size = 0;
 			while(--n) {
-				struct pT_(branch) *b;
+				struct pT_(stem) *b;
 				if(!(b = malloc(sizeof *b))) goto catch;
 				b->base.size = 0;
 				if(!head) b->child[0] = 0, pretail = b; /* First loop. */
@@ -1363,15 +1360,15 @@ static enum tree_result T_(bulk_add)(struct t_(tree) *const tree, pT_(key) key)
 		/* Post-error; modify the original as needed. */
 		if(pretail) pretail->child[0] = tail;
 		else head = node;
-		if(!unfull.node) { /* Add tree to head. */
-			struct pT_(branch) *const branch = pT_(as_branch)(head);
+		if(!unfull.bough) { /* Add tree to head. */
+			struct pT_(stem) *const branch = pT_(as_branch)(head);
 			assert(new_nodes > 1);
 			branch->child[1] = branch->child[0];
-			branch->child[0] = tree->trunk.node;
-			node = tree->trunk.node = head, tree->trunk.height++;
+			branch->child[0] = tree->trunk.bough;
+			node = tree->trunk.bough = head, tree->trunk.height++;
 		} else if(unfull.height) { /* Add head to tree. */
-			struct pT_(branch) *const branch
-				= pT_(as_branch)(node = unfull.node);
+			struct pT_(stem) *const branch
+				= pT_(as_branch)(node = unfull.bough);
 			assert(new_nodes);
 			branch->child[branch->base.size + 1] = head;
 		}
@@ -1390,7 +1387,7 @@ static enum tree_result T_(bulk_add)(struct t_(tree) *const tree, pT_(key) key)
 catch: /* Didn't work. Reset. */
 	free(node);
 	while(head) {
-		struct pT_(node) *const next = pT_(as_branch)(head)->child[0];
+		struct pT_(bough) *const next = pT_(as_branch)(head)->child[0];
 		free(head);
 		head = next;
 	}
@@ -1406,12 +1403,12 @@ catch: /* Didn't work. Reset. */
  false.) @order \O(\log |`tree`|) @allow */
 static int T_(bulk_finish)(struct t_(tree) *const tree) {
 	struct pT_(tree) s;
-	struct pT_(node) *right;
-	if(!tree || !tree->trunk.node || !tree->trunk.height) return 1;
-	for(s = tree->trunk; s.height/**/>1; s.node = right, s.height--) {
+	struct pT_(bough) *right;
+	if(!tree || !tree->trunk.bough || !tree->trunk.height) return 1;
+	for(s = tree->trunk; s.height/**/>1; s.bough = right, s.height--) {
 		unsigned distribute, right_want, right_move, take_sibling;
-		struct pT_(branch) *parent = pT_(as_branch)(s.node);
-		struct pT_(node) *sibling = (assert(parent->base.size),
+		struct pT_(stem) *parent = pT_(as_branch)(s.bough);
+		struct pT_(bough) *sibling = (assert(parent->base.size),
 			parent->child[parent->base.size - 1]);
 		right = parent->child[parent->base.size];
 		/* Should this be increased to max/2 instead of max/3 to make a more
@@ -1435,7 +1432,7 @@ static int T_(bulk_finish)(struct t_(tree) *const tree) {
 			sizeof *right->value * right->size);
 #		endif
 		if(s.height > /*1*/2) { /* (Parent height.) */
-			struct pT_(branch) *rbranch = pT_(as_branch)(right),
+			struct pT_(stem) *rbranch = pT_(as_branch)(right),
 				*sbranch = pT_(as_branch)(sibling);
 			memmove(rbranch->child + right_move, rbranch->child,
 				sizeof *rbranch->child * (right->size + 1));
@@ -1519,7 +1516,7 @@ static enum tree_result T_(update)(struct t_(tree) *const tree,
 /** Tries to remove `key` from `tree`. @return Success, otherwise it was not in
  `tree`. @order \Theta(\log |`tree`|) @allow */
 static int T_(remove)(struct t_(tree) *const tree, const pT_(key) key)
-	{ return !!tree && !!tree->trunk.node
+	{ return !!tree && !!tree->trunk.bough
 	&& tree->trunk.height && pT_(remove)(&tree->trunk, key); }
 
 /** `source` is copied to, and overwrites, `tree`.
@@ -1562,14 +1559,14 @@ static int T_(clone)(struct t_(tree) *const restrict tree,
 	}
 	/* Add new nodes. */
 	while(sc.branch.iterator != sc.leaf.head) {
-		struct pT_(branch) *branch;
+		struct pT_(stem) *branch;
 		if(!(branch = malloc(sizeof *branch))) goto catch;
 		branch->base.size = 0;
 		branch->child[0] = 0;
 		*sc.branch.iterator++ = &branch->base;
 	}
 	while(sc.leaf.iterator != sc.data + sc.no) {
-		struct pT_(node) *leaf;
+		struct pT_(bough) *leaf;
 		if(!(leaf = malloc(sizeof *leaf))) goto catch;
 		leaf->size = 0;
 		*sc.leaf.iterator++ = leaf;
@@ -1583,12 +1580,12 @@ catch:
 	success = 0;
 	if(!sc.data) goto finally;
 	while(sc.leaf.iterator != sc.leaf.fresh) {
-		struct pT_(node) *leaf = *(--sc.leaf.iterator);
+		struct pT_(bough) *leaf = *(--sc.leaf.iterator);
 		assert(leaf);
 		free(leaf);
 	}
 	while(sc.branch.iterator != sc.branch.fresh) {
-		struct pT_(branch) *branch = pT_(as_branch)(*(--sc.branch.iterator));
+		struct pT_(stem) *branch = pT_(as_branch)(*(--sc.branch.iterator));
 		assert(branch);
 		free(branch);
 	}
@@ -1673,7 +1670,7 @@ static pT_(value) T_R_(tree, get)(const struct t_(tree) *const tree,
 	const pT_(key) key) {
 	const pT_(value) pTR_(default_value) = TREE_DEFAULT;
 	struct pT_(ref) ref; /* `TREE_DEFAULT` is a valid <tag:<pT>value>. */
-	return tree && tree->trunk.node && tree->trunk.height
+	return tree && tree->trunk.bough && tree->trunk.height
 		&& (ref = pT_(lookup_find)(tree->trunk, key)).node
 		? *pT_(ref_to_valuep)(ref) : pTR_(default_value);
 }

@@ -34,7 +34,7 @@ typedef void (*pT_(action_fn))(pT_(key) *);
 /** Makes sure the `tree` is in a valid state. */
 static void pT_(valid)(const struct t_(tree) *const tree) {
 	if(!tree) return; /* Null. */
-	if(!tree->trunk.node)
+	if(!tree->trunk.bough)
 		{ assert(!tree->trunk.height); return; } /* Idle. */
 	if(!tree->trunk.height) { return; } /* Empty. */
 	/*...*/
@@ -224,8 +224,8 @@ static void pT_(test)(void) {
 
 	/* Clear. */
 	T_(clear)(0);
-	T_(clear)(&empty), assert(!empty.trunk.node);
-	T_(clear)(&tree), assert(tree.trunk.node && !tree.trunk.height);
+	T_(clear)(&empty), assert(!empty.trunk.bough);
+	T_(clear)(&tree), assert(tree.trunk.bough && !tree.trunk.height);
 	n_unique = 0;
 
 	/* Fill again, this time, don't sort. */
@@ -352,10 +352,10 @@ static void pT_(test)(void) {
 
 	printf("clear, destroy\n");
 	T_(clear)(&tree);
-	assert(!tree.trunk.height && tree.trunk.node);
+	assert(!tree.trunk.height && tree.trunk.bough);
 
 	/* Destroy. */
-	t_(tree_)(&tree), assert(!tree.trunk.node), pT_(valid)(&tree);
+	t_(tree_)(&tree), assert(!tree.trunk.bough), pT_(valid)(&tree);
 	assert(!errno);
 }
 

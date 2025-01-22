@@ -102,7 +102,7 @@ static void order3(void) {
 	unsigned v;
 	int ret;
 	const size_t order3_order
-		= sizeof rnd.trunk.node->key / sizeof *rnd.trunk.node->key + 1;
+		= sizeof rnd.trunk.bough->key / sizeof *rnd.trunk.bough->key + 1;
 	printf("manual: order3 order %lu\n", order3_order);
 	assert(order3_order == 3);
 
@@ -425,7 +425,7 @@ static void order3(void) {
 		order3_tree_graph_horiz_fn(&removal, "graph/tree/removal-b-9.gv");
 		for(n = 0; n < size; n++)
 			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		assert(removal.trunk.height == UINT_MAX && removal.trunk.node);
+		assert(removal.trunk.height == UINT_MAX && removal.trunk.bough);
 		for(n = 0; n < size; n++) assert(!in[n]);
 		{
 			int success = order3_tree_remove(&removal, 0);
@@ -492,7 +492,7 @@ static void redblack(void) {
 	struct { unsigned x; int in; } rnd[10];
 	const unsigned rnd_size = sizeof rnd / sizeof *rnd;
 	const size_t redblack_order
-		= sizeof tree.trunk.node->key / sizeof *tree.trunk.node->key + 1;
+		= sizeof tree.trunk.bough->key / sizeof *tree.trunk.bough->key + 1;
 	printf("Redblack: order %lu.\n", redblack_order);
 	assert(redblack_order == 4);
 
