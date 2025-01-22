@@ -1051,12 +1051,13 @@ static struct T_(cursor) T_(begin)(const struct t_(tree) *const tree) {
 }
 /** @return Whether the `cur` points to an element. @allow */
 static int T_(exists)(struct T_(cursor) *const cur) {
-	if(!cur || !cur->trunk || !cur->trunk->node || !cur->trunk->height)
-		return 0;
-	/* Iterator empty; tree non-empty; point at first. */
+	assert(cur);
+	if(!cur->trunk || !cur->trunk->height) return 0;
+	assert(cur->trunk->node);
+	/* Iterator empty; tree non-empty; fall to first data. */
 	if(!cur->ref.node) {
 		cur->ref.height = cur->trunk->height;
-		for(cur->ref.node = cur->trunk->node; cur->ref.height;
+		for(cur->ref.node = cur->trunk->node; cur->ref.height > 1;
 			cur->ref.node = pT_(as_branch_c)(cur->ref.node)->child[0],
 			cur->ref.height--);
 		cur->ref.idx = 0;
@@ -1080,32 +1081,30 @@ static pT_(value) *T_(value)(const struct T_(cursor) *const cur)
 static void T_(next)(struct T_(cursor) *const cur) {
 	struct pT_(ref) next;
 	assert(cur && cur->trunk && cur->trunk->node
-		&& cur->trunk->height && cur->ref.node);
-	/* fixme: This is not ideal! I think. */
-	/* Next is a copy of the next element. Clip. */
-	next = cur->ref, next.idx++;
-	if(next.height /**/>1 && next.idx > next.node->size) next.idx = next.node->size;
-	while(next.height /**/>1) next.node = pT_(as_branch)(next.node)->child[next.idx],
-		next.idx = 0, next.height--; /* Fall from branch. */
-	cur->ref = next; /* Possibly one beyond bounds. */
-	if(next.idx >= next.node->size) { /* Maybe re-descend reveals more keys. */
-		struct pT_(tree) tree = *cur->trunk;
+		&& cur->trunk->height && cur->ref.node && cur->ref.node->size);
+	/* Next is a copy of the next element. */
+	next = cur->ref, next.idx++, assert(next.idx <= next.node->size);
+	if(next.height > 1) { /* Fall from branch. */
+		do next.node = pT_(as_branch)(next.node)->child[next.idx],
+			next.idx = 0, next.height--; while(next.height > 1);
+	} else if(next.idx >= next.node->size) { /* Re-descend. */
+		struct pT_(tree) descend = *cur->trunk;
 		unsigned a0;
 		/* Target; this will not work with duplicate keys. */
 		const pT_(key) x = next.node->key[next.node->size - 1];
 		assert(next.node->size);
-		for(next.node = 0; tree.height /**/>1;
-			tree.node = pT_(as_branch)(tree.node)->child[a0], tree.height--) {
-			unsigned a1 = tree.node->size;
+		for(next.node = 0; descend.height > 1; descend.node
+			= pT_(as_branch)(descend.node)->child[a0], descend.height--) {
+			unsigned a1 = descend.node->size;
 			a0 = 0;
 			while(a0 < a1) {
 				const unsigned m = (a0 + a1) / 2;
 				/* <t>less must be declared. */
-				if(t_(less)(x, tree.node->key[m]) > 0) a0 = m + 1;
+				if(t_(less)(x, descend.node->key[m]) > 0) a0 = m + 1;
 				else a1 = m;
 			}
-			if(a0 < tree.node->size) next.node = tree.node,
-				next.height = tree.height, next.idx = a0;
+			if(a0 < descend.node->size) next.node = descend.node,
+				next.height = descend.height, next.idx = a0;
 		}
 		if(!next.node) /* Off right. */
 			{ cur->ref.node = 0, cur->trunk = 0; return; }
@@ -1288,10 +1287,11 @@ static enum tree_result T_(bulk_try)(struct t_(tree) *const tree, pT_(key) key)
 		assert(!tree->trunk.height);
 		if(!(node = malloc(sizeof *node))) goto catch;
 		node->size = 0;
+		tree->trunk.height = 1;
 		tree->trunk.node = node;
 	} else if(!tree->trunk.height) { /* Empty tree. */
 		node = tree->trunk.node;
-		tree->trunk.height = /*0*/1;
+		tree->trunk.height = 1;
 		node->size = 0;
 	} else {
 		struct pT_(tree) unfull = { 0, 0 };
@@ -1305,7 +1305,7 @@ static enum tree_result T_(bulk_try)(struct t_(tree) *const tree, pT_(key) key)
 			->child[scout.node->size], scout.height--) {
 			if(scout.node->size < TREE_MAX) unfull = scout;
 			if(scout.node->size) last = scout.node;
-			if(scout.height /*?*/<=1) break;
+			if(scout.height <= 1) break;
 		}
 		assert(last), max = last->key[last->size - 1];
 		if(t_(less)(max, key) > 0) return errno = EDOM, TREE_ERROR;

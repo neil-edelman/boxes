@@ -106,12 +106,15 @@ static void pT_(test)(void) {
 
 	/* Bulk, (simple.) */
 	for(i = 0; i < test_size; i++) {
-		/*pT_(entry_c) e;
-		char z[12];*/
+		/**/char z[12];/**/
 		struct pT_(tree_test) *const t = test + i;
-		/*e = pT_(test_to_entry_c)(t);
-		pT_(to_string)(e, &z);
-		printf("%lu -- bulk adding <%s>.\n", (unsigned long)i, z);*/
+		/**/
+#	ifdef TREE_VALUE
+		t_(to_string)(t->key, &t->value, &z);
+#	else
+		t_(to_string)(t->key, &z);
+#	endif
+		printf("%lu -- bulk adding <%s>.\n", (unsigned long)i, z);/**/
 		switch(
 #	ifdef TREE_VALUE
 		T_(bulk_assign)(&tree, t->key, &v)
@@ -129,6 +132,7 @@ static void pT_(test)(void) {
 			*v = t->value;
 #	endif
 			t->in = 1;
+			printf("Yes %c.\n", t->key);
 			break;
 		}
 
