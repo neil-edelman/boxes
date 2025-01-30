@@ -15,7 +15,7 @@ void T_(test)(void);
 #	if 0
 #		include "../src/orcish.h"
 /** Prints `tree` to `stdout`; useful in debugging. */
-static void pT_(print)(const struct pT_(tree) *const tree) {
+static void pT_(print)(const struct pT_(bough) *const tree) {
 	const struct trie_branch *branch;
 	unsigned b, i;
 	assert(tree);
@@ -38,7 +38,7 @@ static void pT_(print)(const struct pT_(tree) *const tree) {
 #	endif
 
 /** Make sure `tree` is in a valid state, (and all the children.) */
-static void pT_(valid_tree)(/*const*/ struct pT_(tree) *const tree) {
+static void pT_(valid_bough)(/*const*/ struct pT_(bough) *const tree) {
 	unsigned i;
 	int cmp = 0;
 	const char *str1 = 0;
@@ -47,7 +47,7 @@ static void pT_(valid_tree)(/*const*/ struct pT_(tree) *const tree) {
 		assert(tree->branch[i].left < tree->bsize - i);
 	for(i = 0; i <= tree->bsize; i++) {
 		if(trie_bmp_test(&tree->bmp, i)) {
-			pT_(valid_tree)(tree->leaf[i].as_link);
+			pT_(valid_bough)(tree->leaf[i].as_link);
 		} else {
 			const char *str2;
 			struct pT_(ref) ref;
@@ -62,7 +62,7 @@ static void pT_(valid_tree)(/*const*/ struct pT_(tree) *const tree) {
 /** Makes sure the `trie` is in a valid state. */
 static void pT_(valid)(const struct t_(trie) *const trie) {
 	if(!trie || !trie->root) return;
-	pT_(valid_tree)(trie->root);
+	pT_(valid_bough)(trie->root);
 }
 
 static pT_(key) pT_(entry_key)(const pT_(entry) *entry) {

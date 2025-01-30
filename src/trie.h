@@ -191,12 +191,12 @@ typedef const char *(*pT_(string_fn))(pT_(key));
 typedef pT_(key) (*pT_(key_fn))(const pT_(entry) *);
 #	endif /* documentation --> */
 
-union pT_(leaf) { pT_(entry) as_entry; struct pT_(tree) *as_link; };
+union pT_(leaf) { pT_(entry) as_entry; struct pT_(bough) *as_link; };
 /* In a B-tree described using <Knuth, 1998 Art 3>, this is a node of
  `TRIE_ORDER`. Node already has conflicting meaning with the individual
  entries. We use tree, such that a trie is a forest of non-empty complete
  binary trees. */
-struct pT_(tree) {
+struct pT_(bough) {
 	unsigned short bsize;
 	struct trie_branch branch[TRIE_ORDER - 1];
 	struct trie_bmp bmp;
@@ -207,14 +207,14 @@ struct pT_(tree) {
 
  ![States.](../doc/trie/states.png) */
 struct t_(trie);
-struct t_(trie) { struct pT_(tree) *root; };
+struct t_(trie) { struct pT_(bough) *root; };
 typedef struct t_(trie) pT_(box);
 
-struct pT_(ref) { struct pT_(tree) *tree; unsigned lf; };
+struct pT_(ref) { struct pT_(bough) *tree; unsigned lf; };
 
 /* A range of words. */
 struct T_(cursor) { /* fixme: This is very wasteful? at least re-arrange? */
-	struct pT_(tree) *root;
+	struct pT_(bough) *root;
 	struct pT_(ref) start, end;
 };
 
@@ -285,9 +285,9 @@ static void pT_(higher_entry)(struct pT_(ref) *ref) {
 }
 /** This is a convince function for <fn:<pT>match_prefix>.
  @return The leftmost entry string at `lf` of `tree`. */
-static const char *pT_(sample)(const struct pT_(tree) *const tree,
+static const char *pT_(sample)(const struct pT_(bough) *const tree,
 	const unsigned lf) {
-	union { const struct pT_(tree) *readonly; struct pT_(tree) *promise; }
+	union { const struct pT_(bough) *readonly; struct pT_(bough) *promise; }
 		slybox;
 	struct pT_(ref) ref;
 	slybox.readonly = tree, ref.tree = slybox.promise, ref.lf = lf;
@@ -300,7 +300,7 @@ static const char *pT_(sample)(const struct pT_(tree) *const tree,
 static struct T_(cursor) pT_(match_prefix)
 	(const struct t_(trie) *const trie, const char *const prefix) {
 	struct T_(cursor) cur;
-	struct pT_(tree) *tree;
+	struct pT_(bough) *tree;
 	size_t bit;
 	struct { size_t cur, next; } byte;
 	assert(trie && prefix);
@@ -336,7 +336,7 @@ finally:
 
 /** Destroys `tree`'s children and sets invalid state.
  @order \O(|`tree`|) both time and space. */
-static void pT_(clear_r)(struct pT_(tree) *const tree) {
+static void pT_(clear_r)(struct pT_(bough) *const tree) {
 	unsigned i;
 	assert(tree && tree->bsize != USHRT_MAX);
 	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->bmp, i))
@@ -380,9 +380,9 @@ static int pT_(get)(const struct t_(trie) *const trie,
 }
 
 /** Splits `tree` into two trees. Used in <fn:<pT>add>. @throws[malloc] */
-static int pT_(split)(struct pT_(tree) *const tree) {
+static int pT_(split)(struct pT_(bough) *const tree) {
 	unsigned br0, br1, lf;
-	struct pT_(tree) *kid;
+	struct pT_(bough) *kid;
 	assert(tree && tree->bsize == TRIE_ORDER - 1);
 	/* Mitosis; more info added on error in <fn:<PT>add_unique>. */
 	if(!(kid = malloc(sizeof *kid))) return 0;
@@ -433,7 +433,7 @@ static int pT_(split)(struct pT_(tree) *const tree) {
  @param[tree, tree_bit] The start of the tree.
  @param[key, diff_bit] New key and where the new key differs from the tree.
  @return The index of the uninitialized leaf. */
-static unsigned pT_(open)(struct pT_(tree) *const tree,
+static unsigned pT_(open)(struct pT_(bough) *const tree,
 	size_t tree_bit, const char *const key, size_t diff_bit) {
 	unsigned br0, br1, lf;
 	struct trie_branch *branch;
@@ -582,12 +582,12 @@ catch:
 /** Try to remove `string` from `trie`. @fixme Join when combined-half is less
  than a quarter? Probably crucial to performance in some corner cases. */
 static int pT_(remove)(struct t_(trie) *const trie, const char *const string) {
-	struct pT_(tree) *tree;
+	struct pT_(bough) *tree;
 	size_t bit; /* In bits of `key`. */
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	struct { unsigned br0, br1, lf; } ye, no, up;
 	unsigned parent_br = 0; /* Same tree. Useless initialization. */
-	struct { struct pT_(tree) *tree; unsigned lf; } prev = { 0, 0 }; /* Diff. */
+	struct { struct pT_(bough) *tree; unsigned lf; } prev = { 0, 0 }; /* Diff. */
 	struct pT_(ref) rm;
 	assert(trie && string);
 	/* Same as match, except keep track of more stuff. */
@@ -628,7 +628,7 @@ static int pT_(remove)(struct t_(trie) *const trie, const char *const string) {
 	} else if(no.br0 == no.br1 && trie_bmp_test(&tree->bmp, no.lf)) {
 		/* Branch not taken is a link leaf. */
 		struct trie_branch *const parent = tree->branch + parent_br;
-		struct pT_(tree) *const downstream = tree->leaf[no.lf].as_link;
+		struct pT_(bough) *const downstream = tree->leaf[no.lf].as_link;
 		assert(downstream);
 		if(downstream->bsize) {
 			if(parent->skip == UCHAR_MAX
@@ -667,7 +667,7 @@ static int pT_(remove)(struct t_(trie) *const trie, const char *const string) {
 	/* Just making sure. */
 	assert(!prev.tree || trie_bmp_test(&prev.tree->bmp, prev.lf));
 	if(trie_bmp_test(&tree->bmp, 0)) { /* A single link on it's own tree. */
-		struct pT_(tree) *const next = tree->leaf[0].as_link;
+		struct pT_(bough) *const next = tree->leaf[0].as_link;
 		if(prev.tree) prev.tree->leaf[prev.lf].as_link = next;
 		else assert(trie->root == tree), trie->root = next;
 	} else if(prev.tree) { /* Single entry might as well go to previous tree. */
@@ -719,8 +719,8 @@ static void T_(next)(struct T_(cursor) *const cur) {
 		cur->start.lf++; /* It's in the same tree. */
 	} else { /* Going to go off the end. */
 		const char *const sample = pT_(sample)(cur->start.tree, cur->start.lf);
-		const struct pT_(tree) *old = cur->start.tree;
-		struct pT_(tree) *next = cur->root;
+		const struct pT_(bough) *old = cur->start.tree;
+		struct pT_(bough) *next = cur->root;
 		size_t bit = 0;
 		cur->start.tree = 0;
 		while(next != old) {

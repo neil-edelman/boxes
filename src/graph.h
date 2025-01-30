@@ -680,7 +680,7 @@ static void pT_(unused_tree_coda)(void) { pT_(unused_tree)(); }
 #		elif defined TRIE_NAME
 
 /** Outputs a direction string for `lf` in `tr`, `{ "", "r", "l" }`. */
-static const char *pT_(leaf_to_dir)(const struct pT_(tree) *const tr,
+static const char *pT_(leaf_to_dir)(const struct pT_(bough) *const tr,
 	const unsigned lf) {
 	struct { unsigned br0, br1, lf; } t;
 	unsigned left;
@@ -696,7 +696,7 @@ static const char *pT_(leaf_to_dir)(const struct pT_(tree) *const tr,
 
 /** Given a branch `b` in `tr` branches, calculate the right child branches.
  @order \O(log `size`) */
-static unsigned pT_(right)(const struct pT_(tree) *const tr,
+static unsigned pT_(right)(const struct pT_(bough) *const tr,
 	const unsigned b) {
 	unsigned left, right, total = tr->bsize, b0 = 0;
 	assert(tr && b < tr->bsize);
@@ -712,7 +712,7 @@ static unsigned pT_(right)(const struct pT_(tree) *const tr,
 }
 
 /** @return Follows the branches to `b` in `tr` and returns the leaf. */
-static unsigned pT_(left_leaf)(const struct pT_(tree) *const tr,
+static unsigned pT_(left_leaf)(const struct pT_(bough) *const tr,
 	const unsigned b) {
 	unsigned left, right, total = tr->bsize, i = 0, b0 = 0;
 	assert(tr && b < tr->bsize);
@@ -729,7 +729,7 @@ static unsigned pT_(left_leaf)(const struct pT_(tree) *const tr,
 
 /** Graphs `tree` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
-static void pT_(graph_tree_bits)(const struct pT_(tree) *const tree,
+static void pT_(graph_tree_bits)(const struct pT_(bough) *const tree,
 	const size_t treebit, FILE *const fp) {
 	unsigned b, i;
 	assert(tree && fp);
@@ -800,7 +800,7 @@ static void pT_(graph_tree_bits)(const struct pT_(tree) *const tree,
 
 /** Graphs `tree` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
-static void pT_(graph_tree_mem)(const struct pT_(tree) *const tree,
+static void pT_(graph_tree_mem)(const struct pT_(bough) *const tree,
 	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
 	unsigned i;
@@ -871,7 +871,7 @@ static void pT_(graph_tree_mem)(const struct pT_(tree) *const tree,
 
 /** Graphs `tr` on `fp`.`treebit` is the number of bits currently
  (recursive.) */
-static void pT_(graph_tree_logic)(const struct pT_(tree) *const tr,
+static void pT_(graph_tree_logic)(const struct pT_(bough) *const tr,
 	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
 	unsigned left, right, b, i;
@@ -893,7 +893,7 @@ static void pT_(graph_tree_logic)(const struct pT_(tree) *const tr,
 			} else {
 				unsigned leaf = pT_(left_leaf)(tr, b);
 				if(trie_bmp_test(&tr->bmp, leaf)) {
-					const struct pT_(tree) *const child =tr->leaf[leaf].as_link;
+					const struct pT_(bough) *const child =tr->leaf[leaf].as_link;
 					const char *root_str = child->bsize ? "branch" : "leaf";
 					fprintf(fp,
 					"tree%p%s0 [style=dashed, arrowhead=rnormal];\n",
@@ -911,7 +911,7 @@ static void pT_(graph_tree_logic)(const struct pT_(tree) *const tr,
 			} else {
 				unsigned leaf = pT_(left_leaf)(tr, b) + left + 1;
 				if(trie_bmp_test(&tr->bmp, leaf)) {
-					const struct pT_(tree) *const child =tr->leaf[leaf].as_link;
+					const struct pT_(bough) *const child =tr->leaf[leaf].as_link;
 					const char *root_str = child->bsize ? "branch" : "leaf";
 					fprintf(fp,
 					"tree%p%s0 [style=dashed, arrowhead=lnormal];\n",
@@ -928,7 +928,7 @@ static void pT_(graph_tree_logic)(const struct pT_(tree) *const tr,
 	fprintf(fp, "\t// leaves\n");
 
 	for(i = 0; i <= tr->bsize; i++) if(!trie_bmp_test(&tr->bmp, i)) {
-		union { const struct pT_(tree) *readonly; struct pT_(tree) *promise; }
+		union { const struct pT_(bough) *readonly; struct pT_(bough) *promise; }
 			slybox;
 		struct pT_(ref) ref;
 		slybox.readonly = tr, ref.tree = slybox.promise, ref.lf = i;
@@ -941,7 +941,7 @@ static void pT_(graph_tree_logic)(const struct pT_(tree) *const tr,
 		pT_(graph_tree_logic)(tr->leaf[i].as_link, 0, fp);
 }
 
-typedef void (*pT_(tree_file_fn))(const struct pT_(tree) *, size_t, FILE *);
+typedef void (*pT_(tree_file_fn))(const struct pT_(bough) *, size_t, FILE *);
 
 /** Draw a graph of `trie` to `fn` in Graphviz format with `callback` as it's
  tree-drawing output. */
