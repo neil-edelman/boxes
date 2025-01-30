@@ -119,7 +119,7 @@
 #	define TRIE_DIFF(a, b, n) \
 		(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Maximum branching factor/leaves. Prefer alignment `4n`; cache `32n`. */
-#	define TRIE_ORDER 256
+#	define TRIE_ORDER 128
 #	if TRIE_ORDER - 2 < 1 || TRIE_ORDER - 2 > UCHAR_MAX /* Max left. */
 #		error Non-zero maximum left parameter range `[1, UCHAR_MAX]`.
 #	endif
@@ -141,7 +141,16 @@ static const char *const trie_result_str[] = { TRIE_RESULT };
 #	endif
 #	undef TRIE_RESULT
 
-struct trie_branch { unsigned char left, skip; };
+/* TRIE_ORDER <= 2^#left */
+struct trie_branch { unsigned short left : 7, bmp : 1, skip : 8; };
+#if __STDC__ == 1 && __STDC_VERSION__ >= 201112L /* Static wasn't invented. */
+#	if __STDC_VERSION__ < 202311L /* Stupid. */
+_Static_assert(sizeof (unsigned short) == 2 && sizeof (struct trie_branch) == 2, "");
+#	else
+static_assert(sizeof (unsigned short) == 2 && sizeof (struct trie_branch) == 2);
+#	endif
+#endif
+
 #	ifndef TRIE_DECLARE_ONLY
 /* Construct `struct trie_bmp`. */
 #		define BMP_NAME trie
