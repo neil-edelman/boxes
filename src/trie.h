@@ -142,7 +142,7 @@ static const char *const trie_result_str[] = { TRIE_RESULT };
 #	undef TRIE_RESULT
 
 /* TRIE_ORDER <= 2^#left */
-struct trie_branch { unsigned short left : 7, bmp : 1, skip : 8; };
+struct trie_branch { unsigned short left : 7, link : 1, skip : 8; };
 #if __STDC__ == 1 && __STDC_VERSION__ >= 201112L /* Static wasn't invented. */
 #	if __STDC_VERSION__ < 202311L /* Stupid. */
 _Static_assert(sizeof (unsigned short) == 2 && sizeof (struct trie_branch) == 2, "");
@@ -152,10 +152,6 @@ static_assert(sizeof (unsigned short) == 2 && sizeof (struct trie_branch) == 2);
 #endif
 
 #	ifndef TRIE_DECLARE_ONLY
-/* Construct `struct trie_bmp`. */
-#		define BMP_NAME trie
-#		define BMP_BITS TRIE_ORDER
-#		include "bmp.h"
 /** @return Whether `prefix` is the prefix of `word`.
  Used in <fn:<T>prefix>. */
 static int trie_is_prefix(const char *prefix, const char *word) {
@@ -207,8 +203,8 @@ union pT_(leaf) { pT_(entry) as_entry; struct pT_(tree) *as_link; };
  binary trees. */
 struct pT_(tree) {
 	unsigned short bsize;
-	struct trie_branch branch[TRIE_ORDER - 1];
-	struct trie_bmp bmp;
+	/* fixme: link is a leaf property…now uneven. */
+	struct trie_branch branch[TRIE_ORDER /*- 1 */];
 	union pT_(leaf) leaf[TRIE_ORDER];
 };
 /** To initialize it to an idle state, see <fn:<t>trie>, `{0}`, or being
@@ -282,13 +278,13 @@ static const char *pT_(ref_to_string)(const struct pT_(ref) *const ref) {
 /** Fall through `ref` until hit the first entry. Must be pointing at
  something. */
 static void pT_(lower_entry)(struct pT_(ref) *ref) {
-	while(trie_bmp_test(&ref->tree->bmp, ref->lf))
+	while(ref->tree->branch[ref->lf].link)
 		ref->tree = ref->tree->leaf[ref->lf].as_link, ref->lf = 0;
 }
 /** Fall through `ref` until hit the last entry. Must be pointing at
  something. */
 static void pT_(higher_entry)(struct pT_(ref) *ref) {
-	while(trie_bmp_test(&ref->tree->bmp, ref->lf))
+	while(ref->tree->branch[ref->lf].link)
 		ref->tree = ref->tree->leaf[ref->lf].as_link,
 		ref->lf = ref->tree->bsize;
 }
@@ -329,8 +325,7 @@ static struct T_(cursor) pT_(match_prefix)
 				br0 += branch->left + 1, lf += branch->left + 1;
 			bit++;
 		}
-		if(trie_bmp_test(&tree->bmp, lf))
-			{ tree = tree->leaf[lf].as_link; continue; } /* Link. */
+		if(tree->branch[lf].link) { tree = tree->leaf[lf].as_link; continue; };
 finally:
 		assert(br0 <= br1 && lf - br0 + br1 <= tree->bsize);
 		cur.root = trie->root;
@@ -348,7 +343,7 @@ finally:
 static void pT_(clear_r)(struct pT_(tree) *const tree) {
 	unsigned i;
 	assert(tree && tree->bsize != USHRT_MAX);
-	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->bmp, i))
+	for(i = 0; i <= tree->bsize; i++) if(tree->branch[i].link)
 		pT_(clear_r)(tree->leaf[i].as_link), free(tree->leaf[i].as_link);
 }
 
@@ -375,7 +370,7 @@ static int pT_(match)(const struct t_(trie) *const trie,
 				br0 += branch->left + 1, ref->lf += branch->left + 1;
 			bit++;
 		}
-		if(!trie_bmp_test(&ref->tree->bmp, ref->lf)) break;
+		if(!ref->tree->branch[ref->lf].link) break;
 	}
 	return 1;
 }
@@ -427,12 +422,15 @@ static int pT_(split)(struct pT_(tree) *const tree) {
 	memmove(tree->leaf + lf + 1, tree->leaf + lf + kid->bsize + 1,
 		sizeof *tree->leaf * (tree->bsize + 1 - lf - kid->bsize - 1));
 	/* Move the bits. */
-	memcpy(&kid->bmp, &tree->bmp, sizeof tree->bmp);
+	/* Don't think we need to do this now?
+	 memcpy(&kid->bmp, &tree->bmp, sizeof tree->bmp);
 	trie_bmp_remove(&kid->bmp, 0, lf);
 	trie_bmp_remove(&kid->bmp, kid->bsize + 1,
 		tree->bsize - lf - kid->bsize);
 	trie_bmp_remove(&tree->bmp, lf + 1, kid->bsize);
 	trie_bmp_set(&tree->bmp, lf);
+	 */
+	tree->branch[lf].link = 1; /* fixme: OHOH! */
 	tree->leaf[lf].as_link = kid;
 	tree->bsize -= kid->bsize;
 	return 1;
@@ -470,7 +468,7 @@ static unsigned pT_(open)(struct pT_(tree) *const tree,
 	assert(lf <= tree->bsize + 1);
 	leaf = tree->leaf + lf;
 	memmove(leaf + 1, leaf, sizeof *leaf * ((tree->bsize + 1) - lf));
-	trie_bmp_insert(&tree->bmp, lf, 1);
+	tree->branch[lf].link = 1;
 	/* Add a branch. */
 	branch = tree->branch + br0;
 	if(br0 != br1) { /* Split with existing branch. */
@@ -501,7 +499,7 @@ static enum trie_result pT_(add)(struct t_(trie) *const trie, pT_(key) key,
 	} /* Fall-through. */
 	if(ref.tree->bsize == USHRT_MAX) { /* Empty: special case. */
 		ref.tree->bsize = 0, ref.lf = 0;
-		trie_bmp_clear_all(&ref.tree->bmp);
+		//? trie_bmp_clear_all(&ref.tree->bmp);
 		goto assign;
 	}
 	/* Otherwise we will be able to find an exemplar: a neighbouring key to the
@@ -524,7 +522,7 @@ static enum trie_result pT_(add)(struct t_(trie) *const trie, pT_(key) key,
 				br0 += branch->left + 1, ref.lf += branch->left + 1;
 			bit1++;
 		}
-		if(!trie_bmp_test(&ref.tree->bmp, ref.lf)) break; /* One exemplar. */
+		if(!ref.tree->branch[ref.lf].link) break; /* One exemplar. */
 	}
 found_exemplar:
 	exemplar = ref;
@@ -559,7 +557,7 @@ tree:
 				br0 += branch->left + 1, ref.lf += branch->left + 1;
 			bit1++;
 		}
-		if(!trie_bmp_test(&ref.tree->bmp, ref.lf)) goto found_diff;
+		if(!ref.tree->branch[ref.lf].link) goto found_diff;
 	}
 found_diff:
 	/* Account for choosing the right leaf. */
@@ -619,7 +617,7 @@ static int pT_(remove)(struct t_(trie) *const trie, const char *const string) {
 				no.lf = ye.lf, ye.lf += branch->left + 1;
 			bit++;
 		}
-		if(!trie_bmp_test(&tree->bmp, ye.lf)) break;
+		if(!tree->branch[ye.lf].link) break;
 		prev.tree = tree, prev.lf = ye.lf;
 		tree = tree->leaf[ye.lf].as_link; /* Jumped trees. */
 	}
@@ -634,7 +632,7 @@ static int pT_(remove)(struct t_(trie) *const trie, const char *const string) {
 			|| no_child->skip > UCHAR_MAX - parent->skip - 1)
 			return errno = EILSEQ, 0;
 		no_child->skip += parent->skip + 1;
-	} else if(no.br0 == no.br1 && trie_bmp_test(&tree->bmp, no.lf)) {
+	} else if(no.br0 == no.br1 && tree->branch[no.lf].link) {
 		/* Branch not taken is a link leaf. */
 		struct trie_branch *const parent = tree->branch + parent_br;
 		struct pT_(tree) *const downstream = tree->leaf[no.lf].as_link;
@@ -646,7 +644,7 @@ static int pT_(remove)(struct t_(trie) *const trie, const char *const string) {
 			downstream->branch[0].skip += parent->skip + 1;
 		} else {
 			/* Don't allow links to be the single entry in a tree. */
-			assert(!trie_bmp_test(&downstream->bmp, 0));
+			assert(!downstream->branch[0].link);
 		}
 	}
 	/* Update `left` values for the path to the deleted branch. */
@@ -671,24 +669,24 @@ static int pT_(remove)(struct t_(trie) *const trie, const char *const string) {
 		sizeof *tree->leaf * (tree->bsize - ye.lf));
 	tree->bsize--;
 	/* Remove the bit. */
-	trie_bmp_remove(&tree->bmp, ye.lf, 1);
+	/*trie_bmp_remove(&tree->bmp, ye.lf, 1); <-I think this is taken care of by the memmove…up until +/- one? */
 	if(tree->bsize) return 1; /* We are done. */
 	/* Just making sure. */
-	assert(!prev.tree || trie_bmp_test(&prev.tree->bmp, prev.lf));
-	if(trie_bmp_test(&tree->bmp, 0)) { /* A single link on it's own tree. */
+	assert(!prev.tree || prev.tree->branch[prev.lf].link);
+	if(tree->branch[0].link) { /* A single link on it's own tree. */
 		struct pT_(tree) *const next = tree->leaf[0].as_link;
 		if(prev.tree) prev.tree->leaf[prev.lf].as_link = next;
 		else assert(trie->root == tree), trie->root = next;
 	} else if(prev.tree) { /* Single entry might as well go to previous tree. */
 		prev.tree->leaf[prev.lf].as_entry = tree->leaf[0].as_entry;
-		trie_bmp_clear(&prev.tree->bmp, prev.lf);
+		prev.tree->branch[prev.lf].link = 0;//trie_bmp_clear(&prev.tree->bmp, prev.lf);
 	} else {
 		return 1; /* Just one entry; leave it be. */
 	}
 	free(tree);
 	return 1;
 erased_tree:
-	assert(trie->root == tree && !tree->bsize && !trie_bmp_test(&tree->bmp, 0));
+	assert(trie->root == tree && !tree->bsize && !tree->branch[0].link);
 	tree->bsize = USHRT_MAX;
 	return 1;
 }
@@ -744,7 +742,7 @@ static void T_(next)(struct T_(cursor) *const cur) {
 				bit++;
 			}
 			if(lf < next->bsize) cur->start.tree = next, cur->start.lf = lf + 1;
-			assert(trie_bmp_test(&next->bmp, lf)); /* The old. */
+			assert(next->branch[lf].link); /* The old. */
 			next = next->leaf[lf].as_link;
 		}
 		/* End of iteration. Should not get here—all ranged iterators. */

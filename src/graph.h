@@ -742,7 +742,7 @@ static void pT_(graph_tree_bits)(const struct pT_(tree) *const tree,
 		size_t next_branch = treebit + branch->skip;
 		const char *params, *start, *end;
 		struct { unsigned br0, br1; } in_tree;
-		const unsigned is_link = trie_bmp_test(&tree->bmp, i);
+		const unsigned is_link = tree->branch[i].link;
 		/* 0-width joiner "&#8288;": GraphViz gets upset when tag closed
 		 immediately. */
 		fprintf(fp, "\t<tr>\n"
@@ -775,7 +775,7 @@ static void pT_(graph_tree_bits)(const struct pT_(tree) *const tree,
 	}
 	fprintf(fp, "</table>>];\n");
 	/* Draw the lines between trees. */
-	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->bmp, i))
+	for(i = 0; i <= tree->bsize; i++) if(tree->branch[i].link)
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
 		"[style = dashed, arrowhead = %snormal];\n", (const void *)tree, i,
 		(const void *)tree->leaf[i].as_link, pT_(leaf_to_dir)(tree, i));
@@ -783,7 +783,7 @@ static void pT_(graph_tree_bits)(const struct pT_(tree) *const tree,
 	for(i = 0; i <= tree->bsize; i++) {
 		struct { unsigned br0, br1, lf; } in_tree;
 		size_t bit = treebit;
-		if(!trie_bmp_test(&tree->bmp, i)) continue;
+		if(!tree->branch[i].link) continue;
 		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
 		while(in_tree.br0 < in_tree.br1) {
 			const struct trie_branch *branch = tree->branch + in_tree.br0;
@@ -822,7 +822,7 @@ static void pT_(graph_tree_mem)(const struct pT_(tree) *const tree,
 	for(i = 0; i <= tree->bsize; i++) {
 		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
 		const char *key = pT_(sample)(tree, i);
-		const unsigned is_link = trie_bmp_test(&tree->bmp, i);
+		const unsigned is_link = tree->branch[i].link;
 		if(i < tree->bsize) {
 			branch = tree->branch + i;
 			fprintf(fp, "\t<tr>\n"
@@ -846,7 +846,7 @@ static void pT_(graph_tree_mem)(const struct pT_(tree) *const tree,
 		"\t<tr><td></td></tr>\n"
 		"</table>>];\n");
 	/* Draw the lines between trees. */
-	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->bmp, i))
+	for(i = 0; i <= tree->bsize; i++) if(tree->branch[i].link)
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
 		"[style = dashed, arrowhead = %snormal];\n", (const void *)tree, i,
 		(const void *)tree->leaf[i].as_link, pT_(leaf_to_dir)(tree, i));
@@ -854,7 +854,7 @@ static void pT_(graph_tree_mem)(const struct pT_(tree) *const tree,
 	for(i = 0; i <= tree->bsize; i++) {
 		struct { unsigned br0, br1, lf; } in_tree;
 		size_t bit = treebit;
-		if(!trie_bmp_test(&tree->bmp, i)) continue;
+		if(!tree->branch[i].link) continue;
 		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
 		while(in_tree.br0 < in_tree.br1) {
 			branch = tree->branch + in_tree.br0;
@@ -892,7 +892,7 @@ static void pT_(graph_tree_logic)(const struct pT_(tree) *const tr,
 					(const void *)tr, b + 1);
 			} else {
 				unsigned leaf = pT_(left_leaf)(tr, b);
-				if(trie_bmp_test(&tr->bmp, leaf)) {
+				if(tr->branch[leaf].link) {
 					const struct pT_(tree) *const child =tr->leaf[leaf].as_link;
 					const char *root_str = child->bsize ? "branch" : "leaf";
 					fprintf(fp,
@@ -910,7 +910,7 @@ static void pT_(graph_tree_logic)(const struct pT_(tree) *const tr,
 					(const void *)tr, b + left + 1);
 			} else {
 				unsigned leaf = pT_(left_leaf)(tr, b) + left + 1;
-				if(trie_bmp_test(&tr->bmp, leaf)) {
+				if(tr->branch[leaf].link) {
 					const struct pT_(tree) *const child =tr->leaf[leaf].as_link;
 					const char *root_str = child->bsize ? "branch" : "leaf";
 					fprintf(fp,
@@ -927,7 +927,7 @@ static void pT_(graph_tree_logic)(const struct pT_(tree) *const tr,
 
 	fprintf(fp, "\t// leaves\n");
 
-	for(i = 0; i <= tr->bsize; i++) if(!trie_bmp_test(&tr->bmp, i)) {
+	for(i = 0; i <= tr->bsize; i++) if(!tr->branch[i].link) {
 		union { const struct pT_(tree) *readonly; struct pT_(tree) *promise; }
 			slybox;
 		struct pT_(ref) ref;
@@ -937,7 +937,7 @@ static void pT_(graph_tree_logic)(const struct pT_(tree) *const tr,
 			(const void *)tr, i, pT_(ref_to_string)(&ref));
 	}
 
-	for(i = 0; i <= tr->bsize; i++) if(trie_bmp_test(&tr->bmp, i))
+	for(i = 0; i <= tr->bsize; i++) if(tr->branch[i].link)
 		pT_(graph_tree_logic)(tr->leaf[i].as_link, 0, fp);
 }
 

@@ -55,12 +55,10 @@ static void contrived_test(void) {
 	printf("offset in <str>tree:\n"
 		" bsize: %lu\n"
 		" branch: %lu\n"
-		" bmp: %lu\n"
 		" leaf: %lu\n"
 		" whole struct: %lu\n",
 		(unsigned long)offsetof(struct private_str_trie_tree, bsize),
 		(unsigned long)offsetof(struct private_str_trie_tree, branch),
-		(unsigned long)offsetof(struct private_str_trie_tree, bmp),
 		(unsigned long)offsetof(struct private_str_trie_tree, leaf),
 		(unsigned long)sizeof(struct private_str_trie_tree));
 	assert(CHAR_BIT == 8 && ' ' ^ '!' == 1); /* Assumed UTF-8 for tests. */

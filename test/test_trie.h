@@ -46,7 +46,7 @@ static void pT_(valid_tree)(/*const*/ struct pT_(tree) *const tree) {
 	for(i = 0; i < tree->bsize; i++)
 		assert(tree->branch[i].left < tree->bsize - i);
 	for(i = 0; i <= tree->bsize; i++) {
-		if(trie_bmp_test(&tree->bmp, i)) {
+		if(tree->branch[i].link) {
 			pT_(valid_tree)(tree->leaf[i].as_link);
 		} else {
 			const char *str2;
