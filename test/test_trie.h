@@ -121,9 +121,9 @@ static void pT_(test)(void) {
 			);
 		switch(
 #	ifndef TRIE_ENTRY /* <!-- key set */
-		T_(try)(&trie, k)
+		T_(add)(&trie, k)
 #	else /* key set --><!-- map */
-		T_(try)(&trie, k, &e)
+		T_(add)(&trie, k, &e)
 #	endif /* map --> */
 		) {
 		case TRIE_ERROR: perror("trie"); assert(0); return;
@@ -255,9 +255,9 @@ static void pT_(test_random)(void) {
 			/*printf("Creating %s: ", pT_(key_string)(key));*/
 			switch(
 #	ifdef TRIE_ENTRY
-				T_(try)(&trie, key, &e)
+				T_(add)(&trie, key, &e)
 #	else
-				T_(try)(&trie, key)
+				T_(add)(&trie, key)
 #	endif
 			) {
 			case TRIE_ERROR:

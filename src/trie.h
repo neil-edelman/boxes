@@ -236,9 +236,9 @@ enum trie_result T_(match)(const struct t_(trie) *, const char *, pT_(remit) *);
 enum trie_result T_(get)(const struct t_(trie) *, const char *, pT_(remit) *);
 #		endif
 #		ifndef TRIE_ENTRY
-enum trie_result T_(try)(struct t_(trie) *, pT_(key));
+enum trie_result T_(add)(struct t_(trie) *, pT_(key));
 #		else
-enum trie_result T_(try)(struct t_(trie) *, pT_(key), pT_(entry) **);
+enum trie_result T_(add)(struct t_(trie) *, pT_(key), pT_(entry) **);
 #		endif
 int T_(remove)(struct t_(trie) *, const char *);
 #	endif
@@ -846,7 +846,7 @@ static enum trie_result T_(get)(const struct t_(trie) *const trie,
 
 #		ifndef TRIE_ENTRY /* <!-- set */
 /** Adds `key` to `trie` (which must both exist) if it doesn't exist. */
-static enum trie_result T_(try)(struct t_(trie) *const trie,
+static enum trie_result T_(add)(struct t_(trie) *const trie,
 	const pT_(key) key) {
 	assert(trie && t_(string)(key));
 	return pT_(add)(trie, key, 0);
@@ -867,7 +867,7 @@ static enum trie_result T_(try)(struct t_(trie) *const trie,
  @throws[EILSEQ] The string has a distinguishing run of bytes with a
  neighbouring string that is too long. On most platforms, this is about
  32 bytes the same. @throws[malloc] @allow */
-static enum trie_result T_(try)(struct t_(trie) *const trie,
+static enum trie_result T_(add)(struct t_(trie) *const trie,
 	const pT_(key) key, pT_(entry) **const entry) {
 	enum trie_result result;
 	struct pT_(ref) r;
@@ -912,12 +912,11 @@ static void pT_(unused_base)(void) {
 	T_(match)(0, 0, 0); T_(get)(0, 0, 0);
 #		endif
 #		ifdef TRIE_ENTRY
-	T_(try)(0, 0, 0);
+	T_(add)(0, 0, 0);
 #		else
-	T_(try)(0, 0);
+	T_(add)(0, 0);
 #		endif
 	T_(remove)(0, 0); T_(entry)(0); T_(prefix)(0, 0);
-	/*T_(trie_size)(0);*/
 	pT_(unused_base_coda)();
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
