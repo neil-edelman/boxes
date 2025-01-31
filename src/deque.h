@@ -67,20 +67,18 @@
 /** A valid tag type set by `DEQUE_TYPE`. */
 typedef DEQUE_TYPE pT_(type);
 
+/** A linked-list of blocks. */
 struct pT_(block) {
-	struct pT_(block) *next;
+	struct pT_(block) *previous;
 	size_t capacity, size;
 	pT_(type) data[];
 };
 
-/** Manages the array field `data` which has `size` elements. The space is
- indexed up to `capacity`, which is at least `size`.
-
- ![States.](../doc/array/states.png) */
-struct t_(deque) { struct pT_(block) *first; };
+/** Manages a linked-list of blocks. */
+struct t_(deque) { struct pT_(block) *last; };
 typedef struct t_(deque) pT_(box);
 /* !data -> !size, data -> capacity >= min && size <= capacity <= max */
-struct T_(cursor) { struct pT_(block) *b; size_t i; };
+struct T_(cursor) { struct pT_(block) *block; size_t i; };
 
 #	ifdef BOX_NON_STATIC /* Public functions. */
 struct T_(cursor) T_(begin)(const struct t_(deque) *);
@@ -89,89 +87,98 @@ pT_(type) *T_(entry)(struct T_(cursor) *);
 void T_(next)(struct T_(cursor) *);
 struct t_(deque) t_(deque)(void);
 void t_(deque_)(struct t_(deque) *const);
-pT_(type) *T_(append)(struct t_(array) *, size_t);
 pT_(type) *T_(new)(struct t_(array) *);
+pT_(type) *T_(append)(struct t_(array) *, size_t);
 void T_(clear)(struct t_(array) *);
 #	endif
 #	ifndef BOX_DECLARE_ONLY /* Produce code. */
+
+/**
+ @param[n] [0, ⌈SIZE_MAX/2⌉] */
+static pT_(type) *pT_(append)(struct t_(deque) *const deque, const size_t n) {
+	struct pT_(block) *last, *new_block;
+	size_t capacity;
+	if(!n) return 0;
+	if(n < (size_t)~0 ^ ((size_t)~0 >> 1)) { errno = ERANGE; return 0; }
+	if(!(last = deque->last)) {
+		/* Idle. */
+		capacity = 32;
+	} else if((capacity = last->capacity) - last->size >= n) {
+		/* Expected outcome. */
+		pT_(type) *const found = last->data + last->size;
+		last->size += n;
+		return found;
+	}
+	/* Another block is needed. */
+	for( ; n > capacity; capacity *= 2);
+	if(!(new_block = malloc(sizeof *new_block
+		+ sizeof *new_block->data * capacity)))
+		{ if(!errno) errno = ERANGE; return 0; }
+	new_block->capacity = capacity;
+	new_block->size = n;
+	/* If the last is empty, free it. This can happen due to hysteresis. */
+	if(last && !last->size) {
+		deque->last = last->previous;
+		free(last);
+		last = deque->last;
+	}
+	/* Stick the new block in. */
+	new_block->previous = last;
+	deque->last = new_block;
+	return new_block->data;
+}
 
 #		define BOX_PUBLIC_OVERRIDE
 #		include "box.h"
 
 /** @return A cursor at the beginning of a valid `d`. */
-static struct T_(cursor) T_(begin)(const struct t_(deque) *const d) {
-	//union { const struct t_(deque) *readonly; struct t_(deque) *promise; } sly;
+static struct T_(cursor) T_(begin)(const struct t_(deque) *const deque) {
 	struct T_(cursor) cur;
-	assert(d);
-	//cur.b = (sly.readonly = d, sly.promise)->first, cur.i = 0;
-	cur.b = d->first, cur.i = 0;
+	assert(deque);
+	cur.block = deque->last, cur.i = 0;
+	if(!cur.block->size) cur.block = cur.block->previous;
 	return cur;
 }
 /** @return Whether `cur` points to a valid entry. */
 static int T_(exists)(const struct T_(cursor) *const cur)
-	{ return cur && cur->b && cur->i < cur->b->size; }
+	{ return cur && cur->block && cur->i < cur->block->size; }
 /** @return Pointer to a valid entry at `cur`. */
 static pT_(type) *T_(entry)(struct T_(cursor) *const cur)
-	{ return cur->b->data + cur->i; }
+	{ return cur->block->data + cur->i; }
 /** Move to the next of a valid `cur`. */
 static void T_(next)(struct T_(cursor) *const cur)
-	{ if(++cur->i == cur->b->size) cur->b = cur->b->next, cur->i = 0; }
+	{ if(++cur->i == cur->block->size) cur->block = cur->block->previous, cur->i = 0; }
 
 /** Zeroed data (not all-bits-zero) is initialized, as well.
  @return An idle deque. @order \Theta(1) @allow */
 static struct t_(deque) t_(deque)(void)
-	{ struct t_(deque) d; d.first = 0; return d; }
+	{ struct t_(deque) d; d.last = 0; return d; }
 
-/** If `d` is not null, returns the idle zeroed state where it takes no dynamic
- memory. @order \Theta(1) @allow */
-static void t_(deque_)(struct t_(deque) *const d) {
-	if(!d) return;
-	while(d->first) {
-		struct pT_(block) *const block = d->first;
-		d->first = block->next;
+/** If `deque` is not null, returns the idle zeroed state where it takes no
+ dynamic memory. @order \Theta(1) @allow */
+static void t_(deque_)(struct t_(deque) *const deque) {
+	if(!deque) return;
+	while(deque->last) {
+		struct pT_(block) *const block = deque->last;
+		deque->last = block->previous;
 		free(block);
 	}
-	*d = t_(deque)();
+	*deque = t_(deque)();
 }
 
-/** Adds `n` contiguous elements to the back of `d`.
- @implements `append` from `BOX_CONTIGUOUS`
- @return A pointer to the elements. If `a` is idle and `n` is zero, a null
- pointer will be returned, otherwise null indicates an error.
- @throws[realloc, ERANGE] @allow */
-static pT_(type) *T_(append)(struct t_(deque) *const d, const size_t n) {
-	/*pT_(type) *b;*/
-	struct pT_(block) *b;
-	size_t size;
-	if(!n) return 0;
-	if(b->capacity - b->size >= n) {
-		unsigned char *found = d->first->data + d->size;
-		d->size += n;
-		return found;
-	}
-	for(size = d->capacity ? d->capacity * 2 : 32; size <= n; size *= 2);
-	if(!(b = malloc(sizeof *b + sizeof *b->data * size)))
-		{ if(!errno) errno = ERANGE; return 0; }
-	d->capacity = size;
-	d->size = n;
-	c->last = d->first, d->first = c;
-	printf("c is a new buffer of %zu chars, %zu taken up.", size, n);
-	printf("char_deque %p->", (void *)d);
-	for(struct private_char_contiguous *it = d->first; it; it = it->last) {
-		printf("%p->", (void *)it);
-	}
-	printf("\n");
-	return &b->data[0];
-	if(!(b = T_(buffer)(a, n))) return 0;
-	assert(n <= a->capacity && a->size <= a->capacity - n);
-	return a->size += n, b;
-}
-
-/** @return Adds (push back) one new element of `a`. The buffer space holds at
- least one element, or it may invalidate pointers in `a`.
+/** @return Adds one new element to the back of `deque`.
  @order amortised \O(1) @throws[realloc, ERANGE] @allow */
-static pT_(type) *T_(new)(struct t_(array) *const a)
-	{ return T_(append)(a, 1); }
+static pT_(type) *T_(new)(struct t_(deque) *const deque)
+	{ return assert(deque), pT_(append)(deque, 1); }
+
+/** Adds `n` contiguous elements to the back of `deque`.
+ @return A pointer to the elements. If `n` is zero, a null pointer will be
+ returned, otherwise null indicates an error.
+ @throws[realloc, ERANGE] @allow */
+static pT_(type) *T_(append)(struct t_(deque) *const deque, const size_t n)
+	{ return assert(deque), pT_(append)(deque, n); }
+
+/* fixme: erase */
 
 /** Sets `d` to be empty. That is, the size of `d` will be zero, but if it was
  previously in an active non-idle state, it continues to be.
@@ -184,11 +191,8 @@ static void T_(clear)(struct t_(deque) *const d)
 
 static void pT_(unused_base_coda)(void);
 static void pT_(unused_base)(void) {
-	T_(begin)(0); T_(at)(0, 0); T_(exists)(0); T_(entry)(0); T_(next)(0);
-	T_(size)(0); T_(data_at)(0, 0); T_(tell_size)(0, 0);
-	t_(array)(); t_(array_)(0); T_(insert)(0, 0, 0); T_(new)(0); T_(shrink)(0);
-	T_(remove)(0, 0); T_(lazy_remove)(0, 0); T_(clear)(0); T_(peek)(0);
-	T_(pop)(0); T_(append)(0, 0); T_(splice)(0, 0, 0, 0);
+	T_(begin)(0); T_(exists)(0); T_(entry)(0); T_(next)(0);
+	t_(deque)(); t_(deque_)(0); T_(new)(0); T_(append)(0, 0); T_(clear)(0);
 	pT_(unused_base_coda)();
 }
 static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
