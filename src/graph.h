@@ -140,18 +140,30 @@ static void T_(graph)(const struct t_(deque) *const deque, FILE *const fp) {
 		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td align=\"left\">"
 		"<font color=\"Gray75\">&lt;" QUOTE(DEQUE_NAME)
-		"&gt;deque: " QUOTE(DEQUE_TYPE) "</font></td></tr>\n"
+		"&gt;deque</font></td></tr>\n"
+		"\t<hr/>\n"
+		"\t<tr><td align=\"left\">" QUOTE(DEQUE_TYPE) "</td></tr>\n"
 		"</table>>];\n", shape);
-	for(block = deque->back; block; block = block->previous) {
+
+#			ifdef DEQUE_FRONT
+	for(block = deque->front; block; block = block->next)
+#			else
+	for(block = deque->back; block; block = block->previous)
+#			endif
+	{
 		fprintf(fp, "\t%s -> ", shape);
 		sprintf(shape, "block%p", (void *)block);
-		fprintf(fp, "%s;\n"
-			"\tblock%p [label=<\n"
+#			ifdef DEQUE_FRONT
+		fprintf(fp, "%s;\n", shape);
+#			else
+		fprintf(fp, "%s [style=\"dashed\"];\n", shape);
+#			endif
+		fprintf(fp, "\tblock%p [label=<\n"
 			"<table border=\"0\" cellspacing=\"0\">\n"
 			"\t<tr><td colspan=\"2\" align=\"left\">"
 			"<font color=\"Gray75\">%s</font></td></tr>\n"
 			"\t<tr><td colspan=\"2\" align=\"left\">%lu/%lu</td></tr>\n"
-			"\t<hr/>\n", shape, (void *)block, orcify(block),
+			"\t<hr/>\n", (void *)block, orcify(block),
 			(unsigned long)block->size,
 			(unsigned long)block->capacity);
 		for(i = 0; i < block->size; i++) {
@@ -167,6 +179,14 @@ static void T_(graph)(const struct t_(deque) *const deque, FILE *const fp) {
 		fprintf(fp, "\t<tr><td></td></tr>\n"
 			"</table>>];\n");
 	}
+#			ifdef DEQUE_FRONT
+	strcpy(shape, "deque");
+	for(block = deque->back; block; block = block->previous) {
+		fprintf(fp, "\t%s -> ", shape);
+		sprintf(shape, "block%p", (void *)block);
+		fprintf(fp, "%s [style=\"dashed\"];\n", shape);
+	}
+#			endif
 	fprintf(fp, "}\n");
 }
 

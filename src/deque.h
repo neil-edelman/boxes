@@ -6,7 +6,8 @@
  @subtitle Deque
 
  <tag:<t>deque> is a stable container that stores <typedef:<pT>type>; it grows
- as the capacity increases but is not necessarily contagious.
+ as the capacity increases but is not necessarily contagious. The default
+ behaviour is a stack that grows downwards.
 
  @param[DEQUE_NAME, DEQUE_TYPE]
  `<t>` that satisfies `C` naming conventions when mangled and a valid tag-type,
@@ -14,6 +15,7 @@
 
  @param[DEQUE_FRONT]
  This adds double-linking in the blocks so the deque can iterated forwards.
+ Changes the order of the default iteration.
 
  @param[DEQUE_PUSH_FRONT]
  The default deque is only a stack that grows down. This replaces the index
@@ -153,11 +155,12 @@ static pT_(type) *pT_(append_back)(struct t_(deque) *const deque, const size_t n
 		back = deque->back;
 	}
 	/* Stick the new block in. */
-	new_block->previous = back;
 #	ifdef DEQUE_FRONT
-	if(deque->back) deque->back->next = new_block;
 	new_block->next = 0;
+	if(deque->back) assert(!deque->back->next), deque->back->next = new_block;
+	else assert(!deque->front), deque->front = new_block;
 #	endif
+	new_block->previous = back;
 	deque->back = new_block;
 	return new_block->data;
 }
@@ -173,7 +176,6 @@ static struct T_(cursor) T_(end)(const struct t_(deque) *const deque) {
 	/* Can have the head have 0 items, but not the rest. */
 	if(cur.block && !cur.block->size) cur.block = cur.block->previous;
 	cur.i = cur.block ? cur.block->size - 1 : 0;
-	printf("::end %zu\n", cur.i);
 	return cur;
 }
 /** @return Whether `cur` points to a valid entry. */
@@ -249,15 +251,19 @@ static pT_(type) *T_(append_back)(struct t_(deque) *const deque, const size_t n)
  previously in an active non-idle state, it continues to be.
  @order \Theta(1) @allow */
 static void T_(clear)(struct t_(deque) *const deque) {
-	struct pT_(block) *head;
+	struct pT_(block) *back;
 	assert(deque);
-	if(!(head = deque->back)) return;
-	head->size = 0;
-	while(head->previous) {
-		struct pT_(block) *fold = head->previous->previous;
-		free(head->previous);
-		head->previous = fold;
+	if(!(back = deque->back)) return;
+	back->size = 0;
+	while(back->previous) {
+		struct pT_(block) *fold = back->previous->previous;
+		free(back->previous);
+		back->previous = fold;
 	}
+#		ifdef DEQUE_FRONT
+	deque->front = back;
+	back->next = 0;
+#		endif
 }
 
 #		define BOX_PRIVATE_AGAIN
