@@ -12,6 +12,52 @@ int T_(graph_fn)(const pT_(box) *, const char *);
 #	endif
 #	ifndef BOX_DECLARE_ONLY
 
+/* fixme: Should really do a sanitized input. */
+#	if 0
+#	ifndef GRAPH_SANITIZE
+#		define GRAPH_SANITIZE
+#include <ctype.h>
+static const char *private_box_sanitize(const char *str) {
+	static char sanitized[64];
+	const char hex[] = "0123456789abcdef";
+	size_t i = 0;
+	/* fixme: this is too conservative. */
+	for(i = 0; i < sizeof *sanitized - 1 /*nul*/ - 3 /*…*/
+		- 6 /*&amp;,&quot;,&#039;,&lt;,&gt;*/; ) {
+		const char s = *(str++);
+		if(s == '\0') { sanitized[i] = '\0'; return sanitized; }
+		else if((s & 0x80) == 0 && !isgraph(s)) {
+			sanitized[i++] = 'x';
+			sanitized[i++] = hex[s >> 4u];
+			sanitized[i++] = hex[s & 0x0f];
+			continue;
+		} else switch(s) {
+		case '&': sanitized[i++] = '&'; sanitized[i++] = 'a';
+			sanitized[i++] = 'm'; sanitized[i++] = 'p'; sanitized[i++] = ';';
+			break;
+		case '\"': sanitized[i++] = '&'; sanitized[i++] = 'q';
+			sanitized[i++] = 'u'; sanitized[i++] = 'o'; sanitized[i++] = 't';
+			sanitized[i++] = ';'; break;
+		case '\'': sanitized[i++] = '&'; sanitized[i++] = '#';
+			sanitized[i++] = '0'; sanitized[i++] = '3'; sanitized[i++] = '9';
+			sanitized[i++] = ';'; break;
+		case '<': sanitized[i++] = '&'; sanitized[i++] = 'g';
+			sanitized[i++] = 't'; sanitized[i++] = ';'; break;
+		case '>': sanitized[i++] = '&'; sanitized[i++] = 'l';
+			sanitized[i++] = 't'; sanitized[i++] = ';'; break;
+		default:
+			sanitized[i++] = s;
+		}
+	}
+	sanitized[i++] = (char)0xe2; /* … */
+	sanitized[i++] = (char)0x80;
+	sanitized[i++] = (char)0xa6;
+	sanitized[i++] = (char)0x00;
+	return sanitized;
+}
+#	endif
+#	endif
+
 /* Must link the file produced by compiling `orcish.c` to do tests or get
  graphs. (It is particularly useful for debugging—it translates gobbledygook
  pointer addresses into more semi-meaningful deterministic orc names. We have
@@ -73,6 +119,55 @@ static void T_(graph)(const struct t_(array) *const array, FILE *const fp) {
 no_data:
 	fprintf(fp, "\tnode [colour=\"Red\"];\n"
 		"}\n");
+}
+
+#		elif defined DEQUE_NAME
+
+#			define BOX_PUBLIC_OVERRIDE
+#			include "box.h"
+
+/** Draw a graph of `deque` to `fp` in Graphviz format. */
+static void T_(graph)(const struct t_(deque) *const deque, FILE *const fp) {
+	size_t i;
+	char z[12];
+	char shape[64] = "deque";
+	struct pT_(block) *block;
+	fprintf(fp, "digraph {\n"
+		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
+		" fontname=modern];\n"
+		"\tnode [shape=none, fontname=modern];\n"
+		"\t%s [label=<\n"
+		"<table border=\"0\" cellspacing=\"0\">\n"
+		"\t<tr><td align=\"left\">"
+		"<font color=\"Gray75\">&lt;" QUOTE(DEQUE_NAME)
+		"&gt;deque: " QUOTE(DEQUE_TYPE) "</font></td></tr>\n"
+		"</table>>];\n", shape);
+	for(block = deque->back; block; block = block->previous) {
+		fprintf(fp, "\t%s -> ", shape);
+		sprintf(shape, "block%p", (void *)block);
+		fprintf(fp, "%s;\n"
+			"\tblock%p [label=<\n"
+			"<table border=\"0\" cellspacing=\"0\">\n"
+			"\t<tr><td colspan=\"2\" align=\"left\">"
+			"<font color=\"Gray75\">%s</font></td></tr>\n"
+			"\t<tr><td colspan=\"2\" align=\"left\">%lu/%lu</td></tr>\n"
+			"\t<hr/>\n", shape, (void *)block, orcify(block),
+			(unsigned long)block->size,
+			(unsigned long)block->capacity);
+		for(i = 0; i < block->size; i++) {
+			const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
+			t_(to_string)((void *)(block->data + i), &z);
+			fprintf(fp, "\t<tr>\n"
+				"\t\t<td align=\"right\"%s>"
+				"<font face=\"Times-Italic\">%lu</font></td>\n"
+				"\t\t<td align=\"left\"%s>%s</td>\n"
+				"\t</tr>\n", bgc, (unsigned long)i, bgc, z);
+		}
+		if(block->size) fprintf(fp, "\t<hr/>\n");
+		fprintf(fp, "\t<tr><td></td></tr>\n"
+			"</table>>];\n");
+	}
+	fprintf(fp, "}\n");
 }
 
 #		elif defined HEAP_NAME

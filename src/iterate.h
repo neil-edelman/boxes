@@ -44,8 +44,14 @@ static pT_(type) *TR_(any)(const pT_(box) *const box,
 	union { const pT_(box) *readonly; pT_(box) *promise; } slybox;
 	struct T_(cursor) it;
 	assert(box && predicate);
+#	ifdef ITERATE_BACK
+	for(slybox.readonly = box, it = T_(end)(slybox.promise);
+		T_(exists)(&it); T_(previous)(&it))
+#	else
 	for(slybox.readonly = box, it = T_(begin)(slybox.promise);
-		T_(exists)(&it); T_(next)(&it)) {
+		T_(exists)(&it); T_(next)(&it))
+#	endif
+	{
 		pT_(type) *i = T_(entry)(&it);
 		if(predicate(i)) return i;
 	}
@@ -59,7 +65,11 @@ static pT_(type) *TR_(any)(const pT_(box) *const box,
 static void TR_(each)(pT_(box) *const box, const pTR_(action_fn) action) {
 	struct T_(cursor) it;
 	assert(box && action);
+#	ifdef ITERATE_BACK
+	for(it = T_(end)(box); T_(exists)(&it); T_(previous)(&it))
+#	else
 	for(it = T_(begin)(box); T_(exists)(&it); T_(next)(&it))
+#	endif
 		action(T_(entry)(&it));
 }
 
@@ -72,7 +82,12 @@ static void TR_(if_each)(pT_(box) *const box,
 	assert(box && predicate && action);
 	/* fixme: Could I to remove `i` from the list? */
 	/* 2024-11-25: it depends what container… but yes, inefficiently. */
-	for(it = T_(begin)(box); T_(exists)(&it); T_(next)(&it)) {
+#	ifdef ITERATE_BACK
+	for(it = T_(end)(box); T_(exists)(&it); T_(previous)(&it))
+#	else
+	for(it = T_(begin)(box); T_(exists)(&it); T_(next)(&it))
+#	endif
+	{
 		pT_(type) *v = T_(entry)(&it);
 		if(predicate(v)) action(v);
 	}
@@ -186,3 +201,6 @@ static void pTR_(unused_function)(void) {
 static void pTR_(unused_iterate_coda)(void) { pTR_(unused_function)(); }
 
 #endif /* Produce code. */
+#ifdef ITERATE_BACK
+#	undef ITERATE_BACK
+#endif
