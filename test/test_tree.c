@@ -787,8 +787,8 @@ int main(void) {
 	/* Trie is apparently tied to tree in Xcode. It's not working. */
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	char_tree_test();
-	/*char_bounds();
+	/*char_tree_test();
+	char_bounds();
 	int_tree_test();
 	order3_tree_test();
 	order3();

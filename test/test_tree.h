@@ -67,7 +67,6 @@ static void pT_(test)(void) {
 	pT_(key) k, k_prev;
 	size_t i, n_unique = 0, n_unique2;
 	char fn[64];
-	/*int succ;*/
 
 	errno = 0;
 
@@ -278,6 +277,7 @@ static void pT_(test)(void) {
 	/* Delete all. Removal invalidates iterator. */
 	for(cur = T_(begin)(&tree), i = 0; T_(exists)(&cur); ) {
 		/**/char z[12];/**/
+		int succ;
 		k = T_(key)(&cur);
 /**/
 #	ifdef TREE_VALUE
@@ -291,7 +291,10 @@ static void pT_(test)(void) {
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
 		assert(T_(contains)(&tree, k));
-		T_(remove)(&tree, k);
+		T_(graph_fn)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-a-before.gv");
+		succ = T_(remove)(&tree, k);
+		T_(graph_fn)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-a-after.gv");
+		assert(succ);
 		assert(!T_(contains)(&tree, k));
 		cur = T_(more)(&tree, k);
 		/**/printf("Iterator now %s:h%u:i%u.\n",

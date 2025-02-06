@@ -397,11 +397,11 @@ static int pT_(remove)(struct pT_(tree) *const tree, const pT_(key) x) {
 	/* Important when `rm = parent`; `find_idx` later. */
 	parent.height = rm.height + 1;
 	assert(rm.idx < rm.node->size);
-	if(rm.height) goto branch; else goto upward;
+	if(rm.height /**/> 1) goto branch; else goto upward;
 branch: {
 	struct { struct pT_(ref) leaf; struct pT_(bough) *parent; unsigned top; }
 		pred, succ, chosen;
-	assert(rm.height);
+	assert(rm.height /**/>1);
 	/* Predecessor leaf. */
 	pred.leaf = rm, pred.top = 0 /*UINT_MAX*/;
 	do {
@@ -661,7 +661,7 @@ space: /* Node is root or has more than `TREE_MIN`; branches taken care of. */
 #		endif
 	if(!--rm.node->size) {
 		assert(rm.node == tree->bough);
-		if(tree->height) {
+		if(tree->height /**/>1) {
 			tree->bough = pT_(as_branch)(rm.node)->child[0];
 			tree->height--;
 			free(pT_(as_branch)(rm.node));
@@ -1529,8 +1529,8 @@ static enum tree_result T_(update)(struct t_(tree) *const tree,
 /** Tries to remove `key` from `tree`. @return Success, otherwise it was not in
  `tree`. @order \Theta(\log |`tree`|) @allow */
 static int T_(remove)(struct t_(tree) *const tree, const pT_(key) key)
-	{ return !!tree && !!tree->trunk.bough
-	&& tree->trunk.height && pT_(remove)(&tree->trunk, key); }
+	{ return assert(tree), !!tree->trunk.bough
+	&& tree->trunk.height /**/> 1 && pT_(remove)(&tree->trunk, key); }
 
 /** `source` is copied to, and overwrites, `tree`.
  @param[source] In the case where it's null or idle, if `tree` is empty, then
