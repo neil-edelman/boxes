@@ -36,10 +36,11 @@
  the entry is the key. Requires <typedef:<pT>key_fn> `<t>key`, that picks out
  <typedef:<pT>key> from <typedef:<pT>entry>.
 
- @param[TRIE_TO_STRING]
- To string trait contained in <src/to_string.h>. The unnamed trait is
- automatically supplied by the string, but others see
- <typedef:<pT>to_string_fn>.
+ @param[TRIE_TO_STRING, TRIE_KEY_TO_STRING]
+ To string trait contained in <src/to_string.h>. For `TRIE_TO_STRING`, see
+ <typedef:<pT>to_string_fn>; alternately, for `TRIE_KEY_TO_STRING`, the key is
+ suppled to the string directly under the assumption that it is a (possibly
+ subset) of utf-8 encoding, possibly truncated at the last code-point.
 
  @param[TRIE_EXPECT_TRAIT, TRIE_TRAIT]
  Named traits are obtained by including `trie.h` multiple times with
@@ -85,7 +86,11 @@
 #if !defined BOX_ENTRY1 && (defined TRIE_TRAIT ^ defined BOX_MAJOR)
 #	error Trait name must come after expect trait.
 #endif
-#if defined TRIE_TEST && (!defined TRIE_TRAIT && !defined TRIE_TO_STRING \
+#if defined TRIE_TO_STRING && defined TRIE_KEY_TO_STRING
+#	error Exclusive.
+#endif
+#if defined TRIE_TEST && (!defined TRIE_TRAIT \
+	&& !(defined TRIE_TO_STRING || defined TRIE_KEY_TO_STRING) \
 	|| defined TRIE_TRAIT && !defined TRIE_HAS_TO_STRING)
 #	error Test requires to string.
 #endif
@@ -923,34 +928,64 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 #	endif /* body --> */
 #endif /* base code --> */
 
-#ifdef TRIE_TO_STRING
-#	undef TRIE_TO_STRING
-#	ifndef TRIE_DECLARE_ONLY
-#		ifndef TRIE_TRAIT
-/* #			ifdef TRIE_VALUE fixme */
-/** Thunk(`cur`, `a`), transforming a cursor to the key string. */
-static void pT_(to_string)(const struct T_(cursor) *const cur,
+
+#if defined TRIE_TO_STRING || defined TRIE_KEY_TO_STRING
+#	ifdef TRIE_TO_STRING
+#		undef TRIE_TO_STRING
+#		ifndef TRIE_DECLARE_ONLY
+#			ifndef TRIE_TRAIT
+#				ifdef TREE_VALUE
+/** The type of the required `<tr>to_string`. Responsible for turning the
+ read-only argument into a 12-max-`char` output string. `<pT>value` is omitted
+ when it's a set. */
+typedef void (*pT_(to_string_fn))(const pT_(key), const pT_(value) *,
+	char (*)[12]);
+#				else
+typedef void (*pT_(to_string_fn))(const pT_(key), char (*)[12]);
+#				endif
+#			endif
+/** Thunk(`cur`, `a`). One must implement `<tr>to_string` or switch to
+ `TRIE_KEY_TO_STRING`, which uses the key as the string automatically. */
+static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12]) {
-	/* fixme: This is the same code used again and again in all traits. */
+#			ifdef TREE_VALUE
+	tr_(to_string)(cur->ref.node->key[cur->ref.idx],
+		cur->ref.node->value + cur->ref.idx, a);
+#			else
+	tr_(to_string)(cur->ref.node->key[cur->ref.idx], a);
+#			endif
+}
+#		endif
+#	else
+#		undef TRIE_KEY_TO_STRING
+/** Thunk(`cur`, `a`), transforming a cursor to the key string. */
+static void pTR_(to_string)(const struct T_(cursor) *const cur,
+	char (*const a)[12]) {
 	const char *from = pT_(ref_to_string)(&cur->start);
 	unsigned i;
 	char *to = *a;
 	assert(cur && cur->root && a);
-	for(i = 0; i < 11; from++, i++) {
+	for(i = 0; i < 11 - 3; from++, i++) {
 		*to++ = *from;
 		if(*from == '\0') return;
 	}
+	/* Utf-8 assumed. Split at code-point. Still could be grapheme clusters,
+	 but… we take what we can get without a full-functioning text engine. */
+	for( ; i < 11; from++, i++) {
+		const unsigned left = 11 - i;
+		const unsigned char f = (const unsigned char)*from;
+		if(f < 0x80) continue;
+		if(f & 0xe0 == 0xc0) if(left < 2) break; else continue;
+		if(f & 0xf0 == 0xe0) if(left < 3) break; else continue;
+		if(f & 0xf8 == 0xf0) break;
+		/* Very permissive otherwise; we don't actually know anything about the
+		 encoding. */
+		*to++ = *from;
+		if(*from == '\0') return;
+	}
+	/* Fixme: test. */
 	*to = '\0';
 }
-#		else
-/** Type of `TRIE_TO_STRING` needed function `<tr>to_string`. Responsible for
- turning the read-only argument into a 12-max-`char` output string. `<pT>value`
- is omitted when it's a set. Only available to named traits, the
- `TRIE_TO_STRING` of the anonymous trait is implicitly the string itself. */
-typedef void (*pT_(to_string_fn))(const pT_(key), const pT_(entry) *,
-	char (*)[12]);
-#			error Haven't make test yet. Don't see how it would be so useful.
-#		endif
 #	endif
 #	include "to_string.h" /** \include */
 #	ifndef TRIE_TRAIT

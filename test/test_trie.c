@@ -32,7 +32,7 @@ static void str_filler(const char **const key) {
 	*key = backing->str;
 }
 #define TRIE_NAME str
-#define TRIE_TO_STRING /* Uses the keys as strings. For test. */
+#define TRIE_KEY_TO_STRING /* Uses the keys as strings. For test. */
 #define TRIE_TEST
 #include "../src/trie.h"
 
@@ -175,7 +175,7 @@ static void colour_filler(enum colour *const c)
 	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
 #define TRIE_NAME colour
 #define TRIE_KEY enum colour
-#define TRIE_TO_STRING
+#define TRIE_KEY_TO_STRING
 #define TRIE_TEST
 #include "../src/trie.h"
 
@@ -234,7 +234,7 @@ static void str8_filler(struct str8 *const s) {
 }
 #define TRIE_NAME str8
 #define TRIE_ENTRY struct str8
-#define TRIE_TO_STRING
+#define TRIE_KEY_TO_STRING
 #define TRIE_TEST
 #include "../src/trie.h"
 
@@ -251,7 +251,7 @@ static void kv1_filler(struct kv1 *const kv)
 	{ assert(kv), str_filler(&kv->key), kv->value = 42; }
 #define TRIE_NAME kv1
 #define TRIE_ENTRY struct kv1
-#define TRIE_TO_STRING
+#define TRIE_KEY_TO_STRING
 #define TRIE_TEST
 #include "../src/trie.h"
 
@@ -265,7 +265,7 @@ static void kv2_filler(struct kv2 *const kv) {
 }
 #define TRIE_NAME kv2
 #define TRIE_ENTRY struct kv2
-#define TRIE_TO_STRING
+#define TRIE_KEY_TO_STRING
 #define TRIE_TEST
 #include "../src/trie.h"
 
@@ -313,7 +313,7 @@ static void star_filler(struct star *const star) {
 #define TRIE_NAME star
 #define TRIE_ENTRY struct star
 #define TRIE_TEST
-#define TRIE_TO_STRING
+#define TRIE_KEY_TO_STRING
 #include "../src/trie.h"
 
 
