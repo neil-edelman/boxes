@@ -89,7 +89,7 @@ struct pT_(block) {
 	struct pT_(block) *next;
 #	endif
 	size_t capacity, size;
-	pT_(type) data[];
+	pT_(type) data[]; /* Fixme: C99. */
 };
 
 /** Manages a linked-list of blocks. Only the front can have a block-size of
