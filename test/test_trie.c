@@ -13,10 +13,10 @@
 
 /** For testing—have a pool of random names. */
 struct str32 { char str[32]; };
-#define POOL_NAME str32
-#define POOL_TYPE struct str32
-#include "../src/pool.h"
-static struct str32_pool str_pool; /* Global random string buffer. */
+#define DEQUE_NAME str32
+#define DEQUE_TYPE struct str32
+#include "../src/deque.h"
+static struct str32_deque str_storage; /* Global random string buffer. */
 
 
 /* A set of strings stored somewhere else; one must keep the storage for the
@@ -25,7 +25,7 @@ static struct str32_pool str_pool; /* Global random string buffer. */
  index and not the keys themselves; the key strings are not accessed, then. */
 /** Generate a random name from `global_pool` and assign it to `key`. */
 static void str_filler(const char **const key) {
-	struct str32 *backing = str32_pool_new(&str_pool);
+	struct str32 *backing = str32_deque_new_back(&str_storage);
 	/* Unlikely to fail, but for tests, we don't have the set-up to back-out. */
 	assert(backing && key); if(!backing || !key) exit(EXIT_FAILURE);
 	orcish(backing->str, sizeof backing->str);
@@ -357,12 +357,12 @@ int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
-	str_trie_test(), str32_pool_clear(&str_pool);
-	contrived_test(), str32_pool_clear(&str_pool);
+	str_trie_test(), str32_deque_clear(&str_storage);
+	contrived_test(), str32_deque_clear(&str_storage);
 	fixed_colour_test();
 	colour_trie_test();
 	str8_trie_test();
-	kv1_trie_test(), str32_pool_(&str_pool);
+	kv1_trie_test(), str32_deque_(&str_storage);
 	kv2_trie_test();
 	star_trie_test();
 	header_trie_test();
