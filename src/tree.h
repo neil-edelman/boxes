@@ -765,7 +765,9 @@ static int pT_(nodes)(const struct t_(tree) *const tree,
 }
 
 #include "orcish.h"
+#		ifdef TREE_TO_STRING
 static void pT_(graph)(const struct pT_(tree) *, FILE *);
+#		endif
 
 #		ifdef TREE_VALUE /* <!-- map */
 /** Adds or updates `key` in `root`. If not-null, `eject` will be the replaced
@@ -782,11 +784,13 @@ static enum tree_result pT_(update)(struct pT_(tree) *const trunk,
 	struct pT_(bough) *new_head = 0;
 	struct pT_(ref) add, hole, cur;
 	assert(trunk);
+#		ifdef TREE_TO_STRING
 	{
 		FILE *fp = fopen("graph/tree/work1.gv", "w");
 		pT_(graph)(trunk, fp);
 		fclose(fp);
 	}
+#		endif
 	if(!(add.node = trunk->bough)) goto idle;
 	else if(!trunk->height) goto empty;
 	goto descend;
@@ -872,14 +876,16 @@ grow: /* Leaf is full. */ {
 } split: { /* Split between the new and existing nodes. */
 	struct pT_(bough) *sibling;
 	sibling = new_head;
+#		ifdef TREE_TO_STRING
 	{
 		FILE *fp = fopen("graph/tree/work2.gv", "w");
 		pT_(graph)(trunk, fp);
 		fclose(fp);
 	}
+#		endif
 	assert(cur.node && cur.node->size && cur.height);
 	/* Easier to descend now while split hasn't happened. */
-	new_head = --cur.height ? pT_(as_branch)(new_head)->child[0] : 0;
+	new_head = --cur.height > 1 ? pT_(as_branch)(new_head)->child[0] : 0;
 	cur.node = pT_(as_branch)(cur.node)->child[cur.idx];
 	pT_(node_lb)(&cur, key);
 	printf("sibling is %s, cur is %s.\n", orcify(sibling), orcify(cur.node));
@@ -962,6 +968,13 @@ grow: /* Leaf is full. */ {
 	hole.node->key[hole.idx] = key;
 #		ifdef TREE_VALUE
 	if(value) *value = pT_(ref_to_valuep)(hole);
+#		endif
+#		ifdef TREE_TO_STRING
+	{
+		FILE *fp = fopen("graph/tree/work3.gv", "w");
+		pT_(graph)(trunk, fp);
+		fclose(fp);
+	}
 #		endif
 	assert(!new_head);
 	return TREE_ABSENT;
@@ -1486,7 +1499,7 @@ static enum tree_result T_(assign)(struct t_(tree) *const tree,
 /** Only if `TREE_VALUE` is not defined. Adds `key` to `tree` only if it is a
  new value, otherwise returns `TREE_PRESENT`. See <fn:<T>assign>, which is the
  map version. @allow */
-static enum tree_result T_(add)(struct t_(tree) *const tree,
+static enum tree_result T_(try)(struct t_(tree) *const tree,
 	const pT_(key) key)
 	{ return assert(tree), pT_(update)(&tree->trunk, key, 0); }
 #		endif /* set --> */
@@ -1609,7 +1622,7 @@ static void pT_(unused_base)(void) {
 	T_(bulk_assign)(0, k, 0); T_(assign)(0, k, 0);
 	T_(update)(0, k, 0, 0); T_(value)(0);
 #		else
-	T_(bulk_add)(0, k); T_(add)(0, k); T_(update)(0, k, 0);
+	T_(bulk_add)(0, k); T_(try)(0, k); T_(update)(0, k, 0);
 #		endif
 	T_(bulk_finish)(0); T_(remove)(0, k); T_(clone)(0, 0);
 	pT_(unused_base_coda)();
