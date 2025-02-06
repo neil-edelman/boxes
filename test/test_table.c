@@ -214,8 +214,8 @@ static void test_default(void) {
 	struct int_table t = int_table();
 	int one, two, def;
 	printf("Testing get defaults.\n");
-	int_table_add(&t, 1);
-	int_table_add(&t, 2);
+	int_table_try(&t, 1);
+	int_table_try(&t, 2);
 	printf("Table %s.\n", int_table_to_string(&t));
 	one = int_table_get_or(&t, 1, 7);
 	two = int_table_get_or(&t, 2, 7);
@@ -247,10 +247,10 @@ static void test_it(void) {
 	int n;
 
 	printf("Testing zodiac remove iterator.\n");
-	if(!zodiac_table_add(&z, Sagittarius) || !zodiac_table_add(&z, Capricorn)
-		|| !zodiac_table_add(&z, Gemini) || !zodiac_table_add(&z, Aries)
-		|| !zodiac_table_add(&z, Virgo) || !zodiac_table_add(&z, Libra)
-		|| !zodiac_table_add(&z, Taurus)) goto catch;
+	if(!zodiac_table_try(&z, Sagittarius) || !zodiac_table_try(&z, Capricorn)
+		|| !zodiac_table_try(&z, Gemini) || !zodiac_table_try(&z, Aries)
+		|| !zodiac_table_try(&z, Virgo) || !zodiac_table_try(&z, Libra)
+		|| !zodiac_table_try(&z, Taurus)) goto catch;
 	zodiac_table_graph_fn(&z, "graph/table/it-z0.gv");
 	printf("Remove all zodiac one at a time.\n");
 	for(zit = zodiac_table_begin(&z), n = 0; zodiac_table_exists(&zit);
@@ -265,7 +265,7 @@ static void test_it(void) {
 	zodiac_table_(&z);
 
 	printf("Testing iteration with elements [0, %d).\n", no_till2);
-	for(n = 0; n < no_till2; n++) if(!int_table_add(&t, n)) goto catch;
+	for(n = 0; n < no_till2; n++) if(!int_table_try(&t, n)) goto catch;
 	int_table_graph_fn(&t, "graph/table/it0.gv");
 	assert(t.size == no_till2);
 	/* Even ones get deleted. */
