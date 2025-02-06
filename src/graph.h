@@ -12,50 +12,30 @@ int T_(graph_fn)(const pT_(box) *, const char *);
 #	endif
 #	ifndef BOX_DECLARE_ONLY
 
-/* fixme: Should really do a sanitized input. */
-#	if 0
 #	ifndef GRAPH_SANITIZE
 #		define GRAPH_SANITIZE
-#include <ctype.h>
-static const char *private_box_sanitize(const char *str) {
-	static char sanitized[64];
-	const char hex[] = "0123456789abcdef";
-	size_t i = 0;
-	/* fixme: this is too conservative. */
-	for(i = 0; i < sizeof *sanitized - 1 /*nul*/ - 3 /*…*/
-		- 6 /*&amp;,&quot;,&#039;,&lt;,&gt;*/; ) {
-		const char s = *(str++);
-		if(s == '\0') { sanitized[i] = '\0'; return sanitized; }
-		else if((s & 0x80) == 0 && !isgraph(s)) {
-			sanitized[i++] = 'x';
-			sanitized[i++] = hex[s >> 4u];
-			sanitized[i++] = hex[s & 0x0f];
-			continue;
-		} else switch(s) {
-		case '&': sanitized[i++] = '&'; sanitized[i++] = 'a';
-			sanitized[i++] = 'm'; sanitized[i++] = 'p'; sanitized[i++] = ';';
-			break;
-		case '\"': sanitized[i++] = '&'; sanitized[i++] = 'q';
-			sanitized[i++] = 'u'; sanitized[i++] = 'o'; sanitized[i++] = 't';
-			sanitized[i++] = ';'; break;
-		case '\'': sanitized[i++] = '&'; sanitized[i++] = '#';
-			sanitized[i++] = '0'; sanitized[i++] = '3'; sanitized[i++] = '9';
-			sanitized[i++] = ';'; break;
-		case '<': sanitized[i++] = '&'; sanitized[i++] = 'g';
-			sanitized[i++] = 't'; sanitized[i++] = ';'; break;
-		case '>': sanitized[i++] = '&'; sanitized[i++] = 'l';
-			sanitized[i++] = 't'; sanitized[i++] = ';'; break;
-		default:
-			sanitized[i++] = s;
+static void private_graph_sanitize(FILE *const fp, const char *str) {
+	const char *lazy = str, *escape;
+	size_t escape_size;
+	assert(str && fp);
+	int keep_going = 1;
+	do {
+		unsigned char ch = (unsigned char)*str;
+		if(ch == '\0') { escape = "", escape_size = 0, keep_going = 0; goto force; }
+		switch(ch) {
+		case '&': escape = "&amp;", escape_size = 5; goto force;
+		case '<': escape = "&lt;", escape_size = 4; goto force;
+		case '>': escape = "&gt;", escape_size = 4; goto force;
+		case '\"': escape = "&quot;", escape_size = 6; goto force;
+		case '\'': escape = "&#39;", escape_size = 5; goto force;
+		default: continue;
 		}
-	}
-	sanitized[i++] = (char)0xe2; /* … */
-	sanitized[i++] = (char)0x80;
-	sanitized[i++] = (char)0xa6;
-	sanitized[i++] = (char)0x00;
-	return sanitized;
+force:
+		fwrite(lazy, 1, (size_t)(str - lazy), fp);
+		fwrite(escape, 1, escape_size, fp);
+		lazy = str + 1;
+	} while(str++, keep_going);
 }
-#	endif
 #	endif
 
 /* Must link the file produced by compiling `orcish.c` to do tests or get
@@ -106,12 +86,14 @@ static void T_(graph)(const struct t_(array) *const array, FILE *const fp) {
 		"\t<hr/>\n", orcify(array->data));
 	for(i = 0; i < array->size; i++) {
 		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
-		t_(to_string)((void *)(array->data + i), &z);
+		t_(to_string)((void *)(array->data + i), &z), z[11] = '\0';
 		fprintf(fp, "\t<tr>\n"
 			"\t\t<td align=\"right\"%s>"
 			"<font face=\"Times-Italic\">%lu</font></td>\n"
-			"\t\t<td align=\"left\"%s>%s</td>\n"
-			"\t</tr>\n", bgc, (unsigned long)i, bgc, z);
+			"\t\t<td align=\"left\"%s>", bgc, (unsigned long)i, bgc);
+		private_graph_sanitize(fp, z);
+		fprintf(fp, "</td>\n"
+			"\t</tr>\n");
 	}
 	fprintf(fp, "\t<hr/>\n"
 		"\t<tr><td></td></tr>\n"

@@ -39,8 +39,10 @@
  @param[TRIE_TO_STRING, TRIE_KEY_TO_STRING]
  To string trait contained in <src/to_string.h>. For `TRIE_TO_STRING`, see
  <typedef:<pT>to_string_fn>; alternately, for `TRIE_KEY_TO_STRING`, the key is
- suppled to the string directly under the assumption that it is a (possibly
- subset) of utf-8 encoding, possibly truncated at the last code-point.
+ suppled to the string directly, under the assumption that it can be truncated
+ at the last code-point. (If one's data is not a subset of utf-8 and has the
+ highest-bit set, it may be prematurely and unpredictably truncated if one uses
+ `TRIE_KEY_TO_STRING`.)
 
  @param[TRIE_EXPECT_TRAIT, TRIE_TRAIT]
  Named traits are obtained by including `trie.h` multiple times with
@@ -974,16 +976,16 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	for( ; i < 11; from++, i++) {
 		const unsigned left = 11 - i;
 		const unsigned char f = (const unsigned char)*from;
-		if(f < 0x80) continue;
-		if(f & 0xe0 == 0xc0) if(left < 2) break; else continue;
-		if(f & 0xf0 == 0xe0) if(left < 3) break; else continue;
-		if(f & 0xf8 == 0xf0) break;
+		if(f < 0x80) goto encode;
+		if((f & 0xe0) == 0xc0) if(left < 2) break; else goto encode;
+		if((f & 0xf0) == 0xe0) if(left < 3) break; else goto encode;
+		if((f & 0xf8) == 0xf0) break;
+encode:
 		/* Very permissive otherwise; we don't actually know anything about the
 		 encoding. */
 		*to++ = *from;
 		if(*from == '\0') return;
 	}
-	/* Fixme: test. */
 	*to = '\0';
 }
 #	endif
