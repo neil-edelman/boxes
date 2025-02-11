@@ -949,7 +949,7 @@ static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12]) {
 	/* We know the record will be `as_entry` because the cursor never stops on
 	 a link. */
-	tr_(to_string)(&cur->start.tree->leaf[cur->start.lf].as_entry, a);
+	tr_(to_string)(pT_(ref_to_remit)(&cur->start), a);
 }
 #		endif
 #	else
