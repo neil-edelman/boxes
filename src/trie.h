@@ -875,11 +875,12 @@ static enum trie_result T_(add)(struct t_(trie) *const trie,
  neighbouring string that is too long. On most platforms, this is about
  32 bytes the same. @throws[malloc] @allow */
 static enum trie_result T_(add)(struct t_(trie) *const trie,
-	const pT_(key) key, pT_(entry) **const entry) {
+	const pT_(key) key, pT_(entry) **const put_entry_here) {
 	enum trie_result result;
 	struct pT_(ref) r;
-	assert(trie && t_(string)(key));
-	if(result = pT_(add)(trie, key, &r)) *entry = &r.tree->leaf[r.lf].as_entry;
+	assert(trie && t_(string)(key) && put_entry_here);
+	if(result = pT_(add)(trie, key, &r))
+		*put_entry_here = &r.tree->leaf[r.lf].as_entry;
 	return result;
 }
 #		endif /* entry --> */
@@ -933,37 +934,30 @@ static void pT_(unused_base_coda)(void) { pT_(unused_base)(); }
 
 #if defined TRIE_TO_STRING || defined TRIE_KEY_TO_STRING
 #	ifdef TRIE_TO_STRING
-#		undef TRIE_TO_STRING
 #		ifndef TRIE_DECLARE_ONLY
 #			ifndef TRIE_TRAIT
-#				ifdef TREE_VALUE
 /** The type of the required `<tr>to_string`. Responsible for turning the
  read-only argument into a 12-max-`char` output string. `<pT>value` is omitted
  when it's a set. */
-typedef void (*pT_(to_string_fn))(const pT_(key), const pT_(value) *,
-	char (*)[12]);
-#				else
-typedef void (*pT_(to_string_fn))(const pT_(key), char (*)[12]);
-#				endif
+typedef void (*pT_(to_string_fn))(const pT_(entry) *, char (*)[12]);
+/* fixme: Or maybe it's `<pT>remit`? this needs to be refactored a lot. */
 #			endif
 /** Thunk(`cur`, `a`). One must implement `<tr>to_string` or switch to
- `TRIE_KEY_TO_STRING`, which uses the key as the string automatically. */
+ `TRIE_KEY_TO_STRING`, which uses the key as the string automatically.
+ fixme: Should have ref ∈ cursor, ∈ range. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12]) {
-#			ifdef TREE_VALUE
-	tr_(to_string)(cur->ref.node->key[cur->ref.idx],
-		cur->ref.node->value + cur->ref.idx, a);
-#			else
-	tr_(to_string)(cur->ref.node->key[cur->ref.idx], a);
-#			endif
+	/* We know the record will be `as_entry` because the cursor never stops on
+	 a link. */
+	tr_(to_string)(&cur->start.tree->leaf[cur->start.lf].as_entry, a);
 }
 #		endif
 #	else
-#		undef TRIE_KEY_TO_STRING
-/** Thunk(`cur`, `a`), transforming a cursor to the key string. */
+/** Thunk(`cur`, `a`), transforming a cursor to the key string.
+ Where is this even used? */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12]) {
-	const char *from = pT_(ref_to_string)(&cur->start);
+ 	const char *from = pT_(ref_to_string)(&cur->start);
 	unsigned i;
 	char *to = *a;
 	assert(cur && cur->root && a);
@@ -1002,6 +996,13 @@ encode:
 #if defined TRIE_TEST && !defined TRIE_TRAIT \
 	&& defined TRIE_HAS_TO_STRING && defined HAS_GRAPH_H
 #	include "../test/test_trie.h"
+#endif
+
+#ifdef TRIE_TO_STRING /* Need these in test. */
+#	undef TRIE_TO_STRING
+#endif
+#ifdef TRIE_KEY_TO_STRING
+#	undef TRIE_KEY_TO_STRING
 #endif
 
 
