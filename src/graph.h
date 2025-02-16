@@ -1106,9 +1106,9 @@ static void pT_(graph_choose)(const struct t_(trie) *const trie,
 	fprintf(fp, "digraph {\n"
 		"\tgraph [truecolor=true, bgcolor=transparent, fontname=modern];\n"
 		"\tnode [shape=none, fontname=modern];\n");
-	if(!trie->root) fprintf(fp, "\tidle;\n");
-	else if(trie->root->bsize == USHRT_MAX /*fixme??*/) fprintf(fp, "\tempty;\n");
-	else callback(trie->root, 0, fp);
+	if(!trie->trunk) fprintf(fp, "\tidle;\n");
+	else if(trie->trunk->bsize == USHRT_MAX /*fixme??*/) fprintf(fp, "\tempty;\n");
+	else callback(trie->trunk, 0, fp);
 	fprintf(fp, "}\n");
 }
 static int pT_(graph_choose_fn)(const struct t_(trie) *const trie,

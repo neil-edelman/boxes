@@ -61,8 +61,8 @@ static void pT_(valid_bough)(/*const*/ struct pT_(bough) *const tree) {
 
 /** Makes sure the `trie` is in a valid state. */
 static void pT_(valid)(const struct t_(trie) *const trie) {
-	if(!trie || !trie->root) return;
-	pT_(valid_bough)(trie->root);
+	if(!trie || !trie->trunk) return;
+	pT_(valid_bough)(trie->trunk);
 }
 
 static pT_(key) pT_(entry_key)(const pT_(entry) *entry) {
@@ -202,7 +202,7 @@ static void pT_(test)(void) {
 		struct T_(cursor) cur = T_(prefix)(&trie, "");
 		assert(!T_(exists)(&cur));
 	}
-	t_(trie_)(&trie), assert(!trie.root), pT_(valid)(&trie);
+	t_(trie_)(&trie), assert(!trie.trunk), pT_(valid)(&trie);
 	assert(!errno);
 }
 
