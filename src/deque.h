@@ -29,7 +29,7 @@
  For headers in different compilation units.
 
  @depend [box](../../src/box.h)
- @std C89 */
+ @std C89, but recommend C99 flexible array members instead of "struct hack". */
 
 #if !defined DEQUE_NAME || !defined DEQUE_TYPE
 #	error Name or tag type undefined.
