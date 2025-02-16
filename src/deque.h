@@ -89,7 +89,11 @@ struct pT_(block) {
 	struct pT_(block) *next;
 #	endif
 	size_t capacity, size;
-	pT_(type) data[]; /* Fixme: C99. */
+#	if defined __STDC__ && defined __STDC_VERSION__ && __STDC_VERSION__ >= 199901L
+	pT_(type) data[];
+#	else
+	pT_(type) data[1];
+#	endif
 };
 
 /** Manages a linked-list of blocks. Only the front can have a block-size of
@@ -139,9 +143,15 @@ static pT_(type) *pT_(append_back)(struct t_(deque) *const deque, const size_t n
 	/* Another block is needed. */
 	if(capacity < ~((size_t)~0 >> 1)) capacity *= 2;
 	for( ; n > capacity; capacity *= 2);
-	if(!(new_block = malloc(sizeof *new_block
-		+ sizeof *new_block->data * capacity)))
-		{ if(!errno) errno = ERANGE; return 0; }
+	if(!(new_block = malloc(
+#	if defined __STDC__ && defined __STDC_VERSION__ && __STDC_VERSION__ >= 199901L
+		sizeof *new_block + sizeof *new_block->data * capacity
+#	else
+		/* Old "struct hack" from before flexible array members. Not entirely
+		 conforming, but widely accepted. */
+		offsetof(struct pT_(block), data[capacity])
+#	endif
+		))) { if(!errno) errno = ERANGE; return 0; }
 	new_block->capacity = capacity;
 	new_block->size = n;
 	/* If the last is empty, free it. This can happen due to hysteresis. */
