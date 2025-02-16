@@ -201,8 +201,8 @@ typedef pT_(key) (*pT_(key_fn))(const pT_(entry) *);
 union pT_(leaf) { pT_(entry) as_entry; struct pT_(bough) *as_link; };
 /* In a B-tree described using <Knuth, 1998 Art 3>, this is a node of
  `TRIE_ORDER`. Node already has conflicting meaning with the individual
- entries. We use tree, such that a trie is a forest of non-empty complete
- binary trees. */
+ entries. We use a trie is a forest of boughs, which in turn are non-empty
+ complete binary trees contained in contiguous memory. */
 struct pT_(bough) {
 	unsigned short bsize;
 	struct trie_branch branch[TRIE_ORDER - 1];
