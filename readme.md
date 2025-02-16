@@ -22,7 +22,8 @@ are in `test/`.
 The somewhat separate [`orcish`
 project](https://github.com/neil-edelman/orcish) is used to debug
 and graph code; it translates the graphgobbledygook pointer addresses
-into more semi-meaningful deterministic orc names.
+into more semi-meaningful deterministic orc names. It is used in
+graphing and printing the data structure.
 
 ## Design papers ##
 
