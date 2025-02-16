@@ -18,7 +18,7 @@
 <!-- array -->
 <g id="node1" class="node">
 <title>array</title>
-<polygon fill="none" stroke="#000000" stroke-dasharray="1,5" points="454,-180 400,-180 400,-144 454,-144 454,-180"/>
+<path fill="none" stroke="#000000" stroke-dasharray="1,5" points="454,-180 400,-180 400,-144 454,-144 454,-180"/>
 <text text-anchor="middle" x="427" y="-158.3" font-family="modern" font-size="14.00" fill="#000000">array</text>
 </g>
 <!-- box -->
