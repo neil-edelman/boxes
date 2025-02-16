@@ -219,7 +219,7 @@ typedef struct t_(trie) pT_(box);
 
 struct pT_(ref) { struct pT_(bough) *tree; unsigned lf; };
 
-/* A range of words. */
+/* A range of words. fixme: Have a cursor and a range; this is a range. */
 struct T_(cursor) { /* fixme: This is very wasteful? at least re-arrange? */
 	struct pT_(bough) *root;
 	struct pT_(ref) start, end;
@@ -228,7 +228,6 @@ struct T_(cursor) { /* fixme: This is very wasteful? at least re-arrange? */
 #	ifdef BOX_NON_STATIC /* Public functions. */
 struct T_(cursor) T_(begin)(const struct t_(trie) *);
 int T_(exists)(const struct T_(cursor) *);
-/*struct pT_(ref) *T_(entry)(const struct T_(cursor) *);*/
 pT_(remit) T_(entry)(const struct T_(cursor) *);
 void T_(next)(struct T_(cursor) *);
 struct T_(cursor) T_(prefix)(struct t_(trie) *, const char *);
@@ -307,16 +306,16 @@ static const char *pT_(sample)(const struct pT_(bough) *const tree,
 static struct T_(cursor) pT_(match_prefix)
 	(const struct t_(trie) *const trie, const char *const prefix) {
 	struct T_(cursor) cur;
-	struct pT_(bough) *tree;
+	struct pT_(bough) *bough;
 	size_t bit;
 	struct { size_t cur, next; } byte;
 	assert(trie && prefix);
 	cur.root = 0;
-	if(!(tree = trie->trunk) || tree->bsize == USHRT_MAX) return cur;
+	if(!(bough = trie->trunk) || bough->bsize == USHRT_MAX) return cur;
 	for(bit = 0, byte.cur = 0; ; ) {
-		unsigned br0 = 0, br1 = tree->bsize, lf = 0;
+		unsigned br0 = 0, br1 = bough->bsize, lf = 0;
 		while(br0 < br1) {
-			const struct trie_branch *const branch = tree->branch + br0;
+			const struct trie_branch *const branch = bough->branch + br0;
 			/* _Sic_; '\0' is _not_ included for partial match. */
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur <= byte.next; byte.cur++)
@@ -327,12 +326,12 @@ static struct T_(cursor) pT_(match_prefix)
 				br0 += branch->left + 1, lf += branch->left + 1;
 			bit++;
 		}
-		if(trie_bmp_test(&tree->bmp, lf))
-			{ tree = tree->leaf[lf].as_link; continue; } /* Link. */
+		if(trie_bmp_test(&bough->bmp, lf))
+			{ bough = bough->leaf[lf].as_link; continue; } /* Link. */
 finally:
-		assert(br0 <= br1 && lf - br0 + br1 <= tree->bsize);
+		assert(br0 <= br1 && lf - br0 + br1 <= bough->bsize);
 		cur.root = trie->trunk;
-		cur.start.tree = cur.end.tree = tree;
+		cur.start.tree = cur.end.tree = bough;
 		/* Such that <fn:<T>next> is the first and end is greater than. */
 		cur.start.lf = lf, pT_(lower_entry)(&cur.start)/*, cur.start.lf--*/;
 		cur.end.lf = lf + br1 - br0, pT_(higher_entry)(&cur.end)/*, cur.end.lf++*/;
