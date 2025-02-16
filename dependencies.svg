@@ -8,7 +8,8 @@
  viewBox="0.00 0.00 405.50 332.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <style>
 	@media (prefers-color-scheme: dark) {
-		path polygon { stroke: white !important; };
+		path { stroke: white !important; };
+		polygon { stroke: white !important; fill: white !important; };
 		text { fill: white !important; };
 	}
 </style>
