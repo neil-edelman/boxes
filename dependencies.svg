@@ -8,8 +8,9 @@
  viewBox="0.00 0.00 405.50 332.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 <style>
 	@media (prefers-color-scheme: dark) {
-		path { stroke: white; };
-		text { fill: white; };
+		path { stroke: white !important; };
+		polygon { stroke: white !important; fill: white !important; };
+		text { fill: white !important; };
 	}
 </style>
 <g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 328)">
