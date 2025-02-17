@@ -1003,7 +1003,7 @@ encode:
 #	ifdef TRIE_ENTRY
 #		undef TRIE_ENTRY
 #	endif
-#	ifdef TRIE_KEY /*?*/
+#	ifdef TRIE_KEY
 #		undef TRIE_KEY
 #	endif
 #	ifdef TRIE_HAS_TO_STRING
