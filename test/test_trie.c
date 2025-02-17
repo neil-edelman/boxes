@@ -431,11 +431,11 @@ static void unicode_trie_delimit(void) {
 
 
 int main(void) {
-	unsigned seed = 563000/*(unsigned)clock() fixme */;
+	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	str_trie_test(), str32_deque_clear(&str_storage);
-	/*contrived_test(), str32_deque_clear(&str_storage);
+	contrived_test(), str32_deque_clear(&str_storage);
 	fixed_colour_test();
 	colour_trie_test();
 	str8_trie_test();
@@ -444,7 +444,6 @@ int main(void) {
 	star_trie_test();
 	header_trie_test();
 	article_test();
-	unicode_trie_delimit();*/
-	str32_deque_(&str_storage);
+	unicode_trie_delimit();
 	return EXIT_SUCCESS;
 }
