@@ -369,7 +369,7 @@ static struct pT_(ref) pT_(lookup_remove)(struct pT_(tree) tree,
 		/* Cannot delete bulk add. */
 		if(parent && hi < TREE_MIN || !parent && !hi) break;
 		if(hi <= TREE_MIN) { /* Remember the parent temporarily. */
-			if(lo.height) pT_(as_branch)(lo.bough)->child[TREE_MAX] = parent;
+			if(lo.height > 1) pT_(as_branch)(lo.bough)->child[TREE_MAX] = parent;
 			else *leaf_parent = parent;
 		}
 		pT_(node_lb)(&lo, x);
@@ -821,7 +821,7 @@ descend: /* Record last node that has space. */
 			return TREE_PRESENT;
 		}
 	}
-	printf("hole %s; add %s\n", orcify(hole.bough), orcify(add.bough));
+	//printf("hole %s; add %s\n", orcify(hole.bough), orcify(add.bough));
 	if(hole.bough == add.bough) goto insert; else goto grow;
 insert: /* Leaf has space to spare; usually end up here. */
 	assert(add.bough && add.idx <= add.bough->size && add.bough->size < TREE_MAX);
@@ -888,7 +888,7 @@ grow: /* Leaf is full. */ {
 	new_head = --cur.height > 1 ? pT_(as_branch)(new_head)->child[0] : 0;
 	cur.bough = pT_(as_branch)(cur.bough)->child[cur.idx];
 	pT_(node_lb)(&cur, key);
-	printf("sibling is %s, cur is %s.\n", orcify(sibling), orcify(cur.bough));
+	//printf("sibling is %s, cur is %s.\n", orcify(sibling), orcify(cur.bough));
 	assert(!sibling->size && cur.bough->size == TREE_MAX);
 	/* Expand `cur`, which is full, to multiple nodes. */
 	if(cur.idx < TREE_SPLIT) { /* Descend hole to `cur`. */

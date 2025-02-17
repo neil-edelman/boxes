@@ -788,8 +788,9 @@ int main(void) {
 	unsigned seed = 0/*(unsigned)clock()*/;
 	errno = 0;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
+	char_bounds();
 	char_tree_test();
-	/*char_bounds();
+	/*
 	int_tree_test();
 	order3_tree_test();
 	order3();
