@@ -38,20 +38,20 @@ static void pT_(print)(const struct pT_(bough) *const tree) {
 #	endif
 
 /** Make sure `tree` is in a valid state, (and all the children.) */
-static void pT_(valid_bough)(/*const*/ struct pT_(bough) *const tree) {
+static void pT_(valid_bough)(/*const*/ struct pT_(bough) *const bough) {
 	unsigned i;
 	int cmp = 0;
 	const char *str1 = 0;
-	assert(tree && tree->leaves <= TRIE_ORDER);
-	for(i = 0; i < tree->leaves - 1; i++)
-		assert(tree->branch[i].left < tree->leaves - 1 - i);
-	for(i = 0; i < tree->leaves; i++) {
-		if(trie_bmp_test(&tree->bmp, i)) {
-			pT_(valid_bough)(tree->leaf[i].as_link);
+	assert(bough && bough->leaves <= TRIE_ORDER);
+	for(i = 0; i < bough->leaves - 1; i++)
+		assert(bough->branch[i].left < bough->leaves - 1 - i);
+	for(i = 0; i < bough->leaves; i++) {
+		if(trie_bmp_test(&bough->bmp, i)) {
+			pT_(valid_bough)(bough->leaf[i].as_link);
 		} else {
 			const char *str2;
 			struct pT_(ref) ref;
-			ref.tree = tree, ref.lf = i;
+			ref.bough = bough, ref.lf = i;
 			str2 = pT_(ref_to_string)(&ref);
 			if(str1) cmp = strcmp(str1, str2), assert(cmp < 0);
 			str1 = str2;

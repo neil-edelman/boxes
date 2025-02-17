@@ -16,10 +16,19 @@
  in fixed-size nodes in a relaxed version of a B-tree, as
  <Bayer, McCreight, 1972 Large>, where the height is no longer fixed.
 
+ In general, multiple trees are equivalent by rotations. A trie is single one
+ of the trees that aligns with the data. Thus, instead of using binary search,
+ one uses the bits of the key directly; there is just one entry that has to be
+ compared. Where the fine-grained structure of the B-tree is implicit, a trie
+ needs a specific shape. This is given constant size (16 bytes) _per_ entry
+ cache.
+
  While the worse-case run-time of querying or modifying is bounded by
  \O(|`string`|), <Tong, Goebel, Lin, 2015, Smoothed> show that, in an iid
  model, a better fit is \O(\log |`trie`|), which is seen and reported here. It
- is not stable.
+ is not stable. It does not need `<t>less`. In practice, most applications will
+ not see a difference between the tree and trie, but may find one more
+ convenient.
 
  ![Bit view of the trie.](../doc/trie/trie-bits.png)
 
@@ -54,33 +63,6 @@
  @depend [box](../../src/box.h)
  @depend [bmp](../../src/bmp.h)
  @std C89 (Specifically, ISO/IEC 9899/AMD1:1995 because it uses EILSEQ.) */
-
-/* Now that I've completed and tested the `tree` and `trie`. The difference
- between them is,
-- In general, multiple trees are equivalent. When the tree gets too unbalanced,
-  it is actively rotated to another tree. Modification relies on explicit
-  rotations that take \O(\log `n`) to bring it into balance. A tree has implied
-  structure.
-- A trie is a specific rotation that aligns with the data; so has explicit
-  fixed structure. This translates to a trie taking (on our implementation)
-  2 bytes and 1 bit per entry more than the equivalent tree.
-- This data is cached: `tree` lookup takes \log `n` accesses to keys, which it
-  must compare from the start; `trie` lookup takes `log n` accesses to this
-  2-bytes per entry cache and just one key access. (Usually entries are bounded
-  by a short length, so this does not make such a difference.)
-- A trie is never rotated, instead, it relies on iid probability to give it's
-  shape. A `trie` may be more or less balanced than a `tree` (in turn depends
-  on the tree.) Again, if it is bounded by some
-- Our `trie` is limited to 256 bits of non-different consecutive entries to fit
-  in the cache.
-- A `trie` prefix match is equivalent to a sub-trie. A `tree` can also do a
-  prefix match, but in general it will fall on a seam. This means a slightly
-  larger iterator—still \O(1)—and finding a prefix match takes slightly
-  longer—still \O(\log `n`).
-- A `trie` does not need to define `<t>less`; zero and one are naturally
-  ordered.
-- In practice—for most applications—the difference will be negligible. Use
-  the more convenient. */
 
 #ifndef TRIE_NAME
 #	error Name undefined.
@@ -184,7 +166,8 @@ typedef const char *pT_(key);
  <typedef:<pT>key> are the same. */
 typedef TRIE_ENTRY pT_(entry);
 /** Remit is either an extra indirection on <typedef:<pT>entry> on `TRIE_ENTRY`
- or not. */
+ or not in the case of a string—it already has a star, and we can't modify it
+ anyway, so it would be awkward to return a pointer to a string. */
 typedef pT_(entry) *pT_(remit);
 #	else
 typedef pT_(key) pT_(entry);
@@ -198,11 +181,17 @@ typedef const char *(*pT_(string_fn))(pT_(key));
 typedef pT_(key) (*pT_(key_fn))(const pT_(entry) *);
 #	endif /* documentation --> */
 
+/* A leaf in a bough can either be an entry or a link to another bough. */
 union pT_(leaf) { pT_(entry) as_entry; struct pT_(bough) *as_link; };
 /* In a B-tree described using <Knuth, 1998 Art 3>, this is a node of
  `TRIE_ORDER`. Node already has conflicting meaning with the individual
- entries. We use a trie is a forest of boughs, which in turn are non-empty
- complete binary trees contained in contiguous memory. */
+ entries, so we avoid using this terminology. Instead, a trie is made up of
+ boughs: non-empty (leaves is never zero) complete binary trees contained in
+ contiguous memory. The only exception is the trunk could have leaves equal
+ zero in the case of an empty—but not idle—trie to provide hysteresis. That is,
+ switching from 0 to 1 entry repeatedly should not release and `malloc`
+ resources every time (it is lazy.) As a full binary tree, the branches is
+ `leaves - 1`, with the exception being empty. */
 struct pT_(bough) {
 	unsigned short leaves;
 	struct trie_branch branch[TRIE_ORDER - 1];
@@ -217,7 +206,7 @@ struct t_(trie);
 struct t_(trie) { struct pT_(bough) *trunk; };
 typedef struct t_(trie) pT_(box);
 
-struct pT_(ref) { struct pT_(bough) *tree; unsigned lf; };
+struct pT_(ref) { struct pT_(bough) *bough; unsigned lf; };
 
 /* A range of words. fixme: Have a cursor and a range; this is a range. */
 struct T_(cursor) { /* fixme: This is very wasteful? at least re-arrange? */
@@ -261,9 +250,9 @@ static const char *t_(string)(const char *const key) { return key; }
  itself. */
 static pT_(remit) pT_(ref_to_remit)(const struct pT_(ref) *const ref) {
 #		ifdef TRIE_ENTRY
-	return &ref->tree->leaf[ref->lf].as_entry;
+	return &ref->bough->leaf[ref->lf].as_entry;
 #		else
-	return ref->tree->leaf[ref->lf].as_entry;
+	return ref->bough->leaf[ref->lf].as_entry;
 #		endif
 }
 /** @return Given `ref`, get the string. */
@@ -271,23 +260,23 @@ static const char *pT_(ref_to_string)(const struct pT_(ref) *const ref) {
 #		ifdef TRIE_ENTRY
 	/* <fn:<t>string> defined by the user iff `TRIE_KEY`, but <fn:<t>key> must
 	 be defined by the user. */
-	return t_(string)(t_(key)(&ref->tree->leaf[ref->lf].as_entry));
+	return t_(string)(t_(key)(&ref->bough->leaf[ref->lf].as_entry));
 #		else
-	return t_(string)(ref->tree->leaf[ref->lf].as_entry);
+	return t_(string)(ref->bough->leaf[ref->lf].as_entry);
 #		endif
 }
 /** Fall through `ref` until hit the first entry. Must be pointing at
  something. */
 static void pT_(lower_entry)(struct pT_(ref) *ref) {
-	while(trie_bmp_test(&ref->tree->bmp, ref->lf))
-		ref->tree = ref->tree->leaf[ref->lf].as_link, ref->lf = 0;
+	while(trie_bmp_test(&ref->bough->bmp, ref->lf))
+		ref->bough = ref->bough->leaf[ref->lf].as_link, ref->lf = 0;
 }
 /** Fall through `ref` until hit the last entry. Must be pointing at
  something. */
 static void pT_(higher_entry)(struct pT_(ref) *ref) {
-	while(trie_bmp_test(&ref->tree->bmp, ref->lf))
-		ref->tree = ref->tree->leaf[ref->lf].as_link,
-		ref->lf = ref->tree->leaves - 1;
+	while(trie_bmp_test(&ref->bough->bmp, ref->lf))
+		ref->bough = ref->bough->leaf[ref->lf].as_link,
+		ref->lf = ref->bough->leaves - 1;
 }
 /** This is a convince function for <fn:<pT>match_prefix>.
  @return The leftmost entry string at `lf` of `tree`. */
@@ -296,7 +285,7 @@ static const char *pT_(sample)(const struct pT_(bough) *const tree,
 	union { const struct pT_(bough) *readonly; struct pT_(bough) *promise; }
 		slybox;
 	struct pT_(ref) ref;
-	slybox.readonly = tree, ref.tree = slybox.promise, ref.lf = lf;
+	slybox.readonly = tree, ref.bough = slybox.promise, ref.lf = lf;
 	pT_(lower_entry)(&ref);
 	return pT_(ref_to_string)(&ref);
 }
@@ -331,7 +320,7 @@ static struct T_(cursor) pT_(match_prefix)
 finally:
 		assert(br0 <= br1 && lf - br0 + br1 < bough->leaves);
 		cur.root = trie->trunk;
-		cur.start.tree = cur.end.tree = bough;
+		cur.start.bough = cur.end.bough = bough;
 		/* Such that <fn:<T>next> is the first and end is greater than. */
 		cur.start.lf = lf, pT_(lower_entry)(&cur.start)/*, cur.start.lf--*/;
 		cur.end.lf = lf + br1 - br0, pT_(higher_entry)(&cur.end)/*, cur.end.lf++*/;
@@ -357,12 +346,12 @@ static int pT_(match)(const struct t_(trie) *const trie,
 	struct { size_t cur, next; } byte; /* `key` null checks. */
 	assert(trie && string && ref);
 	/* Empty. */
-	if(!(ref->tree = trie->trunk) || !ref->tree->leaves) return 0;
-	for(bit = 0, byte.cur = 0; ; ref->tree = ref->tree->leaf[ref->lf].as_link) {
-		unsigned br0 = 0, br1 = ref->tree->leaves - 1;
+	if(!(ref->bough = trie->trunk) || !ref->bough->leaves) return 0;
+	for(bit = 0, byte.cur = 0; ; ref->bough = ref->bough->leaf[ref->lf].as_link) {
+		unsigned br0 = 0, br1 = ref->bough->leaves - 1;
 		ref->lf = 0;
 		while(br0 < br1) {
-			const struct trie_branch *const branch = ref->tree->branch + br0;
+			const struct trie_branch *const branch = ref->bough->branch + br0;
 			for(byte.next = (bit += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(string[byte.cur] == '\0') return 0; /* Too short. */
@@ -372,7 +361,7 @@ static int pT_(match)(const struct t_(trie) *const trie,
 				br0 += branch->left + 1, ref->lf += branch->left + 1;
 			bit++;
 		}
-		if(!trie_bmp_test(&ref->tree->bmp, ref->lf)) break;
+		if(!trie_bmp_test(&ref->bough->bmp, ref->lf)) break;
 	}
 	return 1;
 }
@@ -492,23 +481,23 @@ static enum trie_result pT_(add)(struct t_(trie) *const trie, pT_(key) key,
 	const char *const key_string = t_(string)(key), *exemplar_string;
 	size_t bit1, diff, tree_bit1;
 	assert(trie && key_string);
-	if(!(ref.tree = trie->trunk)) { /* Idle. */
-		if(!(ref.tree = malloc(sizeof *ref.tree))) goto catch;
-		ref.tree->leaves = 0;
-		trie->trunk = ref.tree;
+	if(!(ref.bough = trie->trunk)) { /* Idle. */
+		if(!(ref.bough = malloc(sizeof *ref.bough))) goto catch;
+		ref.bough->leaves = 0;
+		trie->trunk = ref.bough;
 	} /* Fall-through. */
-	if(!ref.tree->leaves) { /* Empty: special case. */
-		ref.tree->leaves = 1, ref.lf = 0;
-		trie_bmp_clear_all(&ref.tree->bmp);
+	if(!ref.bough->leaves) { /* Empty: special case. */
+		ref.bough->leaves = 1, ref.lf = 0;
+		trie_bmp_clear_all(&ref.bough->bmp);
 		goto assign;
 	}
 	/* Otherwise we will be able to find an exemplar: a neighbouring key to the
 	 new key up to the difference, (after that, it doesn't matter.) */
 	for(bit1 = 0, byte.cur = 0; ;
-		ref.tree = ref.tree->leaf[ref.lf].as_link) {
-		br0 = 0, br1 = ref.tree->leaves - 1, ref.lf = 0; /* Leaf. */
+		ref.bough = ref.bough->leaf[ref.lf].as_link) {
+		br0 = 0, br1 = ref.bough->leaves - 1, ref.lf = 0; /* Leaf. */
 		while(br0 < br1) {
-			const struct trie_branch *const branch = ref.tree->branch + br0;
+			const struct trie_branch *const branch = ref.bough->branch + br0;
 			for(byte.next = (bit1 += branch->skip) / CHAR_BIT;
 				byte.cur < byte.next; byte.cur++)
 				if(key_string[byte.cur] == '\0') {
@@ -522,7 +511,7 @@ static enum trie_result pT_(add)(struct t_(trie) *const trie, pT_(key) key,
 				br0 += branch->left + 1, ref.lf += branch->left + 1;
 			bit1++;
 		}
-		if(!trie_bmp_test(&ref.tree->bmp, ref.lf)) break; /* One exemplar. */
+		if(!trie_bmp_test(&ref.bough->bmp, ref.lf)) break; /* One exemplar. */
 	}
 found_exemplar:
 	exemplar = ref;
@@ -543,13 +532,13 @@ found_exemplar:
 	/* Too much similarity to fit in a limited skip, (~32 characters.) */
 	if((bit1 ? bit1 - 1 : 0) + UCHAR_MAX < diff) { errno = EILSEQ; goto catch; }
 	/* Restart and go to the difference. */
-	for(bit1 = 0, ref.tree = trie->trunk; ;
-		ref.tree = ref.tree->leaf[ref.lf].as_link) {
+	for(bit1 = 0, ref.bough = trie->trunk; ;
+		ref.bough = ref.bough->leaf[ref.lf].as_link) {
 		tree_bit1 = bit1;
 tree:
-		br0 = 0, br1 = ref.tree->leaves - 1, ref.lf = 0;
+		br0 = 0, br1 = ref.bough->leaves - 1, ref.lf = 0;
 		while(br0 < br1) {
-			const struct trie_branch *const branch = ref.tree->branch + br0;
+			const struct trie_branch *const branch = ref.bough->branch + br0;
 			if(diff <= (bit1 += branch->skip)) goto found_diff;
 			if(!TRIE_QUERY(key_string, bit1))
 				br1 = ++br0 + branch->left;
@@ -557,7 +546,7 @@ tree:
 				br0 += branch->left + 1, ref.lf += branch->left + 1;
 			bit1++;
 		}
-		if(!trie_bmp_test(&ref.tree->bmp, ref.lf)) goto found_diff;
+		if(!trie_bmp_test(&ref.bough->bmp, ref.lf)) goto found_diff;
 	}
 found_diff:
 	/* Account for choosing the right leaf. */
@@ -565,17 +554,17 @@ found_diff:
 	/* Split. Agnostic of the key, also inefficient in that it moves data one
 	 time for split and a subset of the data a second time for insert. Having
 	 `TREE_ORDER` be more makes this matter less. */
-	assert(ref.tree->leaves <= TRIE_ORDER);
-	if(ref.tree->leaves == TRIE_ORDER) {
-		if(!pT_(split)(ref.tree)) goto catch; /* Takes memory. */
+	assert(ref.bough->leaves <= TRIE_ORDER);
+	if(ref.bough->leaves == TRIE_ORDER) {
+		if(!pT_(split)(ref.bough)) goto catch; /* Takes memory. */
 		bit1 = tree_bit1;
 		goto tree; /* Start again from the top of the first tree. */
 	}
 	/* Tree is not full. */
-	ref.lf = pT_(open)(ref.tree, tree_bit1, key_string, diff);
+	ref.lf = pT_(open)(ref.bough, tree_bit1, key_string, diff);
 assign:
 #		ifndef TRIE_ENTRY
-	ref.tree->leaf[ref.lf].as_entry = key;
+	ref.bough->leaf[ref.lf].as_entry = key;
 #		else
 	/* Do not have enough information; rely on user to do it. */
 #		endif
@@ -621,7 +610,7 @@ static int pT_(remove)(struct t_(trie) *const trie, const char *const string) {
 		prev.tree = tree, prev.lf = ye.lf;
 		tree = tree->leaf[ye.lf].as_link; /* Jumped trees. */
 	}
-	rm.tree = tree, rm.lf = ye.lf;
+	rm.bough = tree, rm.lf = ye.lf;
 	if(strcmp(pT_(ref_to_string)(&rm), string)) return 0;
 	/* If a branch, branch not taken's skip merges with the parent. */
 	if(no.br0 < no.br1) {
@@ -717,19 +706,19 @@ static void T_(next)(struct T_(cursor) *const cur) {
 	assert(cur);
 	if(!cur->root || !cur->root->leaves)
 		{ cur->root = 0; return; } /* Empty. */
-	assert(cur->start.tree && cur->end.tree
-		&& cur->end.lf < cur->end.tree->leaves);
+	assert(cur->start.bough && cur->end.bough
+		&& cur->end.lf < cur->end.bough->leaves);
 	/* Stop when getting to the end of the range. */
-	if(cur->start.tree == cur->end.tree && cur->start.lf >= cur->end.lf)
+	if(cur->start.bough == cur->end.bough && cur->start.lf >= cur->end.lf)
 		{ cur->root = 0; return; }
-	if(cur->start.lf + 1 < cur->start.tree->leaves) {
+	if(cur->start.lf + 1 < cur->start.bough->leaves) {
 		cur->start.lf++; /* It's in the same tree. */
 	} else { /* Going to go off the end. */
-		const char *const sample = pT_(sample)(cur->start.tree, cur->start.lf);
-		const struct pT_(bough) *old = cur->start.tree;
+		const char *const sample = pT_(sample)(cur->start.bough, cur->start.lf);
+		const struct pT_(bough) *old = cur->start.bough;
 		struct pT_(bough) *next = cur->root;
 		size_t bit = 0;
-		cur->start.tree = 0;
+		cur->start.bough = 0;
 		while(next != old) {
 			unsigned br0 = 0, br1 = next->leaves - 1, lf = 0;
 			while(br0 < br1) {
@@ -741,12 +730,12 @@ static void T_(next)(struct T_(cursor) *const cur) {
 					br0 += branch->left + 1, lf += branch->left + 1;
 				bit++;
 			}
-			if(lf < next->leaves - 1) cur->start.tree = next, cur->start.lf = lf + 1;
+			if(lf < next->leaves - 1) cur->start.bough = next, cur->start.lf = lf + 1;
 			assert(trie_bmp_test(&next->bmp, lf)); /* The old. */
 			next = next->leaf[lf].as_link;
 		}
 		/* End of iteration. Should not get here—all ranged iterators. */
-		if(!cur->start.tree)
+		if(!cur->start.bough)
 			{ cur->root = 0; return; }
 	}
 	pT_(lower_entry)(&cur->start);
@@ -880,7 +869,7 @@ static enum trie_result T_(add)(struct t_(trie) *const trie,
 	struct pT_(ref) r;
 	assert(trie && t_(string)(key) && put_entry_here);
 	if(result = pT_(add)(trie, key, &r))
-		*put_entry_here = &r.tree->leaf[r.lf].as_entry;
+		*put_entry_here = &r.bough->leaf[r.lf].as_entry;
 	return result;
 }
 #		endif /* entry --> */
