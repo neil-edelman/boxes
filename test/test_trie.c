@@ -53,12 +53,12 @@ static void contrived_test(void) {
 
 	/* Info about offsets. */
 	printf("offset in <str>tree:\n"
-		" bsize: %lu\n"
+		" leaves: %lu\n"
 		" branch: %lu\n"
 		" bmp: %lu\n"
 		" leaf: %lu\n"
 		" whole struct: %lu\n",
-		(unsigned long)offsetof(struct private_str_trie_bough, bsize),
+		(unsigned long)offsetof(struct private_str_trie_bough, leaves),
 		(unsigned long)offsetof(struct private_str_trie_bough, branch),
 		(unsigned long)offsetof(struct private_str_trie_bough, bmp),
 		(unsigned long)offsetof(struct private_str_trie_bough, leaf),
@@ -431,7 +431,7 @@ static void unicode_trie_delimit(void) {
 
 
 int main(void) {
-	unsigned seed = (unsigned)clock();
+	unsigned seed = 563000/*(unsigned)clock() fixme */;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
 	str_trie_test(), str32_deque_clear(&str_storage);
