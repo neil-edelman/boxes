@@ -638,7 +638,7 @@ end:
 
 /** Recursively draws `sub` in `fp`. */
 static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
-	const struct pT_(stem) *branch;
+	const struct pT_(branch_bough) *branch;
 	unsigned i;
 	assert(sub->bough && fp && sub->height);
 	fprintf(fp, "\tbough%p [label = <\n"
@@ -688,7 +688,7 @@ static char *pT_(usual_port)(unsigned port) {
 
 /** Recursively draws `sub` in `fp`. */
 static void pT_(subgraph_usual)(const struct pT_(tree) *const sub, FILE *fp) {
-	const struct pT_(stem) *branch;
+	const struct pT_(branch_bough) *branch;
 	unsigned i;
 	assert(sub->bough && fp);
 	fprintf(fp, "\ttrunk%p [label = <\n"

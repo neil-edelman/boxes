@@ -122,21 +122,21 @@ static void order3(void) {
 
 	cur = order3_tree_more(&between, 50);
 	printf("more(50), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 100);
 	printf("->%u.\n", v);
 
 	cur = order3_tree_more(&between, 150);
 	printf("more(150), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 200);
 	printf("->%u.\n", v);
 
 	cur = order3_tree_more(&between, 200);
 	printf("more(200), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 200);
 	printf("->%u.\n", v);
@@ -146,14 +146,14 @@ static void order3(void) {
 
 	cur = order3_tree_more(&between, 250);
 	printf("more(250), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 300);
 	printf("->%u.\n", v);
 
 	cur = order3_tree_more(&between, 350);
 	printf("right next 350, %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(!order3_tree_exists(&cur));
 	printf("->dne.\n");
 
@@ -165,34 +165,34 @@ static void order3(void) {
 
 	cur = order3_tree_less(&between, 50);
 	printf("less(50), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(!order3_tree_exists(&cur));
 	printf("->dne.\n");
 
 	cur = order3_tree_less(&between, 150);
 	printf("less(150), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 100);
 	printf("->%u.\n", v);
 
 	cur = order3_tree_less(&between, 200);
 	printf("less(200), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 200);
 	printf("->%u.\n", v);
 
 	cur = order3_tree_less(&between, 250);
 	printf("less(250), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 200);
 	printf("->%u.\n", v);
 
 	cur = order3_tree_less(&between, 350);
 	printf("less(350), %s:%u\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 300);
 	printf("->%u.\n", v);
@@ -241,7 +241,7 @@ static void order3(void) {
 	for(i = 0; i < size_rnd; i++) {
 		unsigned x = rand() & 65535;
 		printf("__%u) add random value %u__\n", (unsigned)i, x);
-		switch(order3_tree_try(&rnd, x)) {
+		switch(order3_tree_add(&rnd, x)) {
 		case TREE_ERROR: goto catch;
 		case TREE_PRESENT: printf("%u already in tree\n", x); break;
 		case TREE_ABSENT: printf("%u added\n", x); break;
@@ -265,7 +265,7 @@ static void order3(void) {
 			if(!order3_tree_clone(&even_clone, &even)) goto catch;
 			if(i == 4) order3_tree_graph_horiz_fn(&even_clone,
 				"graph/tree/even-clone-9-pre.gv");
-			if(!order3_tree_try(&even_clone, (unsigned)i * 2 + 1)) goto catch;
+			if(!order3_tree_add(&even_clone, (unsigned)i * 2 + 1)) goto catch;
 			sprintf(fn, "graph/tree/even-clone-%u.gv", (unsigned)i * 2 + 1);
 			order3_tree_graph_horiz_fn(&even_clone, fn);
 		}
@@ -439,7 +439,7 @@ static void order3(void) {
 		for(i = 0; i < size; i++) {
 			unsigned x = (unsigned)i + 1;
 			/*printf("__%u) Going to add consecutive %u__\n", (unsigned)i, x);*/
-			switch(order3_tree_try(&consecutive, x)) {
+			switch(order3_tree_add(&consecutive, x)) {
 			case TREE_ERROR: goto catch;
 			case TREE_PRESENT: /*printf("%u already in tree\n", x);*/ break;
 			case TREE_ABSENT: /*printf("%u added\n", x);*/ break;
@@ -689,10 +689,10 @@ static void loop(void) {
 	enum tree_result status;
 	struct loop_tree_cursor cur;
 	unsigned ret, eject;
-	status = loop_tree_try(&tree, 1), assert(status == TREE_ABSENT);
-	status = loop_tree_try(&tree, 2), assert(status == TREE_ABSENT);
-	status = loop_tree_try(&tree, 3), assert(status == TREE_ABSENT);
-	status = loop_tree_try(&tree, 101), assert(status == TREE_PRESENT);
+	status = loop_tree_add(&tree, 1), assert(status == TREE_ABSENT);
+	status = loop_tree_add(&tree, 2), assert(status == TREE_ABSENT);
+	status = loop_tree_add(&tree, 3), assert(status == TREE_ABSENT);
+	status = loop_tree_add(&tree, 101), assert(status == TREE_PRESENT);
 	ret = loop_tree_get_or(&tree, 1, 0), assert(ret == 1);
 	loop_tree_graph_horiz_fn(&tree, "graph/tree/loop1.gv");
 	status = loop_tree_update(&tree, 101, &eject);
@@ -732,28 +732,28 @@ static void loop(void) {
 	/*ret = loop_tree_meaning_left(&tree, 4), assert(ret == 3);*/
 
 	loop_tree_(&tree);
-	if(!loop_tree_try(&tree, 8)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 4)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 16)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 10)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 2)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 6)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 14)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 12)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 7)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 3)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 15)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 9)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 1)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 5)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 13)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 11)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 17)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 18)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 19)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 20)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 21)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 22)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 8)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 4)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 16)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 10)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 2)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 6)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 14)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 12)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 7)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 3)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 15)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 9)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 1)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 5)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 13)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 11)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 17)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 18)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 19)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 20)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 21)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 22)) { assert(0); return; }
 	loop_tree_graph_horiz_fn(&tree, "graph/tree/loop3.gv"); /* For title. */
 	loop_tree_(&tree);
 }

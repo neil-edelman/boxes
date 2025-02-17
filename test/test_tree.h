@@ -253,7 +253,7 @@ static void pT_(test)(void) {
 #	ifdef TREE_VALUE
 		T_(assign)(&tree, t->key, &v)
 #	else
-		T_(try)(&tree, t->key)
+		T_(add)(&tree, t->key)
 #	endif
 		) {
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
@@ -297,7 +297,7 @@ static void pT_(test)(void) {
 		assert(!T_(contains)(&tree, k));
 		cur = T_(more)(&tree, k);
 		/**/printf("Iterator now %s:h%u:i%u.\n",
-			orcify(cur.ref.node), cur.ref.height, cur.ref.idx);/**/
+			orcify(cur.ref.bough), cur.ref.height, cur.ref.idx);/**/
 		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/tree/" QUOTE(TREE_NAME) "-rm-%lu.gv", i);
 			T_(graph_fn)(&tree, fn);
@@ -321,7 +321,7 @@ static void pT_(test)(void) {
 #	ifdef TREE_VALUE
 		T_(assign)(&tree, t->key, &v)
 #	else
-		T_(try)(&tree, t->key)
+		T_(add)(&tree, t->key)
 #	endif
 		) {
 		case TREE_ERROR:
