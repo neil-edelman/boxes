@@ -358,8 +358,13 @@ static void article_test(void) {
  `[\p{L}\p{M}\p{N}\p{Pc}\x200b\x200c\x200d\x2060]` (~words.) This includes the
  surrogate U+d800 because it's in the data file, which Graphviz does not like.
  In fact, it's not really useful to have all the characters represented at all.
- Thus I added a new feature: `TRIE_TO_STRING`. I imagine that it's also useful
- for sticking tries at the beginnings of words in a document. */
+ Thus I renamed `TRIE_TO_STRING` to `TRIE_KEY_TO_STRING` and added a new
+ feature: `TRIE_TO_STRING`. I imagine that it's also useful for sticking tries
+ at the beginnings of words in a document. Anyway, this is to test the to
+ string is different from the key. One could see the file
+ `graph/trie/unicode-edges-2.gv` there is U+800, _etc_, where the key is the
+ actual code point. I don't actually know how to break on failure, but it's
+ done. */
 struct unicode { unsigned unicode; char utf8[5]; };
 static const char *unicode_key(const struct unicode *const u)
 	{ return u->utf8; }
