@@ -644,8 +644,8 @@ static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
 	fprintf(fp, "\tbough%p [label = <\n"
 		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td border=\"0\" port=\"0\">"
-		"<font color=\"Gray75\">%s</font> (h %u)</td></tr>\n",
-		(const void *)sub->bough, orcify(sub->bough), sub->height);
+		"<font color=\"Gray75\">%s</font></td></tr>\n",
+		(const void *)sub->bough, orcify(sub->bough));
 	if(sub->bough->size) fprintf(fp, "\t<hr/>\n");
 	for(i = 0; i < sub->bough->size; i++) {
 		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
@@ -1099,7 +1099,7 @@ static void pT_(graph_tree_logic)(const struct pT_(bough) *const bough,
 		pT_(graph_tree_logic)(bough->leaf[lf].as_link, 0, fp);
 }
 
-typedef void (*pT_(tree_file_fn))(const struct pT_(bough) *, size_t, FILE *);
+typedef void (*pT_(bough_file_fn))(const struct pT_(bough) *, size_t, FILE *);
 
 /** Draw a graph of `trie` to `fn` in Graphviz format with `callback` as it's
  tree-drawing output. */
@@ -1115,7 +1115,7 @@ static void pT_(graph_choose)(const struct t_(trie) *const trie,
 	fprintf(fp, "}\n");
 }
 static int pT_(graph_choose_fn)(const struct t_(trie) *const trie,
-	const char *const fn, const pT_(tree_file_fn) callback) {
+	const char *const fn, const pT_(bough_file_fn) callback) {
 	FILE *fp = fopen(fn, "w");
 	assert(fn);
 	if(!fp) { if(!errno) errno = EDOM; return 0; }

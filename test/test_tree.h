@@ -241,14 +241,14 @@ static void pT_(test)(void) {
 
 	/* Add. */
 	for(i = 0; i < test_size; i++) {
-		/**/char z[12];/**/
+		/*char z[12];*/
 		struct pT_(tree_test) *const t = test + i;
-/**/#	ifdef TREE_VALUE
+/*#	ifdef TREE_VALUE
 		t_(to_string)(t->key, &t->value, &z);
 #	else
 		t_(to_string)(t->key, &z);
 #	endif
-		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);/**/
+		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);*/
 		switch(
 #	ifdef TREE_VALUE
 		T_(assign)(&tree, t->key, &v)
@@ -257,16 +257,16 @@ static void pT_(test)(void) {
 #	endif
 		) {
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
-		case TREE_PRESENT: /**/printf("<%s> already in tree\n", z);/**/ break;
+		case TREE_PRESENT: /*printf("<%s> already in tree\n", z);*/ break;
 		case TREE_ABSENT:
 			n_unique++;
 #	ifdef TREE_VALUE
 			*v = t->value;
 #	endif
 			t->in = 1;
-			/**/printf("<%s> added\n", z);/**/ break;
+			/*printf("<%s> added\n", z);*/ break;
 		}
-		if(!(i & (i + 1)) || i == test_size - 1 || 1) {
+		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/tree/" QUOTE(TREE_NAME) "-add-%lu.gv", i + 1);
 			T_(graph_fn)(&tree, fn);
 		}
@@ -291,7 +291,6 @@ static void pT_(test)(void) {
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
 		assert(T_(contains)(&tree, k));
-		T_(graph_fn)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-a-before.gv");
 		succ = T_(remove)(&tree, k);
 		T_(graph_fn)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-a-after.gv");
 		assert(succ);

@@ -84,8 +84,7 @@
 /* This is the worst-case branching factor; the performance will be
  \O(log_{`TREE_MIN`+1} `size`). Usually this is `⌈(TREE_MAX+1)/2⌉-1`. However,
  smaller values are less-eager; in the extreme,
- <Johnson, Shasha, 1993, Free-at-Empty>, show good results; this has been
- chosen to provide hysteresis. (Except `TREE_MAX 2`, it's fixed.) */
+ <Johnson, Shasha, 1993, Free-at-Empty>, show good results. */
 #	define TREE_MIN (TREE_MAX / 3 ? TREE_MAX / 3 : 1)
 #	define TREE_SPLIT (TREE_ORDER / 2) /* Split index: even order left-leaning. */
 #	define TREE_RESULT X(ERROR), X(ABSENT), X(PRESENT)
@@ -132,25 +131,23 @@ typedef TREE_KEY pT_(key);
 typedef TREE_VALUE pT_(value);
 #	endif
 
-/* Leaf-bough.
-
- These rules are lazier than the original—described in <Knuth, 1998 Art 3>—so
+/* These rules are lazier than the original—described in <Knuth, 1998 Art 3>—so
  as to not exhibit worst-case behaviour in small trees, as
  <Johnson, Shasha, 1993, Free-at-Empty>.
 
- In an effort to unify the terminology of trees and tries—from
+ In an effort to work with the same terminology as tries—from
  <https://bugwoodcloud.org/resource/files/15277.pdf>
- <Coder, Kim D, 2018, Tree anatomy>—the nodes are boughs. There are 2 kinds of
- boughs in memory, bough and stem, corresponding to leaf-boughs and
- branch-boughs.
+ <Coder, Kim D, 2018, Tree anatomy>—what are usually "nodes" are boughs. There
+ are 2 kinds of bough: leaf-boughs and branch-boughs (stem), the latter of
+ which are a specialization to include links to lower-level boughs.
 
  * Every branch-bough (stem) has at most `TREE_ORDER == TREE_MAX + 1` children.
  * Every non-trunk and non-bulk-loaded bough has at least `TREE_MIN` keys,
    (`⎣TREE_MAX/3⎦`.)
- * Every branch-bough (stem) has at least two children, `k`, and contains
-   `k - 1` keys.
+ * Every branch-bough (stem) also has the number of keys plus one children;
+   (that is, it is an implicit full binary tree.)
  * All leaf-boughs are at the height one; they do'n't carry links to other
-   boughs. Branch-boughs, known as stems, have children.
+   boughs.
  * Bulk-loading always is ascending. */
 struct pT_(bough) {
 	unsigned size;
@@ -159,7 +156,7 @@ struct pT_(bough) {
 	pT_(value) value[TREE_MAX];
 #	endif
 };
-/* Branch-bough—a specialization of leaf-bough. */
+/* A stem is a branch-bough: a specialization of leaf-bough that has links. */
 struct pT_(stem) { struct pT_(bough) base, *child[TREE_ORDER]; };
 
 /* fixme: Notch (add) and nick (delete) are good names for the highest
@@ -324,9 +321,8 @@ static struct pT_(ref) pT_(more)(const struct pT_(tree) tree,
 static struct pT_(ref) pT_(lookup_find)(const struct pT_(tree) tree,
 	const pT_(key) x) {
 	struct pT_(ref) lo;
-	lo.node = 0;
-	if(!tree.bough) return lo;
-	for(lo.node = tree.bough, lo.height = tree.height; lo.height;
+	if(!tree.bough || !tree.height) return lo.node = 0, lo;
+	for(lo.node = tree.bough, lo.height = tree.height; ;
 		lo.node = pT_(as_branch_c)(lo.node)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.node->size; lo.idx = 0;
 		if(!hi) continue;
@@ -334,6 +330,7 @@ static struct pT_(ref) pT_(lookup_find)(const struct pT_(tree) tree,
 		/* Absolutely will not equivalent `x > lo`, investigate? */
 		if(lo.idx < lo.node->size && t_(less)(lo.node->key[lo.idx], x) <= 0)
 			break;
+		if(lo.height <= 1) { lo.node = 0; break; }
 	}
 	return lo;
 }
