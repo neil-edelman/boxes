@@ -482,7 +482,6 @@ static unsigned pT_(open)(struct pT_(bough) *const tree,
 	return lf;
 }
 
-static int T_(graph_fn)(const pT_(box) *const box, const char *const fn);
 /** Adds `key` to `trie` and stores it in `found`, if not null. On unique,
  fills in the `key` unless map, then one is on their own. @return A result. */
 static enum trie_result pT_(add)(struct t_(trie) *const trie, pT_(key) key,
@@ -493,7 +492,6 @@ static enum trie_result pT_(add)(struct t_(trie) *const trie, pT_(key) key,
 	const char *const key_string = t_(string)(key), *exemplar_string;
 	size_t bit1, diff, tree_bit1;
 	assert(trie && key_string);
-	T_(graph_fn)(trie, "graph/trie/add.gv");
 	if(!(ref.tree = trie->trunk)) { /* Idle. */
 		if(!(ref.tree = malloc(sizeof *ref.tree))) goto catch;
 		ref.tree->leaves = 0;
