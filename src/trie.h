@@ -932,7 +932,7 @@ typedef void (*pT_(to_string_fn))(const pT_(entry) *, char (*)[12]);
 #			endif
 /** Thunk(`cur`, `a`). One must implement `<tr>to_string` or switch to
  `TRIE_KEY_TO_STRING`, which uses the key as the string automatically.
- fixme: Should have ref ∈ cursor, ∈ range. */
+ fixme: Should have ref ∈ cursor, ∈ range separated. */
 static void pTR_(to_string)(const struct T_(cursor) *const cur,
 	char (*const a)[12]) {
 	/* We know the record will be `as_entry` because the cursor never stops on
