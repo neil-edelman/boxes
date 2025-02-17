@@ -126,7 +126,7 @@
 #	define TRIE_DIFF(a, b, n) \
 		(((a)[TRIE_SLOT(n)] ^ (b)[TRIE_SLOT(n)]) & TRIE_MASK(n))
 /* Maximum branching factor/leaves. Prefer alignment `4n`; cache `32n`. */
-#	define TRIE_ORDER 4/*256*/
+#	define TRIE_ORDER 256
 #	if TRIE_ORDER - 2 < 1 || TRIE_ORDER - 2 > UCHAR_MAX /* Max left. */
 #		error Non-zero maximum left parameter range `[1, UCHAR_MAX]`.
 #	endif
