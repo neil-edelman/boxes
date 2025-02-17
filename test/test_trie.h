@@ -79,7 +79,7 @@ static void pT_(test)(void) {
 	unsigned letter_counts[UCHAR_MAX];
 	const size_t letter_counts_size
 		= sizeof letter_counts / sizeof *letter_counts;
-	struct { pT_(entry) entry; int is_in; } tests[16/*2000*/], *test_end, *test;
+	struct { pT_(entry) entry; int is_in; } tests[2000], *test_end, *test;
 	const size_t tests_size = sizeof tests / sizeof *tests;
 	pT_(remit) e;
 
@@ -108,7 +108,7 @@ static void pT_(test)(void) {
 	unique = 0;
 	memset(letter_counts, 0, sizeof letter_counts);
 	for(i = 0; i < tests_size; i++) {
-		int show = !((i + 1) & i) || i + 1 == tests_size || 1;
+		int show = !((i + 1) & i) || i + 1 == tests_size;
 		pT_(key) k;
 		test = tests + i;
 		k = pT_(entry_key)(&test->entry);
