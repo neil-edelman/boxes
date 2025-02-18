@@ -34,11 +34,9 @@ typedef void (*pT_(action_fn))(pT_(key) *);
 /** Makes sure the `tree` is in a valid state. */
 static void pT_(valid)(const struct t_(tree) *const tree) {
 	if(!tree) return; /* Null. */
-	if(!tree->root.node)
-		{ assert(!tree->root.height); return; } /* Idle. */
-	if(tree->root.height == UINT_MAX)
-		{ assert(tree->root.node); return; } /* Empty. */
-	assert(tree->root.node);
+	if(!tree->trunk.bough)
+		{ assert(!tree->trunk.height); return; } /* Idle. */
+	if(!tree->trunk.height) { return; } /* Empty. */
 	/*...*/
 }
 
@@ -69,7 +67,6 @@ static void pT_(test)(void) {
 	pT_(key) k, k_prev;
 	size_t i, n_unique = 0, n_unique2;
 	char fn[64];
-	/*int succ;*/
 
 	errno = 0;
 
@@ -108,17 +105,20 @@ static void pT_(test)(void) {
 
 	/* Bulk, (simple.) */
 	for(i = 0; i < test_size; i++) {
-		/*pT_(entry_c) e;
-		char z[12];*/
+		/*char z[12];*/
 		struct pT_(tree_test) *const t = test + i;
-		/*e = pT_(test_to_entry_c)(t);
-		pT_(to_string)(e, &z);
+		/*
+#	ifdef TREE_VALUE
+		t_(to_string)(t->key, &t->value, &z);
+#	else
+		t_(to_string)(t->key, &z);
+#	endif
 		printf("%lu -- bulk adding <%s>.\n", (unsigned long)i, z);*/
 		switch(
 #	ifdef TREE_VALUE
 		T_(bulk_assign)(&tree, t->key, &v)
 #	else
-		T_(bulk_try)(&tree, t->key)
+		T_(bulk_add)(&tree, t->key)
 #	endif
 		) {
 		case TREE_ERROR: perror("What?"); assert(0); break;
@@ -218,14 +218,12 @@ static void pT_(test)(void) {
 		it = T_(tree_less)(&tree, key);
 	} while(T_(tree_has_element)(&cur));
 	printf("Individual delete tree: %s.\n", T_(tree_to_string)(&tree));
-	assert(tree.root.height == UINT_MAX);
+	assert(!tree.root.height && tree.root.node);
 #	endif
 
 	/* Clear. */
-	T_(clear)(0);
-	T_(clear)(&empty), assert(!empty.root.node);
-	T_(clear)(&tree), assert(tree.root.node
-		&& tree.root.height == UINT_MAX);
+	T_(clear)(&empty), assert(!empty.trunk.bough);
+	T_(clear)(&tree), assert(tree.trunk.bough && !tree.trunk.height);
 	n_unique = 0;
 
 	/* Fill again, this time, don't sort. */
@@ -245,16 +243,16 @@ static void pT_(test)(void) {
 		/*char z[12];*/
 		struct pT_(tree_test) *const t = test + i;
 /*#	ifdef TREE_VALUE
-		T_(to_string)(t->key, &t->value, &z);
+		t_(to_string)(t->key, &t->value, &z);
 #	else
-		T_(to_string)(t->key, &z);
+		t_(to_string)(t->key, &z);
 #	endif
 		printf("%lu -- adding <%s>.\n", (unsigned long)i, z);*/
 		switch(
 #	ifdef TREE_VALUE
 		T_(assign)(&tree, t->key, &v)
 #	else
-		T_(try)(&tree, t->key)
+		T_(add)(&tree, t->key)
 #	endif
 		) {
 		case TREE_ERROR: perror("unexpected"); assert(0); return;
@@ -278,9 +276,10 @@ static void pT_(test)(void) {
 	/* Delete all. Removal invalidates iterator. */
 	for(cur = T_(begin)(&tree), i = 0; T_(exists)(&cur); ) {
 		/*char z[12];*/
+		int succ;
 		k = T_(key)(&cur);
 /*#	ifdef TREE_VALUE
-		v = T_(tree_value)(&it);
+		v = T_(value)(&cur);
 		t_(to_string)(k, v, &z);
 #	else
 		t_(to_string)(k, &z);
@@ -290,11 +289,13 @@ static void pT_(test)(void) {
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
 		assert(T_(contains)(&tree, k));
-		T_(remove)(&tree, k);
+		succ = T_(remove)(&tree, k);
+		/*T_(graph_fn)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-a-after.gv");*/
+		assert(succ);
 		assert(!T_(contains)(&tree, k));
 		cur = T_(more)(&tree, k);
 		/*printf("Iterator now %s:h%u:i%u.\n",
-			orcify(cur.ref.node), cur.ref.height, cur.ref.idx);*/
+			orcify(cur.ref.bough), cur.ref.height, cur.ref.idx);*/
 		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/tree/" QUOTE(TREE_NAME) "-rm-%lu.gv", i);
 			T_(graph_fn)(&tree, fn);
@@ -318,7 +319,7 @@ static void pT_(test)(void) {
 #	ifdef TREE_VALUE
 		T_(assign)(&tree, t->key, &v)
 #	else
-		T_(try)(&tree, t->key)
+		T_(add)(&tree, t->key)
 #	endif
 		) {
 		case TREE_ERROR:
@@ -352,10 +353,10 @@ static void pT_(test)(void) {
 
 	printf("clear, destroy\n");
 	T_(clear)(&tree);
-	assert(tree.root.height == UINT_MAX && tree.root.node);
+	assert(!tree.trunk.height && tree.trunk.bough);
 
 	/* Destroy. */
-	t_(tree_)(&tree), assert(!tree.root.node), pT_(valid)(&tree);
+	t_(tree_)(&tree), assert(!tree.trunk.bough), pT_(valid)(&tree);
 	assert(!errno);
 }
 

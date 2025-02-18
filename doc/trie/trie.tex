@@ -85,17 +85,17 @@
 
 \maketitle
 
-\abstract{Our prefix-tree, digital-tree, or trie is an ordered set or map with key strings. We build a dynamic index of two-bytes {\it per} entry, only storing differences in a compact binary radix tree. To maximize locality of reference while descending the trie and minimizing update data, these are grouped together in a forest of fix-sized trees. In practice, this trie is comparable to a numerical B-tree in performance.}
+\abstract{Our prefix-tree, digital-tree, or trie is an ordered set or map with nul-terminted key strings. An index of two-bytes {\it per} entry stores differences in a compact binary radix tree. To maximize locality of reference and minimizing update latency, these are grouped together in a forest of fixed-sized trees. In practice, this trie is comparable to a numerical B-tree in performance.}
 
 \section{Introduction}
 
-A trie is a tree that stores partitioned sets of strings\cite{de1959file, fredkin1960trie, jacquet1991analysis, askitis2011redesigning} so that, ``instead of basing a search method on comparisons between keys, we can make use of their representation as a sequence of digits or alphabetic characters [directly].\cite{knuth1997sorting}'' It is necessarily ordered, and allows prefix range queries.
+A trie is a tree that stores ordered, partitioned sets of strings\cite{de1959file, fredkin1960trie, jacquet1991analysis, askitis2011redesigning} so that, ``instead of basing a search method on comparisons between keys, we can make use of their representation as a sequence of digits or alphabetic characters [directly].\cite{knuth1997sorting}'' This means prefix range queries are equivalent to sub-tries. In general, strings might be stored in several different, but equivalent trees—depending on the type. Tries have no such freedom—there is only one trie that lines up with the data.
 
 Often, only parts of the key string are important; a radix trie (compact prefix tree) skips past the parts that are not important, as \cite{askitis2007hat}. If a candidate key match is found, a full match can be made with one index from the trie.
 
 For most applications, a 256-ary trie is space-intensive; the index contains many spaces for keys that are unused. Compression schemes are available, such as re-using a pool of memory\cite{de1959file}, reducing our encoding alphabet, or take smaller than 8-bit chunks\cite{fredkin1960trie}.
 
-We use a combination binary radix trie, described in \cite{morrison1968patricia} as the PATRICIA automaton. Rather than being sparse, a Patricia-trie is a packed index. It is sometimes convenient to think of this as a full binary tree whose branches store the number of skip bits before the cursor, and splits according to 0 or 1 of the decision bit. The leaves, therefore, are keys, and any other information associated with the key, necessarily corresponding to the path through the branches. Examples of this are seen in Figure~\ref{star-0:tree} and \ref{star-1:tree}.
+We use a combination binary radix trie, described in \cite{morrison1968patricia} as the PATRICIA automaton. Rather than being sparse, a Patricia-trie is a packed index. The leaves are keys. Examples of this are seen in Figure~\ref{star-0} and \ref{star-1}.
 
 \section{Implementation}
 
@@ -220,10 +220,10 @@ We use a combination binary radix trie, described in \cite{morrison1968patricia}
 	tree0x100a04120leaf3 [label = <Vega<font color="Gray75">\detokenize{⊔}</font>>];
 }
 	}
-	\caption{A trie with three different views of the data.\label{star-0}}
+	\caption{A Patricia trie with three different views of the data.\label{star-0}}
 \end{figure}
 
-In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{morrison1968patricia}. In C, a NUL-terminated string automatically has this property, and is ordered correctly. Keys are sorted in lexicographic order by numerical value; \code{strcmp}-order, not by any collation algorithm.
+In practice, we talk about a string always terminated by a sentinel; this is an easy way to allow a string and it's prefix in the same trie\cite{morrison1968patricia}. In C, a nul-terminated string automatically has this property, and $0000~0000$ is ordered correctly. On the other hand, one would have to apply a collation translation if the keys are not sorted in lexicographic order by numerical value; \code{strcmp}-order.
 
 Figure~\ref{star-0:bits} is a visual example of a Patricia trie, that is, a binary radix tree and skip values when bits offer no difference. Note that, in ASCII and UTF-8, \code{A} is represented by an octet with the value of 65, binary 01000001; \code{c} 99, 01100011; \code{r} 114, 01110010; \code{S} 83, 01010011; \code{V} 86, 01010110.
 
@@ -234,7 +234,7 @@ Figure~\ref{star-0:tree} shows the conventional full binary tree view of the sam
 
 \subsection{Optimizing data-access}
 
-In a Patrica-trie\cite{morrison1968patricia} path-compression, each non-decision bit is left out of the index. Therefore, in a one-pass algorithm, our key is compared to in order to a sample from the trie before the new decision bit is reached, following a binary-search pattern. This requires access to $\mathcal{O}(\log \text{size})$ keys.
+In a Patrica-trie\cite{morrison1968patricia} path-compression, each non-decision bit is left out of the index. In a one-pass algorithm, our key is compared to in order to a sample from the trie before the new decision bit is reached, following a binary-search pattern. This requires access to $\mathcal{O}(\log \text{size})$ keys.
 
 We can improve on this algorithm by only checking decision bits. This can give us only a single candidate key in the list that matches the supplied key in all the decision bits. This forms an exemplar for comparison with the supplied key. In practice, the improvement only became evident only at 10~million keys.
 
@@ -754,8 +754,9 @@ Deleting a non-leaf key involves merging \code{skips}. However, a key can be nec
 \subsection{Hysteresis}
 
 The non-empty criteria of the trees avoids the pathological case where empty trees from deletion pop-up. Further, we can always join a single leaf with its parent except the in the root.
+% what?
 
-With smaller, dynamic tries, it is more important to not free resources which could be used in the future. Anything less than greedy merging on deletion will have hysteresis. We also should have a zero-key-state with resources, achieved with a flag on the tree size.
+With smaller, dynamic tries, it is more important to not be overly-eager and free resources which could be used in the future. Anything less than greedy merging on deletion will have hysteresis. We also should have a zero-key-state with resources, achieved with a flag on the tree size.
 
 \subsection{Data size and order}
 

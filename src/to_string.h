@@ -93,8 +93,14 @@ static const char *TR_(to_string)(const pT_(box) *const box) {
 	/* Advance the buffer for next time. */
 	to_string_buffer_i &= to_string_buffers_no - 1;
 	*b++ = left;
+#	ifdef TO_STRING_BACK
+	for(slybox.readonly = box, cur = T_(end)(slybox.promise);
+		T_(exists)(&cur); T_(previous)(&cur))
+#	else
 	for(slybox.readonly = box, cur = T_(begin)(slybox.promise);
-		T_(exists)(&cur); T_(next)(&cur)) {
+		T_(exists)(&cur); T_(next)(&cur))
+#	endif
+	{
 		pTR_(to_string)(&cur, (char (*)[12])b);
 		/* Paranoid about '\0'; wastes 1 byte of 12, but otherwise confusing. */
 		for(advance = 0; *b != '\0' && advance < 11; b++, advance++);
@@ -102,8 +108,12 @@ static const char *TR_(to_string)(const pT_(box) *const box) {
 		/* Greedy typesetting: enough for "XXXXXXXXXXX" "," "…" ")" "\0". */
 		if((size_t)(b - buffer) > to_string_buffer_size - 11 - 1
 			- ellipsis_len - 1 - 1) {
-			if(T_(next)(&cur), T_(exists)) goto ellipsis;
-			else break; /* Almost overflow. */
+#	ifdef TO_STRING_BACK
+			if(T_(previous)(&cur), T_(exists))
+#	else
+			if(T_(next)(&cur), T_(exists))
+#	endif
+				goto ellipsis; else break; /* Almost overflow. */
 		}
 	}
 	if(is_sep) b -= 2;
@@ -130,6 +140,9 @@ static void pTR_(unused_to_string_coda)(void) { pTR_(unused_to_string)(); }
 #endif
 
 
+#ifdef TO_STRING_BACK
+#	undef TO_STRING_BACK
+#endif
 #ifdef TO_STRING_EXTERN
 #	undef TO_STRING_EXTERN
 #elifdef TO_STRING_INTERN

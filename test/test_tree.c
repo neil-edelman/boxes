@@ -6,11 +6,14 @@
 
 
 /* Unsigned numbers: this is the minimum tree, but not useful to test. */
+static int foo_less(unsigned a, unsigned b) { return a > b; }
 #define TREE_NAME foo
+#define TREE_KEY unsigned
 #include "../src/tree.h"
 
 
 /* For testing bounds. */
+static int char_less(const char a, const char b) { return a > b; }
 static void char_to_string(const char x, char (*const z)[12])
 	{ (*z)[0] = x; (*z)[1] = '\0'; }
 static void char_filler(char *x)
@@ -36,22 +39,22 @@ static void char_bounds(void) {
 		/*e*/'d', 'f', 'f', 'h',
 		/*i*/'h', 'j', 'j', 'j' };
 	char i;
-	char_tree_bulk_try(&tree, 'b');
-	char_tree_bulk_try(&tree, 'd');
-	char_tree_bulk_try(&tree, 'f');
-	char_tree_bulk_try(&tree, 'h');
-	char_tree_bulk_try(&tree, 'j');
+	char_tree_bulk_add(&tree, 'b');
+	char_tree_bulk_add(&tree, 'd');
+	char_tree_bulk_add(&tree, 'f');
+	char_tree_bulk_add(&tree, 'h');
+	char_tree_bulk_add(&tree, 'j');
 	char_tree_bulk_finish(&tree);
 	char_tree_graph_fn(&tree, "graph/tree/char-bounds.gv");
 	printf("right:\n");
 	for(i = 'a'; i < 'm'; i++) {
-		char right = char_tree_more_or(&tree, i, '_');
+		char right = char_tree_upper_or(&tree, i, '_'); // this is a terrible name
 		printf("%c\t%c\t(%c)\n", i, right, correct_right[(int)i-'a']);
 		assert(right == correct_right[(int)i-'a']);
 	}
 	printf("left:\n");
 	for(i = 'a'; i < 'm'; i++) {
-		char left = char_tree_less_or(&tree, i, '_');
+		char left = char_tree_lower_or(&tree, i, '_');
 		printf("%c\t%c\t(%c)\n", i, left, correct_left[(int)i-'a']);
 		assert(left == correct_left[(int)i-'a']);
 	}
@@ -60,6 +63,7 @@ static void char_bounds(void) {
 
 
 /* Unsigned numbers: testing framework. */
+static int int_less(const unsigned a, const unsigned b) { return a > b; }
 /** @implements <typedef:<pT>to_string_fn> */
 static void int_to_string(const unsigned x, char (*const z)[12])
 	{ /*assert(*x < 10000000000),*/ sprintf(*z, "%u", x); }
@@ -67,15 +71,18 @@ static void int_to_string(const unsigned x, char (*const z)[12])
 static void int_filler(unsigned *x)
 	{ *x = (unsigned)rand() / (RAND_MAX / 1000 + 1); }
 #define TREE_NAME int
+#define TREE_KEY unsigned
 #define TREE_TO_STRING
 #define TREE_TEST
 #include "../src/tree.h"
 
 
+static int order3_less(const unsigned a, const unsigned b) { return a > b; }
 static void order3_filler(unsigned *x) { int_filler(x); }
 static void order3_to_string(const unsigned x, char (*const z)[12])
 	{ int_to_string(x, z); }
 #define TREE_NAME order3
+#define TREE_KEY unsigned
 #define TREE_TEST
 #define TREE_ORDER 3
 #define TREE_TO_STRING
@@ -95,41 +102,41 @@ static void order3(void) {
 	unsigned v;
 	int ret;
 	const size_t order3_order
-		= sizeof rnd.root.node->key / sizeof *rnd.root.node->key + 1;
+		= sizeof rnd.trunk.bough->key / sizeof *rnd.trunk.bough->key + 1;
 	printf("manual: order3 order %lu\n", order3_order);
 	assert(order3_order == 3);
 
 	/* Lookup between nodes. */
-	if(!order3_tree_bulk_try(&between, 100)
-		|| !order3_tree_bulk_try(&between, 200)
-		|| !order3_tree_bulk_try(&between, 300)) goto catch;
+	if(!order3_tree_bulk_add(&between, 100)
+		|| !order3_tree_bulk_add(&between, 200)
+		|| !order3_tree_bulk_add(&between, 300)) goto catch;
 	ret = order3_tree_bulk_finish(&between);
 	assert(ret);
 	order3_tree_graph_horiz_fn(&between, "graph/tree/between.gv");
 
-	v = order3_tree_more_or(&between, 50, 0), assert(v == 100);
-	v = order3_tree_more_or(&between, 150, 0), assert(v == 200);
-	v = order3_tree_more_or(&between, 250, 0), assert(v == 300);
-	v = order3_tree_more_or(&between, 300, 0), assert(v == 300);
-	v = order3_tree_more_or(&between, 350, 0), assert(!v);
+	v = order3_tree_upper_or(&between, 50, 0), assert(v == 100);
+	v = order3_tree_upper_or(&between, 150, 0), assert(v == 200);
+	v = order3_tree_upper_or(&between, 250, 0), assert(v == 300);
+	v = order3_tree_upper_or(&between, 300, 0), assert(v == 300);
+	v = order3_tree_upper_or(&between, 350, 0), assert(!v);
 
 	cur = order3_tree_more(&between, 50);
 	printf("more(50), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 100);
 	printf("->%u.\n", v);
 
 	cur = order3_tree_more(&between, 150);
 	printf("more(150), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 200);
 	printf("->%u.\n", v);
 
 	cur = order3_tree_more(&between, 200);
 	printf("more(200), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 200);
 	printf("->%u.\n", v);
@@ -139,92 +146,92 @@ static void order3(void) {
 
 	cur = order3_tree_more(&between, 250);
 	printf("more(250), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 300);
 	printf("->%u.\n", v);
 
 	cur = order3_tree_more(&between, 350);
 	printf("right next 350, %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(!order3_tree_exists(&cur));
 	printf("->dne.\n");
 
-	v = order3_tree_less_or(&between, 50, 0), assert(!v);
-	v = order3_tree_less_or(&between, 150, 0), assert(v == 100);
-	v = order3_tree_less_or(&between, 250, 0), assert(v == 200);
-	v = order3_tree_less_or(&between, 300, 0), assert(v == 300);
-	v = order3_tree_less_or(&between, 350, 0), assert(v == 300);
+	v = order3_tree_lower_or(&between, 50, 0), assert(!v);
+	v = order3_tree_lower_or(&between, 150, 0), assert(v == 100);
+	v = order3_tree_lower_or(&between, 250, 0), assert(v == 200);
+	v = order3_tree_lower_or(&between, 300, 0), assert(v == 300);
+	v = order3_tree_lower_or(&between, 350, 0), assert(v == 300);
 
 	cur = order3_tree_less(&between, 50);
 	printf("less(50), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(!order3_tree_exists(&cur));
 	printf("->dne.\n");
 
 	cur = order3_tree_less(&between, 150);
 	printf("less(150), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 100);
 	printf("->%u.\n", v);
 
 	cur = order3_tree_less(&between, 200);
 	printf("less(200), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 200);
 	printf("->%u.\n", v);
 
 	cur = order3_tree_less(&between, 250);
 	printf("less(250), %s:%u.\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 200);
 	printf("->%u.\n", v);
 
 	cur = order3_tree_less(&between, 350);
 	printf("less(350), %s:%u\n",
-		orcify(cur.ref.node), cur.ref.idx);
+		orcify(cur.ref.bough), cur.ref.idx);
 	assert(order3_tree_exists(&cur));
 	v = order3_tree_key(&cur), assert(v == 300);
 	printf("->%u.\n", v);
 
 	/* Test greatest lower/least higher bound again. */
 	order3_tree_clear(&between);
-	order3_tree_bulk_try(&between, 10);
-	order3_tree_bulk_try(&between, 20);
-	order3_tree_bulk_try(&between, 30);
-	order3_tree_bulk_try(&between, 40);
-	order3_tree_bulk_try(&between, 50);
-	order3_tree_bulk_try(&between, 60);
-	order3_tree_bulk_try(&between, 70);
-	order3_tree_bulk_try(&between, 80);
+	order3_tree_bulk_add(&between, 10);
+	order3_tree_bulk_add(&between, 20);
+	order3_tree_bulk_add(&between, 30);
+	order3_tree_bulk_add(&between, 40);
+	order3_tree_bulk_add(&between, 50);
+	order3_tree_bulk_add(&between, 60);
+	order3_tree_bulk_add(&between, 70);
+	order3_tree_bulk_add(&between, 80);
 	order3_tree_bulk_finish(&between);
 	order3_tree_graph_horiz_fn(&between, "graph/tree/left.gv");
-	v = order3_tree_less_or(&between, 10, 0), assert(v == 10);
-	v = order3_tree_less_or(&between, 80, 0), assert(v == 80);
-	v = order3_tree_less_or(&between, 55, 0), assert(v == 50);
-	v = order3_tree_less_or(&between, 85, 0), assert(v == 80);
-	v = order3_tree_less_or(&between, 15, 0), assert(v == 10);
-	v = order3_tree_less_or(&between, 5, 0), assert(!v);
-	v = order3_tree_more_or(&between, 10, 0), assert(v == 10);
-	v = order3_tree_more_or(&between, 80, 0), assert(v == 80);
-	v = order3_tree_more_or(&between, 55, 0), assert(v == 60);
-	v = order3_tree_more_or(&between, 85, 0), assert(!v);
-	v = order3_tree_more_or(&between, 15, 0), assert(v == 20);
-	v = order3_tree_more_or(&between, 5, 0), assert(v == 10);
+	v = order3_tree_lower_or(&between, 10, 0), assert(v == 10);
+	v = order3_tree_lower_or(&between, 80, 0), assert(v == 80);
+	v = order3_tree_lower_or(&between, 55, 0), assert(v == 50);
+	v = order3_tree_lower_or(&between, 85, 0), assert(v == 80);
+	v = order3_tree_lower_or(&between, 15, 0), assert(v == 10);
+	v = order3_tree_lower_or(&between, 5, 0), assert(!v);
+	v = order3_tree_upper_or(&between, 10, 0), assert(v == 10);
+	v = order3_tree_upper_or(&between, 80, 0), assert(v == 80);
+	v = order3_tree_upper_or(&between, 55, 0), assert(v == 60);
+	v = order3_tree_upper_or(&between, 85, 0), assert(!v);
+	v = order3_tree_upper_or(&between, 15, 0), assert(v == 20);
+	v = order3_tree_upper_or(&between, 5, 0), assert(v == 10);
 
 	/* For the paper. */
 	order3_tree_clear(&between);
-	order3_tree_bulk_try(&between, 1);
-	order3_tree_bulk_try(&between, 2);
+	order3_tree_bulk_add(&between, 1);
+	order3_tree_bulk_add(&between, 2);
 	if(!order3_tree_clone(&copy, &between)) goto catch;
 	order3_tree_graph_horiz_fn(&copy, "graph/tree/bulk2.gv");
-	order3_tree_bulk_try(&between, 3);
+	order3_tree_bulk_add(&between, 3);
 	if(!order3_tree_clone(&copy, &between)) goto catch;
 	order3_tree_graph_horiz_fn(&copy, "graph/tree/bulk3.gv");
-	order3_tree_bulk_try(&copy, 4);
+	order3_tree_bulk_add(&copy, 4);
 	order3_tree_graph_horiz_fn(&copy, "graph/tree/bulk4.gv");
 	if(!order3_tree_clone(&copy, &between)) goto catch;
 	order3_tree_bulk_finish(&copy);
@@ -234,7 +241,7 @@ static void order3(void) {
 	for(i = 0; i < size_rnd; i++) {
 		unsigned x = rand() & 65535;
 		printf("__%u) add random value %u__\n", (unsigned)i, x);
-		switch(order3_tree_try(&rnd, x)) {
+		switch(order3_tree_add(&rnd, x)) {
 		case TREE_ERROR: goto catch;
 		case TREE_PRESENT: printf("%u already in tree\n", x); break;
 		case TREE_ABSENT: printf("%u added\n", x); break;
@@ -250,7 +257,7 @@ static void order3(void) {
 		 gives keys, `m^{h+1}-1`, three levels. */
 		const size_t size = order3_order * order3_order * order3_order - 1;
 		for(i = 0; i < size; i++) /* Even for odd spaces between them. */
-			if(!order3_tree_bulk_try(&even, ((unsigned)i + 1) * 2)) assert(0);
+			if(!order3_tree_bulk_add(&even, ((unsigned)i + 1) * 2)) assert(0);
 		order3_tree_bulk_finish(&even); /* Does nothing, in this case. */
 		order3_tree_graph_horiz_fn(&even, "graph/tree/even-1.gv");
 		for(i = 0; i <= size; i++) {
@@ -258,7 +265,7 @@ static void order3(void) {
 			if(!order3_tree_clone(&even_clone, &even)) goto catch;
 			if(i == 4) order3_tree_graph_horiz_fn(&even_clone,
 				"graph/tree/even-clone-9-pre.gv");
-			if(!order3_tree_try(&even_clone, (unsigned)i * 2 + 1)) goto catch;
+			if(!order3_tree_add(&even_clone, (unsigned)i * 2 + 1)) goto catch;
 			sprintf(fn, "graph/tree/even-clone-%u.gv", (unsigned)i * 2 + 1);
 			order3_tree_graph_horiz_fn(&even_clone, fn);
 		}
@@ -270,7 +277,7 @@ static void order3(void) {
 		unsigned n;
 		memset(&in, 0, sizeof in);
 		for(n = 0; n < size; n++) {
-			if(!(order3_tree_bulk_try(&removal, n + 1))) goto catch;
+			if(!(order3_tree_bulk_add(&removal, n + 1))) goto catch;
 			in[n] = 1;
 		}
 		order3_tree_bulk_finish(&even);
@@ -418,7 +425,7 @@ static void order3(void) {
 		order3_tree_graph_horiz_fn(&removal, "graph/tree/removal-b-9.gv");
 		for(n = 0; n < size; n++)
 			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		assert(removal.root.height == UINT_MAX && removal.root.node);
+		assert(!removal.trunk.height && removal.trunk.bough);
 		for(n = 0; n < size; n++) assert(!in[n]);
 		{
 			int success = order3_tree_remove(&removal, 0);
@@ -432,7 +439,7 @@ static void order3(void) {
 		for(i = 0; i < size; i++) {
 			unsigned x = (unsigned)i + 1;
 			/*printf("__%u) Going to add consecutive %u__\n", (unsigned)i, x);*/
-			switch(order3_tree_try(&consecutive, x)) {
+			switch(order3_tree_add(&consecutive, x)) {
 			case TREE_ERROR: goto catch;
 			case TREE_PRESENT: /*printf("%u already in tree\n", x);*/ break;
 			case TREE_ABSENT: /*printf("%u added\n", x);*/ break;
@@ -464,12 +471,14 @@ finally:
 
 
 /* Unsigned numbers: testing framework. */
+static int redblack_less(const unsigned a, const unsigned b) { return a > b; }
 static void redblack_to_string(const unsigned key, const unsigned *const value,
 	char (*const a)[12])
 	{ /*assert(*x < 10000000000),*/ sprintf(*a, "%u", key); (void)value; }
 static void redblack_filler(unsigned *const k, unsigned *const v) {
 	*k = *v = (unsigned)rand() / (RAND_MAX / 1000 + 1); }
 #define TREE_NAME redblack
+#define TREE_KEY unsigned
 #define TREE_VALUE unsigned
 #define TREE_ORDER 4
 #define TREE_TO_STRING
@@ -483,7 +492,7 @@ static void redblack(void) {
 	struct { unsigned x; int in; } rnd[10];
 	const unsigned rnd_size = sizeof rnd / sizeof *rnd;
 	const size_t redblack_order
-		= sizeof tree.root.node->key / sizeof *tree.root.node->key + 1;
+		= sizeof tree.trunk.bough->key / sizeof *tree.trunk.bough->key + 1;
 	printf("Redblack: order %lu.\n", redblack_order);
 	assert(redblack_order == 4);
 
@@ -515,7 +524,7 @@ static void redblack(void) {
 	calc_size = (unsigned)redblack_tree_count(&tree);
 	assert(calc_size == n);
 	while(n) {
-		assert(tree.root.height != UINT_MAX);
+		assert(tree.trunk.height != UINT_MAX);
 		i = (unsigned)rand() / (RAND_MAX / n + 1);
 		printf("Drew %u -> %u which is %sin.\n",
 			i, rnd[i].x, rnd[i].in ? "" : "not ");
@@ -541,7 +550,7 @@ static void redblack(void) {
 			assert(!rnd[i].in || rnd[i].x == v);
 		}
 	}
-	assert(tree.root.height == UINT_MAX);
+	assert(!tree.trunk.height);
 	goto finally;
 catch:
 	perror("redblack");
@@ -551,7 +560,8 @@ finally:
 }
 
 
-/* Unsigned numbers and values. Prototype a value. */
+/* Unsigned numbers and values. */
+static int pair_less(const unsigned a, const unsigned b) { return a > b; }
 static void pair_filler(unsigned *const x, unsigned *const y) {
 	int_filler(x);
 	int_filler(y), *y += 10000;
@@ -561,6 +571,7 @@ static void pair_to_string(const unsigned k, const unsigned *const v,
 	char (*const a)[12])
 	{ assert(k < 1000 && v && *v < 100000); sprintf(*a, "%u→%u", k, *v); }
 #define TREE_NAME pair
+#define TREE_KEY unsigned
 #define TREE_VALUE unsigned
 #define TREE_TEST
 #define TREE_TO_STRING
@@ -601,6 +612,7 @@ static const char *star_names[] = { STARS };
 static double star_distances[] = { STARS };
 #undef X
 static size_t star_size = sizeof star_names / sizeof *star_names;
+static int star_less(const double a, const double b) { return a > b; }
 static void star_filler(double *k, const char **v) {
 	const unsigned i = (unsigned)rand() / (RAND_MAX / star_size + 1);
 	*k = star_distances[i], *v = star_names[i];
@@ -645,7 +657,6 @@ static void entry_to_string(const union date32 k, const int *const v,
 }
 #define TREE_NAME entry
 #define TREE_KEY union date32
-#define TREE_LESS
 #define TREE_VALUE int
 #define TREE_TEST
 #define TREE_TO_STRING
@@ -662,8 +673,8 @@ static int loop_less(const unsigned a, const unsigned b)
 static void loop_to_string(const unsigned x, char (*const z)[12])
 	{ int_to_string(x, z); }
 #define TREE_NAME loop
+#define TREE_KEY unsigned
 #define TREE_TEST
-#define TREE_LESS
 #define TREE_ORDER 5
 #define TREE_DEFAULT 0
 #define TREE_TO_STRING
@@ -678,10 +689,10 @@ static void loop(void) {
 	enum tree_result status;
 	struct loop_tree_cursor cur;
 	unsigned ret, eject;
-	status = loop_tree_try(&tree, 1), assert(status == TREE_ABSENT);
-	status = loop_tree_try(&tree, 2), assert(status == TREE_ABSENT);
-	status = loop_tree_try(&tree, 3), assert(status == TREE_ABSENT);
-	status = loop_tree_try(&tree, 101), assert(status == TREE_PRESENT);
+	status = loop_tree_add(&tree, 1), assert(status == TREE_ABSENT);
+	status = loop_tree_add(&tree, 2), assert(status == TREE_ABSENT);
+	status = loop_tree_add(&tree, 3), assert(status == TREE_ABSENT);
+	status = loop_tree_add(&tree, 101), assert(status == TREE_PRESENT);
 	ret = loop_tree_get_or(&tree, 1, 0), assert(ret == 1);
 	loop_tree_graph_horiz_fn(&tree, "graph/tree/loop1.gv");
 	status = loop_tree_update(&tree, 101, &eject);
@@ -695,9 +706,9 @@ static void loop(void) {
 	ret = loop_tree_meaning_get(&tree, 3), assert(ret == 3);
 	ret = loop_tree_meaning_get(&tree, 0), assert(ret == 42);
 
-	ret = loop_tree_more_or(&tree, 3, 0), assert(ret == 3);
-	ret = loop_tree_more_or(&tree, 4, 0), assert(ret == 0);
-	/* fixme: more_or returns a value but more returns a cursor? lol. That is
+	ret = loop_tree_upper_or(&tree, 3, 0), assert(ret == 3);
+	ret = loop_tree_upper_or(&tree, 4, 0), assert(ret == 0);
+	/* fixme: upper_or returns a value but more returns a cursor? lol. That is
 	 terrible. There are so many cursors, values, and ranges, I don't think
 	 it's feasible to have the all? I know why C++ it is transparent. what we
 	 need is a range object that could be applied to the tree? */
@@ -712,8 +723,8 @@ static void loop(void) {
 	ret = loop_tree_meaning_get(&tree, 0), assert(ret == 42);
 	ret = loop_tree_meaning_get(&tree, 1), assert(ret == 101);
 
-	ret = loop_tree_less_or(&tree, 3, 0), assert(ret == 3);
-	ret = loop_tree_less_or(&tree, 4, 0), assert(ret == 3);
+	ret = loop_tree_lower_or(&tree, 3, 0), assert(ret == 3);
+	ret = loop_tree_lower_or(&tree, 4, 0), assert(ret == 3);
 	cur = loop_tree_less(&tree, 0), assert(!loop_tree_exists(&cur));
 	cur = loop_tree_less(&tree, 4),
 		assert(loop_tree_exists(&cur) && loop_tree_key(&cur) == 3);
@@ -721,40 +732,42 @@ static void loop(void) {
 	/*ret = loop_tree_meaning_left(&tree, 4), assert(ret == 3);*/
 
 	loop_tree_(&tree);
-	if(!loop_tree_try(&tree, 8)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 4)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 16)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 10)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 2)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 6)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 14)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 12)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 7)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 3)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 15)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 9)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 1)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 5)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 13)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 11)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 17)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 18)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 19)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 20)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 21)) { assert(0); return; }
-	if(!loop_tree_try(&tree, 22)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 8)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 4)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 16)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 10)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 2)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 6)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 14)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 12)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 7)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 3)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 15)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 9)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 1)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 5)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 13)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 11)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 17)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 18)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 19)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 20)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 21)) { assert(0); return; }
+	if(!loop_tree_add(&tree, 22)) { assert(0); return; }
 	loop_tree_graph_horiz_fn(&tree, "graph/tree/loop3.gv"); /* For title. */
 	loop_tree_(&tree);
 }
 
 
 struct typical_value { int a, b; };
+static int typical_less(const unsigned a, const unsigned b) { return a > b; }
 static void typical_filler(unsigned *const k, struct typical_value **v)
 	{ int_filler(k); *v = 0; }
 static void typical_to_string(const unsigned k,
-	/*const:[*/struct typical_value *const*const v, char (*const z)[12])
+	/*const :[*/ struct typical_value *const*const v, char (*const z)[12])
 	{ sprintf(*z, "%u", k); (void)v; }
 #define TREE_NAME typical
+#define TREE_KEY unsigned
 #define TREE_VALUE struct typical_value *
 #define TREE_TO_STRING
 #define TREE_TEST
@@ -762,6 +775,7 @@ static void typical_to_string(const unsigned k,
 
 
 /* Test inclusion in a header. */
+static int header_less(const char a, const char b) { return a > b; }
 static void header_to_string(const char x, char (*const z)[12])
 	{ char_to_string(x, z); }
 static void header_filler(char *x) { char_filler(x); }
@@ -771,14 +785,15 @@ static void header_filler(char *x) { char_filler(x); }
 
 int main(void) {
 	unsigned seed = (unsigned)clock();
+	errno = 0;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	char_tree_test();
 	char_bounds();
+	char_tree_test();
 	int_tree_test();
-	order3_tree_test();
 	order3();
-	redblack_tree_test();
+	order3_tree_test();
 	redblack();
+	redblack_tree_test();
 	pair_tree_test();
 	star_tree_test();
 	entry_tree_test();

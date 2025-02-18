@@ -3,7 +3,14 @@ generate lightweight and statically type-safe containers.
 
 ## Downloading ##
 
-Pick and choose from `src` and use them. Here are the dependencies.
+Pick and choose from `src` and use them. The dependencies are edges
+in the following diagram. Dotted edges means it's an optional dependency
+based on what one defines. The dashed containers, `deque` and `pool`
+are stable containers—which means for the lifetime of the data, it is not
+going to move. A dotted box—`array`, `heap`, `table`, `tree`, and
+`trie`—means it can move, generally on topology changes. Depending on
+one's use case, it may be good to have one or more stable containers
+as a backing for one or more unstable pointer containers.
 
 ![Dependencies](dependencies.svg)
 
@@ -15,7 +22,8 @@ are in `test/`.
 The somewhat separate [`orcish`
 project](https://github.com/neil-edelman/orcish) is used to debug
 and graph code; it translates the graphgobbledygook pointer addresses
-into more semi-meaningful deterministic orc names.
+into more semi-meaningful deterministic orc names. It is used in
+graphing and printing the data structure.
 
 ## Design papers ##
 

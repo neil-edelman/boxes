@@ -47,6 +47,11 @@ build/test_%.o: test/test_%.c src/%.h
 	@mkdir -p build
 	$(CC) $(CF) -c -o $@ $<
 
+build/%.o: src/%.c src/%.h
+	# compile main $@
+	@mkdir -p build
+	$(CC) $(CF) -c -o $@ $<
+
 build/%.o: test/%.c test/%.h
 	# compile helper $@
 	@mkdir -p build
@@ -77,7 +82,8 @@ test: $(projects)
 	done
 
 clean:
-	-rm -rf build/
-	-rm graph/*.gv
+	#-rm -rf build/
+	#-rm graph/*.gv
+	#wtf
 
 docs: $(docs)

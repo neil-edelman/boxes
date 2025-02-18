@@ -24,9 +24,9 @@ static int pTR_(fill_unique)(pT_(type) *const fill,
 #	if 0 /* <!-- 0: I don't think we use this anymore? */
 #		ifdef BOX_COMPARE /* <!-- comp */
 static int PCMP_(unique_array)(PA_(type) *const fill, const size_t size) {
-	const size_t no_try = 5000;
+	const size_t no_add = 5000;
 	size_t attempt, i = 0;
-	for(attempt = 0; attempt < no_try; attempt++) {
+	for(attempt = 0; attempt < no_add; attempt++) {
 		size_t back;
 		char z[12];
 		A_(filler)(fill + i);
@@ -37,10 +37,10 @@ static int PCMP_(unique_array)(PA_(type) *const fill, const size_t size) {
 			{ printf("unique_array: %s is duplicated.\n", z); continue; }
 		if(++i >= size) break;
 	}
-	if(attempt == no_try) {
+	if(attempt == no_add) {
 		return printf("unique_array: couldn't get unique entries from "
 			QUOTE(LIST_NAME) " in %lu tries; giving up.\n",
-			(unsigned long)no_try), 0;
+			(unsigned long)no_add), 0;
 	}
 	return printf("unique_array: got duplicates in %lu tries.\n",
 		(unsigned long)attempt), 1;

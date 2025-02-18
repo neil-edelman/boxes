@@ -12,6 +12,32 @@ int T_(graph_fn)(const pT_(box) *, const char *);
 #	endif
 #	ifndef BOX_DECLARE_ONLY
 
+#	ifndef GRAPH_SANITIZE
+#		define GRAPH_SANITIZE
+static void private_graph_sanitize(FILE *const fp, const char *str) {
+	const char *lazy = str, *escape;
+	size_t escape_size;
+	int keep_going = 1;
+	assert(str && fp);
+	do {
+		unsigned char ch = (unsigned char)*str;
+		if(ch == '\0') { escape = "", escape_size = 0, keep_going = 0; goto force; }
+		switch(ch) {
+		case '&': escape = "&amp;", escape_size = 5; goto force;
+		case '<': escape = "&lt;", escape_size = 4; goto force;
+		case '>': escape = "&gt;", escape_size = 4; goto force;
+		case '\"': escape = "&quot;", escape_size = 6; goto force;
+		case '\'': escape = "&#39;", escape_size = 5; goto force;
+		default: continue;
+		}
+force:
+		fwrite(lazy, 1, (size_t)(str - lazy), fp);
+		fwrite(escape, 1, escape_size, fp);
+		lazy = str + 1;
+	} while(str++, keep_going);
+}
+#	endif
+
 /* Must link the file produced by compiling `orcish.c` to do tests or get
  graphs. (It is particularly useful for debugging—it translates gobbledygook
  pointer addresses into more semi-meaningful deterministic orc names. We have
@@ -60,12 +86,14 @@ static void T_(graph)(const struct t_(array) *const array, FILE *const fp) {
 		"\t<hr/>\n", orcify(array->data));
 	for(i = 0; i < array->size; i++) {
 		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
-		t_(to_string)((void *)(array->data + i), &z);
+		t_(to_string)((void *)(array->data + i), &z), z[11] = '\0';
 		fprintf(fp, "\t<tr>\n"
 			"\t\t<td align=\"right\"%s>"
 			"<font face=\"Times-Italic\">%lu</font></td>\n"
-			"\t\t<td align=\"left\"%s>%s</td>\n"
-			"\t</tr>\n", bgc, (unsigned long)i, bgc, z);
+			"\t\t<td align=\"left\"%s>", bgc, (unsigned long)i, bgc);
+		private_graph_sanitize(fp, z);
+		fprintf(fp, "</td>\n"
+			"\t</tr>\n");
 	}
 	fprintf(fp, "\t<hr/>\n"
 		"\t<tr><td></td></tr>\n"
@@ -73,6 +101,77 @@ static void T_(graph)(const struct t_(array) *const array, FILE *const fp) {
 no_data:
 	fprintf(fp, "\tnode [colour=\"Red\"];\n"
 		"}\n");
+}
+
+#		elif defined DEQUE_NAME
+
+#			define BOX_PUBLIC_OVERRIDE
+#			include "box.h"
+
+/** Draw a graph of `deque` to `fp` in Graphviz format. */
+static void T_(graph)(const struct t_(deque) *const deque, FILE *const fp) {
+	size_t i;
+	char z[12];
+	char shape[64] = "deque";
+	struct pT_(block) *block;
+	fprintf(fp, "digraph {\n"
+		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
+		" fontname=modern];\n"
+		"\tnode [shape=none, fontname=modern];\n"
+		"\t%s [label=<\n"
+		"<table border=\"0\" cellspacing=\"0\">\n"
+		"\t<tr><td align=\"left\">"
+		"<font color=\"Gray75\">&lt;" QUOTE(DEQUE_NAME)
+		"&gt;deque</font></td></tr>\n"
+		"\t<hr/>\n"
+		"\t<tr><td align=\"left\">" QUOTE(DEQUE_TYPE) "</td></tr>\n"
+		"</table>>];\n", shape);
+
+#			ifdef DEQUE_FRONT
+	for(block = deque->front; block; block = block->next)
+#			else
+	for(block = deque->back; block; block = block->previous)
+#			endif
+	{
+		fprintf(fp, "\t%s -> ", shape);
+		sprintf(shape, "block%p", (void *)block);
+#			ifdef DEQUE_FRONT
+		fprintf(fp, "%s;\n", shape);
+#			else
+		fprintf(fp, "%s [style=\"dashed\"];\n", shape);
+#			endif
+		fprintf(fp, "\tblock%p [label=<\n"
+			"<table border=\"0\" cellspacing=\"0\">\n"
+			"\t<tr><td colspan=\"2\" align=\"left\">"
+			"<font color=\"Gray75\">%s</font></td></tr>\n"
+			"\t<tr><td colspan=\"2\" align=\"left\">%lu/%lu</td></tr>\n"
+			"\t<hr/>\n", (void *)block, orcify(block),
+			(unsigned long)block->size,
+			(unsigned long)block->capacity);
+		for(i = 0; i < block->size; i++) {
+			const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
+			t_(to_string)((void *)(block->data + i), &z), z[11] = '\0';
+			fprintf(fp, "\t<tr>\n"
+				"\t\t<td align=\"right\"%s>"
+				"<font face=\"Times-Italic\">%lu</font></td>\n"
+					"\t\t<td align=\"left\"%s>", bgc, (unsigned long)i, bgc);
+			private_graph_sanitize(fp, z);
+			fprintf(fp, "</td>\n"
+				"\t</tr>\n");
+		}
+		if(block->size) fprintf(fp, "\t<hr/>\n");
+		fprintf(fp, "\t<tr><td></td></tr>\n"
+			"</table>>];\n");
+	}
+#			ifdef DEQUE_FRONT
+	strcpy(shape, "deque");
+	for(block = deque->back; block; block = block->previous) {
+		fprintf(fp, "\t%s -> ", shape);
+		sprintf(shape, "block%p", (void *)block);
+		fprintf(fp, "%s [style=\"dashed\"];\n", shape);
+	}
+#			endif
+	fprintf(fp, "}\n");
 }
 
 #		elif defined HEAP_NAME
@@ -94,8 +193,10 @@ static void T_(graph)(const struct t_(heap) *const heap, FILE *const fp) {
 		"\tedge [arrowhead = none];\n");
 	for(i = 0; i < heap->as_array.size; i++) {
 		const pT_(priority) *const p = heap->as_array.data + i;
-		t_(to_string)(p, &a);
-		fprintf(fp, "\t\tn%lu [label=\"%s\"];\n", (unsigned long)i, a);
+		t_(to_string)(p, &a), a[11] = '\0';
+		fprintf(fp, "\t\tn%lu [label=\"", (unsigned long)i);
+		private_graph_sanitize(fp, a);
+		fprintf(fp, "\"];\n");
 		if(!i) continue;
 		fprintf(fp, "\t\tn%lu -> n%lu;\n",
 			(unsigned long)((i - 1) / 2), (unsigned long)i);
@@ -168,8 +269,10 @@ static void pT_(subgraph)(const struct t_(list) *const list, FILE *const fp,
 	}
 	for(link = T_(head)(list); link; link = T_(link_next)(link)) {
 		if(is_nodes) {
-			t_(to_string)(link, &a);
-			fprintf(fp, "\t%s [label=\"%s\"];\n", pT_(name)(link), a);
+			t_(to_string)(link, &a), a[11] = '\0';
+			fprintf(fp, "\t%s [label=\"", pT_(name)(link));
+			private_graph_sanitize(fp, a);
+			fprintf(fp, "\"];\n");
 		}
 		fprintf(fp, "\t%s -> %s [color=\"%s\"];\n"
 			"\t%s -> %s [color=\"%s4\", style=\"dotted\","
@@ -203,7 +306,6 @@ static void T_(graph)(const struct t_(list) *const list, FILE *const fp) {
 /** Graphs `pool` output to `fp`. */
 static void T_(graph)(const struct t_(pool) *const pool,
 	FILE *const fp) {
-	char str[12];
 	size_t i, j;
 	struct pT_(slot) *slot;
 	pT_(type) *slab;
@@ -302,7 +404,7 @@ no_free0:
 				slot->size);
 			goto no_slab_data;
 		}
-		/* Primary buffer: print rows. */
+		/* Primary buffer: print rows. (Fixme: probably too hash!) */
 		if(!(bmp = calloc(slot->size, sizeof *bmp)))
 			{ perror("temp bitmap"); assert(0); exit(EXIT_FAILURE); }
 		for(j = 0; j < pool->free0.as_array.size; j++) {
@@ -318,8 +420,9 @@ no_free0:
 				fprintf(fp, "<font color=\"Gray50\" face=\"Times-Italic\">%lu</font>",
 					(unsigned long)j);
 			} else {
-				t_(to_string)(slab + j, &str);
-				fprintf(fp, "%s", str);
+				char str[12];
+				t_(to_string)(slab + j, &str), str[11] = '\0';
+				private_graph_sanitize(fp, str);
 			}
 			fprintf(fp, "</td></tr>\n");
 		}
@@ -475,19 +578,20 @@ static void T_(graph)(const struct t_(table) *const table, FILE *const fp) {
 #			else
 			t_(to_string)(pT_(bucket_key)(b), &z);
 #			endif
+			z[11] = '\0';
 			fprintf(fp, "\t\t<td align=\"right\"%s>0x%lx</td>\n"
 				"\t\t<td align=\"left\"%s>"
 #			ifdef TABLE_UNHASH
 				"<font face=\"Times-Italic\">"
 #			endif
-				"%s"
+				, bgc, (unsigned long)b->hash, bgc);
+			private_graph_sanitize(fp, z);
+			fprintf(fp,
 #			ifdef TABLE_UNHASH
 				"</font>"
 #			endif
 				"</td>\n"
 				"\t\t<td port=\"%lu\"%s>%s</td>\n",
-				bgc, (unsigned long)b->hash,
-				bgc, z,
 				(unsigned long)i, bgc, closed);
 		} else {
 			fprintf(fp, "\t\t<td%s></td><td%s></td><td%s></td>\n",
@@ -533,40 +637,43 @@ end:
 #		elif defined TREE_NAME
 
 /** Recursively draws `sub` in `fp`. */
-static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
-	const struct pT_(branch) *branch;
+static void pT_(subgraph)(const struct pT_(subtree) *const sub, FILE *fp) {
+	const struct pT_(branch_bough) *branch;
 	unsigned i;
-	assert(sub->node && fp);
-	fprintf(fp, "\ttrunk%p [label = <\n"
+	assert(sub->bough && fp && sub->height);
+	fprintf(fp, "\tbough%p [label = <\n"
 		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td border=\"0\" port=\"0\">"
 		"<font color=\"Gray75\">%s</font></td></tr>\n",
-		(const void *)sub->node, orcify(sub->node));
-	if(sub->node->size) fprintf(fp, "\t<hr/>\n");
-	for(i = 0; i < sub->node->size; i++) {
+		(const void *)sub->bough, orcify(sub->bough));
+	if(sub->bough->size) fprintf(fp, "\t<hr/>\n");
+	for(i = 0; i < sub->bough->size; i++) {
 		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
 		char z[12];
 #			ifdef TREE_VALUE
-		t_(to_string)(sub->node->key[i], sub->node->value + i, &z);
+		t_(to_string)(sub->bough->key[i], sub->bough->value + i, &z);
 #			else
-		t_(to_string)(sub->node->key[i], &z);
+		t_(to_string)(sub->bough->key[i], &z);
 #			endif
+		z[11] = '\0';
 		fprintf(fp, "\t<tr><td border=\"0\" align=\"left\""
-			" port=\"%u\"%s>%s</td></tr>\n", i + 1, bgc, z);
+			" port=\"%u\"%s>", i + 1, bgc);
+		private_graph_sanitize(fp, z);
+		fprintf(fp, "</td></tr>\n");
 	}
 	fprintf(fp, "\t<hr/>\n"
 		"\t<tr><td></td></tr>\n"
 		"</table>>];\n");
-	if(!sub->height) return;
+	if(sub->height <= 1) return;
 	/* Draw the lines between trees. */
-	branch = pT_(as_branch_c)(sub->node);
+	branch = pT_(as_branch_c)(sub->bough);
 	for(i = 0; i <= branch->base.size; i++)
-		fprintf(fp, "\ttrunk%p:%u:se -> trunk%p;\n",
-		(const void *)sub->node, i, (const void *)branch->child[i]);
+		fprintf(fp, "\tbough%p:%u:se -> bough%p;\n",
+		(const void *)sub->bough, i, (const void *)branch->child[i]);
 	/* Recurse. */
 	for(i = 0; i <= branch->base.size; i++) {
-		struct pT_(tree) child;
-		child.node = branch->child[i], child.height = sub->height - 1;
+		struct pT_(subtree) child;
+		child.bough = branch->child[i], child.height = sub->height - 1;
 		pT_(subgraph)(&child, fp);
 	}
 }
@@ -580,47 +687,65 @@ static char *pT_(usual_port)(unsigned port) {
 }
 
 /** Recursively draws `sub` in `fp`. */
-static void pT_(subgraph_usual)(const struct pT_(tree) *const sub, FILE *fp) {
-	const struct pT_(branch) *branch;
+static void pT_(subgraph_usual)(const struct pT_(subtree) *const sub, FILE *fp) {
+	const struct pT_(branch_bough) *branch;
 	unsigned i;
-	assert(sub->node && fp);
+	assert(sub->bough && fp);
 	fprintf(fp, "\ttrunk%p [label = <\n"
 		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td border=\"0\" colspan=\"%u\">"
 		"<font color=\"Gray75\">%s</font></td></tr>\n"
 		"\t<hr/>\n"
-		"\t<tr>\n", (const void *)sub->node,
-		sub->node->size ? sub->node->size : 1, orcify(sub->node));
-	for(i = 0; i < sub->node->size; i++) {
+		"\t<tr>\n", (const void *)sub->bough,
+		sub->bough->size ? sub->bough->size : 1, orcify(sub->bough));
+	for(i = 0; i < sub->bough->size; i++) {
 		char z[12];
 #			ifdef TREE_VALUE
-		t_(to_string)(sub->node->key[i], sub->node->value + i, &z);
+		t_(to_string)(sub->bough->key[i], sub->bough->value + i, &z);
 #			else
-		t_(to_string)(sub->node->key[i], &z);
+		t_(to_string)(sub->bough->key[i], &z);
 #			endif
+		z[11] = '\0';
 		fprintf(fp, "\t<td border=\"0\" align=\"center\""
-			" port=\"%u\">%s</td>\n", i, z);
+			" port=\"%u\">", i);
+		private_graph_sanitize(fp, z);
+		fprintf(fp, "</td>\n");
 	}
 	/* Dummy node when size is zero. */
-	if(!sub->node->size)
+	if(!sub->bough->size)
 		fprintf(fp, "\t<td border=\"0\" port=\"0\">&nbsp;</td>\n");
 	fprintf(fp, "\t</tr>\n");
 	if(sub->height) fprintf(fp, "\t<hr/>\n"
 		"\t<tr><td></td></tr>\n");
 	fprintf(fp, "</table>>];\n");
-	if(!sub->height) return;
+	if(sub->height <= 1) return;
 	/* Draw the lines between trees. */
-	branch = pT_(as_branch_c)(sub->node);
+	branch = pT_(as_branch_c)(sub->bough);
 	for(i = 0; i <= branch->base.size; i++)
 		fprintf(fp, "\ttrunk%p:%s -> trunk%p;\n",
-		(const void *)sub->node, pT_(usual_port)(i),
+		(const void *)sub->bough, pT_(usual_port)(i),
 		(const void *)branch->child[i]);
 	/* Recurse. */
 	for(i = 0; i <= branch->base.size; i++) {
-		struct pT_(tree) child;
-		child.node = branch->child[i], child.height = sub->height - 1;
+		struct pT_(subtree) child;
+		child.bough = branch->child[i], child.height = sub->height - 1;
 		pT_(subgraph_usual)(&child, fp);
 	}
+}
+
+static void pT_(graph)(const struct pT_(subtree) *const trunk, FILE *const fp) {
+	assert(trunk);
+	fprintf(fp, "digraph {\n"
+		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
+		" fontname=modern, splines=false];\n"
+		"\tnode [shape=none, fontname=modern];\n");
+	if(!trunk->bough)
+		fprintf(fp, "\tidle [shape=plaintext];\n");
+	else if(!trunk->height)
+		fprintf(fp, "\tempty [shape=plaintext];\n");
+	else pT_(subgraph)(trunk, fp);
+	fprintf(fp, "\tnode [color=\"Red\"];\n"
+		"}\n");
 }
 
 #			define BOX_PUBLIC_OVERRIDE
@@ -629,17 +754,7 @@ static void pT_(subgraph_usual)(const struct pT_(tree) *const sub, FILE *fp) {
 /** Draw a graph of `tree` to `fp` in Graphviz format. */
 static void T_(graph)(const struct t_(tree) *const tree, FILE *const fp) {
 	assert(tree && fp);
-	fprintf(fp, "digraph {\n"
-		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"
-		" fontname=modern, splines=false];\n"
-		"\tnode [shape=none, fontname=modern];\n");
-	if(!tree->root.node)
-		fprintf(fp, "\tidle [shape=plaintext];\n");
-	else if(tree->root.height == UINT_MAX)
-		fprintf(fp, "\tempty [shape=plaintext];\n");
-	else pT_(subgraph)(&tree->root, fp);
-	fprintf(fp, "\tnode [color=\"Red\"];\n"
-		"}\n");
+	pT_(graph)(&tree->trunk, fp);
 }
 
 /** Draw a graph of `tree` to `fn` in Graphviz format, the usual way, but too
@@ -656,11 +771,11 @@ static int T_(graph_horiz_fn)(const struct t_(tree) *const tree,
 		" fontname=modern, splines=false];\n"
 		"\tnode [shape=none, fontname=\"Bitstream Vera Sans\"];\n"
 		"\n");
-	if(!tree->root.node)
+	if(!tree->trunk.bough)
 		fprintf(fp, "\tidle [shape=plaintext];\n");
-	else if(tree->root.height == UINT_MAX)
+	else if(!tree->trunk.height)
 		fprintf(fp, "\tempty [shape=plaintext];\n");
-	else pT_(subgraph_usual)(&tree->root, fp);
+	else pT_(subgraph_usual)(&tree->trunk, fp);
 	fprintf(fp, "\tnode [color=\"Red\"];\n"
 		"}\n");
 	fclose(fp);
@@ -674,77 +789,102 @@ static void pT_(unused_tree_coda)(void) { pT_(unused_tree)(); }
 
 #		elif defined TRIE_NAME
 
-/** Outputs a direction string for `lf` in `tr`, `{ "", "r", "l" }`. */
-static const char *pT_(leaf_to_dir)(const struct pT_(tree) *const tr,
+/** Outputs a direction string for `lf` in `bough`, `{ "", "r", "l" }`. */
+static const char *pT_(leaf_to_dir)(const struct pT_(bough) *const bough,
 	const unsigned lf) {
 	struct { unsigned br0, br1, lf; } t;
 	unsigned left;
 	const char *shape = "";
-	t.br0 = 0, t.br1 = tr->bsize, t.lf = 0;
+	t.br0 = 0, t.br1 = bough->leaves - 1, t.lf = 0;
 	while(t.br0 < t.br1) {
-		left = tr->branch[t.br0].left;
+		left = bough->branch[t.br0].left;
 		if(lf <= t.lf + left) t.br1 = ++t.br0 + left, shape = "r";
 		else t.br0 += left + 1, t.lf += left + 1, shape = "l";
 	}
 	return shape;
 }
 
-/** Given a branch `b` in `tr` branches, calculate the right child branches.
+/** Given a `branch` in `bough`, calculate the right child branches.
  @order \O(log `size`) */
-static unsigned pT_(right)(const struct pT_(tree) *const tr,
-	const unsigned b) {
-	unsigned left, right, total = tr->bsize, b0 = 0;
-	assert(tr && b < tr->bsize);
+static unsigned pT_(right)(const struct pT_(bough) *const bough,
+	const unsigned branch) {
+	unsigned left, right, total = bough->leaves - 1, b0 = 0;
+	assert(bough && branch < bough->leaves - 1);
 	for( ; ; ) {
-		right = total - (left = tr->branch[b0].left) - 1;
+		right = total - (left = bough->branch[b0].left) - 1;
 		assert(left < total && right < total);
-		if(b0 >= b) break;
-		if(b <= b0 + left) total = left, b0++;
+		if(b0 >= branch) break;
+		if(branch <= b0 + left) total = left, b0++;
 		else total = right, b0 += left + 1;
 	}
-	assert(b0 == b);
+	assert(b0 == branch);
 	return right;
 }
 
-/** @return Follows the branches to `b` in `tr` and returns the leaf. */
-static unsigned pT_(left_leaf)(const struct pT_(tree) *const tr,
-	const unsigned b) {
-	unsigned left, right, total = tr->bsize, i = 0, b0 = 0;
-	assert(tr && b < tr->bsize);
+/** @return Follows the `branch` in `bough` and returns the leaf. */
+static unsigned pT_(left_leaf)(const struct pT_(bough) *const bough,
+	const unsigned branch) {
+	unsigned left, right, total = bough->leaves - 1, i = 0, b0 = 0;
+	assert(bough && branch < bough->leaves - 1);
 	for( ; ; ) {
-		right = total - (left = tr->branch[b0].left) - 1;
-		assert(left < tr->bsize && right < tr->bsize);
-		if(b0 >= b) break;
-		if(b <= b0 + left) total = left, b0++;
+		right = total - (left = bough->branch[b0].left) - 1;
+		assert(left < bough->leaves - 1 && right < bough->leaves - 1);
+		if(b0 >= branch) break;
+		if(branch <= b0 + left) total = left, b0++;
 		else total = right, b0 += left + 1, i += left + 1;
 	}
-	assert(b0 == b);
+	assert(b0 == branch);
 	return i;
 }
 
+#		ifndef TRIE_KEY_TO_STRING
+/** fixme: This is what we get for not having a well laid-out plan from the
+ beginning. "Let's make a trie." */
+static struct T_(cursor) pT_(keylabelcur)(const struct pT_(bough) *const bough,
+	const unsigned lf) {
+	union { const struct pT_(bough) *readonly; struct pT_(bough) *promise; }
+		slybox;
+	struct T_(cursor) cur; /* fixme: We only use the `<pT>ref`; confusing. */
+	slybox.readonly = bough, cur.start.bough = slybox.promise, cur.start.lf = lf;
+	pT_(lower_entry)(&cur.start);
+	return cur;
+}
+#		endif
+
 /** Graphs `tree` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
-static void pT_(graph_tree_bits)(const struct pT_(tree) *const tree,
+static void pT_(graph_tree_bits)(const struct pT_(bough) *const bough,
 	const size_t treebit, FILE *const fp) {
 	unsigned b, i;
-	assert(tree && fp);
+	assert(bough && fp);
 	fprintf(fp, "\ttree%pbranch0 [label = <\n"
-		"<table border=\"0\" cellspacing=\"0\">\n", (const void *)tree);
-	/*"<table BORDER=\"0\" CELLBORDER=\"0\">\n"*/
-	for(i = 0; i <= tree->bsize; i++) {
-		const char *key = pT_(sample)(tree, i);
-		const struct trie_branch *branch = tree->branch;
+		"<table border=\"0\" cellspacing=\"0\">\n", (const void *)bough);
+	for(i = 0; i < bough->leaves; i++) {
+		const char *const key = pT_(sample)(bough, i), *keylabel = key;
+		unsigned is_keylabel = 1;
+		const struct trie_branch *branch = bough->branch;
 		size_t next_branch = treebit + branch->skip;
 		const char *params, *start, *end;
 		struct { unsigned br0, br1; } in_tree;
-		const unsigned is_link = trie_bmp_test(&tree->bmp, i);
+		const unsigned is_link = !!trie_bmp_test(&bough->bmp, i);
+#		ifndef TRIE_KEY_TO_STRING
+		struct T_(cursor) cur = pT_(keylabelcur)(bough, i);
+		char a[12];
+		pTR_(to_string)(&cur, &a), a[11] = '\0';
+		keylabel = a, is_keylabel = 0;
+#		endif
+
 		/* 0-width joiner "&#8288;": GraphViz gets upset when tag closed
 		 immediately. */
 		fprintf(fp, "\t<tr>\n"
-			"\t\t<td align=\"left\" port=\"%u\">%s%s%s⊔</font></td>\n",
-			i, is_link ? "↓<font color=\"Grey75\">" : "", key,
-			is_link ? "" : "<font color=\"Grey75\">");
-		in_tree.br0 = 0, in_tree.br1 = tree->bsize;
+			"\t\t<td align=\"left\" port=\"%u\">%s",
+			i, is_link ? "↓<font color=\"Grey75\">" : "");
+		private_graph_sanitize(fp, keylabel);
+		fprintf(fp, "%s%s%s</td>\n",
+			!is_link & is_keylabel ? "<font color=\"Grey75\">" : "",
+			is_keylabel ? "⊔" : "",
+			is_link | is_keylabel ? "</font>" : "");
+		in_tree.br0 = 0, in_tree.br1 = bough->leaves - 1;
 		for(b = 0; in_tree.br0 < in_tree.br1; b++) {
 			const unsigned bit = !!TRIE_QUERY(key, b);
 			if(next_branch) {
@@ -761,7 +901,7 @@ static void pT_(graph_tree_bits)(const struct pT_(tree) *const tree,
 						= " bgcolor=\"Black\" color=\"White\" border=\"1\"";
 					start = "<font color=\"White\">", end = "</font>";
 				}
-				next_branch = (branch = tree->branch + in_tree.br0)->skip;
+				next_branch = (branch = bough->branch + in_tree.br0)->skip;
 			}
 			if(b && !(b & 7)) fprintf(fp, "\t\t<td>&nbsp;</td>\n");
 			fprintf(fp, "\t\t<td%s>%s%u%s</td>\n", params, start, bit, end);
@@ -770,18 +910,18 @@ static void pT_(graph_tree_bits)(const struct pT_(tree) *const tree,
 	}
 	fprintf(fp, "</table>>];\n");
 	/* Draw the lines between trees. */
-	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->bmp, i))
+	for(i = 0; i < bough->leaves; i++) if(trie_bmp_test(&bough->bmp, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[style = dashed, arrowhead = %snormal];\n", (const void *)tree, i,
-		(const void *)tree->leaf[i].as_link, pT_(leaf_to_dir)(tree, i));
+		"[style = dashed, arrowhead = %snormal];\n", (const void *)bough, i,
+		(const void *)bough->leaf[i].as_link, pT_(leaf_to_dir)(bough, i));
 	/* Recurse. */
-	for(i = 0; i <= tree->bsize; i++) {
+	for(i = 0; i < bough->leaves; i++) {
 		struct { unsigned br0, br1, lf; } in_tree;
 		size_t bit = treebit;
-		if(!trie_bmp_test(&tree->bmp, i)) continue;
-		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
+		if(!trie_bmp_test(&bough->bmp, i)) continue;
+		in_tree.br0 = 0, in_tree.br1 = bough->leaves - 1, in_tree.lf = 0;
 		while(in_tree.br0 < in_tree.br1) {
-			const struct trie_branch *branch = tree->branch + in_tree.br0;
+			const struct trie_branch *branch = bough->branch + in_tree.br0;
 			bit += branch->skip;
 			if(i <= in_tree.lf + branch->left)
 				in_tree.br1 = ++in_tree.br0 + branch->left;
@@ -789,20 +929,20 @@ static void pT_(graph_tree_bits)(const struct pT_(tree) *const tree,
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 			bit++;
 		}
-		pT_(graph_tree_bits)(tree->leaf[i].as_link, bit, fp);
+		pT_(graph_tree_bits)(bough->leaf[i].as_link, bit, fp);
 	}
 }
 
-/** Graphs `tree` on `fp`. `treebit` is the number of bits currently
+/** Graphs `bough` on `fp`. `treebit` is the number of bits currently
  (recursive.) */
-static void pT_(graph_tree_mem)(const struct pT_(tree) *const tree,
+static void pT_(graph_tree_mem)(const struct pT_(bough) *const bough,
 	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
 	unsigned i;
 	(void)treebit;
-	assert(tree && fp);
+	assert(bough && fp);
 	/* Tree is one record node in memory -- GraphViz says html is
-	 case-insensitive, but no. */
+	 case-insensitive, but no? */
 	fprintf(fp, "\ttree%pbranch0 [label = <\n"
 		"<table border=\"0\" cellspacing=\"0\">\n"
 		"\t<tr><td colspan=\"3\" align=\"left\">"
@@ -813,13 +953,21 @@ static void pT_(graph_tree_mem)(const struct pT_(tree) *const tree,
 		"\t\t<td><font face=\"Times-Italic\">skip</font></td>\n"
 		"\t\t<td><font face=\"Times-Italic\">leaves</font></td>\n"
 		"\t</tr>\n"
-		"\t<hr/>\n", (const void *)tree, orcify(tree), (unsigned long)treebit);
-	for(i = 0; i <= tree->bsize; i++) {
+		"\t<hr/>\n", (const void *)bough, orcify(bough), (unsigned long)treebit);
+	for(i = 0; i < bough->leaves; i++) {
 		const char *const bgc = i & 1 ? " bgcolor=\"Gray95\"" : "";
-		const char *key = pT_(sample)(tree, i);
-		const unsigned is_link = trie_bmp_test(&tree->bmp, i);
-		if(i < tree->bsize) {
-			branch = tree->branch + i;
+		const char *key = pT_(sample)(bough, i), *keylabel = key;
+		unsigned is_keylabel = 1;
+		const unsigned is_link = !!trie_bmp_test(&bough->bmp, i);
+#		ifndef TRIE_KEY_TO_STRING
+		struct T_(cursor) cur = pT_(keylabelcur)(bough, i);
+		char a[12];
+		pTR_(to_string)(&cur, &a), a[11] = '\0';
+		keylabel = a, is_keylabel = 0;
+#		endif
+
+		if(i < bough->leaves - 1) {
+			branch = bough->branch + i;
 			fprintf(fp, "\t<tr>\n"
 				"\t\t<td align=\"right\"%s>%u</td>\n"
 				"\t\t<td align=\"right\"%s>%u</td>\n",
@@ -831,28 +979,30 @@ static void pT_(graph_tree_mem)(const struct pT_(tree) *const tree,
 				"\t\t<td>&#8205;</td>\n");
 		}
 		fprintf(fp, "\t\t<td align=\"left\" port=\"%u\"%s>"
-			"%s%s%s⊔</font></td>\n"
+			"%s", i, bgc, is_link ? "↓<font color=\"Grey75\">" : "");
+		private_graph_sanitize(fp, keylabel);
+		fprintf(fp, "%s%s%s</td>\n"
 			"\t</tr>\n",
-			i, bgc, is_link ? "↓<font color=\"Grey75\">" : "", key,
-			is_link ? "" : "<font color=\"Grey75\">");
-			/* Should really escape it . . . don't have weird characters. */
+			!is_link & is_keylabel ? "<font color=\"Grey75\">" : "",
+			is_keylabel ? "⊔" : "",
+			is_link | is_keylabel ? "</font>" : "");
 	}
 	fprintf(fp, "\t<hr/>\n"
 		"\t<tr><td></td></tr>\n"
 		"</table>>];\n");
 	/* Draw the lines between trees. */
-	for(i = 0; i <= tree->bsize; i++) if(trie_bmp_test(&tree->bmp, i))
+	for(i = 0; i < bough->leaves; i++) if(trie_bmp_test(&bough->bmp, i))
 		fprintf(fp, "\ttree%pbranch0:%u -> tree%pbranch0 "
-		"[style = dashed, arrowhead = %snormal];\n", (const void *)tree, i,
-		(const void *)tree->leaf[i].as_link, pT_(leaf_to_dir)(tree, i));
+		"[style = dashed, arrowhead = %snormal];\n", (const void *)bough, i,
+		(const void *)bough->leaf[i].as_link, pT_(leaf_to_dir)(bough, i));
 	/* Recurse. */
-	for(i = 0; i <= tree->bsize; i++) {
+	for(i = 0; i < bough->leaves; i++) {
 		struct { unsigned br0, br1, lf; } in_tree;
 		size_t bit = treebit;
-		if(!trie_bmp_test(&tree->bmp, i)) continue;
-		in_tree.br0 = 0, in_tree.br1 = tree->bsize, in_tree.lf = 0;
+		if(!trie_bmp_test(&bough->bmp, i)) continue;
+		in_tree.br0 = 0, in_tree.br1 = bough->leaves - 1, in_tree.lf = 0;
 		while(in_tree.br0 < in_tree.br1) {
-			branch = tree->branch + in_tree.br0;
+			branch = bough->branch + in_tree.br0;
 			bit += branch->skip;
 			if(i <= in_tree.lf + branch->left)
 				in_tree.br1 = ++in_tree.br0 + branch->left;
@@ -860,61 +1010,64 @@ static void pT_(graph_tree_mem)(const struct pT_(tree) *const tree,
 				in_tree.br0 += branch->left + 1, in_tree.lf += branch->left + 1;
 			bit++;
 		}
-		pT_(graph_tree_mem)(tree->leaf[i].as_link, bit, fp);
+		pT_(graph_tree_mem)(bough->leaf[i].as_link, bit, fp);
 	}
 }
 
 /** Graphs `tr` on `fp`.`treebit` is the number of bits currently
  (recursive.) */
-static void pT_(graph_tree_logic)(const struct pT_(tree) *const tr,
+static void pT_(graph_tree_logic)(const struct pT_(bough) *const bough,
 	const size_t treebit, FILE *const fp) {
 	const struct trie_branch *branch;
-	unsigned left, right, b, i;
+	unsigned left, right, b, lf;
 	(void)treebit;
-	assert(tr && fp);
-	fprintf(fp, "\t// tree %p\n", (const void *)tr);
-	if(tr->bsize) {
+	assert(bough && fp && bough->leaves);
+	fprintf(fp, "\t// tree %p\n", (const void *)bough);
+	if(bough->leaves > 1) {
 		fprintf(fp, "\t// branches\n");
-		for(b = 0; b < tr->bsize; b++) { /* Branches. */
-			branch = tr->branch + b;
-			left = branch->left, right = pT_(right)(tr, b);
+		for(b = 0; b < bough->leaves - 1; b++) { /* Branches. */
+			branch = bough->branch + b;
+			left = branch->left, right = pT_(right)(bough, b);
 			fprintf(fp, "\ttree%pbranch%u [label=\"%u\", shape=circle,"
 				" style=filled, fillcolor=Grey95];\n"
-				"\ttree%pbranch%u -> ", (const void *)tr, b, branch->skip,
-				(const void *)tr, b);
+				"\ttree%pbranch%u -> ", (const void *)bough, b, branch->skip,
+				(const void *)bough, b);
 			if(left) {
 				fprintf(fp, "tree%pbranch%u [arrowhead=rnormal];\n",
-					(const void *)tr, b + 1);
+					(const void *)bough, b + 1);
 			} else {
-				unsigned leaf = pT_(left_leaf)(tr, b);
-				if(trie_bmp_test(&tr->bmp, leaf)) {
-					const struct pT_(tree) *const child =tr->leaf[leaf].as_link;
-					const char *root_str = child->bsize ? "branch" : "leaf";
+				unsigned leaf = pT_(left_leaf)(bough, b);
+				if(trie_bmp_test(&bough->bmp, leaf)) {
+					const struct pT_(bough) *const child
+						= bough->leaf[leaf].as_link;
+					const char *root_str
+						= child->leaves > 1 ? "branch" : "leaf";
 					fprintf(fp,
 					"tree%p%s0 [style=dashed, arrowhead=rnormal];\n",
 					(const void *)child, root_str);
 				} else {
 					fprintf(fp,
 					"tree%pleaf%u [color=Gray75, arrowhead=rnormal];\n",
-					(const void *)tr, leaf);
+					(const void *)bough, leaf);
 				}
 			}
-			fprintf(fp, "\ttree%pbranch%u -> ", (const void *)tr, b);
+			fprintf(fp, "\ttree%pbranch%u -> ", (const void *)bough, b);
 			if(right) {
 				fprintf(fp, "tree%pbranch%u [arrowhead=lnormal];\n",
-					(const void *)tr, b + left + 1);
+					(const void *)bough, b + left + 1);
 			} else {
-				unsigned leaf = pT_(left_leaf)(tr, b) + left + 1;
-				if(trie_bmp_test(&tr->bmp, leaf)) {
-					const struct pT_(tree) *const child =tr->leaf[leaf].as_link;
-					const char *root_str = child->bsize ? "branch" : "leaf";
+				unsigned leaf = pT_(left_leaf)(bough, b) + left + 1;
+				if(trie_bmp_test(&bough->bmp, leaf)) {
+					const struct pT_(bough) *const child =bough->leaf[leaf].as_link;
+					const char *root_str
+						= child->leaves > 1 ? "branch" : "leaf";
 					fprintf(fp,
 					"tree%p%s0 [style=dashed, arrowhead=lnormal];\n",
 					(const void *)child, root_str);
 				} else {
 					fprintf(fp,
 					"tree%pleaf%u [color=Gray75, arrowhead=lnormal];\n",
-					(const void *)tr, leaf);
+					(const void *)bough, leaf);
 				}
 			}
 		}
@@ -922,37 +1075,53 @@ static void pT_(graph_tree_logic)(const struct pT_(tree) *const tr,
 
 	fprintf(fp, "\t// leaves\n");
 
-	for(i = 0; i <= tr->bsize; i++) if(!trie_bmp_test(&tr->bmp, i)) {
-		union { const struct pT_(tree) *readonly; struct pT_(tree) *promise; }
-			slybox;
+	for(lf = 0; lf < bough->leaves; lf++) if(!trie_bmp_test(&bough->bmp, lf)) {
+		/* fixme: This is idiotic. */
+		const char *keylabel;
+#		ifdef TRIE_KEY_TO_STRING
 		struct pT_(ref) ref;
-		slybox.readonly = tr, ref.tree = slybox.promise, ref.lf = i;
-		fprintf(fp,
-			"\ttree%pleaf%u [label = <%s<font color=\"Gray75\">⊔</font>>];\n",
-			(const void *)tr, i, pT_(ref_to_string)(&ref));
+		union { const struct pT_(bough) *readonly; struct pT_(bough) *promise; }
+			slybox;
+		slybox.readonly = bough, ref.bough = slybox.promise, ref.lf = lf;
+		keylabel = pT_(ref_to_string)(&ref);
+#		else
+		struct T_(cursor) cur = pT_(keylabelcur)(bough, lf);
+		char a[12];
+		pTR_(to_string)(&cur, &a), a[11] = '\0';
+		keylabel = a;
+#		endif
+		fprintf(fp, "\ttree%pleaf%u [label = <", (const void *)bough, lf);
+		private_graph_sanitize(fp, keylabel);
+		fprintf(fp, "<font color=\"Gray75\">⊔</font>>];\n");
 	}
 
-	for(i = 0; i <= tr->bsize; i++) if(trie_bmp_test(&tr->bmp, i))
-		pT_(graph_tree_logic)(tr->leaf[i].as_link, 0, fp);
+	for(lf = 0; lf < bough->leaves; lf++) if(trie_bmp_test(&bough->bmp, lf))
+		pT_(graph_tree_logic)(bough->leaf[lf].as_link, 0, fp);
 }
 
-typedef void (*pT_(tree_file_fn))(const struct pT_(tree) *, size_t, FILE *);
+typedef void (*pT_(bough_file_fn))(const struct pT_(bough) *, size_t, FILE *);
 
 /** Draw a graph of `trie` to `fn` in Graphviz format with `callback` as it's
  tree-drawing output. */
 static void pT_(graph_choose)(const struct t_(trie) *const trie,
-	const char *const fn, const pT_(tree_file_fn) callback) {
-	FILE *fp;
-	assert(trie && fn);
-	if(!(fp = fopen(fn, "w"))) { perror(fn); return; }
+	FILE *const fp, const pT_(bough_file_fn) callback) {
+	assert(trie && fp);
 	fprintf(fp, "digraph {\n"
 		"\tgraph [truecolor=true, bgcolor=transparent, fontname=modern];\n"
 		"\tnode [shape=none, fontname=modern];\n");
-	if(!trie->root) fprintf(fp, "\tidle;\n");
-	else if(trie->root->bsize == USHRT_MAX) fprintf(fp, "\tempty;\n");
-	else callback(trie->root, 0, fp);
+	if(!trie->trunk) fprintf(fp, "\tidle;\n");
+	else if(!trie->trunk->leaves) fprintf(fp, "\tempty;\n");
+	else callback(trie->trunk, 0, fp);
 	fprintf(fp, "}\n");
+}
+static int pT_(graph_choose_fn)(const struct t_(trie) *const trie,
+	const char *const fn, const pT_(bough_file_fn) callback) {
+	FILE *fp = fopen(fn, "w");
+	assert(fn);
+	if(!fp) { if(!errno) errno = EDOM; return 0; }
+	pT_(graph_choose)(trie, fp, callback);
 	fclose(fp);
+	return 1;
 }
 
 #			define BOX_PUBLIC_OVERRIDE
@@ -960,7 +1129,7 @@ static void pT_(graph_choose)(const struct t_(trie) *const trie,
 
 /** Draws `trie` on `fp` as a bit view. */
 static void T_(graph)(const struct t_(trie) *const trie,
-	FILE *const fp) { pT_(graph_tree_bits)(trie->root, 0, fp); }
+	FILE *const fp) { pT_(graph_choose)(trie, fp, &pT_(graph_tree_bits)); }
 
 /** Graphs logical, memory, and bit of `trie` output to `fn` using `no` as the
  filename index. */
@@ -983,13 +1152,13 @@ static void T_(graph_all)(const struct t_(trie) *const trie,
 
 	memcpy(copy + i_copy, bits, sizeof bits - 1);
 	memcpy(copy + i_copy + sizeof bits - 1, fn + i, fn_len - i + 1);
-	pT_(graph_choose)(trie, copy, &pT_(graph_tree_bits));
+	if(!pT_(graph_choose_fn)(trie, copy, &pT_(graph_tree_bits))) return;
 	memcpy(copy + i_copy, logic, sizeof logic - 1);
 	memcpy(copy + i_copy + sizeof logic - 1, fn + i, fn_len - i + 1);
-	pT_(graph_choose)(trie, copy, &pT_(graph_tree_logic));
+	if(!pT_(graph_choose_fn)(trie, copy, &pT_(graph_tree_logic))) return;
 	memcpy(copy + i_copy, mem, sizeof mem - 1);
 	memcpy(copy + i_copy + sizeof mem - 1, fn + i, fn_len - i + 1);
-	pT_(graph_choose)(trie, copy, &pT_(graph_tree_mem));
+	pT_(graph_choose_fn)(trie, copy, &pT_(graph_tree_mem));
 }
 
 #		else
@@ -1013,8 +1182,12 @@ static int T_(graph_fn)(const pT_(box) *const box, const char *const fn) {
 #		define BOX_PRIVATE_AGAIN
 #		include "box.h"
 static void pT_(unused_graph_coda)(void);
-static void pT_(unused_graph)(void)
-	{ T_(graph)(0, 0); T_(graph_fn)(0, 0); pT_(unused_graph_coda)(); }
+static void pT_(unused_graph)(void) {
+	T_(graph)(0, 0); T_(graph_fn)(0, 0);
+#		ifdef TRIE_NAME
+	T_(graph_all)(0, 0, 0);
+#		endif
+	pT_(unused_graph_coda)(); }
 static void pT_(unused_graph_coda)(void) { pT_(unused_graph)(); }
 
 #	endif /* Not declare-only. */

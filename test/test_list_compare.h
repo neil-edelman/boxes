@@ -139,13 +139,13 @@ static void pT_(test_binary)(struct t_(listlink) *(*const parent_new)(void *),
 	T_(xor_to)(0, 0, &la);
 	assert(!T_(head)(&la));
 	{
-		const size_t no_try = 5000;
+		const size_t no_add = 5000;
 		struct t_(list) x, y;
 		size_t i;
 		T_(clear)(&x), T_(clear)(&y);
 		/* By the PHP, this should be more than enough to get at least the
 		 small-entropy ones, (_ie_ `Letter`.) */
-		for(i = 0; i < no_try; i++) {
+		for(i = 0; i < no_add; i++) {
 			if(!(link = parent_new(parent))) { assert(0); return; }
 			t_(filler)(link);
 			T_(push)(&x, link);
@@ -168,9 +168,9 @@ static void pT_(test_binary)(struct t_(listlink) *(*const parent_new)(void *),
 			if(!(c = T_(link_next)(c)) || !(d = T_(link_next)(c))) continue;
 			break;
 		}
-		if(i == no_try) {
+		if(i == no_add) {
 			printf("Couldn't get duplicates from " QUOTE(LIST_NAME)
-				" in %lu tries; giving up.\n", (unsigned long)no_try);
+				" in %lu tries; giving up.\n", (unsigned long)no_add);
 			return;
 		} else {
 			printf("Got duplicates in %lu tries.\n", (unsigned long)i);

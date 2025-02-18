@@ -13,10 +13,10 @@
 
 /** For testing—have a pool of random names. */
 struct str32 { char str[32]; };
-#define POOL_NAME str32
-#define POOL_TYPE struct str32
-#include "../src/pool.h"
-static struct str32_pool str_pool; /* Global random string buffer. */
+#define DEQUE_NAME str32
+#define DEQUE_TYPE struct str32
+#include "../src/deque.h"
+static struct str32_deque str_storage; /* Global random string buffer. */
 
 
 /* A set of strings stored somewhere else; one must keep the storage for the
@@ -25,14 +25,14 @@ static struct str32_pool str_pool; /* Global random string buffer. */
  index and not the keys themselves; the key strings are not accessed, then. */
 /** Generate a random name from `global_pool` and assign it to `key`. */
 static void str_filler(const char **const key) {
-	struct str32 *backing = str32_pool_new(&str_pool);
+	struct str32 *backing = str32_deque_new_back(&str_storage);
 	/* Unlikely to fail, but for tests, we don't have the set-up to back-out. */
 	assert(backing && key); if(!backing || !key) exit(EXIT_FAILURE);
 	orcish(backing->str, sizeof backing->str);
 	*key = backing->str;
 }
 #define TRIE_NAME str
-#define TRIE_TO_STRING /* Uses the keys as strings. For test. */
+#define TRIE_KEY_TO_STRING /* Uses the keys as strings. For test. */
 #define TRIE_TEST
 #include "../src/trie.h"
 
@@ -53,27 +53,27 @@ static void contrived_test(void) {
 
 	/* Info about offsets. */
 	printf("offset in <str>tree:\n"
-		" bsize: %lu\n"
+		" leaves: %lu\n"
 		" branch: %lu\n"
 		" bmp: %lu\n"
 		" leaf: %lu\n"
 		" whole struct: %lu\n",
-		(unsigned long)offsetof(struct private_str_trie_tree, bsize),
-		(unsigned long)offsetof(struct private_str_trie_tree, branch),
-		(unsigned long)offsetof(struct private_str_trie_tree, bmp),
-		(unsigned long)offsetof(struct private_str_trie_tree, leaf),
-		(unsigned long)sizeof(struct private_str_trie_tree));
+		(unsigned long)offsetof(struct private_str_trie_bough, leaves),
+		(unsigned long)offsetof(struct private_str_trie_bough, branch),
+		(unsigned long)offsetof(struct private_str_trie_bough, bmp),
+		(unsigned long)offsetof(struct private_str_trie_bough, leaf),
+		(unsigned long)sizeof(struct private_str_trie_bough));
 	assert(CHAR_BIT == 8 && ' ' ^ '!' == 1); /* Assumed UTF-8 for tests. */
 	errno = 0;
 
 	/* Test limits of tries. */
-	r = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ");
+	r = str_trie_add(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ");
 	assert(r == TRIE_ABSENT);
-	r = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 256 */
+	r = str_trie_add(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 256 */
 	assert(r == TRIE_ERROR && errno == EILSEQ), errno = 0;
-	r = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa!"); /* 255 */
+	r = str_trie_add(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa!"); /* 255 */
 	assert(r == TRIE_ABSENT);
-	r = str_trie_try(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 0 */
+	r = str_trie_add(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa ä"); /* 0 */
 	assert(r == TRIE_ABSENT);
 	success = str_trie_remove(&t, "aaaaaaa aaaaaaa aaaaaaa aaaaaaa!");
 	assert(!success && errno == EILSEQ), errno = 0;
@@ -84,7 +84,7 @@ static void contrived_test(void) {
 	for(count_insert = 0, i = 0; i < sizeof words / sizeof *words; i++) {
 		const char *const word = words[i];
 		/* printf("word: %s\n", word); */
-		switch(str_trie_try(&t, word)) {
+		switch(str_trie_add(&t, word)) {
 		case TRIE_ERROR:
 			perror("trie"); assert(0); break;
 		case TRIE_ABSENT:
@@ -130,8 +130,8 @@ static void contrived_test(void) {
 	assert(count_retrieve == count_insert);
 	assert(count_sentinel == count_insert);
 	{
-		r = str_trie_try(&t, "a"), assert(r == TRIE_PRESENT);
-		r = str_trie_try(&t, "yo"), assert(r == TRIE_ABSENT);
+		r = str_trie_add(&t, "a"), assert(r == TRIE_PRESENT);
+		r = str_trie_add(&t, "yo"), assert(r == TRIE_ABSENT);
 		str_trie_graph_all(&t, "graph/trie/yo.gv", 0);
 		success = str_trie_remove(&t, "yo"), assert(success);
 		str_trie_graph_all(&t, "graph/trie/yo.gv", 1);
@@ -175,7 +175,7 @@ static void colour_filler(enum colour *const c)
 	{ *c = (unsigned)rand() / (RAND_MAX / colour_size + 1); }
 #define TRIE_NAME colour
 #define TRIE_KEY enum colour
-#define TRIE_TO_STRING
+#define TRIE_KEY_TO_STRING
 #define TRIE_TEST
 #include "../src/trie.h"
 
@@ -184,11 +184,11 @@ static void fixed_colour_test(void) {
 	struct colour_trie_cursor cur;
 	int ret;
 	enum colour colour;
-	if(!colour_trie_try(&trie, Black)
-		|| !colour_trie_try(&trie, Red)
-		|| !colour_trie_try(&trie, Yellow)
-		|| !colour_trie_try(&trie, Lime)
-		|| !colour_trie_try(&trie, Steel)) { assert(0); goto catch; }
+	if(!colour_trie_add(&trie, Black)
+		|| !colour_trie_add(&trie, Red)
+		|| !colour_trie_add(&trie, Yellow)
+		|| !colour_trie_add(&trie, Lime)
+		|| !colour_trie_add(&trie, Steel)) { assert(0); goto catch; }
 	colour_trie_graph_all(&trie, "graph/trie/colour-fixed.gv", 0);
 	colour_trie_remove(&trie, "Steel");
 	colour_trie_graph_all(&trie, "graph/trie/colour-fixed.gv", 1);
@@ -234,7 +234,7 @@ static void str8_filler(struct str8 *const s) {
 }
 #define TRIE_NAME str8
 #define TRIE_ENTRY struct str8
-#define TRIE_TO_STRING
+#define TRIE_KEY_TO_STRING
 #define TRIE_TEST
 #include "../src/trie.h"
 
@@ -251,7 +251,7 @@ static void kv1_filler(struct kv1 *const kv)
 	{ assert(kv), str_filler(&kv->key), kv->value = 42; }
 #define TRIE_NAME kv1
 #define TRIE_ENTRY struct kv1
-#define TRIE_TO_STRING
+#define TRIE_KEY_TO_STRING
 #define TRIE_TEST
 #include "../src/trie.h"
 
@@ -265,7 +265,7 @@ static void kv2_filler(struct kv2 *const kv) {
 }
 #define TRIE_NAME kv2
 #define TRIE_ENTRY struct kv2
-#define TRIE_TO_STRING
+#define TRIE_KEY_TO_STRING
 #define TRIE_TEST
 #include "../src/trie.h"
 
@@ -313,7 +313,7 @@ static void star_filler(struct star *const star) {
 #define TRIE_NAME star
 #define TRIE_ENTRY struct star
 #define TRIE_TEST
-#define TRIE_TO_STRING
+#define TRIE_KEY_TO_STRING
 #include "../src/trie.h"
 
 
@@ -334,7 +334,7 @@ static void article_test(void) {
 	for(i = 0; i < sizeof list1 / sizeof *list1; i++) {
 		const struct star *const star = stars + list1[i];
 		struct star *entry;
-		if(!star_trie_try(&trie, star->name, &entry)) { assert(0); break; }
+		if(!star_trie_add(&trie, star->name, &entry)) { assert(0); break; }
 		entry->name = star->name;
 		entry->distance = star->distance;
 	}
@@ -343,7 +343,7 @@ static void article_test(void) {
 	for(i = 0; i < sizeof list2 / sizeof *list2; i++) {
 		const struct star *const star = stars + list2[i];
 		struct star *entry;
-		if(!star_trie_try(&trie, star->name, &entry)) { assert(0); break; }
+		if(!star_trie_add(&trie, star->name, &entry)) { assert(0); break; }
 		entry->name = star->name;
 		entry->distance = star->distance;
 		star_trie_graph_all(&trie, "graph/trie/article.gv", i + 1000);
@@ -353,19 +353,102 @@ static void article_test(void) {
 }
 
 
+/* <https://www.unicode.org/Public/16.0.0/ucd/UnicodeData.txt>. Among the
+ 2-byte utf-8, whenever there's a change in the membership of unicode
+ `[\p{L}\p{M}\p{N}\p{Pc}\x200b\x200c\x200d\x2060]` (~words.) This includes the
+ surrogate U+d800 because it's in the data file, which Graphviz does not like.
+ In fact, it's not really useful to have all the characters represented at all.
+ Thus I renamed `TRIE_TO_STRING` to `TRIE_KEY_TO_STRING` and added a new
+ feature: `TRIE_TO_STRING`. I imagine that it's also useful for sticking tries
+ at the beginnings of words in a document. Anyway, this is to test the to
+ string is different from the key. One could see the file
+ `graph/trie/unicode-edges-2.gv` there is U+800, _etc_, where the key is the
+ actual code point. I don't actually know how to break on failure, but it's
+ done. */
+struct unicode { unsigned unicode; char utf8[5]; };
+static const char *unicode_key(const struct unicode *const u)
+	{ return u->utf8; }
+static void unicode_to_string(const struct unicode *const u,
+	char (*const z)[12]) { sprintf(*z, "U+%x", u->unicode); }
+#define TRIE_NAME unicode
+#define TRIE_ENTRY struct unicode
+#define TRIE_TO_STRING
+#include "../src/trie.h"
+static struct unicode unicode(unsigned unicode) {
+	struct unicode u;
+	u.unicode = unicode;
+	u.utf8[0] = '\0', u.utf8[1] = '\0', u.utf8[2] = '\0', u.utf8[3] = '\0',
+		u.utf8[4] = '\0';
+	if(unicode < 0x80) {
+		u.utf8[0] = (char)unicode;
+	} else if(unicode < 0x0800) { /* Will always be true, in this case. */
+		u.utf8[0] = 0xc0 | (char) (unicode >>  6u);
+		u.utf8[1] = 0x80 | (char)( unicode         & 0x3f);
+	} else if(unicode < 0x010000) {
+		u.utf8[0] = 0xe0 | (char)( unicode  >> 12u);
+		u.utf8[1] = 0x80 | (char)((unicode >>  6u) & 0x3f);
+		u.utf8[2] = 0x80 | (char)( unicode         & 0x3f);
+	} else if(unicode < 0x110000) {
+		u.utf8[0] = 0xf0 | (char) (unicode >> 18u);
+		u.utf8[1] = 0x80 | (char)((unicode >> 12u) & 0x3f);
+		u.utf8[2] = 0x80 | (char)((unicode >>  6u) & 0x3f);
+		u.utf8[3] = 0x80 | (char)( unicode         & 0x3f);
+	} else {
+		/* Return nul? */
+	}
+	return u;
+}
+static void unicode_add(struct unicode_trie *const trie,
+	const unsigned u) {
+	struct unicode uni = unicode(u), *put;
+	if(!unicode_trie_add(trie, uni.utf8, &put)) {
+		assert(0); /* In the absence of any error checking. */
+		return;
+	}
+	*put = uni;
+}
+static void unicode_trie_delimit(void) {
+	const char *const fn = "graph/trie/unicode-edges-2.gv";
+	struct unicode_trie trie = unicode_trie();
+#define X(n) unicode_add(&trie, 0x ## n );
+	X(800) X(830) X(840) X(85e) X(860) X(888) X(889) X(890)
+	X(897) X(8e2) X(8e3) X(964) X(966) X(870) X(871) X(9f2)
+	X(9f4) X(9fa) X(9fc) X(9fd) X(9fe) X(a76) X(a81) X(af0)
+	X(af9) X(b70) X(b71) X(bf3) X(c00) X(c77) X(c78) X(c7f)
+	X(c80) X(c84) X(c85) X(d4f) X(d54) X(d79) X(d7a) X(df4)
+	X(e01) X(e3f) X(e40) X(e4f) X(e50) X(e5a) X(e81) X(f01)
+	X(f18) X(f1a) X(f20) X(f34) X(f35) X(f36) X(f37) X(f38)
+	X(f39) X(f3a) X(f3e) X(f85) X(f86) X(fbe) X(fc6) X(fc7)
+	X(1000) X(104a) X(1050) X(109e) X(10a0) X(10fb) X(10fc) X(1360)
+	X(1369) X(1390) X(13a0) X(1400) X(1401) X(166d) X(166f) X(1680)
+	X(1681) X(169b) X(16a0) X(16eb) X(16ee) X(1735) X(1740) X(17d4)
+	X(17d7) X(17d8) X(17dc) X(1800) X(180b) X(180e) X(180f) X(1940)
+	X(1946) X(19de) X(1a00) X(1a1e) X(1a20) X(1aa0) X(1aa7) X(1aa8)
+	X(1ab0) X(1b4e) X(1b50) X(1b5a) X(1b6b) X(1b74) X(1b80) X(1bfc)
+	X(1c00) X(1c3b) X(1c40) X(1c7e) X(1c80) X(1cc0) X(1cd0) X(1cd3)
+	X(1cd4) X(1fbd) X(1fbe) X(1fbf) X(1fc2) X(1fcd) X(1fd0) X(1fdd)
+	X(1fe0) X(1fed) X(1ff2) X(1ffd)
+#undef X
+	unicode_trie_graph_fn(&trie, fn);
+	unicode_trie_(&trie);
+	fprintf(stderr, "See %s.\n", fn);
+}
+
+
 int main(void) {
 	unsigned seed = (unsigned)clock();
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	errno = 0;
-	str_trie_test(), str32_pool_clear(&str_pool);
-	contrived_test(), str32_pool_clear(&str_pool);
+	str_trie_test(), str32_deque_clear(&str_storage);
+	contrived_test(), str32_deque_clear(&str_storage);
 	fixed_colour_test();
 	colour_trie_test();
 	str8_trie_test();
-	kv1_trie_test(), str32_pool_(&str_pool);
+	kv1_trie_test(), str32_deque_(&str_storage);
 	kv2_trie_test();
 	star_trie_test();
 	header_trie_test();
 	article_test();
+	unicode_trie_delimit();
 	return EXIT_SUCCESS;
 }

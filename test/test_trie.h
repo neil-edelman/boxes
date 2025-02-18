@@ -15,7 +15,7 @@ void T_(test)(void);
 #	if 0
 #		include "../src/orcish.h"
 /** Prints `tree` to `stdout`; useful in debugging. */
-static void pT_(print)(const struct pT_(tree) *const tree) {
+static void pT_(print)(const struct pT_(bough) *const tree) {
 	const struct trie_branch *branch;
 	unsigned b, i;
 	assert(tree);
@@ -38,20 +38,20 @@ static void pT_(print)(const struct pT_(tree) *const tree) {
 #	endif
 
 /** Make sure `tree` is in a valid state, (and all the children.) */
-static void pT_(valid_tree)(/*const*/ struct pT_(tree) *const tree) {
+static void pT_(valid_bough)(/*const*/ struct pT_(bough) *const bough) {
 	unsigned i;
 	int cmp = 0;
 	const char *str1 = 0;
-	assert(tree && tree->bsize <= TRIE_ORDER - 1);
-	for(i = 0; i < tree->bsize; i++)
-		assert(tree->branch[i].left < tree->bsize - i);
-	for(i = 0; i <= tree->bsize; i++) {
-		if(trie_bmp_test(&tree->bmp, i)) {
-			pT_(valid_tree)(tree->leaf[i].as_link);
+	assert(bough && bough->leaves <= TRIE_ORDER);
+	for(i = 0; i < bough->leaves - 1; i++)
+		assert(bough->branch[i].left < bough->leaves - 1 - i);
+	for(i = 0; i < bough->leaves; i++) {
+		if(trie_bmp_test(&bough->bmp, i)) {
+			pT_(valid_bough)(bough->leaf[i].as_link);
 		} else {
 			const char *str2;
 			struct pT_(ref) ref;
-			ref.tree = tree, ref.lf = i;
+			ref.bough = bough, ref.lf = i;
 			str2 = pT_(ref_to_string)(&ref);
 			if(str1) cmp = strcmp(str1, str2), assert(cmp < 0);
 			str1 = str2;
@@ -61,8 +61,8 @@ static void pT_(valid_tree)(/*const*/ struct pT_(tree) *const tree) {
 
 /** Makes sure the `trie` is in a valid state. */
 static void pT_(valid)(const struct t_(trie) *const trie) {
-	if(!trie || !trie->root) return;
-	pT_(valid_tree)(trie->root);
+	if(!trie || !trie->trunk) return;
+	pT_(valid_bough)(trie->trunk);
 }
 
 static pT_(key) pT_(entry_key)(const pT_(entry) *entry) {
@@ -121,9 +121,9 @@ static void pT_(test)(void) {
 			);
 		switch(
 #	ifndef TRIE_ENTRY /* <!-- key set */
-		T_(try)(&trie, k)
+		T_(add)(&trie, k)
 #	else /* key set --><!-- map */
-		T_(try)(&trie, k, &e)
+		T_(add)(&trie, k, &e)
 #	endif /* map --> */
 		) {
 		case TRIE_ERROR: perror("trie"); assert(0); return;
@@ -202,7 +202,7 @@ static void pT_(test)(void) {
 		struct T_(cursor) cur = T_(prefix)(&trie, "");
 		assert(!T_(exists)(&cur));
 	}
-	t_(trie_)(&trie), assert(!trie.root), pT_(valid)(&trie);
+	t_(trie_)(&trie), assert(!trie.trunk), pT_(valid)(&trie);
 	assert(!errno);
 }
 
@@ -255,9 +255,9 @@ static void pT_(test_random)(void) {
 			/*printf("Creating %s: ", pT_(key_string)(key));*/
 			switch(
 #	ifdef TRIE_ENTRY
-				T_(try)(&trie, key, &e)
+				T_(add)(&trie, key, &e)
 #	else
-				T_(try)(&trie, key)
+				T_(add)(&trie, key)
 #	endif
 			) {
 			case TRIE_ERROR:
