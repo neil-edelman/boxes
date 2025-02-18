@@ -784,7 +784,6 @@ static void header_filler(char *x) { char_filler(x); }
 
 
 int main(void) {
-	/* Trie is apparently tied to tree in Xcode. It's not working. */
 	unsigned seed = 0/*(unsigned)clock()*/;
 	errno = 0;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
@@ -796,11 +795,11 @@ int main(void) {
 	redblack();
 	redblack_tree_test();
 	pair_tree_test();
-	/*star_tree_test();
+	star_tree_test();
 	entry_tree_test();
 	loop_tree_test();
 	loop();
 	typical_tree_test();
-	header_tree_test();*/
+	header_tree_test();
 	return EXIT_SUCCESS;
 }
