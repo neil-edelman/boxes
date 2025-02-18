@@ -180,7 +180,7 @@ struct pT_(branch_bough) { struct pT_(bough) base, *child[TREE_ORDER]; };
 		forbidden	(leaves,MAX]
  …Which I didn't define very well. */
 
-/* A pointer to a bough plus height is a [sub]-tree. */
+/* A pointer to a bough plus height is a sub-tree. */
 struct pT_(subtree) { struct pT_(bough) *bough; unsigned height; };
 /** See <fn:<t>tree>.
 
@@ -189,25 +189,13 @@ struct t_(tree);
 struct t_(tree) { struct pT_(subtree) trunk; };
 typedef struct t_(tree) pT_(box);
 
-/* Address of a specific key by node. Height might not be used, but there's too
- many structs in this file anyway. (That's <tag:<pT>tree>…merge this) */
+/* Address of a specific key. */
 struct pT_(ref) {
 	struct pT_(bough) *bough; /* If null, others ignored. */
-	unsigned height, idx; /* `idx < node.size` means valid. */
+	unsigned height, idx; /* `idx < bough.size`, `height > 0`. */
 };
-
+/* Enough to address a specific key and move keys. */
 struct T_(cursor) { struct pT_(subtree) *trunk; struct pT_(ref) ref; };
-
-struct pT_(entry) {
-	pT_(key) key;
-#	ifdef TREE_VALUE
-	pT_(value) *value;
-#	endif
-};
-
-/** Adding, deleting, or changes in the topology of the tree invalidate the
- iterator. To modify the tree while iterating, take the <fn:<T>key> and restart
- the iterator with <fn:<T>less> or <fn:<T>more> as appropriate. */
 
 #	ifdef BOX_NON_STATIC /* Public functions. */
 struct T_(cursor) T_(begin)(const struct t_(tree) *);
@@ -691,12 +679,12 @@ end:
 	return 1;
 }
 
-/** Private: frees non-empty `tree` and it's children recursively, but doesn't
- put it to idle or clear pointers.
- @param[keep] Keep one leaf if non-null. Set to null before. */
+/** Private: frees non-empty `tree` and it's children recursively.
+ @param[keep] Keep one leaf-bough if non-null (**); set the pointer to null
+ before calling it (*). */
 static void pT_(clear_r)(struct pT_(subtree) tree, struct pT_(bough) **const keep) {
-	assert(tree.bough);
-	if(tree.height > 1) {
+	assert(tree.bough && tree.height);
+	if(tree.height >= 1) {
 		if(keep && !*keep) *keep = tree.bough;
 		else free(tree.bough);
 	} else {

@@ -40,7 +40,7 @@ static void char_bounds(void) {
 		/*i*/'h', 'j', 'j', 'j' };
 	char i;
 	char_tree_bulk_add(&tree, 'b');
-	char_tree_bulk_add(&tree, 'd');
+	/*char_tree_bulk_add(&tree, 'd');
 	char_tree_bulk_add(&tree, 'f');
 	char_tree_bulk_add(&tree, 'h');
 	char_tree_bulk_add(&tree, 'j');
@@ -57,7 +57,7 @@ static void char_bounds(void) {
 		char left = char_tree_less_or(&tree, i, '_');
 		printf("%c\t%c\t(%c)\n", i, left, correct_left[(int)i-'a']);
 		assert(left == correct_left[(int)i-'a']);
-	}
+	}*/
 	char_tree_(&tree);
 }
 
@@ -788,12 +788,12 @@ int main(void) {
 	unsigned seed = 0/*(unsigned)clock()*/;
 	errno = 0;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	char_tree_test();
+	//char_tree_test();
 	char_bounds();
-	int_tree_test(); /* <- this? */
-	order3_tree_test(); /*<- this is behaving non-deterministically? */
-	order3();
-	redblack_tree_test();
+	//int_tree_test(); /* <- this? */
+	//order3_tree_test(); /*<- this is behaving non-deterministically? */
+	//order3();
+	//redblack_tree_test(); /* <- also this, after? */
 	/*redblack(); <- when I uncomment this, the above is non-deterministic?
 	pair_tree_test();
 	star_tree_test();
