@@ -4,7 +4,7 @@
  @abstract Header <../../src/tree.h>; examples <../../test/test_tree.c>;
  article <../tree/tree.pdf>.
 
- @subtitle Ordered tree
+ @subtitle B-tree
 
  ![Example of an order-3 tree.](../doc/tree/tree.png)
 
@@ -45,7 +45,7 @@
  @param[TREE_DECLARE_ONLY, TREE_NON_STATIC]
  For headers in different compilation units.
 
- @fixme merge, difference, trie
+ @fixme merge, difference
  @depend [box](../../src/box.h)
  @std C89 */
 
@@ -86,7 +86,7 @@
  smaller values are less-eager; in the extreme,
  <Johnson, Shasha, 1993, Free-at-Empty>, show good results. */
 #	define TREE_MIN (TREE_MAX / 3 ? TREE_MAX / 3 : 1)
-#	define TREE_SPLIT (TREE_ORDER / 2) /* Split index: even order left-leaning. */
+#	define TREE_SPLIT (TREE_ORDER / 2) /* Even order left-leaning. */
 #	define TREE_RESULT X(ERROR), X(ABSENT), X(PRESENT)
 #	define X(n) TREE_##n
 /** A result of modifying the tree, of which `TREE_ERROR` is false.
@@ -140,11 +140,11 @@ typedef TREE_VALUE pT_(value);
  <Coder, Kim D, 2018, Tree anatomy>—what are usually "nodes" are boughs. There
  are 2 kinds of bough: leaf-boughs and branch-boughs.
 
- * Every branch-bough (stem) has at most `TREE_ORDER == TREE_MAX + 1` children.
+ * Every branch-bough has at most `TREE_ORDER == TREE_MAX + 1` children.
  * Every non-trunk and non-bulk-loaded bough has at least `TREE_MIN` keys,
    (`⎣TREE_MAX/3⎦`.)
- * Every branch-bough (stem) also has the number of keys plus one children;
-   (that is, it is an implicit full binary tree.)
+ * Every branch-bough also has the number of keys plus one children; (that is,
+   it is an implicit full binary tree.)
  * All leaf-boughs are at the height one; they do'n't carry links to other
    boughs.
  * Bulk-loading always is ascending. */
@@ -163,7 +163,7 @@ struct pT_(branch_bough) { struct pT_(bough) base, *child[TREE_ORDER]; };
  non-full node, in spirit with the tree analogy.
 
  1-based instead of 0-based is continually giving me headaches. I think because
- the implicit conversion of the flag states:
+ the implicit conversion of the flag states. Before I had:
 					branches
  null	forbidden	MAX (I think?)
  there	storage		MAX
@@ -178,7 +178,7 @@ struct pT_(branch_bough) { struct pT_(bough) base, *child[TREE_ORDER]; };
  there	tree		[1,leaves]
  null	forbidden	[1,leaves]
 		forbidden	(leaves,MAX]
- …Which I didn't define very well. */
+ …Which I didn't define very well. I think I've got all of them. */
 
 /* A pointer to a bough plus height is a sub-tree. */
 struct pT_(subtree) { struct pT_(bough) *bough; unsigned height; };
@@ -215,8 +215,8 @@ void T_(clear)(struct t_(tree) *);
 size_t T_(count)(const struct t_(tree) *);
 int T_(contains)(const struct t_(tree) *, pT_(key));
 pT_(value) T_(get_or)(const struct t_(tree) *, pT_(key), pT_(value));
-pT_(key) T_(less_or)(const struct t_(tree) *, pT_(key), pT_(key));
-pT_(key) T_(more_or)(const struct t_(tree) *, pT_(key), pT_(key));
+pT_(key) T_(lower_or)(const struct t_(tree) *, pT_(key), pT_(key));
+pT_(key) T_(upper_or)(const struct t_(tree) *, pT_(key), pT_(key));
 #		ifdef TREE_VALUE
 enum tree_result T_(assign)(struct t_(tree) *, pT_(key), pT_(value) **);
 enum tree_result T_(update)(struct t_(tree) *, pT_(key), pT_(key) *, pT_(value) **);
@@ -769,12 +769,6 @@ static int pT_(nodes)(const struct t_(tree) *const tree,
 	return 1;
 }
 
-////////// FIXME
-#include "orcish.h"
-#		ifdef TREE_TO_STRING
-static void pT_(graph)(const struct pT_(subtree) *, FILE *);
-#		endif
-
 #		ifdef TREE_VALUE /* <!-- map */
 /** Adds or updates `key` in `root`. If not-null, `eject` will be the replaced
  key, otherwise don't replace. If `value` is not-null, sticks the associated
@@ -879,7 +873,6 @@ grow: /* Leaf is full. */ {
 	new_head = --cur.height > 1 ? pT_(as_branch)(new_head)->child[0] : 0;
 	cur.bough = pT_(as_branch)(cur.bough)->child[cur.idx];
 	pT_(node_lb)(&cur, key);
-	//printf("sibling is %s, cur is %s.\n", orcify(sibling), orcify(cur.bough));
 	assert(!sibling->size && cur.bough->size == TREE_MAX);
 	/* Expand `cur`, which is full, to multiple nodes. */
 	if(cur.idx < TREE_SPLIT) { /* Descend hole to `cur`. */
@@ -1260,8 +1253,9 @@ static pT_(value) T_(get_or)(const struct t_(tree) *const tree,
 /** For example, `tree = { 10 }`, `x = 5 -> default_value`, `x = 10 -> 10`,
  `x = 11 -> 10`.
  @return Key in `tree` less-then-or-equal to `x` or `default_key` if `x` is
- smaller than all in `tree`. @order \O(\log |`tree`|) @allow */
-static pT_(key) T_(less_or)(const struct t_(tree) *const tree,
+ smaller than all in `tree`. @order \O(\log |`tree`|) @allow
+ @fixme Should return a cursor. */
+static pT_(key) T_(lower_or)(const struct t_(tree) *const tree,
 	const pT_(key) x, const pT_(key) default_key) {
 	struct pT_(ref) ref;
 	return tree && (ref = pT_(less)(tree->trunk, x)).bough ?
@@ -1274,7 +1268,7 @@ static pT_(key) T_(less_or)(const struct t_(tree) *const tree,
  @return Key in `tree` greater-than-or-equal to `x` or `default_key` if `x` is
  greater than all in `tree`.
  @order \O(\log |`tree`|) @allow */
-static pT_(key) T_(more_or)(const struct t_(tree) *const tree,
+static pT_(key) T_(upper_or)(const struct t_(tree) *const tree,
 	const pT_(key) x, const pT_(key) default_key) {
 	struct pT_(ref) ref;
 	return tree && (ref = pT_(more)(tree->trunk, x)).bough
@@ -1477,9 +1471,7 @@ static int T_(bulk_finish)(struct t_(tree) *const tree) {
  distinguishable keys.)
  @param[valuep] Only present if `TREE_VALUE` (map) was specified. If this
  parameter is non-null and a return value other then `TREE_ERROR`, this
- receives the address of the value associated with the `key`. This pointer is
- only guaranteed to be valid only while the `tree` doesn't undergo
- structural changes, (such as potentially calling it again.)
+ receives the address of the value associated with the `key`.
  @return Either `TREE_ERROR` (false) and doesn't touch `tree`, `TREE_ABSENT`
  and adds a new key with `key`, or `TREE_PRESENT` there was already an existing
  key. @throws[malloc] @order \Theta(\log |`tree`|) @allow */
@@ -1607,9 +1599,8 @@ static void pT_(unused_base)(void) {
 	pT_(key) k; pT_(value) v; memset(&k, 0, sizeof k); memset(&v, 0, sizeof v);
 	T_(begin)(0); T_(exists)(0); T_(entry)(0); T_(key)(0);
 	T_(next)(0); T_(previous)(0); T_(less)(0, k); T_(more)(0, k);
-	t_(tree)(); t_(tree_)(0); T_(clear)(0); T_(count)(0);
-	T_(contains)(0, k); T_(get_or)(0, k, v);
-	T_(less_or)(0, k, k); T_(more_or)(0, k, k);
+	t_(tree)(); t_(tree_)(0); T_(clear)(0); T_(count)(0); T_(contains)(0, k);
+	T_(get_or)(0, k, v); T_(lower_or)(0, k, k); T_(upper_or)(0, k, k);
 #		ifdef TREE_VALUE
 	T_(bulk_assign)(0, k, 0); T_(assign)(0, k, 0);
 	T_(update)(0, k, 0, 0); T_(value)(0);

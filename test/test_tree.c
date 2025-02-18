@@ -48,13 +48,13 @@ static void char_bounds(void) {
 	char_tree_graph_fn(&tree, "graph/tree/char-bounds.gv");
 	printf("right:\n");
 	for(i = 'a'; i < 'm'; i++) {
-		char right = char_tree_more_or(&tree, i, '_'); // this is a terrible name
+		char right = char_tree_upper_or(&tree, i, '_'); // this is a terrible name
 		printf("%c\t%c\t(%c)\n", i, right, correct_right[(int)i-'a']);
 		assert(right == correct_right[(int)i-'a']);
 	}
 	printf("left:\n");
 	for(i = 'a'; i < 'm'; i++) {
-		char left = char_tree_less_or(&tree, i, '_');
+		char left = char_tree_lower_or(&tree, i, '_');
 		printf("%c\t%c\t(%c)\n", i, left, correct_left[(int)i-'a']);
 		assert(left == correct_left[(int)i-'a']);
 	}
@@ -114,11 +114,11 @@ static void order3(void) {
 	assert(ret);
 	order3_tree_graph_horiz_fn(&between, "graph/tree/between.gv");
 
-	v = order3_tree_more_or(&between, 50, 0), assert(v == 100);
-	v = order3_tree_more_or(&between, 150, 0), assert(v == 200);
-	v = order3_tree_more_or(&between, 250, 0), assert(v == 300);
-	v = order3_tree_more_or(&between, 300, 0), assert(v == 300);
-	v = order3_tree_more_or(&between, 350, 0), assert(!v);
+	v = order3_tree_upper_or(&between, 50, 0), assert(v == 100);
+	v = order3_tree_upper_or(&between, 150, 0), assert(v == 200);
+	v = order3_tree_upper_or(&between, 250, 0), assert(v == 300);
+	v = order3_tree_upper_or(&between, 300, 0), assert(v == 300);
+	v = order3_tree_upper_or(&between, 350, 0), assert(!v);
 
 	cur = order3_tree_more(&between, 50);
 	printf("more(50), %s:%u.\n",
@@ -157,11 +157,11 @@ static void order3(void) {
 	assert(!order3_tree_exists(&cur));
 	printf("->dne.\n");
 
-	v = order3_tree_less_or(&between, 50, 0), assert(!v);
-	v = order3_tree_less_or(&between, 150, 0), assert(v == 100);
-	v = order3_tree_less_or(&between, 250, 0), assert(v == 200);
-	v = order3_tree_less_or(&between, 300, 0), assert(v == 300);
-	v = order3_tree_less_or(&between, 350, 0), assert(v == 300);
+	v = order3_tree_lower_or(&between, 50, 0), assert(!v);
+	v = order3_tree_lower_or(&between, 150, 0), assert(v == 100);
+	v = order3_tree_lower_or(&between, 250, 0), assert(v == 200);
+	v = order3_tree_lower_or(&between, 300, 0), assert(v == 300);
+	v = order3_tree_lower_or(&between, 350, 0), assert(v == 300);
 
 	cur = order3_tree_less(&between, 50);
 	printf("less(50), %s:%u.\n",
@@ -209,18 +209,18 @@ static void order3(void) {
 	order3_tree_bulk_add(&between, 80);
 	order3_tree_bulk_finish(&between);
 	order3_tree_graph_horiz_fn(&between, "graph/tree/left.gv");
-	v = order3_tree_less_or(&between, 10, 0), assert(v == 10);
-	v = order3_tree_less_or(&between, 80, 0), assert(v == 80);
-	v = order3_tree_less_or(&between, 55, 0), assert(v == 50);
-	v = order3_tree_less_or(&between, 85, 0), assert(v == 80);
-	v = order3_tree_less_or(&between, 15, 0), assert(v == 10);
-	v = order3_tree_less_or(&between, 5, 0), assert(!v);
-	v = order3_tree_more_or(&between, 10, 0), assert(v == 10);
-	v = order3_tree_more_or(&between, 80, 0), assert(v == 80);
-	v = order3_tree_more_or(&between, 55, 0), assert(v == 60);
-	v = order3_tree_more_or(&between, 85, 0), assert(!v);
-	v = order3_tree_more_or(&between, 15, 0), assert(v == 20);
-	v = order3_tree_more_or(&between, 5, 0), assert(v == 10);
+	v = order3_tree_lower_or(&between, 10, 0), assert(v == 10);
+	v = order3_tree_lower_or(&between, 80, 0), assert(v == 80);
+	v = order3_tree_lower_or(&between, 55, 0), assert(v == 50);
+	v = order3_tree_lower_or(&between, 85, 0), assert(v == 80);
+	v = order3_tree_lower_or(&between, 15, 0), assert(v == 10);
+	v = order3_tree_lower_or(&between, 5, 0), assert(!v);
+	v = order3_tree_upper_or(&between, 10, 0), assert(v == 10);
+	v = order3_tree_upper_or(&between, 80, 0), assert(v == 80);
+	v = order3_tree_upper_or(&between, 55, 0), assert(v == 60);
+	v = order3_tree_upper_or(&between, 85, 0), assert(!v);
+	v = order3_tree_upper_or(&between, 15, 0), assert(v == 20);
+	v = order3_tree_upper_or(&between, 5, 0), assert(v == 10);
 
 	/* For the paper. */
 	order3_tree_clear(&between);
@@ -706,9 +706,9 @@ static void loop(void) {
 	ret = loop_tree_meaning_get(&tree, 3), assert(ret == 3);
 	ret = loop_tree_meaning_get(&tree, 0), assert(ret == 42);
 
-	ret = loop_tree_more_or(&tree, 3, 0), assert(ret == 3);
-	ret = loop_tree_more_or(&tree, 4, 0), assert(ret == 0);
-	/* fixme: more_or returns a value but more returns a cursor? lol. That is
+	ret = loop_tree_upper_or(&tree, 3, 0), assert(ret == 3);
+	ret = loop_tree_upper_or(&tree, 4, 0), assert(ret == 0);
+	/* fixme: upper_or returns a value but more returns a cursor? lol. That is
 	 terrible. There are so many cursors, values, and ranges, I don't think
 	 it's feasible to have the all? I know why C++ it is transparent. what we
 	 need is a range object that could be applied to the tree? */
@@ -723,8 +723,8 @@ static void loop(void) {
 	ret = loop_tree_meaning_get(&tree, 0), assert(ret == 42);
 	ret = loop_tree_meaning_get(&tree, 1), assert(ret == 101);
 
-	ret = loop_tree_less_or(&tree, 3, 0), assert(ret == 3);
-	ret = loop_tree_less_or(&tree, 4, 0), assert(ret == 3);
+	ret = loop_tree_lower_or(&tree, 3, 0), assert(ret == 3);
+	ret = loop_tree_lower_or(&tree, 4, 0), assert(ret == 3);
 	cur = loop_tree_less(&tree, 0), assert(!loop_tree_exists(&cur));
 	cur = loop_tree_less(&tree, 4),
 		assert(loop_tree_exists(&cur) && loop_tree_key(&cur) == 3);
