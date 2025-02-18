@@ -784,7 +784,7 @@ static void header_filler(char *x) { char_filler(x); }
 
 
 int main(void) {
-	unsigned seed = 0/*(unsigned)clock()*/;
+	unsigned seed = (unsigned)clock();
 	errno = 0;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	char_bounds();
