@@ -160,10 +160,25 @@ struct pT_(bough) {
 struct pT_(branch_bough) { struct pT_(bough) base, *child[TREE_ORDER]; };
 
 /* fixme: Notch (add) and nick (delete) are good names for the highest
- non-full node, in spirit with the tree analogy. Replace `<pT>node` with a
- uniform terminology between `tree` and `tree`. This should be made of
- fixed-size `<pT>bought`, with a `tree` as—for tree—an implicit structure
- realized by binary search. The root bought is the `trunk`. */
+ non-full node, in spirit with the tree analogy.
+
+ 1-based instead of 0-based is continually giving me headaches. I think because
+ the implicit conversion of the flag states:
+					branches
+ null	forbidden	MAX (I think?)
+ there	storage		MAX
+ null	idle		0
+ null	forbidden	[1,branches]
+ there	tree		[0,branches]
+		forbidden	(branches,MAX)
+ …convert to…
+					leaves
+ null	idle		0
+ there	storage		0
+ there	tree		[1,leaves]
+ null	forbidden	[1,leaves]
+		forbidden	(leaves,MAX]
+ …Which I didn't define very well. */
 
 /* A pointer to a bough plus height is a [sub]-tree. */
 struct pT_(tree) { struct pT_(bough) *bough; unsigned height; };
@@ -283,7 +298,8 @@ static struct pT_(ref) pT_(less)(const struct pT_(tree) tree,
 	const pT_(key) x) {
 	struct pT_(ref) hi, found;
 	found.bough = 0;
-	if(!tree.bough || !tree.height) return found;
+	if(!tree.height) return found;
+	assert(tree.bough);
 	for(hi.bough = tree.bough, hi.height = tree.height; ;
 		hi.bough = pT_(as_branch_c)(hi.bough)->child[hi.idx], hi.height--) {
 		if(!(hi.idx = hi.bough->size)) continue;
@@ -303,7 +319,8 @@ static struct pT_(ref) pT_(more)(const struct pT_(tree) tree,
 	const pT_(key) x) {
 	struct pT_(ref) lo, found;
 	found.bough = 0;
-	if(!tree.bough || !tree.height) return found;
+	if(!tree.height) return found;
+	assert(tree.bough);
 	for(lo.bough = tree.bough, lo.height = tree.height; ;
 		lo.bough = pT_(as_branch_c)(lo.bough)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.bough->size; lo.idx = 0;
@@ -321,7 +338,8 @@ static struct pT_(ref) pT_(more)(const struct pT_(tree) tree,
 static struct pT_(ref) pT_(lookup_find)(const struct pT_(tree) tree,
 	const pT_(key) x) {
 	struct pT_(ref) lo;
-	if(!tree.bough || !tree.height) return lo.bough = 0, lo;
+	if(!tree.height) return lo.bough = 0, lo;
+	assert(tree.bough);
 	for(lo.bough = tree.bough, lo.height = tree.height; ;
 		lo.bough = pT_(as_branch_c)(lo.bough)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.bough->size; lo.idx = 0;
@@ -340,7 +358,7 @@ static struct pT_(ref) pT_(lookup_hole)(struct pT_(tree) tree,
 	const pT_(key) x, struct pT_(ref) *const hole, int *const is_equal) {
 	struct pT_(ref) lo;
 	hole->bough = 0;
-	assert(tree.height >= 1);
+	assert(tree.height >= 1 && tree.bough);
 	for(lo.bough = tree.bough, lo.height = tree.height; ;
 		lo.bough = pT_(as_branch_c)(lo.bough)->child[lo.idx], lo.height--) {
 		unsigned hi = lo.bough->size; lo.idx = 0;
@@ -1324,12 +1342,12 @@ static enum tree_result T_(bulk_add)(struct t_(tree) *const tree, pT_(key) key)
 		assert(!tree->trunk.height);
 		if(!(bough = malloc(sizeof *bough))) goto catch;
 		bough->size = 0;
-		tree->trunk.height = 1; /* In anticipation. */
 		tree->trunk.bough = bough;
+		tree->trunk.height = 1; /* In anticipation. */
 	} else if(!tree->trunk.height) { /* Empty tree. */
 		bough = tree->trunk.bough;
-		tree->trunk.height = 1; /* In anticipation. */
 		bough->size = 0;
+		tree->trunk.height = 1; /* In anticipation. */
 	} else {
 		struct pT_(tree) unfull = { 0, 0 };
 		unsigned new_nodes, n; /* Count new nodes. */
