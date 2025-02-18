@@ -1531,7 +1531,7 @@ static enum tree_result T_(update)(struct t_(tree) *const tree,
  `tree`. @order \Theta(\log |`tree`|) @allow */
 static int T_(remove)(struct t_(tree) *const tree, const pT_(key) key)
 	{ return assert(tree), !!tree->trunk.bough
-	&& tree->trunk.height /**/> 1 && pT_(remove)(&tree->trunk, key); }
+	&& tree->trunk.height && pT_(remove)(&tree->trunk, key); }
 
 /** `source` is copied to, and overwrites, `tree`.
  @param[source] In the case where it's null or idle, if `tree` is empty, then
