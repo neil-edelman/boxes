@@ -792,7 +792,7 @@ int main(void) {
 	char_bounds();
 	int_tree_test();
 	order3_tree_test();
-	order3();
+	/**/order3();
 	redblack_tree_test();
 	redblack();
 	/*pair_tree_test();
