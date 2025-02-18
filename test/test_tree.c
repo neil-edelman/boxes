@@ -40,8 +40,8 @@ static void char_bounds(void) {
 		/*i*/'h', 'j', 'j', 'j' };
 	char i;
 	char_tree_bulk_add(&tree, 'b');
-	/*char_tree_bulk_add(&tree, 'd');
-	char_tree_bulk_add(&tree, 'f');
+	char_tree_bulk_add(&tree, 'd');
+	/*char_tree_bulk_add(&tree, 'f');
 	char_tree_bulk_add(&tree, 'h');
 	char_tree_bulk_add(&tree, 'j');
 	char_tree_bulk_finish(&tree);

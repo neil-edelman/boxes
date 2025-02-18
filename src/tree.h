@@ -679,34 +679,34 @@ end:
 	return 1;
 }
 
-/** Private: frees non-empty `tree` and it's children recursively.
+/** Private: frees non-empty `sub` and it's children recursively.
  @param[keep] Keep one leaf-bough if non-null (**); set the pointer to null
  before calling it (*). */
-static void pT_(clear_r)(struct pT_(subtree) tree, struct pT_(bough) **const keep) {
-	assert(tree.bough && tree.height);
-	if(tree.height >= 1) {
-		if(keep && !*keep) *keep = tree.bough;
-		else free(tree.bough);
+static void pT_(clear_r)(struct pT_(subtree) sub,
+	struct pT_(bough) **const keep) {
+	assert(sub.bough && sub.height);
+	if(sub.height >= 1) {
+		if(keep && !*keep) *keep = sub.bough;
+		else free(sub.bough);
 	} else {
 		struct pT_(subtree) child;
 		unsigned i;
-		child.height = tree.height - 1;
-		for(i = 0; i <= tree.bough->size; i++)
-			child.bough = pT_(as_branch)(tree.bough)->child[i],
+		child.height = sub.height - 1;
+		for(i = 0; i <= sub.bough->size; i++)
+			child.bough = pT_(as_branch)(sub.bough)->child[i],
 			pT_(clear_r)(child, keep);
-		free(pT_(as_branch)(tree.bough));
+		free(pT_(as_branch)(sub.bough));
 	}
 }
-/** Private: `tree` can be null. */
+/** Private clear `tree` but don't clear memory for one bough if we have it.
+ That is, if not idle, go into an empty state. */
 static void pT_(clear)(struct t_(tree) *tree) {
-	struct pT_(bough) *one = 0;
-	/* Already not there/idle/empty. */
-	if(!tree || !tree->trunk.bough || !tree->trunk.height) return;
-	pT_(clear_r)(tree->trunk, &one), assert(one);
-	/* This is a special state where the tree has one leaf, but it is empty.
-	 This state exists because it gives hysteresis to 0–1 transition because
-	 we have no advanced memory management. */
-	tree->trunk.bough = one;
+	struct pT_(bough) *lazy = 0;
+	assert(tree);
+	if(!tree->trunk.height) return;
+	assert(tree->trunk.bough);
+	pT_(clear_r)(tree->trunk, &lazy), assert(lazy);
+	tree->trunk.bough = lazy;
 	tree->trunk.height = 0;
 }
 
@@ -1258,7 +1258,8 @@ static void t_(tree_)(struct t_(tree) *const tree) {
 /** Clears `tree`, which can be null, idle, empty, or full. If it is empty or
  full, it remains active, (all except one node are freed.)
  @order \O(|`tree`|) @allow */
-static void T_(clear)(struct t_(tree) *const tree) { pT_(clear)(tree); }
+static void T_(clear)(struct t_(tree) *const tree)
+	{ assert(tree), pT_(clear)(tree); }
 
 /** Counts all the keys on `tree`, which can be null.
  @order \O(|`tree`|) @allow */
@@ -1309,18 +1310,18 @@ static pT_(key) T_(more_or)(const struct t_(tree) *const tree,
 
 #		ifdef TREE_VALUE /* <!-- map */
 /** Only if `TREE_VALUE` is set; the set version is <fn:<T>add>. Packs `key` on
- the right side of `tree` without doing the usual restructuring. All other
- topology modification functions should be avoided until followed by
+ the upper side of `tree` tightly without doing the usual restructuring. All
+ other topology modification functions should be avoided until followed by
  <fn:<T>bulk_finish>.
- @param[value] A pointer to the key's value which is set by the function on
- returning true. Can be null.
+ @param[put_value_here] A pointer to the key's value which is set by the
+ function on returning true. Can be null.
  @return One of <tag:tree_result>: `TREE_ERROR` and `errno` will be set,
  `TREE_PRESENT` if the key is already (the highest) in the tree, and
- `TREE_ABSENT`, added, the `value` (if applicable) is uninitialized.
+ `TREE_ABSENT`, added, the `put_value_here` (if applicable) is uninitialized.
  @throws[EDOM] `x` is smaller than the largest key in `tree`. @throws[malloc]
  @order \O(\log |`tree`|) @allow */
 static enum tree_result T_(bulk_assign)(struct t_(tree) *const tree,
-	pT_(key) key, pT_(value) **const value) {
+	pT_(key) key, pT_(value) **const put_value_here) {
 #		elif defined TREE_VALUE /* map --><!-- null: For braces matching. */
 }
 #		else /* null --><!-- set */
@@ -1359,10 +1360,10 @@ static enum tree_result T_(bulk_add)(struct t_(tree) *const tree, pT_(key) key)
 		if(t_(less)(max, key) > 0) return errno = EDOM, TREE_ERROR;
 		if(t_(less)(key, max) <= 0) {
 #		ifdef TREE_VALUE
-			if(value) {
+			if(put_value_here) {
 				struct pT_(ref) max_ref;
 				max_ref.bough = last, max_ref.idx = last->size - 1;
-				*value = pT_(ref_to_valuep)(max_ref);
+				*put_value_here = pT_(ref_to_valuep)(max_ref);
 			}
 #		endif
 			return TREE_PRESENT;
@@ -1394,7 +1395,7 @@ static enum tree_result T_(bulk_add)(struct t_(tree) *const tree, pT_(key) key)
 			branch->child[1] = branch->child[0];
 			branch->child[0] = tree->trunk.bough;
 			bough = tree->trunk.bough = head, tree->trunk.height++;
-		} else if(unfull.height) { /* Add head to tree. */
+		} else if(unfull.height > 1) { /* Add head to tree. */
 			struct pT_(branch_bough) *const branch
 				= pT_(as_branch)(bough = unfull.bough);
 			assert(new_nodes);
@@ -1404,10 +1405,10 @@ static enum tree_result T_(bulk_add)(struct t_(tree) *const tree, pT_(key) key)
 	assert(bough && bough->size < TREE_MAX);
 	bough->key[bough->size] = key;
 #		ifdef TREE_VALUE
-	if(value) {
+	if(put_value_here) {
 		struct pT_(ref) max_ref;
 		max_ref.bough = bough, max_ref.idx = bough->size;
-		*value = pT_(ref_to_valuep)(max_ref);
+		*put_value_here = pT_(ref_to_valuep)(max_ref);
 	}
 #		endif
 	bough->size++;
