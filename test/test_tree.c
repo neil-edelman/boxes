@@ -41,14 +41,14 @@ static void char_bounds(void) {
 	char i;
 	char_tree_bulk_add(&tree, 'b');
 	char_tree_bulk_add(&tree, 'd');
-	/*char_tree_bulk_add(&tree, 'f');
+	char_tree_bulk_add(&tree, 'f');
 	char_tree_bulk_add(&tree, 'h');
 	char_tree_bulk_add(&tree, 'j');
 	char_tree_bulk_finish(&tree);
 	char_tree_graph_fn(&tree, "graph/tree/char-bounds.gv");
 	printf("right:\n");
 	for(i = 'a'; i < 'm'; i++) {
-		char right = char_tree_more_or(&tree, i, '_');
+		char right = char_tree_more_or(&tree, i, '_'); // this is a terrible name
 		printf("%c\t%c\t(%c)\n", i, right, correct_right[(int)i-'a']);
 		assert(right == correct_right[(int)i-'a']);
 	}
@@ -57,7 +57,7 @@ static void char_bounds(void) {
 		char left = char_tree_less_or(&tree, i, '_');
 		printf("%c\t%c\t(%c)\n", i, left, correct_left[(int)i-'a']);
 		assert(left == correct_left[(int)i-'a']);
-	}*/
+	}
 	char_tree_(&tree);
 }
 

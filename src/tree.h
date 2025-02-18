@@ -685,7 +685,7 @@ end:
 static void pT_(clear_r)(struct pT_(subtree) sub,
 	struct pT_(bough) **const keep) {
 	assert(sub.bough && sub.height);
-	if(sub.height >= 1) {
+	if(sub.height <= 1) {
 		if(keep && !*keep) *keep = sub.bough;
 		else free(sub.bough);
 	} else {
@@ -1248,7 +1248,7 @@ static void t_(tree_)(struct t_(tree) *const tree) {
 	if(!tree->trunk.bough) { /* Idle. */
 		assert(!tree->trunk.height);
 	} else if(!tree->trunk.height) { /* Empty with space. */
-		free(tree->trunk.bough);
+		assert(tree->trunk.bough), free(tree->trunk.bough);
 	} else {
 		pT_(clear_r)(tree->trunk, 0);
 	}
@@ -1433,8 +1433,10 @@ catch: /* Didn't work. Reset. */
 static int T_(bulk_finish)(struct t_(tree) *const tree) {
 	struct pT_(subtree) s;
 	struct pT_(bough) *right;
-	if(!tree || !tree->trunk.bough || !tree->trunk.height) return 1;
-	for(s = tree->trunk; s.height/**/>1; s.bough = right, s.height--) {
+	assert(tree);
+	if(!tree->trunk.height) return 1;
+	assert(tree->trunk.bough);
+	for(s = tree->trunk; s.height > 1; s.bough = right, s.height--) {
 		unsigned distribute, right_want, right_move, take_sibling;
 		struct pT_(branch_bough) *parent = pT_(as_branch)(s.bough);
 		struct pT_(bough) *sibling = (assert(parent->base.size),
