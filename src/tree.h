@@ -789,34 +789,23 @@ static enum tree_result pT_(update)(struct pT_(subtree) *const trunk,
 	 Figure 2. */
 	struct pT_(bough) *new_head = 0;
 	struct pT_(ref) add, hole, cur;
-	printf("__update__\n");
 	assert(trunk);
-/*#		ifdef TREE_TO_STRING
-	{
-		FILE *fp = fopen("graph/tree/work1.gv", "w");
-		pT_(graph)(trunk, fp);
-		fclose(fp);
-	}
-#		endif*/
 	if(!(add.bough = trunk->bough)) goto idle;
 	else if(!trunk->height) goto empty;
 	goto descend;
 idle: /* No reserved memory; reserve memory. */
-	printf("idle\n");
 	assert(!add.bough && !trunk->height);
 	if(!(add.bough = malloc(sizeof *add.bough))) goto catch;
 	trunk->bough = add.bough;
 	trunk->height = 0;
 	goto empty;
 empty: /* Tree is empty with one bought. */
-	printf("empty\n");
 	assert(add.bough && !trunk->height);
 	add.height = trunk->height = 1;
 	add.bough->size = 0;
 	add.idx = 0;
 	goto insert;
 descend: /* Record last node that has space. */
-	printf("descend\n");
 	{
 		int is_equal = 0;
 		add = pT_(lookup_hole)(*trunk, key, &hole, &is_equal);
@@ -831,10 +820,8 @@ descend: /* Record last node that has space. */
 			return TREE_PRESENT;
 		}
 	}
-	//printf("hole %s; add %s\n", orcify(hole.bough), orcify(add.bough));
 	if(hole.bough == add.bough) goto insert; else goto grow;
 insert: /* Leaf has space to spare; usually end up here. */
-	printf("insert\n");
 	assert(add.bough && add.idx <= add.bough->size && add.bough->size < TREE_MAX);
 	memmove(add.bough->key + add.idx + 1, add.bough->key + add.idx,
 		sizeof *add.bough->key * (add.bough->size - add.idx));
@@ -848,7 +835,7 @@ insert: /* Leaf has space to spare; usually end up here. */
 	if(value) *value = pT_(ref_to_valuep)(add);
 #		endif
 	return TREE_ABSENT;
-grow: /* Leaf is full. */ printf("grow\n"); {
+grow: /* Leaf is full. */ {
 	unsigned new_no = hole.bough ? hole.height - 1: trunk->height + 1;
 	struct pT_(bough) **new_next = &new_head, *new_leaf;
 	struct pT_(branch_bough) *new_branch;
@@ -884,16 +871,9 @@ grow: /* Leaf is full. */ printf("grow\n"); {
 	}
 	cur = hole; /* Go down; (as opposed to doing it on paper.) */
 	goto split;
-} split: printf("split\n"); { /* Split between the new and existing nodes. */
+} split: { /* Split between the new and existing nodes. */
 	struct pT_(bough) *sibling;
 	sibling = new_head;
-#		ifdef TREE_TO_STRING
-	{
-		FILE *fp = fopen("graph/tree/work2.gv", "w");
-		pT_(graph)(trunk, fp);
-		fclose(fp);
-	}
-#		endif
 	assert(cur.bough && cur.bough->size && cur.height);
 	/* Easier to descend now while split hasn't happened. */
 	new_head = --cur.height > 1 ? pT_(as_branch)(new_head)->child[0] : 0;
@@ -979,13 +959,6 @@ grow: /* Leaf is full. */ printf("grow\n"); {
 	hole.bough->key[hole.idx] = key;
 #		ifdef TREE_VALUE
 	if(value) *value = pT_(ref_to_valuep)(hole);
-#		endif
-#		ifdef TREE_TO_STRING
-	{
-		FILE *fp = fopen("graph/tree/work3.gv", "w");
-		pT_(graph)(trunk, fp);
-		fclose(fp);
-	}
 #		endif
 	assert(!new_head);
 	return TREE_ABSENT;

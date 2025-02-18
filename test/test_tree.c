@@ -788,15 +788,15 @@ int main(void) {
 	unsigned seed = 0/*(unsigned)clock()*/;
 	errno = 0;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	//char_tree_test();
 	char_bounds();
-	//int_tree_test(); /* <- this? */
-	//order3_tree_test(); /*<- this is behaving non-deterministically? */
-	//order3();
-	//redblack_tree_test(); /* <- also this, after? */
-	/*redblack(); <- when I uncomment this, the above is non-deterministic?
+	char_tree_test();
+	int_tree_test();
+	order3();
+	order3_tree_test();
+	redblack();
+	redblack_tree_test();
 	pair_tree_test();
-	star_tree_test();
+	/*star_tree_test();
 	entry_tree_test();
 	loop_tree_test();
 	loop();

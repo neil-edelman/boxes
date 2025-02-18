@@ -222,7 +222,6 @@ static void pT_(test)(void) {
 #	endif
 
 	/* Clear. */
-	T_(clear)(0);
 	T_(clear)(&empty), assert(!empty.trunk.bough);
 	T_(clear)(&tree), assert(tree.trunk.bough && !tree.trunk.height);
 	n_unique = 0;
