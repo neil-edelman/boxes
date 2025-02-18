@@ -1020,7 +1020,10 @@ static void pT_(cannibalize_r)(struct pT_(ref) ref,
 static void pT_(cannibalize)(const struct t_(tree) *const tree,
 	struct pT_(scaffold) *const sc) {
 	struct pT_(ref) ref;
-	assert(tree && tree->trunk.height && sc);
+	assert(tree /*&& tree->trunk.height != UINT_MAX ?? I don't know what that
+		means. tree->trunk.height can be absolutely 0 and bough can be null,
+		apparently. So I just invalidated a check by switching to 1-based?
+		Sketchy. */ && sc);
 	/* Nothing to cannibalize. */
 	if(!sc->victim.branches && !sc->victim.leaves) return;
 	assert(tree->trunk.bough);

@@ -291,7 +291,7 @@ static void pT_(test)(void) {
 		if(++i > test_size) assert(0); /* Avoids loops. */
 		assert(T_(contains)(&tree, k));
 		succ = T_(remove)(&tree, k);
-		T_(graph_fn)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-a-after.gv");
+		/*T_(graph_fn)(&tree, "graph/tree/" QUOTE(TREE_NAME) "-a-after.gv");*/
 		assert(succ);
 		assert(!T_(contains)(&tree, k));
 		cur = T_(more)(&tree, k);

@@ -425,7 +425,7 @@ static void order3(void) {
 		order3_tree_graph_horiz_fn(&removal, "graph/tree/removal-b-9.gv");
 		for(n = 0; n < size; n++)
 			assert(order3_tree_contains(&removal, n + 1) == in[n]);
-		assert(removal.trunk.height == UINT_MAX && removal.trunk.bough);
+		assert(!removal.trunk.height && removal.trunk.bough);
 		for(n = 0; n < size; n++) assert(!in[n]);
 		{
 			int success = order3_tree_remove(&removal, 0);
@@ -550,7 +550,7 @@ static void redblack(void) {
 			assert(!rnd[i].in || rnd[i].x == v);
 		}
 	}
-	assert(tree.trunk.height == UINT_MAX);
+	assert(!tree.trunk.height);
 	goto finally;
 catch:
 	perror("redblack");
@@ -788,14 +788,14 @@ int main(void) {
 	unsigned seed = 0/*(unsigned)clock()*/;
 	errno = 0;
 	srand(seed), rand(), printf("Seed %u.\n", seed);
-	char_bounds();
 	char_tree_test();
+	char_bounds();
 	int_tree_test();
 	order3_tree_test();
 	order3();
-	/*redblack_tree_test();
+	redblack_tree_test();
 	redblack();
-	pair_tree_test();
+	/*pair_tree_test();
 	star_tree_test();
 	entry_tree_test();
 	loop_tree_test();
