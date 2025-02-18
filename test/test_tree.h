@@ -276,17 +276,16 @@ static void pT_(test)(void) {
 
 	/* Delete all. Removal invalidates iterator. */
 	for(cur = T_(begin)(&tree), i = 0; T_(exists)(&cur); ) {
-		/**/char z[12];/**/
+		/*char z[12];*/
 		int succ;
 		k = T_(key)(&cur);
-/**/
-#	ifdef TREE_VALUE
+/*#	ifdef TREE_VALUE
 		v = T_(value)(&cur);
 		t_(to_string)(k, v, &z);
 #	else
 		t_(to_string)(k, &z);
 #	endif
-		printf("Targeting <%s> for removal.\n", z);/**/
+		printf("Targeting <%s> for removal.\n", z);*/
 		if(i) { const int cmp = t_(less)(k, k_prev); assert(cmp > 0); }
 		k_prev = k;
 		if(++i > test_size) assert(0); /* Avoids loops. */
@@ -296,8 +295,8 @@ static void pT_(test)(void) {
 		assert(succ);
 		assert(!T_(contains)(&tree, k));
 		cur = T_(more)(&tree, k);
-		/**/printf("Iterator now %s:h%u:i%u.\n",
-			orcify(cur.ref.bough), cur.ref.height, cur.ref.idx);/**/
+		/*printf("Iterator now %s:h%u:i%u.\n",
+			orcify(cur.ref.bough), cur.ref.height, cur.ref.idx);*/
 		if(!(i & (i + 1)) || i == test_size - 1) {
 			sprintf(fn, "graph/tree/" QUOTE(TREE_NAME) "-rm-%lu.gv", i);
 			T_(graph_fn)(&tree, fn);

@@ -411,7 +411,7 @@ branch: {
 		if(pred.leaf.bough->size < TREE_MIN) /* Possible in bulk-add? */
 			{ pred.leaf.bough = 0; goto no_pred; }
 		else if(pred.leaf.bough->size > TREE_MIN) pred.top = pred.leaf.height;
-		else if(pred.leaf.height)
+		else if(pred.leaf.height > 1)
 			pT_(as_branch)(pred.leaf.bough)->child[TREE_MAX] = up;
 		else pred.parent = up;
 	} while(pred.leaf.height > 1);
@@ -428,7 +428,7 @@ no_pred:
 		if(succ.leaf.bough->size < TREE_MIN)
 			{ succ.leaf.bough = 0; goto no_succ; }
 		else if(succ.leaf.bough->size > TREE_MIN) succ.top = succ.leaf.height;
-		else if(succ.leaf.height)
+		else if(succ.leaf.height > 1)
 			pT_(as_branch)(succ.leaf.bough)->child[TREE_MAX] = up;
 		else succ.parent = up;
 	} while(succ.leaf.height > 1);
