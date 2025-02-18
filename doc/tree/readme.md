@@ -2,7 +2,7 @@
 
 Header [\.\./\.\./src/tree\.h](../../src/tree.h); examples [\.\./\.\./test/test\_tree\.c](../../test/test_tree.c); article [\.\./tree/tree\.pdf](../tree/tree.pdf)\.
 
-## Ordered tree ##
+## B\-tree ##
 
  * [Description](#user-content-preamble)
  * [Typedef Aliases](#user-content-typedef): [&lt;pT&gt;key](#user-content-typedef-95e6d0aa), [&lt;pT&gt;value](#user-content-typedef-3a465e90), [&lt;pT&gt;less_fn](#user-content-typedef-ca992ecb), [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)
@@ -19,14 +19,12 @@ A [&lt;t&gt;tree](#user-content-tag-31fcdbd1) is an ordered set or map contained
 
 All operations are fail\-fast and will not compromise the integrity of any existing tree\.
 
-Adding, deleting, or changes in the topology of the tree invalidate the iterator\. To modify the tree while iterating, take the [&lt;T&gt;key](#user-content-fn-3154790) and restart the iterator with [&lt;T&gt;less](#user-content-fn-8d54d9ac) or [&lt;T&gt;more](#user-content-fn-5c40636c) as appropriate\.
+
 
  * Parameter: TREE\_NAME, TREE\_KEY  
-   `<t>` that satisfies `C` naming conventions when mangled, required, and `TREE_KEY`, a type, [&lt;pT&gt;key](#user-content-typedef-95e6d0aa), whose default is `unsigned int`\.
+   `<t>` that satisfies `C` naming conventions when mangled, and `TREE_KEY`, a type, [&lt;pT&gt;key](#user-content-typedef-95e6d0aa), required\.
  * Parameter: TREE\_VALUE  
    Optional payload to go with the type, [&lt;pT&gt;value](#user-content-typedef-3a465e90), thus making it a map instead of a set\.
- * Parameter: TREE\_LESS  
-   By default, defines [&lt;t&gt;less](#user-content-fn-534b464c) `(a, b) -> a < b`\.
  * Parameter: TREE\_ORDER  
    Sets the branching factor, or order as [Knuth, 1998 Art 3](https://scholar.google.ca/scholar?q=Knuth%2C+1998+Art+3), to the range `[3, UINT_MAX+1]`\. Default 65 is tuned to an integer to pointer map, and should be okay for most variations\. 4 is isomorphic to left\-leaning red\-black tree, [Sedgewick, 2008, LLRB](https://scholar.google.ca/scholar?q=Sedgewick%2C+2008%2C+LLRB)\. The above illustration is 5\.
  * Parameter: TREE\_DEFAULT  
@@ -42,7 +40,7 @@ Adding, deleting, or changes in the topology of the tree invalidate the iterator
  * Dependancies:  
    [box](../../src/box.h)
  * Caveat:  
-   merge, difference, trie ([&lt;T&gt;less](#user-content-fn-8d54d9ac), [&lt;T&gt;more](#user-content-fn-5c40636c))
+   merge, difference ([&lt;T&gt;less](#user-content-fn-8d54d9ac), [&lt;T&gt;more](#user-content-fn-5c40636c), [&lt;T&gt;lower_or](#user-content-fn-757bdb4a))
 
 
 ## <a id = "user-content-typedef" name = "user-content-typedef">Typedef Aliases</a> ##
@@ -67,7 +65,7 @@ On `TREE_VALUE`, this creates a map, otherwise a set of [&lt;pT&gt;key](#user-co
 
 <code>typedef int(*<strong>&lt;pT&gt;less_fn</strong>)(const &lt;pT&gt;key a, const &lt;pT&gt;key b);</code>
 
-Inducing a strict weak order by returning a positive result if `a` is out\-of\-order with respect to `b`\. It only needs to divide entries into two instead of three categories\. Compatible, but less strict then the comparators from `bsearch` and `qsort`\. For example, `return a > b` or `return strcmp(a, b)` would give an ascending tree\.
+Inducing a strict weak order by returning a positive result if `a` is out\-of\-order with respect to `b`\. Compatible, but less strict then the comparators from `bsearch` and `qsort`: it only needs to divide entries into two instead of three categories\. For example, `return a > b` or `return strcmp(a, b)` would give an ascending tree\.
 
 
 
@@ -145,25 +143,23 @@ See [&lt;t&gt;tree](#user-content-fn-31fcdbd1)\.
 
 <tr><td align = right>&lt;pT&gt;value</td><td><a href = "#user-content-fn-e9879d51">&lt;T&gt;get_or</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;value</td></tr>
 
-<tr><td align = right>&lt;pT&gt;key</td><td><a href = "#user-content-fn-8379b620">&lt;T&gt;less_or</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;key</td></tr>
+<tr><td align = right>&lt;pT&gt;key</td><td><a href = "#user-content-fn-757bdb4a">&lt;T&gt;lower_or</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;key</td></tr>
 
-<tr><td align = right>&lt;pT&gt;key</td><td><a href = "#user-content-fn-21b4ade0">&lt;T&gt;more_or</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;key</td></tr>
-
-<tr><td align = right>enum tree_result</td><td><a href = "#user-content-fn-a7e74be3">&lt;T&gt;bulk_assign</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;value</td></tr>
-
-<tr><td align = right>enum tree_result</td><td><a href = "#user-content-fn-d169d163">&lt;T&gt;bulk_try</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key</td></tr>
-
-<tr><td align = right>int</td><td><a href = "#user-content-fn-81569ea5">&lt;T&gt;bulk_finish</a></td><td>&lt;t&gt;tree</td></tr>
+<tr><td align = right>&lt;pT&gt;key</td><td><a href = "#user-content-fn-23a48fb9">&lt;T&gt;upper_or</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;key</td></tr>
 
 <tr><td align = right>enum tree_result</td><td><a href = "#user-content-fn-40416930">&lt;T&gt;assign</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;value</td></tr>
 
 <tr><td align = right>enum tree_result</td><td><a href = "#user-content-fn-5772e298">&lt;T&gt;update</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;key, &lt;pT&gt;value</td></tr>
 
-<tr><td align = right>enum tree_result</td><td><a href = "#user-content-fn-edcfce52">&lt;T&gt;try</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key</td></tr>
+<tr><td align = right>enum tree_result</td><td><a href = "#user-content-fn-a7e74be3">&lt;T&gt;bulk_assign</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;value</td></tr>
+
+<tr><td align = right>enum tree_result</td><td><a href = "#user-content-fn-7b8ec2e0">&lt;T&gt;add</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key</td></tr>
 
 <tr><td align = right>enum tree_result</td><td><a href = "#user-content-fn-5772e298">&lt;T&gt;update</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key, &lt;pT&gt;key</td></tr>
 
-<tr><td align = right>int</td><td><a href = "#user-content-fn-9508049f">&lt;pT&gt;remove</a></td><td>&lt;pT&gt;tree, &lt;pT&gt;key</td></tr>
+<tr><td align = right>enum tree_result</td><td><a href = "#user-content-fn-7a080fa1">&lt;T&gt;bulk_add</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key</td></tr>
+
+<tr><td align = right>int</td><td><a href = "#user-content-fn-81569ea5">&lt;T&gt;bulk_finish</a></td><td>&lt;t&gt;tree</td></tr>
 
 <tr><td align = right>int</td><td><a href = "#user-content-fn-56806709">&lt;T&gt;remove</a></td><td>&lt;t&gt;tree, &lt;pT&gt;key</td></tr>
 
@@ -197,19 +193,19 @@ See [&lt;t&gt;tree](#user-content-fn-31fcdbd1)\.
 
 <tr><td align = right>static &lt;pT&gt;value</td><td><a href = "#user-content-fn-e9879d51">&lt;T&gt;get_or</a></td><td>tree, key, default_value</td></tr>
 
-<tr><td align = right>static &lt;pT&gt;key</td><td><a href = "#user-content-fn-8379b620">&lt;T&gt;less_or</a></td><td>tree, x, default_key</td></tr>
+<tr><td align = right>static &lt;pT&gt;key</td><td><a href = "#user-content-fn-757bdb4a">&lt;T&gt;lower_or</a></td><td>tree, x, default_key</td></tr>
 
-<tr><td align = right>static &lt;pT&gt;key</td><td><a href = "#user-content-fn-21b4ade0">&lt;T&gt;more_or</a></td><td>tree, x, default_key</td></tr>
+<tr><td align = right>static &lt;pT&gt;key</td><td><a href = "#user-content-fn-23a48fb9">&lt;T&gt;upper_or</a></td><td>tree, x, default_key</td></tr>
 
-<tr><td align = right>static enum tree_result</td><td><a href = "#user-content-fn-a7e74be3">&lt;T&gt;bulk_assign</a></td><td>tree, key, value</td></tr>
+<tr><td align = right>static enum tree_result</td><td><a href = "#user-content-fn-a7e74be3">&lt;T&gt;bulk_assign</a></td><td>tree, key, put_value_here</td></tr>
 
-<tr><td align = right>static enum tree_result</td><td><a href = "#user-content-fn-d169d163">&lt;T&gt;bulk_try</a></td><td>tree, key</td></tr>
+<tr><td align = right>static enum tree_result</td><td><a href = "#user-content-fn-7a080fa1">&lt;T&gt;bulk_add</a></td><td>tree, key</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-81569ea5">&lt;T&gt;bulk_finish</a></td><td>tree</td></tr>
 
 <tr><td align = right>static enum tree_result</td><td><a href = "#user-content-fn-40416930">&lt;T&gt;assign</a></td><td>tree, key, valuep</td></tr>
 
-<tr><td align = right>static enum tree_result</td><td><a href = "#user-content-fn-edcfce52">&lt;T&gt;try</a></td><td>tree, key</td></tr>
+<tr><td align = right>static enum tree_result</td><td><a href = "#user-content-fn-7b8ec2e0">&lt;T&gt;add</a></td><td>tree, key</td></tr>
 
 <tr><td align = right>static enum tree_result</td><td><a href = "#user-content-fn-5772e298">&lt;T&gt;update</a></td><td>tree, key, eject, value</td></tr>
 
@@ -323,33 +319,15 @@ See [&lt;t&gt;tree](#user-content-fn-31fcdbd1)\.
 
 
 
-### <a id = "user-content-fn-8379b620" name = "user-content-fn-8379b620">&lt;T&gt;less_or</a> ###
+### <a id = "user-content-fn-757bdb4a" name = "user-content-fn-757bdb4a">&lt;T&gt;lower_or</a> ###
 
-<code>&lt;pT&gt;key <strong>&lt;T&gt;less_or</strong>(const struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;key</em>);</code>
-
-
-
-### <a id = "user-content-fn-21b4ade0" name = "user-content-fn-21b4ade0">&lt;T&gt;more_or</a> ###
-
-<code>&lt;pT&gt;key <strong>&lt;T&gt;more_or</strong>(const struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;key</em>);</code>
+<code>&lt;pT&gt;key <strong>&lt;T&gt;lower_or</strong>(const struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;key</em>);</code>
 
 
 
-### <a id = "user-content-fn-a7e74be3" name = "user-content-fn-a7e74be3">&lt;T&gt;bulk_assign</a> ###
+### <a id = "user-content-fn-23a48fb9" name = "user-content-fn-23a48fb9">&lt;T&gt;upper_or</a> ###
 
-<code>enum tree_result <strong>&lt;T&gt;bulk_assign</strong>(struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;value</em> **);</code>
-
-
-
-### <a id = "user-content-fn-d169d163" name = "user-content-fn-d169d163">&lt;T&gt;bulk_try</a> ###
-
-<code>enum tree_result <strong>&lt;T&gt;bulk_try</strong>(struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>);</code>
-
-
-
-### <a id = "user-content-fn-81569ea5" name = "user-content-fn-81569ea5">&lt;T&gt;bulk_finish</a> ###
-
-<code>int <strong>&lt;T&gt;bulk_finish</strong>(struct <em>&lt;t&gt;tree</em> *);</code>
+<code>&lt;pT&gt;key <strong>&lt;T&gt;upper_or</strong>(const struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;key</em>);</code>
 
 
 
@@ -365,9 +343,15 @@ See [&lt;t&gt;tree](#user-content-fn-31fcdbd1)\.
 
 
 
-### <a id = "user-content-fn-edcfce52" name = "user-content-fn-edcfce52">&lt;T&gt;try</a> ###
+### <a id = "user-content-fn-a7e74be3" name = "user-content-fn-a7e74be3">&lt;T&gt;bulk_assign</a> ###
 
-<code>enum tree_result <strong>&lt;T&gt;try</strong>(struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>);</code>
+<code>enum tree_result <strong>&lt;T&gt;bulk_assign</strong>(struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;value</em> **);</code>
+
+
+
+### <a id = "user-content-fn-7b8ec2e0" name = "user-content-fn-7b8ec2e0">&lt;T&gt;add</a> ###
+
+<code>enum tree_result <strong>&lt;T&gt;add</strong>(struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>);</code>
 
 
 
@@ -377,9 +361,15 @@ See [&lt;t&gt;tree](#user-content-fn-31fcdbd1)\.
 
 
 
-### <a id = "user-content-fn-9508049f" name = "user-content-fn-9508049f">&lt;pT&gt;remove</a> ###
+### <a id = "user-content-fn-7a080fa1" name = "user-content-fn-7a080fa1">&lt;T&gt;bulk_add</a> ###
 
-<code>int <strong>&lt;pT&gt;remove</strong>(struct <em>&lt;pT&gt;tree</em> *, <em>&lt;pT&gt;key</em>);</code>
+<code>enum tree_result <strong>&lt;T&gt;bulk_add</strong>(struct <em>&lt;t&gt;tree</em> *, <em>&lt;pT&gt;key</em>);</code>
+
+
+
+### <a id = "user-content-fn-81569ea5" name = "user-content-fn-81569ea5">&lt;T&gt;bulk_finish</a> ###
+
+<code>int <strong>&lt;T&gt;bulk_finish</strong>(struct <em>&lt;t&gt;tree</em> *);</code>
 
 
 
@@ -551,9 +541,9 @@ Counts all the keys on `tree`, which can be null\.
 
 
 
-### <a id = "user-content-fn-8379b620" name = "user-content-fn-8379b620">&lt;T&gt;less_or</a> ###
+### <a id = "user-content-fn-757bdb4a" name = "user-content-fn-757bdb4a">&lt;T&gt;lower_or</a> ###
 
-<code>static &lt;pT&gt;key <strong>&lt;T&gt;less_or</strong>(const struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>x</em>, const &lt;pT&gt;key <em>default_key</em>)</code>
+<code>static &lt;pT&gt;key <strong>&lt;T&gt;lower_or</strong>(const struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>x</em>, const &lt;pT&gt;key <em>default_key</em>)</code>
 
 For example, `tree = { 10 }`, `x = 5 -> default_value`, `x = 10 -> 10`, `x = 11 -> 10`\.
 
@@ -561,13 +551,15 @@ For example, `tree = { 10 }`, `x = 5 -> default_value`, `x = 10 -> 10`, `x = 11 
    Key in `tree` less\-then\-or\-equal to `x` or `default_key` if `x` is smaller than all in `tree`\.
  * Order:  
    &#927;\(log |`tree`|\)
+ * Caveat:  
+   Should return a cursor\.
 
 
 
 
-### <a id = "user-content-fn-21b4ade0" name = "user-content-fn-21b4ade0">&lt;T&gt;more_or</a> ###
+### <a id = "user-content-fn-23a48fb9" name = "user-content-fn-23a48fb9">&lt;T&gt;upper_or</a> ###
 
-<code>static &lt;pT&gt;key <strong>&lt;T&gt;more_or</strong>(const struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>x</em>, const &lt;pT&gt;key <em>default_key</em>)</code>
+<code>static &lt;pT&gt;key <strong>&lt;T&gt;upper_or</strong>(const struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>x</em>, const &lt;pT&gt;key <em>default_key</em>)</code>
 
 For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`, `x = 11 -> default_value`\.
 
@@ -581,14 +573,14 @@ For example, `tree = { 10 }`, `x = 5 -> 10`, `x = 10 -> 10`, `x = 11 -> default_
 
 ### <a id = "user-content-fn-a7e74be3" name = "user-content-fn-a7e74be3">&lt;T&gt;bulk_assign</a> ###
 
-<code>static enum tree_result <strong>&lt;T&gt;bulk_assign</strong>(struct &lt;t&gt;tree *const <em>tree</em>, &lt;pT&gt;key <em>key</em>, &lt;pT&gt;value **const <em>value</em>)</code>
+<code>static enum tree_result <strong>&lt;T&gt;bulk_assign</strong>(struct &lt;t&gt;tree *const <em>tree</em>, &lt;pT&gt;key <em>key</em>, &lt;pT&gt;value **const <em>put_value_here</em>)</code>
 
-Only if `TREE_VALUE` is set; the set version is [&lt;T&gt;try](#user-content-fn-edcfce52)\. Packs `key` on the right side of `tree` without doing the usual restructuring\. All other topology modification functions should be avoided until followed by [&lt;T&gt;bulk_finish](#user-content-fn-81569ea5)\.
+Only if `TREE_VALUE` is set; the set version is [&lt;T&gt;add](#user-content-fn-7b8ec2e0)\. Packs `key` on the upper side of `tree` tightly without doing the usual restructuring\. All other topology modification functions should be avoided until followed by [&lt;T&gt;bulk_finish](#user-content-fn-81569ea5)\.
 
- * Parameter: _value_  
+ * Parameter: _put\_value\_here_  
    A pointer to the key's value which is set by the function on returning true\. Can be null\.
  * Return:  
-   One of [tree_result](#user-content-tag-9c3f99d7): `TREE_ERROR` and `errno` will be set, `TREE_PRESENT` if the key is already \(the highest\) in the tree, and `TREE_ABSENT`, added, the `value` \(if applicable\) is uninitialized\.
+   One of [tree_result](#user-content-tag-9c3f99d7): `TREE_ERROR` and `errno` will be set, `TREE_PRESENT` if the key is already \(the highest\) in the tree, and `TREE_ABSENT`, added, the `put_value_here` \(if applicable\) is uninitialized\.
  * Exceptional return: EDOM  
    `x` is smaller than the largest key in `tree`\.
  * Exceptional return: malloc  
@@ -598,9 +590,9 @@ Only if `TREE_VALUE` is set; the set version is [&lt;T&gt;try](#user-content-fn-
 
 
 
-### <a id = "user-content-fn-d169d163" name = "user-content-fn-d169d163">&lt;T&gt;bulk_try</a> ###
+### <a id = "user-content-fn-7a080fa1" name = "user-content-fn-7a080fa1">&lt;T&gt;bulk_add</a> ###
 
-<code>static enum tree_result <strong>&lt;T&gt;bulk_try</strong>(struct &lt;t&gt;tree *const <em>tree</em>, &lt;pT&gt;key <em>key</em>)</code>
+<code>static enum tree_result <strong>&lt;T&gt;bulk_add</strong>(struct &lt;t&gt;tree *const <em>tree</em>, &lt;pT&gt;key <em>key</em>)</code>
 
 Only if `TREE_VALUE` is not set; see [&lt;T&gt;assign](#user-content-fn-40416930), which is the map version\. Packs `key` on the right side of `tree`\.
 
@@ -610,7 +602,7 @@ Only if `TREE_VALUE` is not set; see [&lt;T&gt;assign](#user-content-fn-40416930
 
 <code>static int <strong>&lt;T&gt;bulk_finish</strong>(struct &lt;t&gt;tree *const <em>tree</em>)</code>
 
-Distributes `tree` \(can be null\) on the right side so that, after a series of [&lt;T&gt;bulk_try](#user-content-fn-d169d163) or [&lt;T&gt;bulk_assign](#user-content-fn-a7e74be3), it will be consistent with the minimum number of keys in a node\.
+Distributes `tree` \(can be null\) on the right side so that, after a series of [&lt;T&gt;bulk_add](#user-content-fn-7a080fa1) or [&lt;T&gt;bulk_assign](#user-content-fn-a7e74be3), it will be consistent with the minimum number of keys in a node\.
 
  * Return:  
    The re\-distribution was a success and all nodes are within rules\. \(Only when intermixing bulk and regular operations, can the function return false\.\)
@@ -627,7 +619,7 @@ Distributes `tree` \(can be null\) on the right side so that, after a series of 
 Adds or gets `key` in `tree`\. If `key` is already in `tree`, uses the old value, _vs_ [&lt;T&gt;update](#user-content-fn-5772e298)\. \(This is only significant in trees with distinguishable keys\.\)
 
  * Parameter: _valuep_  
-   Only present if `TREE_VALUE` \(map\) was specified\. If this parameter is non\-null and a return value other then `TREE_ERROR`, this receives the address of the value associated with the `key`\. This pointer is only guaranteed to be valid only while the `tree` doesn't undergo structural changes, \(such as potentially calling it again\.\)
+   Only present if `TREE_VALUE` \(map\) was specified\. If this parameter is non\-null and a return value other then `TREE_ERROR`, this receives the address of the value associated with the `key`\.
  * Return:  
    Either `TREE_ERROR` \(false\) and doesn't touch `tree`, `TREE_ABSENT` and adds a new key with `key`, or `TREE_PRESENT` there was already an existing key\.
  * Exceptional return: malloc  
@@ -637,9 +629,9 @@ Adds or gets `key` in `tree`\. If `key` is already in `tree`, uses the old value
 
 
 
-### <a id = "user-content-fn-edcfce52" name = "user-content-fn-edcfce52">&lt;T&gt;try</a> ###
+### <a id = "user-content-fn-7b8ec2e0" name = "user-content-fn-7b8ec2e0">&lt;T&gt;add</a> ###
 
-<code>static enum tree_result <strong>&lt;T&gt;try</strong>(struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>key</em>)</code>
+<code>static enum tree_result <strong>&lt;T&gt;add</strong>(struct &lt;t&gt;tree *const <em>tree</em>, const &lt;pT&gt;key <em>key</em>)</code>
 
 Only if `TREE_VALUE` is not defined\. Adds `key` to `tree` only if it is a new value, otherwise returns `TREE_PRESENT`\. See [&lt;T&gt;assign](#user-content-fn-40416930), which is the map version\.
 
@@ -652,7 +644,7 @@ Only if `TREE_VALUE` is not defined\. Adds `key` to `tree` only if it is a new v
 Adds or updates `key` in `tree`\.
 
  * Parameter: _eject_  
-   If this parameter is non\-null and a return value of `TREE_PRESENT`, the old key is stored in `eject`, replaced by `key`\. A null value indicates that on conflict, the new key yields to the old key, as [&lt;T&gt;try](#user-content-fn-edcfce52)\. This is only significant in trees with distinguishable keys\.
+   If this parameter is non\-null and a return value of `TREE_PRESENT`, the old key is stored in `eject`, replaced by `key`\. A null value indicates that on conflict, the new key yields to the old key, as [&lt;T&gt;add](#user-content-fn-7b8ec2e0)\. This is only significant in trees with distinguishable keys\.
  * Parameter: _value_  
    Only present if `TREE_VALUE` \(map\) was specified\. If this parameter is non\-null and a return value other then `TREE_ERROR`, this receives the address of the value associated with the key\.
  * Return:  

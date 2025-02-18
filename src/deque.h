@@ -19,7 +19,8 @@
 
  @param[DEQUE_PUSH_FRONT]
  The default deque is only a stack that grows down. This replaces the index
- size with a range in all the blocks. Implies `DEQUE_FRONT`.
+ size with a range in all the blocks. Implies `DEQUE_FRONT`. (Not implemented
+ yet; I just use this as a stable memory store.)
 
  @param[DEQUE_TO_STRING]
  To string trait contained in <../../src/to_string.h>. See
@@ -117,7 +118,7 @@ struct T_(cursor) T_(begin)(const struct t_(deque) *);
 void T_(next)(struct T_(cursor) *);
 #		endif
 struct t_(deque) t_(deque)(void);
-void t_(deque_)(struct t_(deque) *const);
+void t_(deque_)(struct t_(deque) *);
 pT_(type) *T_(new_back)(struct t_(deque) *);
 pT_(type) *T_(append_back)(struct t_(deque) *, size_t);
 void T_(clear)(struct t_(deque) *);
@@ -125,7 +126,7 @@ void T_(clear)(struct t_(deque) *);
 #	ifndef BOX_DECLARE_ONLY /* Produce code. */
 
 /** Appends `n` contiguous items to `deque`.
- @param[n] [0, ⌈SIZE_MAX/2⌉]. Returns null if `n = 0`.
+ @param[n] [0, ⌈`SIZE_MAX`/2⌉]. Returns null if `n = 0`.
  @throws[malloc, ERANGE] */
 static pT_(type) *pT_(append_back)(struct t_(deque) *const deque, const size_t n) {
 	struct pT_(block) *back, *new_block;

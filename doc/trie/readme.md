@@ -17,9 +17,11 @@ Header [\.\./\.\./src/trie\.h](../../src/trie.h) requires [\.\./\.\./src/bmp\.h]
 
 A [&lt;t&gt;trie](#user-content-tag-21f3c845) is a prefix\-tree, digital\-tree, or trie: an ordered set or map of byte null\-terminated immutable key strings allowing efficient prefix queries\. The implementation is as [Morrison, 1968 PATRICiA](https://scholar.google.ca/scholar?q=Morrison%2C+1968+PATRICiA): a compact [binary radix trie](https://en.wikipedia.org/wiki/Radix_tree) that acts as an index, only storing the where the key bits are different\. The keys are grouped in fixed\-size nodes in a relaxed version of a B\-tree, as [Bayer, McCreight, 1972 Large](https://scholar.google.ca/scholar?q=Bayer%2C+McCreight%2C+1972+Large), where the height is no longer fixed\.
 
-While the worse\-case run\-time of querying or modifying is bounded by &#927;\(|`string`|\), [Tong, Goebel, Lin, 2015, Smoothed](https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed) show that, in an iid model, a better fit is &#927;\(log |`trie`|\), which is seen and reported here\. It is not stable\.
+In general, multiple trees are equivalent by rotations\. A trie is single one of the trees that aligns with the data\. Thus, instead of using binary search, one uses the bits of the key directly; there is just one entry that has to be compared\. Where the fine\-grained structure of the B\-tree is implicit, a trie needs a specific shape\. This is given constant size \(16 bytes\) _per_ entry cache\.
 
 ![Bit view of the trie.](../../doc/trie/trie-bits.png)
+
+While the worse\-case run\-time of querying or modifying is bounded by &#927;\(|`string`|\), [Tong, Goebel, Lin, 2015, Smoothed](https://scholar.google.ca/scholar?q=Tong%2C+Goebel%2C+Lin%2C+2015%2C+Smoothed) show that, in an iid model, a better fit is &#927;\(log |`trie`|\), which is seen and reported here\. It is not stable\. It does not need `<t>less`\. In practice, most applications will not see a difference between the tree and trie, but may find one more convenient\.
 
 
 
@@ -29,8 +31,8 @@ While the worse\-case run\-time of querying or modifying is bounded by &#927;\(|
    Optional [&lt;pT&gt;key](#user-content-typedef-95e6d0aa), the default of which is `const char *`\. Requires implementation of [&lt;pT&gt;string_fn](#user-content-typedef-9cf8629b) `<t>string` to convert [&lt;pT&gt;key](#user-content-typedef-95e6d0aa) to a `const char *`\.
  * Parameter: TRIE\_ENTRY  
    Optional [&lt;pT&gt;entry](#user-content-typedef-9be2614d) that contains the key, the default of which is the entry is the key\. Requires [&lt;pT&gt;key_fn](#user-content-typedef-d71854df) `<t>key`, that picks out [&lt;pT&gt;key](#user-content-typedef-95e6d0aa) from [&lt;pT&gt;entry](#user-content-typedef-9be2614d)\.
- * Parameter: TRIE\_TO\_STRING  
-   To string trait contained in [src/to\_string\.h](src/to_string.h)\. The unnamed trait is automatically supplied by the string, but others see [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b)\.
+ * Parameter: TRIE\_TO\_STRING, TRIE\_KEY\_TO\_STRING  
+   To string trait contained in [src/to\_string\.h](src/to_string.h)\. For `TRIE_TO_STRING`, see [&lt;pT&gt;to_string_fn](#user-content-typedef-4442127b); alternately, for `TRIE_KEY_TO_STRING`, the key is suppled to the string directly, under the assumption that it can be truncated at the last code\-point\. \(If one's data is not a subset of utf\-8 and has the highest\-bit set, it may be prematurely and unpredictably truncated if one uses `TRIE_KEY_TO_STRING`\.\)
  * Parameter: TRIE\_EXPECT\_TRAIT, TRIE\_TRAIT  
    Named traits are obtained by including `trie.h` multiple times with `TRIE_EXPECT_TRAIT` and then subsequently including the name in `TRIE_TRAIT`\.
  * Parameter: TRIE\_DECLARE\_ONLY, TRIE\_NON\_STATIC  
@@ -65,7 +67,7 @@ If `TRIE_ENTRY` is set, one must provide `<t>key` as a [&lt;pT&gt;key_fn](#user-
 
 <code>typedef &lt;pT&gt;entry *<strong>&lt;pT&gt;remit</strong>;</code>
 
-Remit is either an extra indirection on [&lt;pT&gt;entry](#user-content-typedef-9be2614d) on `TRIE_ENTRY` or not\.
+Remit is either an extra indirection on [&lt;pT&gt;entry](#user-content-typedef-9be2614d) on `TRIE_ENTRY` or not in the case of a string—it already has a star, and we can't modify it anyway, so it would be awkward to return a pointer to a string\.
 
 
 
@@ -87,9 +89,9 @@ Extracts [&lt;pT&gt;key](#user-content-typedef-95e6d0aa) from [&lt;pT&gt;entry](
 
 ### <a id = "user-content-typedef-4442127b" name = "user-content-typedef-4442127b">&lt;pT&gt;to_string_fn</a> ###
 
-<code>typedef void(*<strong>&lt;pT&gt;to_string_fn</strong>)(const &lt;pT&gt;key, const &lt;pT&gt;entry *, char(*)[12]);</code>
+<code>typedef void(*<strong>&lt;pT&gt;to_string_fn</strong>)(const &lt;pT&gt;entry *, char(*)[12]);</code>
 
-Type of `TRIE_TO_STRING` needed function `<tr>to_string`\. Responsible for turning the read\-only argument into a 12\-max\-`char` output string\. `<pT>value` is omitted when it's a set\. Only available to named traits, the `TRIE_TO_STRING` of the anonymous trait is implicitly the string itself\.
+The type of the required `<tr>to_string`\. Responsible for turning the read\-only argument into a 12\-max\-`char` output string\. `<pT>value` is omitted when it's a set\.
 
 
 
@@ -153,9 +155,9 @@ To initialize it to an idle state, see [&lt;t&gt;trie](#user-content-fn-21f3c845
 
 <tr><td align = right>enum trie_result</td><td><a href = "#user-content-fn-2b98edfb">&lt;T&gt;get</a></td><td>&lt;t&gt;trie, char, &lt;pT&gt;remit</td></tr>
 
-<tr><td align = right>enum trie_result</td><td><a href = "#user-content-fn-edcfce52">&lt;T&gt;try</a></td><td>&lt;t&gt;trie, &lt;pT&gt;key</td></tr>
+<tr><td align = right>enum trie_result</td><td><a href = "#user-content-fn-7b8ec2e0">&lt;T&gt;add</a></td><td>&lt;t&gt;trie, &lt;pT&gt;key</td></tr>
 
-<tr><td align = right>enum trie_result</td><td><a href = "#user-content-fn-edcfce52">&lt;T&gt;try</a></td><td>&lt;t&gt;trie, &lt;pT&gt;key, &lt;pT&gt;entry</td></tr>
+<tr><td align = right>enum trie_result</td><td><a href = "#user-content-fn-7b8ec2e0">&lt;T&gt;add</a></td><td>&lt;t&gt;trie, &lt;pT&gt;key, &lt;pT&gt;entry</td></tr>
 
 <tr><td align = right>int</td><td><a href = "#user-content-fn-56806709">&lt;T&gt;remove</a></td><td>&lt;t&gt;trie, char</td></tr>
 
@@ -177,7 +179,7 @@ To initialize it to an idle state, see [&lt;t&gt;trie](#user-content-fn-21f3c845
 
 <tr><td align = right>static &lt;pT&gt;remit</td><td><a href = "#user-content-fn-2b98edfb">&lt;T&gt;get</a></td><td>trie, string</td></tr>
 
-<tr><td align = right>static enum trie_result</td><td><a href = "#user-content-fn-edcfce52">&lt;T&gt;try</a></td><td>trie, key, entry</td></tr>
+<tr><td align = right>static enum trie_result</td><td><a href = "#user-content-fn-7b8ec2e0">&lt;T&gt;add</a></td><td>trie, key, put_entry_here</td></tr>
 
 <tr><td align = right>static int</td><td><a href = "#user-content-fn-56806709">&lt;T&gt;remove</a></td><td>trie, string</td></tr>
 
@@ -267,15 +269,15 @@ To initialize it to an idle state, see [&lt;t&gt;trie](#user-content-fn-21f3c845
 
 
 
-### <a id = "user-content-fn-edcfce52" name = "user-content-fn-edcfce52">&lt;T&gt;try</a> ###
+### <a id = "user-content-fn-7b8ec2e0" name = "user-content-fn-7b8ec2e0">&lt;T&gt;add</a> ###
 
-<code>enum trie_result <strong>&lt;T&gt;try</strong>(struct <em>&lt;t&gt;trie</em> *, <em>&lt;pT&gt;key</em>);</code>
+<code>enum trie_result <strong>&lt;T&gt;add</strong>(struct <em>&lt;t&gt;trie</em> *, <em>&lt;pT&gt;key</em>);</code>
 
 
 
-### <a id = "user-content-fn-edcfce52" name = "user-content-fn-edcfce52">&lt;T&gt;try</a> ###
+### <a id = "user-content-fn-7b8ec2e0" name = "user-content-fn-7b8ec2e0">&lt;T&gt;add</a> ###
 
-<code>enum trie_result <strong>&lt;T&gt;try</strong>(struct <em>&lt;t&gt;trie</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;entry</em> **);</code>
+<code>enum trie_result <strong>&lt;T&gt;add</strong>(struct <em>&lt;t&gt;trie</em> *, <em>&lt;pT&gt;key</em>, <em>&lt;pT&gt;entry</em> **);</code>
 
 
 
@@ -404,9 +406,9 @@ If may not have a null, the `remit` is stuck as a pointer on the end and a `trie
 
 
 
-### <a id = "user-content-fn-edcfce52" name = "user-content-fn-edcfce52">&lt;T&gt;try</a> ###
+### <a id = "user-content-fn-7b8ec2e0" name = "user-content-fn-7b8ec2e0">&lt;T&gt;add</a> ###
 
-<code>static enum trie_result <strong>&lt;T&gt;try</strong>(struct &lt;t&gt;trie *const <em>trie</em>, const &lt;pT&gt;key <em>key</em>, &lt;pT&gt;entry **const <em>entry</em>)</code>
+<code>static enum trie_result <strong>&lt;T&gt;add</strong>(struct &lt;t&gt;trie *const <em>trie</em>, const &lt;pT&gt;key <em>key</em>, &lt;pT&gt;entry **const <em>put_entry_here</em>)</code>
 
 Adds `key` to `trie` if it doesn't exist already\.
 
@@ -414,8 +416,6 @@ If `TRIE_ENTRY` was specified and the return is `TRIE_ABSENT`, the trie is in an
 
 
 
- * Parameter: _entry_  
-   Output pointer\. Only if `TRIE_ENTRY` is set will this parameter exist\.
  * Return:  
    One of, `TRIE_ERROR`, `errno` is set and `entry` is not; `TRIE_ABSENT`, `key` is added to `trie`; `TRIE_PRESENT`, the value associated with `key`\.
  * Exceptional return: EILSEQ  

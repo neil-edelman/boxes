@@ -48,7 +48,7 @@ static void char_bounds(void) {
 	char_tree_graph_fn(&tree, "graph/tree/char-bounds.gv");
 	printf("right:\n");
 	for(i = 'a'; i < 'm'; i++) {
-		char right = char_tree_upper_or(&tree, i, '_'); // this is a terrible name
+		char right = char_tree_upper_or(&tree, i, '_');
 		printf("%c\t%c\t(%c)\n", i, right, correct_right[(int)i-'a']);
 		assert(right == correct_right[(int)i-'a']);
 	}
