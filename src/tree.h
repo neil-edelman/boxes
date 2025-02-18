@@ -1370,7 +1370,7 @@ static enum tree_result T_(bulk_add)(struct t_(tree) *const tree, pT_(key) key)
 		}
 
 		/* One leaf, and the rest branches. */
-		new_nodes = n = unfull.bough ? unfull.height : tree->trunk.height + 2;
+		new_nodes = n = unfull.bough ? unfull.height - 1 : tree->trunk.height + 1;
 		if(!n) {
 			bough = unfull.bough;
 		} else {
