@@ -718,7 +718,7 @@ static void pT_(subgraph_usual)(const struct pT_(tree) *const sub, FILE *fp) {
 	if(sub->height) fprintf(fp, "\t<hr/>\n"
 		"\t<tr><td></td></tr>\n");
 	fprintf(fp, "</table>>];\n");
-	if(!sub->height) return;
+	if(sub->height <= 1) return;
 	/* Draw the lines between trees. */
 	branch = pT_(as_branch_c)(sub->bough);
 	for(i = 0; i <= branch->base.size; i++)

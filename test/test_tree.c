@@ -790,11 +790,10 @@ int main(void) {
 	srand(seed), rand(), printf("Seed %u.\n", seed);
 	char_bounds();
 	char_tree_test();
-	/*
 	int_tree_test();
 	order3_tree_test();
 	order3();
-	redblack_tree_test();
+	/*redblack_tree_test();
 	redblack();
 	pair_tree_test();
 	star_tree_test();
