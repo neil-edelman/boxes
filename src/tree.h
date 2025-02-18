@@ -1324,11 +1324,11 @@ static enum tree_result T_(bulk_add)(struct t_(tree) *const tree, pT_(key) key)
 		assert(!tree->trunk.height);
 		if(!(bough = malloc(sizeof *bough))) goto catch;
 		bough->size = 0;
-		tree->trunk.height = 1;
+		tree->trunk.height = 1; /* In anticipation. */
 		tree->trunk.bough = bough;
 	} else if(!tree->trunk.height) { /* Empty tree. */
 		bough = tree->trunk.bough;
-		tree->trunk.height = 1;
+		tree->trunk.height = 1; /* In anticipation. */
 		bough->size = 0;
 	} else {
 		struct pT_(tree) unfull = { 0, 0 };
