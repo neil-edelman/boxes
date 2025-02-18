@@ -637,7 +637,7 @@ end:
 #		elif defined TREE_NAME
 
 /** Recursively draws `sub` in `fp`. */
-static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
+static void pT_(subgraph)(const struct pT_(subtree) *const sub, FILE *fp) {
 	const struct pT_(branch_bough) *branch;
 	unsigned i;
 	assert(sub->bough && fp && sub->height);
@@ -672,7 +672,7 @@ static void pT_(subgraph)(const struct pT_(tree) *const sub, FILE *fp) {
 		(const void *)sub->bough, i, (const void *)branch->child[i]);
 	/* Recurse. */
 	for(i = 0; i <= branch->base.size; i++) {
-		struct pT_(tree) child;
+		struct pT_(subtree) child;
 		child.bough = branch->child[i], child.height = sub->height - 1;
 		pT_(subgraph)(&child, fp);
 	}
@@ -687,7 +687,7 @@ static char *pT_(usual_port)(unsigned port) {
 }
 
 /** Recursively draws `sub` in `fp`. */
-static void pT_(subgraph_usual)(const struct pT_(tree) *const sub, FILE *fp) {
+static void pT_(subgraph_usual)(const struct pT_(subtree) *const sub, FILE *fp) {
 	const struct pT_(branch_bough) *branch;
 	unsigned i;
 	assert(sub->bough && fp);
@@ -727,13 +727,13 @@ static void pT_(subgraph_usual)(const struct pT_(tree) *const sub, FILE *fp) {
 		(const void *)branch->child[i]);
 	/* Recurse. */
 	for(i = 0; i <= branch->base.size; i++) {
-		struct pT_(tree) child;
+		struct pT_(subtree) child;
 		child.bough = branch->child[i], child.height = sub->height - 1;
 		pT_(subgraph_usual)(&child, fp);
 	}
 }
 
-static void pT_(graph)(const struct pT_(tree) *const trunk, FILE *const fp) {
+static void pT_(graph)(const struct pT_(subtree) *const trunk, FILE *const fp) {
 	assert(trunk);
 	fprintf(fp, "digraph {\n"
 		"\tgraph [rankdir=LR, truecolor=true, bgcolor=transparent,"

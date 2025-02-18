@@ -791,10 +791,10 @@ int main(void) {
 	char_tree_test();
 	char_bounds();
 	int_tree_test(); /* <- this? */
-	/*order3_tree_test(); <- this is behaving non-deterministically? */
-	/*order3();
+	order3_tree_test(); /*<- this is behaving non-deterministically? */
+	order3();
 	redblack_tree_test();
-	redblack();
+	/*redblack(); <- when I uncomment this, the above is non-deterministic?
 	pair_tree_test();
 	star_tree_test();
 	entry_tree_test();
