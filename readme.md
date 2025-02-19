@@ -19,7 +19,7 @@ as a backing for one or more unstable pointer containers.
 ## Documentation ##
 
 Documented parameters in each project are pre-processor macros.
-Examples are in <test/> test_array.c _etc_.
+Examples are in [text/](]test/) test_array.c _etc_.
 
 <table><tr>
 <th>documentation</th>
