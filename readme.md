@@ -3,34 +3,33 @@ generate lightweight and statically type-safe containers.
 
 ## Downloading ##
 
-Pick and choose from `src` and use them. The dependencies are edges
-in the following diagram. Dotted edges means it's an optional dependency
-based on what one defines. The dashed containers, `deque` and `pool`
-are stable containers—which means for the lifetime of the data, it is not
-going to move. A dotted box—`array`, `heap`, `table`, `tree`, and
-`trie`—means it can move, generally on topology changes. Depending on
-one's use case, it may be good to have one or more stable containers
-as a backing for one or more unstable pointer containers.
+This is not a library, just headers where needed. Pick and choose
+from `src` and use them. The dependencies are edges in the following
+diagram. Or just download the entire `src` directory and put it
+where it's convenient to reference from one's code.
 
 ![Dependencies](dependencies.svg)
 
-Or just download the entire `src` directory and put it where it's
-convenient to reference from one's code. Parameters in each project
-are pre-processor macros. Documentation is in `doc/` and examples
-are in `test/`.
+Dotted edges means it's an optional dependency. The dashed containers,
+`deque` and `pool` are stable containers. A dotted box—`array`,
+`heap`, `table`, `tree`, and `trie`, means unstable. Depending on
+one's use case, it may be good to have one or more stable containers
+as a backing for one or more unstable pointer containers.
 
-The somewhat separate [`orcish`
-project](https://github.com/neil-edelman/orcish) is used to debug
-and graph code; it translates the graphgobbledygook pointer addresses
-into more semi-meaningful deterministic orc names. It is used in
-graphing and printing the data structure.
+## Documentation ##
 
-## Design papers ##
-
-The implementation is fairly standard. Some rationales of the more
-complex containers documented here.
+Documented parameters in each project are pre-processor macros.
+Examples are in <test/> test_array.c _etc_.
 
 <table><tr>
+<th>documentation</th>
+<th>design paper</th>
+</tr>
+<tr><td><a href = "doc/array/">array</a></td><td></td></tr>
+<tr><td><a href = "doc/deque/">deque</a></td><td></td></tr>
+<tr><td><a href = "doc/heap/">heap</a></td><td></td></tr>
+<tr><td><a href = "doc/list/">list</a></td><td></td></tr>
+<tr>
 <td><a href = "doc/pool/">memory pool</a></td>
 <td><a href = "doc/pool/pool.pdf">A slab-allocator for similar objects</a></td>
 </tr><tr>
